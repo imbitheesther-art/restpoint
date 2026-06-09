@@ -337,7 +337,7 @@ const DocumentsModal = ({ isOpen, onClose, documents, deceasedId, onUpdate }) =>
     if (window.confirm('Are you sure you want to delete this document?')) {
       try {
         // Simulate API call for demo - replace with actual API
-        await axios.delete(`https://cinema-text-architectural-financial.trycloudflare.com/api/v1/restpoint/delete-document/${documentId}`);
+        await axios.delete(`http://localhost:8009/api/v1/restpoint/delete-document/${documentId}`);
         toast.success('Document deleted successfully');
         setDocumentList(prev => prev.filter(doc => doc.id !== documentId));
         

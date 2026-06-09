@@ -3,10 +3,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { safeQuery } = require('../../shared/database');
 const { validateTenantActive } = require('../../shared/tenancy');
-const coldRoomRoutes = require('../routes/coldRoom');
+const coldRoomRoutes = require('./routes/coldRoom');
 
 const app = express();
-const PORT = process.env.PORT || 8007;
+const PORT = process.env.PORT || 8107;
 
 app.use(cors());
 app.use(helmet());

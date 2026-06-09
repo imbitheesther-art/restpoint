@@ -811,7 +811,7 @@ const StatusTimeline = ({ deceasedData }) => {
   const [editingCharge, setEditingCharge] = useState(null);
 
   const { id: deceasedId } = useParams();
-  const API_BASE_URL = 'https://cinema-text-architectural-financial.trycloudflare.com/api/v1/restpoint';
+  const API_BASE_URL = 'http://localhost:8009/api/v1/restpoint';
 
   const fetchCharges = async () => {
     try {

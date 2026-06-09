@@ -5123,3 +5123,7 @@
 {"label":"backend-api","level":"info","message":"[PROXY] POST /api/v1/leaders/analytics/click → http://localhost/api/v1/leaders/analytics/click","timestamp":"2026-05-18 20:08:31"}
 {"label":"backend-api","level":"info","message":"[PROXY] POST /api/v1/leaders/analytics/click → http://localhost/api/v1/leaders/analytics/click","timestamp":"2026-05-18 20:08:33"}
 {"label":"backend-api","level":"info","message":" API Gateway running on port 8009","timestamp":"2026-05-18 20:49:50"}
+{"label":"backend-api","level":"info","message":" API Gateway running on port 8009","timestamp":"2026-05-31 20:42:13"}
+{"label":"backend-api","level":"info","message":" API Gateway running on port 8009","timestamp":"2026-05-31 20:46:58"}
+{"label":"backend-api","level":"info","message":"Shutting down API Gateway...","timestamp":"2026-05-31 20:51:58"}
+{"label":"backend-api","level":"info","message":" API Gateway running on port 8009","timestamp":"2026-05-31 20:52:05"}

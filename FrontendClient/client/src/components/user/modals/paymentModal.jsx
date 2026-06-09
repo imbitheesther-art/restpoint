@@ -35,7 +35,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('https://intimate-sink-rev-derived.trycloudflare.com/api/v1/restpoint/update-payment', {
+      const response = await fetch('http://localhost:8009/api/v1/restpoint/update-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('https://intimate-sink-rev-derived.trycloudflare.com/api/v1/restpoint/initiate-stk-push', {
+      const response = await fetch('http://localhost:8009/api/v1/restpoint/initiate-stk-push', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

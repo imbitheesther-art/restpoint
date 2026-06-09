@@ -331,7 +331,7 @@ const EmbalmingInfoSection = ({ deceased, onUpdate }) => {
   // Fetch available chemicals
   const fetchAvailableChemicals = async () => {
     try {
-      const response = await fetch(' https://intimate-sink-rev-derived.trycloudflare.com/api/v1/restpoint/chemicals');
+      const response = await fetch(' http://localhost:8009/api/v1/restpoint/chemicals');
       const result = await response.json();
       
       if (result.success) {
@@ -438,7 +438,7 @@ const EmbalmingInfoSection = ({ deceased, onUpdate }) => {
       console.log('Sending embalming data:', payload);
 
       // Send embalming data
-      const response = await fetch('https://cheats-jewellery-certified-relatively.trycloudflare.com/api/v1/restpoint/embalming', {
+      const response = await fetch('http://localhost:8009/api/v1/restpoint/embalming', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -483,7 +483,7 @@ const EmbalmingInfoSection = ({ deceased, onUpdate }) => {
           updated_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
         };
 
-        const response = await fetch('https://cheats-jewellery-certified-relatively.trycloudflare.com/api/v1/restpoint/chemicals/use', {
+        const response = await fetch('http://localhost:8009/api/v1/restpoint/chemicals/use', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

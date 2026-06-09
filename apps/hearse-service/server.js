@@ -3,11 +3,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { safeQuery } = require('../../shared/database');
 const { validateTenantActive } = require('../../shared/tenancy');
-const driverDispatchRoutes = require('../routes/driverDispatchRoutes');
-const bookHearseRoutes = require('../routes/bookhearse');
+const driverDispatchRoutes = require('./routes/driverDispatchRoutes');
+const bookHearseRoutes = require('./routes/bookhearse');
 
 const app = express();
-const PORT = process.env.PORT || 8009;
+const PORT = process.env.PORT || 8109;
 
 app.use(cors());
 app.use(helmet());

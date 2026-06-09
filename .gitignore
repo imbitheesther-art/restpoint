@@ -1,3 +1,4 @@
 /*          # Ignore everything at the root
 !BackendApi/
 !FrontendClient/
+node_modules

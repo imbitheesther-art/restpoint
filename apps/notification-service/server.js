@@ -5,7 +5,7 @@ const { safeQuery } = require('../../shared/database');
 const { validateTenantActive } = require('../../shared/tenancy');
 
 const app = express();
-const PORT = process.env.PORT || 8011;
+const PORT = process.env.PORT || 8111;
 
 app.use(cors());
 app.use(helmet());

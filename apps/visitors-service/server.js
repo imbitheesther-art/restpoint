@@ -5,7 +5,7 @@ const { safeQuery } = require('../../shared/database');
 const { validateTenantActive } = require('../../shared/tenancy');
 
 const app = express();
-const PORT = process.env.PORT || 8010;
+const PORT = process.env.PORT || 8110;
 
 app.use(cors());
 app.use(helmet());
@@ -36,13 +36,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/api/v1/restpoint/visitors', async (req, res) => {
-  res.json({
-    success: true,
-    message: 'Hello from visitors-service!',
-    tenant: req.tenantSlug
-  });
-});
+const visitorsRoutes = require('./routes/visitorsRoutes');
+
+app.use('/api/v1/restpoint/visitors', visitorsRoutes);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`visitors-service is running on port ${PORT}`);

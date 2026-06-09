@@ -641,7 +641,7 @@ const  PerformanceDashboard = () => {
       setLoading(true);
       try {
         // Replace with your actual API endpoint
-        const response = await fetch(' https://intimate-sink-rev-derived.trycloudflare.com/api/v1/restpoint/performance');
+        const response = await fetch(' http://localhost:8009/api/v1/restpoint/performance');
         const data = await response.json();
         setPerformanceData(data.data);
         

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import {
   Truck,
   Calendar,
@@ -16,6 +18,11 @@ import {
   Fuel,
   Gauge,
   Settings,
+  Navigation,
+  ExternalLink,
+  Search,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -34,6 +41,32 @@ const Colors = {
   buttonHover: '#1D4ED8',
   progressBg: '#F3F4F6',
   hoverGray: '#F9FAFB',
+};
+
+// TomTom API Configuration (keep as backup)
+const TOMTOM_API_KEY = 'vrEBolWtMhzwL9icvdOoNQlHbghvBE1F';
+const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
+
+// Free Routing APIs
+const OSRM_API = 'https://router.project-osrm.org/route/v1/driving';
+const NOMINATIM_API = 'https://nominatim.openstreetmap.org/search';
+
+// MapLibre Configuration
+const MAP_CONFIG = {
+  // Free OpenStreetMap-based styles
+  styles: {
+    standard: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    voyager: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+  },
+  defaultCenter: [36.8219, -1.2921], // [lng, lat] for MapLibre (Note: reverse order!)
+  defaultZoom: 13,
+};
+
+const DEFAULT_MORTUARY = {
+  lat: -1.2921,
+  lon: 36.8219,
+  address: 'LEE FUNERAL SERVICES',
 };
 
 // --- Styled Components ---
@@ -251,6 +284,7 @@ const ModalOverlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 1rem;
 `;
 
 const ModalContent = styled.div`
@@ -258,8 +292,8 @@ const ModalContent = styled.div`
   padding: 2rem;
   border-radius: 1rem;
   width: 90%;
-  max-width: 900px;
-  max-height: 85vh;
+  max-width: 1100px;
+  max-height: 90vh;
   overflow-y: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -267,6 +301,7 @@ const ModalContent = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    padding: 1rem;
   }
 `;
 
@@ -285,6 +320,7 @@ const CloseButton = styled.button`
   border: none;
   cursor: pointer;
   color: ${Colors.textSecondary};
+  padding: 0.25rem;
 
   &:hover {
     color: ${Colors.dangerRed};
@@ -293,6 +329,7 @@ const CloseButton = styled.button`
 
 const FormGroup = styled.div`
   margin-bottom: 1.25rem;
+  position: relative;
 `;
 
 const Label = styled.label`
@@ -309,6 +346,7 @@ const Input = styled.input`
   border: 1px solid ${Colors.borderColor};
   border-radius: 0.5rem;
   font-size: 0.95rem;
+  transition: border-color 0.2s;
 
   &:focus {
     outline: none;
@@ -317,15 +355,15 @@ const Input = styled.input`
 `;
 
 const MapContainer = styled.div`
-  height: 200px;
   width: 100%;
-  border-radius: 0.5rem;
+  height: 400px;
+  border-radius: 0.75rem;
   overflow: hidden;
   border: 1px solid ${Colors.borderColor};
-  margin-bottom: 1rem;
+  position: relative;
+  background: ${Colors.progressBg};
 
-  iframe {
-    border: none;
+  .maplibregl-map {
     width: 100%;
     height: 100%;
   }
@@ -346,10 +384,11 @@ const SearchResults = styled.div`
 `;
 
 const SearchResultItem = styled.div`
-  padding: 0.6rem 0.75rem;
+  padding: 0.75rem 1rem;
   cursor: pointer;
   border-bottom: 1px solid ${Colors.borderColor};
   font-size: 0.9rem;
+  transition: background 0.2s;
 
   &:hover {
     background: ${Colors.hoverGray};
@@ -398,15 +437,99 @@ const RateInput = styled.div`
   }
 `;
 
-// TomTom API Configuration
-const TOMTOM_API_KEY = 'vrEBolWtMhzwL9icvdOoNQlHbghvBE1F';
-const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
-const DEFAULT_MORTUARY = {
-  lat: -1.2921,
-  lon: 36.8219,
-  address: 'LEE FUNERAL SERVICES',
-};
+const MapControls = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
 
+const MapButton = styled.button`
+  background: white;
+  border: 1px solid ${Colors.borderColor};
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${Colors.hoverGray};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+
+const RouteInfoBox = styled.div`
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  strong {
+    color: ${Colors.accentBlue};
+  }
+`;
+
+const LoadingOverlay = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 1rem 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid ${Colors.borderColor};
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  background: white;
+  
+  &:focus {
+    outline: none;
+    border-color: ${Colors.accentBlue};
+  }
+`;
+
+// Main Component
 const DispatchSection = ({ deceasedId, onUpdate }) => {
   const { id } = useParams();
   const [showModal, setShowModal] = useState(false);
@@ -416,6 +539,12 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
   const [username, setUsername] = useState('System');
   const [trips, setTrips] = useState([]);
 
+  // Map Refs
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const markersRef = useRef([]);
+  const routeSourceRef = useRef(null);
+
   // Form state
   const [tripName, setTripName] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
@@ -423,7 +552,7 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
   const [vehicleCC, setVehicleCC] = useState('');
   const [dispatchDate, setDispatchDate] = useState('');
   const [negotiatedPrice, setNegotiatedPrice] = useState('');
-  const [ratePerKm, setRatePerKm] = useState(100); // Default rate per km
+  const [ratePerKm, setRatePerKm] = useState(100);
 
   // Location state
   const [destination, setDestination] = useState('');
@@ -433,12 +562,17 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [travelTime, setTravelTime] = useState(null);
+  const [isMapLoading, setIsMapLoading] = useState(false);
+  const [mapStyle, setMapStyle] = useState('standard');
 
   // Calculations
   const [fuelCost, setFuelCost] = useState(null);
   const [fuelEstimate, setFuelEstimate] = useState(null);
   const [transportCost, setTransportCost] = useState(null);
   const [totalCost, setTotalCost] = useState(null);
+
+  // Debounce timer for search
+  const searchTimeout = useRef(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('username');
@@ -449,36 +583,398 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
     fetchTrips();
   }, [deceasedId, id]);
 
-  const fetchTrips = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/dispatch/${deceasedId || id}`);
-      if (response.data.success) {
-        setTrips(response.data.data);
+  // Initialize map when modal opens
+  useEffect(() => {
+    if (showModal && mapContainer.current) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        initializeMap();
+      }, 100);
+    }
+
+    // Cleanup on modal close
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
       }
+    };
+  }, [showModal, mapStyle]);
+
+  const initializeMap = () => {
+    if (!mapContainer.current || map.current) return;
+
+    try {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: MAP_CONFIG.styles[mapStyle] || MAP_CONFIG.styles.standard,
+        center: MAP_CONFIG.defaultCenter,
+        zoom: MAP_CONFIG.defaultZoom,
+        attributionControl: true,
+      });
+
+      // Add navigation controls
+      map.current.addControl(new maplibregl.NavigationControl(), 'top-left');
+      map.current.addControl(new maplibregl.ScaleControl({
+        maxWidth: 100,
+        unit: 'metric'
+      }), 'bottom-left');
+
+      // Add mortuary marker
+      map.current.on('load', () => {
+        addMarker(
+          DEFAULT_MORTUARY.lat,
+          DEFAULT_MORTUARY.lon,
+          '#10B981',
+          '🏠',
+          'Mortuary'
+        );
+
+        // If editing with existing destination, load route
+        if (destinationLat && destinationLon) {
+          addMarker(destinationLat, destinationLon, '#EF4444', '📍', 'Destination');
+          fetchRoute(DEFAULT_MORTUARY.lat, DEFAULT_MORTUARY.lon, destinationLat, destinationLon);
+        }
+      });
+
+      // Handle map errors gracefully
+      map.current.on('error', (e) => {
+        console.error('Map error:', e);
+      });
     } catch (error) {
-      console.error('Error fetching trips:', error);
+      console.error('Error initializing map:', error);
     }
   };
 
-  const calculateFuelCost = () => {
-    if (!vehicleCC || !distance) return null;
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
 
+  const addMarker = (lat, lng, color, emoji, label) => {
+    if (!map.current) return;
+
+    // Create custom marker element
+    const el = document.createElement('div');
+    el.className = 'custom-marker';
+    el.innerHTML = `
+      <div style="
+        background: ${color};
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        border: 2px solid white;
+      ">
+        <span style="font-size: 16px;">${emoji}</span>
+        <span>${label}</span>
+      </div>
+    `;
+
+    // Remove existing marker at similar position (avoid duplicates)
+    const marker = new maplibregl.Marker({ 
+      element: el, 
+      anchor: 'bottom',
+      offset: [0, -10]
+    })
+      .setLngLat([lng, lat])
+      .addTo(map.current);
+
+    markersRef.current.push(marker);
+    return marker;
+  };
+
+  const fetchRoute = async (originLat, originLon, destLat, destLon) => {
+    if (!map.current) return;
+    
+    setIsMapLoading(true);
+    
+    try {
+      // Using OSRM (free, no API key needed)
+      const url = `${OSRM_API}/${originLon},${originLat};${destLon},${destLat}?overview=full&geometries=geojson&steps=true&alternatives=false`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch route');
+      }
+      
+      const data = await response.json();
+
+      if (data.routes?.[0]) {
+        const route = data.routes[0];
+        const distanceKm = (route.distance / 1000).toFixed(1);
+        const durationMinutes = Math.round(route.duration / 60);
+        const hours = Math.floor(durationMinutes / 60);
+        const minutes = durationMinutes % 60;
+        const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+        setDistance(parseFloat(distanceKm));
+        setTravelTime(timeString);
+
+        // Draw route on map
+        drawRoute(route.geometry);
+        
+        // Fit map to show entire route
+        fitMapToRoute(route.geometry);
+      }
+    } catch (error) {
+      console.error('Route error:', error);
+      
+      // Fallback to Haversine distance calculation
+      const dist = calculateDistance(originLat, originLon, destLat, destLon);
+      setDistance(Math.round(dist * 10) / 10);
+      
+      // Estimate time (assume average 40km/h)
+      const estimatedMinutes = Math.round((dist / 40) * 60);
+      const hours = Math.floor(estimatedMinutes / 60);
+      const minutes = estimatedMinutes % 60;
+      setTravelTime(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`);
+      
+      // Draw straight line as fallback
+      drawStraightLine(originLat, originLon, destLat, destLon);
+    } finally {
+      setIsMapLoading(false);
+    }
+  };
+
+  const drawRoute = (geometry) => {
+    if (!map.current) return;
+
+    // Remove existing route
+    if (map.current.getLayer('route-line')) {
+      map.current.removeLayer('route-line');
+    }
+    if (map.current.getLayer('route-line-bg')) {
+      map.current.removeLayer('route-line-bg');
+    }
+    if (map.current.getSource('route')) {
+      map.current.removeSource('route');
+    }
+
+    // Add route source
+    map.current.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: geometry,
+      },
+    });
+
+    // Add background (wider) line
+    map.current.addLayer({
+      id: 'route-line-bg',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': '#2563EB',
+        'line-width': 8,
+        'line-opacity': 0.2,
+      },
+    });
+
+    // Add main route line with dash effect (Waze-like)
+    map.current.addLayer({
+      id: 'route-line',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': '#2563EB',
+        'line-width': 4,
+        'line-opacity': 0.8,
+      },
+    });
+
+    routeSourceRef.current = geometry;
+  };
+
+  const drawStraightLine = (lat1, lon1, lat2, lon2) => {
+    if (!map.current) return;
+
+    const geometry = {
+      type: 'LineString',
+      coordinates: [[lon1, lat1], [lon2, lat2]]
+    };
+
+    drawRoute(geometry);
+    fitMapToRoute(geometry);
+  };
+
+  const fitMapToRoute = (geometry) => {
+    if (!map.current || !geometry || !geometry.coordinates) return;
+
+    try {
+      const coordinates = geometry.coordinates;
+      const bounds = coordinates.reduce((bounds, coord) => {
+        return bounds.extend([coord[0], coord[1]]);
+      }, new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
+
+      map.current.fitBounds(bounds, {
+        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+        maxZoom: 15,
+        duration: 1000,
+      });
+    } catch (error) {
+      console.error('Error fitting map to route:', error);
+    }
+  };
+
+  // Haversine formula for distance calculation (fallback)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  const searchLocation = useCallback(async (query) => {
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Clear previous timeout
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    // Debounce search
+    searchTimeout.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        // Using Nominatim (free, rate-limited to 1 request/sec)
+        const response = await fetch(
+          `${NOMINATIM_API}?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=ke&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'FuneralServiceApp/1.0', // Required by Nominatim
+            },
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error('Search failed');
+        }
+        
+        const data = await response.json();
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+        
+        // Fallback to TomTom if Nominatim fails
+        try {
+          const response = await fetch(
+            `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${TOMTOM_API_KEY}&countrySet=KE&limit=5`
+          );
+          const data = await response.json();
+          const formattedResults = (data.results || []).map(r => ({
+            display_name: r.address.freeformAddress,
+            lat: r.position.lat,
+            lon: r.position.lon,
+          }));
+          setSearchResults(formattedResults);
+        } catch (fallbackError) {
+          console.error('Fallback search error:', fallbackError);
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  }, []);
+
+  const handleDestinationSelect = (result) => {
+    const address = result.display_name;
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+
+    setDestination(address);
+    setDestinationLat(lat);
+    setDestinationLon(lon);
+    setSearchResults([]);
+
+    // Update map
+    if (map.current) {
+      // Clear old markers except mortuary
+      markersRef.current.forEach(marker => {
+        const pos = marker.getLngLat();
+        if (pos.lat !== DEFAULT_MORTUARY.lon || pos.lng !== DEFAULT_MORTUARY.lat) {
+          marker.remove();
+        }
+      });
+
+      addMarker(lat, lon, '#EF4444', '📍', 'Destination');
+      fetchRoute(DEFAULT_MORTUARY.lat, DEFAULT_MORTUARY.lon, lat, lon);
+    } else {
+      // Fallback distance calculation
+      const dist = calculateDistance(DEFAULT_MORTUARY.lat, DEFAULT_MORTUARY.lon, lat, lon);
+      setDistance(Math.round(dist * 10) / 10);
+      const estimatedMinutes = Math.round((dist / 40) * 60);
+      const hours = Math.floor(estimatedMinutes / 60);
+      const minutes = estimatedMinutes % 60;
+      setTravelTime(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`);
+    }
+  };
+
+  const openInWaze = () => {
+    if (destinationLat && destinationLon) {
+      const url = `https://waze.com/ul?ll=${destinationLat},${destinationLon}&navigate=yes`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const openInGoogleMaps = () => {
+    if (destinationLat && destinationLon) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${destinationLat},${destinationLon}`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const calculateFuelCost = useCallback(() => {
+    if (!vehicleCC || !distance) return null;
     const cc = parseFloat(vehicleCC);
-    let kmPerLiter = cc < 1500 ? 15 : cc < 2000 ? 12 : cc < 3000 ? 9 : cc < 4000 ? 6 : 4;
+    let kmPerLiter;
+    
+    if (cc < 1500) kmPerLiter = 15;
+    else if (cc < 2000) kmPerLiter = 12;
+    else if (cc < 3000) kmPerLiter = 9;
+    else if (cc < 4000) kmPerLiter = 6;
+    else kmPerLiter = 4;
 
     const roundTrip = distance * 2;
     const fuelNeeded = roundTrip / kmPerLiter;
+    
     return {
       liters: Math.round(fuelNeeded * 10) / 10,
       cost: Math.round(fuelNeeded * 180), // KES 180 per liter
     };
-  };
+  }, [vehicleCC, distance]);
 
-  const calculateTransportCost = () => {
-    if (!distance) return null;
+  const calculateTransportCost = useCallback(() => {
+    if (!distance || !ratePerKm) return null;
     const roundTrip = distance * 2;
     return Math.round(roundTrip * ratePerKm);
-  };
+  }, [distance, ratePerKm]);
 
   useEffect(() => {
     if (distance) {
@@ -491,77 +987,20 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
       const transport = calculateTransportCost();
       setTransportCost(transport);
 
-      // Total cost = fuel + transport
       const total = (fuel?.cost || 0) + (transport || 0);
       setTotalCost(total);
     }
-  }, [distance, vehicleCC, ratePerKm]);
+  }, [distance, vehicleCC, ratePerKm, calculateFuelCost, calculateTransportCost]);
 
-  const searchLocation = async (query) => {
-    if (query.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
+  const fetchTrips = async () => {
     try {
-      const response = await fetch(
-        `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${TOMTOM_API_KEY}&countrySet=KE&limit=5`,
-      );
-      const data = await response.json();
-      setSearchResults(data.results || []);
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const calculateRoute = async (lat, lon) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.tomtom.com/routing/1/calculateRoute/${DEFAULT_MORTUARY.lat},${DEFAULT_MORTUARY.lon}:${lat},${lon}/json?key=${TOMTOM_API_KEY}&travelMode=car`,
-      );
-      const data = await response.json();
-
-      if (data.routes?.[0]) {
-        const route = data.routes[0];
-        const distanceKm = (route.summary.lengthInMeters / 1000).toFixed(1);
-        const timeInSeconds = route.summary.travelTimeInSeconds;
-        const hours = Math.floor(timeInSeconds / 3600);
-        const minutes = Math.floor((timeInSeconds % 3600) / 60);
-        const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-
-        setDistance(parseFloat(distanceKm));
-        setTravelTime(timeString);
+      const response = await axios.get(`${API_BASE_URL}/dispatch/${deceasedId || id}`);
+      if (response.data.success) {
+        setTrips(response.data.data);
       }
     } catch (error) {
-      console.error('Route error:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching trips:', error);
     }
-  };
-
-  const handleDestinationSelect = (result) => {
-    setDestination(result.address.freeformAddress);
-    setDestinationLat(result.position.lat);
-    setDestinationLon(result.position.lon);
-    setSearchResults([]);
-    calculateRoute(result.position.lat, result.position.lon);
-  };
-
-  const getMapUrl = () => {
-    if (!destinationLat || !destinationLon) {
-      return `https://www.openstreetmap.org/export/embed.html?bbox=36.7,-1.4,37.0,-1.2&layer=mapnik&marker=${DEFAULT_MORTUARY.lat},${DEFAULT_MORTUARY.lon}`;
-    }
-
-    const minLon = Math.min(DEFAULT_MORTUARY.lon, destinationLon) - 0.1;
-    const maxLon = Math.max(DEFAULT_MORTUARY.lon, destinationLon) + 0.1;
-    const minLat = Math.min(DEFAULT_MORTUARY.lat, destinationLat) - 0.1;
-    const maxLat = Math.max(DEFAULT_MORTUARY.lat, destinationLat) + 0.1;
-
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${minLon},${minLat},${maxLon},${maxLat}&layer=mapnik&marker=${DEFAULT_MORTUARY.lat},${DEFAULT_MORTUARY.lon}&marker=${destinationLat},${destinationLon}`;
   };
 
   const resetForm = () => {
@@ -581,11 +1020,43 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
     setFuelEstimate(null);
     setTransportCost(null);
     setTotalCost(null);
+    setSearchResults([]);
     setEditingId(null);
+    
+    // Clear map markers and routes
+    if (map.current) {
+      clearMarkers();
+      
+      // Remove route layers
+      ['route-line', 'route-line-bg'].forEach(layer => {
+        if (map.current.getLayer(layer)) {
+          map.current.removeLayer(layer);
+        }
+      });
+      
+      if (map.current.getSource('route')) {
+        map.current.removeSource('route');
+      }
+      
+      // Reset map view
+      map.current.flyTo({
+        center: MAP_CONFIG.defaultCenter,
+        zoom: MAP_CONFIG.defaultZoom,
+      });
+      
+      // Re-add mortuary marker
+      addMarker(DEFAULT_MORTUARY.lat, DEFAULT_MORTUARY.lon, '#10B981', '🏠', 'Mortuary');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!vehiclePlate || !dispatchDate || !destinationLat || !destinationLon) {
+      setMessage('Please fill in all required fields');
+      return;
+    }
+    
     setIsLoading(true);
 
     const fuel = calculateFuelCost();
@@ -617,10 +1088,10 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
     try {
       if (editingId) {
         await axios.put(`${API_BASE_URL}/dispatch/${editingId}`, tripData);
-        setMessage('Trip updated!');
+        setMessage('Trip updated successfully!');
       } else {
         await axios.post(`${API_BASE_URL}/dispatch`, tripData);
-        setMessage('Trip added!');
+        setMessage('Trip added successfully!');
       }
 
       setTimeout(async () => {
@@ -631,6 +1102,7 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
         setMessage('');
       }, 1500);
     } catch (error) {
+      console.error('Error saving trip:', error);
       setMessage('Error: ' + (error.response?.data?.error || error.message));
     } finally {
       setIsLoading(false);
@@ -638,12 +1110,14 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
   };
 
   const handleDelete = async (tripId) => {
-    if (window.confirm('Delete this trip?')) {
+    if (window.confirm('Are you sure you want to delete this trip?')) {
       try {
         await axios.delete(`${API_BASE_URL}/dispatch/${tripId}`);
         await fetchTrips();
         onUpdate?.();
+        setMessage('Trip deleted successfully');
       } catch (error) {
+        console.error('Error deleting trip:', error);
         setMessage('Error deleting trip');
       }
     }
@@ -651,19 +1125,28 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
 
   const handleEdit = (trip) => {
     setEditingId(trip.dispatch_id);
-    setTripName(trip.trip_name);
-    setVehiclePlate(trip.vehicle_plate);
-    setVehicleName(trip.vehicle_name);
-    setVehicleCC(trip.vehicle_cc);
-    setDispatchDate(trip.dispatch_date?.split('T')[0]);
+    setTripName(trip.trip_name || '');
+    setVehiclePlate(trip.vehicle_plate || '');
+    setVehicleName(trip.vehicle_name || '');
+    setVehicleCC(trip.vehicle_cc || '');
+    setDispatchDate(trip.dispatch_date?.split('T')[0] || '');
     setNegotiatedPrice(trip.negotiated_price || '');
     setRatePerKm(trip.rate_per_km || 100);
-    setDestination(trip.destination_address);
+    setDestination(trip.destination_address || '');
     setDestinationLat(trip.destination_lat);
     setDestinationLon(trip.destination_lon);
     setDistance(trip.distance_km);
     setTravelTime(trip.travel_time);
     setShowModal(true);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount).replace('KES', 'KES ');
   };
 
   return (
@@ -686,22 +1169,34 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
       {message && (
         <div
           style={{
-            padding: '0.75rem',
+            padding: '0.75rem 1rem',
             marginBottom: '1rem',
             background: message.includes('Error') ? '#FEE2E2' : '#D1FAE5',
             color: message.includes('Error') ? '#DC2626' : '#059669',
             borderRadius: '0.5rem',
             fontSize: '0.9rem',
-            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
+          {message.includes('Error') ? (
+            <AlertCircle size={16} />
+          ) : (
+            <CheckCircle size={16} />
+          )}
           {message}
         </div>
       )}
 
       {trips.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: Colors.textSecondary }}>
-          No trips added yet
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '3rem', 
+          color: Colors.textSecondary 
+        }}>
+          <Truck size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+          <p>No trips added yet. Click "Add Trip" to get started.</p>
         </div>
       ) : (
         trips.map((trip) => {
@@ -716,7 +1211,12 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
                 </TripLabel>
                 <DateBadge>
                   <Calendar size={14} />
-                  {new Date(trip.dispatch_date).toLocaleDateString()}
+                  {new Date(trip.dispatch_date).toLocaleDateString('en-KE', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
                 </DateBadge>
               </TripHeader>
 
@@ -758,7 +1258,12 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
                   </strong>{' '}
                   km round trip
                 </Stat>
-                {trip.travel_time && <Stat>⏱️ {trip.travel_time}</Stat>}
+                {trip.travel_time && (
+                  <Stat>
+                    <Clock size={12} style={{ display: 'inline', marginRight: '2px' }} />
+                    {trip.travel_time}
+                  </Stat>
+                )}
                 {trip.rate_per_km && (
                   <Stat>
                     <Settings size={12} style={{ display: 'inline', marginRight: '2px' }} />
@@ -771,19 +1276,28 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
                 <FuelEstimate>
                   <Fuel size={14} />
                   <span>
-                    Fuel: {trip.fuel_estimate}L (KES {trip.fuel_cost})
+                    Fuel: {trip.fuel_estimate}L ({formatCurrency(trip.fuel_cost)})
                   </span>
                 </FuelEstimate>
               )}
 
               <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginTop: '0.5rem'
+                }}
               >
                 <Stat style={{ fontWeight: 500 }}>
                   <DollarSign size={14} style={{ display: 'inline', marginRight: '2px' }} />
-                  {displayPrice.toLocaleString()}
+                  {formatCurrency(displayPrice)}
                   <span
-                    style={{ color: Colors.textSecondary, marginLeft: '4px', fontSize: '0.8rem' }}
+                    style={{ 
+                      color: Colors.textSecondary, 
+                      marginLeft: '4px', 
+                      fontSize: '0.8rem' 
+                    }}
                   >
                     {trip.negotiated_price ? '(final)' : '(est.)'}
                   </span>
@@ -803,188 +1317,288 @@ const DispatchSection = ({ deceasedId, onUpdate }) => {
         })
       )}
 
-      <ModalOverlay style={{ display: showModal ? 'flex' : 'none' }}>
-        <ModalContent>
-          <ModalHeader>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-              {editingId ? 'Edit Trip' : 'New Trip'}
-            </h3>
-            <CloseButton
-              onClick={() => {
-                setShowModal(false);
-                resetForm();
-              }}
-            >
-              <X size={20} />
-            </CloseButton>
-          </ModalHeader>
+      {/* Add/Edit Trip Modal */}
+      {showModal && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalHeader>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                {editingId ? 'Edit Trip' : 'New Trip'}
+              </h3>
+              <CloseButton
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+              >
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
 
-          {/* Left Column */}
-          <div>
-            <FormGroup>
-              <Label>Trip Name</Label>
-              <Input
-                value={tripName}
-                onChange={(e) => setTripName(e.target.value)}
-                placeholder="e.g., Trip A, Funeral Day"
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Vehicle Plate *</Label>
-              <Input
-                value={vehiclePlate}
-                onChange={(e) => setVehiclePlate(e.target.value)}
-                placeholder="KCA 123A"
-                required
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Vehicle Name</Label>
-              <Input
-                value={vehicleName}
-                onChange={(e) => setVehicleName(e.target.value)}
-                placeholder="e.g., Mercedes, Toyota"
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Engine CC</Label>
-              <Input
-                value={vehicleCC}
-                onChange={(e) => setVehicleCC(e.target.value)}
-                placeholder="e.g., 2000"
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Trip Date *</Label>
-              <Input
-                type="date"
-                value={dispatchDate}
-                onChange={(e) => setDispatchDate(e.target.value)}
-                required
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Rate per Kilometer (KES) *</Label>
-              <RateInput>
+            {/* Left Column - Form Fields */}
+            <div>
+              <FormGroup>
+                <Label>Trip Name</Label>
                 <Input
-                  type="number"
-                  value={ratePerKm}
-                  onChange={(e) => setRatePerKm(parseFloat(e.target.value) || 0)}
-                  min="1"
-                  step="1"
+                  value={tripName}
+                  onChange={(e) => setTripName(e.target.value)}
+                  placeholder="e.g., Trip A, Funeral Day"
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Vehicle Plate *</Label>
+                <Input
+                  value={vehiclePlate}
+                  onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+                  placeholder="KCA 123A"
                   required
                 />
-                <span>/km</span>
-              </RateInput>
-            </FormGroup>
+              </FormGroup>
 
-            <FormGroup style={{ position: 'relative' }}>
-              <Label>Destination *</Label>
-              <Input
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value);
-                  searchLocation(e.target.value);
-                }}
-                placeholder="Search destination"
-                required
-              />
-              {searchResults.length > 0 && (
-                <SearchResults>
-                  {searchResults.map((result, idx) => (
-                    <SearchResultItem key={idx} onClick={() => handleDestinationSelect(result)}>
-                      {result.address.freeformAddress}
-                    </SearchResultItem>
-                  ))}
-                </SearchResults>
+              <FormGroup>
+                <Label>Vehicle Name</Label>
+                <Input
+                  value={vehicleName}
+                  onChange={(e) => setVehicleName(e.target.value)}
+                  placeholder="e.g., Mercedes, Toyota"
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Engine CC</Label>
+                <Input
+                  type="number"
+                  value={vehicleCC}
+                  onChange={(e) => setVehicleCC(e.target.value)}
+                  placeholder="e.g., 2000"
+                  min="0"
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Trip Date *</Label>
+                <Input
+                  type="date"
+                  value={dispatchDate}
+                  onChange={(e) => setDispatchDate(e.target.value)}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Rate per Kilometer (KES) *</Label>
+                <RateInput>
+                  <Input
+                    type="number"
+                    value={ratePerKm}
+                    onChange={(e) => setRatePerKm(parseFloat(e.target.value) || 0)}
+                    min="1"
+                    step="1"
+                    required
+                  />
+                  <span>/km</span>
+                </RateInput>
+              </FormGroup>
+
+              <FormGroup style={{ position: 'relative' }}>
+                <Label>Destination *</Label>
+                <div style={{ position: 'relative' }}>
+                  <Input
+                    value={destination}
+                    onChange={(e) => {
+                      setDestination(e.target.value);
+                      searchLocation(e.target.value);
+                    }}
+                    placeholder="Search for a location..."
+                    required
+                  />
+                  {isSearching && (
+                    <Loader2 
+                      size={16} 
+                      style={{ 
+                        position: 'absolute', 
+                        right: '10px', 
+                        top: '50%', 
+                        transform: 'translateY(-50%)',
+                        animation: 'spin 1s linear infinite'
+                      }} 
+                    />
+                  )}
+                </div>
+                {searchResults.length > 0 && (
+                  <SearchResults>
+                    {searchResults.map((result, idx) => (
+                      <SearchResultItem 
+                        key={idx} 
+                        onClick={() => handleDestinationSelect(result)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <MapPin size={14} color={Colors.accentBlue} />
+                          <span>{result.display_name}</span>
+                        </div>
+                      </SearchResultItem>
+                    ))}
+                  </SearchResults>
+                )}
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Final Price (Optional)</Label>
+                <Input
+                  type="number"
+                  value={negotiatedPrice}
+                  onChange={(e) => setNegotiatedPrice(e.target.value)}
+                  placeholder="Enter agreed price"
+                  min="0"
+                />
+                <small
+                  style={{ 
+                    color: Colors.textSecondary, 
+                    marginTop: '0.25rem', 
+                    display: 'block',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  This will override the calculated estimate
+                </small>
+              </FormGroup>
+            </div>
+
+            {/* Right Column - Map */}
+            <div>
+              <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                <Select 
+                  value={mapStyle}
+                  onChange={(e) => setMapStyle(e.target.value)}
+                  style={{ fontSize: '0.85rem', padding: '0.4rem' }}
+                >
+                  <option value="standard">Light Map</option>
+                  <option value="dark">Dark Map</option>
+                  <option value="voyager">Voyager Map</option>
+                </Select>
+              </div>
+              
+              <MapContainer ref={mapContainer}>
+                {isMapLoading && (
+                  <LoadingOverlay>
+                    <Loader2 size={16} className="animate-spin" />
+                    Calculating route...
+                  </LoadingOverlay>
+                )}
+                
+                <MapControls>
+                  <MapButton onClick={openInWaze} title="Open in Waze">
+                    <ExternalLink size={14} /> Open in Waze
+                  </MapButton>
+                  <MapButton onClick={openInGoogleMaps} title="Open in Google Maps">
+                    <Navigation size={14} /> Open in Maps
+                  </MapButton>
+                </MapControls>
+                
+                {distance && (
+                  <RouteInfoBox>
+                    <span>
+                      <MapPin size={14} />
+                      <strong>{distance} km</strong>
+                    </span>
+                    <span>
+                      <Clock size={14} />
+                      <strong>{travelTime}</strong>
+                    </span>
+                    {totalCost && (
+                      <span>
+                        <DollarSign size={14} />
+                        <strong>{formatCurrency(totalCost)}</strong>
+                      </span>
+                    )}
+                  </RouteInfoBox>
+                )}
+              </MapContainer>
+
+              {distance && (
+                <SummaryBox>
+                  <p>
+                    <span>📍 One way:</span> <strong>{distance} km</strong>
+                  </p>
+                  <p>
+                    <span>🔄 Round trip:</span> <strong>{(distance * 2).toFixed(1)} km</strong>
+                  </p>
+                  <p>
+                    <span>⏱️ Travel time:</span> <strong>{travelTime}</strong>
+                  </p>
+                  <p>
+                    <span>💰 Transport rate:</span> <strong>KES {ratePerKm}/km</strong>
+                  </p>
+                  <p>
+                    <span>🚗 Transport cost:</span> <strong>{formatCurrency(transportCost || 0)}</strong>
+                  </p>
+                  {fuelCost && (
+                    <>
+                      <p>
+                        <span>⛽ Fuel needed:</span>{' '}
+                        <strong>{fuelEstimate}L</strong>
+                      </p>
+                      <p>
+                        <span>⛽ Fuel cost:</span>{' '}
+                        <strong>{formatCurrency(fuelCost)}</strong>
+                      </p>
+                      <p
+                        style={{
+                          borderTop: `1px solid ${Colors.borderColor}`,
+                          marginTop: '0.75rem',
+                          paddingTop: '0.75rem',
+                          fontWeight: 'bold',
+                          fontSize: '1.1rem',
+                        }}
+                      >
+                        <span>💰 Total estimate:</span>
+                        <strong style={{ color: Colors.successGreen }}>
+                          {formatCurrency(totalCost || 0)}
+                        </strong>
+                      </p>
+                    </>
+                  )}
+                </SummaryBox>
               )}
-            </FormGroup>
 
-            <FormGroup>
-              <Label>Final Price (Optional)</Label>
-              <Input
-                type="number"
-                value={negotiatedPrice}
-                onChange={(e) => setNegotiatedPrice(e.target.value)}
-                placeholder="Enter agreed price"
-              />
-              <small
-                style={{ color: Colors.textSecondary, marginTop: '0.25rem', display: 'block' }}
+              <StyledButton
+                onClick={handleSubmit}
+                disabled={
+                  isLoading || !destinationLat || !vehiclePlate || !dispatchDate || !ratePerKm
+                }
+                style={{ width: '100%', marginTop: '1rem' }}
               >
-                This will override the calculated estimate
-              </small>
-            </FormGroup>
-          </div>
-
-          {/* Right Column */}
-          <div>
-            <MapContainer>
-              <iframe src={getMapUrl()} title="Route Map" loading="lazy" />
-            </MapContainer>
-
-            {distance && (
-              <SummaryBox>
-                <p>
-                  <span>📍 One way:</span> <strong>{distance} km</strong>
-                </p>
-                <p>
-                  <span>🔄 Round trip:</span> <strong>{(distance * 2).toFixed(1)} km</strong>
-                </p>
-                <p>
-                  <span>⏱️ Travel time:</span> <strong>{travelTime}</strong>
-                </p>
-                <p>
-                  <span>💰 Transport ({ratePerKm}/km):</span> <strong>KES {transportCost}</strong>
-                </p>
-                {fuelCost && (
+                {isLoading ? (
                   <>
-                    <p>
-                      <span>⛽ Fuel:</span>{' '}
-                      <strong>
-                        {fuelEstimate}L (KES {fuelCost})
-                      </strong>
-                    </p>
-                    <p
-                      style={{
-                        borderTop: `1px solid ${Colors.borderColor}`,
-                        marginTop: '0.5rem',
-                        paddingTop: '0.5rem',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      <span>💰 Total estimate:</span>
-                      <strong style={{ color: Colors.successGreen }}>KES {totalCost}</strong>
-                    </p>
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> 
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} /> {editingId ? 'Update' : 'Save'} Trip
                   </>
                 )}
-              </SummaryBox>
-            )}
+              </StyledButton>
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
 
-            <StyledButton
-              onClick={handleSubmit}
-              disabled={
-                isLoading || !destinationLat || !vehiclePlate || !dispatchDate || !ratePerKm
-              }
-              style={{ width: '100%', marginTop: '1rem' }}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={16} /> {editingId ? 'Update' : 'Save'} Trip
-                </>
-              )}
-            </StyledButton>
-          </div>
-        </ModalContent>
-      </ModalOverlay>
+      {/* Add CSS for animations */}
+      <style jsx>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
     </DispatchContainer>
   );
 };

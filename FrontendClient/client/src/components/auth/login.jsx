@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authApi } from '../../api/authApi';
 import styled, { keyframes, css } from 'styled-components';
-import { 
-  Shield, 
-  Users, 
-  Mail, 
-  Lock, 
-  User, 
-  Eye, 
-  EyeOff, 
-  Clock, 
-  LogOut, 
+import {
+  Shield,
+  Users,
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  Clock,
+  LogOut,
   CheckCircle,
   AlertCircle,
   Loader as LoaderIcon
@@ -20,8 +21,8 @@ import {
 const Colors = {
   primary: '#2C3E50',
   primaryLight: '#34495E',
-  secondary: '#00B894',
-  accent: '#FF6B6B',
+  secondary: '#000000ff',
+  accent: '#0ee945ff',
   white: '#FFFFFF',
   lightGray: '#F8F9FA',
   mediumGray: '#E9ECEF',
@@ -393,7 +394,7 @@ const InputWrapper = styled.div`
   align-items: center;
   transition: all 0.3s ease;
 
-  ${props => props.hasError && css`
+  ${props => props.$hasError && css`
     animation: ${pulse} 0.5s ease;
   `}
 `;
@@ -401,7 +402,7 @@ const InputWrapper = styled.div`
 const FormInput = styled.input`
   width: 100%;
   padding: 1.25rem 1.25rem 1.25rem 3.5rem;
-  border: 2px solid ${props => props.hasError ? Colors.danger : Colors.mediumGray};
+  border: 2px solid ${props => props.$hasError ? Colors.danger : Colors.mediumGray};
   border-radius: 16px;
   font-size: 1.1rem;
   transition: all 0.3s ease;
@@ -411,8 +412,8 @@ const FormInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: ${props => props.hasError ? Colors.danger : Colors.secondary};
-    box-shadow: 0 0 0 4px ${props => props.hasError ? 'rgba(220, 53, 69, 0.1)' : 'rgba(0, 184, 148, 0.1)'};
+    border-color: ${props => props.$hasError ? Colors.danger : Colors.secondary};
+    box-shadow: 0 0 0 4px ${props => props.$hasError ? 'rgba(220, 53, 69, 0.1)' : 'rgba(0, 184, 148, 0.1)'};
     background: ${Colors.white};
     transform: translateY(-2px);
   }
@@ -433,7 +434,7 @@ const IconWrapper = styled.div`
   left: 1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  color: ${props => props.hasError ? Colors.danger : Colors.darkGray};
+  color: ${props => props.$hasError ? Colors.danger : Colors.darkGray};
   z-index: 2;
   transition: all 0.3s ease;
 `;
@@ -567,26 +568,6 @@ const Message = styled.div`
   `}
 `;
 
-const SecurityNote = styled.div`
-  text-align: center;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
-  border-radius: 20px;
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  
-  p {
-    margin: 0;
-    color: ${Colors.textSecondary};
-    font-size: 1rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-  }
-`;
-
 // Authentication Popup Modal
 const AuthPopup = styled.div`
   position: fixed;
@@ -618,8 +599,8 @@ const PopupIcon = styled.div`
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: ${props => props.success ? 
-    'rgba(16, 185, 129, 0.1)' : 
+  background: ${props => props.success ?
+    'rgba(16, 185, 129, 0.1)' :
     'rgba(59, 130, 246, 0.1)'};
   display: flex;
   align-items: center;
@@ -684,15 +665,14 @@ function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Redirect if already logged in
+  // Clear any stale auth data on mount (fixes stuck login state)
   useEffect(() => {
+    // Clear any invalid tokens on login page load
     const token = localStorage.getItem('authToken');
-    const user = localStorage.getItem('user');
-    
-    if (token && user) {
-      navigate('/');
+    if (token === 'undefined' || token === 'null') {
+      localStorage.clear();
     }
-  }, [navigate]);
+  }, []);
 
   // Set cookie function
   const setCookie = (name, value, days) => {
@@ -701,90 +681,74 @@ function LoginPage() {
     document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
   };
 
-  const showAuthenticationPopup = (success, message) => {
-    setAuthPopupData({ success, message });
-    setShowAuthPopup(true);
-    
-    setTimeout(() => {
-      setShowAuthPopup(false);
-      if (success) {
-        navigate('/');
-      }
-    }, success ? 2000 : 3000);
-  };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage({ type: '', text: '' });
 
-    // Enhanced validation
+    // Validation
     if (!identifier.trim() || !password.trim()) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Please enter both username/email and password' 
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Password must be at least 6 characters long' 
+      setMessage({
+        type: 'error',
+        text: 'Please enter both email/username and password'
       });
       setIsLoading(false);
       return;
     }
 
     try {
-      // Show authenticating popup
-      showAuthenticationPopup(false, 'Authenticating your credentials...');
-
-      const response = await fetch(' https://inform-rpm-enabled-appendix.trycloudflare.com/api/v1/restpoint/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          identifier: identifier.trim(),
-          password: password.trim()
-        }),
+      console.log('🔐 Attempting login...');
+      
+      const data = await authApi.login({
+        email: identifier.trim(),  // Use 'email' instead of 'identifier'
+        password: password.trim()
       });
+      
+      console.log('📦 Login response:', data);
 
-      const data = await response.json();
+      if (data && data.success) {
+        // Store token - use the correct key from API response
+        const token = data.token || data.accessToken;
+        
+        if (!token) {
+          throw new Error('No token received from server');
+        }
+        
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('loginTime', new Date().toISOString());
 
-   if (response.ok && data.success) {
-  // Use the correct keys from your API response
-  localStorage.setItem('authToken', data.accessToken);      // <-- was data.token
-  localStorage.setItem('refreshToken', data.refreshToken);  // store refresh token too
-  localStorage.setItem('user', JSON.stringify(data.user));
-  localStorage.setItem('loginTime', new Date().toISOString());
+        // Store token in cookie
+        setCookie('authToken', token, 7);
+        if (data.user?.role) setCookie('userRole', data.user.role, 7);
 
-  // Store token in cookie for persistence (7 days)
-  setCookie('authToken', data.accessToken, 7);  // <-- match accessToken
-  setCookie('userRole', data.user.role, 7);
-
-  setMessage({ 
-    type: 'success', 
-    text: 'Login successful! Welcome back!' 
-  });
+        setMessage({
+          type: 'success',
+          text: 'Login successful! Redirecting to dashboard...'
+        });
 
         // Show success popup
-        showAuthenticationPopup(true, 'Authentication successful! Redirecting to dashboard...');
-        
+        setAuthPopupData({ success: true, message: 'Authentication successful! Redirecting to dashboard...' });
+        setShowAuthPopup(true);
+
+        // Redirect after delay
+        setTimeout(() => {
+          setShowAuthPopup(false);
+          navigate('/dashboard');
+        }, 1500);
+
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: data.message || 'Login failed. Please check your credentials.' 
+        setMessage({
+          type: 'error',
+          text: data?.message || 'Login failed. Please check your credentials.'
         });
         setIsLoading(false);
       }
     } catch (err) {
       console.error('Login error:', err);
-      setMessage({ 
-        type: 'error', 
-        text: 'Unable to connect to server. Please check your connection and try again.' 
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.message || 'Unable to connect to server. Please check your connection.'
       });
       setIsLoading(false);
     }
@@ -801,17 +765,17 @@ function LoginPage() {
           <div></div>
           <div></div>
         </FloatingShapes>
-        
+
         <LoginCard>
           <LoginLeftPanel>
             <LoginLogo>
               <Shield size={40} />
-               LEE FH  MMS
+              RP MMS
             </LoginLogo>
             <LoginSubtitle>
               Secure Access Portal for Mortuary Management Software (MMS)
             </LoginSubtitle>
-            
+
             <FeatureList>
               <li>
                 <CheckCircle size={20} />
@@ -827,10 +791,10 @@ function LoginPage() {
               </li>
               <li>
                 <CheckCircle size={20} />
-                24/7 System uptime !
+                24/7 System uptime!
               </li>
             </FeatureList>
-            
+
             {currentTime && (
               <TimeDisplay>
                 <Clock size={20} />
@@ -838,7 +802,7 @@ function LoginPage() {
               </TimeDisplay>
             )}
           </LoginLeftPanel>
-          
+
           <LoginRightPanel>
             <LoginForm onSubmit={handleLogin}>
               <WelcomeSection>
@@ -846,50 +810,49 @@ function LoginPage() {
                   <Users size={32} />
                   Welcome Back!
                 </WelcomeTitle>
-              <WelcomeText>
-  Welcome back let’s get things in order.
-</WelcomeText>
-
+                <WelcomeText>
+                  Welcome back! Let's get things in order.
+                </WelcomeText>
               </WelcomeSection>
 
               {message.text && (
                 <Message type={message.type}>
-                  {message.type === 'success' ? 
-                    <CheckCircle size={24} /> : 
+                  {message.type === 'success' ?
+                    <CheckCircle size={24} /> :
                     <AlertCircle size={24} />
                   }
                   {message.text}
                 </Message>
               )}
-              
+
               <FormGroup>
                 <FormLabel>
                   <Mail size={20} />
-                  Username or Email
+                  Email Address
                 </FormLabel>
-                <InputWrapper hasError={hasError && !identifier}>
-                  <IconWrapper hasError={hasError && !identifier}>
+                <InputWrapper $hasError={hasError && !identifier}>
+                  <IconWrapper $hasError={hasError && !identifier}>
                     <User size={22} />
                   </IconWrapper>
                   <FormInput
-                    type="text"
-                    placeholder="Enter your username or email address"
+                    type="email"
+                    placeholder="Enter your email address"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     required
                     disabled={isLoading}
-                    hasError={hasError && !identifier}
+                    $hasError={hasError && !identifier}
                   />
                 </InputWrapper>
               </FormGroup>
-              
+
               <FormGroup>
                 <FormLabel>
                   <Lock size={20} />
                   Password
                 </FormLabel>
-                <InputWrapper hasError={hasError && !password}>
-                  <IconWrapper hasError={hasError && !password}>
+                <InputWrapper $hasError={hasError && !password}>
+                  <IconWrapper $hasError={hasError && !password}>
                     <Lock size={22} />
                   </IconWrapper>
                   <FormInput
@@ -899,10 +862,10 @@ function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
-                    hasError={hasError && !password}
+                    $hasError={hasError && !password}
                   />
-                  <PasswordToggle 
-                    type="button" 
+                  <PasswordToggle
+                    type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading}
                   >
@@ -910,27 +873,20 @@ function LoginPage() {
                   </PasswordToggle>
                 </InputWrapper>
               </FormGroup>
-              
+
               <LoginButton type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader /> 
+                    <Loader />
                     Authenticating...
                   </>
                 ) : (
                   <>
                     <LogOut size={24} />
-                    SignIn - RP MMS
+                    Sign In - RP MMS
                   </>
                 )}
               </LoginButton>
-
-              <SecurityNote>
-                <p>
-                  <Shield size={20} />
-                  🔒 @restpoint Your security is our priority. All data is encrypted and protected.
-                </p>
-              </SecurityNote>
             </LoginForm>
           </LoginRightPanel>
         </LoginCard>

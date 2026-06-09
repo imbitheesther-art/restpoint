@@ -3,23 +3,41 @@ import { ENDPOINTS } from './endpoints';
 
 export const authApi = {
   /**
-   * Login — POST /api/v1/restpoint/login
-   * Backend returns: { success, accessToken, refreshToken, user }
+   * Login — POST /api/v1/restpoint/auth/login
+   * Backend returns: { success, accessToken, refreshToken, user, tenantId, tenantSlug }
+   * Accepts both { email, password } and { identifier, password }
    */
-  login: async ({ identifier, password }) => {
-    const response = await api.post(ENDPOINTS.AUTH.LOGIN, { identifier, password });
+  login: async ({ email, identifier, password }) => {
+    // Use email if provided, otherwise use identifier (support both field names)
+    const loginIdentifier = email || identifier;
+    
+    console.log('🔐 Login attempt with identifier:', loginIdentifier);
+    
+    const response = await api.post(ENDPOINTS.AUTH.LOGIN, { 
+      identifier: loginIdentifier, 
+      password 
+    });
+    
     const data = response.data;
 
     if (data?.accessToken) {
-      localStorage.setItem('token', data.accessToken);
+      // Store token with consistent naming (authToken, not token)
+      localStorage.setItem('authToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken || '');
       localStorage.setItem('user', JSON.stringify(data.user || {}));
+      localStorage.setItem('tenantId', data.tenantId?.toString() || '');
+      localStorage.setItem('tenantSlug', data.tenantSlug || '');
+      
+      // Set axios default header with tenant slug for all subsequent requests
+      if (data.tenantSlug) {
+        api.defaults.headers.common['x-tenant-slug'] = data.tenantSlug;
+      }
     }
     return data;
   },
 
   /**
-   * Logout — POST /api/v1/restpoint/logout
+   * Logout — POST /api/v1/restpoint/auth/logout
    */
   logout: async () => {
     try {
@@ -27,16 +45,21 @@ export const authApi = {
     } catch (_) {
       // swallow network errors on logout
     } finally {
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');  // Remove legacy key
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      localStorage.removeItem('tenant_slug');
+      localStorage.removeItem('tenantId');
+      localStorage.removeItem('tenantSlug');
+      
+      // Clear tenant header
+      delete api.defaults.headers.common['x-tenant-slug'];
     }
     return { success: true };
   },
 
   /**
-   * Get current authenticated user — GET /api/v1/restpoint/me
+   * Get current authenticated user — GET /api/v1/restpoint/auth/me
    */
   getMe: async () => {
     const response = await api.get(ENDPOINTS.AUTH.ME);
@@ -44,20 +67,24 @@ export const authApi = {
   },
 
   /**
-   * Refresh access token — POST /api/v1/restpoint/refresh
+   * Refresh access token — POST /api/v1/restpoint/auth/refresh
    */
   refresh: async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     const response = await api.post(ENDPOINTS.AUTH.REFRESH, { refreshToken });
     const data = response.data;
     if (data?.accessToken) {
-      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('authToken', data.accessToken);
+      // Preserve tenant context during refresh
+      if (data.tenantSlug) {
+        api.defaults.headers.common['x-tenant-slug'] = data.tenantSlug;
+      }
     }
     return data;
   },
 
   /**
-   * Check auth status (passive — no error on 401) — GET /api/v1/restpoint/status
+   * Check auth status (passive — no error on 401) — GET /api/v1/restpoint/auth/status
    */
   checkStatus: async () => {
     try {
@@ -69,10 +96,37 @@ export const authApi = {
   },
 
   /**
-   * Register new tenant admin user — POST /api/v1/restpoint/register
+   * Register new tenant — POST /api/v1/restpoint/tenants/register
    */
-  register: async (userData) => {
-    const response = await api.post(ENDPOINTS.AUTH.REGISTER, userData);
+  register: async (tenantData) => {
+    const response = await api.post(ENDPOINTS.TENANT.REGISTER, tenantData);
     return response.data;
+  },
+  
+  /**
+   * Initialize tenant session with slug
+   */
+  setTenantContext: (tenantSlug, tenantId) => {
+    localStorage.setItem('tenantSlug', tenantSlug);
+    localStorage.setItem('tenantId', tenantId?.toString() || '');
+    api.defaults.headers.common['x-tenant-slug'] = tenantSlug;
+  },
+  
+  /**
+   * Get current tenant context
+   */
+  getTenantContext: () => {
+    return {
+      tenantSlug: localStorage.getItem('tenantSlug'),
+      tenantId: localStorage.getItem('tenantId')
+    };
+  },
+  
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated: () => {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    return !!token && token !== 'undefined' && token !== 'null';
   },
 };

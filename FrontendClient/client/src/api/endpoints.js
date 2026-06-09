@@ -3,15 +3,14 @@
 // All paths routed through the API Gateway (base: VITE_API_URL || http://localhost:8000)
 
 export const ENDPOINTS = {
-  // ─── AUTH / USERS ──────────────────────────────────────────────────────────
   AUTH: {
-    LOGIN:    '/api/v1/restpoint/login',
-    LOGOUT:   '/api/v1/restpoint/logout',
-    REGISTER: '/api/v1/restpoint/register',
-    REFRESH:  '/api/v1/restpoint/refresh',
-    ME:       '/api/v1/restpoint/me',
-    VERIFY:   '/api/v1/restpoint/verify',
-    STATUS:   '/api/v1/restpoint/status',
+    LOGIN:    '/api/v1/restpoint/auth/login',
+    LOGOUT:   '/api/v1/restpoint/auth/logout',
+    REGISTER: '/api/v1/restpoint/tenants/register',  // Actually tenant registration
+    REFRESH:  '/api/v1/restpoint/auth/refresh',
+    ME:       '/api/v1/restpoint/auth/me',
+    VERIFY:   '/api/v1/restpoint/auth/verify',
+    STATUS:   '/api/v1/restpoint/auth/status',
   },
 
   // ─── TENANT ─────────────────────────────────────────────────────────────────

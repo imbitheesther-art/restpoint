@@ -332,7 +332,7 @@ const ReportGenerator= () => {
     setError(null);
     
     try {
-      let url = 'https://cheats-jewellery-certified-relatively.trycloudflare.com/api/v1/restpoint/moltuary-analytics/generate-report';
+      let url = 'http://localhost:8009/api/v1/restpoint/moltuary-analytics/generate-report';
       
       if (reportType === 'custom' && startDate && endDate) {
         url += `?startDate=${startDate}&endDate=${endDate}`;

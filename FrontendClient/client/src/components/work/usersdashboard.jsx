@@ -1,6 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import styled, { keyframes } from "styled-components";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
@@ -18,23 +17,10 @@ import Swal from "sweetalert2";
 // External Components
 const ExternalLoader = lazy(() => import('../loader/loader'));
 
-// --- Professional Color Palette ---
-const Colors = {
-  primary: '#2C3E50',
-  secondary: '#34495E',
-  accent: '#3498DB',
-  accentDark: '#2980B9',
-  background: '#F8F9FA',
-  surface: '#FFFFFF',
-  textPrimary: '#2C3E50',
-  textSecondary: '#5D6D7E',
-  textMuted: '#95A5A6',
-  border: '#E5E7EB',
-  success: '#27AE60',
-  warning: '#F39C12',
-  error: '#E74C3C',
-  info: '#3498DB'
-};
+// --- Centralized Theme & Services ---
+import Colors from "../../theme/colors";
+import { userService } from "../../services/userService";
+import { authService } from "../../services/authService";
 
 // --- Animations ---
 const fadeIn = keyframes`
@@ -81,102 +67,7 @@ class SoundManager {
 const soundManager = new SoundManager();
 
 // --- Token Management with Refresh ---
-class TokenManager {
-  constructor() {
-    this.baseURL = 'https://targeted-granny-dublin-parade.trycloudflare.com/api/v1/restpoint';
-  }
-
-  getAuthToken() {
-    return localStorage.getItem('authToken');
-  }
-
-  getRefreshToken() {
-    return localStorage.getItem('refreshToken');
-  }
-
-  setAuthToken(token) {
-    localStorage.setItem('authToken', token);
-  }
-
-  setRefreshToken(token) {
-    localStorage.setItem('refreshToken', token);
-  }
-
-  clearTokens() {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-  }
-
-  async refreshAuthToken() {
-    const refreshToken = this.getRefreshToken();
-    
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    try {
-      const response = await axios.post(`${this.baseURL}/auth/refresh`, {
-        refreshToken
-      });
-
-      const { accessToken, refreshToken: newRefreshToken } = response.data;
-      
-      this.setAuthToken(accessToken);
-      if (newRefreshToken) {
-        this.setRefreshToken(newRefreshToken);
-      }
-
-      return accessToken;
-    } catch (error) {
-      this.clearTokens();
-      throw error;
-    }
-  }
-
-  // Setup axios interceptors
-  setupInterceptors() {
-    // Request interceptor to add auth token
-    axios.interceptors.request.use(
-      (config) => {
-        const token = this.getAuthToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // Response interceptor to handle token refresh
-    axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const newToken = await this.refreshAuthToken();
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return axios(originalRequest);
-          } catch (refreshError) {
-            this.clearTokens();
-            window.location.href = '/login';
-            return Promise.reject(refreshError);
-          }
-        }
-
-        return Promise.reject(error);
-      }
-    );
-  }
-}
-
-const tokenManager = new TokenManager();
+// Token management and Axios interceptors have been centralized in src/api/client.js
 
 // --- Styled Components ---
 const PageWrapper = styled.div`
@@ -1065,16 +956,9 @@ const RegistrationForm = ({ isOpen, onClose, onUserRegistered }) => {
         branch_id: 1 // Always use branch ID 1
       };
 
-      // Get token from localStorage
-      const token = localStorage.getItem('authToken');
+      const data = await userService.registerUser(registrationData);
       
-      const response = await axios.post('https://targeted-granny-dublin-parade.trycloudflare.com/api/v1/restpoint/users/register', registrationData, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined
-        }
-      });
-      
-      if (response.data.success) {
+      if (data.success) {
         Swal.fire({
           icon: 'success',
           title: 'User Registered',
@@ -1268,27 +1152,16 @@ const UsersDashboard = () => {
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const BASE_URL = "https://cinema-text-architectural-financial.trycloudflare.com/api/v1/restpoint";
 
-  // Initialize token manager
-  useEffect(() => {
-    tokenManager.setupInterceptors();
-  }, []);
 
   // Enhanced fetch users with error handling
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
+      const data = await userService.getUsers();
       
-      const response = await axios.get(`${BASE_URL}/users`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined
-        }
-      });
-      
-      if (response.data.success) {
-        const filteredData = response.data.data.filter(user => 
+      if (data.success) {
+        const filteredData = data.data.filter(user => 
           user.role !== 'database-administrator'
         ).map(user => ({
           ...user,
@@ -1377,16 +1250,9 @@ const UsersDashboard = () => {
 
     if (result.isConfirmed) {
       try {
-        const token = localStorage.getItem('authToken');
-        const response = await axios.put(`${BASE_URL}/users/${user.id}/status`, {
-          is_active: newStatus
-        }, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined
-          }
-        });
+        const data = await userService.updateUserStatus(user.id, newStatus);
         
-        if (response.data.success) {
+        if (data.success) {
           Swal.fire({
             icon: 'success',
             title: 'Status Updated',
@@ -1449,14 +1315,9 @@ const UsersDashboard = () => {
 
     if (result.isConfirmed) {
       try {
-        const token = localStorage.getItem('authToken');
-        const response = await axios.delete(`${BASE_URL}/users/${user.id}`, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined
-          }
-        });
+        const data = await userService.deleteUser(user.id);
         
-        if (response.data.success) {
+        if (data.success) {
           Swal.fire({
             icon: 'success',
             title: 'User Deleted',
@@ -1516,16 +1377,9 @@ const UsersDashboard = () => {
 
     if (newPassword) {
       try {
-        const token = localStorage.getItem('authToken');
-        const response = await axios.put(`${BASE_URL}/users/${user.id}/password`, {
-          newPassword
-        }, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined
-          }
-        });
+        const data = await userService.updateUserPassword(user.id, newPassword);
         
-        if (response.data.success) {
+        if (data.success) {
           Swal.fire({
             icon: 'success',
             title: 'Password Updated',

@@ -470,7 +470,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
       setCurrentOperation("Loading postmortem data...");
 
       const response = await fetch(
-        `https://inform-rpm-enabled-appendix.trycloudflare.com/api/v1/restpoint/deceased/${deceasedId}`
+        `http://localhost:8009/api/v1/restpoint/deceased/${deceasedId}`
       );
 
       if (response.ok) {

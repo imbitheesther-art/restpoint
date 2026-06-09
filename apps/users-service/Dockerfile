@@ -1,24 +1,19 @@
-FROM node:22-alpine
-WORKDIR /usr/src/app
+FROM node:18-alpine
 
-# Copy global and service package files
-COPY global/package*.json ./global/
-COPY users-service/package*.json ./users-service/
+WORKDIR /app
 
-# Install dependencies for both global and service
-RUN cd global && npm install
-RUN cd users-service && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retries 10 && \
-    npm install
+# Copy package files
+COPY package*.json ./
+RUN npm install
 
-# Copy source code
-COPY global ./global
-COPY users-service ./users-service
+# Copy application code
+COPY . .
 
-# Set working directory to the service
-WORKDIR /usr/src/app/users-service
+# Build TypeScript
+RUN npm run build
 
-EXPOSE 8002
-CMD ["node", "server.js"]
+# Expose port
+EXPOSE 8003
+
+# Start application
+CMD ["npm", "start"]

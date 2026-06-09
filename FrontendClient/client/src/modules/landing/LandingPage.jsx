@@ -1,622 +1,612 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 
-const LandingPage = () => {
-  const navigate = useNavigate();
-  const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly' or 'yearly'
-  const [activeFaq, setActiveFaq] = useState(null);
+// ─── Palette: Absolute Minimalist Jet Black & Vivid Green ──────────────────────
+const C = {
+  bg:       '#000000',
+  bg2:      '#050505',
+  bg3:      '#0a0a0a',
+  border:   '#141414',
+  border2:  '#222222',
+  dim:      '#2e2e2e',
+  muted:    '#666666',
+  mid:      '#999999',
+  light:    '#e1e1e1',
+  white:    '#ffffff',
+  green:    '#1db954',
+  greenDim: '#0a3216',
+  greenGlow:'rgba(29,185,84,0.06)',
+  greenBorder:'rgba(29,185,84,0.18)',
+};
 
-  const toggleFaq = (index) => {
-    setActiveFaq(activeFaq === index ? null : index);
-  };
+// ─── SVG Icons ────────────────────────────────────────────────────────────────
+const Icons = {
+  tracking: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  ),
+  embalming: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
+      <path d="M20 12v4M4 12v4M12 4v4M12 16v4M8 8h8M8 16h8"/>
+      <rect x="6" y="8" width="12" height="8" rx="1"/>
+    </svg>
+  ),
+  certificates: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  ),
+  chat: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  obituaries: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
+      <path d="M4 4h16v16H4z"/>
+      <line x1="8" y1="8" x2="16" y2="8"/>
+      <line x1="8" y1="12" x2="12" y2="12"/>
+    </svg>
+  ),
+  payments: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
+      <rect x="2" y="6" width="20" height="12" rx="2"/>
+      <line x1="2" y1="10" x2="22" y2="10"/>
+      <circle cx="16" cy="14" r="1" fill={C.green}/>
+    </svg>
+  ),
+  user: () => (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={C.white} strokeWidth="1">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    </svg>
+  ),
+};
 
-  const features = [
-    {
-      title: 'Deceased Records & QR Tracking',
-      description: 'Fully digitize admissions, secure tagging, and immediate QR-code generation for tracking deceased records across your branches.',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1.005 1.005 0 001-1V5a1.005 1.005 0 00-1-1H5a1.005 1.005 0 00-1 1v2a1.005 1.005 0 001 1zm0 12h2a1.005 1.005 0 001-1v-2a1.005 1.005 0 00-1-1H5a1.005 1.005 0 00-1 1v2a1.005 1.005 0 001 1zm12-12h2a1.005 1.005 0 001-1V5a1.005 1.005 0 00-1-1h-2a1.005 1.005 0 00-1 1v2a1.005 1.005 0 001 1z" />
-        </svg>
-      )
-    },
-    {
-      title: 'Embalming & Autopsy Workflows',
-      description: 'Streamline embalming progress, chemical inventory levels, autopsy logs, and post-mortem certificate generation.',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      )
-    },
-    {
-      title: 'Hearse Fleet & Logistics',
-      description: 'Book vehicles, dispatch drivers with route coordinates, log kilometers, and monitor hearse service maintenance.',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-        </svg>
-      )
-    },
-    {
-      title: 'Smart Billing & Invoices',
-      description: 'Generate itemized billing, handle automated storage pricing, manage deposits, and reconcile local payments like M-Pesa.',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      title: 'Analytics & Compliance',
-      description: 'Access total deceased occupancies, dispatch counts, revenue breakdowns, and compliance monitoring logs.',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      title: 'Multi-Branch Operations',
-      description: 'Isolate tenant branches, secure custom branding stylesheets, and control roles for family communication managers.',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      )
-    }
-  ];
+const portalFeatures = [
+  { icon: Icons.tracking, label: 'Real-time Tracking' },
+  { icon: Icons.embalming, label: 'Embalming Progress' },
+  { icon: Icons.certificates, label: 'Digital Certificates' },
+  { icon: Icons.chat, label: 'Direct Chat' },
+  { icon: Icons.obituaries, label: 'Obituaries' },
+  { icon: Icons.payments, label: 'Online Payments' },
+];
 
-  const faqs = [
-    {
-      q: "Does Montezuma ERP support offline data syncing?",
-      a: "Yes. Our client application caches essential deceased registration forms locally so you can continue records operations during service dropouts and automatically sync when connection returns."
-    },
-    {
-      q: "How does the multi-branch tenant isolation work?",
-      a: "Each mortuary branch gets a custom tenant slug. This ensures complete database isolation, distinct billing policies, and dedicated hearse fleet managers, while allowing administrators global analytics reports."
-    },
-    {
-      q: "Is it compliant with local Kenyan hospital/mortuary rules?",
-      a: "Absolutely. Montezuma provides fields and reporting formats aligned with local laws, including burial permit tracking, formal tags, and medical cause logs."
-    }
-  ];
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+const useInView = (threshold = 0.05) => {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, inView];
+};
+
+const Reveal = ({ children, delay = 0, style = {}, className = '' }) => {
+  const [ref, inView] = useInView();
+  return (
+    <div ref={ref} className={className} style={{
+      opacity: inView ? 1 : 0,
+      transform: inView ? 'translateY(0)' : 'translateY(16px)',
+      transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+      ...style,
+    }}>{children}</div>
+  );
+};
+
+const PulseDot = ({ size = 6 }) => (
+  <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size, flexShrink: 0 }}>
+    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: C.green, opacity: 0.4, animation: 'pulseRing 2.5s cubic-bezier(0.16,1,0.3,1) infinite' }} />
+    <span style={{ width: size * 0.6, height: size * 0.6, borderRadius: '50%', background: C.green, display: 'block' }} />
+  </span>
+);
+
+const Counter = ({ value }) => {
+  const [display, setDisplay] = useState(value);
+  const prev = useRef(value);
+  useEffect(() => {
+    if (value === prev.current) return;
+    const diff = value - prev.current; const steps = 12; let i = 0;
+    const id = setInterval(() => {
+      i++; setDisplay(Math.round(prev.current + (diff * i) / steps));
+      if (i >= steps) { clearInterval(id); prev.current = value; }
+    }, 30);
+    return () => clearInterval(id);
+  }, [value]);
+  return <span>{typeof display === 'number' ? display.toLocaleString() : display}</span>;
+};
+
+// ─── Workflows Mock Dataset ───────────────────────────────────────────────────
+const WORKFLOWS = [
+  { key: 'admissions', label: 'Admissions', sublabel: 'Records · QR · IDs',
+    detailTitle: 'Digital admission & QR tagging', unit: 'admissions this month',
+    detailDesc: 'Every body is admitted digitally in under 90 seconds. A unique QR code is generated and printed at the point of admission.',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+    events: [{ text: 'New admission — Odhiambo, J.', ref: 'ADM-0341 · Ward B' }, { text: 'QR tag printed — Kamau, P.', ref: 'ADM-0338' }] },
+  { key: 'billing', label: 'Billing', sublabel: 'KES · USD · EUR',
+    detailTitle: 'Automated daily charge runs', unit: 'accounts billed today',
+    detailDesc: 'Storage fees calculated from admission date at midnight — every night, without manual input. Multi-currency support.',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
+    events: [{ text: 'Nightly billing run — 342 accounts', ref: 'RUN-20250531' }, { text: 'Rate updated — VIP suite', ref: 'CFG-007' }] },
+  { key: 'invoices', label: 'Invoices', sublabel: 'M-PESA · Card',
+    detailTitle: 'Itemised invoices in one click', unit: 'invoices this month',
+    detailDesc: 'Professional invoices with per-day itemisation and embedded payment links. Families pay directly from SMS.',
+    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
+    events: [{ text: 'Invoice #INV-2025-0892 sent', ref: 'Mwangi family' }, { text: 'Invoice #INV-2025-0891 paid', ref: 'Otieno family' }] },
+  { key: 'payments', label: 'Payments', sublabel: 'STK Push',
+    detailTitle: 'Real-time M-PESA reconciliation', unit: 'KES collected today',
+    detailDesc: 'STK push, card, and bank transfers reconciled automatically. Receipts sent by SMS instantly.',
+    image: 'https://images.unsplash.com/photo-1563013544-824ae1d704d3?auto=format&fit=crop&w=800&q=80',
+    events: [{ text: 'M-PESA received — KES 15,000', ref: 'MP25XQ' }, { text: 'Card payment cleared', ref: 'VISA · Oduya' }] },
+];
+
+const WorkflowDashboard = () => {
+  const [active, setActive] = useState(0);
+  const [counts, setCounts] = useState({ admissions: 1247, billing: 342, invoices: 892, payments: 156000 });
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActive(p => (p + 1) % WORKFLOWS.length);
+      setCounts(p => ({
+        admissions: p.admissions + Math.floor(Math.random() * 2),
+        billing: p.billing + Math.floor(Math.random() * 1),
+        invoices: p.invoices + Math.floor(Math.random() * 2),
+        payments: p.payments + Math.floor(Math.random() * 3000)
+      }));
+      setTick(p => p + 1);
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  const wf = WORKFLOWS[active];
+  const countMap = { admissions: counts.admissions, billing: counts.billing, invoices: counts.invoices, payments: counts.payments };
+  const sans = { fontFamily: '"DM Sans", system-ui, sans-serif' };
+  const serif = { fontFamily: '"DM Serif Display", Georgia, serif' };
 
   return (
-    <div style={{
-      backgroundColor: '#0a0b10',
-      color: '#f8fafc',
-      fontFamily: "'Inter', sans-serif",
-      minHeight: '100vh',
-      overflowX: 'hidden'
-    }}>
-      {/* HEADER NAV */}
-      <nav style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        backdropFilter: 'blur(12px)',
-        backgroundColor: 'rgba(10, 11, 16, 0.8)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '1rem 2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          {/* BRAND */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-              width: '2.25rem',
-              height: '2.25rem',
-              borderRadius: '0.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '1.25rem',
-              color: '#ffffff'
-            }}>M</div>
-            <span style={{
-              fontSize: '1.25rem',
-              fontWeight: 800,
-              background: 'linear-gradient(to right, #ffffff, #94a3b8)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>MONTEZUMA <span style={{ color: '#6366f1', fontSize: '0.9rem', fontWeight: 600 }}>ERP</span></span>
-          </div>
-
-          {/* MENU LINKS */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <a href="#features" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}>Features</a>
-            <a href="#pricing" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}>Pricing</a>
-            <a href="#faq" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}>FAQ</a>
-            <button 
-              onClick={() => navigate('/login')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                padding: '0.5rem 1.25rem',
-                borderRadius: '0.375rem',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background 0.2s'
-              }}
-            >
-              Log In
-            </button>
-            <button 
-              onClick={() => navigate('/register')}
-              style={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.5rem 1.5rem',
-                borderRadius: '0.375rem',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                transition: 'transform 0.2s'
-              }}
-            >
-              Get Started
-            </button>
-          </div>
+    <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ padding: '1.25rem 1.5rem', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <PulseDot size={6} />
+          <span style={{ ...sans, fontSize: '0.68rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: C.green }}>Live System Engine</span>
         </div>
-      </nav>
-
-      {/* HERO SECTION */}
-      <section style={{
-        padding: '8rem 2rem 6rem 2rem',
-        textAlign: 'center',
-        position: 'relative'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '-10%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '600px',
-          height: '400px',
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
-          filter: 'blur(40px)',
-          zIndex: 0
-        }}></div>
-
-        <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-            border: '1px solid rgba(99, 102, 241, 0.2)',
-            padding: '0.35rem 1rem',
-            borderRadius: '9999px',
-            color: '#818cf8',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            marginBottom: '2rem'
-          }}>
-            <span>✨ Introducing Montezuma v2.0 RESTPOINT</span>
-          </div>
-
-          <h1 style={{
-            fontSize: '3.75rem',
-            fontWeight: 800,
-            lineHeight: 1.15,
-            letterSpacing: '-0.02em',
-            marginBottom: '1.5rem',
-            background: 'linear-gradient(to right, #ffffff 30%, #94a3b8 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            Modern Mortuary Management & Enterprise ERP
-          </h1>
-
-          <p style={{
-            fontSize: '1.2rem',
-            color: '#94a3b8',
-            lineHeight: 1.6,
-            marginBottom: '3rem',
-            maxWidth: '650px',
-            margin: '0 auto 3rem auto'
-          }}>
-            Streamline admissions, automated embalming workflows, hearse fleet scheduling, itemized invoices, and multi-branch compliance in one beautifully intuitive cloud dashboard.
-          </p>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-            <button 
-              onClick={() => navigate('/register')}
-              style={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.875rem 2.25rem',
-                borderRadius: '0.5rem',
-                fontSize: '1rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(99, 102, 241, 0.35)'
-              }}
-            >
-              Start Free Trial
-            </button>
-            <button 
-              onClick={() => {
-                const element = document.getElementById('features');
-                element?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              style={{
-                background: 'rgba(255, 255, 255, 0.04)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                padding: '0.875rem 2.25rem',
-                borderRadius: '0.5rem',
-                fontSize: '1rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background 0.2s'
-              }}
-            >
-              Explore Features
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* DASHBOARD PREVIEW */}
-      <section style={{
-        padding: '0 2rem 6rem 2rem',
-        maxWidth: '1100px',
-        margin: '0 auto'
-      }}>
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(20, 21, 28, 0.9) 0%, rgba(13, 14, 19, 0.9) 100%)',
-          borderRadius: '1rem',
-          padding: '2rem',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
-        }}>
-          {/* Header bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <div style={{ width: '0.75rem', height: '0.75rem', borderRadius: '50%', backgroundColor: '#ef4444' }}></div>
-              <div style={{ width: '0.75rem', height: '0.75rem', borderRadius: '50%', backgroundColor: '#eab308' }}></div>
-              <div style={{ width: '0.75rem', height: '0.75rem', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
-            </div>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>MONTEZUMA ERP • LIVE SYSTEM DEMO</span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 600 }}>
-              <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }}></span>
-              Connected to database
-            </div>
-          </div>
-
-          {/* Dummy dashboard preview grids */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            {[
-              { label: 'Total Occupancy', value: '42 cases', desc: '84% Capacity', color: '#6366f1' },
-              { label: 'Active Embalmings', value: '8 bodies', desc: 'Under processing', color: '#10b981' },
-              { label: 'Hearse Fleet Status', value: '3 / 5 online', desc: 'Logistics tracking active', color: '#f59e0b' },
-              { label: 'Unpaid Invoices', value: 'KES 485,000', desc: 'Reconciliation pending', color: '#ec4899' }
-            ].map((stat, i) => (
-              <div key={i} style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                padding: '1.25rem',
-                borderRadius: '0.5rem'
-              }}>
-                <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>{stat.label}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: stat.color, marginBottom: '0.25rem' }}>{stat.value}</div>
-                <div style={{ fontSize: '0.75rem', color: '#475569' }}>{stat.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Graph visual */}
-          <div style={{
-            height: '200px',
-            background: 'rgba(255, 255, 255, 0.01)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
-            borderRadius: '0.5rem',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            padding: '1.5rem',
-            gap: '0.5rem'
-          }}>
-            {[45, 60, 48, 70, 58, 85, 68, 92, 80, 75, 88, 98].map((h, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '0.5rem' }}>
-                <div style={{
-                  width: '100%',
-                  height: `${h}px`,
-                  background: 'linear-gradient(to top, rgba(99, 102, 241, 0.8), rgba(168, 85, 247, 0.8))',
-                  borderRadius: '0.25rem'
-                }}></div>
-                <span style={{ fontSize: '0.7rem', color: '#475569' }}>M{i+1}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES SECTION */}
-      <section id="features" style={{
-        padding: '6rem 2rem',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem' }}>Engineered for Enterprise Compliance</h2>
-          <p style={{ color: '#94a3b8', maxWidth: '600px', margin: '0 auto' }}>All operational components connected securely to dedicated SQL databases with active tenant shielding and full event audits.</p>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '2rem'
-        }}>
-          {features.map((feature, idx) => (
-            <div key={idx} style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              transition: 'transform 0.2s',
-              cursor: 'pointer'
-            }}>
-              <div style={{
-                backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                width: '3rem',
-                height: '3rem',
-                borderRadius: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '1.5rem',
-                color: '#6366f1'
-              }}>
-                {feature.icon}
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem' }}>{feature.title}</h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: 1.5 }}>{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* PRICING SECTION */}
-      <section id="pricing" style={{
-        padding: '6rem 2rem',
-        maxWidth: '1000px',
-        margin: '0 auto',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem' }}>Transparent Scale-based Pricing</h2>
-          <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Choose a plan that fits your clinic or multi-location mortuary organization.</p>
-
-          <div style={{
-            display: 'inline-flex',
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
-            padding: '0.25rem',
-            borderRadius: '0.5rem',
-            border: '1px solid rgba(255, 255, 255, 0.08)'
-          }}>
-            <button 
-              onClick={() => setBillingPeriod('monthly')}
-              style={{
-                backgroundColor: billingPeriod === 'monthly' ? '#6366f1' : 'transparent',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.5rem 1.5rem',
-                borderRadius: '0.375rem',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Monthly
-            </button>
-            <button 
-              onClick={() => setBillingPeriod('yearly')}
-              style={{
-                backgroundColor: billingPeriod === 'yearly' ? '#6366f1' : 'transparent',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.5rem 1.5rem',
-                borderRadius: '0.375rem',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Yearly (Save 20%)
-            </button>
-          </div>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '2rem',
-          alignItems: 'stretch'
-        }}>
+        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           {[
-            {
-              title: "Starter Branch",
-              price: billingPeriod === 'monthly' ? "15,000" : "12,000",
-              desc: "Perfect for single branch clinics and mortuaries.",
-              features: ["Up to 50 active cases/mo", "Basic QR tracking cards", "Direct M-Pesa billing", "Email alerts", "1 admin + 3 staff"]
-            },
-            {
-              title: "Enterprise Hub",
-              price: billingPeriod === 'monthly' ? "35,000" : "28,000",
-              desc: "Designed for full operations with multi-branch analytics.",
-              popular: true,
-              features: ["Unlimited active cases", "Interactive embalming logs", "Hearse booking coordinates", "Auto cold room assignment", "Unlimited administrators"]
-            }
-          ].map((plan, i) => (
-            <div key={i} style={{
-              background: plan.popular ? 'linear-gradient(135deg, rgba(30, 32, 54, 0.9) 0%, rgba(13, 14, 19, 0.9) 100%)' : 'rgba(255, 255, 255, 0.02)',
-              border: plan.popular ? '2px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.05)',
-              borderRadius: '0.75rem',
-              padding: '2.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative'
-            }}>
-              {plan.popular && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-12px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: '#6366f1',
-                  color: '#ffffff',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  padding: '0.25rem 1rem',
-                  borderRadius: '9999px'
-                }}>MOST POPULAR</span>
-              )}
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>{plan.title}</h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{plan.desc}</p>
-              <div style={{ marginBottom: '2rem' }}>
-                <span style={{ fontSize: '2.25rem', fontWeight: 800 }}>KES {plan.price}</span>
-                <span style={{ color: '#64748b' }}> / month</span>
-              </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem 0', flexGrow: 1 }}>
-                {plan.features.map((feat, idx) => (
-                  <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.9rem', color: '#cbd5e1' }}>
-                    <svg className="w-5 h-5 text-indigo-400" style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-              <button 
-                onClick={() => navigate('/register')}
-                style={{
-                  background: plan.popular ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'rgba(255, 255, 255, 0.05)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '0.875rem',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  width: '100%'
-                }}
-              >
-                Choose {plan.title}
-              </button>
+            ['Admissions', counts.admissions],
+            ['Billings', counts.billing],
+            ['Invoices', counts.invoices],
+            ['KES collected', `${Math.round(counts.payments / 1000)}k`]
+          ].map(([label, val]) => (
+            <div key={label} style={{ textAlign: 'right' }}>
+              <div style={{ ...sans, fontSize: '0.95rem', fontWeight: 600, color: C.white, lineHeight: 1 }}>{typeof val === 'string' ? val : val.toLocaleString()}</div>
+              <div style={{ ...sans, fontSize: '0.58rem', color: C.muted, marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* FAQ SECTION */}
-      <section id="faq" style={{
-        padding: '6rem 2rem',
-        maxWidth: '800px',
-        margin: '0 auto',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 800 }}>Frequently Asked Questions</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: `1px solid ${C.border}`, background: C.bg }}>
+        {WORKFLOWS.map((w, i) => (
+          <button key={w.key} onClick={() => setActive(i)} style={{
+            background: active === i ? C.bg2 : 'transparent', border: 'none',
+            borderRight: i < 3 ? `1px solid ${C.border}` : 'none',
+            borderBottom: `2px solid ${active === i ? C.green : 'transparent'}`,
+            padding: '1rem 0.75rem', cursor: 'pointer', textAlign: 'left',
+          }}>
+            <div style={{ ...sans, fontSize: '0.75rem', fontWeight: 600, color: active === i ? C.white : C.muted, marginBottom: '2px' }}>{w.label}</div>
+            <div style={{ ...sans, fontSize: '0.58rem', color: active === i ? C.green : C.muted }}>{w.sublabel}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="dash-panel">
+        <div style={{ padding: '2rem' }} className="dash-left">
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: C.greenGlow, border: `1px solid ${C.greenBorder}`, borderRadius: '4px', padding: '3px 8px', marginBottom: '1.25rem' }}>
+            <span style={{ width: 4, height: 4, borderRadius: '50%', background: C.green }} />
+            <span style={{ ...sans, fontSize: '0.58rem', color: C.green, fontWeight: 600, textTransform: 'uppercase' }}>Pipeline Normal</span>
+          </div>
+          <h4 style={{ ...serif, fontSize: '1.25rem', fontWeight: 400, color: C.white, marginBottom: '0.75rem' }}>{wf.detailTitle}</h4>
+          <p style={{ ...sans, fontSize: '0.82rem', color: C.mid, lineHeight: 1.6, marginBottom: '1.5rem' }}>{wf.detailDesc}</p>
+          
+          <div style={{ width: '100%', height: '160px', borderRadius: '4px', overflow: 'hidden', marginBottom: '1.5rem', border: `1px solid ${C.border}` }}>
+            <img src={wf.image} alt={wf.detailTitle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <span style={{ fontSize: '2.25rem', fontWeight: 500, color: C.white }}><Counter value={countMap[wf.key]} /></span>
+            <span style={{ ...sans, fontSize: '0.68rem', color: C.muted, textTransform: 'uppercase' }}>{wf.unit}</span>
+          </div>
+
+          <div style={{ height: '2px', background: C.border, borderRadius: '1px', overflow: 'hidden' }}>
+            <div key={tick} style={{ height: '100%', background: C.green, animation: 'dashFill 5s linear forwards' }} />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {faqs.map((faq, idx) => (
-            <div key={idx} style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              borderRadius: '0.5rem',
-              padding: '1.25rem',
-              cursor: 'pointer'
-            }} onClick={() => toggleFaq(idx)}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 600, fontSize: '1.05rem' }}>{faq.q}</span>
-                <span style={{ fontSize: '1.25rem', color: '#6366f1' }}>{activeFaq === idx ? '−' : '+'}</span>
+        <div style={{ padding: '2rem', background: C.bg3 }}>
+          <p style={{ ...sans, fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: C.muted, marginBottom: '1rem', fontWeight: 600 }}>Recent Events</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.5rem' }}>
+            {wf.events.map((ev, i) => (
+              <div key={i} style={{ background: C.bg2, borderRadius: '4px', padding: '0.8rem 1rem', borderLeft: `1px solid ${C.green}` }}>
+                <div style={{ ...sans, fontSize: '0.78rem', color: C.white, fontWeight: 500 }}>{ev.text}</div>
+                <div style={{ ...sans, fontSize: '0.62rem', color: C.muted }}>{ev.ref}</div>
               </div>
-              {activeFaq === idx && (
-                <p style={{ color: '#94a3b8', marginTop: '1rem', fontSize: '0.95rem', lineHeight: 1.5 }}>{faq.a}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer style={{
-        backgroundColor: '#07080c',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-        padding: '4rem 2rem 2rem 2rem'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '2.5rem',
-          marginBottom: '3rem'
-        }}>
-          <div>
-            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>MONTEZUMA <span style={{ color: '#6366f1' }}>ERP</span></span>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '1rem', lineHeight: 1.5 }}>Modern operational suites for Kenyan mortuary compliance, vehicle dispatches, and QR logistics.</p>
-          </div>
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: '#ffffff', marginBottom: '1rem', fontWeight: 700 }}>System Services</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <li><a href="#features" style={{ color: '#64748b', textDecoration: 'none' }}>Deceased Management</a></li>
-              <li><a href="#features" style={{ color: '#64748b', textDecoration: 'none' }}>Embalming Tracker</a></li>
-              <li><a href="#features" style={{ color: '#64748b', textDecoration: 'none' }}>Hearse Logistics</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 style={{ fontSize: '0.9rem', color: '#ffffff', marginBottom: '1rem', fontWeight: 700 }}>Legal & Compliance</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <li><a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Terms of Service</a></li>
-              <li><a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Privacy Policy</a></li>
-            </ul>
+            ))}
           </div>
         </div>
-
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-          paddingTop: '1.5rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <span style={{ fontSize: '0.8rem', color: '#475569' }}>&copy; 2026 Montezuma ERP. All rights reserved. Registered Restpoint System.</span>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}>Support</span>
-            <span style={{ fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}>Status</span>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };
 
-export default LandingPage;
+// ─── Constants ────────────────────────────────────────────────────────────────
+const features = [
+  { num: '01', title: 'Deceased Records & QR', body: 'Digital admissions with instant QR tagging. Every admission tracked, every record accessible in seconds.', stat: '< 90s', statLabel: 'avg. admission' },
+  { num: '02', title: 'Autopsy & Embalming', body: 'Structured post-mortem workflows with digital sign-off chains.', stat: '100%', statLabel: 'compliance' },
+  { num: '03', title: 'Smart Fleet Dispatch', body: 'Real-time vehicle dispatching with automatic route optimization.', stat: '3×', statLabel: 'faster dispatch' },
+  { num: '04', title: 'M-PESA Billing', body: 'Automated daily charges, multi-currency support, one-tap M-PESA collection.', stat: 'KES 0', statLabel: 'manual work' },
+  { num: '05', title: 'Family Portal', body: 'Families receive SMS login to track status, view documents, and pay online.', stat: '24/7', statLabel: 'access' },
+  { num: '06', title: 'Analytics & Compliance', body: 'Real-time occupancy, revenue, and burial permit tracking for Kenyan regulations.', stat: '1-click', statLabel: 'reports' },
+];
+
+const marketplaceItems = [
+  { name: 'Premium Floral Wreath', price: 'KES 3,500', category: 'Wreaths', sales: 234, img: '/flower.jpg' },
+  { name: 'Elegant Memorial Caskets', price: 'KES 25,000', category: 'Caskets', sales: 89, img: '/cross.jpg' },
+  { name: 'Obituary Design', price: 'KES 500', category: 'Printing', sales: 567, img: '/rest1.png' },
+  { name: 'Burial Flowers', price: 'KES 2,000', category: 'Flowers', sales: 432, img: '/flower.png' },
+];
+
+const faqs = [
+  { q: 'Does Rest Point support offline syncing?', a: 'Yes. Our progressive web app caches all forms locally and syncs automatically when connection is restored.' },
+  { q: 'How does multi-branch isolation work?', a: 'Each branch receives a dedicated tenant environment with complete database isolation and custom branding.' },
+  { q: 'Is it compliant with Kenyan regulations?', a: 'Built for Kenya. We cover burial permit tracking, county health integrations, and Kenyan documentation formats.' },
+  { q: 'How does the Family Portal work?', a: 'Families receive a secure SMS link — no app download. They see real-time status and can pay directly.' },
+];
+
+const scrollToSection = (sectionId) => {
+  const element = document.getElementById(sectionId);
+  if (element) element.scrollIntoView({ behavior: 'smooth' });
+};
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+export default function LandingPage() {
+  const [activeFaq, setActiveFaq] = useState(null);
+  const [mpesaOpen, setMpesaOpen] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [amount, setAmount] = useState('10000');
+  const [cardNum, setCardNum] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
+
+  const navigate = (path) => { window.location.href = path; };
+
+  useEffect(() => {
+    setTimeout(() => setHeroReady(true), 100);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth > 768) setMenuOpen(false); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const formatCard = v => v.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();
+  const formatExpiry = v => { const d = v.replace(/\D/g,'').slice(0,4); return d.length > 2 ? d.slice(0,2)+'/'+d.slice(2) : d; };
+
+  const handleMpesa = () => {
+    if (!phone.match(/^(07|01)\d{8}$/)) { alert('Enter a valid Kenyan phone number'); return; }
+    alert(`STK Push sent to ${phone} — KES ${Number(amount).toLocaleString()}`);
+    setMpesaOpen(false);
+  };
+  
+  const handleCard = () => {
+    if (cardNum.replace(/\s/g,'').length < 16) { alert('Enter a valid card number'); return; }
+    alert(`Payment of KES ${Number(amount).toLocaleString()} processed`);
+    setCardOpen(false);
+  };
+
+  const sans = { fontFamily: '"DM Sans", system-ui, sans-serif' };
+  const serif = { fontFamily: '"DM Serif Display", Georgia, serif' };
+
+    return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; background: ${C.bg}; }
+        body { overflow-x: hidden; background: ${C.bg}; color: ${C.light}; }
+        ::selection { background: ${C.greenDim}; color: ${C.green}; }
+
+        @keyframes pulseRing { 0% { transform: scale(1); opacity: 0.4; } 100% { transform: scale(2.4); opacity: 0; } }
+        @keyframes dashFill { from { width: 0%; } to { width: 100%; } }
+
+        .nav-link { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: ${C.light}; text-decoration: none; cursor: pointer; transition: color 0.18s ease, transform 0.18s ease; }
+        .nav-link:hover { color: ${C.green}; }
+
+        .btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; padding: 0.95rem 1.75rem; border-radius: 999px; cursor: pointer; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; border: none; }
+        .btn-green { background: linear-gradient(135deg, ${C.green} 0%, #3de07a 100%); color: #000; box-shadow: 0 18px 40px rgba(29,185,84,0.22); }
+        .btn-green:hover { transform: translateY(-3px); }
+        .btn-outline { background: rgba(255,255,255,0.04); color: ${C.light}; border: 1px solid rgba(255,255,255,0.15); }
+        .btn-outline:hover { color: ${C.green}; border-color: ${C.green}; background: rgba(29,185,84,0.08); }
+
+        .desk-nav { display: none; align-items: center; }
+        .mob-only { display: flex; align-items: center; justify-content: center; }
+
+        .mobile-menu { position: fixed; inset: 0; background: ${C.bg}; z-index: 400; display: flex; flex-direction: column; overflow-y: auto; animation: slideDown 0.2s ease; }
+        .mob-nav-link { font-family: 'DM Sans', sans-serif; font-size: 1rem; color: ${C.light}; text-decoration: none; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: block; cursor: pointer; }
+        .mob-nav-link:hover { color: ${C.green}; }
+
+        .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 3rem; align-items: center; }
+        .hero-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 1rem; box-shadow: 0 40px 80px rgba(0,0,0,0.35); }
+        .hero-tag { display: inline-flex; align-items: center; gap: 0.65rem; background: rgba(29,185,84,0.12); border: 1px solid rgba(29,185,84,0.18); border-radius: 999px; padding: 0.7rem 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.18em; color: ${C.green}; }
+        .hero-row { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+        .hero-stat { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1rem 1.25rem; min-width: 160px; }
+
+        .section { padding: 6rem 0; }
+        .section.light { background: ${C.bg2}; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+        .feature-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.22); transition: transform 0.25s ease, border-color 0.25s ease; }
+        .feature-card:hover { transform: translateY(-8px); border-color: rgba(29,185,84,0.25); }
+        .market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        .faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .faq-q { width: 100%; background: none; border: none; color: ${C.light}; text-align: left; padding: 1.5rem 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-family: 'DM Sans', sans-serif; font-size: 1rem; }
+        .faq-q:hover { color: ${C.green}; }
+        .bottom-cta { background: rgba(29,185,84,0.08); border: 1px solid rgba(29,185,84,0.12); border-radius: 24px; padding: 3rem 2rem; }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 1024px) { .hero-grid { grid-template-columns: 1fr; } .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 768px) { .container { padding: 0 1.25rem; } .hero-tag { width: fit-content; } .hero-row { justify-content: center; } .feature-grid, .market-grid { grid-template-columns: 1fr; } .desk-nav { display: none; } .mob-only { display: flex; } }
+        @media (min-width: 1025px) { .desk-nav { display: flex; } .mob-only { display: none; } }
+      `}</style>
+
+      <div style={{ background: C.bg, color: C.light, minHeight: '100vh' }}>
+        {menuOpen && (
+          <div className="mobile-menu">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
+              <span style={{ fontWeight: 700, color: C.white, letterSpacing: '0.08em' }}>Rest Point</span>
+              <button onClick={() => setMenuOpen(false)} style={{ background: 'none', border: 'none', color: C.light, cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
+            </div>
+            {['features', 'marketplace', 'pricing', 'faq'].map(section => (
+              <div key={section} onClick={() => { scrollToSection(section); setMenuOpen(false); }} className="mob-nav-link">{section.charAt(0).toUpperCase() + section.slice(1)}</div>
+            ))}
+            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ width: '100%' }}>Log in</button>
+              <button onClick={() => navigate('/register')} className="btn btn-green" style={{ width: '100%' }}>Start free trial</button>
+            </div>
+          </div>
+        )}
+
+        <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 300, backgroundColor: scrolled ? 'rgba(0,0,0,0.92)' : 'transparent', borderBottom: scrolled ? `1px solid rgba(255,255,255,0.08)` : '1px solid transparent', padding: '1rem 0', transition: 'all 0.25s ease', backdropFilter: 'saturate(180%) blur(16px)' }}>
+          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: C.green, display: 'grid', placeItems: 'center', color: '#000', fontWeight: 800 }}>RP</div>
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.12em', color: C.white }}>REST POINT</div>
+                <div style={{ fontSize: '0.72rem', color: C.muted, letterSpacing: '0.14em' }}>Mortuary Ops</div>
+              </div>
+            </div>
+
+            <div className="desk-nav" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              <div onClick={() => scrollToSection('features')} className="nav-link">Features</div>
+              <div onClick={() => scrollToSection('marketplace')} className="nav-link">Marketplace</div>
+              <div onClick={() => scrollToSection('pricing')} className="nav-link">Pricing</div>
+              <div onClick={() => scrollToSection('faq')} className="nav-link">FAQ</div>
+              <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ padding: '0.65rem 1.15rem' }}>Log in</button>
+              <button onClick={() => navigate('/register')} className="btn btn-green" style={{ padding: '0.65rem 1.15rem' }}>Start</button>
+            </div>
+
+            <button className="mob-only" onClick={() => setMenuOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <span style={{ width: '22px', height: '2px', background: C.light, borderRadius: '2px' }} />
+              <span style={{ width: '22px', height: '2px', background: C.light, borderRadius: '2px' }} />
+            </button>
+          </div>
+        </nav>
+
+        <main style={{ paddingTop: '100px' }}>
+          <section style={{ padding: '6rem 0 4rem' }}>
+            <div className="container">
+              <div className="hero-grid">
+                <div>
+                  <div className="hero-tag">Trusted by modern funeral homes</div>
+                  <h1 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2.75rem, 5vw, 4.5rem)', lineHeight: 1.02, marginTop: '1.5rem', marginBottom: '1.5rem', color: C.white }}>Run mortal care with confidence, speed and transparency.</h1>
+                  <p style={{ fontSize: '1.05rem', color: C.mid, maxWidth: '680px', lineHeight: 1.7, marginBottom: '2rem' }}>From admission to billing, documents, family updates and marketplace sales — Rest Point centralizes every workflow for funeral homes that need reliability and dignity at scale.</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                    <button onClick={() => navigate('/register')} className="btn btn-green">Start free trial</button>
+                    <button onClick={() => scrollToSection('features')} className="btn btn-outline">See features</button>
+                  </div>
+
+                  <div className="hero-row">
+                    {['Live admissions', 'Uptime SLA', 'Realtime invoices'].map((label, index) => (
+                      <div key={label} className="hero-stat">
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: C.white, marginBottom: '0.35rem' }}>{index === 0 ? '400+' : index === 1 ? '99.99%' : '2M+'}</div>
+                        <div style={{ fontSize: '0.82rem', color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="hero-card">
+                  <img src="/landing.png" alt="Rest Point Dashboard" style={{ width: '100%', borderRadius: '20px', display: 'block' }} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="features" className="section light">
+            <div className="container">
+              <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <p style={{ fontSize: '0.78rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: C.green, marginBottom: '1rem' }}>What makes us different</p>
+                <h2 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.05, color: C.white }}>A single platform for every mortuary workflow.</h2>
+              </div>
+
+              <div className="feature-grid">
+                {features.slice(0, 6).map((feat, i) => (
+                  <div key={feat.num} className="feature-card" style={{ animation: `pulseRing 0.8s ease ${i * 0.08}s both` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                      <span style={{ color: C.green, fontWeight: 700 }}>{feat.num}</span>
+                      <span style={{ color: C.white, fontWeight: 700 }}>{feat.stat}</span>
+                    </div>
+                    <h3 style={{ fontSize: '1.15rem', marginBottom: '0.85rem', color: C.white }}>{feat.title}</h3>
+                    <p style={{ fontSize: '0.95rem', color: C.mid, lineHeight: 1.8 }}>{feat.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="section">
+            <div className="container">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontSize: '0.78rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: C.green, marginBottom: '1rem' }}>Family portal</p>
+                  <h2 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2rem, 3.6vw, 2.8rem)', color: C.white, marginBottom: '1.25rem' }}>Families get access without friction.</h2>
+                  <p style={{ fontSize: '1rem', color: C.mid, lineHeight: 1.8, marginBottom: '2rem' }}>Secure links, real-time documents, billing and communication that keep families informed and reduce support overhead.</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+                    {portalFeatures.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px', padding: '1rem' }}>
+                        <div style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '12px', background: 'rgba(29,185,84,0.12)' }}>{item.icon()}</div>
+                        <span style={{ fontSize: '0.95rem', color: C.light }}>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="hero-card">
+                  <img src="/familyportal.png" alt="Family Portal" style={{ width: '100%', borderRadius: '20px', display: 'block' }} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="marketplace" className="section light">
+            <div className="container">
+              <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <p style={{ color: C.green, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '1rem', fontSize: '0.78rem' }}>Marketplace</p>
+                <h2 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', color: C.white }}>Sell grief care and products with one storefront.</h2>
+              </div>
+              <div className="market-grid">
+                {marketplaceItems.map((item, i) => (
+                  <div key={i} className="mkt-card" style={{ animation: `dashFill 0.55s ease ${i * 0.07}s both` }}>
+                    <div style={{ width: '100%', height: '170px', overflow: 'hidden' }}>
+                      <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ padding: '1.25rem' }}>
+                      <div style={{ fontSize: '0.75rem', color: C.green, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{item.category}</div>
+                      <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: C.white }}>{item.name}</h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: C.muted, fontSize: '0.88rem' }}>
+                        <span>{item.sales} sold</span>
+                        <span style={{ color: C.green, fontWeight: 700 }}>{item.price}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section id="pricing" className="section">
+            <div className="container">
+              <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <p style={{ color: C.green, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '1rem', fontSize: '0.78rem' }}>Pricing</p>
+                <h2 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', color: C.white }}>Flexible plans for mortuaries of any size.</h2>
+                <p style={{ color: C.mid, maxWidth: '680px', margin: '1rem auto 0', lineHeight: 1.8 }}>Pick a plan that suits your branch count, operations and invoicing needs. Upgrade anytime without hidden fees.</p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                <button onClick={() => setBillingCycle('monthly')} className="btn" style={{ background: billingCycle === 'monthly' ? C.green : 'transparent', color: billingCycle === 'monthly' ? '#000' : C.light, border: '1px solid rgba(255,255,255,0.12)' }}>Monthly</button>
+                <button onClick={() => setBillingCycle('yearly')} className="btn" style={{ background: billingCycle === 'yearly' ? C.green : 'transparent', color: billingCycle === 'yearly' ? '#000' : C.light, border: '1px solid rgba(255,255,255,0.12)' }}>Yearly (save 10%)</button>
+              </div>
+
+              <div className="pricing-grid">
+                {(() => {
+                  const base = { standard: 7500, enterprise: 18000 };
+                  const discount = 0.1;
+                  const plans = [
+                    { key: 'standard', title: 'Standard', description: 'Single branch operations', price: billingCycle === 'monthly' ? base.standard : Math.round(base.standard * 12 * (1 - discount)), suffix: billingCycle === 'monthly' ? '/month' : '/year', popular: false },
+                    { key: 'enterprise', title: 'Enterprise', description: 'Multi-branch with advanced workflows', price: billingCycle === 'monthly' ? base.enterprise : Math.round(base.enterprise * 12 * (1 - discount)), suffix: billingCycle === 'monthly' ? '/month' : '/year', popular: true }
+                  ];
+                  return plans.map((plan, idx) => (
+                    <div key={plan.key} className="feature-card" style={{ padding: '2rem', position: 'relative', border: plan.popular ? `1px solid ${C.green}` : '1px solid rgba(255,255,255,0.08)', background: plan.popular ? 'rgba(29,185,84,0.08)' : 'rgba(255,255,255,0.02)' }}>
+                      {plan.popular && <div style={{ position: 'absolute', top: '-0.75rem', right: '1rem', background: C.green, color: '#000', padding: '0.45rem 0.85rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700 }}>Popular</div>}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.9rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: C.green, marginBottom: '0.75rem' }}>{plan.title}</div>
+                        <div style={{ fontSize: '3rem', fontWeight: 800, color: C.white, lineHeight: 1 }}>{plan.price.toLocaleString()}</div>
+                        <div style={{ fontSize: '0.95rem', color: C.muted, marginTop: '0.35rem' }}>{plan.suffix}</div>
+                      </div>
+                      <p style={{ color: C.light, lineHeight: 1.8, marginBottom: '1.75rem' }}>{plan.description}</p>
+                      <button onClick={() => navigate('/register')} className="btn btn-green" style={{ width: '100%' }}>{billingCycle === 'monthly' ? 'Start monthly' : 'Start yearly'}</button>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          </section>
+
+          <section id="faq" className="section light">
+            <div className="container" style={{ maxWidth: '820px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <h2 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: C.white }}>Your questions, answered.</h2>
+              </div>
+              <div>
+                {faqs.map((faq, idx) => (
+                  <div key={idx} className="faq-item">
+                    <button className="faq-q" onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}>
+                      <span>{faq.q}</span>
+                      <span style={{ color: C.green, fontSize: '1.2rem', transition: 'transform 0.2s ease', transform: activeFaq === idx ? 'rotate(45deg)' : 'none' }}>+</span>
+                    </button>
+                    {activeFaq === idx && <p style={{ fontSize: '0.95rem', color: C.mid, lineHeight: 1.8, paddingBottom: '1.5rem' }}>{faq.a}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="section" style={{ padding: '4rem 0' }}>
+            <div className="container" style={{ maxWidth: '860px', margin: '0 auto' }}>
+              <div className="bottom-cta">
+                <h2 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', color: C.white, marginBottom: '1rem' }}>Ready to bring structure and dignity to your operations?</h2>
+                <p style={{ color: C.mid, lineHeight: 1.8, marginBottom: '2rem' }}>Launch your account, create your tenant, and start managing admissions, documents, invoices, and family communications from one secure hub.</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
+                  <button onClick={() => navigate('/register')} className="btn btn-green">Start free trial</button>
+                  <button onClick={() => navigate('/login')} className="btn btn-outline">Book a demo</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <footer style={{ background: C.bg3, borderTop: '1px solid rgba(255,255,255,0.08)', padding: '2.5rem 0' }}>
+            <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: C.white, marginBottom: '0.5rem' }}>Rest Point</div>
+                <div style={{ fontSize: '0.78rem', color: C.muted }}>Built for mortuaries in East Africa.</div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', color: C.muted, fontSize: '0.8rem' }}>
+                <span>Support</span>
+                <span>Terms</span>
+                <span>Privacy</span>
+              </div>
+              <div style={{ color: C.muted, fontSize: '0.8rem' }}>© {new Date().getFullYear()} Rest Point</div>
+            </div>
+          </footer>
+        </main>
+      </div>
+    </>
+  );
+}
+

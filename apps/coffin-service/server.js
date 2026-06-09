@@ -3,10 +3,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { safeQuery } = require('../../shared/database');
 const { validateTenantActive } = require('../../shared/tenancy');
-const coffinRoutes = require('../routes/coffinRoutes');
+const coffinRoutes = require('./routes/coffinRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 8008;
+const PORT = process.env.PORT || 8108;
 
 app.use(cors());
 app.use(helmet());

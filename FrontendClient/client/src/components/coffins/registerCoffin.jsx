@@ -1060,7 +1060,7 @@ const RegisterCoffin = () => {
     try {
       console.log('Sending request to server...');
       
-      const response = await fetch('https://cinema-text-architectural-financial.trycloudflare.com/api/v1/restpoint/register-coffin', {
+      const response = await fetch('http://localhost:8009/api/v1/restpoint/register-coffin', {
         method: 'POST',
         body: formData,
       });
