@@ -1152,3 +1152,103 @@ textarea.form-control {
     border-radius: var(--radius-md);
   }
 }
+
+/* ============================================
+   Loading State
+   ============================================ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 20px;
+}
+
+.loading-container p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   FullCalendar jQuery Overrides
+   ============================================ */
+.fc-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fc-event {
+  border-radius: var(--radius-md) !important;
+  padding: 4px 8px !important;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin: 2px 4px !important;
+  border: none !important;
+}
+
+.fc-event:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+.fc-day-number {
+  font-weight: 600;
+  padding: 6px !important;
+}
+
+.fc-today {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+.fc-today .fc-day-number {
+  background: var(--accent-blue);
+  color: white;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fc-day-heading {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.fc .fc-row {
+  min-height: 80px;
+}
+
+.fc-toolbar {
+  display: none !important;
+}
+
+.fc-view-container {
+  height: 100%;
+}
+
+.fc-scroller {
+  overflow: auto !important;
+}

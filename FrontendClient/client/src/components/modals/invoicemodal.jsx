@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-// The user requested to stop importing styled components and define them here
-import styled, { keyframes, css } from 'styled-components'; 
+import styled, { keyframes, css } from 'styled-components';
 import { FileText, Printer, Download, X, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { invoiceApi } from '../../api/invoiceApi';
 
 // =========================================================================
 // 1. STYLED COMPONENTS DEFINITIONS
@@ -215,24 +215,21 @@ const InvoiceModal = ({ isOpen, onClose, deceasedData }) => {
     setInvoiceData(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/restpoint/invoice/${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      // Use centralized invoice API with options
+      const result = await invoiceApi.generate(id, {
+        includeColdRoom: options.includeColdRoom,
+        includeServices: options.includeServices,
+        includePaymentHistory: options.includePaymentHistory,
+        includeTaxDetails: options.includeTaxDetails
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (result) {
         setInvoiceData(result);
         toast.success(result.message || 'Invoice generated successfully');
-      } else {
-        throw new Error(result.message || 'Failed to generate invoice');
       }
     } catch (error) {
       console.error('Error generating invoice:', error);
-      toast.error(error.message || 'Failed to generate invoice');
+      toast.error(error.response?.data?.message || 'Failed to generate invoice');
     } finally {
       setIsGenerating(false);
     }

@@ -1,0 +1,352 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # DATABASE SERVICES
+  # ============================================
+  mariadb:
+    image: mariadb:10.11
+    container_name: restpoint_mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-RestPoint2024!}
+      MARIADB_DATABASE: restpoint_main
+      MARIADB_USER: restpoint_user
+      MARIADB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./scripts/init-db:/docker-entrypoint-initdb.d
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: restpoint_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RestPointRedis2024}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-RestPointRedis2024}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: restpoint_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-restpoint}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-RestPointRabbit2024}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - restpoint
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # CORE SERVICES
+  # ============================================
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: restpoint_gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-restpoint}:${RABBITMQ_PASSWORD:-RestPointRabbit2024}@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET:-RestPointJWTSecret2024ChangeMe}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: restpoint_auth
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      NODE_ENV: production
+      PORT: 8001
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: restpoint_main
+      DB_USER: restpoint_user
+      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-RestPointJWTSecret2024ChangeMe}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-infowelttallis@gmail.com}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-40045355}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  tenant-service:
+    build:
+      context: ./services/tenant-service
+      dockerfile: Dockerfile
+    container_name: restpoint_tenant
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      NODE_ENV: production
+      PORT: 8002
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: restpoint_main
+      DB_USER: restpoint_user
+      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-restpoint}:${RABBITMQ_PASSWORD:-RestPointRabbit2024}@rabbitmq:5672
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-infowelttallis@gmail.com}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-40045355}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # BUSINESS SERVICES
+  # ============================================
+  deceased-service:
+    build:
+      context: ./services/deceased-service
+      dockerfile: Dockerfile
+    container_name: restpoint_deceased
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      NODE_ENV: production
+      PORT: 8004
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: restpoint_main
+      DB_USER: restpoint_user
+      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+
+  invoice-service:
+    build:
+      context: ./services/invoice-service
+      dockerfile: Dockerfile
+    container_name: restpoint_invoice
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      NODE_ENV: production
+      PORT: 8005
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: restpoint_main
+      DB_USER: restpoint_user
+      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+
+  calendar-service:
+    build:
+      context: ./services/calender-service
+      dockerfile: Dockerfile
+    container_name: restpoint_calendar
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      NODE_ENV: production
+      PORT: 8006
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: restpoint_main
+      DB_USER: restpoint_user
+      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+
+  mpesa-service:
+    build:
+      context: ./services/mpesa-service
+      dockerfile: Dockerfile
+    container_name: restpoint_mpesa
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      NODE_ENV: production
+      PORT: 8007
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: restpoint_main
+      DB_USER: restpoint_user
+      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      MPESA_ENVIRONMENT: ${MPESA_ENVIRONMENT:-sandbox}
+      MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY:-}
+      MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET:-}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: restpoint_notification
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      NODE_ENV: production
+      PORT: 8008
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-restpoint}:${RABBITMQ_PASSWORD:-RestPointRabbit2024}@rabbitmq:5672
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - restpoint
+
+  socketio-service:
+    build:
+      context: ./services/socketio-service
+      dockerfile: Dockerfile
+    container_name: restpoint_socketio
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-RestPointJWTSecret2024ChangeMe}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+
+  # ============================================
+  # FRONTEND
+  # ============================================
+  frontend:
+    build:
+      context: ./FrontendClient/client
+      dockerfile: Dockerfile
+    container_name: restpoint_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+networks:
+  restpoint:
+    driver: bridge
+    name: restpoint
+
+volumes:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local

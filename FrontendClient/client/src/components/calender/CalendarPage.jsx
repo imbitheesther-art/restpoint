@@ -1,13 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import moment from 'moment';
-import './CalendarPage.css';
 import { useParams } from 'react-router-dom';
 import { useTenantStore } from '../../store/useTenantStore';
 import { calendarApi } from '../../api/calendar.api';
+import './CalendarPage.css';
 
 // ============================================
 // CONFIGURATION
@@ -36,7 +31,6 @@ const CONFIG = {
   }
 };
 
-
 // ============================================
 // TOAST NOTIFICATION SYSTEM
 // ============================================
@@ -64,11 +58,13 @@ const CalendarPage = () => {
   const { slug } = useParams();
   const { tenantData } = useTenantStore();
   const calendarRef = useRef(null);
+  const fcInstanceRef = useRef(null);
+  const scriptsLoadedRef = useRef(false);
   
   // State
   const [events, setEvents] = useState([]);
   const [filters, setFilters] = useState(['interment', 'exhumation', 'memorial', 'maintenance']);
-  const [currentView, setCurrentView] = useState('dayGridMonth');
+  const [currentView, setCurrentView] = useState('agendaWeek');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -79,6 +75,7 @@ const CalendarPage = () => {
   const [stats, setStats] = useState({ total: 0, today: 0, thisWeek: 0, byType: {} });
   const [toasts, setToasts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [scriptsLoaded, setScriptsLoaded] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -97,11 +94,47 @@ const CalendarPage = () => {
 
   // Settings state
   const [settings, setSettings] = useState({
-    defaultView: 'dayGridMonth',
+    defaultView: 'agendaWeek',
     showWeekends: true,
     timeFormat24: false,
     dailyReminders: true
   });
+
+  // ============================================
+  // LOAD FULLCALENDAR SCRIPTS
+  // ============================================
+  useEffect(() => {
+    if (scriptsLoadedRef.current) {
+      setScriptsLoaded(true);
+      return;
+    }
+
+    const loadScripts = async () => {
+      const scripts = [
+        { src: '/resources/calender/js/moment.min.js', name: 'moment' },
+        { src: '/resources/calender/js/jquery.min.js', name: 'jquery' },
+        { src: '/resources/calender/js/fullcalendar.min.js', name: 'fullcalendar' }
+      ];
+
+      for (const scriptInfo of scripts) {
+        if (!window[scriptInfo.name === 'jquery' ? 'jQuery' : scriptInfo.name]) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = scriptInfo.src;
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Failed to load ${scriptInfo.src}`));
+            document.head.appendChild(script);
+          });
+        }
+      }
+
+      scriptsLoadedRef.current = true;
+      setScriptsLoaded(true);
+    };
+
+    loadScripts();
+  }, []);
 
   // ============================================
   // TOAST HELPERS
@@ -144,63 +177,162 @@ const CalendarPage = () => {
   }, []);
 
   useEffect(() => {
-    loadEvents();
-    loadStats();
-  }, [loadEvents, loadStats]);
+    if (scriptsLoaded) {
+      loadEvents();
+      loadStats();
+    }
+  }, [scriptsLoaded, loadEvents, loadStats]);
+
+  // ============================================
+  // INITIALIZE FULLCALENDAR
+  // ============================================
+  useEffect(() => {
+    if (!scriptsLoaded || !calendarRef.current || !window.jQuery) return;
+
+    const $ = window.jQuery;
+
+    // Destroy existing calendar instance
+    if (fcInstanceRef.current) {
+      fcInstanceRef.current.fullCalendar('destroy');
+    }
+
+    // Format events for FullCalendar
+    const fcEvents = events.map(e => ({
+      id: e.id,
+      title: e.title,
+      start: e.start,
+      end: e.end,
+      className: e.entryType || 'interment',
+      backgroundColor: CONFIG.ENTRY_TYPES[e.entryType || 'interment']?.color || CONFIG.ENTRY_TYPES.interment.color,
+      borderColor: CONFIG.ENTRY_TYPES[e.entryType || 'interment']?.color || CONFIG.ENTRY_TYPES.interment.color,
+      extendedProps: {
+        entryType: e.entryType,
+        location: e.location,
+        description: e.description,
+        status: e.status,
+        assignedTo: e.assignedTo,
+        reference: e.reference
+      }
+    }));
+
+    // Initialize FullCalendar
+    fcInstanceRef.current = $(calendarRef.current).fullCalendar({
+      header: false,
+      defaultView: settings.defaultView,
+      defaultDate: currentDate,
+      editable: true,
+      selectable: true,
+      selectMirror: true,
+      navLinks: true,
+      weekends: settings.showWeekends,
+      timeFormat: settings.timeFormat24 ? 'H(:mm)' : 'h(:mm)t',
+      businessHours: {
+        start: '06:00',
+        end: '22:00',
+        dow: [1, 2, 3, 4, 5, 6]
+      },
+      slotDuration: '00:30:00',
+      slotMinTime: '06:00:00',
+      slotMaxTime: '22:00:00',
+      nowIndicator: true,
+      height: '100%',
+      views: {
+        month: {
+          columnHeaderFormat: 'ddd',
+          columnHeaderHtml: function(momentDate) {
+            return '<span>' + momentDate.format('ddd') + '</span>';
+          }
+        },
+        agendaWeek: {
+          columnHeaderFormat: 'ddd D',
+          slotLabelFormat: settings.timeFormat24 ? 'H:mm' : 'h(:mm)t'
+        },
+        agendaDay: {
+          columnHeaderFormat: 'dddd D',
+          slotLabelFormat: settings.timeFormat24 ? 'H:mm' : 'h(:mm)t'
+        }
+      },
+      events: fcEvents,
+      
+      // Event callbacks
+      dateClick: function(info) {
+        setCurrentEditingId(null);
+        setFormData({
+          title: '',
+          entryType: 'interment',
+          startDate: moment(info.date).format('YYYY-MM-DD'),
+          startTime: moment(info.date).format('HH:mm'),
+          endDate: moment(info.date).format('YYYY-MM-DD'),
+          endTime: moment(info.date).add(30, 'minutes').format('HH:mm'),
+          location: '',
+          description: '',
+          status: 'pending',
+          assignedTo: '',
+          reference: ''
+        });
+        setModalOpen(true);
+      },
+      
+      eventClick: function(info) {
+        setSelectedEvent({
+          id: info.event.id,
+          title: info.event.title,
+          start: info.event.start,
+          end: info.event.end,
+          extendedProps: info.event.extendedProps
+        });
+        setDetailsModalOpen(true);
+      },
+      
+      eventDrop: async function(info) {
+        const eventId = info.event.id;
+        const newStart = info.event.start.toISOString();
+        const newEnd = info.event.end ? info.event.end.toISOString() : null;
+
+        try {
+          await calendarApi.updateEvent(eventId, { start: newStart, end: newEnd });
+          showToast('Entry moved successfully', 'success');
+        } catch (error) {
+          info.revert();
+          showToast('Failed to move entry', 'error');
+        }
+      },
+      
+      eventResize: async function(info) {
+        const eventId = info.event.id;
+        const newEnd = info.event.end ? info.event.end.toISOString() : null;
+
+        try {
+          await calendarApi.updateEvent(eventId, { end: newEnd });
+          showToast('Entry duration updated', 'success');
+        } catch (error) {
+          info.revert();
+          showToast('Failed to update duration', 'error');
+        }
+      },
+
+      viewDisplay: function(view) {
+        setCurrentDate(view.intervalStart);
+        setCurrentView(view.name);
+      },
+
+      eventRender: function(event, element) {
+        // Custom event rendering
+        const timeText = moment(event.start).format(settings.timeFormat24 ? 'HH:mm' : 'h:mm A');
+        element.find('.fc-title').html(`<div class="event-time">${timeText}</div><div class="event-title">${event.title}</div>`);
+      }
+    });
+
+    return () => {
+      if (fcInstanceRef.current) {
+        fcInstanceRef.current.fullCalendar('destroy');
+      }
+    };
+  }, [scriptsLoaded, events, settings, showToast]);
 
   // ============================================
   // EVENT HANDLERS
   // ============================================
-  const handleDateClick = (info) => {
-    setCurrentEditingId(null);
-    setFormData({
-      title: '',
-      entryType: 'interment',
-      startDate: moment(info.date).format('YYYY-MM-DD'),
-      startTime: moment(info.date).format('HH:mm'),
-      endDate: moment(info.date).format('YYYY-MM-DD'),
-      endTime: moment(info.date).add(30, 'minutes').format('HH:mm'),
-      location: '',
-      description: '',
-      status: 'pending',
-      assignedTo: '',
-      reference: ''
-    });
-    setModalOpen(true);
-  };
-
-  const handleEventClick = (info) => {
-    setSelectedEvent(info.event);
-    setDetailsModalOpen(true);
-  };
-
-  const handleEventDrop = async (info) => {
-    const eventId = info.event.id;
-    const newStart = info.event.start.toISOString();
-    const newEnd = info.event.end ? info.event.end.toISOString() : null;
-
-    try {
-      await calendarApi.updateEvent(eventId, { start: newStart, end: newEnd });
-      showToast('Entry moved successfully', 'success');
-    } catch (error) {
-      info.revert();
-      showToast('Failed to move entry', 'error');
-    }
-  };
-
-  const handleEventResize = async (info) => {
-    const eventId = info.event.id;
-    const newEnd = info.event.end ? info.event.end.toISOString() : null;
-
-    try {
-      await calendarApi.updateEvent(eventId, { end: newEnd });
-      showToast('Entry duration updated', 'success');
-    } catch (error) {
-      info.revert();
-      showToast('Failed to update duration', 'error');
-    }
-  };
-
   const handleFilterChange = (type) => {
     setFilters(prev => {
       const newFilters = prev.includes(type)
@@ -212,9 +344,26 @@ const CalendarPage = () => {
 
   const handleViewChange = (view) => {
     setCurrentView(view);
-    if (calendarRef.current) {
-      const calendar = calendarRef.current.getApi();
-      calendar.changeView(view);
+    if (fcInstanceRef.current) {
+      fcInstanceRef.current.fullCalendar('changeView', view);
+    }
+  };
+
+  const handlePrev = () => {
+    if (fcInstanceRef.current) {
+      fcInstanceRef.current.fullCalendar('prev');
+    }
+  };
+
+  const handleNext = () => {
+    if (fcInstanceRef.current) {
+      fcInstanceRef.current.fullCalendar('next');
+    }
+  };
+
+  const handleToday = () => {
+    if (fcInstanceRef.current) {
+      fcInstanceRef.current.fullCalendar('today');
     }
   };
 
@@ -313,20 +462,6 @@ const CalendarPage = () => {
   // ============================================
   // RENDER HELPERS
   // ============================================
-  const renderEventContent = (eventInfo) => {
-    const entryType = eventInfo.event.extendedProps.entryType || 'interment';
-    const typeConfig = CONFIG.ENTRY_TYPES[entryType] || CONFIG.ENTRY_TYPES.interment;
-    
-    return (
-      <div className="calendar-event" style={{ backgroundColor: typeConfig.color }}>
-        <div className="event-time">
-          {moment(eventInfo.event.start).format(settings.timeFormat24 ? 'HH:mm' : 'h:mm A')}
-        </div>
-        <div className="event-title">{eventInfo.event.title}</div>
-      </div>
-    );
-  };
-
   const filteredStats = {
     total: events.length,
     today: events.filter(e => moment(e.start).isSame(new Date(), 'day')).length,
@@ -346,6 +481,17 @@ const CalendarPage = () => {
   // ============================================
   // RENDER
   // ============================================
+  if (!scriptsLoaded) {
+    return (
+      <div className="calendar-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading Calendar...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="calendar-page">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -367,7 +513,24 @@ const CalendarPage = () => {
               <i className="fas fa-bell" />
               <span className="notification-badge">3</span>
             </button>
-            <button className="add-event-btn" onClick={() => handleDateClick({ date: new Date() })}>
+            <button className="add-event-btn" onClick={() => {
+              const now = moment();
+              setFormData({
+                title: '',
+                entryType: 'interment',
+                startDate: now.format('YYYY-MM-DD'),
+                startTime: now.format('HH:mm'),
+                endDate: now.format('YYYY-MM-DD'),
+                endTime: now.add(30, 'minutes').format('HH:mm'),
+                location: '',
+                description: '',
+                status: 'pending',
+                assignedTo: '',
+                reference: ''
+              });
+              setCurrentEditingId(null);
+              setModalOpen(true);
+            }}>
               <i className="fas fa-plus" />
               <span>New Entry</span>
             </button>
@@ -459,22 +622,13 @@ const CalendarPage = () => {
           {/* Calendar Navigation */}
           <div className="calendar-nav">
             <div className="nav-left">
-              <button className="nav-btn" onClick={() => {
-                const calendar = calendarRef.current?.getApi();
-                calendar?.prev();
-              }}>
+              <button className="nav-btn" onClick={handlePrev}>
                 <i className="fas fa-chevron-left" />
               </button>
-              <button className="nav-btn" onClick={() => {
-                const calendar = calendarRef.current?.getApi();
-                calendar?.next();
-              }}>
+              <button className="nav-btn" onClick={handleNext}>
                 <i className="fas fa-chevron-right" />
               </button>
-              <button className="today-btn" onClick={() => {
-                const calendar = calendarRef.current?.getApi();
-                calendar?.today();
-              }}>
+              <button className="today-btn" onClick={handleToday}>
                 Today
               </button>
             </div>
@@ -484,20 +638,20 @@ const CalendarPage = () => {
             <div className="nav-right">
               <div className="view-switcher">
                 <button
-                  className={`view-btn ${currentView === 'dayGridMonth' ? 'active' : ''}`}
-                  onClick={() => handleViewChange('dayGridMonth')}
+                  className={`view-btn ${currentView === 'month' ? 'active' : ''}`}
+                  onClick={() => handleViewChange('month')}
                 >
                   Month
                 </button>
                 <button
-                  className={`view-btn ${currentView === 'dayGridWeek' ? 'active' : ''}`}
-                  onClick={() => handleViewChange('dayGridWeek')}
+                  className={`view-btn ${currentView === 'agendaWeek' ? 'active' : ''}`}
+                  onClick={() => handleViewChange('agendaWeek')}
                 >
                   Week
                 </button>
                 <button
-                  className={`view-btn ${currentView === 'dayGridDay' ? 'active' : ''}`}
-                  onClick={() => handleViewChange('dayGridDay')}
+                  className={`view-btn ${currentView === 'agendaDay' ? 'active' : ''}`}
+                  onClick={() => handleViewChange('agendaDay')}
                 >
                   Day
                 </button>
@@ -513,43 +667,7 @@ const CalendarPage = () => {
 
           {/* Calendar Container */}
           <div className="calendar-wrapper">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView={settings.defaultView}
-              headerToolbar={false}
-              defaultDate={currentDate}
-              navLinks={true}
-              editable={true}
-              selectable={true}
-              selectMirror={true}
-              dayMaxEvents={true}
-              weekends={settings.showWeekends}
-              initialTimeFormat={{ hour: settings.timeFormat24 ? 2 : 1, minute: '2-digit', meridiem: !settings.timeFormat24 }}
-              slotDuration="00:30:00"
-              slotMinTime="06:00:00"
-              slotMaxTime="22:00:00"
-              nowIndicator={true}
-              height="100%"
-              events={events.map(e => ({
-                ...e,
-                className: e.entryType,
-                extendedProps: {
-                  entryType: e.entryType,
-                  location: e.location,
-                  description: e.description,
-                  status: e.status,
-                  assignedTo: e.assignedTo,
-                  reference: e.reference
-                }
-              }))}
-              dateClick={handleDateClick}
-              eventClick={handleEventClick}
-              eventDrop={handleEventDrop}
-              eventResize={handleEventResize}
-              eventContent={renderEventContent}
-              datesSet={(info) => setCurrentDate(info.start)}
-            />
+            <div ref={calendarRef} id="calendar" />
           </div>
         </main>
       </div>
@@ -560,7 +678,24 @@ const CalendarPage = () => {
           <i className="fas fa-calendar-alt" />
           <span>Calendar</span>
         </button>
-        <button className="nav-item" onClick={() => handleDateClick({ date: new Date() })}>
+        <button className="nav-item" onClick={() => {
+          const now = moment();
+          setFormData({
+            title: '',
+            entryType: 'interment',
+            startDate: now.format('YYYY-MM-DD'),
+            startTime: now.format('HH:mm'),
+            endDate: now.format('YYYY-MM-DD'),
+            endTime: now.add(30, 'minutes').format('HH:mm'),
+            location: '',
+            description: '',
+            status: 'pending',
+            assignedTo: '',
+            reference: ''
+          });
+          setCurrentEditingId(null);
+          setModalOpen(true);
+        }}>
           <i className="fas fa-plus-circle" />
           <span>Add</span>
         </button>
@@ -882,9 +1017,9 @@ const CalendarPage = () => {
                     value={settings.defaultView}
                     onChange={(e) => setSettings(prev => ({ ...prev, defaultView: e.target.value }))}
                   >
-                    <option value="dayGridMonth">Month</option>
-                    <option value="dayGridWeek">Week</option>
-                    <option value="dayGridDay">Day</option>
+                    <option value="month">Month</option>
+                    <option value="agendaWeek">Week</option>
+                    <option value="agendaDay">Day</option>
                     <option value="listWeek">List</option>
                   </select>
                 </div>

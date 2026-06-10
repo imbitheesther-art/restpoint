@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { DollarSign, Smartphone, Building2, CreditCard, CheckCircle, CircleX, X } from 'lucide-react';
+import { paymentApi } from '../../api/paymentApi';
 
-const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName }) => {
+const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName, onSuccess }) => {
   const [paymentData, setPaymentData] = useState({
     amount: '',
     paymentMethod: '',
@@ -35,20 +36,13 @@ const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://localhost:8009/api/v1/restpoint/update-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          deceasedId,
-          ...paymentData,
-        }),
+      // Use centralized payment API
+      const result = await paymentApi.updatePayment({
+        deceasedId,
+        ...paymentData,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (result) {
         setMessage({ type: 'success', text: 'Payment updated successfully!' });
         setPaymentData({
           amount: '',
@@ -58,14 +52,22 @@ const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName }) => {
           bankName: '',
           transactionDate: new Date().toISOString().split('T')[0],
         });
+        
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          onSuccess(result);
+        }
+        
         setTimeout(() => {
           onClose();
         }, 2000);
-      } else {
-        setMessage({ type: 'error', text: result.message || 'Failed to update payment' });
       }
-    } catch {
-      setMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } catch (error) {
+      console.error('Payment update error:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to update payment' 
+      });
     } finally {
       setLoading(false);
     }
@@ -81,27 +83,22 @@ const PaymentUpdateModal = ({ isOpen, onClose, deceasedId, deceasedName }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://localhost:8009/api/v1/restpoint/initiate-stk-push', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          deceasedId,
-          amount: paymentData.amount,
-          phoneNumber: paymentData.phoneNumber,
-        }),
+      // Use centralized payment API
+      const result = await paymentApi.initiateSTKPush({
+        deceasedId,
+        amount: paymentData.amount,
+        phoneNumber: paymentData.phoneNumber,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (result) {
         setMessage({ type: 'success', text: 'STK push initiated successfully! Check your phone to complete payment.' });
-      } else {
-        setMessage({ type: 'error', text: result.message || 'Failed to initiate STK push' });
       }
-    } catch {
-      setMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } catch (error) {
+      console.error('STK push error:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to initiate STK push' 
+      });
     } finally {
       setLoading(false);
     }

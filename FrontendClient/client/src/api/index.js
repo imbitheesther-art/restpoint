@@ -24,6 +24,7 @@ export { invoiceApi } from './invoiceApi';
 export { analyticsApi } from './analyticsApi';
 export { tenantApi } from './tenant.api';
 export { calendarApi } from './calendar.api';
+export { paymentApi } from './paymentApi';
 
 // Re-export endpoints for direct access if needed
 export { ENDPOINTS } from './endpoints';
