@@ -1,20 +1,11 @@
 FROM node:22-alpine
 WORKDIR /usr/src/app
 
-# Copy global and service package files
-COPY global/package*.json ./global/
-COPY socketio-service/package*.json ./socketio-service/
+COPY package*.json ./
+RUN npm install --omit=dev
 
-# Install dependencies
-RUN cd global && npm install
-RUN cd socketio-service && npm install
+COPY . .
 
-# Copy source code
-COPY global ./global
-COPY socketio-service ./socketio-service
-
-# Set working directory to the service
-WORKDIR /usr/src/app/socketio-service
-
-EXPOSE 8010
+EXPOSE 3000
+ENV PORT=3000
 CMD ["node", "server.js"]

@@ -229,6 +229,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8006
+    environment:
+      NODE_ENV: production
+      PORT: 8006
       DB_HOST: mariadb
       DB_PORT: 3306
       DB_NAME: restpoint_main
