@@ -310,7 +310,7 @@
     display: block;
   }
 }
-<<<<<<< HEAD
+
 
 @media (max-width: 480px) {
   .header-content {
@@ -426,5 +426,3 @@
 .fc-scroller {
   overflow: auto !important;
 }
-=======
->>>>>>> 04ec62dd621af3696da70676e03606187f314fb0
