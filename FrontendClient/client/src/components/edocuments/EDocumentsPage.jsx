@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   FileUp, Download, Trash2, File, Search, Plus, AlertCircle, Loader, 
-  Eye, Pencil, X, FileText, Template, Edit3, Save, Upload, Copy,
+  Eye, Pencil, X, FileText, LayoutTemplate as Template, Edit3, Save, Upload, Copy,
   ChevronDown, ChevronUp, Filter, Grid, List
 } from 'lucide-react';
+
 import Swal from 'sweetalert2';
 import DocumentEditor from './DocumentEditor';
 

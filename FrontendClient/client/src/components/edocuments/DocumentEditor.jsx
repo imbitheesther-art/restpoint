@@ -1,9 +1,30 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
-  X, Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
-  Pen, Eraser, Type, Square, Circle, Image as ImageIcon, Signature,
-  Trash2, Eye, Check, Upload, Move, RefreshCw, AlertCircle, Lock, Cloud
+  X,
+  Save,
+  Download,
+  Printer as Print,        // Print doesn't exist, use Printer
+  Undo,
+  Redo,
+  ZoomIn,
+  ZoomOut,
+  Pen,
+  Eraser,
+  Type,
+  Square,
+  Circle,
+  Image as ImageIcon,
+  PenTool as Signature,     // Signature doesn't exist, use PenTool
+  Trash2,
+  Eye,
+  Check,
+  Upload,
+  Move,
+  RefreshCw,
+  AlertCircle,
+  Lock,
+  Cloud,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
