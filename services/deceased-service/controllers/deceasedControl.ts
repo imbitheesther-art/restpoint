@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { DateTime } from 'luxon';
 import crypto from 'crypto';
 import axios from 'axios';
-import { lookupTenantDatabase, safeTenantExecute, safeTenantQuery } from '../../shared/dbConfig';
+import { lookupTenantDatabase, safeTenantExecute, safeTenantQuery } from '../../../shared/dbConfig';
 import ExcelExportService from '../services/excelExportService';
 import mysql from 'mysql2/promise';
 

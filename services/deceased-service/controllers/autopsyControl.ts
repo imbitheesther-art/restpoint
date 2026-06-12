@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit'; // Fixed: default import
 import { DateTime } from 'luxon';
-import { lookupTenantDatabase, safeTenantExecute, safeTenantQuery } from '../../shared/dbConfig';
+import { lookupTenantDatabase, safeTenantExecute, safeTenantQuery } from '../../../shared/dbConfig';
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
