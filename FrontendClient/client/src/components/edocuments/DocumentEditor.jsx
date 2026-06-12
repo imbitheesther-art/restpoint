@@ -462,7 +462,7 @@ const DocumentEditor = ({
     const doc = documentRef.current;
     const template = templateRef.current;
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const setFabricBackgroundImage = (url) => {
         try {
           fabricCanvas._loadingState = true;
