@@ -42,5 +42,8 @@
   },
   "overrides": {
     "readable-stream": "^3.6.2"
-  }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

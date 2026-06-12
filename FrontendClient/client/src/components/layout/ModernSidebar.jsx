@@ -18,7 +18,9 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Hexagon
+  Hexagon,
+  User,
+  UserCircle
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Colors } from '../../theme/colors';
@@ -649,10 +651,20 @@ const ModernSidebar = ({ tenantData, userData = {}, onLogout = () => {}, onToggl
           </SidebarNav>
 
           <SidebarFooter>
-            <UserInfo $visible={true}>
-              <UserName>{userData.name || 'Admin User'}</UserName>
-              <UserRole>{userData.role || 'Administrator'}</UserRole>
-            </UserInfo>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0' }}>
+              <div style={{ 
+                width: '32px', height: '32px', borderRadius: '50%', 
+                background: 'rgba(4, 200, 0, 0.2)', display: 'flex', 
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0 
+              }}>
+                <User size={16} color="#04c800" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.7rem', color: theme.textMuted, marginBottom: '1px' }}>Logged in as</div>
+                <UserName>{userData.name || 'Admin User'}</UserName>
+                <UserRole>{userData.role || 'Administrator'}</UserRole>
+              </div>
+            </div>
             <LogoutButton onClick={handleLogout} aria-label="Sign out">
               <LogOut size={16} />
               <LogoutText $visible={true}>Sign Out</LogoutText>
@@ -766,14 +778,42 @@ const ModernSidebar = ({ tenantData, userData = {}, onLogout = () => {}, onToggl
       </SidebarNav>
 
       <SidebarFooter $isOpen={isOpen}>
-        <UserInfo $visible={isOpen}>
-          <UserName>{userData.name || 'Admin User'}</UserName>
-          <UserRole>{userData.role || 'Administrator'}</UserRole>
-        </UserInfo>
-        <LogoutButton $collapsed={!isOpen} onClick={handleLogout} aria-label="Sign out">
-          <LogOut size={16} />
-          <LogoutText $visible={isOpen}>Sign Out</LogoutText>
-        </LogoutButton>
+        {isOpen ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}>
+              <div style={{ 
+                width: '36px', height: '36px', borderRadius: '50%', 
+                background: 'rgba(4, 200, 0, 0.2)', display: 'flex', 
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0 
+              }}>
+                <User size={18} color="#04c800" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.7rem', color: theme.textMuted, marginBottom: '2px' }}>Logged in as</div>
+                <UserName>{userData.name || 'Admin User'}</UserName>
+                <UserRole>{userData.role || 'Administrator'}</UserRole>
+              </div>
+            </div>
+            <LogoutButton $collapsed={false} onClick={handleLogout} aria-label="Sign out">
+              <LogOut size={16} />
+              <LogoutText $visible={true}>Sign Out</LogoutText>
+            </LogoutButton>
+          </>
+        ) : (
+          <>
+            <div style={{ 
+              width: '32px', height: '32px', borderRadius: '50%', 
+              background: 'rgba(4, 200, 0, 0.2)', display: 'flex', 
+              alignItems: 'center', justifyContent: 'center', marginBottom: '8px',
+              cursor: 'default'
+            }} title={`Logged in as ${userData.name || 'Admin User'} (${userData.role || 'Administrator'})`}>
+              <User size={16} color="#04c800" />
+            </div>
+            <LogoutButton $collapsed={true} onClick={handleLogout} aria-label="Sign out">
+              <LogOut size={18} />
+            </LogoutButton>
+          </>
+        )}
       </SidebarFooter>
     </SidebarContainer>
   );

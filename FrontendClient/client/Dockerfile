@@ -1,5 +1,5 @@
 # Production Dockerfile for Rest Point Frontend
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -18,21 +18,24 @@ RUN npm run build
 # Production stage with nginx
 FROM nginx:alpine AS production
 
+# Install certbot for SSL (optional)
+RUN apk add --no-cache certbot certbot-nginx
+
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built assets from builder stage
+# Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy favicon and other assets from public folder
-COPY --from=builder /app/public /usr/share/nginx/html
+# Copy SSL certificates if they exist (optional)
+COPY ssl /etc/nginx/ssl 2>/dev/null || true
 
-# Expose port 80
-EXPOSE 80
+# Expose ports
+EXPOSE 80 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

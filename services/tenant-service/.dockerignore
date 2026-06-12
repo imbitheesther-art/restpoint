@@ -7,7 +7,6 @@ README.md
 .npmrc
 .prettierrc
 eslint.config.js
-tsconfig.json
 src
 uploads
 *.log

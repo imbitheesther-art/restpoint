@@ -1,297 +1,148 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { TenantModel } from '../models/tenant.model';
-import { fileStorageService } from '../../global/services/fileStorageService';
+import * as mysql from 'mysql2/promise';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 
-export class OnboardingController {
+export class TenantModel {
   
-  async createOrganization(req: Request, res: Response): Promise<Response> {
+  static async registerTenant(data: {
+    tenant_name: string;
+    email: string;
+    password: string;
+    full_name: string;
+    phone: string | null;
+    location: string;
+  }) {
+    // Create database connection to master
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'root',
+    });
+
     try {
-      const { organizationName, email, location, password, phone } = req.body;
-      const logoUrl = (req as any).file ? `/uploads/${(req as any).file.filename}` : null;
-
-      console.log('📝 Received onboarding request:', { organizationName, email, location });
-
-      if (!organizationName || !email || !location || !password) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Missing required fields' 
-        });
-      }
-
-      if (password.length < 6) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Password must be at least 6 characters' 
-        });
-      }
-
-      console.log(`📦 Creating dedicated database for: ${organizationName}`);
+      // Generate slug and database name
+      const slug = data.tenant_name.toLowerCase().replace(/\s+/g, '-');
+      const dbName = `tenant_${slug}_${Date.now()}`;
       
-      const { tenant, token } = await TenantModel.registerTenant({
-        tenant_name: organizationName,
-        email,
-        password,
-        full_name: organizationName,
-        phone: phone || null,
-        location: location
-      });
-
-      console.log(`✅ Tenant registered! Database: ${tenant.db_name}`);
-
-      // Create tenant folder structure for file uploads
-      try {
-        const folderInfo = fileStorageService.createTenantFolders(tenant.tenant_slug);
-        console.log(`📁 Created folder structure for tenant: ${tenant.tenant_slug}`, folderInfo.rootPath);
-      } catch (folderError: any) {
-        console.warn(`⚠️ Could not create folder structure: ${folderError.message}`);
-        // Don't fail the registration if folder creation fails
-      }
-
-      return res.status(201).json({
-        success: true,
-        message: 'Organization setup completed successfully! A dedicated database has been created.',
-        organizationId: tenant.tenant_id,
-        token,
-        logoUrl,
-        database: {
-          name: tenant.db_name,
-          host: process.env.DB_HOST || 'localhost'
-        },
-        user: {
-          id: 1,
-          organizationId: tenant.tenant_id,
-          email: tenant.email,
-          role: 'admin',
-          isActive: true,
-          isVerified: true,
-          fullName: organizationName
-        }
-      });
+      // Create database
+      await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
       
-    } catch (error: any) {
-      console.error('❌ Onboarding error:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: error.message || 'Internal server error'
-      });
-    }
-  }
-
-  async login(req: Request, res: Response): Promise<Response> {
-    try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Email and password required' 
-        });
-      }
-
-      // Find tenant by email
-      const tenant = await TenantModel.findByEmail(email);
-      
-      if (!tenant) {
-        return res.status(401).json({ 
-          success: false, 
-          message: 'Invalid email or password' 
-        });
-      }
-
-      // Get tenant database connection
-      const connection = await TenantModel.getTenantDatabase(tenant.tenant_id);
-      
-      if (!connection) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Unable to connect to tenant database' 
-        });
-      }
-      
-      // Query user from tenant database
-      const [users] = await connection.promise().execute(
-        'SELECT * FROM users WHERE email = ?',
-        [email]
+      // Insert into tenants table
+      const [result] = await connection.execute(
+        `INSERT INTO tenants (tenant_name, slug, db_name, email, location, status) 
+         VALUES (?, ?, ?, ?, ?, 'active')`,
+        [data.tenant_name, slug, dbName, data.email, data.location]
       );
       
-      const user = users[0];
+      const tenantId = (result as any).insertId;
       
-      if (!user) {
-        await connection.end();
-        return res.status(401).json({ 
-          success: false, 
-          message: 'Invalid email or password' 
-        });
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      // Create tenant database tables
+      const tenantConn = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || 'root',
+        database: dbName
+      });
       
-      if (!isValidPassword) {
-        await connection.end();
-        return res.status(401).json({ 
-          success: false, 
-          message: 'Invalid email or password' 
-        });
-      }
-
-      // Update last login
-      await connection.promise().execute(
-        'UPDATE users SET last_login_at = NOW() WHERE user_id = ?',
-        [user.user_id]
+      // Create users table
+      await tenantConn.execute(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          full_name VARCHAR(255),
+          phone VARCHAR(20),
+          role ENUM('admin', 'manager', 'staff') DEFAULT 'staff',
+          is_active BOOLEAN DEFAULT TRUE,
+          is_verified BOOLEAN DEFAULT FALSE,
+          last_login_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Hash password and create admin user
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      await tenantConn.execute(
+        `INSERT INTO users (email, password_hash, full_name, role, is_active, is_verified) 
+         VALUES (?, ?, ?, 'admin', TRUE, TRUE)`,
+        [data.email, hashedPassword, data.full_name]
       );
-
-      await connection.end();
-
-      // Generate JWT token
-      const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+      
+      await tenantConn.end();
+      
+      // Generate token
       const token = jwt.sign(
-        { 
-          userId: user.user_id, 
-          email: user.email, 
-          tenantId: tenant.tenant_id,
-          tenantSlug: tenant.tenant_slug,
-          role: user.role 
-        },
-        jwtSecret,
+        { email: data.email, tenantId, tenantSlug: slug, role: 'admin' },
+        process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '7d' }
       );
-
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        token,
-        user: {
-          id: user.user_id,
-          organizationId: tenant.tenant_id,
-          email: user.email,
-          role: user.role,
-          isActive: user.is_active === 1,
-          fullName: user.full_name
-        }
-      });
       
-    } catch (error: any) {
-      console.error('❌ Login error:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: error.message || 'Internal server error' 
-      });
+      return {
+        tenant: {
+          tenant_id: tenantId,
+          tenant_name: data.tenant_name,
+          tenant_slug: slug,
+          db_name: dbName,
+          email: data.email,
+          location: data.location
+        },
+        token
+      };
+      
+    } finally {
+      await connection.end();
     }
   }
-
-  async logout(req: Request, res: Response): Promise<Response> {
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Logged out successfully' 
+  
+  static async findByEmail(email: string): Promise<any> {
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'root',
+      database: process.env.DB_NAME || 'master_db'
     });
-  }
-
-  async getOrganization(req: Request, res: Response): Promise<Response> {
+    
     try {
-      const user = (req as any).user;
-      
-      if (!user || !user.tenantId) {
-        return res.status(401).json({ 
-          success: false, 
-          message: 'Unauthorized' 
-        });
-      }
-
-      // Find tenant by ID
-      const tenant = await TenantModel.findById(user.tenantId);
-      
-      if (!tenant) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Organization not found' 
-        });
-      }
-
-      // Get tenant database connection
-      const connection = await TenantModel.getTenantDatabase(tenant.tenant_id);
-      
-      if (!connection) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Unable to connect to tenant database' 
-        });
-      }
-      
-      // Get all users from tenant database
-      const [users] = await connection.promise().execute(
-        `SELECT user_id, email, full_name, role, is_active, created_at 
-         FROM users ORDER BY created_at DESC`
+      const [rows] = await connection.execute(
+        'SELECT * FROM tenants WHERE email = ?',
+        [email]
       );
-      
+      return (rows as any[])[0] || null;
+    } finally {
       await connection.end();
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          organization: {
-            id: tenant.tenant_id,
-            name: tenant.tenant_name,
-            tenantSlug: tenant.tenant_slug,
-            email: tenant.email,
-            location: tenant.location,
-            database: tenant.db_name
-          },
-          users: users,
-          totalUsers: users.length
-        }
-      });
-      
-    } catch (error: any) {
-      console.error('❌ Get organization error:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: error.message || 'Internal server error' 
-      });
     }
   }
-
-  // New method to test tenant database connection
-  async testTenantConnection(req: Request, res: Response): Promise<Response> {
+  
+  static async findById(id: number): Promise<any> {
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'root',
+      database: process.env.DB_NAME || 'master_db'
+    });
+    
     try {
-      const { tenantId } = req.params;
-      
-      const tenant = await TenantModel.findById(parseInt(tenantId));
-      
-      if (!tenant) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Tenant not found' 
-        });
-      }
-      
-      const connection = await TenantModel.getTenantDatabase(tenant.tenant_id);
-      
-      if (!connection) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Could not connect to tenant database' 
-        });
-      }
-      
-      // Test query
-      const [result] = await connection.promise().execute('SELECT 1 as test, DATABASE() as db_name');
+      const [rows] = await connection.execute(
+        'SELECT * FROM tenants WHERE tenant_id = ?',
+        [id]
+      );
+      return (rows as any[])[0] || null;
+    } finally {
       await connection.end();
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Tenant database connection successful',
-        database: result[0]
-      });
-      
-    } catch (error: any) {
-      console.error('❌ Test connection error:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: error.message || 'Connection test failed' 
-      });
     }
+  }
+  
+  static async getTenantDatabase(tenantId: number): Promise<mysql.Connection | null> {
+    const tenant = await this.findById(tenantId);
+    if (!tenant) return null;
+    
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'root',
+      database: tenant.db_name
+    });
+    
+    return connection;
   }
 }

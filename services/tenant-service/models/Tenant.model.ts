@@ -45,13 +45,16 @@ async function getServerConnection(): Promise<mysql.Connection> {
 }
 
 function generateSlug(tenantName: string): string {
-    return slugify(tenantName, {
+    // If slugify has a default export
+    const slugifyFn = typeof slugify === 'function' ? slugify : (slugify as any).default;
+    return slugifyFn(tenantName, {
         lower: true,
         strict: true,
         remove: /[*+~.()'"!:@]/g,
         trim: true
     });
 }
+
 
 async function createCompleteTenantDatabase(tenantName: string, subdomain: string, email: string, password_hash: string, full_name: string, phone: string | null): Promise<{ dbName: string }> {
     const dbName = `mortuary_${subdomain}_${Date.now()}`.replace(/-/g, '_');

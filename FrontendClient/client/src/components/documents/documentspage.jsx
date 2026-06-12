@@ -6,7 +6,7 @@ import {
   CheckCircle, Printer, X, Search, Filter, Share2, Mail, MessageCircle,
   Tag, Calendar, HardDrive, Type, User as UserIcon, ExternalLink,
   ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, Smartphone, Wifi, WifiOff,
-  Upload, Plus
+  Upload, Plus, ScanBarcode, Copy, QrCode
 } from 'lucide-react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -826,6 +826,85 @@ const META_COLORS = {
   type: { bg: '#e0e7ff', text: '#3730a3' },
   format: { bg: '#fce7f3', text: '#be185d' },
   user: { bg: '#f3e8ff', text: '#7c3aed' },
+  barcode: { bg: '#fff7ed', text: '#9a3412' },
+};
+
+// Barcode Generation Utility
+const generateDocumentBarcode = (doc) => {
+  const id = doc.documentId || doc.id || Date.now().toString();
+  const prefix = doc.category ? doc.category.substring(0, 3).toUpperCase() : 'DOC';
+  const hash = id.toString().slice(-6).padStart(6, '0');
+  const timestamp = doc.uploadedAt ? new Date(doc.uploadedAt).getTime().toString(36).slice(-4).toUpperCase() : '0000';
+  return `${prefix}-${hash}-${timestamp}`;
+};
+
+// Barcode Display Component
+const BarcodeDisplay = ({ code, documentName }) => {
+  const barcodeRef = useRef(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success('Barcode copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy barcode');
+    }
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html><head><title>Document Barcode</title>
+      <style>
+        body { font-family: monospace; text-align: center; padding: 20px; }
+        .barcode { font-size: 24px; letter-spacing: 3px; margin: 10px 0; 
+                   border: 2px solid #000; padding: 10px 20px; display: inline-block; }
+        .name { font-size: 12px; margin: 5px 0; color: #666; }
+        .code { font-size: 10px; color: #999; }
+      </style></head><body>
+        <div class="name">${documentName || 'Document'}</div>
+        <div class="barcode">${code}</div>
+        <div class="code">Scan to track this document</div>
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  return (
+    <div style={{ textAlign: 'center', padding: '1rem' }}>
+      <div style={{ 
+        fontFamily: 'monospace', fontSize: '1.5rem', letterSpacing: '3px',
+        border: '2px solid #1e293b', borderRadius: '0.5rem', padding: '1rem 1.5rem',
+        background: 'white', display: 'inline-block', marginBottom: '0.5rem',
+        fontWeight: 'bold'
+      }}>
+        {code}
+      </div>
+      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0.5rem 0' }}>
+        Scan or enter this code to track the document
+      </p>
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+        <button onClick={handleCopy} style={{
+          background: copied ? '#10b981' : '#3b82f6', color: 'white', border: 'none',
+          padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600
+        }}>
+          <Copy size={14} /> {copied ? 'Copied!' : 'Copy Code'}
+        </button>
+        <button onClick={handlePrint} style={{
+          background: '#f59e0b', color: 'white', border: 'none',
+          padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600
+        }}>
+          <Printer size={14} /> Print Label
+        </button>
+      </div>
+    </div>
+  );
 };
 
 // Enhanced PDF Viewer Component
@@ -1270,6 +1349,7 @@ const DocumentsPage = () => {
   const [uploadingFile, setUploadingFile] = useState(null);
   const [uploadCategory, setUploadCategory] = useState('General');
   const [isUploading, setIsUploading] = useState(false);
+  const [barcodeDocument, setBarcodeDocument] = useState(null);
 
   const deceasedId = params.deceasedId || params.id;
 
@@ -1911,6 +1991,15 @@ const DocumentsPage = () => {
                   <Trash2 size={14} />
                   {window.innerWidth >= 768 && 'Delete'}
                 </ActionButton>
+                <ActionButton 
+                  onClick={() => setBarcodeDocument(document)}
+                  bgColor="#9333ea"
+                  hoverColor="#7e22ce"
+                  title="Track Barcode"
+                >
+                  <ScanBarcode size={14} />
+                  {window.innerWidth >= 768 && 'Track'}
+                </ActionButton>
               </ActionButtons>
             </DocumentCard>
           ))
@@ -2086,6 +2175,32 @@ const DocumentsPage = () => {
                   )}
                 </SubmitButton>
               </ShareForm>
+            </ModalBody>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Barcode Tracking Modal */}
+      {barcodeDocument && (
+        <ModalOverlay onClick={() => setBarcodeDocument(null)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>
+                <ScanBarcode size={18} style={{ marginRight: '0.4rem' }} />
+                Document Tracking Code
+              </ModalTitle>
+              <CloseButton onClick={() => setBarcodeDocument(null)}>
+                <X size={18} />
+              </CloseButton>
+            </ModalHeader>
+            <ModalBody>
+              <p style={{ color: '#475569', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                Tracking code for: <strong>{barcodeDocument.originalName}</strong>
+              </p>
+              <BarcodeDisplay 
+                code={generateDocumentBarcode(barcodeDocument)} 
+                documentName={barcodeDocument.originalName}
+              />
             </ModalBody>
           </ModalContent>
         </ModalOverlay>
