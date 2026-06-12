@@ -24,7 +24,7 @@ import {
   Settings,
   Download,
   Printer,
-  Report,
+  FileText as Report,
   Calendar,
   MapPin,
   Phone,

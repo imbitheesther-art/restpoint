@@ -2,11 +2,28 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ENDPOINTS } from '../../api/endpoints';
 import { 
-  UserPlus, Check, Loader2, ClipboardList, AlertTriangle, 
-  XCircle, CheckCircle, Info, Calendar, ChevronLeft, 
-  ChevronRight, CalendarDays, X, Calendar as CalendarIcon,
-  User, MapPin, Crosshair, Fingerprint, Hospital, HeartPulse,
-  ArrowRight, ArrowLeft
+  UserPlus,
+  Check,
+  Loader2,
+  ClipboardList,
+  AlertTriangle,
+  XCircle,
+  CheckCircle,
+  Info,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  X,
+  Calendar as CalendarIcon,
+  User,
+  MapPin,
+  Crosshair,
+  Fingerprint,
+  Building2 as Hospital,
+  HeartPulse,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 
 // --- FIXED Smart Calendar Component (No Hidden Dropdown, Proper Z-Index, No Clipping) ---
