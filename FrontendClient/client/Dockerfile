@@ -27,8 +27,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy SSL certificates if they exist (optional)
-COPY ssl /etc/nginx/ssl 2>/dev/null || true
+
 
 # Expose ports
 EXPOSE 80 443
