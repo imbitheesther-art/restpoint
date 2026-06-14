@@ -4,7 +4,11 @@
 # Package Manager: Yarn
 # ============================================
 
-.PHONY: help dev build deploy docker-up docker-down logs clean test lint setup
+.PHONY: help setup dev build lint lint-fix test clean \
+        docker-up docker-down docker-logs docker-restart \
+        docker-rebuild ps shell \
+        db-migrate db-seed db-setup db-shell \
+        deploy health
 
 # Colors
 BLUE := \033[0;34m
@@ -24,7 +28,7 @@ help:
 	@echo "  make dev            - Start dev mode with hot reload"
 	@echo "  make build          - Build all services for production"
 	@echo "  make lint           - Run ESLint checks"
-	@echo "  make lint:fix       - Fix lint issues automatically"
+	@echo "  make lint-fix       - Fix lint issues automatically"
 	@echo "  make test           - Run all tests"
 	@echo "  make clean          - Remove node_modules and dist"
 	@echo ""
@@ -37,10 +41,10 @@ help:
 	@echo "  make ps             - Show running containers"
 	@echo ""
 	@echo "$(YELLOW)Database:$(RESET)"
-	@echo "  make db:migrate     - Run database migrations"
-	@echo "  make db:seed        - Seed default data"
-	@echo "  make db:setup       - Migrate + Seed"
-	@echo "  make db:shell       - Open MySQL shell (requires docker)"
+	@echo "  make db-migrate     - Run database migrations"
+	@echo "  make db-seed        - Seed default data"
+	@echo "  make db-setup       - Migrate + Seed"
+	@echo "  make db-shell       - Open MySQL shell (requires docker)"
 	@echo ""
 	@echo "$(YELLOW)Production:$(RESET)"
 	@echo "  make deploy         - Full production deployment"
@@ -80,7 +84,7 @@ lint:
 	@echo "$(GREEN)Running ESLint...$(RESET)"
 	@yarn lint
 
-lint:fix:
+lint-fix:
 	@echo "$(GREEN)Fixing lint issues...$(RESET)"
 	@yarn lint:fix
 
@@ -103,7 +107,7 @@ docker-up:
 	@docker-compose up -d
 	@echo "$(GREEN)✓ All services started!$(RESET)"
 	@echo ""
-	@echo "  Frontend:  http://localhost:3000"
+	@echo "  Frontend:  https://app.restpoint.co.ke (port 8082)"
 	@echo "  API:       http://localhost:8000"
 	@echo "  Portal:    http://localhost:5000"
 
@@ -140,21 +144,21 @@ shell:
 # ============================================
 # DATABASE
 # ============================================
-db:migrate:
+db-migrate:
 	@echo "$(GREEN)Running database migrations...$(RESET)"
 	@node scripts/migrate.js
 	@echo "$(GREEN)✓ Migrations complete!$(RESET)"
 
-db:seed:
+db-seed:
 	@echo "$(GREEN)Seeding database...$(RESET)"
 	@node scripts/seed.js
 	@echo "$(GREEN)✓ Seeding complete!$(RESET)"
 	@echo ""
 	@echo "  System Admin: welt / 40045355@Welttallis"
 
-db:setup: db:migrate db:seed
+db-setup: db-migrate db-seed
 
-db:shell:
+db-shell:
 	@docker-compose exec mariadb mysql -u root -proot restpoint_system
 
 # ============================================
@@ -165,19 +169,23 @@ deploy:
 	@echo "$(BLUE)  Rest Point Production Deployment$(RESET)"
 	@echo "$(BLUE)============================================$(RESET)"
 	@echo ""
-	@echo "$(YELLOW)Step 1: Building services...$(RESET)"
-	@yarn build
-	@echo "$(GREEN)✓ Build complete$(RESET)"
+	@echo "$(YELLOW)Step 1: Building frontend...$(RESET)"
+	@cd FrontendClient/client && docker build -t frontend .
+	@echo "$(GREEN)✓ Frontend built$(RESET)"
 	@echo ""
-	@echo "$(YELLOW)Step 2: Starting Docker services...$(RESET)"
-	@docker-compose up -d --build
-	@echo "$(GREEN)✓ Docker services started$(RESET)"
+	@echo "$(YELLOW)Step 2: Starting frontend on port 8082...$(RESET)"
+	@docker run -d --name restpoint-frontend -p 8082:8082 frontend
+	@echo "$(GREEN)✓ Frontend running on port 8082$(RESET)"
 	@echo ""
-	@echo "$(YELLOW)Step 3: Running migrations...$(RESET)"
+	@echo "$(YELLOW)Step 3: Starting all Docker services...$(RESET)"
+	@docker-compose up -d
+	@echo "$(GREEN)✓ All services started$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)Step 4: Running migrations...$(RESET)"
 	@node scripts/migrate.js
 	@echo "$(GREEN)✓ Migrations complete$(RESET)"
 	@echo ""
-	@echo "$(YELLOW)Step 4: Seeding data...$(RESET)"
+	@echo "$(YELLOW)Step 5: Seeding data...$(RESET)"
 	@node scripts/seed.js
 	@echo "$(GREEN)✓ Seed data loaded$(RESET)"
 	@echo ""
@@ -197,7 +205,7 @@ deploy:
 health:
 	@echo "$(BLUE)Checking service health...$(RESET)"
 	@echo ""
-	@for port in 8000 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013 8014 8015 8016 8017 8018 8111 5000 3000; do \
+	@for port in 8000 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013 8014 8015 8016 8017 8018 8111 5000 8082; do \
 		status=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$$port/health 2>/dev/null || echo "000"); \
 		if [ "$$status" != "000" ]; then \
 			echo "$(GREEN)✓ Port $$port: OK ($$status)$(RESET)"; \
