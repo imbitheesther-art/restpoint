@@ -29,10 +29,9 @@ import {
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as fabric from "fabric";
-<<<<<<< HEAD
 
-=======
->>>>>>> 8bd82230a86c8e76ea5544b6866f9e7efb1543b3
+
+
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
