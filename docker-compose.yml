@@ -483,7 +483,8 @@ services:
     restart: unless-stopped
 
   # ============================================
-  # FRONTEND - React UI
+  # FRONTEND - React UI (Port 8082)
+  # Production: docker run -d --name restpoint-frontend -p 8082:8082 frontend
   # ============================================
   frontend:
     build:
@@ -491,7 +492,7 @@ services:
       dockerfile: Dockerfile
     container_name: restpoint_frontend
     ports:
-      - "3000:3000"
+      - "8082:8082"
     env_file:
       - .env
     depends_on:
