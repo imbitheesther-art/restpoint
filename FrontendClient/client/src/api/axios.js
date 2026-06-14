@@ -24,7 +24,7 @@ const getSessionFingerprint = () => {
 
 // Base instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   withCredentials: true, // HTTP-only cookies
   headers: {
     'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ api.interceptors.response.use(
           const responseSlug = response.data?.tenantSlug;
           const localSlug = localStorage.getItem('tenantSlug');
           if (responseSlug && localSlug && responseSlug !== localSlug) {
-            console.warn('⚠️ Tenant slug mismatch - possible data leakage prevented');
+          
             handleAuthFailure();
             return Promise.reject(new Error('Tenant mismatch'));
           }
@@ -158,7 +158,7 @@ api.interceptors.response.use(
     
     // Handle 403 - Forbidden (tenant mismatch or CSRF)
     if (error.response?.status === 403) {
-      console.error('⚠️ Security violation detected');
+     
       // Could redirect to login with a security message
     }
     

@@ -4,7 +4,6 @@ import type { Express, Request, Response, NextFunction } from "express";
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { apiReference } from '@scalar/express-api-reference';
 
 dotenv.config();
 
@@ -62,32 +61,32 @@ process.on('unhandledRejection', (reason: any) => {
 });
 
 // Configuration
-const PORT: number = Number(process.env.PORT) || 8000;
+const PORT: number = Number(process.env.PORT) || 5000;
 const HOST: string = process.env.HOST || '0.0.0.0';
 
 // Service URLs
 const SERVICES: IServices = {
-  users: process.env.USERS_SERVICE_URL || 'http://localhost:8003',
-  marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8007',
-  socketio: process.env.SOCKETIO_SERVICE_URL || 'http://localhost:8009',
-  mpesa: process.env.MPESA_SERVICE_URL || 'http://localhost:8011',
-  portal: process.env.PORTAL_SERVICE_URL || 'http://localhost:8003',
-  tenant: process.env.TENANT_SERVICE_URL || 'http://localhost:8002',
-  deceased: process.env.DECEASED_SERVICE_URL || 'http://localhost:8103',
-  embalming: process.env.EMBALMING_SERVICE_URL || 'http://localhost:8105',
-  invoices: process.env.INVOICES_SERVICE_URL || 'http://localhost:8106',
-  coldroom: process.env.COLDROOM_SERVICE_URL || 'http://localhost:8107',
-  coffin: process.env.COFFIN_SERVICE_URL || 'http://localhost:8108',
-  hearse: process.env.HEARSE_SERVICE_URL || 'http://localhost:8109',
-  visitors: process.env.VISITORS_SERVICE_URL || 'http://localhost:8110',
-  notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:8111',
-  documents: process.env.DOCUMENTS_SERVICE_URL || 'http://localhost:8112',
-  edocuments: process.env.EDOCUMENTS_SERVICE_URL || 'http://localhost:8116',
-  analytics: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:8113',
-  reports: process.env.REPORTS_SERVICE_URL || 'http://localhost:8114',
-  bodycheckout: process.env.BODYCHECKOUT_SERVICE_URL || 'http://localhost:8115',
-  calendar: process.env.CALENDAR_SERVICE_URL || 'http://localhost:8104',
-  search: process.env.SEARCH_SERVICE_URL || 'http://localhost:8020',
+  users: process.env.USERS_SERVICE_URL || 'http://localhost:5001',
+  marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:5004',
+  socketio: process.env.SOCKETIO_SERVICE_URL || 'http://localhost:5013',
+  mpesa: process.env.MPESA_SERVICE_URL || 'http://localhost:5011',
+  portal: process.env.PORTAL_SERVICE_URL || 'http://localhost:5019',
+  tenant: process.env.TENANT_SERVICE_URL || 'http://localhost:5002',
+  deceased: process.env.DECEASED_SERVICE_URL || 'http://localhost:5003',
+  embalming: process.env.EMBALMING_SERVICE_URL || 'http://localhost:5105',
+  invoices: process.env.INVOICES_SERVICE_URL || 'http://localhost:5005',
+  coldroom: process.env.COLDROOM_SERVICE_URL || 'http://localhost:5107',
+  coffin: process.env.COFFIN_SERVICE_URL || 'http://localhost:5006',
+  hearse: process.env.HEARSE_SERVICE_URL || 'http://localhost:5109',
+  visitors: process.env.VISITORS_SERVICE_URL || 'http://localhost:5014',
+  notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:5111',
+  documents: process.env.DOCUMENTS_SERVICE_URL || 'http://localhost:5007',
+  edocuments: process.env.EDOCUMENTS_SERVICE_URL || 'http://localhost:5008',
+  analytics: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:5009',
+  reports: process.env.REPORTS_SERVICE_URL || 'http://localhost:5114',
+  bodycheckout: process.env.BODYCHECKOUT_SERVICE_URL || 'http://localhost:5015',
+  calendar: process.env.CALENDAR_SERVICE_URL || 'http://localhost:5010',
+  search: process.env.SEARCH_SERVICE_URL || 'http://localhost:5020',
 };
 
 // Rate limiters
@@ -122,6 +121,9 @@ app.use(cors({
       'http://localhost:5174',
       'http://localhost:3000',
       'http://localhost:8080',
+      'https://restpoint.co.ke',
+      'https://app.restpoint.co.ke',
+      'https://api.restpoint.co.ke',
       ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
     ];
     
@@ -222,7 +224,7 @@ const createProxy = (targetUrl: string, serviceName: string) => {
 // ============================================
 // AUTH SERVICE (Port 8001)
 // ============================================
-app.use('/api/v1/restpoint/auth', createProxy('http://localhost:8001', 'AUTH'));
+app.use('/api/v1/restpoint/auth', createProxy('http://localhost:5001', 'AUTH'));
 
 // ============================================
 // USERS SERVICE (Port 8003)
@@ -352,25 +354,6 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'UP', service: 'api-gateway', port: PORT, timestamp: new Date().toISOString() });
 });
 
-// ============================================
-// API REFERENCE DOCUMENTATION
-// ============================================
-app.use(
-  '/reference',
-  apiReference({
-    spec: {
-      content: {
-        openapi: '3.1.0',
-        info: { 
-          title: 'API Gateway - RestPoint MMS', 
-          version: '1.0.0',
-          description: 'Unified API Gateway for RestPoint Mortuary Management System'
-        },
-        servers: [{ url: `http://localhost:${PORT}`, description: 'Local development' }],
-      }
-    }
-  })
-);
 
 // ============================================
 // 404 HANDLER
@@ -398,17 +381,13 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // START SERVER
 // ============================================
 const server = app.listen(PORT, HOST, () => {
-  Logger.info(`🚀 API Gateway running on http://${HOST}:${PORT}`);
-  console.log('\n📋 Service Mapping:');
-  console.log('═'.repeat(50));
+  Logger.info(`API Gateway running on http://${HOST}:${PORT}`);
+  
+  
   Object.entries(SERVICES).forEach(([name, url]) => {
-    console.log(`   ✅ ${name.padEnd(15)} → ${url}`);
+    
   });
-  console.log('═'.repeat(50));
-  console.log(`\n📖 API Reference: http://localhost:${PORT}/reference`);
-  console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
-  console.log(`🔑 Auth endpoint: http://localhost:${PORT}/api/v1/restpoint/auth`);
-  console.log(`⚰️  Deceased endpoint: http://localhost:${PORT}/api/v1/restpoint/deceased\n`);
+  
 });
 
 // Graceful shutdown

@@ -1,7 +1,7 @@
 {
   "name": "market-service",
   "version": "1.0.0",
-  "description": "The backend API powering Sisasa Hub—where Kenyans engage, approve manifestos, and shape public dialogue.",
+  "description": "The backend service for managing marketplace operations.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,8 +14,8 @@
   "keywords": [
     "backend",
     "api",
-    "sisasa",
-    "civic-engagement",
+    "mortuary",
+    "feuneral- homes",
     "kenya"
   ],
   "author": "Welt Tallis Cooperation, Nairobi, Kenya",
@@ -27,7 +27,6 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "@scalar/express-api-reference": "^0.9.7",
     "axios": "^1.16.1",
     "cloudinary": "^2.9.0",
     "cors": "^2.8.6",

@@ -50,7 +50,7 @@ services:
       dockerfile: services/api-gateway/Dockerfile
     container_name: restpoint_gateway
     ports:
-      - "${API_GATEWAY_PORT:-8000}:8000"
+      - "${API_GATEWAY_PORT:-5000}:5000"
     env_file:
       - .env
     depends_on:
@@ -71,7 +71,7 @@ services:
       dockerfile: services/auth-service/Dockerfile
     container_name: restpoint_auth
     ports:
-      - "${AUTH_SERVICE_PORT:-8001}:8001"
+      - "${AUTH_SERVICE_PORT:-5001}:5001"
     env_file:
       - .env
     depends_on:
@@ -92,7 +92,7 @@ services:
       dockerfile: services/tenant-service/Dockerfile
     container_name: restpoint_tenant
     ports:
-      - "${TENANT_SERVICE_PORT:-8002}:8002"
+      - "${TENANT_SERVICE_PORT:-5002}:5002"
     env_file:
       - .env
     depends_on:
@@ -113,7 +113,7 @@ services:
       dockerfile: services/deceased-service/Dockerfile
     container_name: restpoint_deceased
     ports:
-      - "${DECEASED_SERVICE_PORT:-8003}:8003"
+      - "${DECEASED_SERVICE_PORT:-5003}:5003"
     env_file:
       - .env
     depends_on:
@@ -134,7 +134,7 @@ services:
       dockerfile: services/marketplace-service/Dockerfile
     container_name: restpoint_marketplace
     ports:
-      - "${MARKETPLACE_SERVICE_PORT:-8004}:8004"
+      - "${MARKETPLACE_SERVICE_PORT:-5004}:5004"
     env_file:
       - .env
     depends_on:
@@ -155,7 +155,7 @@ services:
       dockerfile: services/invoice-service/Dockerfile
     container_name: restpoint_invoice
     ports:
-      - "${INVOICE_SERVICE_PORT:-8005}:8005"
+      - "${INVOICE_SERVICE_PORT:-5005}:5005"
     env_file:
       - .env
     depends_on:
@@ -176,7 +176,7 @@ services:
       dockerfile: services/coffin-service/Dockerfile
     container_name: restpoint_coffin
     ports:
-      - "${COFFIN_SERVICE_PORT:-8006}:8006"
+      - "${COFFIN_SERVICE_PORT:-5006}:5006"
     env_file:
       - .env
     depends_on:
@@ -197,7 +197,7 @@ services:
       dockerfile: services/documents-service/Dockerfile
     container_name: restpoint_documents
     ports:
-      - "${DOCUMENTS_SERVICE_PORT:-8007}:8007"
+      - "${DOCUMENTS_SERVICE_PORT:-5007}:5007"
     env_file:
       - .env
     depends_on:
@@ -218,7 +218,7 @@ services:
       dockerfile: services/edocuments-service/Dockerfile
     container_name: restpoint_edocuments
     ports:
-      - "${EDOCUMENTS_SERVICE_PORT:-8008}:8008"
+      - "${EDOCUMENTS_SERVICE_PORT:-5008}:5008"
     env_file:
       - .env
     depends_on:
@@ -239,7 +239,7 @@ services:
       dockerfile: services/analytics-service/Dockerfile
     container_name: restpoint_analytics
     ports:
-      - "${ANALYTICS_SERVICE_PORT:-8009}:8009"
+      - "${ANALYTICS_SERVICE_PORT:-5009}:5009"
     env_file:
       - .env
     depends_on:
@@ -260,7 +260,7 @@ services:
       dockerfile: services/calender-service/Dockerfile
     container_name: restpoint_calender
     ports:
-      - "${CALENDER_SERVICE_PORT:-8010}:8010"
+      - "${CALENDER_SERVICE_PORT:-5010}:5010"
     env_file:
       - .env
     depends_on:
@@ -281,10 +281,10 @@ services:
       dockerfile: services/mpesa-service/Dockerfile
     container_name: restpoint_mpesa
     ports:
-      - "${MPESA_SERVICE_PORT:-8011}:8011"
+      - "${MPESA_SERVICE_PORT:-5011}:5011"
     env_file:
-      - .env
-    depends_on:
+      - .env                   
+    depends_on:        
       redis:
         condition: service_healthy
       mariadb:
@@ -443,6 +443,10 @@ services:
   # ============================================
   # CALL SERVICE
   # ============================================
+  
+
+  
+
   call-service:
     build:
       context: .

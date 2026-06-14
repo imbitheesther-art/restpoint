@@ -107,8 +107,8 @@ docker-up:
 	@docker-compose up -d
 	@echo "$(GREEN)✓ All services started!$(RESET)"
 	@echo ""
-	@echo "  Frontend:  https://app.restpoint.co.ke (port 8082)"
-	@echo "  API:       http://localhost:8000"
+	@echo "  Frontend:  https://restpoint.co.ke (port 8082)"
+	@echo "  API:       http://localhost:5000"
 	@echo "  Portal:    http://localhost:5000"
 
 docker-down:
@@ -205,7 +205,7 @@ deploy:
 health:
 	@echo "$(BLUE)Checking service health...$(RESET)"
 	@echo ""
-	@for port in 8000 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013 8014 8015 8016 8017 8018 8111 5000 8082; do \
+	@for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5010 5011 5012 5013 5014 5015 5016 5017 5018 5019 5111 8082; do \
 		status=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$$port/health 2>/dev/null || echo "000"); \
 		if [ "$$status" != "000" ]; then \
 			echo "$(GREEN)✓ Port $$port: OK ($$status)$(RESET)"; \

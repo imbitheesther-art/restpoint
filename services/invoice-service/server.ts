@@ -1,14 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { safeQuery } = require('../shared/database');
-const { validateTenantActive } = require('../shared/tenancy');
+const { safeQuery } = require('../../shared/dbConfig');
+const { validateTenantActive } = require('../../shared/tenancy');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const invoice = require('./routes/invoice');
 const printInvoiceRoute = require('./routes/printInvoiceRoute');
 
 const app = express();
-const PORT = process.env.PORT || 8106;
+const PORT = process.env.PORT || 5005;
 
 // CORS configuration - Allow credentials for proxied requests
 app.use(cors({
@@ -45,9 +45,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.use('/api/v1/restpoint', invoiceRoutes);
-app.use('/api/v1/restpoint', invoice);
-app.use('/api/v1/restpoint', printInvoiceRoute);
+app.use('/api/v2/restpoint', invoiceRoutes);
+app.use('/api/v2/restpoint', invoice);
+app.use('/api/v2/restpoint', printInvoiceRoute);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`invoice-service is running on port ${PORT}`);
