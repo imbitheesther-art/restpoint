@@ -18,7 +18,6 @@ import {
   Settings,
   Send,
 MessageSquare as WhatsApp,
-  MessageSquare as WhatsApp,
   Users,
   Clock,
   AlertCircle,
