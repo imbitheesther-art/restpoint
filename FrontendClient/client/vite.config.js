@@ -15,14 +15,31 @@ export default defineConfig({
       timeout: 120000
     },
     allowedHosts: [
-      'bug-free-adventure-p7jpg64r649pfrj7x-5173.app.github.dev',
-      '.app.github.dev',
+      'respoint.co.ke',
+      'app.restpoint.co.ke',
       'localhost'
     ],
     cors: true,
     fs: {
       strict: false,
       allow: ['..']
+    },
+    proxy: {
+      '/api/v2': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/public': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
     }
   },
   optimizeDeps: {

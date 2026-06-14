@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -11,16 +11,20 @@ import {
   Calendar,
   MapPin,
   Phone,
-  IdCard,
-  Signature,
+  UserCheck as IdCard,
+  PenTool as Signature,
   Download,
-  Print,
+  Printer as Print,
   CheckCircle,
   AlertCircle,
   Clock,
   Truck,
+  Edit3,
+  Eye,
+  Building2,
 } from 'lucide-react';
 import styled from 'styled-components';
+import { useTenantStore } from '../../store/useTenantStore';
 
 const API_GATEWAY_URL = 'http://localhost:8000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
@@ -206,6 +210,12 @@ const Button = styled.button`
     color: white;
     &:hover { background: #059669; }
   `
+      : props.variant === 'gold'
+      ? `
+    background: linear-gradient(135deg, #A67C52 0%, #C9A876 100%);
+    color: white;
+    &:hover { opacity: 0.9; }
+  `
       : `
     background: ${Colors.mediumGray};
     color: ${Colors.darkGray};
@@ -271,6 +281,39 @@ const StatusBadge = styled.span`
       : '#991b1b'};
 `;
 
+const TenantHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+  color: white;
+`;
+
+const TenantLogo = styled.img`
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.1);
+  padding: 4px;
+`;
+
+const TenantLogoPlaceholder = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #A67C52 0%, #C9A876 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+`;
+
 // Helper to get tenant slug
 const getTenantSlug = () => {
   return localStorage.getItem('tenantSlug') || 
@@ -289,9 +332,13 @@ const ReleaseFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { tenantData } = useTenantStore();
   const [deceasedData, setDeceasedData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const printRef = useRef(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -417,14 +464,68 @@ const ReleaseFormPage = () => {
     window.print();
   };
 
-  const handleDownloadPDF = async () => {
-    try {
-      toast.info('PDF download feature coming soon');
-      // TODO: Implement PDF generation and download
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('Failed to download PDF');
-    }
+  const handleDownloadPDF = () => {
+    const tenantName = tenantData?.name || 'Rest Point Funeral Home';
+    const tenantLogo = tenantData?.logo || '';
+    const tenantPhone = tenantData?.phone || '';
+    const tenantEmail = tenantData?.email || '';
+    const tenantLocation = tenantData?.location || '';
+    
+    const printContent = `<!DOCTYPE html>
+<html><head><title>Release Form - ${deceasedData?.full_name || 'Deceased'}</title>
+<style>
+@page { margin: 1.5cm; size: A4; }
+body { font-family: Arial, sans-serif; color: #1e293b; margin: 0; padding: 20px; }
+.header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #A67C52; padding-bottom: 16px; margin-bottom: 24px; }
+.logo { width: 64px; height: 64px; border-radius: 12px; object-fit: contain; }
+.logo-ph { width: 64px; height: 64px; border-radius: 12px; background: #A67C52; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 800; }
+.tenant-info h1 { margin: 0; font-size: 20px; } .tenant-info p { margin: 2px 0; font-size: 12px; color: #64748b; }
+.title { text-align: center; font-size: 18px; font-weight: 700; margin: 24px 0; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.section { margin-bottom: 20px; } .section h3 { font-size: 14px; color: #A67C52; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+.info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dotted #e2e8f0; font-size: 13px; }
+.info-label { color: #64748b; } .info-value { font-weight: 600; }
+.signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+.sig-box { border-top: 2px solid #1e293b; padding-top: 8px; text-align: center; font-size: 12px; color: #64748b; }
+.footer { margin-top: 32px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+</style></head><body>
+<div class="header">
+${tenantLogo ? `<img src="${tenantLogo}" class="logo" alt="Logo" />` : '<div class="logo-ph">RP</div>'}
+<div class="tenant-info"><h1>${tenantName}</h1>${tenantPhone ? `<p>📞 ${tenantPhone}</p>` : ''}${tenantEmail ? `<p>📧 ${tenantEmail}</p>` : ''}${tenantLocation ? `<p>📍 ${tenantLocation}</p>` : ''}</div>
+</div>
+<div class="title">📋 RELEASE FORM</div>
+<div class="section"><h3>Deceased Information</h3><div class="info-grid">
+<div class="info-row"><span class="info-label">Full Name:</span><span class="info-value">${deceasedData?.full_name || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Deceased ID:</span><span class="info-value">${deceasedData?.deceased_id || id}</span></div>
+<div class="info-row"><span class="info-label">Date of Death:</span><span class="info-value">${deceasedData?.date_of_death ? new Date(deceasedData.date_of_death).toLocaleDateString() : 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Gender:</span><span class="info-value">${deceasedData?.gender || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">County:</span><span class="info-value">${deceasedData?.county || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Status:</span><span class="info-value">${deceasedData?.status || 'N/A'}</span></div>
+</div></div>
+<div class="section"><h3>Release Details</h3><div class="info-grid">
+<div class="info-row"><span class="info-label">Released To:</span><span class="info-value">${formData.releasedTo || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Relationship:</span><span class="info-value">${formData.relationship || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">ID Number:</span><span class="info-value">${formData.idNumber || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${formData.phoneNumber || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Release Date:</span><span class="info-value">${formData.releaseDate || 'N/A'}</span></div>
+<div class="info-row"><span class="info-label">Release Time:</span><span class="info-value">${formData.releaseTime || 'N/A'}</span></div>
+</div>
+${formData.itemsReturned ? `<p style="font-size:13px"><strong>Items Returned:</strong> ${formData.itemsReturned}</p>` : ''}
+${formData.notes ? `<p style="font-size:13px"><strong>Notes:</strong> ${formData.notes}</p>` : ''}
+</div>
+<div class="signature-grid">
+<div><div class="sig-box">Received By: ${formData.receivedBy || '________________'}</div></div>
+<div><div class="sig-box">Witness: ${formData.witnessName || '________________'}</div></div>
+</div>
+<div class="footer">Generated by ${tenantName} • ${new Date().toLocaleString()}</div>
+</body></html>`;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+    toast.success('Release form generated!');
   };
 
   if (isLoading) {
@@ -459,6 +560,23 @@ const ReleaseFormPage = () => {
     <Container>
       <ToastContainer position="top-right" autoClose={3000} />
       
+      {/* Tenant Header */}
+      <TenantHeader>
+        {tenantData?.logo ? (
+          <TenantLogo src={tenantData.logo} alt={tenantData.name} />
+        ) : (
+          <TenantLogoPlaceholder>{(tenantData?.name || 'RP').slice(0, 2).toUpperCase()}</TenantLogoPlaceholder>
+        )}
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>{tenantData?.name || 'Funeral Home'}</h2>
+          <p style={{ margin: '4px 0 0', fontSize: '0.8rem', opacity: 0.7 }}>
+            {tenantData?.location && `📍 ${tenantData.location}`}
+            {tenantData?.phone && ` • 📞 ${tenantData.phone}`}
+            {tenantData?.email && ` • 📧 ${tenantData.email}`}
+          </p>
+        </div>
+      </TenantHeader>
+
       <Header>
         <BackButton onClick={() => navigate(-1)}>
           <ArrowLeft size={20} /> Back
@@ -466,12 +584,15 @@ const ReleaseFormPage = () => {
         <Title>
           <FileText size={24} /> Release Form
         </Title>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <Button variant="gold" onClick={() => setIsEditing(!isEditing)}>
+            <Edit3 size={16} /> {isEditing ? 'Preview' : 'Edit'}
+          </Button>
           <Button variant="secondary" onClick={handlePrint}>
             <Print size={16} /> Print
           </Button>
           <Button variant="secondary" onClick={handleDownloadPDF}>
-            <Download size={16} /> Download PDF
+            <Download size={16} /> Generate PDF
           </Button>
         </div>
       </Header>

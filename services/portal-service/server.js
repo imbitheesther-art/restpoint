@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { testConnection } = require('./config/database');
-const { runMigrations } = require('./migrations/migrate');
 const { errorHandler, corsOptions } = require('./middleware');
 const portalRoutes = require('./routes/portal');
 
@@ -61,10 +60,6 @@ const startServer = async () => {
     // Test Database Connection
     console.log('📊 Testing database connection...');
     await testConnection();
-
-    // Run Migrations
-    console.log('\n📋 Running database migrations...');
-    await runMigrations();
 
     // Start Server
     app.listen(PORT, () => {

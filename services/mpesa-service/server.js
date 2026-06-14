@@ -10,13 +10,9 @@ dotenv.config();
 // Database Initialization
 const initDB = async () => {
   try {
-    console.log('📦 [M-Pesa Service] Running database migrations...');
-    await db.migrate.latest({
-      directory: './src/migrations'
-    });
     console.log('✅ [M-Pesa Service] Database ready.');
   } catch (error) {
-    console.warn('⚠️ [M-Pesa Service] Migration failed:', error.message);
+    console.warn('⚠️ [M-Pesa Service] DB init failed:', error.message);
   }
 };
 

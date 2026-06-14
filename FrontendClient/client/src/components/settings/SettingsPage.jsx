@@ -22,6 +22,7 @@ const tabs = [
   { id: 'mpesa', label: 'M-Pesa Config', icon: Smartphone },
   { id: 'payments', label: 'Payment History', icon: History },
   { id: 'stk', label: 'STK Push', icon: Send },
+  { id: 'quickbooks', label: 'QuickBooks', icon: CreditCard },
 ];
 
 const SettingsPage = () => {
@@ -584,6 +585,104 @@ const SettingsPage = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* QuickBooks Integration Tab */}
+      {activeTab === 'quickbooks' && (
+        <div>
+          <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: `1px solid ${Colors.border}`, padding: '1.5rem', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: '600', color: Colors.text, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CreditCard size={18} color="#2CA01C" /> QuickBooks Integration
+            </h2>
+            <p style={{ fontSize: '0.8rem', color: Colors.textMuted, marginBottom: '1.5rem' }}>
+              Connect your QuickBooks account to sync invoices, payments, and financial data automatically.
+            </p>
+
+            {/* Integration Card */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', 
+              border: '1px solid #bbf7d0', 
+              borderRadius: '12px', 
+              padding: '1.5rem',
+              marginBottom: '1.5rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ 
+                  width: '48px', height: '48px', borderRadius: '12px', 
+                  background: '#2CA01C', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(44,160,28,0.3)',
+                }}>
+                  <span style={{ fontSize: '24px', color: 'white', fontWeight: 800 }}>QB</span>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#166534' }}>QuickBooks Online</h3>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#15803d' }}>Accounting & Financial Management</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                {[
+                  'Auto-sync invoices and payments',
+                  'Real-time financial reporting',
+                  'Tax preparation & compliance',
+                  'Multi-currency support (KES/USD)',
+                  'Automated bank reconciliation',
+                ].map((feature, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#166534' }}>
+                    <CheckCircle size={14} color="#22c55e" />
+                    {feature}
+                  </div>
+                ))}
+              </div>
+
+              {/* Pricing */}
+              <div style={{ 
+                background: 'white', 
+                border: '2px solid #2CA01C', 
+                borderRadius: '10px', 
+                padding: '1.25rem',
+                textAlign: 'center',
+              }}>
+                <p style={{ fontSize: '0.75rem', color: Colors.textMuted, margin: '0 0 0.25rem', textTransform: 'uppercase', fontWeight: 600 }}>Integration Price</p>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#2CA01C', marginBottom: '0.25rem' }}>
+                  KES 50,000
+                </div>
+                <p style={{ fontSize: '0.8rem', color: Colors.textMuted, margin: '0 0 1rem' }}>One-time setup fee + monthly maintenance</p>
+                
+                <button style={{
+                  width: '100%', padding: '0.75rem 2rem',
+                  background: 'linear-gradient(135deg, #2CA01C 0%, #16a34a 100%)',
+                  color: 'white', border: 'none', borderRadius: '8px',
+                  fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  boxShadow: '0 4px 12px rgba(44,160,28,0.3)',
+                }}
+                onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 20px rgba(44,160,28,0.4)'; }}
+                onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(44,160,28,0.3)'; }}
+                >
+                  Contact Us to Integrate
+                </button>
+                <p style={{ fontSize: '0.7rem', color: Colors.textMuted, margin: '0.75rem 0 0' }}>
+                  Email: <strong>info@restpoint.co.ke</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.5rem', 
+              padding: '0.75rem 1rem', 
+              background: 'rgba(245,158,11,0.08)', 
+              border: '1px solid rgba(245,158,11,0.2)', 
+              borderRadius: '8px',
+            }}>
+              <AlertCircle size={16} color={Colors.warning} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 500, color: Colors.warning }}>
+                QuickBooks integration is not yet active for this account. Contact our team to get started.
+              </span>
+            </div>
           </div>
         </div>
       )}

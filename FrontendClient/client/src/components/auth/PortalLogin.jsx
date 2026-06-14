@@ -103,15 +103,15 @@ function PortalLoginPage() {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
           height: 100vh;
           overflow: hidden;
-          background: #ffffff;
+          background: linear-gradient(135deg, #0A1F3D 0%, #0F2847 100%);
         }
 
-        /* Full White Background */
+        /* Navy background matching landing page */
         .portal {
           position: relative;
           width: 100%;
           height: 100vh;
-          background: #ffffff;
+          background: linear-gradient(135deg, #0A1F3D 0%, #0F2847 100%);
           display: flex;
           align-items: center;
           justify-content: center;

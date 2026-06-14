@@ -19,7 +19,8 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import api from '../api/client';
+import api from '../api/axios';
+import { ENDPOINTS } from '../api/endpoints';
 
 // Theme Colors
 const Colors = {
@@ -632,7 +633,7 @@ const MemorialPage = () => {
   const fetchMemorialData = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/v1/memorial/${slug}`);
+      const response = await api.get(ENDPOINTS.MEMORIAL.DETAIL(slug));
       setMemorial(response.data.data);
     } catch (err) {
       console.error('Error fetching memorial:', err);
@@ -644,7 +645,7 @@ const MemorialPage = () => {
 
   const fetchCandleCount = async () => {
     try {
-      const response = await api.get(`/api/v1/memorial/${slug}/candles`);
+      const response = await api.get(ENDPOINTS.MEMORIAL.CANDLES(slug));
       setCandleCount(response.data.data?.count || 0);
     } catch (err) {
       console.error('Error fetching candles:', err);
@@ -653,7 +654,7 @@ const MemorialPage = () => {
 
   const fetchCondolences = async () => {
     try {
-      const response = await api.get(`/api/v1/memorial/${slug}/condolences`);
+      const response = await api.get(ENDPOINTS.MEMORIAL.CONDOLENCES(slug));
       setCondolences(response.data.data || []);
     } catch (err) {
       console.error('Error fetching condolences:', err);
@@ -662,7 +663,7 @@ const MemorialPage = () => {
 
   const handleLightCandle = async () => {
     try {
-      await api.post(`/api/v1/memorial/${slug}/candles`, {
+      await api.post(ENDPOINTS.MEMORIAL.CANDLES(slug), {
         visitorName: 'Anonymous'
       });
       setCandleCount(prev => prev + 1);
@@ -675,7 +676,7 @@ const MemorialPage = () => {
   const handlePostCondolence = async (e) => {
     e.preventDefault();
     try {
-      await api.post(`/api/v1/memorial/${slug}/condolences`, {
+      await api.post(ENDPOINTS.MEMORIAL.CONDOLENCES(slug), {
         visitorName: condolenceName,
         message: condolenceMessage
       });
@@ -691,7 +692,7 @@ const MemorialPage = () => {
   const handlePostMemory = async (e) => {
     e.preventDefault();
     try {
-      await api.post(`/api/v1/memorial/${slug}/memories`, {
+      await api.post(ENDPOINTS.MEMORIAL.MEMORIES(slug), {
         visitorName: memoryName,
         message: memoryText
       });

@@ -1,11 +1,12 @@
 import api from './axios';
+import { ENDPOINTS } from './endpoints';
 
 export const invoiceApi = {
   /**
    * List all invoices
    */
   list: async (params = {}) => {
-    const response = await api.get('/api/v1/restpoint/invoices', { params });
+    const response = await api.get(ENDPOINTS.INVOICE.LIST, { params });
     return response.data;
   },
 
@@ -13,7 +14,7 @@ export const invoiceApi = {
    * Create a new invoice
    */
   create: async (data) => {
-    const response = await api.post('/api/v1/restpoint/invoices', data);
+    const response = await api.post(ENDPOINTS.INVOICE.CREATE, data);
     return response.data;
   },
 
@@ -21,7 +22,7 @@ export const invoiceApi = {
    * Get invoice by ID
    */
   getById: async (id) => {
-    const response = await api.get(`/api/v1/restpoint/invoices/${id}`);
+    const response = await api.get(ENDPOINTS.INVOICE.DETAIL(id));
     return response.data;
   },
 
@@ -29,7 +30,7 @@ export const invoiceApi = {
    * Update an invoice
    */
   update: async (id, data) => {
-    const response = await api.put(`/api/v1/restpoint/invoices/${id}`, data);
+    const response = await api.put(ENDPOINTS.INVOICE.UPDATE(id), data);
     return response.data;
   },
 
@@ -37,7 +38,7 @@ export const invoiceApi = {
    * Delete an invoice
    */
   delete: async (id) => {
-    const response = await api.delete(`/api/v1/restpoint/invoices/${id}`);
+    const response = await api.delete(ENDPOINTS.INVOICE.DELETE(id));
     return response.data;
   },
 
@@ -45,7 +46,7 @@ export const invoiceApi = {
    * Make a payment on an invoice
    */
   pay: async (id, payload) => {
-    const response = await api.post(`/api/v1/restpoint/invoices/${id}/pay`, payload);
+    const response = await api.post(ENDPOINTS.INVOICE.PAY(id), payload);
     return response.data;
   },
 
@@ -53,7 +54,7 @@ export const invoiceApi = {
    * Get invoice as PDF
    */
   getPDF: async (id) => {
-    const response = await api.get(`/api/v1/restpoint/invoices/${id}/pdf`, { responseType: 'blob' });
+    const response = await api.get(ENDPOINTS.INVOICE.PDF(id), { responseType: 'blob' });
     return response.data;
   },
 
@@ -61,7 +62,7 @@ export const invoiceApi = {
    * Initiate MPESA payment for invoice
    */
   mpesa: async (id, phone) => {
-    const response = await api.post(`/api/v1/restpoint/invoices/${id}/mpesa`, { phone });
+    const response = await api.post(ENDPOINTS.INVOICE.MPESA(id), { phone });
     return response.data;
   },
 
@@ -71,7 +72,7 @@ export const invoiceApi = {
    * @param {Object} options - Invoice generation options
    */
   generate: async (deceasedId, options = {}) => {
-    const response = await api.get(`/api/v1/restpoint/invoice/${deceasedId}`, { params: options });
+    const response = await api.get(ENDPOINTS.INVOICE.GENERATE(deceasedId), { params: options });
     return response.data;
   },
 };

@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
-import { fabric } from 'fabric';
+import * as fabric from "fabric";
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -38,9 +38,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 // ============================================
 
 const CONFIG = {
-  API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1/restpoint',
+  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v2/restpoint',
   AUTO_SAVE_INTERVAL: 30000, // 30 seconds
-  MAX_CANVAS_SIZE: { width: 800, height: 1131 }, // A4
+  MAX_CANVAS_SIZE: { width: 1200, height: 1131 }, // A4
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   HISTORY_MAX_STATES: 50,
   SUPPORTED_FILE_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'],

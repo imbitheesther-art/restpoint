@@ -20,16 +20,18 @@ import {
   ChevronRight,
   Hexagon,
   User,
-  UserCircle
+  UserCircle,
+  Phone,
+  Shield
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Colors } from '../../theme/colors';
 
-// Theme colors from system - Updated for better look
+// Theme colors - Clean plain dark theme
 const theme = {
-  primary: '#ffffff',           // Darker background
-  secondary: '#111111',         // Slightly lighter
-  accent: '#000000',            // Green accent (Rest Point brand)
+  primary: '#ffffff',
+  secondary: '#111111',
+  accent: '#1e293b',
   accentLight: 'rgba(4, 200, 0, 0.1)',
   accentLighter: 'rgba(4, 200, 0, 0.05)',
   background: '#0f0f0f',
@@ -511,9 +513,11 @@ const ModernSidebar = ({ tenantData, userData = {}, onLogout = () => {}, onToggl
     { icon: ShoppingCart, label: 'Marketplace', path: `${basePath}/marketplace` },
     { icon: UsersRound, label: 'Coffins', path: `${basePath}/coffins` },
     { icon: Truck, label: 'Hearse', path: `${basePath}/hearse` },
+    { icon: Phone, label: 'Voice Call', path: `${basePath}/call` },
   ];
 
   const systemMenuItems = [
+    { icon: Shield, label: 'Users', path: `${basePath}/users` },
     { icon: Bell, label: 'Notifications', path: `${basePath}/notifications` },
     { icon: BarChart3, label: 'Analytics', path: `${basePath}/analytics` },
     { icon: FileBarChart, label: 'Reports', path: `${basePath}/reports` },

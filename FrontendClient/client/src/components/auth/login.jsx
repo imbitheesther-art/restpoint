@@ -7,27 +7,47 @@ import { authApi } from '../../api/authApi';
    Mobile Responsive · Clean · Modern
    ═══════════════════════════════════════════════════════════════ */
 
+// Landing page color scheme for consistency
+const LPC = {
+  navy900: '#0A1F3D',
+  navy800: '#0F2847',
+  navy700: '#1a3a52',
+  navy50:  '#F9FAFB',
+  char900: '#111827',
+  char700: '#374151',
+  char600: '#4B5563',
+  char500: '#6B7280',
+  char300: '#D1D5DB',
+  char200: '#E5E7EB',
+  char100: '#F3F4F6',
+  gold:    '#A67C52',
+  goldL:   '#C9A876',
+  goldD:   '#8B6340',
+  emerald: '#059669',
+  emeraldL:'#10B981',
+};
+
 const T = {
-  bg0:   '#040404',
-  bg1:   '#070707',
-  bg2:   '#0b0b0b',
-  bg3:   '#0f0f0f',
-  bg4:   '#131313',
-  line:  '#1e1e1e',
-  line2: '#282828',
-  dim:   '#333333',
-  sub:   '#555555',
-  muted: '#777777',
-  mid:   '#aaaaaa',
-  light: '#e0e0e0',
-  white: '#f8f8f8',
-  g:     '#04c800',
-  gd:    '#038b00',
-  gl:    '#09ff09',
-  ga:    'rgba(4,200,0,0.12)',
-  ga2:   'rgba(4,200,0,0.06)',
-  ga3:   'rgba(4,200,0,0.04)',
-  gs:    '0 0 30px rgba(4,200,0,0.2)',
+  bg0:   LPC.navy900,
+  bg1:   LPC.navy800,
+  bg2:   LPC.navy700,
+  bg3:   '#f8f9fa',
+  bg4:   '#ffffff',
+  line:  LPC.char200,
+  line2: LPC.char300,
+  dim:   LPC.char500,
+  sub:   LPC.char600,
+  muted: LPC.char500,
+  mid:   LPC.char700,
+  light: LPC.char900,
+  white: '#111827',
+  g:     LPC.gold,
+  gd:    LPC.goldD,
+  gl:    LPC.goldL,
+  ga:    'rgba(166,124,82,0.12)',
+  ga2:   'rgba(166,124,82,0.06)',
+  ga3:   'rgba(166,124,82,0.04)',
+  gs:    `0 0 30px rgba(166,124,82,0.2)`,
 };
 
 /* ── SVG Icons ────────────────────────────────────────────────── */
@@ -444,8 +464,21 @@ function LoginPage() {
                   )}
                 </button>
 
+                {/* Forgot Password Link */}
+                <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(166,124,82,.3)', transition: 'color .2s', fontSize: '.75rem' }}
+                    onMouseEnter={(e) => e.target.style.color = T.g}
+                    onMouseLeave={(e) => e.target.style.color = T.muted}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
                 {/* Footer links */}
-                <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
                   <p style={{ fontSize: '.75rem', color: T.muted }}>
                     Don't have an account?{' '}
                     <button 

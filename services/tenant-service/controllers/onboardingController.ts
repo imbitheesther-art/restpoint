@@ -1,148 +1,306 @@
 import * as mysql from 'mysql2/promise';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import { TenantModel } from '../models/Tenant.model';
+import { Router, Request, Response } from 'express';
 
-export class TenantModel {
-  
-  static async registerTenant(data: {
-    tenant_name: string;
-    email: string;
-    password: string;
-    full_name: string;
-    phone: string | null;
-    location: string;
-  }) {
-    // Create database connection to master
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'root',
-    });
+const router = Router();
 
-    try {
-      // Generate slug and database name
-      const slug = data.tenant_name.toLowerCase().replace(/\s+/g, '-');
-      const dbName = `tenant_${slug}_${Date.now()}`;
-      
-      // Create database
-      await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-      
-      // Insert into tenants table
-      const [result] = await connection.execute(
-        `INSERT INTO tenants (tenant_name, slug, db_name, email, location, status) 
-         VALUES (?, ?, ?, ?, ?, 'active')`,
-        [data.tenant_name, slug, dbName, data.email, data.location]
-      );
-      
-      const tenantId = (result as any).insertId;
-      
-      // Create tenant database tables
-      const tenantConn = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || 'root',
-        database: dbName
+// ─── POST /api/v2/restpoint/tenants/register ─────────────────────
+router.post('/register', async (req: Request, res: Response) => {
+  try {
+    const {
+      tenant_name,
+      email,
+      password,
+      full_name,
+      phone,
+      location,
+      country,
+      branches
+    } = req.body;
+
+    // Validate required fields
+    if (!tenant_name || !email || !password || !full_name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: tenant_name, email, password, full_name'
       });
-      
-      // Create users table
-      await tenantConn.execute(`
-        CREATE TABLE IF NOT EXISTS users (
-          user_id INT AUTO_INCREMENT PRIMARY KEY,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          password_hash VARCHAR(255) NOT NULL,
-          full_name VARCHAR(255),
-          phone VARCHAR(20),
-          role ENUM('admin', 'manager', 'staff') DEFAULT 'staff',
-          is_active BOOLEAN DEFAULT TRUE,
-          is_verified BOOLEAN DEFAULT FALSE,
-          last_login_at TIMESTAMP NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      
-      // Hash password and create admin user
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-      await tenantConn.execute(
-        `INSERT INTO users (email, password_hash, full_name, role, is_active, is_verified) 
-         VALUES (?, ?, ?, 'admin', TRUE, TRUE)`,
-        [data.email, hashedPassword, data.full_name]
-      );
-      
-      await tenantConn.end();
-      
-      // Generate token
-      const token = jwt.sign(
-        { email: data.email, tenantId, tenantSlug: slug, role: 'admin' },
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '7d' }
-      );
-      
-      return {
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    // Validate branches if provided
+    if (branches && Array.isArray(branches)) {
+      for (const branch of branches) {
+        if (!branch.branch_name) {
+          return res.status(400).json({
+            success: false,
+            message: 'Each branch must have a name'
+          });
+        }
+      }
+    }
+
+    // Register the tenant
+    const result = await TenantModel.registerTenant({
+      tenant_name,
+      email,
+      password,
+      full_name,
+      phone: phone || null,
+      location: location || null,
+      country: country || null,
+      branches: branches || []
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Tenant registered successfully',
+      data: {
+        token: result.token,
+        tenant: result.tenant,
+        user: {
+          email: email,
+          full_name: full_name,
+          role: 'admin'
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Registration error:', error);
+    
+    if (error.message === 'Tenant slug already exists') {
+      return res.status(409).json({
+        success: false,
+        message: 'An organization with this name already exists'
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Registration failed',
+      error: error.message
+    });
+  }
+});
+
+// ─── GET /api/v2/restpoint/tenants/branches ───────────────────────
+router.get('/branches', async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = req.headers['x-tenant-slug'] as string || req.query.slug as string;
+    if (!tenantSlug) {
+      return res.status(400).json({ success: false, message: 'Tenant slug required' });
+    }
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const branches = await TenantModel.getBranches(tenant.db_name);
+    return res.json({ success: true, data: { branches } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── POST /api/v2/restpoint/tenants/branches ──────────────────────
+router.post('/branches', async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = req.headers['x-tenant-slug'] as string;
+    if (!tenantSlug) {
+      return res.status(400).json({ success: false, message: 'Tenant slug required' });
+    }
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const { branch_name, branch_location, branch_phone, branch_email } = req.body;
+    if (!branch_name) {
+      return res.status(400).json({ success: false, message: 'Branch name required' });
+    }
+
+    const branchId = await TenantModel.addBranch(tenant.db_name, {
+      branch_name,
+      branch_location: branch_location || '',
+      branch_phone: branch_phone || '',
+      branch_email: branch_email || ''
+    });
+
+    return res.status(201).json({ success: true, data: { branch_id: branchId } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── GET /api/v2/restpoint/tenants/charges ─────────────────────────
+router.get('/charges', async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = req.headers['x-tenant-slug'] as string;
+    if (!tenantSlug) {
+      return res.status(400).json({ success: false, message: 'Tenant slug required' });
+    }
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const charges = await TenantModel.getBaseCharges(tenant.db_name);
+    return res.json({ success: true, data: { charges } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── POST /api/v2/restpoint/tenants/charges ────────────────────────
+router.post('/charges', async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = req.headers['x-tenant-slug'] as string;
+    if (!tenantSlug) {
+      return res.status(400).json({ success: false, message: 'Tenant slug required' });
+    }
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const { charge_id, charge_name, charge_description, amount, charge_category, is_mandatory, branch_id } = req.body;
+    if (!charge_name) {
+      return res.status(400).json({ success: false, message: 'Charge name required' });
+    }
+
+    const id = await TenantModel.upsertBaseCharge(tenant.db_name, {
+      charge_id,
+      charge_name,
+      charge_description: charge_description || '',
+      amount: amount || 0,
+      charge_category: charge_category || 'other',
+      is_mandatory: is_mandatory || false,
+      branch_id: branch_id || null
+    });
+
+    return res.status(charge_id ? 200 : 201).json({ success: true, data: { charge_id: id } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── GET /api/v2/restpoint/portal/lookup ──────────────────────────
+// Portal login: find deceased by next-of-kin phone number
+router.get('/portal/lookup', async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number required' });
+    }
+
+    const result = await TenantModel.findDeceasedByPhone(phone as string);
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'No deceased found with this phone number' });
+    }
+
+    // Generate a session token for portal access
+    const sessionToken = jwt.sign(
+      {
+        tenantId: result.tenant.tenant_id,
+        tenantSlug: result.tenant.tenant_slug,
+        deceasedId: result.deceased.deceased_id,
+        type: 'portal'
+      },
+      process.env.JWT_SECRET || 'portal-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        sessionToken,
         tenant: {
-          tenant_id: tenantId,
-          tenant_name: data.tenant_name,
-          tenant_slug: slug,
-          db_name: dbName,
-          email: data.email,
-          location: data.location
+          tenantId: result.tenant.tenant_id,
+          tenantSlug: result.tenant.tenant_slug,
+          tenantName: result.tenant.tenant_name,
+          country: result.tenant.country
         },
-        token
-      };
-      
-    } finally {
-      await connection.end();
-    }
-  }
-  
-  static async findByEmail(email: string): Promise<any> {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'root',
-      database: process.env.DB_NAME || 'master_db'
+        deceased: {
+          deceased_id: result.deceased.deceased_id,
+          full_name: result.deceased.full_name,
+          date_of_death: result.deceased.date_of_death
+        },
+        branch: result.branch ? {
+          branch_id: result.branch.branch_id,
+          branch_name: result.branch.branch_name,
+          branch_location: result.branch.branch_location,
+          branch_phone: result.branch.branch_phone
+        } : null
+      }
     });
-    
-    try {
-      const [rows] = await connection.execute(
-        'SELECT * FROM tenants WHERE email = ?',
-        [email]
-      );
-      return (rows as any[])[0] || null;
-    } finally {
-      await connection.end();
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── GET /api/v2/restpoint/marketplace/products ───────────────────
+router.get('/marketplace/products', async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = req.headers['x-tenant-slug'] as string || req.query.slug as string;
+    if (!tenantSlug) {
+      return res.status(400).json({ success: false, message: 'Tenant slug required' });
     }
-  }
-  
-  static async findById(id: number): Promise<any> {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'root',
-      database: process.env.DB_NAME || 'master_db'
-    });
-    
-    try {
-      const [rows] = await connection.execute(
-        'SELECT * FROM tenants WHERE tenant_id = ?',
-        [id]
-      );
-      return (rows as any[])[0] || null;
-    } finally {
-      await connection.end();
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
     }
+
+    const products = await TenantModel.getMarketplaceProducts(tenant.db_name);
+    return res.json({ success: true, data: { products } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
-  
-  static async getTenantDatabase(tenantId: number): Promise<mysql.Connection | null> {
-    const tenant = await this.findById(tenantId);
-    if (!tenant) return null;
-    
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'root',
-      database: tenant.db_name
+});
+
+// ─── POST /api/v2/restpoint/marketplace/orders ────────────────────
+router.post('/marketplace/orders', async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = req.headers['x-tenant-slug'] as string || req.body.tenantSlug;
+    if (!tenantSlug) {
+      return res.status(400).json({ success: false, message: 'Tenant slug required' });
+    }
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const { customer_name, customer_phone, customer_email, deceased_id, delivery_branch_id, items, notes } = req.body;
+    if (!customer_name || !customer_phone || !items || !items.length) {
+      return res.status(400).json({ success: false, message: 'Customer name, phone, and items required' });
+    }
+
+    const orderId = await TenantModel.createOrder(tenant.db_name, {
+      customer_name,
+      customer_phone,
+      customer_email,
+      deceased_id,
+      delivery_branch_id,
+      items,
+      notes
     });
-    
-    return connection;
+
+    return res.status(201).json({ success: true, data: { order_id: orderId } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
-}
+});
+
+export default router;

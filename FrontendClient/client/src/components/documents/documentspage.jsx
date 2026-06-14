@@ -9,16 +9,18 @@ import {
   Upload, Plus, ScanBarcode, Copy, QrCode
 } from 'lucide-react';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useReactToPrint } from 'react-to-print';
+import { playWarningSound, confirmWithWarning } from '../../utils/deleteWarning';
 
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 // API Configuration - Centralized API Gateway
-const API_GATEWAY = process.env.REACT_APP_API_GATEWAY || 'http://localhost:5000';
-const BASE_API = `${API_GATEWAY}/api/v1/restpoint`;
+const API_GATEWAY = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_API = `${API_GATEWAY}/api/v2/restpoint`;
 
 // Enhanced Styled Components with minimal padding
 const PageContainer = styled.div`
@@ -1677,7 +1679,12 @@ const DocumentsPage = () => {
   };
 
   const handleDelete = async (documentId, documentName) => {
-    if (window.confirm(`Are you sure you want to delete "${documentName}"? This action cannot be undone.`)) {
+    const confirmed = await confirmWithWarning(
+      `Delete "${documentName}"?`,
+      'This action cannot be undone. All data will be permanently removed.',
+      Swal
+    );
+    if (confirmed) {
       try {
         setIsDeleting(true);
         

@@ -6,19 +6,70 @@ import {
   Menu, ChevronDown, ChevronUp, Download, Upload, Printer,
   Copy, Scissors, Layers, Grid, Maximize, Minimize,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Undo2, Redo2, Check, AlertCircle
+  Undo2, Redo2, Check, AlertCircle, Barcode, Clock
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './EnhancedDocumentEditor.css';
 
-// API Configuration
-const API_GATEWAY = process.env.REACT_APP_API_GATEWAY || 'http://localhost:5000';
-const BASE_API = `${API_GATEWAY}/api/v1/restpoint`;
+// API Configuration - use centralized axios instance
+import axiosInstance from '../../api/axios';
+// All API calls go through /api/v2/restpoint (PHP backend)
+const BASE_API = '/api/v2/restpoint';
+
+/**
+ * JsBarcode barcode generator (inline small implementation)
+ */
+const generateBarcodeDataURL = (text, options = {}) => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const width = options.width || 300;
+  const height = options.height || 80;
+  canvas.width = width;
+  canvas.height = height;
+
+  // Simple Code128-like barcode rendering
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  const bars = [];
+  const code = String(text || '1234567890');
+  
+  // Generate bars based on character codes
+  for (let i = 0; i < code.length; i++) {
+    const charCode = code.charCodeAt(i);
+    const bitCount = 8;
+    for (let j = 0; j < bitCount; j++) {
+      bars.push((charCode >> (bitCount - 1 - j)) & 1);
+    }
+  }
+
+  // Add start/stop bits
+  bars.unshift(1, 0, 1);
+  bars.push(1, 0, 1);
+
+  const barWidth = width / bars.length;
+  
+  bars.forEach((bar, index) => {
+    if (bar === 1) {
+      ctx.fillStyle = options.color || '#000000';
+      ctx.fillRect(index * barWidth, 0, Math.ceil(barWidth), height - 20);
+    }
+  });
+
+  // Add text below
+  ctx.fillStyle = options.color || '#000000';
+  ctx.font = options.fontSize || '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(code, width / 2, height - 4);
+
+  return canvas.toDataURL('image/png');
+};
 
 /**
  * Enterprise-Grade Document Editor
- * Features: Canvas editing, field mapping, real-time collaboration, version history
+ * Features: Canvas editing, field mapping, real-time collaboration, version history,
+ * barcode generation, real-time timestamps, drag & drop
  */
 const EnhancedDocumentEditor = ({ 
   documentId, 
@@ -48,6 +99,94 @@ const EnhancedDocumentEditor = ({
   const [documentTitle, setDocumentTitle] = useState(document?.title || 'Untitled Document');
   const [isConnected, setIsConnected] = useState(true);
   const [collaborators, setCollaborators] = useState([]);
+  const [templateLoadError, setTemplateLoadError] = useState(null);
+  
+  // Barcode state
+  const [barcodeText, setBarcodeText] = useState('1234567890');
+  
+  // Real-time timestamp state - update every second
+  const [currentTimestamp, setCurrentTimestamp] = useState(new Date());
+  const [timestampObject, setTimestampObject] = useState(null);
+  const [timestampUpdateInterval, setTimestampUpdateInterval] = useState(null);
+
+  // Update timestamp every second when a timestamp object exists on the canvas
+  useEffect(() => {
+    if (!timestampObject || !canvas) {
+      if (timestampUpdateInterval) {
+        clearInterval(timestampUpdateInterval);
+        setTimestampUpdateInterval(null);
+      }
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      setCurrentTimestamp(now);
+      
+      // Update the fabric object text with current time
+      const activeObjects = canvas.getObjects();
+      activeObjects.forEach(obj => {
+        if (obj._isTimestamp && obj.type === 'i-text') {
+          const formatted = getFormattedTimestamp();
+          obj.set({ text: formatted });
+          canvas.renderAll();
+        }
+      });
+    }, 1000);
+
+    setTimestampUpdateInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timestampObject, canvas]);
+
+  const getFormattedTimestamp = () => {
+    const now = new Date();
+    return now.toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Drag & drop state for barcode/timestamp
+  const dragOverHandler = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const dropHandler = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!canvas) return;
+    
+    const type = e.dataTransfer.getData('application/x-editor-element');
+    if (!type) return;
+    
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const pointer = {
+      x: e.clientX - canvasRect.left,
+      y: e.clientY - canvasRect.top
+    };
+    
+    // Adjust for zoom/pan
+    const zoom = canvas.getZoom();
+    const vpt = canvas.viewportTransform;
+    const canvasX = (pointer.x - vpt[4]) / zoom;
+    const canvasY = (pointer.y - vpt[5]) / zoom;
+    
+    if (type === 'barcode') {
+      addBarcodeToCanvas(canvasX, canvasY);
+    } else if (type === 'timestamp') {
+      addTimestampToCanvas(canvasX, canvasY);
+    }
+  }, [canvas]);
 
   // Initialize canvas
   useEffect(() => {
@@ -63,30 +202,87 @@ const EnhancedDocumentEditor = ({
       renderOnAddRemove: true
     });
 
-    // Load template canvas state if available
-    if (document?.canvas_state) {
-      fabricCanvas.loadFromJSON(document.canvas_state, () => {
-        fabricCanvas.renderAll();
-        saveHistory(fabricCanvas);
-      });
+    // Enable drag-and-drop on the canvas wrapper
+    const canvasWrapper = canvasRef.current.parentElement;
+    if (canvasWrapper) {
+      canvasWrapper.addEventListener('dragover', dragOverHandler);
+      canvasWrapper.addEventListener('drop', dropHandler);
     }
 
-    // Load template if no document state
-    if (!document?.canvas_state && template?.template_json) {
-      fabricCanvas.loadFromJSON(template.template_json, () => {
-        fabricCanvas.renderAll();
-        saveHistory(fabricCanvas);
+    // Load template canvas state if available
+    const loadCanvasState = () => {
+      return new Promise((resolve) => {
+        if (document?.canvas_state) {
+          try {
+            const state = typeof document.canvas_state === 'string' 
+              ? JSON.parse(document.canvas_state) 
+              : document.canvas_state;
+              
+            fabricCanvas.loadFromJSON(state, () => {
+              fabricCanvas.renderAll();
+              saveHistory(fabricCanvas);
+              setTemplateLoadError(null);
+              resolve();
+            });
+          } catch (err) {
+            console.error('Error loading document canvas state:', err);
+            setTemplateLoadError('Failed to load document canvas state');
+            resolve();
+          }
+        } 
+        // Load template if no document state
+        else if (template?.template_json) {
+          try {
+            const templateJson = typeof template.template_json === 'string'
+              ? JSON.parse(template.template_json)
+              : template.template_json;
+              
+            fabricCanvas.loadFromJSON(templateJson, () => {
+              fabricCanvas.renderAll();
+              saveHistory(fabricCanvas);
+              setTemplateLoadError(null);
+              toast.success('Template loaded successfully');
+              resolve();
+            });
+          } catch (err) {
+            console.error('Error loading template:', err);
+            setTemplateLoadError('Failed to load template. Starting with blank canvas.');
+            toast.warning('Template could not be loaded. Starting with blank canvas.');
+            resolve();
+          }
+        } else {
+          resolve();
+        }
       });
-    }
+    };
+
+    loadCanvasState().then(() => {
+      // Scan for existing timestamp objects
+      const objects = fabricCanvas.getObjects();
+      objects.forEach(obj => {
+        if (obj._isTimestamp) {
+          setTimestampObject(obj);
+        }
+      });
+    });
 
     // Event listeners
     fabricCanvas.on('object:added', () => saveHistory(fabricCanvas));
     fabricCanvas.on('object:modified', () => saveHistory(fabricCanvas));
-    fabricCanvas.on('object:removed', () => saveHistory(fabricCanvas));
+    fabricCanvas.on('object:removed', (e) => {
+      if (e.target && e.target._isTimestamp) {
+        setTimestampObject(null);
+      }
+      saveHistory(fabricCanvas);
+    });
     fabricCanvas.on('selection:created', (e) => {
       setSelectedObject(e.selected[0]);
       setActiveTool('select');
       setShowProperties(true);
+      // Show timestamp info if selected object is a timestamp
+      if (e.selected[0]?._isTimestamp) {
+        document.title = 'Editing Timestamp - Auto-updating every second';
+      }
     });
     fabricCanvas.on('selection:updated', (e) => {
       setSelectedObject(e.selected[0]);
@@ -185,10 +381,15 @@ const EnhancedDocumentEditor = ({
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      if (timestampUpdateInterval) clearInterval(timestampUpdateInterval);
       fabricCanvas.dispose();
       document.removeEventListener('keydown', handleKeyDown);
+      if (canvasWrapper) {
+        canvasWrapper.removeEventListener('dragover', dragOverHandler);
+        canvasWrapper.removeEventListener('drop', dropHandler);
+      }
     };
-  }, []);
+  }, []); // Only run once on mount - template load happens inside
 
   // Save to history
   const saveHistory = useCallback((c) => {
@@ -256,6 +457,65 @@ const EnhancedDocumentEditor = ({
     canvas.renderAll();
     saveHistory(canvas);
     toast.success('Field added');
+  };
+
+  /**
+   * Add a barcode to the canvas at specified position
+   */
+  const addBarcodeToCanvas = (left, top) => {
+    if (!canvas) return;
+    
+    const barcodeDataURL = generateBarcodeDataURL(barcodeText);
+    
+    fabric.Image.fromURL(barcodeDataURL, (img) => {
+      const scale = 1;
+      img.set({ 
+        left: left || 100, 
+        top: top || 100, 
+        scaleX: scale, 
+        scaleY: scale,
+        cornerStyle: 'circle',
+        cornerColor: '#3b82f6',
+        cornerStrokeColor: '#2563eb',
+        transparentCorners: false,
+        _isBarcode: true,
+        barcodeText: barcodeText
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+      saveHistory(canvas);
+      toast.success('Barcode added');
+    });
+  };
+
+  /**
+   * Add a real-time timestamp to the canvas
+   */
+  const addTimestampToCanvas = (left, top) => {
+    if (!canvas) return;
+    
+    const formatted = getFormattedTimestamp();
+    const fabricText = new fabric.IText(formatted, {
+      left: left || 100,
+      top: top || 100,
+      fontSize: 14,
+      fill: '#333333',
+      fontFamily: 'Courier New',
+      editable: false,
+      selectable: true,
+      backgroundColor: '#f0f9ff',
+      padding: 4,
+      _isTimestamp: true,
+      timestampCreated: new Date().toISOString()
+    });
+    
+    canvas.add(fabricText);
+    canvas.setActiveObject(fabricText);
+    canvas.renderAll();
+    saveHistory(canvas);
+    setTimestampObject(fabricText);
+    toast.success('Real-time timestamp added - updates every second');
   };
 
   // Upload image
@@ -330,6 +590,12 @@ const EnhancedDocumentEditor = ({
   // Delete selected
   const handleDelete = () => {
     if (!canvas || !selectedObject) return;
+    
+    // Check if deleting a timestamp
+    if (selectedObject._isTimestamp) {
+      setTimestampObject(null);
+    }
+    
     canvas.remove(selectedObject);
     setSelectedObject(null);
     setShowProperties(false);
@@ -382,16 +648,13 @@ const EnhancedDocumentEditor = ({
   const toggleGrid = () => {
     setShowGrid(!showGrid);
     if (canvas) {
-      // Simple grid implementation
       if (!showGrid) {
         const gridSize = 20;
         const gridColor = '#f0f0f0';
         
-        // Remove existing grid
         const existingGrid = canvas.getObjects().filter(obj => obj.isGrid);
         existingGrid.forEach(obj => canvas.remove(obj));
         
-        // Add new grid
         for (let i = 0; i < canvas.width / gridSize; i++) {
           const line = new fabric.Line([i * gridSize, 0, i * gridSize, canvas.height], {
             stroke: gridColor,
@@ -528,6 +791,34 @@ const EnhancedDocumentEditor = ({
     canvas.renderAll();
   };
 
+  // Regenerate barcode with new text
+  const handleRegenerateBarcode = () => {
+    if (!canvas || !selectedObject || !selectedObject._isBarcode) return;
+    
+    const barcodeDataURL = generateBarcodeDataURL(barcodeText);
+    fabric.Image.fromURL(barcodeDataURL, (img) => {
+      img.set({ 
+        left: selectedObject.left, 
+        top: selectedObject.top, 
+        scaleX: selectedObject.scaleX, 
+        scaleY: selectedObject.scaleY,
+        cornerStyle: 'circle',
+        cornerColor: '#3b82f6',
+        cornerStrokeColor: '#2563eb',
+        transparentCorners: false,
+        _isBarcode: true,
+        barcodeText: barcodeText
+      });
+      canvas.remove(selectedObject);
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+      saveHistory(canvas);
+      setSelectedObject(img);
+      toast.success('Barcode regenerated');
+    });
+  };
+
   // Quick actions
   const quickActions = [
     { icon: <Undo2 size={16} />, label: 'Undo', action: handleUndo, shortcut: 'Ctrl+Z' },
@@ -556,6 +847,30 @@ const EnhancedDocumentEditor = ({
     { icon: <Printer size={16} />, label: 'Print', action: handlePrint, shortcut: 'Ctrl+P' },
   ];
 
+  /**
+   * Handle drag start from the special elements panel
+   */
+  const handleDragStart = (e, type) => {
+    e.dataTransfer.setData('application/x-editor-element', type);
+    e.dataTransfer.effectAllowed = 'copy';
+    // Set drag image
+    const canvasPreview = document.createElement('div');
+    canvasPreview.style.width = '150px';
+    canvasPreview.style.height = '40px';
+    canvasPreview.style.background = '#f0f9ff';
+    canvasPreview.style.border = '2px solid #3b82f6';
+    canvasPreview.style.borderRadius = '4px';
+    canvasPreview.style.display = 'flex';
+    canvasPreview.style.alignItems = 'center';
+    canvasPreview.style.justifyContent = 'center';
+    canvasPreview.style.fontSize = '12px';
+    canvasPreview.style.color = '#333';
+    canvasPreview.textContent = type === 'barcode' ? '||| Barcode |||' : '📅 Timestamp';
+    document.body.appendChild(canvasPreview);
+    e.dataTransfer.setDragImage(canvasPreview, 75, 20);
+    setTimeout(() => document.body.removeChild(canvasPreview), 0);
+  };
+
   return (
     <div className={`enhanced-editor-container ${isFullscreen ? 'fullscreen' : ''}`}>
       <ToastContainer position="top-right" autoClose={3000} />
@@ -576,6 +891,12 @@ const EnhancedDocumentEditor = ({
         </div>
         
         <div className="header-center">
+          {timestampObject && (
+            <span className="live-indicator">
+              <span className="live-dot"></span>
+              LIVE Timestamp Active
+            </span>
+          )}
           <div className="connection-status">
             <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
             {isConnected ? 'Connected' : 'Disconnected'}
@@ -652,6 +973,16 @@ const EnhancedDocumentEditor = ({
         </div>
       </div>
 
+      {templateLoadError && (
+        <div className="template-error-banner">
+          <AlertCircle size={16} />
+          <span>{templateLoadError}</span>
+          <button onClick={() => setTemplateLoadError(null)} className="btn-icon">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="editor-content">
         {/* Left Toolbar */}
         <div className="editor-toolbar">
@@ -693,6 +1024,22 @@ const EnhancedDocumentEditor = ({
                 style={{ display: 'none' }}
               />
             </label>
+            {/* Barcode button */}
+            <button 
+              onClick={() => addBarcodeToCanvas(100, 100)} 
+              className="tool-btn"
+              title="Add Barcode"
+            >
+              <Barcode size={18} />
+            </button>
+            {/* Timestamp button */}
+            <button 
+              onClick={() => addTimestampToCanvas(100, 100)} 
+              className="tool-btn"
+              title="Add Real-time Timestamp"
+            >
+              <Clock size={18} />
+            </button>
           </div>
 
           <div className="tool-group">
@@ -739,15 +1086,95 @@ const EnhancedDocumentEditor = ({
           <canvas ref={canvasRef} className="fabric-canvas" />
         </div>
 
-        {/* Right Panel - Fields */}
+        {/* Right Panel - Fields & Special Elements */}
         <div className={`fields-panel ${showFieldsPanel ? 'open' : ''}`}>
           <div className="fields-header" onClick={() => setShowFieldsPanel(!showFieldsPanel)}>
-            <h4>📋 Document Fields</h4>
+            <h4>📋 Elements & Fields</h4>
             {showFieldsPanel ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </div>
 
           {showFieldsPanel && (
             <div className="fields-content">
+              {/* Drag & Drop Special Elements Section */}
+              <div className="special-elements-section">
+                <h5 className="section-title">🔄 Drag & Drop Elements</h5>
+                <p className="section-hint">Drag these onto the canvas, or click the toolbar buttons above</p>
+                
+                {/* Draggable Barcode */}
+                <div 
+                  className="draggable-element"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'barcode')}
+                  onClick={() => addBarcodeToCanvas(100, 100)}
+                >
+                  <div className="element-icon">
+                    <Barcode size={20} />
+                  </div>
+                  <div className="element-info">
+                    <span className="element-name">Barcode</span>
+                    <span className="element-desc">Drag to add a scannable barcode</span>
+                  </div>
+                  <div className="element-badge">Drag</div>
+                </div>
+
+                {/* Draggable Timestamp */}
+                <div 
+                  className="draggable-element"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'timestamp')}
+                  onClick={() => addTimestampToCanvas(100, 100)}
+                >
+                  <div className="element-icon timestamp-icon">
+                    <Clock size={20} />
+                  </div>
+                  <div className="element-info">
+                    <span className="element-name">Real-time Timestamp</span>
+                    <span className="element-desc">Auto-updates every second</span>
+                  </div>
+                  <div className="element-badge live">LIVE</div>
+                </div>
+              </div>
+
+              {/* Barcode Configuration (shown when barcode is selected) */}
+              {selectedObject?._isBarcode && (
+                <div className="barcode-config">
+                  <h5 className="section-title">📊 Barcode Settings</h5>
+                  <div className="field-item">
+                    <label>Barcode Value</label>
+                    <input
+                      type="text"
+                      value={barcodeText}
+                      onChange={(e) => setBarcodeText(e.target.value)}
+                      placeholder="Enter barcode text"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleRegenerateBarcode}
+                    className="btn btn-secondary w-full"
+                  >
+                    🔄 Regenerate Barcode
+                  </button>
+                </div>
+              )}
+
+              {/* Timestamp Info (shown when timestamp is selected) */}
+              {selectedObject?._isTimestamp && (
+                <div className="timestamp-info">
+                  <h5 className="section-title">⏱️ Timestamp Info</h5>
+                  <div className="field-item">
+                    <label>Current Value:</label>
+                    <div className="timestamp-preview">
+                      {getFormattedTimestamp()}
+                    </div>
+                    <span className="timestamp-note">⏺️ Auto-updates every second</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Document Fields Section */}
+              <div className="fields-divider" />
+              <h5 className="section-title">📝 Document Fields</h5>
+              
               {fields.length === 0 ? (
                 <p className="no-fields">No fields in this document</p>
               ) : (
@@ -790,9 +1217,11 @@ const EnhancedDocumentEditor = ({
                   </div>
                 ))
               )}
-              <button onClick={autofillFields} className="btn btn-secondary w-full">
-                🔄 Auto-fill Fields
-              </button>
+              {fields.length > 0 && (
+                <button onClick={autofillFields} className="btn btn-secondary w-full">
+                  🔄 Auto-fill Fields
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -807,6 +1236,23 @@ const EnhancedDocumentEditor = ({
               </button>
             </div>
             
+            {selectedObject._isBarcode && (
+              <div className="property-item">
+                <label>Barcode:</label>
+                <span className="property-value">{selectedObject.barcodeText || barcodeText}</span>
+              </div>
+            )}
+
+            {selectedObject._isTimestamp && (
+              <div className="property-item">
+                <label>Timestamp:</label>
+                <span className="property-value live-value">
+                  {getFormattedTimestamp()}
+                </span>
+                <span className="property-hint">⏺️ Auto-updates in real-time</span>
+              </div>
+            )}
+
             <div className="property-item">
               <label>Fill Color:</label>
               <input 
@@ -850,7 +1296,7 @@ const EnhancedDocumentEditor = ({
               <span>{Math.round(selectedObject.angle || 0)}°</span>
             </div>
 
-            {selectedObject.type === 'i-text' && (
+            {selectedObject.type === 'i-text' && !selectedObject._isTimestamp && (
               <>
                 <div className="property-item">
                   <label>Font Size:</label>
@@ -931,6 +1377,12 @@ const EnhancedDocumentEditor = ({
           <span>Objects: {canvas ? canvas.getObjects().length : 0}</span>
           <span>|</span>
           <span>History: {historyStep + 1}/{history.length}</span>
+          {timestampObject && (
+            <>
+              <span>|</span>
+              <span className="live-badge">⏺️ Timestamp Active</span>
+            </>
+          )}
         </div>
         <div className="status-right">
           <span>Canvas: 800 × 1200</span>

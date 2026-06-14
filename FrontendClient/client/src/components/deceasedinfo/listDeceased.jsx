@@ -23,13 +23,14 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ExportModal from './ExportModal';
+import RaiseTicketModal from '../support/RaiseTicketModal';
 
 // API Configuration
 const API_GATEWAY_URL = 'http://localhost:8000';
 const DECEASED_BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
 
 // Use API client that handles auth and tenant slug
-import api from '../../api/client';
+import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
 // Colors
@@ -800,6 +801,7 @@ const AllDeceasedPage = () => {
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -1173,6 +1175,19 @@ const AllDeceasedPage = () => {
             <PrimaryButton refresh onClick={fetchDeceased} disabled={loading}>
               {loading ? <AnimatedLoader2 size={18} /> : <RefreshCw size={18} />}Refresh
             </PrimaryButton>
+            <button onClick={() => setShowTicketModal(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.6rem 1rem', border: '1px solid rgba(166,124,82,0.3)',
+                borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.85rem',
+                fontWeight: 600, background: 'rgba(166,124,82,0.08)', color: '#A67C52',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(166,124,82,0.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(166,124,82,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              🎫 Raise Ticket
+            </button>
             <ReportButton onClick={() => setShowExportModal(true)} disabled={loading || filteredDeceasedRecords.length === 0}>
               <FileText size={18} />Export
             </ReportButton>
@@ -1318,6 +1333,14 @@ const AllDeceasedPage = () => {
             year: yearFilter,
             search: searchTerm,
           }}
+        />
+
+        {/* Raise Ticket Modal */}
+        <RaiseTicketModal
+          isOpen={showTicketModal}
+          onClose={() => setShowTicketModal(false)}
+          tenantName={getTenantSlug()}
+          tenantSlug={getTenantSlug()}
         />
       </ContentWrapper>
     </AppContainer>

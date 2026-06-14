@@ -247,11 +247,6 @@ const server = app.listen(PORT, () => {
   // Run background tasks AFTER server starts
   (async () => {
     try {
-      // Run migrations
-      console.log(" Running database migrations...");
-      await db.migrate.latest();
-      console.log(" Migrations completed successfully");
-
       // Create uploads directory
       const uploadsDir = path.join(__dirname, "uploads");
       if (!fs.existsSync(uploadsDir)) {

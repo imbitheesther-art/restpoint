@@ -123,6 +123,22 @@ export const authApi = {
   },
   
   /**
+   * Get auth headers for external service calls (e.g., call-service)
+   */
+  getAuthHeaders: () => {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const slug = localStorage.getItem('tenantSlug');
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (slug) {
+      headers['x-tenant-slug'] = slug;
+    }
+    return headers;
+  },
+  
+  /**
    * Check if user is authenticated
    */
   isAuthenticated: () => {

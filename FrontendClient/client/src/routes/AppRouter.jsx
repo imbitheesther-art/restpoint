@@ -8,6 +8,7 @@ import LandingPage from '../modules/landing/LandingPage';
 import OnboardingFlow from '../modules/onboarding/OnboardingFlow';
 import LoginPage from '../components/auth/login';
 import PortalLoginPage from '../components/auth/PortalLogin';
+import ForgotPassword from '../components/auth/ForgotPassword';
 import Notifications from '../components/notifications/notifications';
 import InvoiceManager from '../components/invoices/invoicemanager';
 import DocumentsPage from '../components/documents/documentspage';
@@ -26,11 +27,16 @@ import UploadProduct from '../components/marketplace/UploadProduct';
 // Import Settings page
 import SettingsPage from '../components/settings/SettingsPage';
 import ReleaseFormPage from '../components/releaseform/ReleaseFormPage';
+import UserManagement from '../components/user/UserManagement';
+import PublicMemorialPage from '../components/memorial/PublicMemorialPage';
 
 // Import Calendar, EDocuments, and Reports components
 import CalendarPage from '../components/calender/CalendarPage';
 import EDocumentsPage from '../components/edocuments/EDocumentsPage';
 import ReportGenerator from '../components/reports/reportGenerator';
+
+// Import Call/Voice component
+import CallPage from '../components/call/CallPage';
 
 // Loading fallback component
 const RouteLoadingFallback = () => (
@@ -328,7 +334,15 @@ const TenantDashboardRoutes = ({ tenantData }) => {
           <DashboardLayout tenantData={tenantData}>
             <ReleaseFormPage />
           </DashboardLayout>
-        } />
+        }/>
+
+        {/* Public Memorial Route */}
+        <Route path="memorial/:deceasedId" element={
+          <PublicMemorialPage />
+        }/>
+        <Route path="memorial/:deceasedId/:token" element={
+          <PublicMemorialPage />
+        }/>
         
         {/* 404 Not Found Route - Keep within dashboard layout */}
         <Route path="not-found" element={
@@ -344,6 +358,20 @@ const TenantDashboardRoutes = ({ tenantData }) => {
               <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1a1a1a' }}>Analytics</h1>
               <p style={{ color: '#6B7280', marginTop: '0.5rem' }}>Analytics dashboard coming soon.</p>
             </div>
+          </DashboardLayout>
+        } />
+        
+        {/* Users management */}
+        <Route path="users" element={
+          <DashboardLayout tenantData={tenantData}>
+            <UserManagement />
+          </DashboardLayout>
+        } />
+        
+        {/* Call / Voice Room Route */}
+        <Route path="call" element={
+          <DashboardLayout tenantData={tenantData}>
+            <CallPage />
           </DashboardLayout>
         } />
         
@@ -416,6 +444,7 @@ const AppRouter = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/register" element={<OnboardingFlow />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
       <Route path="/portal/login" element={<PortalLoginPage />} />
       

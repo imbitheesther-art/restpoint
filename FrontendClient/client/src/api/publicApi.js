@@ -1,4 +1,5 @@
 import api from './axios';
+import { ENDPOINTS } from './endpoints';
 
 /**
  * Public API layer for unauthenticated access
@@ -12,7 +13,7 @@ export const publicApi = {
    */
   getTenantBranding: async (slug) => {
     try {
-      const response = await api.get(`/api/public/tenants/${slug}/branding`);
+      const response = await api.get(ENDPOINTS.PUBLIC.TENANT_BRANDING(slug));
       return response.data;
     } catch (error) {
       console.error('Failed to fetch tenant branding:', error);
@@ -26,7 +27,7 @@ export const publicApi = {
    */
   getPublicDeceasedRecord: async (slug, publicId) => {
     try {
-      const response = await api.get(`/api/public/tenants/${slug}/deceased/${publicId}`);
+      const response = await api.get(ENDPOINTS.PUBLIC.DECEASED_RECORD(slug, publicId));
       return response.data;
     } catch (error) {
       console.error('Failed to fetch deceased record:', error);
@@ -40,7 +41,7 @@ export const publicApi = {
    */
   searchPublicDeceased: async (slug, query) => {
     try {
-      const response = await api.get(`/api/public/tenants/${slug}/deceased/search`, {
+      const response = await api.get(ENDPOINTS.PUBLIC.SEARCH_DECEASED(slug), {
         params: { q: query }
       });
       return response.data;
@@ -56,7 +57,7 @@ export const publicApi = {
    */
   scanQRCode: async (qrCode) => {
     try {
-      const response = await api.get(`/api/public/deceased/${qrCode}`);
+      const response = await api.get(ENDPOINTS.PUBLIC.QR_CODE(qrCode));
       return response.data;
     } catch (error) {
       console.error('Failed to scan QR code:', error);
@@ -71,7 +72,7 @@ export const publicApi = {
    */
   requestAccess: async (slug, accessRequest) => {
     try {
-      const response = await api.post(`/api/public/tenants/${slug}/request-access`, accessRequest);
+      const response = await api.post(ENDPOINTS.PUBLIC.REQUEST_ACCESS(slug), accessRequest);
       return response.data;
     } catch (error) {
       console.error('Failed to request access:', error);
@@ -86,7 +87,7 @@ export const publicApi = {
    */
   bookHearse: async (slug, booking) => {
     try {
-      const response = await api.post(`/api/public/tenants/${slug}/hearse/book`, booking);
+      const response = await api.post(ENDPOINTS.PUBLIC.HEARSE_BOOK(slug), booking);
       return response.data;
     } catch (error) {
       console.error('Failed to book hearse:', error);
@@ -100,7 +101,7 @@ export const publicApi = {
    */
   checkTenantStatus: async (slug) => {
     try {
-      const response = await api.get(`/api/public/tenants/${slug}/status`);
+      const response = await api.get(ENDPOINTS.PUBLIC.TENANT_STATUS(slug));
       return response.data;
     } catch (error) {
       console.error('Tenant not found or not public:', error);
@@ -114,7 +115,7 @@ export const publicApi = {
    */
   getPublishedDeceased: async (slug, page = 1, limit = 20) => {
     try {
-      const response = await api.get(`/api/public/tenants/${slug}/deceased`, {
+      const response = await api.get(ENDPOINTS.PUBLIC.PUBLISHED_DECEASED(slug), {
         params: { page, limit }
       });
       return response.data;

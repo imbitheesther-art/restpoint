@@ -9,15 +9,15 @@ const ExternalLoader = ({
   fullScreen = true,
   className = "",
 }) => {
-  const colorMap = {
-    primary: "#04c800",
-    secondary: "#038b00",
-    success: "#04c800",
-    warning: "#f78c00",
-    danger: "#e74c3c",
-    dark: "#1a1a1a",
-    light: "#f8f9fa",
-  };
+const colorMap = {
+  primary: "#A67C52",
+  secondary: "#0A1F3D",
+  success: "#059669",
+  warning: "#F59E0B",
+  danger: "#DC2626",
+  dark: "#0A1F3D",
+  light: "#F9FAFB",
+};
 
   const sizeMap = {
     small: { width: "24px", fontSize: "0.7rem" },

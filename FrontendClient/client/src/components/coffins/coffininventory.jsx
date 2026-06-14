@@ -5,7 +5,7 @@ import {
   ListGroup, ListGroupItem, Alert, Carousel, InputGroup,
   Table, Container
 } from 'react-bootstrap';
-import api from '../../api/client';
+import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 import {
   Search,

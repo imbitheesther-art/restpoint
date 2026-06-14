@@ -1,6 +1,6 @@
 // components/InvoiceDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import api from '../../api/client';
+import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 import { safeMap, hasData, safeNumber } from '../../utils/safeRender';
 import DeceasedFinancialTable from './deceasedFainancialTable';

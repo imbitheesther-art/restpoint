@@ -1,4 +1,4 @@
-import api from '../api/client';
+import api from '../api/axios';
 import { ENDPOINTS } from '../api/endpoints';
 
 export const userService = {
@@ -23,7 +23,7 @@ export const userService = {
   },
 
   registerUser: async (userData) => {
-    const response = await api.post(`${ENDPOINTS.USERS.LIST}/register`, userData);
+    const response = await api.post(ENDPOINTS.USERS.REGISTER, userData);
     return response.data;
   },
 
@@ -33,12 +33,12 @@ export const userService = {
   },
 
   updateUserStatus: async (id, status) => {
-    const response = await api.put(`${ENDPOINTS.USERS.LIST}/${id}/status`, { status });
+    const response = await api.put(ENDPOINTS.USERS.STATUS(id), { status });
     return response.data;
   },
 
   updateUserPassword: async (id, password) => {
-    const response = await api.put(`${ENDPOINTS.USERS.LIST}/${id}/password`, { password });
+    const response = await api.put(ENDPOINTS.USERS.PASSWORD(id), { password });
     return response.data;
   }
 };
