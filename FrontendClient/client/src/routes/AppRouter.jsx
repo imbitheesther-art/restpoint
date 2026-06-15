@@ -28,7 +28,7 @@ import UploadProduct from '../components/marketplace/UploadProduct';
 // Import Settings page
 import SettingsPage from '../components/settings/SettingsPage';
 import ReleaseFormPage from '../components/releaseform/ReleaseFormPage';
-import UserManagement from '../components/user/UserManagement';
+import UserManagement from '../components/user/users';
 import PublicMemorialPage from '../components/memorial/PublicMemorialPage';
 
 // Import Calendar, EDocuments, and Reports components

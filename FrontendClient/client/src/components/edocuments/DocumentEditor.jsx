@@ -32,12 +32,14 @@ import * as fabric from "fabric";
 
 
 
+
+
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
-// ============================================
+// ==
 // PRODUCTION CONFIGURATION
-// ============================================
+// ==
 
 const CONFIG = {
   API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v2/restpoint',
@@ -51,9 +53,9 @@ const CONFIG = {
   ISOLATION_LEVEL: 'strict' // strict = verify tenant on every API call
 };
 
-// ============================================
+// ==
 // UTILITY FUNCTIONS
-// ============================================
+// ==
 
 const dataURItoBlob = (dataURI) => {
   try {
@@ -94,9 +96,9 @@ const getTenantInfo = () => {
   };
 };
 
-// ============================================
+// ==
 // MAIN COMPONENT
-// ============================================
+// ==
 
 const DocumentEditor = ({
   document: initialDocument,
@@ -148,9 +150,9 @@ const DocumentEditor = ({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  // ============================================
+  // ==
   // SECURITY & INITIALIZATION
-  // ============================================
+  // ==
 
   // Verify tenant on mount
   useEffect(() => {
@@ -167,9 +169,9 @@ const DocumentEditor = ({
     }
   }, [tenantInfo]);
 
-  // ============================================
+  // ==
   // HISTORY MANAGEMENT
-  // ============================================
+  // ==
 
   const saveHistoryState = useCallback((fabricCanvas) => {
     if (!fabricCanvas || fabricCanvas._loadingState) return;
@@ -252,9 +254,9 @@ const DocumentEditor = ({
     }
   }, [canvas]);
 
-  // ============================================
+  // ==
   // CANVAS INITIALIZATION
-  // ============================================
+  // ==
 
   useEffect(() => {
     if (!canvasRef.current || !tenantInfo.slug || securityStatus !== 'verified') return;
@@ -357,9 +359,9 @@ const DocumentEditor = ({
     }
   }, [tenantInfo, securityStatus, saveHistoryState]);
 
-  // ============================================
+  // ==
   // BRUSH CONFIGURATION
-  // ============================================
+  // ==
 
   useEffect(() => {
     if (!canvas) return;
@@ -383,9 +385,9 @@ const DocumentEditor = ({
     }
   }, [activeTool, brushColor, brushSize, canvas]);
 
-  // ============================================
+  // ==
   // KEYBOARD SHORTCUTS
-  // ============================================
+  // ==
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -415,9 +417,9 @@ const DocumentEditor = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canvas, handleUndo, handleRedo]);
 
-  // ============================================
+  // ==
   // AUTO-SAVE MECHANISM
-  // ============================================
+  // ==
 
   const autoSaveDocument = useCallback(async () => {
     if (!canvas || !isDirty || isSaving || !tenantInfo.slug) return;
@@ -476,9 +478,9 @@ const DocumentEditor = ({
     };
   }, [autoSaveDocument]);
 
-  // ============================================
+  // ==
   // BACKGROUND LOADING
-  // ============================================
+  // ==
 
   const loadBackground = async (fabricCanvas) => {
     const file = fileRef.current;
@@ -606,9 +608,9 @@ const DocumentEditor = ({
     });
   };
 
-  // ============================================
+  // ==
   // CANVAS OPERATIONS
-  // ============================================
+  // ==
 
   const addTextBox = useCallback(() => {
     if (!canvas) return;
@@ -739,9 +741,9 @@ const DocumentEditor = ({
     }
   }, [canvas, saveHistoryState]);
 
-  // ============================================
+  // ==
   // SIGNATURE HANDLING
-  // ============================================
+  // ==
 
   const signatureStart = useCallback((e) => {
     if (e.type === 'touchstart') e.preventDefault();
@@ -850,9 +852,9 @@ const DocumentEditor = ({
     }
   }, [canvas, signatureData, saveHistoryState]);
 
-  // ============================================
+  // ==
   // DOCUMENT OPERATIONS
-  // ============================================
+  // ==
 
   const saveDocument = useCallback(async () => {
     if (!canvas || !tenantInfo.slug) return;
@@ -984,9 +986,9 @@ const DocumentEditor = ({
     }
   }, [canvas, documentTitle]);
 
-  // ============================================
+  // ==
   // RENDER
-  // ============================================
+  // ==
 
   const colorPresets = [
     '#000000', '#FFFFFF', '#D97706', '#DC2626', '#2563EB', '#16A34A',
@@ -1316,9 +1318,9 @@ const DocumentEditor = ({
   );
 };
 
-// ============================================
+// ==
 // STYLING (Production-Grade)
-// ============================================
+// ==
 
 const editorContainerStyle = {
   position: 'fixed',
@@ -1530,3 +1532,4 @@ const closeModalButtonStyle = {
 };
 
 export default DocumentEditor;
+

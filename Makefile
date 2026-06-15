@@ -144,6 +144,7 @@ shell:
 # ============================================
 # DATABASE
 # ============================================
+
 db-migrate:
 	@echo "$(GREEN)Running database migrations...$(RESET)"
 	@node scripts/migrate.js

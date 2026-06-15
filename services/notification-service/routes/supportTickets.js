@@ -13,23 +13,6 @@ router.post('/api/v2/restpoint/support/tickets', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Subject and message are required' });
     }
 
-    // Store ticket in tenant_tracking database
-    await safeMasterQuery(`
-      CREATE TABLE IF NOT EXISTS tenant_tracking.support_tickets (
-        ticket_id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_slug VARCHAR(255),
-        tenant_name VARCHAR(255),
-        user_email VARCHAR(255),
-        user_name VARCHAR(255),
-        type ENUM('bug', 'feature', 'help', 'other') DEFAULT 'help',
-        subject VARCHAR(500) NOT NULL,
-        message TEXT NOT NULL,
-        status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
     const [result] = await safeMasterQuery(
       `INSERT INTO tenant_tracking.support_tickets (tenant_slug, tenant_name, user_email, user_name, type, subject, message)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -67,22 +50,6 @@ router.post('/api/v2/restpoint/support/tickets', async (req, res) => {
 // Get support tickets (for admin dashboard)
 router.get('/api/v2/restpoint/support/tickets', async (req, res) => {
   try {
-    await safeMasterQuery(`
-      CREATE TABLE IF NOT EXISTS tenant_tracking.support_tickets (
-        ticket_id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_slug VARCHAR(255),
-        tenant_name VARCHAR(255),
-        user_email VARCHAR(255),
-        user_name VARCHAR(255),
-        type ENUM('bug', 'feature', 'help', 'other') DEFAULT 'help',
-        subject VARCHAR(500) NOT NULL,
-        message TEXT NOT NULL,
-        status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
     const [tickets] = await safeMasterQuery(
       'SELECT * FROM tenant_tracking.support_tickets ORDER BY created_at DESC LIMIT 100'
     );
