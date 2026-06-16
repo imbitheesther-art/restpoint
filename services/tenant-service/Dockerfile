@@ -6,9 +6,15 @@ RUN apk add --no-cache python3 make g++
 
 WORKDIR /usr/src/app
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+# Copy workspace-level config files
+COPY package.json tsconfig.json tsconfig.base.json ./
+
+# Copy all workspace package.json files for proper resolution
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY services/tenant-service/package.json ./services/tenant-service/
 
 # Install dependencies (including devDependencies for build)
 RUN npm install --legacy-peer-deps
@@ -16,8 +22,8 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript (only this service and its dependencies)
+RUN cd services/tenant-service && npx tsc
 
 # Production stage - Use same Node version as builder
 FROM node:20-alpine AS production
@@ -36,9 +42,7 @@ COPY package*.json ./
 RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Copy built application from builder stage
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/scripts ./scripts
-COPY --from=builder /usr/src/app/config ./config
+COPY --from=builder /usr/src/app/services/tenant-service/dist ./dist
 
 # Create uploads directory
 RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
