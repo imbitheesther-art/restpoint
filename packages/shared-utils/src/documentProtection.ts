@@ -23,6 +23,8 @@ const ALLOWED_DIRECTORIES = [
   'autopsy_reports',
   'invoices',
   'receipts',
+  'coffins',
+  
   'deceased_docs',
   'permits',
   'other',

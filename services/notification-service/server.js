@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const axios = require('axios');
 const { safeMasterQuery } = require('../../shared/dist/dbConfig');
 const { validateTenantActive } = require('../../shared/dist/tenancy');
 const notificationsController = require('./controllers/notifications');
@@ -8,6 +9,7 @@ const supportTicketsRouter = require('./routes/supportTickets');
 
 const app = express();
 const PORT = process.env.PORT || 8111;
+const SOCKETIO_URL = process.env.SOCKETIO_SERVICE_URL || 'http://localhost:8010';
 
 app.use(cors());
 app.use(helmet());
@@ -36,7 +38,15 @@ app.use(async (req, res, next) => {
         }
       } catch (err) {
         console.error('[TenantAuth] Error validating tenant:', err.message);
-        // Allow request to proceed - some services handle their own auth
+        // Allow request to proceed - use tenantSlug to derive db_name
+        try {
+          const tenants = await safeMasterQuery(`SELECT db_name FROM tenants WHERE tenant_slug = ?`, [tenantSlug]);
+          if (tenants && tenants.length > 0 && tenants[0].db_name) {
+            req.tenantDbName = tenants[0].db_name;
+          }
+        } catch (dbErr) {
+          console.error('[TenantAuth] Fallback DB lookup failed:', dbErr.message);
+        }
       }
     }
     
@@ -86,12 +96,25 @@ app.delete('/api/v1/restpoint/notification/notifications/:id', async (req, res) 
 
 // Create notification endpoint (for real-time notifications from other services)
 app.post('/api/v1/restpoint/notification/notifications', async (req, res) => {
+  // If tenantDbName not set from middleware, derive it from tenant slug
+  if (!req.tenantDbName) {
+    const tenantSlug = req.headers['x-tenant-slug'];
+    if (tenantSlug) {
+      try {
+        const tenants = await safeMasterQuery(`SELECT db_name FROM tenants WHERE tenant_slug = ?`, [tenantSlug]);
+        if (tenants && tenants.length > 0 && tenants[0].db_name) {
+          req.tenantDbName = tenants[0].db_name;
+        }
+      } catch (err) {
+        console.error('[CreateNotification] DB lookup error:', err.message);
+      }
+    }
+  }
   return notificationsController.createNotification(req, res);
 });
 
 // Subscribe endpoint placeholder (store subscription in tenant DB or push service)
 app.post('/api/v1/restpoint/notification/subscribe', async (req, res) => {
-  // In a full implementation we'd persist the subscription and send push messages
   console.log('Received push subscription (placeholder)');
   return res.status(200).json({ success: true, message: 'Subscribed (placeholder)' });
 });
@@ -101,6 +124,7 @@ app.use(supportTicketsRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`notification-service is running on port ${PORT}`);
+  
   // Start background notification job for all tenants (runs every 60s)
   setInterval(async () => {
     try {

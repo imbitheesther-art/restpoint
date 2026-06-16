@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
+import { clearTenantCache } from '../../../packages/shared-services/src/redisService';
 
 // Server connection (same as Tenant.model)
 let serverConnection: mysql.Connection | null = null;
@@ -176,6 +177,14 @@ export class SystemAdminController {
             const { tenantId } = req.params;
             const conn = await getServerConnection();
 
+            // Get tenant slug before updating
+            const [existingTenants] = await conn.query(
+                'SELECT tenant_slug, db_name FROM tenant_tracking.tenants WHERE tenant_id = ?',
+                [tenantId]
+            );
+            const tenantInfo = Array.isArray(existingTenants) && existingTenants.length > 0 ? (existingTenants[0] as any) : null;
+            const tenantSlug = tenantInfo?.tenant_slug || `tenant_${tenantId}`;
+
             // Update tenant status
             await conn.query(
                 `UPDATE tenant_tracking.tenants 
@@ -185,26 +194,28 @@ export class SystemAdminController {
             );
 
             // Deactivate all users in the tenant database
-            const [tenants] = await conn.query(
-                'SELECT db_name FROM tenant_tracking.tenants WHERE tenant_id = ?',
-                [tenantId]
-            );
-
-            if (Array.isArray(tenants) && tenants.length > 0) {
-                const tenant = tenants[0] as any;
+            if (tenantInfo?.db_name) {
                 try {
                     const tenantConn = await mysql.createConnection({
                         host: process.env.DB_HOST || 'localhost',
                         port: parseInt(process.env.DB_PORT || '3306'),
                         user: process.env.DB_USER || 'root',
                         password: process.env.DB_PASSWORD || '',
-                        database: tenant.db_name,
+                        database: tenantInfo.db_name,
                     });
                     await tenantConn.query('UPDATE users SET is_active = FALSE');
                     await tenantConn.end();
                 } catch (e) {
                     console.warn('Could not deactivate users:', e);
                 }
+            }
+
+            // Clear Redis cache for this tenant
+            try {
+                const cleared = await clearTenantCache(tenantSlug);
+                console.log(`[SystemAdmin] 🧹 Cleared ${cleared} Redis cache entries for suspended tenant: ${tenantSlug}`);
+            } catch (cacheErr) {
+                console.warn('[SystemAdmin] ⚠️ Could not clear Redis cache:', cacheErr);
             }
 
             res.json({
@@ -227,6 +238,13 @@ export class SystemAdminController {
             const { tenantId } = req.params;
             const conn = await getServerConnection();
 
+            // Get tenant slug before updating
+            const [existingTenants] = await conn.query(
+                'SELECT tenant_slug, db_name FROM tenant_tracking.tenants WHERE tenant_id = ?',
+                [tenantId]
+            );
+            const tenantInfo = Array.isArray(existingTenants) && existingTenants.length > 0 ? (existingTenants[0] as any) : null;
+
             // Update tenant status
             await conn.query(
                 `UPDATE tenant_tracking.tenants 
@@ -236,20 +254,14 @@ export class SystemAdminController {
             );
 
             // Reactivate all users in the tenant database
-            const [tenants] = await conn.query(
-                'SELECT db_name FROM tenant_tracking.tenants WHERE tenant_id = ?',
-                [tenantId]
-            );
-
-            if (Array.isArray(tenants) && tenants.length > 0) {
-                const tenant = tenants[0] as any;
+            if (tenantInfo?.db_name) {
                 try {
                     const tenantConn = await mysql.createConnection({
                         host: process.env.DB_HOST || 'localhost',
                         port: parseInt(process.env.DB_PORT || '3306'),
                         user: process.env.DB_USER || 'root',
                         password: process.env.DB_PASSWORD || '',
-                        database: tenant.db_name,
+                        database: tenantInfo.db_name,
                     });
                     await tenantConn.query('UPDATE users SET is_active = TRUE');
                     await tenantConn.end();
@@ -278,6 +290,14 @@ export class SystemAdminController {
             const { tenantId } = req.params;
             const conn = await getServerConnection();
 
+            // Get tenant slug before updating
+            const [existingTenants] = await conn.query(
+                'SELECT tenant_slug, db_name FROM tenant_tracking.tenants WHERE tenant_id = ?',
+                [tenantId]
+            );
+            const tenantInfo = Array.isArray(existingTenants) && existingTenants.length > 0 ? (existingTenants[0] as any) : null;
+            const tenantSlug = tenantInfo?.tenant_slug || `tenant_${tenantId}`;
+
             // Soft delete - mark as deleted
             await conn.query(
                 `UPDATE tenant_tracking.tenants 
@@ -287,26 +307,28 @@ export class SystemAdminController {
             );
 
             // Deactivate all users
-            const [tenants] = await conn.query(
-                'SELECT db_name FROM tenant_tracking.tenants WHERE tenant_id = ?',
-                [tenantId]
-            );
-
-            if (Array.isArray(tenants) && tenants.length > 0) {
-                const tenant = tenants[0] as any;
+            if (tenantInfo?.db_name) {
                 try {
                     const tenantConn = await mysql.createConnection({
                         host: process.env.DB_HOST || 'localhost',
                         port: parseInt(process.env.DB_PORT || '3306'),
                         user: process.env.DB_USER || 'root',
                         password: process.env.DB_PASSWORD || '',
-                        database: tenant.db_name,
+                        database: tenantInfo.db_name,
                     });
                     await tenantConn.query('UPDATE users SET is_active = FALSE');
                     await tenantConn.end();
                 } catch (e) {
                     console.warn('Could not deactivate users:', e);
                 }
+            }
+
+            // Clear ALL Redis cache for this tenant
+            try {
+                const cleared = await clearTenantCache(tenantSlug);
+                console.log(`[SystemAdmin] 🧹 Cleared ${cleared} Redis cache entries for deleted tenant: ${tenantSlug}`);
+            } catch (cacheErr) {
+                console.warn('[SystemAdmin] ⚠️ Could not clear Redis cache:', cacheErr);
             }
 
             res.json({

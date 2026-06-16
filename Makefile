@@ -22,7 +22,7 @@
 	portal-up portal-down portal-logs \
 	chemical-up chemical-down chemical-logs \
 	frontend-up frontend-down frontend-logs \
-	status help
+	status help battle-check
 
 # ============================================
 # GENERAL COMMANDS
@@ -241,14 +241,14 @@ notification-logs: ## Show notification-service logs
 # QR CODE SERVICE
 # ============================================
 
-# qrcode-up: ## Start qrcode-service only
-# 	docker compose up -d qrcode-service
+qrcode-up: ## Start qrcode-service only
+	docker compose up -d qrcode-service
 
-# qrcode-down: ## Stop qrcode-service
-# 	docker compose stop qrcode-service
+qrcode-down: ## Stop qrcode-service
+	docker compose stop qrcode-service
 
-# qrcode-logs: ## Show qrcode-service logs
-# 	docker compose logs -f qrcode-service
+qrcode-logs: ## Show qrcode-service logs
+	docker compose logs -f qrcode-service
 
 # ============================================
 # VISITORS SERVICE
@@ -280,14 +280,14 @@ bodycheckout-logs: ## Show bodycheckout-service logs
 # EXTRA SERVICES
 # ============================================
 
-# extra-up: ## Start extra-services only
-# 	docker compose up -d extra-services
+extra-up: ## Start extra-services only
+	docker compose up -d extra-services
 
-# extra-down: ## Stop extra-services
-# 	docker compose stop extra-services
+extra-down: ## Stop extra-services
+	docker compose stop extra-services
 
-# extra-logs: ## Show extra-services logs
-# 	docker compose logs -f extra-services
+extra-logs: ## Show extra-services logs
+	docker compose logs -f extra-services
 
 # ============================================
 # UPDATES SERVICE
@@ -369,6 +369,15 @@ status: ## Show detailed status of all services
 	@curl -s http://localhost:5105/health 2>/dev/null && echo "✅ Chemical Service (5105)" || echo "❌ Chemical Service (5105)"
 	@curl -s http://localhost:5111/health 2>/dev/null && echo "✅ Notification Service (5111)" || echo "❌ Notification Service (5111)"
 	@curl -s http://localhost:8082 2>/dev/null && echo "✅ Frontend (8082)" || echo "❌ Frontend (8082)"
+
+# ============================================
+# BATTLE IMAGES CHECK
+# ============================================
+
+battle-check: ## Check battle images
+	@echo "=== Battle Files ==="
+	@ls -la /opt/-WELT-TALLIS-SIASA-HUB-APPLICATION-/server/leaders-service/uploads/battles/ 2>/dev/null | wc -l || echo "Directory not found"
+	@echo "Total battle files found"
 
 # ============================================
 # HELP

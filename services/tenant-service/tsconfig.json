@@ -2,28 +2,32 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "../../",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "strictPropertyInitialization": false
+    "strict": false,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false
   },
   "include": [
-    "*.ts",
-    "src/**/*",
-    "config/**/*",
-    "controllers/**/*",
-    "middlewares/**/*",
-    "models/**/*",
-    "routes/**/*",
-    "services/**/*",
-    "types/**/*",
-    "utils/**/*",
-    "scripts/**/*",
-    "migrations/**/*"
+    "server.ts",
+    "routes/**/*.ts",
+    "controllers/**/*.ts",
+    "models/**/*.ts",
+    "services/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "scripts/**/*.ts",
+    "types/**/*.ts",
+    "migrations/**/*.ts",
+    "../../shared/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", "uploads"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
 }

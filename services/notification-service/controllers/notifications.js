@@ -1,14 +1,30 @@
+const axios = require('axios');
 const { safeTenantQuery, safeMasterQuery } = require('../../../shared/dbConfig');
-const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps'); // Kenya timezone helper
+const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps');
+
+const SOCKETIO_URL = process.env.SOCKETIO_SERVICE_URL || 'http://localhost:8010';
+
+/**
+ * Emit a real-time event via SocketIO service REST endpoint
+ */
+async function emitSocketEvent(tenantSlug, event, data) {
+  try {
+    await axios.post(`${SOCKETIO_URL}/emit/${event}`, {
+      tenantSlug,
+      data: { ...data, timestamp: new Date().toISOString() }
+    }, { timeout: 2000 });
+  } catch (error) {
+    // SocketIO service may not be running - silently log
+    console.warn(`⚠️ Could not emit socket event ${event}: ${error.message}`);
+  }
+}
 
 async function handleDeceasedNotifications(tenantDbName, io = null) {
   console.log({ message: `📢 Running notifications for tenant DB: ${tenantDbName}` });
 
   try {
-    // Only process deceased records created/updated in the last cycle
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
     
-    // Fetch recently created or updated deceased records
     const recentDeceased = await safeTenantQuery(tenantDbName, 
       `SELECT * FROM deceased WHERE created_at >= ? OR updated_at >= ?`,
       [oneHourAgo, oneHourAgo]
@@ -30,7 +46,6 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
 
       const deceasedDetails = `Name: ${full_name}, DOB: ${date_of_birth || 'N/A'}, Status: ${status || 'N/A'}, Mortuary Charge: KES ${total_mortuary_charge || 0}`;
 
-      // Only create new_body notification if recently created (within last hour)
       if (created_at && new Date(created_at) >= new Date(oneHourAgo)) {
         await insertNotification(tenantDbName,
           deceased_id,
@@ -40,7 +55,7 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
         );
       }
 
-      // Check Autopsy Record (only if not already notified)
+      // Check Autopsy Record
       const existingAutopsy = await safeTenantQuery(tenantDbName,
         `SELECT * FROM notifications WHERE deceased_id = ? AND type = 'autopsy_done'`,
         [deceased_id],
@@ -61,7 +76,7 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
         }
       }
 
-      // Check Dispatch Record (only if not already notified)
+      // Check Dispatch Record
       const existingDispatch = await safeTenantQuery(tenantDbName,
         `SELECT * FROM notifications WHERE deceased_id = ? AND type = 'dispatch_created'`,
         [deceased_id],
@@ -83,10 +98,41 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
         }
       }
 
+      // ====== BILLING ALERT CHECK ======
+      // Check if deceased has high outstanding charges that need attention
+      if (total_mortuary_charge > 0) {
+        const existingBillingAlert = await safeTenantQuery(tenantDbName,
+          `SELECT * FROM notifications WHERE deceased_id = ? AND type IN ('billing-threshold-exceeded', 'billing-critical') ORDER BY created_at DESC LIMIT 1`,
+          [deceased_id]
+        );
+
+        const hasHighAlert = existingBillingAlert.length > 0;
+
+        if (total_mortuary_charge > 100000 && !hasHighAlert) {
+          const alertMsg = `🚨 CRITICAL BILLING: ${full_name} (ID #${deceased_id}) has outstanding charges of KES ${total_mortuary_charge}. Immediate attention required!`;
+          await insertNotification(tenantDbName, deceased_id, 'billing-critical', alertMsg, io);
+          await emitSocketEvent(tenantDbName, 'billing-critical', {
+            deceased_id,
+            full_name,
+            total_mortuary_charge,
+            message: alertMsg
+          });
+        } else if (total_mortuary_charge > 50000 && !hasHighAlert) {
+          const alertMsg = `⚠️ Billing Alert: ${full_name} (ID #${deceased_id}) has outstanding charges of KES ${total_mortuary_charge}`;
+          await insertNotification(tenantDbName, deceased_id, 'billing-threshold-exceeded', alertMsg, io);
+          await emitSocketEvent(tenantDbName, 'billing-threshold-exceeded', {
+            deceased_id,
+            full_name,
+            total_mortuary_charge,
+            message: alertMsg
+          });
+        }
+      }
+
       console.log(`---------------------------------------`);
     }
 
-    // Notify balance for deceased with outstanding balances (only if not already notified recently)
+    // Notify balance for deceased with outstanding balances
     const balanceDeceased = await safeTenantQuery(tenantDbName, `
       SELECT d.deceased_id, d.full_name, d.total_mortuary_charge, d.date_of_birth, d.status
       FROM deceased d
@@ -116,7 +162,6 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
 }
 
 async function insertNotification(tenantDbName, deceased_id, type, message, io = null) {
-  // Check existing notification of the same type for the deceased to avoid duplicates
   const existing = await safeTenantQuery(tenantDbName,
     `SELECT * FROM notifications WHERE deceased_id = ? AND type = ?`,
     [deceased_id, type],
@@ -127,7 +172,6 @@ async function insertNotification(tenantDbName, deceased_id, type, message, io =
     return null;
   }
 
-  // Use your external Kenya timezone timestamp utility
   const formattedDate = getKenyaTimeISO();
 
   const result = await safeTenantQuery(tenantDbName,
@@ -218,7 +262,6 @@ async function getAllNotifications(req, res) {
   }
 }
 
-// ====================== MARK AS READ ======================
 async function markNotificationAsRead(req, res) {
   try {
     const { id } = req.params;
@@ -242,7 +285,6 @@ async function markNotificationAsRead(req, res) {
   }
 }
 
-// ====================== MARK ALL AS READ ======================
 async function markAllNotificationsAsRead(req, res) {
   try {
     const tenantDb = req.tenantDbName || req.headers['x-tenant-db'];
@@ -261,7 +303,6 @@ async function markAllNotificationsAsRead(req, res) {
   }
 }
 
-// ====================== DELETE NOTIFICATION ======================
 async function deleteNotification(req, res) {
   try {
     const { id } = req.params;

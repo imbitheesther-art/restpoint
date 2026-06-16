@@ -1,4 +1,11 @@
-export { getKenyaTimeISO, getKenyaTimeFormatted } from './timestamps';
+export { 
+  getKenyaTimeISO, 
+  getKenyaTimeFormatted,
+  getKenyaDateTime,
+  getKenyaTimeMs,
+  toKenyaTime,
+  getKenyaDate,
+} from './timestamps';
 export {
   encrypt,
   decrypt,
