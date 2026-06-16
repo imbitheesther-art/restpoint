@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ============================================
   # DATABASE SERVICES
@@ -226,9 +224,6 @@ services:
     restart: unless-stopped
     ports:
       - "8006:8006"
-    environment:
-      NODE_ENV: production
-      PORT: 8006
     environment:
       NODE_ENV: production
       PORT: 8006
