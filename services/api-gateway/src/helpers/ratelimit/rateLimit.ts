@@ -89,7 +89,7 @@ export const createRateLimiter = ({
   const options: any = {
     store: new RedisStore({
       sendCommand: async (...args: string[]): Promise<any> => {
-        return await redis.call(...args);
+        return await (redis.call as any)(...args);
       },
       prefix: 'rl:', // Rate limiting prefix for Redis keys
     }),
