@@ -37,3 +37,7 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
         INDEX idx_email (email),
         INDEX idx_organization_name (organization_name),
         INDEX idx_subscription_status (subscription_status)
+      );
+    `,
+  },
+];

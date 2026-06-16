@@ -22,10 +22,7 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Build TypeScript (only this service and its dependencies)
-RUN cd services/tenant-service && npx tsc
-
-# Production stage - Use same Node version as builder
+# Production stage
 FROM node:20-alpine AS production
 
 # Install runtime dependencies
@@ -37,12 +34,22 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /usr/src/app
 
-# Copy package files and install production dependencies only
-COPY package*.json ./
+# Copy workspace-level config files
+COPY package.json tsconfig.json tsconfig.base.json ./
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY services/tenant-service/package.json ./services/tenant-service/
+
+# Install production dependencies
 RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
-# Copy built application from builder stage
-COPY --from=builder /usr/src/app/services/tenant-service/dist ./dist
+# Copy source from builder
+COPY --from=builder /usr/src/app /usr/src/app
+
+# Install tsx for running TypeScript directly
+RUN npm install -g tsx
 
 # Create uploads directory
 RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
@@ -63,4 +70,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start application with dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/server.js"]
+CMD ["tsx", "services/tenant-service/server.ts"]
