@@ -1,5 +1,7 @@
-// RestPoint API Gateway - Pure JavaScript using require()
-// No TypeScript compilation needed - runs directly with: node server.js
+#!/usr/bin/env node
+// RestPoint API Gateway — Pure Node.js (no TypeScript compilation needed)
+// Run directly: node server.js
+
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
@@ -13,55 +15,52 @@ const APP_NAME = 'restpoint-gateway';
 const APP_VERSION = '1.0.0';
 
 const Logger = {
-  info: (message, meta) => console.log('[INFO] ' + message, meta || ''),
-  error: (message, meta) => console.error('[ERROR] ' + message, meta || ''),
-  warn: (message, meta) => console.warn('[WARN] ' + message, meta || ''),
-  debug: (message, meta) => console.debug('[DEBUG] ' + message, meta || '')
+  info: (m, d) => { if (d) console.log('[INFO] ' + m, d); else console.log('[INFO] ' + m); },
+  error: (m, d) => { if (d) console.error('[ERROR] ' + m, d); else console.error('[ERROR] ' + m); },
+  warn: (m, d) => { if (d) console.warn('[WARN] ' + m, d); else console.warn('[WARN] ' + m); },
+  debug: (m, d) => { if (d) console.debug('[DEBUG] ' + m, d); else console.debug('[DEBUG] ' + m); },
 };
 
-// Error handlers
-process.on('uncaughtException', (error) => {
-  Logger.error('Uncaught Exception', { message: error.message, stack: error.stack });
-  const connectionErrors = ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET'];
-  if (!connectionErrors.includes(error.code)) {
+process.on('uncaughtException', function(e) {
+  Logger.error('Uncaught Exception', { message: e.message, stack: e.stack });
+  if ([ 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET' ].indexOf(e.code) < 0) {
     process.exit(1);
   }
 });
 
-process.on('unhandledRejection', (reason) => {
-  Logger.error('Unhandled Rejection', { message: reason?.message || reason });
+process.on('unhandledRejection', function(r) {
+  Logger.error('Unhandled Rejection', { message: (r && r.message) || r });
 });
 
-// Environment helper
-const env = (key, fallback) => process.env[key] || fallback;
+function env(key, fallback) {
+  var val = process.env[key];
+  return val || fallback;
+}
 
-const PORT = Number(process.env.PORT) || 5000;
-const HOST = process.env.HOST || '0.0.0.0';
+var PORT = Number(process.env.PORT) || 5000;
+var HOST = process.env.HOST || '0.0.0.0';
 
-// Service URLs
-const SVC = {
-  auth: env('AUTH_SERVICE_URL', 'http://localhost:5001'),
-  users: env('USERS_SERVICE_URL', 'http://localhost:5001'),
-  marketplace: env('MARKETPLACE_SERVICE_URL', 'http://localhost:5004'),
-  mpesa: env('MPESA_SERVICE_URL', 'http://localhost:5011'),
-  portal: env('PORTAL_SERVICE_URL', 'http://localhost:5019'),
-  tenant: env('TENANT_SERVICE_URL', 'http://localhost:5002'),
-  deceased: env('DECEASED_SERVICE_URL', 'http://localhost:5003'),
-  embalming: env('EMBALMING_SERVICE_URL', 'http://localhost:5105'),
-  invoices: env('INVOICES_SERVICE_URL', 'http://localhost:5005'),
-  coffin: env('COFFIN_SERVICE_URL', 'http://localhost:5006'),
-  visitors: env('VISITORS_SERVICE_URL', 'http://localhost:5014'),
-  notification: env('NOTIFICATION_SERVICE_URL', 'http://localhost:5111'),
-  documents: env('DOCUMENTS_SERVICE_URL', 'http://localhost:5007'),
-  analytics: env('ANALYTICS_SERVICE_URL', 'http://localhost:5009'),
-  bodycheckout: env('BODYCHECKOUT_SERVICE_URL', 'http://localhost:5015'),
-  edocuments: env('EDOCUMENTS_SERVICE_URL', 'http://localhost:5008'),
-  calendar: env('CALENDAR_SERVICE_URL', 'http://localhost:5010'),
-  chemicals: env('CHEMICAL_SERVICE_URL', 'http://localhost:5105'),
-};
+var SVC = {};
+SVC.auth = env('AUTH_SERVICE_URL', 'http://localhost:5001');
+SVC.users = env('USERS_SERVICE_URL', 'http://localhost:5001');
+SVC.marketplace = env('MARKETPLACE_SERVICE_URL', 'http://localhost:5004');
+SVC.mpesa = env('MPESA_SERVICE_URL', 'http://localhost:5011');
+SVC.portal = env('PORTAL_SERVICE_URL', 'http://localhost:5019');
+SVC.tenant = env('TENANT_SERVICE_URL', 'http://localhost:5002');
+SVC.deceased = env('DECEASED_SERVICE_URL', 'http://localhost:5003');
+SVC.embalming = env('EMBALMING_SERVICE_URL', 'http://localhost:5105');
+SVC.invoices = env('INVOICES_SERVICE_URL', 'http://localhost:5005');
+SVC.coffin = env('COFFIN_SERVICE_URL', 'http://localhost:5006');
+SVC.visitors = env('VISITORS_SERVICE_URL', 'http://localhost:5014');
+SVC.notification = env('NOTIFICATION_SERVICE_URL', 'http://localhost:5111');
+SVC.documents = env('DOCUMENTS_SERVICE_URL', 'http://localhost:5007');
+SVC.analytics = env('ANALYTICS_SERVICE_URL', 'http://localhost:5009');
+SVC.bodycheckout = env('BODYCHECKOUT_SERVICE_URL', 'http://localhost:5015');
+SVC.edocuments = env('EDOCUMENTS_SERVICE_URL', 'http://localhost:5008');
+SVC.calendar = env('CALENDAR_SERVICE_URL', 'http://localhost:5010');
+SVC.chemicals = env('CHEMICAL_SERVICE_URL', 'http://localhost:5105');
 
-// Rate limiters
-const apiLimiter = rateLimit({
+var apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,
   message: { success: false, message: 'Too many requests' },
@@ -69,88 +68,80 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const authLimiter = rateLimit({
+var isProd = env('NODE_ENV', 'development') === 'production';
+var authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: env('NODE_ENV', 'development') === 'production' ? 10 : 100,
+  max: isProd ? 10 : 100,
   message: { success: false, message: 'Too many auth attempts' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-const app = express();
+var app = express();
 
-// CORS
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || origin.startsWith('http://localhost:')) return callback(null, true);
-    const allowed = [
-      'http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080',
-      'https://restpoint.co.ke', 'https://app.restpoint.co.ke', 'https://api.restpoint.co.ke',
+  origin: function(origin, cb) {
+    if (!origin || origin.indexOf('localhost') >= 0) return cb(null, true);
+    var allowed = [
+      'https://restpoint.co.ke',
+      'https://app.restpoint.co.ke',
+      'https://api.restpoint.co.ke',
     ];
-    if (allowed.indexOf(origin) >= 0) return callback(null, true);
-    return callback(new Error('Origin not permitted: ' + origin));
+    if (allowed.indexOf(origin) >= 0) return cb(null, true);
+    return cb(new Error('Origin not allowed: ' + origin));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug', 'x-tenant-id'],
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','x-tenant-slug','x-tenant-id'],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
 app.use('/api/v1/', apiLimiter);
 
-// Auth-specific rate limit
-app.use((req, res, next) => {
+app.use(function(req, res, next) {
   if (req.originalUrl.match(/\/auth\/(login|register|refresh)/)) {
     return authLimiter(req, res, next);
   }
   next();
 });
 
-// ============================================
-// PROXY - Uses Node's native http module
-// ============================================
-
-function createProxy(targetUrl) {
-  const parsedUrl = new URL(targetUrl);
-
-  return (req, res) => {
-    const path = req.originalUrl || req.url || '/';
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port,
+// ===== PROXY =====
+function createProxy(target) {
+  var parts = new URL(target);
+  return function(req, res) {
+    var path = req.originalUrl || req.url || '/';
+    var opts = {
+      hostname: parts.hostname,
+      port: parts.port,
       path: path,
       method: req.method,
-      headers: Object.assign({}, req.headers, { host: parsedUrl.host }),
+      headers: Object.assign({}, req.headers, { host: parts.host }),
     };
+    delete opts.headers['connection'];
 
-    // Remove connection header
-    delete options.headers['connection'];
-
-    const proxyReq = http.request(options, (proxyRes) => {
+    var proxy = http.request(opts, function(proxyRes) {
       res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
     });
 
-    proxyReq.on('error', (err) => {
-      Logger.error('Proxy error: ' + targetUrl + ' - ' + err.message);
+    proxy.on('error', function(err) {
+      Logger.error('Proxy error: ' + target + ' - ' + err.message);
       if (!res.headersSent) {
-        res.status(503).json({ success: false, message: 'Service unavailable', service: targetUrl });
+        res.status(503).json({ success: false, message: 'Service unavailable' });
       }
     });
 
     if (req.body && Object.keys(req.body).length > 0) {
-      proxyReq.write(JSON.stringify(req.body));
+      proxy.write(JSON.stringify(req.body));
     }
-
-    proxyReq.end();
+    proxy.end();
   };
 }
 
-// Register proxy routes
-const proxyRoutes = [
+// Route config: [path, serviceKey]
+var routes = [
   ['/api/v1/restpoint/auth', 'auth'],
   ['/api/v1/restpoint/users', 'users'],
   ['/api/v1/users', 'users'],
@@ -180,40 +171,40 @@ const proxyRoutes = [
   ['/api/v1/edocuments', 'edocuments'],
 ];
 
-proxyRoutes.forEach(([route, serviceKey]) => {
-  app.use(route, createProxy(SVC[serviceKey]));
-});
+for (var i = 0; i < routes.length; i++) {
+  app.use(routes[i][0], createProxy(SVC[routes[i][1]]));
+}
 
 // Health
-app.get('/api/v1/health', (req, res) => {
+app.get('/api/v1/health', function(req, res) {
   res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now(), services: Object.keys(SVC) });
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', function(req, res) {
   res.json({ status: 'ok', service: APP_NAME, version: APP_VERSION, port: PORT });
 });
 
 // 404
-app.use((req, res) => {
+app.use(function(req, res) {
   res.status(404).json({ success: false, message: 'Cannot ' + req.method + ' ' + req.originalUrl });
 });
 
-// Global error
-app.use((err, req, res, next) => {
+// Error handler
+app.use(function(err, req, res, next) {
   Logger.error('Internal: ' + err.message, { stack: err.stack });
   res.status(500).json({ success: false, message: 'Internal Server Error' });
 });
 
-// Start server
-const server = app.listen(PORT, HOST, () => {
+// Start
+var server = app.listen(PORT, HOST, function() {
   Logger.info(APP_NAME + ' running on http://' + HOST + ':' + PORT);
   Logger.info('Proxying ' + Object.keys(SVC).length + ' services');
 });
 
-const shutdown = () => {
+function shutdown() {
   Logger.info('Shutting down...');
-  server.close(() => process.exit(0));
-};
+  server.close(function() { process.exit(0); });
+}
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

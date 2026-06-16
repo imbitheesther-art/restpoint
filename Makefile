@@ -64,7 +64,8 @@ endef
 	docker-up docker-down docker-rebuild docker-logs docker-clean \
 	db-migrate db-seed db-reset deploy health status \
 	gateway auth tenant deceased marketplace invoice coffin documents edocuments analytics \
-	calender mpesa notification qrcode socketio visitors bodycheckout extra updates call portal chemical frontend
+	calender mpesa notification qrcode socketio visitors bodycheckout extra updates call portal chemical frontend \
+	setup-env setup-node
 
 # ============================================
 # DEFAULT TARGET
@@ -86,6 +87,8 @@ help:
 	@echo "  make help            Show this help"
 	@echo "  make install         Install all dependencies"
 	@echo "  make setup           Full setup (install + build)"
+	@echo "  make setup-env       Smart setup (Node.js check/upgrade + deps + build)"
+	@echo "  make setup-node      Check and upgrade Node.js to v22.x"
 	@echo "  make build           Build all services"
 	@echo "  make rebuild         Clean rebuild all services"
 	@echo "  make clean           Remove node_modules and dist"
@@ -137,6 +140,27 @@ install:
 
 setup: install build
 	@echo "$(GREEN)✓ Setup complete!$(RESET)"
+
+# ============================================
+# SMART SETUP (with Node.js auto-upgrade)
+# ============================================
+
+setup-env:
+	@echo "$(GREEN)Running smart setup (Node.js check + deps + build)...$(RESET)"
+	@if [ -f scripts/setup.sh ]; then \
+		bash scripts/setup.sh; \
+	else \
+		echo "$(RED)✗ scripts/setup.sh not found. Run 'make install' instead$(RESET)"; \
+		exit 1; \
+	fi
+
+setup-node:
+	@echo "$(GREEN)Checking/upgrading Node.js...$(RESET)"
+	@if [ -f scripts/setup.sh ]; then \
+		bash scripts/setup.sh --node; \
+	else \
+		echo "$(YELLOW)⚠ scripts/setup.sh not found. Upgrade Node.js manually to v22.x$(RESET)"; \
+	fi
 
 # ============================================
 # BUILD
