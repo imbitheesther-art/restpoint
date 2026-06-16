@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit';
-import type { Options, RateLimitRequestHandler } from 'express-rate-limit';
+import type { RateLimitRequestHandler } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import Redis from 'ioredis';
 import type { Request } from 'express';
@@ -86,10 +86,10 @@ export const createRateLimiter = ({
 }: IRateLimiterOptions): RateLimitRequestHandler => {
   const redis = getRedisClient();
   
-  const options: Options = {
+  const options: any = {
     store: new RedisStore({
       sendCommand: async (...args: string[]): Promise<any> => {
-        return await redis.call(...args as string[]);
+        return await redis.call(...args);
       },
       prefix: 'rl:', // Rate limiting prefix for Redis keys
     }),
@@ -335,8 +335,8 @@ export const extractUserFromRequest = (req: Request): IUserPayload | null => {
  * @param limiters - Array of rate limiter middleware functions
  * @returns Combined middleware
  */
-export const applyLimiters = (...limiters: RateLimitRequestHandler[]): RateLimitRequestHandler => {
-  return (req, res, next) => {
+export const applyLimiters = (...limiters: RateLimitRequestHandler[]) => {
+  return (req: any, res: any, next: any) => {
     let index = 0;
     
     const runNext = () => {
