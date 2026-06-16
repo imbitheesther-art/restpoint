@@ -2,14 +2,18 @@ FROM node:20-alpine AS builder
 
 WORKDIR /usr/src/app
 
-# Copy workspace-level tsconfig.base.json (referenced by tsconfig.json extends ../../tsconfig.base.json)
-COPY tsconfig.base.json /tsconfig.base.json
+# Copy workspace-level tsconfig.base.json
+COPY tsconfig.base.json ./
 
-COPY services/calender-service/package.json services/calender-service/tsconfig.json ./
+# Copy service package.json and tsconfig.json maintaining directory structure
+COPY services/calender-service/package.json services/calender-service/tsconfig.json services/calender-service/
+
+WORKDIR /usr/src/app/services/calender-service
 RUN npm install
 
 COPY services/calender-service/ .
-RUN npm run build
+
+RUN npx tsc
 
 FROM node:20-alpine AS production
 
@@ -17,10 +21,11 @@ RUN apk add --no-cache dumb-init
 
 WORKDIR /usr/src/app
 
-COPY --from=builder /usr/src/app/package.json ./
+COPY --from=builder /usr/src/app/services/calender-service/package.json services/calender-service/
+WORKDIR /usr/src/app/services/calender-service
 RUN npm install --omit=dev && npm cache clean --force
 
-COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/services/calender-service/dist ./dist
 
 EXPOSE 8104
 
