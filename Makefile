@@ -22,7 +22,7 @@
 	portal-up portal-down portal-logs \
 	chemical-up chemical-down chemical-logs \
 	frontend-up frontend-down frontend-logs \
-	status help battle-check
+	status help
 
 # ============================================
 # GENERAL COMMANDS
@@ -369,15 +369,6 @@ status: ## Show detailed status of all services
 	@curl -s http://localhost:5105/health 2>/dev/null && echo "✅ Chemical Service (5105)" || echo "❌ Chemical Service (5105)"
 	@curl -s http://localhost:5111/health 2>/dev/null && echo "✅ Notification Service (5111)" || echo "❌ Notification Service (5111)"
 	@curl -s http://localhost:8082 2>/dev/null && echo "✅ Frontend (8082)" || echo "❌ Frontend (8082)"
-
-# ============================================
-# BATTLE IMAGES CHECK
-# ============================================
-
-battle-check: ## Check battle images
-	@echo "=== Battle Files ==="
-	@ls -la /opt/-WELT-TALLIS-SIASA-HUB-APPLICATION-/server/leaders-service/uploads/battles/ 2>/dev/null | wc -l || echo "Directory not found"
-	@echo "Total battle files found"
 
 # ============================================
 # HELP
