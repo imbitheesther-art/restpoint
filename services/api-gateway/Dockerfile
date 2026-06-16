@@ -11,7 +11,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 # Copy package files
-COPY package.json yarn.lock ./
+COPY package.json ./
 COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Copy tsconfig
@@ -19,7 +19,7 @@ COPY tsconfig.json tsconfig.base.json ./
 COPY services/api-gateway/tsconfig.json ./services/api-gateway/
 
 # Install dependencies
-RUN yarn install --frozen-lockfile --production=false
+RUN yarn install --production=false
 
 # Copy source code
 COPY services/api-gateway/ ./services/api-gateway/
@@ -36,11 +36,11 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 # Copy production dependencies
-COPY package.json yarn.lock ./
+COPY package.json ./
 COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Install only production dependencies
-RUN yarn install --frozen-lockfile --production=true
+RUN yarn install --production=true
 
 # Copy built artifacts from builder
 COPY --from=builder /app/services/api-gateway/dist ./services/api-gateway/dist
