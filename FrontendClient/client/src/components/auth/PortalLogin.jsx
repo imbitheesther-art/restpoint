@@ -2,190 +2,138 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/authApi';
 
-const C = {
-  navy900: '#0A1F3D',
-  navy800: '#0F2847',
-  gold:    '#A67C52',
-  goldD:   '#8B6340',
-  emerald: '#059669',
-};
+const C = { navy900: '#0A1F3D', navy800: '#0F2847', gold: '#A67C52', goldD: '#8B6340', emerald: '#059669' };
 
-function PortalLoginPage() {
+export default function PortalLoginPage() {
   const navigate = useNavigate();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState({ type: '', text: '' });
 
-  const formatPhoneNumber = (value) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length === 0) return '';
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
-  };
+  const fmt = v => { const d = v.replace(/\D/g,''); if(d.length<=3)return d; if(d.length<=6)return `${d.slice(0,3)} ${d.slice(3)}`; return `${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6,10)}`; };
+  const raw = () => phone.replace(/\D/g,'');
 
-  const handlePhoneChange = (e) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhoneNumber(formatted);
-    if (message.text) setMessage({ type: '', text: '' });
-  };
-
-  const getRawPhoneDigits = () => phoneNumber.replace(/\D/g, '');
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-    const rawDigits = getRawPhoneDigits();
-    if (!rawDigits || rawDigits.length < 10) {
-      setMessage({ type: 'error', text: 'Please enter a valid 10-digit phone number' });
-      setIsLoading(false);
-      return;
-    }
+  const submit = async e => {
+    e.preventDefault(); setLoading(true); setMsg({type:'',text:''});
+    const r = raw();
+    if (!r || r.length<10) { setMsg({type:'error',text:'Enter a valid 10-digit phone number'}); setLoading(false); return; }
     try {
-      const data = await authApi.portalLogin({ phone: rawDigits });
-      if (data && data.success) {
-        localStorage.setItem('sessionToken', data.sessionToken || data.session_token);
+      const data = await authApi.portalLogin({ phone: r });
+      if (data?.success) {
+        localStorage.setItem('sessionToken', data.sessionToken||data.session_token);
         localStorage.setItem('tenantSlug', data.tenantSlug);
         localStorage.setItem('deceasedId', data.deceased?.deceased_id);
         navigate('/portal/dashboard');
-      } else {
-        setMessage({ type: 'error', text: data?.message || 'Login failed. Check your phone number.' });
-      }
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Unable to connect. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
+      } else setMsg({type:'error',text:data?.message||'Login failed'});
+    } catch(e) { setMsg({type:'error',text:'Connection error. Try again.'}); }
+    setLoading(false);
   };
 
   return (
     <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#F9FAFB',
-      fontFamily: "'Inter', sans-serif",
+      minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center',
+      background:`linear-gradient(135deg, rgba(10,31,61,.85) 0%, rgba(15,40,71,.75) 100%), url('/familyportal.png') center/cover no-repeat fixed`,
+      fontFamily:"'Inter',sans-serif", position:'relative', overflow:'hidden'
     }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');`}</style>
-      <div style={{
-        background: '#fff',
-        borderRadius: 16,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
-        border: '1px solid #E5E7EB',
-        padding: '2.5rem 2rem',
-        width: '100%',
-        maxWidth: 400,
-        margin: '1rem',
+      {/* Animated particles overlay */}
+      <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none'}}>
+        {[...Array(8)].map((_,i)=>(
+          <div key={i} style={{
+            position:'absolute', width:'4px', height:'4px', borderRadius:'50%',
+            background:'rgba(166,124,82,.4)', left:`${10+Math.random()*80}%`,
+            animation:`float ${6+Math.random()*8}s ${Math.random()*5}s infinite ease-in-out`,
+            opacity:0.4+Math.random()*0.4
+          }} />
+        ))}
+      </div>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+        @keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.1)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes glow{0%,100%{opacity:.6}50%{opacity:1}}
+        .card{animation:fadeUp 0.8s ease both;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+      `}</style>
+
+      <div className="card" style={{
+        background:'rgba(255,255,255,.08)', backdropFilter:'blur(20px)',
+        borderRadius:20, border:'1px solid rgba(255,255,255,.15)',
+        padding:'2.5rem 2rem', width:'100%', maxWidth:400, margin:'1rem',
+        boxShadow:'0 24px 80px rgba(0,0,0,.3)'
       }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{textAlign:'center',marginBottom:32}}>
           <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: '#0A1F3D',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 2px 8px rgba(10,31,61,0.15)',
+            width:56, height:56, borderRadius:16,
+            background:'linear-gradient(135deg,#0A1F3D,#152D4A)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            margin:'0 auto 16px', border:'1px solid rgba(166,124,82,.3)'
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="1.5" strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 600, color: '#0A1F3D', margin: 0, letterSpacing: '-0.02em' }}>Rest Point</h1>
-          <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 6, fontWeight: 400 }}>Family Portal — Track case progress, view documents, and communicate</p>
+          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.5rem',fontWeight:600,color:'#fff',margin:0,letterSpacing:'-.02em'}}>Rest Point</h1>
+          <p style={{fontSize:'.8rem',color:'rgba(255,255,255,.7)',marginTop:6}}>Family Portal — stay connected with loved ones</p>
         </div>
 
-        {/* Phone Input */}
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:20}}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+            <label style={{display:'block',fontSize:'.72rem',fontWeight:600,color:'rgba(255,255,255,.8)',marginBottom:8,letterSpacing:'.05em'}}>
               Phone Number
             </label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={handlePhoneChange}
-              placeholder="0712 345 678"
-              disabled={isLoading}
+            <input type="tel" value={phone} onChange={e=>setPhone(fmt(e.target.value))}
+              placeholder="0712 345 678" disabled={loading}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '1rem',
-                border: '1.5px solid #D1D5DB',
-                borderRadius: 10,
-                outline: 'none',
-                fontFamily: "'Inter', sans-serif",
-                color: '#111827',
-                background: '#F9FAFB',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-                boxSizing: 'border-box',
+                width:'100%',padding:'14px 18px',fontSize:'1rem',
+                border:'1.5px solid rgba(255,255,255,.2)',borderRadius:12,
+                outline:'none',fontFamily:"'Inter',sans-serif",
+                color:'#fff',background:'rgba(255,255,255,.08)',
+                transition:'all .25s',boxSizing:'border-box',letterSpacing:'.05em'
               }}
-              onFocus={(e) => { e.target.style.borderColor = '#A67C52'; e.target.style.boxShadow = '0 0 0 3px rgba(166,124,82,0.1)'; e.target.style.background = '#fff'; }}
-              onBlur={(e) => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; e.target.style.background = '#F9FAFB'; }}
+              onFocus={e=>{e.target.style.borderColor=C.gold;e.target.style.background='rgba(255,255,255,.12)';e.target.style.boxShadow='0 0 0 3px rgba(166,124,82,.15)'}}
+              onBlur={e=>{e.target.style.borderColor='rgba(255,255,255,.2)';e.target.style.background='rgba(255,255,255,.08)';e.target.style.boxShadow='none'}}
             />
           </div>
 
-          {message.text && (
+          {msg.text && (
             <div style={{
-              padding: '10px 14px',
-              borderRadius: 8,
-              fontSize: '0.82rem',
-              fontWeight: 500,
-              background: message.type === 'error' ? '#FEF2F2' : '#F0FDF4',
-              color: message.type === 'error' ? '#DC2626' : '#16A34A',
-              border: message.type === 'error' ? '1px solid #FECACA' : '1px solid #BBF7D0',
-            }}>
-              {message.text}
-            </div>
+              padding:'12px 16px',borderRadius:10,fontSize:'.8rem',fontWeight:500,
+              background:msg.type==='error'?'rgba(220,38,38,.15)':'rgba(5,150,105,.15)',
+              color:msg.type==='error'?'#FCA5A5':'#6EE7B7',
+              border:msg.type==='error'?'1px solid rgba(220,38,38,.3)':'1px solid rgba(5,150,105,.3)',
+              animation:'fadeUp .3s ease'
+            }}>{msg.text}</div>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
+          <button type="submit" disabled={loading}
             style={{
-              width: '100%',
-              padding: '14px 24px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              border: 'none',
-              borderRadius: 10,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              background: isLoading ? '#9CA3AF' : '#0A1F3D',
-              color: '#fff',
-              fontFamily: "'Inter', sans-serif",
-              transition: 'all 0.2s',
-              boxShadow: isLoading ? 'none' : '0 4px 12px -4px rgba(10,31,61,0.3)',
+              width:'100%',padding:'15px 24px',fontSize:'.75rem',fontWeight:700,
+              letterSpacing:'.08em',textTransform:'uppercase',
+              border:'none',borderRadius:12,
+              cursor:loading?'not-allowed':'pointer',
+              background:loading?'rgba(255,255,255,.15)':'linear-gradient(135deg,#A67C52,#C9A876)',
+              color:'#fff',fontFamily:"'Inter',sans-serif",
+              transition:'all .25s',
+              boxShadow:loading?'none':'0 4px 20px -4px rgba(166,124,82,.4)',
             }}
-            onMouseEnter={(e) => { if (!isLoading) { e.target.style.background = '#0F2847'; e.target.style.transform = 'translateY(-1px)'; } }}
-            onMouseLeave={(e) => { e.target.style.background = isLoading ? '#9CA3AF' : '#0A1F3D'; e.target.style.transform = 'none'; }}
+            onMouseEnter={e=>{if(!loading){e.target.style.transform='translateY(-2px)';e.target.style.boxShadow='0 8px 28px -4px rgba(166,124,82,.5)'}}}
+            onMouseLeave={e=>{e.target.style.transform='none';if(!loading)e.target.style.boxShadow='0 4px 20px -4px rgba(166,124,82,.4)'}}
           >
-            {isLoading ? 'Sending...' : 'Access Family Portal'}
+            {loading ? 'Sending link...' : 'Access Family Portal'}
           </button>
 
-          <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9CA3AF', marginTop: 8, lineHeight: 1.5 }}>
-            Enter the phone number you registered with your funeral home. An SMS link will be sent to access your family's information.
+          <p style={{textAlign:'center',fontSize:'.7rem',color:'rgba(255,255,255,.5)',marginTop:4,lineHeight:1.6}}>
+            Enter the phone number registered with your funeral home.<br/>A secure link will be sent to access your family's information.
           </p>
         </form>
 
-        <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #F3F4F6', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.72rem', color: '#9CA3AF', lineHeight: 1.5, margin: 0 }}>
+        <div style={{marginTop:24,paddingTop:20,borderTop:'1px solid rgba(255,255,255,.1)',textAlign:'center'}}>
+          <p style={{fontSize:'.65rem',color:'rgba(255,255,255,.4)',lineHeight:1.6,margin:0}}>
             By continuing, you agree to our{' '}
-            <a href="/privacy" style={{ color: '#A67C52', textDecoration: 'none', fontWeight: 500 }}>Privacy Policy</a>
+            <a href="/privacy" style={{color:C.gold,textDecoration:'none',fontWeight:500}}>Privacy Policy</a>
             {' '}and{' '}
-            <a href="/terms" style={{ color: '#A67C52', textDecoration: 'none', fontWeight: 500 }}>Terms of Service</a>.
-            Your data is encrypted and protected.
+            <a href="/terms" style={{color:C.gold,textDecoration:'none',fontWeight:500}}>Terms</a>
           </p>
         </div>
       </div>
     </div>
   );
 }
-
-export default PortalLoginPage;

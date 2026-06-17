@@ -51,15 +51,15 @@ const FEATURES = [
 ];
 
 const REASONS = [
-  { icon:Icons.clock, title:'Save 60% of Admin Time', desc:'Automate repetitive tasks like scheduling, billing, and document generation. Your team focuses on serving families.' },
-  { icon:Icons.heart, title:'Families Love It', desc:'The Family Portal gives loved ones real-time updates, document access, and secure communication—no app download required.' },
-  { icon:Icons.dollar, title:'New Revenue Streams', desc:'The integrated marketplace lets you earn commission on flowers, catering, and memorial items. Additional income with zero extra work.' },
-  { icon:Icons.shield, title:'Enterprise Security', desc:'Bank-level encryption, role-based access, and complete audit trails. Your data and families\' information are always protected.' },
-  { icon:Icons.globe, title:'Global Memorial Board', desc:'Families worldwide can light candles, leave messages, and participate in memorials. A powerful emotional connection.' },
-  { icon:Icons.award, title:'Trusted by 100+ Homes', desc:'Across Kenya and East Africa, funeral professionals trust Rest Point to manage their operations and serve families with dignity.' },
-  { icon:Icons.sms, title:'SMS Notifications', desc:'Automated SMS updates at every milestone. Families stay informed without calling. Reduce phone calls by 70%.' },
-  { icon:Icons.truck, title:'GPS Dispatch Tracking', desc:'Track hearses in real-time. Families receive automated arrival notifications. Optimize routes and reduce fuel costs.' },
-  { icon:Icons.lock, title:'Critical Data Protection', desc:'Postmortem reports, autopsy results, and medical records are strictly encrypted and masked. Only authorized staff access sensitive case information.' },
+  { icon:Icons.clock, title:'Save 60% Admin Time', desc:'Automate scheduling, billing, and docs. Your team focuses on families, not paperwork.' },
+  { icon:Icons.heart, title:'Family Portal — No App', desc:'Families get a secure link via SMS. Track progress, view documents, pay M-PESA. No download.' },
+  { icon:Icons.dollar, title:'New Revenue for Your Home', desc:'Help families memorialize digitally — light candles, leave memories. You earn, they heal.' },
+  { icon:Icons.shield, title:'Enterprise Security', desc:'Bank-level encryption, role-based access, full audit trails. Data you can trust.' },
+  { icon:Icons.globe, title:'Digital Memorial Candles', desc:'Light a candle. Leave a memory. Dedicated to dignity — every life leaves a mark.' },
+  { icon:Icons.award, title:'Built for African Mortuaries', desc:'M-PESA, local SMS, multi-tenant. Designed for Kenya, Uganda, Tanzania.' },
+  { icon:Icons.sms, title:'SMS Link — Not SMS Spam', desc:'Families get one secure link. No app. No spam. Just connection when it matters.' },
+  { icon:Icons.truck, title:'GPS Hearse Tracking', desc:'Real-time location. Families get arrival alerts. Cut 70% of "where is the hearse?" calls.' },
+  { icon:Icons.lock, title:'Data You Control', desc:'Postmortem, autopsy, medical records — encrypted and masked. Only your staff sees.' },
 ];
 
 const TRUST = [
@@ -255,6 +255,18 @@ export default function App() {
         .hero{padding:clamp(6rem,12vw,8rem) 0 clamp(3rem,6vw,4rem);background:linear-gradient(135deg,${C.navy50} 0%,rgba(5,150,105,.03) 100%);position:relative;overflow:hidden}
         .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(166,124,82,0.08) 0%,transparent 70%);border-radius:50%;pointer-events:none}
         .hero::after{content:'';position:absolute;bottom:-30%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+        
+        @keyframes textReveal{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes textGlow{0%,100%{text-shadow:0 0 20px rgba(166,124,82,0)}50%{text-shadow:0 0 30px rgba(166,124,82,0.15)}}
+        @keyframes fadeScale{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+        @keyframes slideLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes slideRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+        .anim-1{animation:textReveal 0.8s ease 0.1s both}
+        .anim-2{animation:textReveal 0.8s ease 0.3s both}
+        .anim-3{animation:textReveal 0.8s ease 0.5s both}
+        .anim-4{animation:textReveal 0.8s ease 0.7s both}
+        .anim-5{animation:textReveal 0.8s ease 0.9s both}
+        .anim-scale{animation:fadeScale 0.8s ease 0.3s both}
         
         .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;z-index:1}
         @media(max-width:768px){.hero-inner{grid-template-columns:1fr;gap:2rem}}
@@ -586,18 +598,18 @@ export default function App() {
           </div>
         </section>
 
-        {/* MARKETPLACE */}
+        {/* DIGITAL MEMORIALS / MARKETPLACE */}
         <section id="marketplace" className="section marketplace-section">
           <div className="wrap">
             <div className="marketplace-inner">
               <div className="marketplace-text">
-                <div className="eyebrow">{Icons.shop} Integrated Marketplace</div>
-                <h2>New Revenue Streams for Your Funeral Home</h2>
-                <p>Our integrated marketplace connects families with trusted vendors for flowers, keepsakes, memorial items, catering, and more. Generate additional revenue while providing comprehensive service.</p>
+                <div className="eyebrow">{Icons.shop} Digital Memorials</div>
+                <h2>Help Families Honor Their Loved Ones</h2>
+                <p>Your funeral home offers digital memorial services — light candles, leave memories, share tributes, and send flowers — all through your platform. A meaningful way to serve families and generate revenue for your home.</p>
                 <div className="family-benefits">
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Curated Vendors</strong> — Pre-screened, reliable local partners</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Commission Revenue</strong> — Earn on every marketplace transaction</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Seamless Integration</strong> — Vendors and families connect through your platform</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Digital Candles & Tributes</strong> — Families light candles, leave messages from anywhere in the world</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Flowers & Keepsakes from Your Home</strong> — List what your home offers. Families order directly from you.</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>New Revenue for You</strong> — Digital memorials generate income for your funeral home. No vendor cuts.</div></div>
                 </div>
                 <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={()=>navigate('/register')}>Learn More {Icons.arrow}</button></div>
               </div>
