@@ -55,6 +55,7 @@ const FEATURES = [
   { icon:Icons.truck, title:'Dispatch Tracking', desc:'GPS-enabled hearse tracking with fuel estimation and automated family notifications on arrival.', color:'#14B8A6', gradient:'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)' },
   { icon:Icons.calendar, title:'Scheduling', desc:'Manage funeral services and team schedules with automated reminders and conflict detection.', color:'#6366F1', gradient:'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)' },
   { icon:Icons.dollar, title:'Billing & Invoicing', desc:'Automated invoicing with M-PESA integration, payment tracking, and financial reporting.', color:'#10B981', gradient:'linear-gradient(135deg, #10B981 0%, #34D399 100%)' },
+  { icon:Icons.shield, title:'Billing Never Stops', desc:'3-tier failover system ensures billing runs 24/7. If one service fails, another takes over automatically. Zero downtime, zero missed charges.', color:'#EF4444', gradient:'linear-gradient(135deg, #EF4444 0%, #F87171 100%)' },
 ];
 
 const INITIAL_CANDLES = [

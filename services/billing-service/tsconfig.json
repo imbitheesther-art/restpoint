@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "types": ["node", "mysql2"],
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
