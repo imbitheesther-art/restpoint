@@ -4,8 +4,9 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const mysql = require('mysql2/promise');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
-const REFRESH_SECRET = process.env.REFRESH_SECRET || 'supersecretrefreshkey';
+// Global fallback secrets
+const GLOBAL_JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const GLOBAL_REFRESH_SECRET = process.env.REFRESH_SECRET || 'supersecretrefreshkey';
 
 // ============================================
 // DATABASE CONNECTIONS (NO DATABASE SELECTED)
@@ -33,6 +34,40 @@ const getTenantConnection = async (dbName) => {
     database: dbName,
   });
   return connection;
+};
+
+// ============================================
+// PER-TENANT JWT SECRETS
+// ============================================
+
+/**
+ * Get tenant-specific JWT secrets from database
+ * Each tenant has their own jwt_secret and refresh_secret stored in tenant_tracking.tenants
+ */
+const getTenantJwtSecret = async (tenantId) => {
+  try {
+    const serverConn = await getServerConnection();
+    const [tenants] = await serverConn.query(
+      'SELECT jwt_secret, refresh_secret FROM tenant_tracking.tenants WHERE tenant_id = ?',
+      [tenantId]
+    );
+    await serverConn.end();
+    
+    if (tenants.length > 0 && tenants[0].jwt_secret) {
+      return {
+        jwtSecret: tenants[0].jwt_secret,
+        refreshSecret: tenants[0].refresh_secret || tenants[0].jwt_secret
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching tenant JWT secret:', error.message);
+  }
+  
+  // Fallback to global secret if tenant-specific not found
+  return {
+    jwtSecret: GLOBAL_JWT_SECRET,
+    refreshSecret: GLOBAL_REFRESH_SECRET
+  };
 };
 
 // ============================================
@@ -105,9 +140,9 @@ const findUserInTenantDB = async (dbName, email) => {
 };
 
 /**
- * Generate JWT tokens
+ * Generate JWT tokens with per-tenant secrets
  */
-const generateTokens = (user, tenant) => {
+const generateTokens = async (user, tenant) => {
   const payload = {
     userId: user.user_id,
     email: user.email,
@@ -118,8 +153,11 @@ const generateTokens = (user, tenant) => {
     role: user.role || 'admin'
   };
   
-  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-  const refreshToken = jwt.sign(payload, REFRESH_SECRET, { expiresIn: '30d' });
+  // Get tenant-specific JWT secrets
+  const { jwtSecret, refreshSecret } = await getTenantJwtSecret(tenant.tenant_id);
+  
+  const accessToken = jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
+  const refreshToken = jwt.sign(payload, refreshSecret, { expiresIn: '30d' });
   
   return { accessToken, refreshToken };
 };
@@ -214,8 +252,8 @@ exports.login = asyncHandler(async (req, res) => {
       console.warn('⚠️ Could not update last login:', error.message);
     }
     
-    // Step 5: Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user, tenant);
+    // Step 5: Generate tokens with per-tenant secrets
+    const { accessToken, refreshToken } = await generateTokens(user, tenant);
     
     // Step 6: Return response
     console.log('✅ Login successful!\n');
@@ -280,14 +318,18 @@ exports.refresh = asyncHandler(async (req, res) => {
   }
   
   try {
-    // Verify refresh token
-    const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
+    // First decode to get tenantId (using global secret for initial verification)
+    const decoded = jwt.verify(refreshToken, GLOBAL_REFRESH_SECRET);
+    
+    // Get tenant-specific secret for full verification
+    const { jwtSecret, refreshSecret } = await getTenantJwtSecret(decoded.tenantId);
+    const verified = jwt.verify(refreshToken, refreshSecret);
     
     // Find tenant
     const serverConn = await getServerConnection();
     const [tenants] = await serverConn.query(
       `SELECT * FROM tenant_tracking.tenants WHERE tenant_id = ? AND status = 'active'`,
-      [decoded.tenantId]
+      [verified.tenantId]
     );
     await serverConn.end();
     
@@ -304,7 +346,7 @@ exports.refresh = asyncHandler(async (req, res) => {
     const tenantConn = await getTenantConnection(tenant.db_name);
     const [users] = await tenantConn.execute(
       `SELECT * FROM users WHERE user_id = ? AND is_active = 1`,
-      [decoded.userId]
+      [verified.userId]
     );
     await tenantConn.end();
     
@@ -317,8 +359,8 @@ exports.refresh = asyncHandler(async (req, res) => {
     
     const user = users[0];
     
-    // Generate new tokens
-    const { accessToken } = generateTokens(user, tenant);
+    // Generate new tokens with per-tenant secrets
+    const { accessToken } = await generateTokens(user, tenant);
     
     console.log('✅ Token refreshed');
     
@@ -367,16 +409,27 @@ exports.getMe = asyncHandler(async (req, res) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    // Decode to get tenantId first
+    const decoded = jwt.decode(token);
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+    
+    // Get tenant-specific secret for verification
+    const { jwtSecret } = await getTenantJwtSecret(decoded.tenantId);
+    const verified = jwt.verify(token, jwtSecret);
     
     res.status(200).json({
       success: true,
       user: {
-        userId: decoded.userId,
-        email: decoded.email,
-        tenantId: decoded.tenantId,
-        tenantName: decoded.tenantName,
-        role: decoded.role
+        userId: verified.userId,
+        email: verified.email,
+        tenantId: verified.tenantId,
+        tenantName: verified.tenantName,
+        role: verified.role
       }
     });
   } catch (error) {

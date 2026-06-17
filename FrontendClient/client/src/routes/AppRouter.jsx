@@ -8,6 +8,7 @@ import LandingPage from '../modules/landing/LandingPage';
 import OnboardingFlow from '../modules/onboarding/OnboardingFlow';
 import PrivacyPolicy from '../components/privacy/PrivacyPolicy';
 import TermsOfService from '../components/privacy/TermsOfService';
+import AccountDeletion from '../components/privacy/AccountDeletion';
 import WhyUsPage from '../components/pages/WhyUsPage';
 import LoginPage from '../components/auth/login';
 import PortalLoginPage from '../components/auth/PortalLogin';
@@ -463,6 +464,7 @@ const AppRouter = () => {
       <Route path="/portal/login" element={<PortalLoginPage />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/account-deletion" element={<AccountDeletion />} />
       <Route path="/why-us" element={<WhyUsPage />} />
       
       {/* Legacy dashboard redirect */}
