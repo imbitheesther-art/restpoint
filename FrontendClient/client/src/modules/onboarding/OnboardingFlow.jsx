@@ -1,39 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../../api/axios';
 
 /* ═══════════════════════════════════════════════════════════════
    REST POINT — Onboarding Flow
-   Design System: Matches Landing Page (Cinematic dark luxury)
+   Design System: Matches Landing Page (navy + gold luxury)
    ═══════════════════════════════════════════════════════════════ */
 
-const T = {
-  bg0:   '#040404',
-  bg1:   '#070707',
-  bg2:   '#0b0b0b',
-  bg3:   '#0f0f0f',
-  bg4:   '#131313',
-  line:  '#1e1e1e',
-  line2: '#282828',
-  dim:   '#333333',
-  sub:   '#555555',
-  muted: '#777777',
-  mid:   '#aaaaaa',
-  light: '#e0e0e0',
-  white: '#f8f8f8',
-  g:     '#04c800',
-  gd:    '#038b00',
-  gl:    '#09ff09',
-  ga:    'rgba(4,200,0,0.12)',
-  ga2:   'rgba(4,200,0,0.06)',
-  ga3:   'rgba(4,200,0,0.04)',
-  gs:    '0 0 30px rgba(4,200,0,0.2)',
+const C = {
+  navy900:'#0A1F3D',navy800:'#0F2847',navy700:'#143252',navy600:'#1a3a52',
+  navy50:'#F9FAFB',char700:'#374151',char600:'#4B5563',char500:'#6B7280',
+  char300:'#D1D5DB',char200:'#E5E7EB',char100:'#F3F4F6',
+  gold:'#A67C52',goldD:'#8B6340',goldL:'#C9A876',
+  emerald:'#059669',emeraldD:'#047857',
 };
 
-const API_BASE_URL = 'http://localhost:8002/api';
-
-/* ── SVG Icons ────────────────────────────────────────────────── */
+/* ── SVG Icons (matched to landing page style) ──────────────── */
 const I = {
   eye:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
   eyeOff: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
@@ -44,6 +27,7 @@ const I = {
   lock:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
   shield: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   cloud:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>,
+  star: <svg width="9" height="9" viewBox="0 0 24 24" fill={C.gold}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
 };
 
 const OnboardingFlow = () => {
@@ -93,10 +77,10 @@ const OnboardingFlow = () => {
   };
 
   const getPasswordStrengthColor = (strength) => {
-    if (strength === 0) return T.dim;
+    if (strength === 0) return C.char500;
     if (strength === 1) return '#c94c4c';
-    if (strength === 2) return T.g;
-    return T.gl;
+    if (strength === 2) return C.gold;
+    return C.emerald;
   };
 
   const getPasswordStrengthText = (strength) => {
@@ -191,7 +175,7 @@ const OnboardingFlow = () => {
         submitData.append('logo', logoFile);
       }
 
-      const response = await axios.post(`${API_BASE_URL}/onboarding/organization`, submitData, {
+      const response = await api.post('/api/v1/restpoint/tenant/onboarding/organization', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -261,30 +245,18 @@ const OnboardingFlow = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html{scroll-behavior:smooth;background:${T.bg0};}
-        body{overflow-x:hidden;background:${T.bg0};color:${T.light};font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
-        ::selection{background:rgba(4,200,0,.2);color:${T.g};}
+        html{scroll-behavior:smooth;background:${C.navy50};}
+        body{overflow-x:hidden;background:${C.navy50};color:${C.char700};font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+        ::selection{background:rgba(166,124,82,0.15);color:${C.gold};}
         ::-webkit-scrollbar{width:3px;}
-        ::-webkit-scrollbar-track{background:${T.bg0};}
-        ::-webkit-scrollbar-thumb{background:${T.dim};border-radius:3px;}
-        ::-webkit-scrollbar-thumb:hover{background:${T.g};}
+        ::-webkit-scrollbar-track{background:${C.navy50};}
+        ::-webkit-scrollbar-thumb{background:${C.char300};border-radius:3px;}
+        ::-webkit-scrollbar-thumb:hover{background:${C.char500};}
 
-        .cg{font-family:'Cormorant Garamond',Georgia,serif;}
-        .syne{font-family:'Syne',sans-serif;}
-
-        /* Input focus styles */
-        .inp:focus{outline:none;border-color:${T.g}!important;box-shadow:0 0 0 3px ${T.ga};}
-        
-        /* Checkbox custom style */
-        .chk:checked{accent-color:${T.g};}
-
-        /* Button hover */
-        .btn-g{background:${T.g};color:#000;box-shadow:0 4px 24px -6px rgba(4,200,0,.5);transition:all .22s;}
-        .btn-g:hover{background:${T.gl};transform:translateY(-2px);box-shadow:0 8px 32px -6px rgba(4,200,0,.6);}
-        .btn-g:active{transform:translateY(0);}
+        .inp:focus{outline:none;border-color:${C.gold}!important;box-shadow:0 0 0 3px rgba(166,124,82,.15);}
+        .chk:checked{accent-color:${C.gold};}
       `}</style>
 
       {/* Terms Modal */}
@@ -295,18 +267,10 @@ const OnboardingFlow = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.92)',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              backdropFilter: 'blur(6px)',
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(10,31,61,0.92)', zIndex: 1000,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '2rem', backdropFilter: 'blur(6px)',
             }}
             onClick={() => setShowTermsModal(false)}
           >
@@ -315,13 +279,9 @@ const OnboardingFlow = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               style={{
-                background: T.bg3,
-                border: `1px solid ${T.line}`,
-                borderRadius: '14px',
-                maxWidth: '580px',
-                maxHeight: '80vh',
-                overflow: 'auto',
-                padding: '2rem',
+                background: '#fff', border: `1px solid ${C.char200}`,
+                borderRadius: '14px', maxWidth: '580px',
+                maxHeight: '80vh', overflow: 'auto', padding: '2rem',
                 position: 'relative',
               }}
               onClick={(e) => e.stopPropagation()}
@@ -329,29 +289,21 @@ const OnboardingFlow = () => {
               <button
                 onClick={() => setShowTermsModal(false)}
                 style={{
-                  position: 'absolute',
-                  top: '1rem',
-                  right: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: T.muted,
-                  padding: '.25rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color .2s',
+                  position: 'absolute', top: '1rem', right: '1rem',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: C.char500, padding: '.25rem', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', transition: 'color .2s',
                 }}
-                onMouseEnter={(e) => e.target.style.color = T.white}
-                onMouseLeave={(e) => e.target.style.color = T.muted}
+                onMouseEnter={(e) => e.target.style.color = C.navy900}
+                onMouseLeave={(e) => e.target.style.color = C.char500}
               >
                 {I.x}
               </button>
-              <div className="eye" style={{ marginBottom: '1rem' }}>Terms & Conditions</div>
-              <h2 className="cg" style={{ fontSize: '1.8rem', color: T.white, marginBottom: '1.5rem', fontWeight: 600 }}>
-                Rest Point <span style={{ color: T.g }}>Service Agreement</span>
+              <div style={{ marginBottom: '1rem', fontFamily:'Inter', fontSize:'.7rem', fontWeight:700, letterSpacing:'.15em', textTransform:'uppercase', color:C.gold }}>Terms & Conditions</div>
+              <h2 style={{ fontFamily:"'Lora',serif", fontSize:'1.8rem', fontWeight:500, color:C.navy900, marginBottom:'1.5rem' }}>
+                Rest Point <span style={{ color: C.gold }}>Service Agreement</span>
               </h2>
-              <div style={{ color: T.mid, lineHeight: 1.7, fontSize: '.85rem' }}>
+              <div style={{ color: C.char700, lineHeight: 1.7, fontSize: '.85rem' }}>
                 <p style={{ marginBottom: '1.25rem' }}>By using RestPoint, you agree to these terms:</p>
                 <ul style={{ listStyle: 'none', padding: 0 }}>
                   {[
@@ -368,34 +320,26 @@ const OnboardingFlow = () => {
                     'Misuse or unauthorized access may result in account termination.',
                   ].map((item, i) => (
                     <li key={i} style={{ marginBottom: '.65rem', display: 'flex', alignItems: 'start', gap: '.65rem' }}>
-                      <span style={{ color: T.g, marginTop: '.2rem' }}>{I.check}</span>
+                      <span style={{ color: C.gold, marginTop: '.2rem', flexShrink:0 }}>{I.check}</span>
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
-                <h3 className="syne" style={{ color: T.light, marginTop: '1.5rem', marginBottom: '.75rem', fontSize: '.95rem', fontWeight: 700, letterSpacing: '.03em' }}>Ownership</h3>
+                <h3 style={{ fontFamily:'Inter', fontWeight:700, color:C.navy900, marginTop:'1.5rem', marginBottom:'.75rem', fontSize:'.95rem', letterSpacing:'.03em' }}>Ownership</h3>
                 <p>RestPoint is independently owned, operated, and managed. All software, branding, intellectual property, and platform services remain the exclusive property of RestPoint.</p>
               </div>
               <button
                 onClick={() => setShowTermsModal(false)}
-                className="syne"
                 style={{
-                  marginTop: '1.5rem',
-                  width: '100%',
-                  background: T.g,
-                  color: '#000',
-                  border: 'none',
-                  padding: '.8rem',
-                  borderRadius: '8px',
-                  fontSize: '.7rem',
-                  fontWeight: 700,
-                  letterSpacing: '.1em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
+                  marginTop: '1.5rem', width: '100%',
+                  background: C.navy900, color: '#fff',
+                  border: 'none', padding: '.8rem', borderRadius: '8px',
+                  fontSize: '.7rem', fontWeight: 700, letterSpacing: '.1em',
+                  textTransform: 'uppercase', cursor: 'pointer',
                   transition: 'all .22s',
                 }}
-                onMouseEnter={(e) => { e.target.style.background = T.gl; e.target.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={(e) => { e.target.style.background = T.g; e.target.style.transform = 'translateY(0)'; }}
+                onMouseEnter={(e) => { e.target.style.background = C.navy800; e.target.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={(e) => { e.target.style.background = C.navy900; e.target.style.transform = 'translateY(0)'; }}
               >
                 I Understand
               </button>
@@ -406,42 +350,40 @@ const OnboardingFlow = () => {
 
       {/* Navigation */}
       <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 300,
-        background: navScrolled ? `rgba(4,4,4,.94)` : 'transparent',
-        borderBottom: navScrolled ? `1px solid ${T.line}` : '1px solid transparent',
-        padding: '.9rem 0',
-        transition: 'all .3s ease',
-        backdropFilter: navScrolled ? 'blur(24px) saturate(1.4)' : 'none',
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 300,
+        background: navScrolled ? 'rgba(249,250,251,0.9)' : 'rgba(249,250,251,0.7)',
+        borderBottom: navScrolled ? `1px solid ${C.char200}` : '1px solid transparent',
+        padding: '1rem 0', transition: 'all .3s ease',
+        backdropFilter: navScrolled ? 'blur(24px)' : 'none',
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '.8rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', background: T.ga, border: `1px solid rgba(4,200,0,.2)`, borderRadius: '8px', padding: '.4rem .9rem' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.g, boxShadow: `0 0 10px ${T.g}` }} />
-              <span className="syne" style={{ fontSize: '.72rem', fontWeight: 800, letterSpacing: '.16em', color: T.g }}>REST POINT</span>
-            </div>
-            <span className="syne" style={{ fontSize: '.5rem', color: T.sub, letterSpacing: '.14em', textTransform: 'uppercase' }}>Mortuary OS</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.emerald }} />
+            <span style={{ fontFamily:"'Lora',serif", fontSize: '1rem', fontWeight: 700, color: C.navy900 }}>Rest Point</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span className="syne" style={{ fontSize: '.6rem', color: T.muted, letterSpacing: '.12em', textTransform: 'uppercase' }}>Create Account</span>
-            <button onClick={() => navigate('/login')} className="syne" style={{ background: 'rgba(255,255,255,.04)', color: T.light, border: `1px solid rgba(255,255,255,.1)`, padding: '.44rem .9rem', borderRadius: '8px', fontSize: '.62rem', cursor: 'pointer', transition: 'all .2s' }} onMouseEnter={(e) => { e.target.style.color = T.g; e.target.style.borderColor = 'rgba(4,200,0,.4)'; }} onMouseLeave={(e) => { e.target.style.color = T.light; e.target.style.borderColor = 'rgba(255,255,255,.1)'; }}>Log in</button>
+            <span style={{ fontFamily:'Inter', fontSize: '.7rem', color: C.char600, letterSpacing: '.1em' }}>Create Account</span>
+            <button onClick={() => navigate('/login')} style={{
+              background: 'transparent', color: C.navy900, border: `1.5px solid ${C.navy900}`,
+              padding: '.5rem .9rem', borderRadius: '8px', fontSize: '.65rem',
+              fontWeight: 700, letterSpacing: '.1em', cursor: 'pointer',
+              transition: 'all .22s',
+            }} onMouseEnter={(e) => { e.target.style.background = 'rgba(10,31,61,.05)'; }} onMouseLeave={(e) => { e.target.style.background = 'transparent'; }}>
+              Log in
+            </button>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
       <main style={{ paddingTop: '80px', minHeight: '100vh' }}>
-        {/* Hero Section with Form */}
         <section style={{ padding: '3rem 0 5rem', position: 'relative', overflow: 'hidden' }}>
-          {/* Background grid */}
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px)', backgroundSize: '80px 80px', pointerEvents: 'none' }} />
+          {/* Background gradient */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #F9FAFB 0%, rgba(5,150,105,.03) 100%)', pointerEvents: 'none' }} />
           
           {/* Glow orbs */}
-          <div style={{ position: 'absolute', top: '-20%', right: '-8%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(4,200,0,.05) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-10%', left: '10%', width: '400px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(4,200,0,.03) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: '-20%', right: '-8%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(166,124,82,.05) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-10%', left: '10%', width: '400px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(166,124,82,.03) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
 
           <div style={{ maxWidth: '560px', margin: '0 auto', padding: '0 1.75rem', position: 'relative', zIndex: 1 }}>
             {/* Header */}
@@ -451,14 +393,22 @@ const OnboardingFlow = () => {
               transition={{ duration: 0.5 }}
               style={{ textAlign: 'center', marginBottom: '2.5rem' }}
             >
-              <div className="hbadge" style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', background: T.ga, border: `1px solid rgba(4,200,0,.2)`, borderRadius: '8px', padding: '.45rem .9rem', fontFamily: 'Syne,sans-serif', fontSize: '.58rem', color: T.g, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill={T.g}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '.5rem',
+                fontSize: '.7rem', fontWeight: 700, letterSpacing: '.15em',
+                textTransform: 'uppercase', color: C.gold, marginBottom: '1rem',
+              }}>
+                <span style={{ width:'16px', height:'1px', background:'currentColor' }} />
                 Enterprise Onboarding
               </div>
-              <h1 className="cg" style={{ fontSize: 'clamp(1.8rem,5vw,2.8rem)', fontWeight: 600, color: T.white, marginBottom: '.75rem', letterSpacing: '-.02em', lineHeight: 1.2 }}>
-                Create your<br /><span style={{ color: T.g, fontStyle: 'italic' }}>organization</span> account
+              <h1 style={{
+                fontFamily:"'Lora',serif", fontSize:'clamp(1.8rem,5vw,2.8rem)',
+                fontWeight: 500, color: C.navy900, marginBottom: '.75rem',
+                letterSpacing: '-.02em', lineHeight: 1.2,
+              }}>
+                Create your<br /><span style={{ color: C.gold, fontStyle:'italic' }}>organization</span> account
               </h1>
-              <p style={{ fontSize: '.88rem', color: T.mid, lineHeight: 1.7, maxWidth: '400px', margin: '0 auto' }}>
+              <p style={{ fontSize: '.9rem', color: C.char600, lineHeight: 1.7, maxWidth: '400px', margin: '0 auto' }}>
                 Set up your mortuary on Rest Point. Complete the form below to get started with your free trial.
               </p>
             </motion.div>
@@ -469,11 +419,9 @@ const OnboardingFlow = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15 }}
               style={{
-                background: 'rgba(255,255,255,.022)',
-                border: `1px solid ${T.line}`,
-                borderRadius: '14px',
-                padding: '2rem',
-                boxShadow: '0 20px 50px -15px rgba(0,0,0,.7)',
+                background: '#fff', border: `1px solid ${C.char200}`,
+                borderRadius: '14px', padding: '2rem',
+                boxShadow: '0 20px 60px -10px rgba(0,0,0,.08)',
               }}
             >
               <form onSubmit={handleSubmit}>
@@ -485,18 +433,10 @@ const OnboardingFlow = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       style={{
-                        background: T.ga,
-                        border: `1px solid rgba(4,200,0,.3)`,
-                        color: T.g,
-                        padding: '.75rem',
-                        borderRadius: '8px',
-                        marginBottom: '1.25rem',
-                        fontSize: '.8rem',
-                        textAlign: 'center',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '.5rem',
+                        background: 'rgba(5,150,105,.06)', border: `1px solid rgba(5,150,105,.3)`,
+                        color: C.emerald, padding: '.75rem', borderRadius: '8px',
+                        marginBottom: '1.25rem', fontSize: '.8rem', textAlign: 'center',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem',
                       }}
                     >
                       {I.check} {apiSuccess}
@@ -512,14 +452,9 @@ const OnboardingFlow = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       style={{
-                        background: 'rgba(201,76,76,.1)',
-                        border: `1px solid rgba(201,76,76,.3)`,
-                        color: '#ff6b6b',
-                        padding: '.75rem',
-                        borderRadius: '8px',
-                        marginBottom: '1.25rem',
-                        fontSize: '.8rem',
-                        textAlign: 'center',
+                        background: 'rgba(201,76,76,.06)', border: `1px solid rgba(201,76,76,.3)`,
+                        color: '#c94c4c', padding: '.75rem', borderRadius: '8px',
+                        marginBottom: '1.25rem', fontSize: '.8rem', textAlign: 'center',
                       }}
                     >
                       ⚠️ {apiError}
@@ -529,35 +464,31 @@ const OnboardingFlow = () => {
 
                 {/* Logo Upload */}
                 <div style={{ marginBottom: '1.75rem', textAlign: 'center' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.75rem', fontWeight: 600 }}>
-                    Organization Logo <span style={{ color: T.g }}>*</span>
+                  <label style={{
+                    display: 'block', fontSize: '.6rem', fontWeight: 700,
+                    letterSpacing: '.14em', textTransform: 'uppercase',
+                    color: C.char500, marginBottom: '.75rem',
+                  }}>
+                    Organization Logo <span style={{ color: C.gold }}>*</span>
                   </label>
                   <div
                     style={{
-                      width: '100px',
-                      height: '100px',
-                      margin: '0 auto',
-                      border: `2px dashed ${errors.logo ? '#c94c4c' : (logoPreview ? T.g : T.dim)}`,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                      background: T.bg4,
-                      transition: 'all .25s',
+                      width: '100px', height: '100px', margin: '0 auto',
+                      border: `2px dashed ${errors.logo ? '#c94c4c' : (logoPreview ? C.gold : C.char300)}`,
+                      borderRadius: '50%', display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                      overflow: 'hidden', background: C.char100, transition: 'all .25s',
                     }}
                     onClick={() => document.getElementById('logoUpload').click()}
-                    onMouseEnter={(e) => { if (!logoPreview) { e.target.style.borderColor = T.g; e.target.style.background = T.ga; } }}
-                    onMouseLeave={(e) => { if (!logoPreview) { e.target.style.borderColor = errors.logo ? '#c94c4c' : T.dim; e.target.style.background = T.bg4; } }}
+                    onMouseEnter={(e) => { if (!logoPreview) { e.target.style.borderColor = C.gold; e.target.style.background = 'rgba(166,124,82,.08)'; } }}
+                    onMouseLeave={(e) => { if (!logoPreview) { e.target.style.borderColor = errors.logo ? '#c94c4c' : C.char300; e.target.style.background = C.char100; } }}
                   >
                     {logoPreview ? (
                       <img src={logoPreview} alt="Logo Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <>
-                        <div style={{ color: T.muted, marginBottom: '.25rem' }}>{I.upload}</div>
-                        <span className="syne" style={{ fontSize: '.55rem', color: T.muted, letterSpacing: '.05em' }}>Upload</span>
+                        <div style={{ color: C.char500, marginBottom: '.25rem' }}>{I.upload}</div>
+                        <span style={{ fontSize: '.55rem', color: C.char500, letterSpacing: '.05em' }}>Upload</span>
                       </>
                     )}
                   </div>
@@ -569,12 +500,12 @@ const OnboardingFlow = () => {
                     style={{ display: 'none' }}
                   />
                   {errors.logo && <div style={{ color: '#c94c4c', fontSize: '.65rem', marginTop: '.5rem' }}>{errors.logo}</div>}
-                  <div className="syne" style={{ fontSize: '.55rem', color: T.sub, marginTop: '.5rem', letterSpacing: '.03em' }}>PNG, JPG or SVG (Max 10MB)</div>
+                  <div style={{ fontSize: '.55rem', color: C.char500, marginTop: '.5rem', letterSpacing: '.03em' }}>PNG, JPG or SVG (Max 10MB)</div>
                 </div>
 
                 {/* Organization Name */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.5rem', fontWeight: 600 }}>Organization Name <span style={{ color: T.g }}>*</span></label>
+                  <label className="fs" style={{ display:'block', fontSize:'.6rem', fontWeight:700, letterSpacing:'.14em', textTransform:'uppercase', color:C.char500, marginBottom:'.5rem' }}>Organization Name <span style={{ color: C.gold }}>*</span></label>
                   <input
                     type="text"
                     name="organizationName"
@@ -583,13 +514,9 @@ const OnboardingFlow = () => {
                     placeholder="e.g., Nairobi Funeral Home"
                     className="inp"
                     style={{
-                      width: '100%',
-                      padding: '.75rem',
-                      background: T.bg4,
-                      border: `1px solid ${errors.organizationName ? '#c94c4c' : T.line2}`,
-                      borderRadius: '8px',
-                      fontSize: '.88rem',
-                      color: T.light,
+                      width: '100%', padding: '.75rem', background: C.char100,
+                      border: `1px solid ${errors.organizationName ? '#c94c4c' : C.char200}`,
+                      borderRadius: '8px', fontSize: '.88rem', color: C.navy900,
                       transition: 'all .2s',
                     }}
                   />
@@ -598,7 +525,7 @@ const OnboardingFlow = () => {
 
                 {/* Email */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.5rem', fontWeight: 600 }}>Email Address <span style={{ color: T.g }}>*</span></label>
+                  <label className="fs" style={{ display:'block', fontSize:'.6rem', fontWeight:700, letterSpacing:'.14em', textTransform:'uppercase', color:C.char500, marginBottom:'.5rem' }}>Email Address <span style={{ color: C.gold }}>*</span></label>
                   <input
                     type="email"
                     name="email"
@@ -607,13 +534,9 @@ const OnboardingFlow = () => {
                     placeholder="info@funeralhome.co.ke"
                     className="inp"
                     style={{
-                      width: '100%',
-                      padding: '.75rem',
-                      background: T.bg4,
-                      border: `1px solid ${errors.email ? '#c94c4c' : T.line2}`,
-                      borderRadius: '8px',
-                      fontSize: '.88rem',
-                      color: T.light,
+                      width: '100%', padding: '.75rem', background: C.char100,
+                      border: `1px solid ${errors.email ? '#c94c4c' : C.char200}`,
+                      borderRadius: '8px', fontSize: '.88rem', color: C.navy900,
                       transition: 'all .2s',
                     }}
                   />
@@ -622,7 +545,7 @@ const OnboardingFlow = () => {
 
                 {/* Location */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.5rem', fontWeight: 600 }}>Location <span style={{ color: T.g }}>*</span></label>
+                  <label className="fs" style={{ display:'block', fontSize:'.6rem', fontWeight:700, letterSpacing:'.14em', textTransform:'uppercase', color:C.char500, marginBottom:'.5rem' }}>Location <span style={{ color: C.gold }}>*</span></label>
                   <input
                     type="text"
                     name="location"
@@ -631,13 +554,9 @@ const OnboardingFlow = () => {
                     placeholder="e.g., Nairobi, Kenya"
                     className="inp"
                     style={{
-                      width: '100%',
-                      padding: '.75rem',
-                      background: T.bg4,
-                      border: `1px solid ${errors.location ? '#c94c4c' : T.line2}`,
-                      borderRadius: '8px',
-                      fontSize: '.88rem',
-                      color: T.light,
+                      width: '100%', padding: '.75rem', background: C.char100,
+                      border: `1px solid ${errors.location ? '#c94c4c' : C.char200}`,
+                      borderRadius: '8px', fontSize: '.88rem', color: C.navy900,
                       transition: 'all .2s',
                     }}
                   />
@@ -646,7 +565,7 @@ const OnboardingFlow = () => {
 
                 {/* Password */}
                 <div style={{ marginBottom: '1rem' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.5rem', fontWeight: 600 }}>Password <span style={{ color: T.g }}>*</span></label>
+                  <label className="fs" style={{ display:'block', fontSize:'.6rem', fontWeight:700, letterSpacing:'.14em', textTransform:'uppercase', color:C.char500, marginBottom:'.5rem' }}>Password <span style={{ color: C.gold }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -656,14 +575,9 @@ const OnboardingFlow = () => {
                       placeholder="Create a strong password"
                       className="inp"
                       style={{
-                        width: '100%',
-                        padding: '.75rem',
-                        paddingRight: '2.5rem',
-                        background: T.bg4,
-                        border: `1px solid ${errors.password ? '#c94c4c' : T.line2}`,
-                        borderRadius: '8px',
-                        fontSize: '.88rem',
-                        color: T.light,
+                        width: '100%', padding: '.75rem', paddingRight: '2.5rem',
+                        background: C.char100, border: `1px solid ${errors.password ? '#c94c4c' : C.char200}`,
+                        borderRadius: '8px', fontSize: '.88rem', color: C.navy900,
                         transition: 'all .2s',
                       }}
                     />
@@ -671,21 +585,14 @@ const OnboardingFlow = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       style={{
-                        position: 'absolute',
-                        right: '.75rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: T.muted,
-                        padding: '.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
+                        position: 'absolute', right: '.75rem', top: '50%',
+                        transform: 'translateY(-50%)', background: 'none',
+                        border: 'none', cursor: 'pointer', color: C.char500,
+                        padding: '.25rem', display: 'flex', alignItems: 'center',
                         transition: 'color .2s',
                       }}
-                      onMouseEnter={(e) => e.target.style.color = T.light}
-                      onMouseLeave={(e) => e.target.style.color = T.muted}
+                      onMouseEnter={(e) => e.target.style.color = C.navy900}
+                      onMouseLeave={(e) => e.target.style.color = C.char500}
                     >
                       {showPassword ? I.eyeOff : I.eye}
                     </button>
@@ -694,7 +601,11 @@ const OnboardingFlow = () => {
                     <div style={{ marginTop: '.5rem' }}>
                       <div style={{ display: 'flex', gap: '.25rem', marginBottom: '.25rem' }}>
                         {[1, 2, 3].map((level) => (
-                          <div key={level} style={{ flex: 1, height: '3px', background: passwordStrength >= level ? getPasswordStrengthColor(passwordStrength) : T.dim, borderRadius: '2px', transition: 'background .2s' }} />
+                          <div key={level} style={{
+                            flex: 1, height: '3px',
+                            background: passwordStrength >= level ? getPasswordStrengthColor(passwordStrength) : C.char200,
+                            borderRadius: '2px', transition: 'background .2s',
+                          }} />
                         ))}
                       </div>
                       <div style={{ fontSize: '.65rem', color: getPasswordStrengthColor(passwordStrength) }}>
@@ -707,7 +618,7 @@ const OnboardingFlow = () => {
 
                 {/* Verify Password */}
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.5rem', fontWeight: 600 }}>Verify Password <span style={{ color: T.g }}>*</span></label>
+                  <label className="fs" style={{ display:'block', fontSize:'.6rem', fontWeight:700, letterSpacing:'.14em', textTransform:'uppercase', color:C.char500, marginBottom:'.5rem' }}>Verify Password <span style={{ color: C.gold }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showVerifyPassword ? 'text' : 'password'}
@@ -717,14 +628,10 @@ const OnboardingFlow = () => {
                       placeholder="Confirm your password"
                       className="inp"
                       style={{
-                        width: '100%',
-                        padding: '.75rem',
-                        paddingRight: '2.5rem',
-                        background: T.bg4,
-                        border: `1px solid ${errors.verifyPassword || errors.passwordMatch ? '#c94c4c' : T.line2}`,
-                        borderRadius: '8px',
-                        fontSize: '.88rem',
-                        color: T.light,
+                        width: '100%', padding: '.75rem', paddingRight: '2.5rem',
+                        background: C.char100,
+                        border: `1px solid ${errors.verifyPassword || errors.passwordMatch ? '#c94c4c' : C.char200}`,
+                        borderRadius: '8px', fontSize: '.88rem', color: C.navy900,
                         transition: 'all .2s',
                       }}
                     />
@@ -732,27 +639,20 @@ const OnboardingFlow = () => {
                       type="button"
                       onClick={() => setShowVerifyPassword(!showVerifyPassword)}
                       style={{
-                        position: 'absolute',
-                        right: '.75rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: T.muted,
-                        padding: '.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
+                        position: 'absolute', right: '.75rem', top: '50%',
+                        transform: 'translateY(-50%)', background: 'none',
+                        border: 'none', cursor: 'pointer', color: C.char500,
+                        padding: '.25rem', display: 'flex', alignItems: 'center',
                         transition: 'color .2s',
                       }}
-                      onMouseEnter={(e) => e.target.style.color = T.light}
-                      onMouseLeave={(e) => e.target.style.color = T.muted}
+                      onMouseEnter={(e) => e.target.style.color = C.navy900}
+                      onMouseLeave={(e) => e.target.style.color = C.char500}
                     >
                       {showVerifyPassword ? I.eyeOff : I.eye}
                     </button>
                   </div>
                   {formData.verifyPassword && formData.password === formData.verifyPassword && formData.password && (
-                    <div style={{ fontSize: '.65rem', color: T.g, marginTop: '.25rem', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
+                    <div style={{ fontSize: '.65rem', color: C.emerald, marginTop: '.25rem', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
                       {I.check} Passwords match
                     </div>
                   )}
@@ -773,14 +673,19 @@ const OnboardingFlow = () => {
                       className="chk"
                       style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', marginTop: '.15rem', flexShrink: 0 }}
                     />
-                    <span style={{ fontSize: '.78rem', color: T.muted, lineHeight: 1.5 }}>
+                    <span style={{ fontSize: '.78rem', color: C.char600, lineHeight: 1.5 }}>
                       I agree to the{' '}
                       <button 
                         type="button"
                         onClick={() => setShowTermsModal(true)}
-                        style={{ background: 'none', border: 'none', color: T.g, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(4,200,0,.4)', transition: 'color .2s' }}
-                        onMouseEnter={(e) => e.target.style.color = T.gl}
-                        onMouseLeave={(e) => e.target.style.color = T.g}
+                        style={{
+                          background: 'none', border: 'none', color: C.gold,
+                          cursor: 'pointer', textDecoration: 'underline',
+                          textDecorationColor: 'rgba(166,124,82,.4)',
+                          transition: 'color .2s',
+                        }}
+                        onMouseEnter={(e) => e.target.style.color = C.goldD}
+                        onMouseLeave={(e) => e.target.style.color = C.gold}
                       >
                         Terms and Conditions
                       </button>
@@ -796,31 +701,23 @@ const OnboardingFlow = () => {
                   disabled={isSubmitting}
                   whileHover={!isSubmitting ? { scale: 1.01 } : undefined}
                   whileTap={!isSubmitting ? { scale: 0.99 } : undefined}
-                  className="syne"
                   style={{
                     width: '100%',
-                    background: isSubmitting ? T.dim : T.g,
-                    color: isSubmitting ? T.muted : '#000',
-                    border: 'none',
-                    padding: '.9rem',
-                    borderRadius: '8px',
-                    fontSize: '.7rem',
-                    fontWeight: 700,
-                    letterSpacing: '.1em',
+                    background: isSubmitting ? C.char300 : C.navy900,
+                    color: isSubmitting ? C.char500 : '#fff',
+                    border: 'none', padding: '.9rem', borderRadius: '8px',
+                    fontSize: '.7rem', fontWeight: 700, letterSpacing: '.1em',
                     textTransform: 'uppercase',
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     opacity: isSubmitting ? 0.6 : 1,
-                    boxShadow: isSubmitting ? 'none' : '0 4px 24px -6px rgba(4,200,0,.5)',
+                    boxShadow: isSubmitting ? 'none' : '0 4px 16px -4px rgba(10,31,61,.4)',
                     transition: 'all .22s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '.5rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem',
                   }}
                 >
                   {isSubmitting ? (
                     <>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                      <span style={{ width:'14px',height:'14px',borderRadius:'50%',border:'2px solid currentColor',borderTopColor:'transparent',animation:'spin 0.6s linear infinite' }} />
                       Creating Account...
                     </>
                   ) : (
@@ -841,12 +738,16 @@ const OnboardingFlow = () => {
             >
               {[
                 [I.lock, 'AES-256 Encryption'],
-                [I.shield, 'ISO 27001 Compliant'],
+                [I.shield, 'Enterprise Security'],
                 [I.cloud, 'Contabo Cloud'],
               ].map(([ic, label]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '.4rem', background: T.ga, border: `1px solid rgba(4,200,0,.12)`, borderRadius: '7px', padding: '.4rem .7rem' }}>
-                  <span style={{ color: T.g }}>{ic}</span>
-                  <span className="syne" style={{ fontSize: '.55rem', color: T.g, fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>
+                <div key={label} style={{
+                  display: 'flex', alignItems: 'center', gap: '.4rem',
+                  border: `1px solid ${C.char200}`, borderRadius: '7px',
+                  padding: '.4rem .7rem', background: C.char100,
+                }}>
+                  <span style={{ color: C.gold }}>{ic}</span>
+                  <span style={{ fontSize: '.55rem', color: C.char600, fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>
                 </div>
               ))}
             </motion.div>
@@ -856,45 +757,47 @@ const OnboardingFlow = () => {
 
       {/* Footer */}
       <footer style={{
-        background: T.bg1,
-        borderTop: `1px solid ${T.line}`,
+        background: C.navy900, borderTop: `1px solid ${C.navy800}`,
         padding: '2.5rem 0 2rem',
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
-            {/* Brand */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.75rem' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.g, boxShadow: `0 0 8px ${T.g}` }} />
-                <span className="syne" style={{ fontSize: '.78rem', fontWeight: 800, color: T.white, letterSpacing: '.14em' }}>REST POINT</span>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.emerald }} />
+                <span style={{ fontFamily:"'Lora',serif", fontSize: '.9rem', fontWeight: 700, color: '#fff' }}>Rest Point</span>
               </div>
-              <p style={{ fontSize: '.72rem', color: T.sub, lineHeight: 1.7, maxWidth: '200px' }}>The complete mortuary operating system, built for East Africa.</p>
+              <p style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.7)', lineHeight: 1.7, maxWidth: '200px' }}>The complete mortuary operating system, built for East Africa.</p>
             </div>
-            {/* Product */}
             <div>
-              <div className="syne" style={{ fontSize: '.58rem', color: T.muted, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '1rem' }}>Product</div>
+              <div style={{ fontSize: '.58rem', color: 'rgba(255,255,255,.5)', letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '1rem', fontWeight: 600 }}>Product</div>
               {['Features', 'Family Portal', 'Marketplace', 'Pricing'].map(l => (
-                <div key={l} style={{ fontSize: '.73rem', color: T.sub, marginBottom: '.55rem', cursor: 'pointer', transition: 'color .18s' }} onMouseEnter={e => e.target.style.color = T.g} onMouseLeave={e => e.target.style.color = T.sub}>{l}</div>
+                <div key={l} style={{ fontSize: '.73rem', color: 'rgba(255,255,255,.7)', marginBottom: '.55rem', cursor: 'pointer', transition: 'color .18s' }} onMouseEnter={e => e.target.style.color = C.gold} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,.7)'}>{l}</div>
               ))}
             </div>
-            {/* Company */}
             <div>
-              <div className="syne" style={{ fontSize: '.58rem', color: T.muted, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '1rem' }}>Company</div>
+              <div style={{ fontSize: '.58rem', color: 'rgba(255,255,255,.5)', letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '1rem', fontWeight: 600 }}>Company</div>
               {['About', 'Blog', 'Careers', 'Contact'].map(l => (
-                <div key={l} style={{ fontSize: '.73rem', color: T.sub, marginBottom: '.55rem', cursor: 'pointer', transition: 'color .18s' }} onMouseEnter={e => e.target.style.color = T.g} onMouseLeave={e => e.target.style.color = T.sub}>{l}</div>
+                <div key={l} style={{ fontSize: '.73rem', color: 'rgba(255,255,255,.7)', marginBottom: '.55rem', cursor: 'pointer', transition: 'color .18s' }} onMouseEnter={e => e.target.style.color = C.gold} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,.7)'}>{l}</div>
               ))}
             </div>
-            {/* Legal */}
             <div>
-              <div className="syne" style={{ fontSize: '.58rem', color: T.muted, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '1rem' }}>Legal</div>
+              <div style={{ fontSize: '.58rem', color: 'rgba(255,255,255,.5)', letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '1rem', fontWeight: 600 }}>Legal</div>
               {['Privacy Policy', 'Terms of Service', 'Security'].map(l => (
-                <div key={l} style={{ fontSize: '.73rem', color: T.sub, marginBottom: '.55rem', cursor: 'pointer', transition: 'color .18s' }} onMouseEnter={e => e.target.style.color = T.g} onMouseLeave={e => e.target.style.color = T.sub}>{l}</div>
+                <div key={l} style={{ fontSize: '.73rem', color: 'rgba(255,255,255,.7)', marginBottom: '.55rem', cursor: 'pointer', transition: 'color .18s' }} onMouseEnter={e => e.target.style.color = C.gold} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,.7)'}>{l}</div>
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', paddingTop: '1.5rem', borderTop: `1px solid ${T.line}` }}>
-            <div style={{ fontSize: '.65rem', color: T.sub }}>© {new Date().getFullYear()} Rest Point. All rights reserved.</div>
-            <div className="vtag" style={{ fontFamily: 'Syne,sans-serif', fontSize: '.55rem', color: T.g, background: T.ga, border: `1px solid rgba(4,200,0,.18)`, borderRadius: '5px', padding: '.2rem .55rem', letterSpacing: '.08em' }}>v2cloud.2026.RP</div>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '1rem', flexWrap: 'wrap', paddingTop: '1.5rem',
+            borderTop: `1px solid ${C.navy800}`,
+          }}>
+            <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.6)' }}>© {new Date().getFullYear()} Rest Point. All rights reserved.</div>
+            <div style={{ display:'flex', gap:'.5rem', alignItems:'center', fontSize:'.65rem', color:'rgba(255,255,255,.6)' }}>
+              <span style={{ width:'6px',height:'6px',borderRadius:'50%',background:C.emerald,display:'inline-block' }}/>
+              Built with compassion for funeral professionals across Africa.
+            </div>
           </div>
         </div>
       </footer>

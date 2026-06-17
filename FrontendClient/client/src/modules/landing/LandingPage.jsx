@@ -48,7 +48,7 @@ const REASONS = [
   { icon:Icons.award, title:'Trusted by 100+ Homes', desc:'Across Kenya and East Africa, funeral professionals trust Rest Point to manage their operations and serve families with dignity.' },
   { icon:Icons.sms, title:'SMS Notifications', desc:'Automated SMS updates at every milestone. Families stay informed without calling. Reduce phone calls by 70%.' },
   { icon:Icons.truck, title:'GPS Dispatch Tracking', desc:'Track hearses in real-time. Families receive automated arrival notifications. Optimize routes and reduce fuel costs.' },
-  { icon:Icons.barChart, title:'Data-Driven Decisions', desc:'Live dashboards with revenue, case volumes, and staff performance. Export custom reports.' },
+  { icon:Icons.lock, title:'Critical Data Protection', desc:'Postmortem reports, autopsy results, and medical records are strictly encrypted and masked. Only authorized staff access sensitive case information.' },
 ];
 
 const TESTIMONIALS = [
@@ -517,11 +517,11 @@ export default function App() {
               <div className="security-text">
                 <div className="eyebrow">{Icons.shield} Enterprise Security</div>
                 <h2>Your Data. Protected. Always.</h2>
-                <p>We take data security seriously. Your funeral home's sensitive information and families' personal data are protected by enterprise-grade security infrastructure.</p>
+                <p>We take data security seriously. Your funeral home's sensitive information — including postmortem reports, autopsy findings, medical records, and families' personal data — are protected by enterprise-grade security infrastructure.</p>
                 <div className="security-items" style={{marginTop:'2rem'}}>
                   <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.lock}</div><div><h4>Contobo Security Family</h4><p>Enterprise-grade encryption at rest and in transit. SOC 2 compliant infrastructure with multi-layered security controls.</p></div></div>
                   <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.shield}</div><div><h4>Role-Based Access Control</h4><p>Granular permissions for directors, managers, staff, and families. Every action is logged with complete audit trails.</p></div></div>
-                  <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.file}</div><div><h4>Compliance & Regulatory</h4><p>Built to meet HIPAA, GDPR, and local East African regulatory requirements for data protection.</p></div></div>
+                  <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.file}</div><div><h4>Critical Data Protection</h4><p>Postmortem reports, autopsy results, cause of death, medical history, and identification documents are encrypted and automatically masked. Prevents sensitive case information from being exposed.</p></div></div>
                   <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.globe}</div><div><h4>Disaster Recovery</h4><p>Automated daily backups, multi-region redundancy, and 99.9% uptime SLA.</p></div></div>
                 </div>
               </div>

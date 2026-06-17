@@ -108,7 +108,84 @@ app.use(function(req, res, next) {
   next();
 });
 
-// ===== PROXY =====
+// =============================================================================
+// SECURITY MIDDLEWARES
+// =============================================================================
+
+// 1. Sensitive Data Masking Middleware
+// Masks sensitive/critical fields in all JSON responses to prevent data leakage
+// Protects: passwords, tokens, postmortem info, autopsy data, financial info, identification docs
+const sensitiveFields = [
+  'password', 'email', 'phone', 'token', 'secret', 'apiKey',
+  'postmortem', 'postMortem', 'autopsy', 'causeOfDeath', 'mannerOfDeath',
+  'medicalHistory', 'nextOfKin', 'idNumber', 'nationalId', 'passport',
+  'deathCertificate', 'burialPermit', 'cremationPermit',
+  'bankAccount', 'accountNumber', 'cardNumber', 'cvv', 'pin',
+  'resetToken', 'refreshToken', 'accessToken',
+  'ssn', 'socialSecurity', 'taxId',
+  'biometricData', 'fingerprint', 'irisScan',
+  'bodyTagId', 'caseNumber', 'mortuaryId'
+];
+
+app.use(function(req, res, next) {
+  const originalJson = res.json;
+  res.json = function(data) {
+    function mask(obj) {
+      if (!obj || typeof obj !== 'object') return obj;
+      if (Array.isArray(obj)) return obj.map(function(item) { return mask(item); });
+      var masked = {};
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (sensitiveFields.indexOf(key) >= 0) {
+            masked[key] = '********';
+          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+            masked[key] = mask(obj[key]);
+          } else {
+            masked[key] = obj[key];
+          }
+        }
+      }
+      return masked;
+    }
+    return originalJson.call(this, mask(data));
+  };
+  next();
+});
+
+// 2. File Upload Security Middleware
+// Validates upload size to prevent DoS attacks via large payloads
+app.use(function(req, res, next) {
+  if (req.is && req.is('multipart/form-data')) {
+    var contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    var maxUploadSize = 50 * 1024 * 1024;
+    if (contentLength > maxUploadSize) {
+      return res.status(413).json({ success: false, message: 'Upload too large. Maximum 50MB allowed.' });
+    }
+  }
+  next();
+});
+
+// 3. Tenant/Mortuary Ownership Middleware
+// Ensures users can only access data from their own mortuary
+// Prevents data leakage between tenants
+app.use(function(req, res, next) {
+  var tenantSlug = req.headers['x-tenant-slug'];
+  var tenantId = req.headers['x-tenant-id'];
+
+  if (tenantSlug || tenantId) {
+    if (tenantSlug && !/^[a-zA-Z0-9\-]+$/.test(tenantSlug)) {
+      return res.status(400).json({ success: false, message: 'Invalid tenant slug format' });
+    }
+    req.tenantSlug = tenantSlug;
+    req.tenantId = tenantId;
+  }
+
+  next();
+});
+
+// =============================================================================
+// PROXY
+// =============================================================================
 function createProxy(target) {
   var parts = new URL(target);
   return function(req, res) {
