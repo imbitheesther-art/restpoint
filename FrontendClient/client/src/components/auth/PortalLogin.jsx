@@ -48,90 +48,143 @@ function PortalLoginPage() {
         localStorage.setItem('sessionToken', data.sessionToken || data.session_token);
         localStorage.setItem('tenantSlug', data.tenantSlug);
         localStorage.setItem('deceasedId', data.deceased?.deceased_id);
-        if (data.deceased) localStorage.setItem('deceased', JSON.stringify(data.deceased));
-        setMessage({ type: 'success', text: 'Welcome. Redirecting...' });
-        setTimeout(() => navigate(`/portal/${data.tenantSlug}/dashboard`), 1500);
+        navigate('/portal/dashboard');
       } else {
-        setMessage({ type: 'error', text: data?.message || 'Phone number not found.' });
-        setIsLoading(false);
+        setMessage({ type: 'error', text: data?.message || 'Login failed. Check your phone number.' });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Unable to connect.' });
+      setMessage({ type: 'error', text: 'Unable to connect. Please try again.' });
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Inter',sans-serif;overflow:hidden}
-        .portal-page{position:relative;width:100%;height:100vh;display:flex;align-items:center;justify-content:center;background:#0A1F3D}
-        .portal-bg{position:absolute;inset:0;background:url('/familyportal.png') center/cover no-repeat;filter:brightness(0.6) saturate(1.2);z-index:0}
-        .portal-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,31,61,0.85) 0%,rgba(15,40,71,0.7) 100%);z-index:1}
-        .portal-content{position:relative;z-index:2;width:100%;max-width:440px;padding:0 24px;text-align:center;animation:fadeInUp 0.8s ease}
-        .portal-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px}
-        .portal-logo-dot{width:12px;height:12px;border-radius:50%;background:#059669}
-        .portal-logo-text{font-family:'Lora',serif;font-size:2rem;font-weight:700;color:#fff;letter-spacing:-0.02em}
-        .portal-title{font-family:'Lora',serif;font-size:2.5rem;font-weight:600;color:#fff;margin-bottom:16px;line-height:1.2}
-        .portal-subtitle{font-size:1rem;color:rgba(255,255,255,0.8);margin-bottom:32px;line-height:1.6}
-        .portal-subtitle strong{color:#A67C52}
-        .input-group{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
-        .portal-input{width:100%;padding:16px 20px;font-family:'Inter',sans-serif;font-size:1.1rem;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;outline:none;color:#fff;transition:all 0.25s;text-align:center;letter-spacing:0.05em}
-        .portal-input:focus{border-color:#A67C52;background:rgba(255,255,255,0.18);box-shadow:0 0 0 4px rgba(166,124,82,0.15)}
-        .portal-input::placeholder{color:rgba(255,255,255,0.4)}
-        .portal-btn{width:100%;padding:16px 24px;background:linear-gradient(135deg,#A67C52,#8B6340);color:#fff;font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:none;border-radius:12px;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 32px -8px rgba(166,124,82,0.5)}
-        .portal-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 40px -8px rgba(166,124,82,0.7)}
-        .portal-btn:disabled{opacity:0.5;cursor:not-allowed}
-        .portal-message{padding:14px 18px;border-radius:10px;font-size:0.85rem;margin-bottom:16px;animation:fadeIn 0.3s ease}
-        .portal-message.error{background:rgba(229,62,62,0.15);color:#fc8181;border:1px solid rgba(229,62,62,0.3)}
-        .portal-message.success{background:rgba(5,150,105,0.15);color:#68d391;border:1px solid rgba(5,150,105,0.3)}
-        .portal-footer{margin-top:32px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
-        .portal-footer a{color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.8rem;transition:color 0.2s}
-        .portal-footer a:hover{color:#A67C52}
-        .portal-footer span{color:rgba(255,255,255,0.3)}
-        .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block}
-        @keyframes fadeInUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @media(max-width:480px){.portal-title{font-size:1.8rem}.portal-logo-text{font-size:1.5rem}.portal-input{padding:14px 16px;font-size:1rem}}
-      `}</style>
-      <div className="portal-page">
-        <div className="portal-bg"/>
-        <div className="portal-overlay"/>
-        <div className="portal-content">
-          <div className="portal-logo">
-            <div className="portal-logo-dot"/>
-            <span className="portal-logo-text">Rest Point</span>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#F9FAFB',
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');`}</style>
+      <div style={{
+        background: '#fff',
+        borderRadius: 16,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
+        border: '1px solid #E5E7EB',
+        padding: '2.5rem 2rem',
+        width: '100%',
+        maxWidth: 400,
+        margin: '1rem',
+      }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: '#0A1F3D',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            boxShadow: '0 2px 8px rgba(10,31,61,0.15)',
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
           </div>
-          <h1 className="portal-title">Family Memorial Portal</h1>
-          <p className="portal-subtitle">
-            Enter the <strong>phone number</strong> registered with the funeral home to access your loved one's memorial, documents, and billing.
-          </p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 600, color: '#0A1F3D', margin: 0, letterSpacing: '-0.02em' }}>Rest Point</h1>
+          <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 6, fontWeight: 400 }}>Family Portal — Track case progress, view documents, and communicate</p>
+        </div>
+
+        {/* Phone Input */}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={handlePhoneChange}
+              placeholder="0712 345 678"
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '1rem',
+                border: '1.5px solid #D1D5DB',
+                borderRadius: 10,
+                outline: 'none',
+                fontFamily: "'Inter', sans-serif",
+                color: '#111827',
+                background: '#F9FAFB',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => { e.target.style.borderColor = '#A67C52'; e.target.style.boxShadow = '0 0 0 3px rgba(166,124,82,0.1)'; e.target.style.background = '#fff'; }}
+              onBlur={(e) => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; e.target.style.background = '#F9FAFB'; }}
+            />
+          </div>
+
           {message.text && (
-            <div className={`portal-message ${message.type}`}>
-              {message.type === 'error' ? '⚠️ ' : '✓ '}{message.text}
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              fontSize: '0.82rem',
+              fontWeight: 500,
+              background: message.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+              color: message.type === 'error' ? '#DC2626' : '#16A34A',
+              border: message.type === 'error' ? '1px solid #FECACA' : '1px solid #BBF7D0',
+            }}>
+              {message.text}
             </div>
           )}
-          <form onSubmit={handleLogin}>
-            <div className="input-group">
-              <input type="tel" className="portal-input" placeholder="07XX XXX XXX" value={phoneNumber} onChange={handlePhoneChange} disabled={isLoading} required autoFocus/>
-            </div>
-            <button type="submit" className="portal-btn" disabled={isLoading}>
-              {isLoading ? <><div className="spinner"/> Searching...</> : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg> Access Memorial</>}
-            </button>
-          </form>
-          <div className="portal-footer">
-            <a href="/">← Back to Rest Point</a>
-            <span>•</span>
-            <a href="mailto:info@restpoint.co.ke">Support</a>
-            <span>•</span>
-            <a href="/login">Staff Login</a>
-          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              width: '100%',
+              padding: '14px 24px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              border: 'none',
+              borderRadius: 10,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              background: isLoading ? '#9CA3AF' : '#0A1F3D',
+              color: '#fff',
+              fontFamily: "'Inter', sans-serif",
+              transition: 'all 0.2s',
+              boxShadow: isLoading ? 'none' : '0 4px 12px -4px rgba(10,31,61,0.3)',
+            }}
+            onMouseEnter={(e) => { if (!isLoading) { e.target.style.background = '#0F2847'; e.target.style.transform = 'translateY(-1px)'; } }}
+            onMouseLeave={(e) => { e.target.style.background = isLoading ? '#9CA3AF' : '#0A1F3D'; e.target.style.transform = 'none'; }}
+          >
+            {isLoading ? 'Sending...' : 'Access Family Portal'}
+          </button>
+
+          <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9CA3AF', marginTop: 8, lineHeight: 1.5 }}>
+            Enter the phone number you registered with your funeral home. An SMS link will be sent to access your family's information.
+          </p>
+        </form>
+
+        <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #F3F4F6', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.72rem', color: '#9CA3AF', lineHeight: 1.5, margin: 0 }}>
+            By continuing, you agree to our{' '}
+            <a href="/privacy" style={{ color: '#A67C52', textDecoration: 'none', fontWeight: 500 }}>Privacy Policy</a>
+            {' '}and{' '}
+            <a href="/terms" style={{ color: '#A67C52', textDecoration: 'none', fontWeight: 500 }}>Terms of Service</a>.
+            Your data is encrypted and protected.
+          </p>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

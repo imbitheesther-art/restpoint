@@ -62,15 +62,6 @@ const REASONS = [
   { icon:Icons.lock, title:'Critical Data Protection', desc:'Postmortem reports, autopsy results, and medical records are strictly encrypted and masked. Only authorized staff access sensitive case information.' },
 ];
 
-const TESTIMONIALS = [
-  { author:'Sarah Chen', role:'Director, Eternal Rest', text:'Welt Tallis cut our admin time by 60%. Families are more satisfied.', stat:'60% time savings', avatar:'SC' },
-  { author:'James Okonkwo', role:'Manager, Heritage Services', text:'The Family Portal has been transformative. We\'ve seen more 5-star reviews.', stat:'45% more reviews', avatar:'JO' },
-  { author:'Maria Santos', role:'Owner, Compassionate Care', text:'The marketplace integration has opened new revenue opportunities.', stat:'+$8K/month', avatar:'MS' },
-  { author:'David Mwangi', role:'Director, Grace & Peace', text:'The memorial board is incredible. Families worldwide can light candles.', stat:'3x engagement', avatar:'DM' },
-  { author:'Grace Wanjiku', role:'Manager, Serene Rest', text:'GPS dispatch tracking has been a game-changer. Families love real-time updates.', stat:'70% fewer calls', avatar:'GW' },
-  { author:'Peter Ochieng', role:'Owner, Legacy Services', text:'The document editor saved us hours every week. Permits in minutes.', stat:'4x faster docs', avatar:'PO' },
-];
-
 const TRUST = [
   { icon:Icons.lock, title:'Bank-Level Security', desc:'Enterprise-grade encryption, role-based access, and secure cloud infrastructure.', stat:'256-bit SSL' },
   { icon:Icons.shield, title:'99.9% Uptime', desc:'Redundant systems, daily backups, and disaster recovery.', stat:'24/7 Support' },
@@ -392,7 +383,7 @@ export default function App() {
         .testimonial-stat{font-size:1.4rem;font-weight:700;color:${C.gold};margin-bottom:1rem;font-family:'Playfair Display',serif}
         .testimonial-text{font-size:.95rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem;font-style:italic}
         .testimonial-author{font-weight:600;color:${C.navy900};font-size:.9rem}
-        .testimonial-role{font-size:.8rem;color:${C.char600)}
+        .testimonial-role{font-size:.8rem;color:${C.char600}}
         
         .pricing-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
         .pricing-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
@@ -666,21 +657,26 @@ export default function App() {
           </div>
         </section>
 
-        {/* TESTIMONIALS */}
-        <section className="section testimonials-section">
+        {/* DATA PRIVACY & PROTECTION */}
+        <section className="section" style={{background:'#fff',borderTop:'1px solid '+C.char200,borderBottom:'1px solid '+C.char200}}>
           <div className="wrap">
             <div style={{textAlign:'center',marginBottom:'3rem'}}>
-              <div className="eyebrow" style={{justifyContent:'center'}}>{Icons.star} Trusted by Professionals</div>
-              <h2 style={{color:C.navy900}}>What Funeral Directors Say</h2>
+              <div className="eyebrow" style={{justifyContent:'center'}}>{Icons.lock} Data Privacy & Protection</div>
+              <h2 style={{color:C.navy900}}>Your Data. Protected. Always.</h2>
+              <p style={{color:C.char600,maxWidth:'700px',margin:'1rem auto 0',lineHeight:1.7}}>We take data protection seriously. Here's how we safeguard your information and ensure regulatory compliance.</p>
             </div>
-            <div className="testimonials-grid">
-              {TESTIMONIALS.map((t,i)=>(
-                <div key={i} className="testimonial-card">
-                  <div className="testimonial-avatar">{t.avatar}</div>
-                  <div className="testimonial-stat">{t.stat}</div>
-                  <p className="testimonial-text">"{t.text}"</p>
-                  <div className="testimonial-author">{t.author}</div>
-                  <div className="testimonial-role">{t.role}</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'1.5rem'}}>
+              {[
+                {icon:Icons.lock,t:'Data We Collect',d:'Only essential info: name, email, phone, business details, and deceased records for funeral home management. No unnecessary personal data collected.'},
+                {icon:Icons.shield,t:'How We Use It',d:'Exclusively for management services — case tracking, billing, documents, family communication, memorials. We never sell your data.'},
+                {icon:Icons.file,t:'Storage & Retention',d:'Encrypted servers with daily backups. Retained as long as needed or required by law. You can request deletion anytime.'},
+                {icon:Icons.globe,t:'Data Sharing',d:'Only authorized personnel within your organization. Payment via encrypted APIs (M-PESA, banks). Never shared with unauthorized parties.'},
+                {icon:Icons.check,t:'Your Rights',d:'Access, correct, delete, restrict, portability, withdraw consent — per Kenyan Data Protection Act 2019 and GDPR.'},
+                {icon:Icons.shield,t:'Security Measures',d:'End-to-end encryption, role-based access, auto session timeout, audit trails, regular security audits, firewalls.'},
+              ].map((p,i)=>(
+                <div key={i} style={{display:'flex',gap:'1rem',padding:'1.5rem',background:C.navy50,borderRadius:12,border:'1px solid '+C.char200,transition:'all .3s'}} onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 8px 24px -8px rgba(0,0,0,.08)'}} onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none'}}>
+                  <div style={{color:C.emerald,flexShrink:0,marginTop:2,fontSize:'1.3rem'}}>{p.icon}</div>
+                  <div><h4 style={{fontFamily:'Inter,sans-serif',fontWeight:600,fontSize:'.95rem',color:C.navy900,marginBottom:'.5rem'}}>{p.t}</h4><p style={{fontSize:'.85rem',color:C.char600,lineHeight:1.6}}>{p.d}</p></div>
                 </div>
               ))}
             </div>
