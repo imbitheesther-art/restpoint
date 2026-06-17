@@ -7,6 +7,8 @@ import ModernSidebar from '../components/layout/ModernSidebar';
 import LandingPage from '../modules/landing/LandingPage';
 import OnboardingFlow from '../modules/onboarding/OnboardingFlow';
 import PrivacyPolicy from '../components/privacy/PrivacyPolicy';
+import TermsOfService from '../components/privacy/TermsOfService';
+import WhyUsPage from '../components/pages/WhyUsPage';
 import LoginPage from '../components/auth/login';
 import PortalLoginPage from '../components/auth/PortalLogin';
 import ForgotPassword from '../components/auth/ForgotPassword';
@@ -460,6 +462,8 @@ const AppRouter = () => {
       <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
       <Route path="/portal/login" element={<PortalLoginPage />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/why-us" element={<WhyUsPage />} />
       
       {/* Legacy dashboard redirect */}
       <Route path="/dashboard/*" element={

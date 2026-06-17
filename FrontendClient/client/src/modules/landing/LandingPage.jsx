@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-/* REST POINT — Premium Funeral Home Management Platform | Built by Welt Tallis Technologies */
-const C = { 
+const ImageWithFallback = ({ src, alt, style, fallbackContent }) => {
+  const [imgError, setImgError] = useState(false);
+
+  if (imgError) {
+    return <div style={style} dangerouslySetInnerHTML={{ __html: fallbackContent }} />;
+  }
+
+  return <img src={src} alt={alt} style={style} onError={() => setImgError(true)} />;
+};
+
+const C = {
   navy900:'#0A1F3D', navy800:'#0F2847', navy700:'#152D4A', navy50:'#F9FAFB',
-  char700:'#374151', char600:'#4B5563', char500:'#6B7280', char300:'#D1D5DB', 
-  char200:'#E5E7EB', char100:'#F3F4F6', gold:'#A67C52', goldD:'#8B6340', 
+  char700:'#374151', char600:'#4B5563', char500:'#6B7280', char300:'#D1D5DB',
+  char200:'#E5E7EB', char100:'#F3F4F6', gold:'#A67C52', goldD:'#8B6340',
   emerald:'#059669', emeraldLight:'#10B981', purple:'#8B5CF6', blue:'#3B82F6',
   pink:'#EC4899', orange:'#F59E0B', teal:'#14B8A6', indigo:'#6366F1'
 };
@@ -26,47 +35,26 @@ const Icons = {
   heart: <Svg d={<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>}/>,
   menu: <Svg d={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>}/>,
   close: <Svg d={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}/>,
-  flame: <Svg d={<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/>}/>,
-  star: <svg width="16" height="16" viewBox="0 0 24 24" fill={C.gold}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-  shop: <Svg d={<><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></>}/>,
-  clock: <Svg d={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>}/>,
-  dollar: <Svg d={<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>}/>,
   truck: <Svg d={<><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>}/>,
   award: <Svg d={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>}/>,
   barChart: <Svg d={<><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>}/>,
   sms: <Svg d={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>}/>,
   calendar: <Svg d={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>}/>,
+  fuel: <Svg d={<><path d="M3 22V8l4-4h6l4 4v14"/><path d="M11 10V2"/><path d="M15 10v4"/><path d="M7 22h12"/><path d="M3 22h18"/></>}/>,
+  gps: <Svg d={<><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="3"/></>}/>,
+  route: <Svg d={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>}/>,
 };
 
 const FEATURES = [
-  { icon:Icons.zap, title:'Case Management', desc:'Track every service from first call to final arrangements. Real-time updates, timeline tracking, auto-notifications, and complete digital case history.', color:C.emerald, gradient:'linear-gradient(135deg, #059669 0%, #10B981 100%)' },
-  { icon:Icons.heart, title:'Family Portal', desc:'Families get a secure SMS link (no app needed) to view documents, track progress, receive billing, make M-PESA payments, and communicate with your team.', color:C.gold, gradient:'linear-gradient(135deg, #A67C52 0%, #C9A876 100%)' },
-  { icon:Icons.file, title:'Document Editor', desc:'Built-in canvas-based document creator with smart templates for burial permits, death certificates, invoices, and release forms. Generate, sign, and share in minutes.', color:C.blue, gradient:'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)' },
-  { icon:Icons.globe, title:'Integrated Marketplace', desc:'Turn your funeral home into a one-stop shop. Connect families with trusted florists, caterers, keepsake vendors. Earn up to 20% commission on every transaction.', color:C.purple, gradient:'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)' },
-  { icon:Icons.users, title:'Team Collaboration', desc:'Real-time coordination across directors, drivers, embalmers, and admin staff. Role-based permissions, shared calendars, task assignments, and full audit trails.', color:C.pink, gradient:'linear-gradient(135deg, #EC4899 0%, #F472B6 100%)' },
-  { icon:Icons.barChart, title:'Reporting & Analytics', desc:'Live dashboard tracking revenue, case volumes, billing status, and staff performance. Export custom reports. Data-driven decisions for business growth.', color:C.orange, gradient:'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)' },
-  { icon:Icons.truck, title:'Dispatch & Hearse Tracking', desc:'GPS-enabled dispatch tracking for hearses and vehicles. Real-time location updates, route optimization, and automated family notifications on arrival.', color:C.teal, gradient:'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)' },
-  { icon:Icons.calendar, title:'Calendar & Scheduling', desc:'Manage funeral services, viewings, and team schedules in one place. Automated reminders, conflict detection, and shared team calendars.', color:C.indigo, gradient:'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)' },
-  { icon:Icons.dollar, title:'Billing & Invoicing', desc:'Automated invoicing with M-PESA integration, payment tracking, and financial reporting. Reduce billing errors and accelerate payment collection.', color:C.emeraldLight, gradient:'linear-gradient(135deg, #10B981 0%, #34D399 100%)' },
-];
-
-const REASONS = [
-  { icon:Icons.clock, title:'Save 60% Admin Time', desc:'Automate scheduling, billing, and docs. Your team focuses on families, not paperwork.' },
-  { icon:Icons.heart, title:'Family Portal — No App', desc:'Families get a secure link via SMS. Track progress, view documents, pay M-PESA. No download.' },
-  { icon:Icons.dollar, title:'New Revenue for Your Home', desc:'Help families memorialize digitally — light candles, leave memories. You earn, they heal.' },
-  { icon:Icons.shield, title:'Enterprise Security', desc:'Bank-level encryption, role-based access, full audit trails. Data you can trust.' },
-  { icon:Icons.globe, title:'Digital Memorial Candles', desc:'Light a candle. Leave a memory. Dedicated to dignity — every life leaves a mark.' },
-  { icon:Icons.award, title:'Built for African Mortuaries', desc:'M-PESA, local SMS, multi-tenant. Designed for Kenya, Uganda, Tanzania.' },
-  { icon:Icons.sms, title:'SMS Link — Not SMS Spam', desc:'Families get one secure link. No app. No spam. Just connection when it matters.' },
-  { icon:Icons.truck, title:'GPS Hearse Tracking', desc:'Real-time location. Families get arrival alerts. Cut 70% of "where is the hearse?" calls.' },
-  { icon:Icons.lock, title:'Data You Control', desc:'Postmortem, autopsy, medical records — encrypted and masked. Only your staff sees.' },
-];
-
-const TRUST = [
-  { icon:Icons.lock, title:'Bank-Level Security', desc:'Enterprise-grade encryption, role-based access, and secure cloud infrastructure.', stat:'256-bit SSL' },
-  { icon:Icons.shield, title:'99.9% Uptime', desc:'Redundant systems, daily backups, and disaster recovery.', stat:'24/7 Support' },
-  { icon:Icons.file, title:'Compliance Ready', desc:'Built for HIPAA, GDPR, and local regulations. Audit trails for every action.', stat:'100% Compliant' },
-  { icon:Icons.globe, title:'Global Reach', desc:'Support families worldwide. Anyone can light candles and stay connected.', stat:'50+ Countries' },
+  { icon:Icons.zap, title:'Case Management', desc:'Track every service from first call to final arrangements with real-time updates and complete digital case history.', color:'#059669', gradient:'linear-gradient(135deg, #059669 0%, #10B981 100%)' },
+  { icon:Icons.heart, title:'Family Portal', desc:'Secure SMS link for families to view documents, track progress, and make payments. No app required.', color:'#A67C52', gradient:'linear-gradient(135deg, #A67C52 0%, #C9A876 100%)' },
+  { icon:Icons.file, title:'Document Editor', desc:'Generate burial permits, death certificates, and invoices with smart templates. Sign and share in minutes.', color:'#3B82F6', gradient:'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)' },
+  { icon:Icons.globe, title:'Marketplace', desc:'Connect families with vendors and earn commission. Turn your funeral home into a complete service center.', color:'#8B5CF6', gradient:'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)' },
+  { icon:Icons.users, title:'Team Collaboration', desc:'Coordinate across directors, drivers, and staff with role-based permissions and shared calendars.', color:'#EC4899', gradient:'linear-gradient(135deg, #EC4899 0%, #F472B6 100%)' },
+  { icon:Icons.barChart, title:'Analytics', desc:'Live dashboard tracking revenue, case volumes, and staff performance. Data-driven decisions for growth.', color:'#F59E0B', gradient:'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)' },
+  { icon:Icons.truck, title:'Dispatch Tracking', desc:'GPS-enabled hearse tracking with fuel estimation and automated family notifications on arrival.', color:'#14B8A6', gradient:'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)' },
+  { icon:Icons.calendar, title:'Scheduling', desc:'Manage funeral services and team schedules with automated reminders and conflict detection.', color:'#6366F1', gradient:'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)' },
+  { icon:Icons.dollar, title:'Billing & Invoicing', desc:'Automated invoicing with M-PESA integration, payment tracking, and financial reporting.', color:'#10B981', gradient:'linear-gradient(135deg, #10B981 0%, #34D399 100%)' },
 ];
 
 const INITIAL_CANDLES = [
@@ -90,18 +78,15 @@ const INITIAL_CANDLES = [
 
 function Candle({ name, message, lit, onLight, delay = 0 }) {
   return (
-    <div 
-      onClick={onLight} 
-      style={{ 
-        display:'flex', 
-        flexDirection:'column', 
-        alignItems:'center', 
-        cursor:lit?'default':'pointer', 
-        gap:'.6rem', 
-        animation:`fadeInUp 0.6s ease ${delay}ms both`, 
-        transition:'transform 0.2s' 
-      }} 
-      onMouseEnter={e=>{if(!lit)e.currentTarget.style.transform='scale(1.1)'}} 
+    <div
+      onClick={onLight}
+      style={{
+        display:'flex', flexDirection:'column', alignItems:'center',
+        cursor:lit?'default':'pointer', gap:'.6rem',
+        animation:`fadeInUp 0.6s ease ${delay}ms both`,
+        transition:'transform 0.2s'
+      }}
+      onMouseEnter={e=>{if(!lit)e.currentTarget.style.transform='scale(1.1)'}}
       onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)'}}
     >
       <div style={{ position:'relative', height:'56px', display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
@@ -183,7 +168,7 @@ export default function App() {
   }, [candles, candleName]);
 
   const goLogin = () => navigate('/login');
-  const goStart = () => { if (isLoggedIn) navigate('/dashboard'); else navigate('/register'); };
+  const goStart = () => navigate('/login');
   const goPortal = () => navigate('/portal/login');
 
   if (loading) return <Loader onComplete={()=>setLoading(false)} />;
@@ -192,40 +177,43 @@ export default function App() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
+
         *{margin:0;padding:0;box-sizing:border-box}
         html{scroll-behavior:smooth;background:${C.navy50}}
         body{font-family:'Inter',sans-serif;color:${C.char700};background:${C.navy50};-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         ::selection{background:rgba(166,124,82,0.15);color:${C.gold}}
-        
+
         .wrap{max-width:1200px;margin:0 auto;padding:0 clamp(1rem,5vw,2.5rem)}
         .section{padding:clamp(4rem,10vw,7rem) 0}
-        
+
         h1,h2,h3,h4{font-family:'Playfair Display',serif;font-weight:600;line-height:1.2;letter-spacing:-0.02em}
         h1{font-size:clamp(2.5rem,8vw,4.5rem)}
         h2{font-size:clamp(1.8rem,6vw,3.2rem)}
         h3{font-size:clamp(1.2rem,3vw,1.8rem)}
         h4{font-size:clamp(1rem,2.5vw,1.3rem)}
-        
+
         .eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${C.gold};margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
         .eyebrow::before{content:'';width:16px;height:1px;background:currentColor}
-        
+
         .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.75rem;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:all .22s;white-space:nowrap;font-family:'Inter',sans-serif;position:relative;overflow:hidden}
         .btn::before{content:'';position:absolute;top:50%;left:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,0.15);transform:translate(-50%,-50%);transition:width 0.6s, height 0.6s}
         .btn:active::before{width:300px;height:300px}
-        
+
         .btn-primary{background:${C.navy900};color:#fff;box-shadow:0 4px 16px -4px rgba(10,31,61,.4)}
         .btn-primary:hover{background:${C.navy800};transform:translateY(-2px);box-shadow:0 8px 24px -4px rgba(10,31,61,.6)}
-        
+
         .btn-secondary{background:transparent;color:${C.navy900};border:1.5px solid ${C.navy900}}
         .btn-secondary:hover{background:rgba(10,31,61,.05);transform:translateY(-2px)}
-        
+
         .btn-text{background:none;color:${C.navy900};padding:.5rem 0;border:none}
         .btn-text:hover{opacity:.8}
-        
+
         .btn-gold{background:${C.gold};color:#fff;box-shadow:0 4px 16px -4px rgba(166,124,82,.4)}
         .btn-gold:hover{background:${C.goldD};transform:translateY(-2px);box-shadow:0 8px 24px -4px rgba(166,124,82,.6)}
-        
+
+        .btn-outline-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+        .btn-outline-light:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+
         nav{position:fixed;top:0;left:0;right:0;z-index:100;background:${scrolled?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.7)'};backdrop-filter:blur(12px);border-bottom:1px solid ${scrolled?C.char200:'transparent'};padding:1.2rem 0;transition:all .3s}
         .nav-wrap{display:flex;justify-content:space-between;align-items:center}
         .logo{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:700;color:${C.navy900};font-family:'Playfair Display',serif;cursor:pointer;letter-spacing:-0.02em}
@@ -243,7 +231,7 @@ export default function App() {
         .mobile-cta{width:100%;margin-top:.75rem}
         @media(max-width:768px){.nav-links{display:none!important}.nav-cta{display:none!important}.hamburger{display:block!important}}
         @media(min-width:769px){.mobile-menu{display:none!important}}
-        
+
         @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes flame{0%,100%{transform:scaleX(1)scaleY(1)rotate(-1deg)}25%{transform:scaleX(1.04)scaleY(0.97)rotate(1deg)}50%{transform:scaleX(0.97)scaleY(1.04)rotate(-.5deg)}75%{transform:scaleX(1.03)scaleY(0.98)rotate(.8deg)}}
@@ -251,55 +239,49 @@ export default function App() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
         @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
-        
+
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+        @keyframes fadeRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes fadeLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        @keyframes rotate3d{from{transform:perspective(1000px) rotateY(0deg)}to{transform:perspective(1000px) rotateY(360deg)}}
+        @keyframes floatUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(166,124,82,0.2)}50%{box-shadow:0 0 40px rgba(166,124,82,0.4)}}
+        @keyframes cardHover{from{transform:translateY(0)scale(1)}to{transform:translateY(-8px)scale(1.02)}}
+
         .hero{padding:clamp(6rem,12vw,8rem) 0 clamp(3rem,6vw,4rem);background:linear-gradient(135deg,${C.navy50} 0%,rgba(5,150,105,.03) 100%);position:relative;overflow:hidden}
         .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(166,124,82,0.08) 0%,transparent 70%);border-radius:50%;pointer-events:none}
         .hero::after{content:'';position:absolute;bottom:-30%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none}
-        
+
         @keyframes textReveal{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
-        @keyframes textGlow{0%,100%{text-shadow:0 0 20px rgba(166,124,82,0)}50%{text-shadow:0 0 30px rgba(166,124,82,0.15)}}
-        @keyframes fadeScale{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-        @keyframes slideLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes slideRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
         .anim-1{animation:textReveal 0.8s ease 0.1s both}
         .anim-2{animation:textReveal 0.8s ease 0.3s both}
         .anim-3{animation:textReveal 0.8s ease 0.5s both}
         .anim-4{animation:textReveal 0.8s ease 0.7s both}
         .anim-5{animation:textReveal 0.8s ease 0.9s both}
         .anim-scale{animation:fadeScale 0.8s ease 0.3s both}
-        
+
         .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;z-index:1}
         @media(max-width:768px){.hero-inner{grid-template-columns:1fr;gap:2rem}}
-        
+
         .hero-text h1{color:${C.navy900};margin-bottom:1.5rem;line-height:1.1}
         .hero-text p{font-size:1.05rem;color:${C.char700};line-height:1.7;margin-bottom:2rem;max-width:540px}
         .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem}
         @media(max-width:640px){.hero-cta{flex-wrap:nowrap;gap:.75rem}.hero-cta .btn{flex:1;padding:.7rem 1rem;font-size:.65rem}}
-        
+
         .hero-trust{display:flex;gap:1.5rem;font-size:.85rem;color:${C.char600};flex-wrap:wrap}
         .hero-trust-item{display:flex;align-items:center;gap:.5rem}
         .trust-icon{color:${C.emerald};flex-shrink:0}
-        
+
         .hero-image{position:relative}
         .dashboard-shell{background:#fff;border:1px solid ${C.char200};border-radius:16px;overflow:hidden;box-shadow:0 20px 60px -10px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.05)}
         .chrome{display:flex;gap:.5rem;align-items:center;padding:.75rem 1rem;background:${C.char100};border-bottom:1px solid ${C.char200}}
         .dot{width:8px;height:8px;border-radius:50%}.d-red{background:#FF5F57}.d-yellow{background:#FEBC2E}.d-green{background:#28C840}
         .url{flex:1;background:#fff;border-radius:4px;padding:.4rem .7rem;font-size:.65rem;color:${C.char500};font-family:monospace}
-        .dash-img{width:100%;display:block;background:linear-gradient(135deg,${C.char100},${C.navy50})}
-        
-        .trust-section{background:#fff;padding:clamp(4rem,8vw,6rem) 0;border-top:1px solid ${C.char200};border-bottom:1px solid ${C.char200};position:relative;overflow:hidden}
-        .trust-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.gold},transparent);opacity:.3}
-        .trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem}
-        @media(max-width:1024px){.trust-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:640px){.trust-grid{grid-template-columns:1fr}}
-        .trust-card{padding:2rem;text-align:center;position:relative;transition:transform .3s}
-        .trust-card:hover{transform:translateY(-4px)}
-        .trust-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:3px;background:${C.gold};border-radius:0 0 2px 2px;opacity:0;transition:opacity .3s}
-        .trust-card:hover::before{opacity:1}
-        .trust-card h3{font-size:1.1rem;margin-bottom:.75rem;color:${C.navy900}}
-        .trust-card p{font-size:.9rem;color:${C.char600};line-height:1.6}
-        .trust-stat{display:inline-block;margin-top:.75rem;padding:.25rem .75rem;background:rgba(166,124,82,0.1);color:${C.gold};border-radius:20px;font-size:.75rem;font-weight:700;letter-spacing:.05em}
-        
+        .dash-img{width:100%;display:block;background:linear-gradient(135deg,${C.char100},${C.navy50});max-height:420px;overflow:hidden}
+        .dash-img img{width:100%;height:auto;max-height:420px;object-fit:cover;display:block}
+
         .features-section{background:${C.navy50};position:relative}
         .features-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .features-header{text-align:center;margin-bottom:4rem}
@@ -308,26 +290,33 @@ export default function App() {
         .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
         @media(max-width:1024px){.features-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:640px){.features-grid{grid-template-columns:1fr}}
-        
-        .feature-card{background:#fff;padding:2rem;border-radius:16px;border:1px solid ${C.char200};transition:all .3s;position:relative;overflow:hidden}
-        .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-gradient);transform:scaleX(0);transition:transform .3s;transform-origin:left}
-        .feature-card:hover{border-color:${C.gold};transform:translateY(-6px);box-shadow:0 20px 40px -12px rgba(166,124,82,.25)}
+
+        .feature-card{background:#fff;padding:2rem;border-radius:16px;border:1px solid ${C.char200};transition:all .4s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden}
+        .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-gradient);transform:scaleX(0);transition:transform .4s cubic-bezier(0.4,0,0.2,1);transform-origin:left}
+        .feature-card::after{content:'';position:absolute;top:50%;left:50%;width:300px;height:300px;border-radius:50%;background:var(--card-gradient);opacity:0;transform:translate(-50%,-50%)scale(0);transition:opacity .5s,transform .5s;pointer-events:none;z-index:0}
+        .feature-card:hover{border-color:${C.gold};transform:translateY(-8px);box-shadow:0 24px 48px -16px rgba(166,124,82,.25)}
         .feature-card:hover::before{transform:scaleX(1)}
-        .feature-icon{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;background:var(--card-bg);color:#fff;box-shadow:0 8px 16px -4px var(--card-shadow)}
+        .feature-card:hover::after{opacity:.03;transform:translate(-50%,-50%)scale(1)}
+        .feature-card>*{position:relative;z-index:1}
+        .feature-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;background:var(--card-bg);color:#fff;box-shadow:0 8px 16px -4px var(--card-shadow);transition:transform .4s}
+        .feature-card:hover .feature-icon{transform:scale(1.1)rotate(-5deg)}
         .feature-card h3{margin-bottom:.75rem;color:${C.navy900};font-size:1.15rem}
         .feature-card p{font-size:.9rem;color:${C.char600};line-height:1.6}
-        
-        .reasons-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
-        .reasons-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .reasons-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
-        @media(max-width:1024px){.reasons-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:640px){.reasons-grid{grid-template-columns:1fr}}
-        .reason-card{display:flex;gap:1rem;padding:1.5rem;background:#fff;border-radius:12px;border:1px solid ${C.char200};transition:all .3s}
-        .reason-card:hover{border-color:${C.gold};transform:translateY(-3px);box-shadow:0 12px 28px -8px rgba(166,124,82,.2)}
-        .reason-icon{width:40px;height:40px;border-radius:10px;background:rgba(166,124,82,0.1);color:${C.gold};display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .reason-card h4{font-size:.95rem;color:${C.navy900};margin-bottom:.5rem;font-family:'Inter',sans-serif;font-weight:600}
-        .reason-card p{font-size:.85rem;color:${C.char600};line-height:1.5}
-        
+
+        .dispatch-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
+        .dispatch-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
+        .dispatch-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+        @media(max-width:768px){.dispatch-inner{grid-template-columns:1fr;gap:2rem}}
+        .dispatch-text h2{color:${C.navy900};margin-bottom:1.5rem}
+        .dispatch-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
+        .dispatch-benefits{display:flex;flex-direction:column;gap:1rem}
+        .dispatch-benefit{display:flex;gap:1rem;font-size:.95rem;color:${C.char700};padding:1rem;background:#fff;border-radius:10px;border:1px solid ${C.char200};transition:all .3s}
+        .dispatch-benefit:hover{transform:translateX(6px);border-color:${C.teal};box-shadow:0 4px 12px -4px rgba(20,184,166,.15)}
+        .dispatch-benefit strong{color:${C.navy900};font-weight:600}
+        .dispatch-check{color:${C.teal};font-weight:700;flex-shrink:0}
+        .dispatch-image{background:#fff;border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
+        .dispatch-image img{width:100%;height:auto;object-fit:cover;border-radius:16px}
+
         .family-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
         .family-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .family-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
@@ -335,35 +324,34 @@ export default function App() {
         .family-text h2{color:${C.navy900};margin-bottom:1.5rem}
         .family-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
         .family-benefits{display:flex;flex-direction:column;gap:1rem}
-        .benefit-item{display:flex;gap:1rem;font-size:.95rem;color:${C.char700}}
+        .benefit-item{display:flex;gap:1rem;font-size:.95rem;color:${C.char700};padding:.75rem;background:#fff;border-radius:10px;border:1px solid ${C.char200};transition:all .3s}
+        .benefit-item:hover{transform:translateX(6px);border-color:${C.gold};box-shadow:0 4px 12px -4px rgba(166,124,82,.15)}
         .benefit-item strong{color:${C.navy900};font-weight:600}
         .benefit-check{color:${C.emerald};font-weight:700;flex-shrink:0}
         .family-image{background:#fff;border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
         .family-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
-        
-        .marketplace-section{background:#fff;position:relative;overflow:hidden}
-        .marketplace-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .marketplace-inner{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-        @media(max-width:768px){.marketplace-inner{grid-template-columns:1fr}}
-        .marketplace-text h2{color:${C.navy900};margin-bottom:1.5rem}
-        .marketplace-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
-        .marketplace-image{border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
-        .marketplace-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
-        
+
+        .storefront-section{background:#fff;position:relative;overflow:hidden}
+        .storefront-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
+        .storefront-inner{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+        @media(max-width:768px){.storefront-inner{grid-template-columns:1fr}}
+        .storefront-text h2{color:${C.navy900};margin-bottom:1.5rem}
+        .storefront-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
+
         .security-section{background:#fff;position:relative}
         .security-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .security-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-        @media(max-width:768px){.security-inner{grid-template-columns:1fr}}
+        @media(max-width:768px){.security-inner{grid-template-columns:1fr;gap:2rem}}
         .security-text h2{color:${C.navy900};margin-bottom:1.5rem}
         .security-items{display:flex;flex-direction:column;gap:1.5rem}
         .security-item{display:flex;gap:1rem;padding:1rem;background:${C.navy50};border-radius:10px;transition:all .3s}
-        .security-item:hover{background:#fff;box-shadow:0 4px 12px -4px rgba(0,0,0,.08);transform:translateX(4px)}
+        .security-item:hover{background:#fff;box-shadow:0 4px 12px -4px rgba(0,0,0,.08);transform:translateX(6px)}
         .security-item h4{color:${C.navy900};margin-bottom:.25rem;font-size:.95rem;font-family:'Inter',sans-serif;font-weight:600}
         .security-item p{font-size:.85rem;color:${C.char600};line-height:1.5}
         .security-icon{color:${C.emerald};flex-shrink:0;margin-top:2px}
         .security-image{border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
         .security-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
-        
+
         .memorial-section{background:linear-gradient(180deg,${C.navy900} 0%,${C.navy800} 50%,${C.navy900} 100%);color:#fff;position:relative;overflow:hidden}
         .memorial-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(5,150,105,.1) 0%,transparent 60%);pointer-events:none}
         .memorial-section::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
@@ -381,29 +369,15 @@ export default function App() {
         .memorial-cta{background:rgba(166,124,82,.15);border:1px solid rgba(166,124,82,.3);border-radius:16px;padding:2rem;margin-top:2rem;backdrop-filter:blur(10px)}
         .memorial-cta h3{color:#fff;margin-bottom:1rem}
         .memorial-cta p{color:rgba(255,255,255,.8);font-size:.95rem;line-height:1.6;margin-bottom:1.5rem}
-        
-        .testimonials-section{background:${C.navy50};position:relative}
-        .testimonials-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
-        @media(max-width:1024px){.testimonials-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:640px){.testimonials-grid{grid-template-columns:1fr}}
-        .testimonial-card{background:#fff;padding:2rem;border-radius:16px;border:1px solid ${C.char200};transition:all .3s;position:relative}
-        .testimonial-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${C.gold},${C.emerald});border-radius:16px 16px 0 0;transform:scaleX(0);transition:transform .3s;transform-origin:left}
-        .testimonial-card:hover{border-color:${C.gold};transform:translateY(-4px);box-shadow:0 16px 32px -8px rgba(166,124,82,.2)}
-        .testimonial-card:hover::before{transform:scaleX(1)}
-        .testimonial-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,${C.gold},${C.emerald});display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;margin-bottom:1rem;box-shadow:0 4px 12px -2px rgba(166,124,82,.3)}
-        .testimonial-stat{font-size:1.4rem;font-weight:700;color:${C.gold};margin-bottom:1rem;font-family:'Playfair Display',serif}
-        .testimonial-text{font-size:.95rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem;font-style:italic}
-        .testimonial-author{font-weight:600;color:${C.navy900};font-size:.9rem}
-        .testimonial-role{font-size:.8rem;color:${C.char600}}
-        
+
         .pricing-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
         .pricing-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .pricing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2rem;max-width:900px;margin:0 auto}
         @media(max-width:768px){.pricing-grid{grid-template-columns:1fr}}
-        .pricing-card{background:#fff;padding:2.5rem;border-radius:16px;border:1px solid ${C.char200};position:relative;transition:all .3s}
-        .pricing-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -8px rgba(0,0,0,.1)}
+        .pricing-card{background:#fff;padding:2.5rem;border-radius:16px;border:1px solid ${C.char200};position:relative;transition:all .4s}
+        .pricing-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px -12px rgba(0,0,0,.12)}
         .pricing-card.featured{border-color:${C.gold};box-shadow:0 20px 40px -10px rgba(166,124,82,.25)}
+        .pricing-card.featured:hover{box-shadow:0 24px 48px -12px rgba(166,124,82,.35)}
         .pricing-badge{position:absolute;top:-12px;left:2rem;background:${C.gold};color:#fff;padding:.5rem 1.25rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.1em;box-shadow:0 4px 12px -2px rgba(166,124,82,.4)}
         .pricing-label{font-size:.8rem;color:${C.gold};text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;font-weight:700}
         .pricing-amount{font-size:2.5rem;font-weight:700;color:${C.navy900};margin-bottom:.25rem;font-family:'Playfair Display',serif}
@@ -411,7 +385,7 @@ export default function App() {
         .pricing-divider{height:1px;background:${C.char200};margin:1.5rem 0}
         .pricing-item{display:flex;gap:.75rem;font-size:.9rem;color:${C.char700};margin-bottom:.75rem;align-items:center}
         .pricing-cta{width:100%;margin-top:2rem}
-        
+
         .cta-final{background:linear-gradient(135deg,${C.navy900} 0%,${C.navy800} 100%);color:#fff;text-align:center;padding:clamp(4rem,10vw,6rem) 0;position:relative;overflow:hidden}
         .cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(166,124,82,0.1) 0%,transparent 60%);pointer-events:none}
         .cta-final::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
@@ -419,7 +393,7 @@ export default function App() {
         .cta-final h2{color:#fff;margin-bottom:1rem}
         .cta-final p{font-size:1rem;color:rgba(255,255,255,.9);margin-bottom:2rem;line-height:1.7}
         .cta-final-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-        
+
         footer{background:${C.navy900};color:#fff;border-top:1px solid ${C.navy800};padding:4rem 0 2rem;position:relative}
         footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.gold},transparent);opacity:.3}
         .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
@@ -429,7 +403,7 @@ export default function App() {
         .footer-link{display:block;font-size:.85rem;color:rgba(255,255,255,.7);margin-bottom:.75rem;transition:color .2s;text-decoration:none;cursor:pointer}.footer-link:hover{color:${C.gold}}
         .footer-divider{height:1px;background:${C.navy800};margin:2rem 0}
         .footer-bottom{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:rgba(255,255,255,.6);flex-wrap:wrap;gap:1rem}
-        
+
         @media(max-width:480px){
           h1{font-size:1.8rem}
           h2{font-size:1.4rem}
@@ -450,34 +424,32 @@ export default function App() {
           </div>
           <div className="nav-links">
             <a href="#features" className="nav-link">Platform</a>
-            <a href="#why" className="nav-link">Why Rest Point</a>
+            <a href="#dispatch" className="nav-link">Dispatch</a>
             <a href="#family" className="nav-link">Family Portal</a>
-            <a href="#marketplace" className="nav-link">Marketplace</a>
-            <a href="#security" className="nav-link">Security</a>
+            <a href="#storefront" className="nav-link">Storefront</a>
             <a href="#pricing" className="nav-link">Pricing</a>
           </div>
           <div className="nav-cta">
-            {isLoggedIn ? <button className="btn btn-text" onClick={()=>navigate('/dashboard')}>Dashboard {Icons.arrow}</button> : <><button className="btn btn-text" onClick={goLogin}>Log In</button><button className="btn btn-primary" onClick={goStart}>Start Free Trial {Icons.arrow}</button></>}
+            <><button className="btn btn-text" onClick={goLogin}>Log In</button><button className="btn btn-primary" onClick={goStart}>Start Free Trial {Icons.arrow}</button></>
           </div>
           <button className="hamburger" onClick={()=>setMobileOpen(!mobileOpen)}>{mobileOpen?Icons.close:Icons.menu}</button>
         </div>
       </nav>
 
       <div className={`mobile-overlay ${mobileOpen?'open':''}`} onClick={()=>setMobileOpen(false)}/>
-      <div className={`mobile-menu ${mobileOpen?'open':''}`}>
-        <a href="#features" className="mobile-link" onClick={()=>setMobileOpen(false)}>Platform</a>
-        <a href="#why" className="mobile-link" onClick={()=>setMobileOpen(false)}>Why Rest Point</a>
-        <a href="#family" className="mobile-link" onClick={()=>setMobileOpen(false)}>Family Portal</a>
-        <a href="#marketplace" className="mobile-link" onClick={()=>setMobileOpen(false)}>Marketplace</a>
-        <a href="#security" className="mobile-link" onClick={()=>setMobileOpen(false)}>Security</a>
-        <a href="#pricing" className="mobile-link" onClick={()=>setMobileOpen(false)}>Pricing</a>
-        <div className="mobile-cta">
-          {isLoggedIn ? <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={()=>{setMobileOpen(false);navigate('/dashboard')}}>Dashboard {Icons.arrow}</button> : <>
-            <button className="btn btn-secondary" style={{width:'100%',justifyContent:'center',marginBottom:'.5rem'}} onClick={()=>{setMobileOpen(false);goLogin()}}>Log In</button>
-            <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={()=>{setMobileOpen(false);goStart()}}>Start Free Trial {Icons.arrow}</button>
-          </>}
+        <div className={`mobile-menu ${mobileOpen?'open':''}`}>
+          <a href="#features" className="mobile-link" onClick={()=>setMobileOpen(false)}>Platform</a>
+          <a href="#dispatch" className="mobile-link" onClick={()=>setMobileOpen(false)}>Dispatch</a>
+          <a href="#family" className="mobile-link" onClick={()=>setMobileOpen(false)}>Family Portal</a>
+          <a href="#storefront" className="mobile-link" onClick={()=>setMobileOpen(false)}>Storefront</a>
+          <a href="#pricing" className="mobile-link" onClick={()=>setMobileOpen(false)}>Pricing</a>
+          <div className="mobile-cta">
+            <>
+              <button className="btn btn-secondary" style={{width:'100%',justifyContent:'center',marginBottom:'.5rem'}} onClick={()=>{setMobileOpen(false);goLogin()}}>Log In</button>
+              <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={()=>{setMobileOpen(false);goStart()}}>Start Free Trial {Icons.arrow}</button>
+            </>
+          </div>
         </div>
-      </div>
 
       <main style={{paddingTop:'60px'}}>
         {/* HERO */}
@@ -485,50 +457,31 @@ export default function App() {
           <div className="wrap">
             <div className="hero-inner">
               <div className="hero-text">
-                <div className="eyebrow">{Icons.star} Modern Funeral Home Management</div>
-                <h1>One platform.<br/>Complete peace of mind.</h1>
-                <p>Manage funeral operations, serve families through a dedicated portal, create documents with integrated tools, and grow revenue through our marketplace—all in one secure place built for compassion and excellence.</p>
-                <div className="hero-cta">
+                <div className="eyebrow anim-1">{Icons.star} Modern Funeral Home Management</div>
+                <h1 className="anim-2">One platform.<br/>Complete peace of mind.</h1>
+                <p className="anim-3">Manage funeral operations, serve families through a dedicated portal, track dispatch with fuel estimation, create documents with integrated tools, and grow revenue through our storefront—all in one secure platform built for compassion and excellence.</p>
+                <div className="hero-cta anim-4">
                   <button className="btn btn-primary" onClick={goStart}>{isLoggedIn?'Dashboard':'Start Free Trial'} {Icons.arrow}</button>
                   <button className="btn btn-gold" onClick={goPortal}>Family Portal {Icons.arrow}</button>
                 </div>
-                <div className="hero-trust">
+                <div className="hero-trust anim-5">
                   <div className="hero-trust-item"><span className="trust-icon">{Icons.check}</span>30-day free trial</div>
                   <div className="hero-trust-item"><span className="trust-icon">{Icons.check}</span>No credit card needed</div>
                   <div className="hero-trust-item"><span className="trust-icon">{Icons.check}</span>Full onboarding support</div>
                 </div>
               </div>
-              <div className="hero-image">
+              <div className="hero-image anim-scale">
                 <div className="dashboard-shell">
                   <div className="chrome">
                     <div style={{display:'flex',gap:'.4rem'}}><div className="dot d-red"/><div className="dot d-yellow"/><div className="dot d-green"/></div>
                     <div className="url">restpoint.app/dashboard</div>
                   </div>
                   <div className="dash-img" style={{minHeight:'auto',position:'relative'}}>
-                    <img src="/landing.png" alt="Rest Point Dashboard" style={{width:'100%',height:'auto',display:'block',borderRadius:'0 0 12px 12px'}} onError={e=>{e.target.style.display='none';e.target.parentElement.innerHTML='<div style="padding:3rem;text-align:center;background:linear-gradient(135deg,#F3F4F6,#F9FAFB)"><div style="font-size:2.5rem;margin-bottom:1rem">📊</div><div style="color:#6B7280;font-family:Inter,sans-serif">Rest Point Dashboard</div></div>'}}/>
+                    <ImageWithFallback src="/landing.png" alt="Rest Point Dashboard" style={{borderRadius:'0 0 12px 12px'}}
+                      fallbackContent='<div style="padding:3rem;text-align:center;background:linear-gradient(135deg,#F3F4F6,#F9FAFB)"><div style="font-size:2.5rem;margin-bottom:1rem">📊</div><div style="color:#6B7280;font-family:Inter,sans-serif">Rest Point Dashboard</div></div>'/>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* TRUST */}
-        <section className="trust-section">
-          <div className="wrap">
-            <div style={{textAlign:'center',marginBottom:'3rem'}}>
-              <h2 style={{color:C.navy900,marginBottom:'.5rem'}}>Built for Funeral Professionals</h2>
-              <p style={{color:C.char600}}>Enterprise-grade reliability meets compassionate family service.</p>
-            </div>
-            <div className="trust-grid">
-              {TRUST.map((t,i)=>(
-                <div key={i} className="trust-card">
-                  <div style={{fontSize:'2.5rem',marginBottom:'1rem',color:C.gold}}>{t.icon}</div>
-                  <h3>{t.title}</h3>
-                  <p>{t.desc}</p>
-                  <span className="trust-stat">{t.stat}</span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -543,7 +496,7 @@ export default function App() {
             </div>
             <div className="features-grid">
               {FEATURES.map((f,i)=>(
-                <div key={i} className="feature-card" style={{'--card-gradient':f.gradient,'--card-bg':f.gradient,'--card-shadow':f.color+'40'}}>
+                <div key={i} className="feature-card" style={{'--card-gradient':f.gradient,'--card-bg':f.gradient,'--card-shadow':f.color+'40',animation:`slideUp 0.6s ease ${i*0.08}s both`}}>
                   <div className="feature-icon">{f.icon}</div>
                   <h3>{f.title}</h3>
                   <p>{f.desc}</p>
@@ -553,24 +506,26 @@ export default function App() {
           </div>
         </section>
 
-        {/* WHY REST POINT */}
-        <section id="why" className="section reasons-section">
+        {/* DISPATCH & FUEL TRACKING */}
+        <section id="dispatch" className="section dispatch-section">
           <div className="wrap">
-            <div className="features-header">
-              <div className="eyebrow" style={{justifyContent:'center'}}>{Icons.award} Why Choose Rest Point</div>
-              <h2>9 Reasons Funeral Homes Love Us</h2>
-              <p>Join 100+ funeral homes across East Africa already transforming their operations.</p>
-            </div>
-            <div className="reasons-grid">
-              {REASONS.map((r,i)=>(
-                <div key={i} className="reason-card">
-                  <div className="reason-icon">{r.icon}</div>
-                  <div>
-                    <h4>{r.title}</h4>
-                    <p>{r.desc}</p>
-                  </div>
+            <div className="dispatch-inner">
+              <div className="dispatch-text">
+                <div className="eyebrow">{Icons.truck} Dispatch & Fuel Tracking</div>
+                <h2>Track Every Kilometer. Estimate Every Fuel Cost.</h2>
+                <p>GPS-enabled dispatch tracking with intelligent fuel consumption estimation. Know exactly how much fuel your hearses consume based on distance, vehicle type, and current fuel prices — so you can bill accurately and reduce operational guesswork.</p>
+                <div className="dispatch-benefits">
+                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.gps}</span><div><strong>Real-Time GPS Tracking</strong> — Live location of every hearse. Families get arrival alerts automatically.</div></div>
+                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.fuel}</span><div><strong>Smart Fuel Estimation</strong> — Calculate distance from funeral home to dispatch destination and estimate fuel consumption in real-time.</div></div>
+                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.route}</span><div><strong>Route Optimization</strong> — Find the most efficient route. Reduce fuel costs and response times by up to 30%.</div></div>
+                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.dollar}</span><div><strong>Fuel Cost Billing</strong> — Automatically include fuel costs in dispatch charges. Accurate, transparent billing for families.</div></div>
                 </div>
-              ))}
+                <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={goStart}>Learn More {Icons.arrow}</button></div>
+              </div>
+              <div className="dispatch-image">
+                <ImageWithFallback src="/location.png" alt="GPS Dispatch & Fuel Tracking"
+                  fallbackContent='<div style="padding:3rem;text-align:center;color:#6B7280"><div style="font-size:3rem;margin-bottom:1rem">🗺️</div><div style="font-weight:600;margin-bottom:.5rem">GPS Dispatch & Fuel Tracking</div><div style="font-size:.85rem">Real-time hearse location & fuel estimation</div></div>'/>
+              </div>
             </div>
           </div>
         </section>
@@ -586,35 +541,39 @@ export default function App() {
                 <div className="family-benefits">
                   <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Instant Communication</strong> — Automated SMS updates at every milestone</div></div>
                   <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Document Access</strong> — Families download permits, certificates, and invoices</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Secure Billing</strong> — View invoices and pay via M-PESA, card, or bank</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Secure Billing</strong> — View invoices and pay via M-PESA, card, or bank. Avoid billing calls.</div></div>
                   <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Memorial Tributes</strong> — Light candles and leave messages of remembrance</div></div>
                 </div>
                 <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={goPortal}>Access Family Portal {Icons.arrow}</button></div>
               </div>
               <div className="family-image">
-                <img src="/familyportal.png" alt="Family Portal" onError={e=>{e.target.style.display='none';e.target.parentElement.innerHTML='<div style="padding:3rem;text-align:center">👨‍👩‍👧‍👦 Family Portal</div>'}}/>
+                <ImageWithFallback src="/familyportal.png" alt="Family Portal"
+                  fallbackContent='<div style="padding:3rem;text-align:center">👨‍👩‍👧‍👦 Family Portal</div>'/>
               </div>
             </div>
           </div>
         </section>
 
-        {/* DIGITAL MEMORIALS / MARKETPLACE */}
-        <section id="marketplace" className="section marketplace-section">
+        {/* STOREFRONT / MARKETPLACE */}
+        <section id="storefront" className="section marketplace-section">
           <div className="wrap">
             <div className="marketplace-inner">
               <div className="marketplace-text">
-                <div className="eyebrow">{Icons.shop} Digital Memorials</div>
-                <h2>Help Families Honor Their Loved Ones</h2>
-                <p>Your funeral home offers digital memorial services — light candles, leave memories, share tributes, and send flowers — all through your platform. A meaningful way to serve families and generate revenue for your home.</p>
+                <div className="eyebrow">{Icons.shop} Funeral Home Storefront</div>
+                <h2>A Place for Funeral Homes to Sell</h2>
+                <p>Turn your funeral home into a complete service center. Your dedicated storefront lets families browse and purchase coffins, caskets, funeral packages, memorial keepsakes, and floral arrangements — directly from your home. No third-party commissions.</p>
                 <div className="family-benefits">
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Digital Candles & Tributes</strong> — Families light candles, leave messages from anywhere in the world</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Flowers & Keepsakes from Your Home</strong> — List what your home offers. Families order directly from you.</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>New Revenue for You</strong> — Digital memorials generate income for your funeral home. No vendor cuts.</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Your Products, Your Brand</strong> — List coffins, caskets, and funeral merchandise with custom pricing. Families browse your full catalog.</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Built-in Order Management</strong> — Track orders from placement to delivery. Manage inventory, receive payments, and generate invoices.</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>New Revenue Stream</strong> — Sell funeral packages, memorial keepsakes, flowers, and more. You keep 100% of the revenue.</div></div>
                 </div>
-                <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={()=>navigate('/register')}>Learn More {Icons.arrow}</button></div>
+                <div style={{marginTop:'1.5rem'}}>
+                  <button className="btn btn-primary" onClick={()=>navigate('/marketplace')}>Browse Storefront {Icons.arrow}</button>
+                </div>
               </div>
               <div className="marketplace-image">
-                <img src="/flower.png" alt="Marketplace" onError={e=>{e.target.style.display='none';e.target.parentElement.innerHTML='<div style="padding:3rem;text-align:center;color:#6B7280">🛍️ Marketplace Platform</div>'}}/>
+                <ImageWithFallback src="/storefront.png" alt="Funeral Home Storefront"
+                  fallbackContent='<div style="padding:3rem;text-align:center;color:#6B7280;min-height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:4rem;margin-bottom:1rem">🏪</div><div style="font-size:1.2rem;font-weight:600;margin-bottom:.5rem">Funeral Home Storefront</div><div style="font-size:.9rem">Sell coffins, caskets & funeral packages</div></div>'/>
               </div>
             </div>
           </div>
@@ -631,12 +590,13 @@ export default function App() {
                 <div className="security-items" style={{marginTop:'2rem'}}>
                   <div className="security-item"><div className="security-icon">{Icons.lock}</div><div><h4>Contobo Security Family</h4><p>Enterprise-grade encryption at rest and in transit. SOC 2 compliant infrastructure with multi-layered security controls.</p></div></div>
                   <div className="security-item"><div className="security-icon">{Icons.shield}</div><div><h4>Role-Based Access Control</h4><p>Granular permissions for directors, managers, staff, and families. Every action is logged with complete audit trails.</p></div></div>
-                  <div className="security-item"><div className="security-icon">{Icons.file}</div><div><h4>Critical Data Protection</h4><p>Postmortem reports, autopsy results, cause of death, medical history, and identification documents are encrypted and automatically masked. Prevents sensitive case information from being exposed.</p></div></div>
+                  <div className="security-item"><div className="security-icon">{Icons.file}</div><div><h4>Critical Data Protection</h4><p>Postmortem reports, autopsy results, cause of death, medical history, and identification documents are encrypted and automatically masked.</p></div></div>
                   <div className="security-item"><div className="security-icon">{Icons.globe}</div><div><h4>Disaster Recovery</h4><p>Automated daily backups, multi-region redundancy, and 99.9% uptime SLA.</p></div></div>
                 </div>
               </div>
               <div className="security-image">
-                <img src="/cloud.png" alt="Security" onError={e=>{e.target.style.display='none';e.target.parentElement.innerHTML='<div style="padding:3rem;text-align:center;color:#6B7280">🔒 Enterprise Security</div>'}}/>
+                <ImageWithFallback src="/cloud.png" alt="Enterprise Security"
+                  fallbackContent='<div style="padding:3rem;text-align:center;color:#6B7280">🔒 Enterprise Security</div>'/>
               </div>
             </div>
           </div>
@@ -669,32 +629,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* DATA PRIVACY & PROTECTION */}
-        <section className="section" style={{background:'#fff',borderTop:'1px solid '+C.char200,borderBottom:'1px solid '+C.char200}}>
-          <div className="wrap">
-            <div style={{textAlign:'center',marginBottom:'3rem'}}>
-              <div className="eyebrow" style={{justifyContent:'center'}}>{Icons.lock} Data Privacy & Protection</div>
-              <h2 style={{color:C.navy900}}>Your Data. Protected. Always.</h2>
-              <p style={{color:C.char600,maxWidth:'700px',margin:'1rem auto 0',lineHeight:1.7}}>We take data protection seriously. Here's how we safeguard your information and ensure regulatory compliance.</p>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'1.5rem'}}>
-              {[
-                {icon:Icons.lock,t:'Data We Collect',d:'Only essential info: name, email, phone, business details, and deceased records for funeral home management. No unnecessary personal data collected.'},
-                {icon:Icons.shield,t:'How We Use It',d:'Exclusively for management services — case tracking, billing, documents, family communication, memorials. We never sell your data.'},
-                {icon:Icons.file,t:'Storage & Retention',d:'Encrypted servers with daily backups. Retained as long as needed or required by law. You can request deletion anytime.'},
-                {icon:Icons.globe,t:'Data Sharing',d:'Only authorized personnel within your organization. Payment via encrypted APIs (M-PESA, banks). Never shared with unauthorized parties.'},
-                {icon:Icons.check,t:'Your Rights',d:'Access, correct, delete, restrict, portability, withdraw consent — per Kenyan Data Protection Act 2019 and GDPR.'},
-                {icon:Icons.shield,t:'Security Measures',d:'End-to-end encryption, role-based access, auto session timeout, audit trails, regular security audits, firewalls.'},
-              ].map((p,i)=>(
-                <div key={i} style={{display:'flex',gap:'1rem',padding:'1.5rem',background:C.navy50,borderRadius:12,border:'1px solid '+C.char200,transition:'all .3s'}} onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 8px 24px -8px rgba(0,0,0,.08)'}} onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none'}}>
-                  <div style={{color:C.emerald,flexShrink:0,marginTop:2,fontSize:'1.3rem'}}>{p.icon}</div>
-                  <div><h4 style={{fontFamily:'Inter,sans-serif',fontWeight:600,fontSize:'.95rem',color:C.navy900,marginBottom:'.5rem'}}>{p.t}</h4><p style={{fontSize:'.85rem',color:C.char600,lineHeight:1.6}}>{p.d}</p></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* PRICING */}
         <section id="pricing" className="section pricing-section">
           <div className="wrap">
@@ -720,7 +654,7 @@ export default function App() {
                 <div className="pricing-amount">KES 18,500</div>
                 <div className="pricing-period">per month</div>
                 <div className="pricing-divider"/>
-                {['Unlimited branches & locations','Unlimited deceased records','Advanced Analytics & Reports','Custom Compliance Settings','GPS Dispatch Tracking','Integrated Marketplace','24/7 Priority Support','Dedicated Account Manager','No Limitations'].map((f,i)=>(
+                {['Unlimited branches & locations','Unlimited deceased records','Advanced Analytics & Reports','Custom Compliance Settings','GPS Dispatch & Fuel Tracking','Storefront Marketplace','24/7 Priority Support','Dedicated Account Manager','No Limitations'].map((f,i)=>(
                   <div key={i} className="pricing-item"><span style={{color:C.emerald,flexShrink:0}}>{Icons.check}</span>{f}</div>
                 ))}
                 <button className="btn btn-primary pricing-cta" onClick={goStart}>Start Free Trial {Icons.arrow}</button>
@@ -737,10 +671,10 @@ export default function App() {
         <section className="cta-final">
           <div className="cta-final-inner">
             <h2>Ready to Transform Your Funeral Home Operations?</h2>
-            <p>Join 100+ funeral homes across Kenya and East Africa already using Rest Point to streamline operations, serve families better, and grow their business.</p>
+            <p>Join 100+ funeral homes across Kenya and East Africa already using Rest Point to streamline operations, serve families better, track dispatch costs, and grow their business.</p>
             <div className="cta-final-buttons">
               <button className="btn btn-gold" onClick={goStart}>{isLoggedIn?'Go to Dashboard':'Start Free Trial'} {Icons.arrow}</button>
-              <button className="btn btn-secondary" style={{background:'transparent',color:'#fff',borderColor:'rgba(255,255,255,.5)'}} onClick={goLogin}>Schedule a Demo {Icons.arrow}</button>
+              <button className="btn btn-outline-light" onClick={goLogin}>Schedule a Demo {Icons.arrow}</button>
             </div>
           </div>
         </section>
@@ -749,9 +683,9 @@ export default function App() {
       <footer>
         <div className="wrap">
           <div className="footer-grid">
-            <div className="footer-col">
+            <div className="footer-col" style={{gridColumn:'1 / -1'}}>
               <div style={{display:'flex',alignItems:'center',gap:'.5rem',marginBottom:'1rem'}}><div className="logo-dot"/><h4 style={{margin:0}}>Rest Point</h4></div>
-              <p>Enterprise funeral home management platform built for compassion, compliance, and growth. Built by <span style={{color:C.gold}}>Welt Tallis Technologies</span>.</p>
+              <p style={{maxWidth:'600px'}}>Enterprise funeral home management platform built for compassion, compliance, and growth. Built by <span style={{color:C.gold}}>Welt Tallis Technologies</span>.</p>
               <div style={{display:'flex',gap:'1rem',marginTop:'1.25rem'}}>
                 {[{l:'Twitter',p:'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z'},{l:'Facebook',p:'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'},{l:'LinkedIn',p:'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'},{l:'Instagram',p:'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z'}].map((s,i)=>(
                   <a key={i} href="#" style={{color:'rgba(255,255,255,.6)',transition:'color .2s',cursor:'pointer'}} onMouseEnter={e=>e.target.style.color=C.gold} onMouseLeave={e=>e.target.style.color='rgba(255,255,255,.6)'} title={s.l}>
@@ -763,16 +697,17 @@ export default function App() {
             <div className="footer-col">
               <h4>Platform</h4>
               <a href="#features" className="footer-link">Features</a>
-              <a href="#marketplace" className="footer-link">Marketplace</a>
+              <a href="#storefront" className="footer-link">Storefront</a>
               <a href="#security" className="footer-link">Security</a>
               <a href="#pricing" className="footer-link">Pricing</a>
               <a className="footer-link" onClick={()=>navigate('/register')}>Start Free Trial</a>
             </div>
             <div className="footer-col">
-              <h4>Family Portal</h4>
-              <a href="/portal/login" className="footer-link">Access Portal</a>
+              <h4>Services</h4>
+              <a href="#dispatch" className="footer-link">Dispatch & Fuel Tracking</a>
+              <a href="#family" className="footer-link">Family Portal</a>
+              <a className="footer-link" onClick={()=>navigate('/marketplace')}>Marketplace</a>
               <a className="footer-link" onClick={()=>document.querySelector('.memorial-section')?.scrollIntoView({behavior:'smooth'})}>Memorial Board</a>
-              <a href="#family" className="footer-link">Family Features</a>
             </div>
             <div className="footer-col">
               <h4>Company</h4>
@@ -780,6 +715,7 @@ export default function App() {
               <a className="footer-link" onClick={()=>navigate('/contact')}>Contact</a>
               <a className="footer-link" onClick={()=>navigate('/privacy')}>Privacy Policy</a>
               <a className="footer-link" onClick={()=>navigate('/terms')}>Terms of Service</a>
+              <a className="footer-link" onClick={()=>navigate('/why-us')}>Why Us</a>
               <a className="footer-link" href="mailto:info@restpoint.co.ke">info@restpoint.co.ke</a>
             </div>
           </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Users, SquareUser, Handshake, Phone, PlusCircle, Trash2, X, Loader2, Mail, Edit3, UserPlus } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 // Sleek Color Palette
 const Colors = {
@@ -328,28 +330,8 @@ const NextOfKinSection = ({ nextOfKin, onUpdate }) => {
     const [contact, setContact] = useState('');
     const [email, setEmail] = useState('');
 
-  // Centralized API base URL
-  const API_BASE_URL = 'http://localhost:8000/api/v1/restpoint';
-  const API_REGISTER_KIN_URL = `${API_BASE_URL}/deceased/${deceasedId}/next-of-kin`;
-  
-  // Helper to get tenant slug
-  const getTenantSlug = () => {
-    return localStorage.getItem('tenantSlug') || 
-           localStorage.getItem('tenant_slug') ||
-           (() => {
-             try {
-               const user = JSON.parse(localStorage.getItem('user') || '{}');
-               return user.tenantSlug || user.tenant?.slug || 'default';
-             } catch {
-               return 'default';
-             }
-           })();
-  };
-
-  // Helper to get auth token
-  const getAuthToken = () => {
-    return localStorage.getItem('authToken') || localStorage.getItem('token');
-  };
+  // Use centralized API client from endpoints.js (api/interceptor handles auth & tenant headers automatically)
+  const kinEndpoint = ENDPOINTS.DECEASED.NEXT_OF_KIN(deceasedId);
 
     useEffect(() => {
         if (nextOfKin && Array.isArray(nextOfKin)) {
@@ -371,37 +353,17 @@ const NextOfKinSection = ({ nextOfKin, onUpdate }) => {
     };
 
     const handleDelete = async (kinId) => {
-      if (!window.confirm('Remove this next of kin?')) {
-        return;
-      }
-
+      if (!window.confirm('Remove this next of kin?')) return;
       setMessage(null);
       try {
-        const tenantSlug = getTenantSlug();
-        const token = getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/deceased/${deceasedId}/next-of-kin/${kinId}`, {
-          method: 'DELETE',
-          headers: {
-            'x-tenant-slug': tenantSlug,
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to delete next of kin');
-        }
-        
+        await api.delete(`${kinEndpoint}/${kinId}`);
         setLocalKin(prev => prev.filter(kin => kin.id !== kinId));
         setMessage({ text: 'Kin removed', type: 'success' });
-        
-        if (onUpdate) {
-          onUpdate();
-        }
-        
+        if (onUpdate) onUpdate();
         clearMessage();
       } catch (error) {
         console.error('Delete kin error:', error);
-        setMessage({ text: 'Error removing kin: ' + error.message, type: 'error' });
+        setMessage({ text: 'Error removing kin: ' + (error.response?.data?.message || error.message), type: 'error' });
         clearMessage();
       }
     };
@@ -410,14 +372,12 @@ const NextOfKinSection = ({ nextOfKin, onUpdate }) => {
       e.preventDefault();
       setIsLoading(true);
       setMessage(null);
-
       if (!fullName.trim() || !relationship.trim() || !contact.trim()) {
         setMessage({ text: 'Please fill in required fields', type: 'error' });
         setIsLoading(false);
         clearMessage();
         return;
       }
-
       const payload = {
         deceased_id: deceasedId, 
         full_name: fullName.trim(),
@@ -425,47 +385,16 @@ const NextOfKinSection = ({ nextOfKin, onUpdate }) => {
         contact: contact.trim(),
         email: email.trim() === '' ? null : email.trim(),
       };
-
       try {
-        const tenantSlug = getTenantSlug();
-        const token = getAuthToken();
-        
-        console.log('Adding next of kin to:', API_REGISTER_KIN_URL);
-        console.log('Payload:', payload);
-        
-        const response = await fetch(API_REGISTER_KIN_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-tenant-slug': tenantSlug,
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-          body: JSON.stringify(payload),
-        });
-
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('API Error:', errorData);
-          throw new Error(errorData.message || `Failed to add next of kin (${response.status})`);
-        }
-
-        const result = await response.json();
-        console.log('Success:', result);
-        
+        await api.post(kinEndpoint, payload);
         setShowModal(false);
         resetForm();
         setMessage({ text: 'Kin added successfully', type: 'success' });
-        
-        if (onUpdate) {
-          onUpdate();
-        }
-        
+        if (onUpdate) onUpdate();
         clearMessage();
       } catch (error) {
         console.error('Add kin error:', error);
-        setMessage({ text: 'Error adding kin: ' + error.message, type: 'error' });
+        setMessage({ text: 'Error adding kin: ' + (error.response?.data?.message || error.message), type: 'error' });
         clearMessage();
       } finally {
         setIsLoading(false);

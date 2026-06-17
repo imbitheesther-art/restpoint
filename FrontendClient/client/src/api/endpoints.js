@@ -1,9 +1,9 @@
 // src/api/endpoints.js
 // Rest Point — Canonical API endpoint map
-// All paths use /api/v2/ for the PHP backend
+// All paths use /api/v1/ for the API gateway
 // Base URL: VITE_API_URL || http://localhost:8000
 
-const API_PREFIX = '/api/v2/restpoint';
+const API_PREFIX = '/api/v1/restpoint';
 
 export const ENDPOINTS = {
   AUTH: {
@@ -184,14 +184,14 @@ export const ENDPOINTS = {
   },
 
   PUBLIC: {
-    TENANT_BRANDING:     (slug) => `/api/v2/public/tenants/${slug}/branding`,
-    DECEASED_RECORD:     (slug, publicId) => `/api/v2/public/tenants/${slug}/deceased/${publicId}`,
-    SEARCH_DECEASED:     (slug) => `/api/v2/public/tenants/${slug}/deceased/search`,
-    PUBLISHED_DECEASED:  (slug) => `/api/v2/public/tenants/${slug}/deceased`,
-    QR_CODE:             (qrCode) => `/api/v2/public/deceased/${qrCode}`,
-    REQUEST_ACCESS:      (slug) => `/api/v2/public/tenants/${slug}/request-access`,
-    HEARSE_BOOK:         (slug) => `/api/v2/public/tenants/${slug}/hearse/book`,
-    TENANT_STATUS:       (slug) => `/api/v2/public/tenants/${slug}/status`,
+    TENANT_BRANDING:     (slug) => `/api/v1/public/tenants/${slug}/branding`,
+    DECEASED_RECORD:     (slug, publicId) => `/api/v1/public/tenants/${slug}/deceased/${publicId}`,
+    SEARCH_DECEASED:     (slug) => `/api/v1/public/tenants/${slug}/deceased/search`,
+    PUBLISHED_DECEASED:  (slug) => `/api/v1/public/tenants/${slug}/deceased`,
+    QR_CODE:             (qrCode) => `/api/v1/public/deceased/${qrCode}`,
+    REQUEST_ACCESS:      (slug) => `/api/v1/public/tenants/${slug}/request-access`,
+    HEARSE_BOOK:         (slug) => `/api/v1/public/tenants/${slug}/hearse/book`,
+    TENANT_STATUS:       (slug) => `/api/v1/public/tenants/${slug}/status`,
   },
 
   CALL: {
@@ -212,7 +212,7 @@ export const ENDPOINTS = {
     ADD_MEMORY:  (slug) => `${API_PREFIX}/memorial/${slug}/memories`,
     PROGRAM:     (slug) => `${API_PREFIX}/memorial/${slug}/program`,
     SHARE_LINK:  (slug, token) => `${API_PREFIX}/memorial/${slug}/share/${token}`,
-    PUBLIC:      (slug, deceasedId) => `/api/v2/public/memorial/${slug}/${deceasedId}`,
+    PUBLIC:      (slug, deceasedId) => `/api/v1/public/memorial/${slug}/${deceasedId}`,
   },
 
   // MARKETPLACE - Per-tenant listings with real-time orders

@@ -117,8 +117,7 @@ app.use(function(req, res, next) {
 // Protects: passwords, tokens, postmortem info, autopsy data, financial info, identification docs
 const sensitiveFields = [
   'password', 'email', 'phone', 'token', 'secret', 'apiKey',
-  'postmortem', 'postMortem', 'autopsy', 'causeOfDeath', 'mannerOfDeath',
-  'medicalHistory', 'nextOfKin', 'idNumber', 'nationalId', 'passport',
+   'idNumber', 'nationalId', 'passport',
   'deathCertificate', 'burialPermit', 'cremationPermit',
   'bankAccount', 'accountNumber', 'cardNumber', 'cvv', 'pin',
   'resetToken', 'refreshToken', 'accessToken',

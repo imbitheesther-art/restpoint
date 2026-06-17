@@ -178,6 +178,7 @@ const OnboardingFlow = () => {
       const response = await api.post('/api/v1/restpoint/tenant/onboarding/organization', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'x-tenant-slug': '', // No tenant slug for new organization creation
         },
         timeout: 30000,
       });

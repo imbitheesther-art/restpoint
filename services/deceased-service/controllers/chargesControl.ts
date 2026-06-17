@@ -3,10 +3,12 @@ import { Request, Response } from 'express';
 // Mock data for development - will be replaced with actual DB queries
 let mockCharges: any[] = [];
 
-/**
+/**     
  * GET /charges/:deceased_id
  * Get all charges for a deceased
- */
+ */    
+
+
 export const getCharges = async (req: Request, res: Response) => {
   try {
     const { deceased_id } = req.params;

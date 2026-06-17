@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { paymentApi } from '../../api/paymentApi';
 import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 const Colors = {
   primary: '#3b82f6', success: '#22c55e', danger: '#ef4444',
@@ -148,7 +149,7 @@ const SettingsPage = () => {
     if (!validateOrg()) return;
     setIsSubmitting(true);
     try {
-      await api.put(`/api/v1/tenant/settings/${slug}`, orgForm, {
+      await api.put(ENDPOINTS.TENANT.CONFIG(slug), orgForm, {
         headers: { 'x-tenant-slug': slug || 'system_shared' }
       });
       setTenantData({ ...tenantData, ...orgForm });
@@ -168,7 +169,7 @@ const SettingsPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.put(`/api/v1/tenant/mpesa/${slug}`, mpesaForm, {
+      await api.put(ENDPOINTS.TENANT.CONFIG(slug) + '/mpesa', mpesaForm, {
         headers: { 'x-tenant-slug': slug || 'system_shared' }
       });
       setTenantData({ ...tenantData, mpesa: mpesaForm });

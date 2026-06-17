@@ -12,13 +12,17 @@ echo "🚀 [Startup] Initializing service..."
 # Ensure required global dependencies are available
 echo "📦 [Startup] Checking shared dependencies..."
 
-# Install critical shared dependencies if not already present
-for dep in "mysql2" "jsonwebtoken" "dotenv"; do
+# Install ALL critical shared dependencies at once (prevents each install from removing previous ones)
+DEPS=""
+for dep in "mysql2" "jsonwebtoken" "dotenv" "cors" "helmet" "express"; do
   if ! node -e "require('$dep')" 2>/dev/null; then
-    echo "   Installing missing dependency: $dep"
-    npm install --no-save "$dep" 2>/dev/null || true
+    DEPS="$DEPS $dep"
   fi
 done
+if [ -n "$DEPS" ]; then
+  echo "   Installing missing dependencies:$DEPS"
+  npm install --no-save $DEPS 2>/dev/null || true
+fi
 
 # Ensure shared modules directory exists
 if [ -d "/usr/src/app/shared" ]; then

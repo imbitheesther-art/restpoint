@@ -56,6 +56,20 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       external: []
+    },
+    // Enable cache busting with content hashes
+    manifest: true,
+    // Set shorter cache TTL for assets
+    assetsInlineLimit: 4096,
+    // Generate unique filenames with hashes
+    cssCodeSplit: true,
+    // Minification with cache busting
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
     }
   }
 })

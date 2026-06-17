@@ -77,7 +77,19 @@ api.interceptors.request.use((config) => {
   }
   
   // Every request MUST have a tenant slug for data isolation
-  config.headers['x-tenant-slug'] = tenantSlug || 'system_shared';
+  // Skip for public endpoints (onboarding, login, portal login) that don't have a tenant yet
+  const isPublicEndpoint = 
+    config.url?.includes('/tenant/onboarding/') ||
+    config.url?.includes('/auth/login') ||
+    config.url?.includes('/portal/login') ||
+    config.url?.includes('/auth/register');
+    
+  if (!isPublicEndpoint) {
+    config.headers['x-tenant-slug'] = tenantSlug || 'system-shared';
+  } else {
+    // Remove tenant slug for public endpoints to avoid validation errors
+    delete config.headers['x-tenant-slug'];
+  }
   
   // Add CSRF token for non-GET requests
   if (config.method !== 'get') {
