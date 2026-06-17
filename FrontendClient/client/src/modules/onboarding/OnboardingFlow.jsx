@@ -307,9 +307,13 @@ const OnboardingFlow = () => {
                 <p style={{ marginBottom: '1.25rem' }}>By using RestPoint, you agree to these terms:</p>
                 <ul style={{ listStyle: 'none', padding: 0 }}>
                   {[
+                    'A one-time setup and training fee of KES 1,000 is required for account activation.',
+                    'Monthly subscription: KES 9,500 for single-tenant plans.',
+                    'Monthly subscription: KES 18,500 for multi-tenant plans with no limitations.',
                     'Subscription payments must be made on time.',
                     'A 5-day grace period is provided after the due date.',
                     'Accounts may be suspended if payment is not received within 5 days.',
+                    'Account reactivation after suspension requires a KES 1,000 reactivation fee.',
                     'Customer data remains securely stored during account suspension.',
                     'All customer data is securely isolated to prevent unauthorized access.',
                     'RestPoint uses multiple layers of security and encryption.',
@@ -409,8 +413,23 @@ const OnboardingFlow = () => {
                 Create your<br /><span style={{ color: C.gold, fontStyle:'italic' }}>organization</span> account
               </h1>
               <p style={{ fontSize: '.9rem', color: C.char600, lineHeight: 1.7, maxWidth: '400px', margin: '0 auto' }}>
-                Set up your mortuary on Rest Point. Complete the form below to get started with your free trial.
+                Set up your mortuary on Rest Point. Complete the form below to get started.
               </p>
+              <div style={{
+                marginTop: '1rem', background: 'rgba(166,124,82,.08)',
+                border: `1px solid rgba(166,124,82,.2)`, borderRadius: '10px',
+                padding: '.75rem', fontSize: '.78rem', color: C.char700, lineHeight: 1.6,
+              }}>
+                <strong style={{ color: C.navy900 }}>Service & Setup Fee — KES 1,000</strong>
+                <span style={{ display:'block', marginTop: '.2rem' }}>
+                  One-time facility registration & training fee. Includes setup support and onboarding assistance.
+                </span>
+                <div style={{ marginTop: '.5rem', display:'flex', gap:'.75rem', flexWrap:'wrap', justifyContent:'center' }}>
+                  <span style={{ background:C.navy900, color:'#fff', borderRadius:'6px', padding:'.2rem .6rem', fontSize:'.68rem', fontWeight:600 }}>Single: KES 9,500/mo</span>
+                  <span style={{ background:C.gold, color:'#fff', borderRadius:'6px', padding:'.2rem .6rem', fontSize:'.68rem', fontWeight:600 }}>Multi-Tenant: KES 18,500/mo</span>
+                  <span style={{ background:C.emerald, color:'#fff', borderRadius:'6px', padding:'.2rem .6rem', fontSize:'.68rem', fontWeight:600 }}>No Limitations</span>
+                </div>
+              </div>
             </motion.div>
 
             {/* Form Card */}

@@ -22,9 +22,20 @@ const getSessionFingerprint = () => {
   return fp;
 };
 
+// Dynamically determine base URL for production HTTPS support
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) return envUrl;
+  // In production, API is proxied through nginx on same origin using HTTPS
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return window.location.origin; // Same-origin API via nginx proxy with HTTPS
+  }
+  return 'http://localhost:5000';
+};
+
 // Base instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: getBaseURL(),
   withCredentials: true, // HTTP-only cookies
   headers: {
     'Content-Type': 'application/json',

@@ -1,42 +1,53 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 /* REST POINT — Premium Funeral Home Management Platform | Built by Welt Tallis Technologies */
-const C = { navy900:'#0A1F3D',navy800:'#0F2847',navy50:'#F9FAFB',char700:'#374151',char600:'#4B5563',char500:'#6B7280',char300:'#D1D5DB',char200:'#E5E7EB',char100:'#F3F4F6',gold:'#A67C52',goldD:'#8B6340',emerald:'#059669' };
-const Svg = ({d,sw=2}) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+const C = { 
+  navy900:'#0A1F3D', navy800:'#0F2847', navy700:'#152D4A', navy50:'#F9FAFB',
+  char700:'#374151', char600:'#4B5563', char500:'#6B7280', char300:'#D1D5DB', 
+  char200:'#E5E7EB', char100:'#F3F4F6', gold:'#A67C52', goldD:'#8B6340', 
+  emerald:'#059669', emeraldLight:'#10B981', purple:'#8B5CF6', blue:'#3B82F6',
+  pink:'#EC4899', orange:'#F59E0B', teal:'#14B8A6', indigo:'#6366F1'
+};
+
+const Svg = ({d, sw=2, size=18}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+);
+
 const Icons = {
-  arrow:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
-  check:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
-  lock:<Svg d={<><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>}/>,
-  shield:<Svg d={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>}/>,
-  users:<Svg d={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}/>,
-  zap:<Svg d={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>}/>,
-  file:<Svg d={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="13" x2="8" y2="13"/><line x1="12" y1="17" x2="8" y2="17"/></>}/>,
-  globe:<Svg d={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>}/>,
-  heart:<Svg d={<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>}/>,
-  menu:<Svg d={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>}/>,
-  close:<Svg d={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}/>,
-  flame:<Svg d={<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/>}/>,
-  star:<svg width="16" height="16" viewBox="0 0 24 24" fill={C.gold}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-  shop:<Svg d={<><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></>}/>,
-  clock:<Svg d={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>}/>,
-  dollar:<Svg d={<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>}/>,
-  truck:<Svg d={<><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>}/>,
-  award:<Svg d={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>}/>,
-  barChart:<Svg d={<><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>}/>,
-  sms:<Svg d={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>}/>,
-  calendar:<Svg d={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>}/>,
+  arrow: <Svg d={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>} size={16}/>,
+  check: <Svg d={<><polyline points="20 6 9 17 4 12"/></>} size={18} sw={2.5}/>,
+  lock: <Svg d={<><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>}/>,
+  shield: <Svg d={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>}/>,
+  users: <Svg d={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}/>,
+  zap: <Svg d={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>}/>,
+  file: <Svg d={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="13" x2="8" y2="13"/><line x1="12" y1="17" x2="8" y2="17"/></>}/>,
+  globe: <Svg d={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>}/>,
+  heart: <Svg d={<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>}/>,
+  menu: <Svg d={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>}/>,
+  close: <Svg d={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}/>,
+  flame: <Svg d={<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/>}/>,
+  star: <svg width="16" height="16" viewBox="0 0 24 24" fill={C.gold}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  shop: <Svg d={<><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></>}/>,
+  clock: <Svg d={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>}/>,
+  dollar: <Svg d={<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>}/>,
+  truck: <Svg d={<><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>}/>,
+  award: <Svg d={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>}/>,
+  barChart: <Svg d={<><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>}/>,
+  sms: <Svg d={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>}/>,
+  calendar: <Svg d={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>}/>,
 };
 
 const FEATURES = [
-  { icon:Icons.zap, title:'Case Management', desc:'Track every service from first call to final arrangements. Real-time updates, timeline tracking, auto-notifications, and complete digital case history.', color:'#059669' },
-  { icon:Icons.heart, title:'Family Portal', desc:'Families get a secure SMS link (no app needed) to view documents, track progress, receive billing, make M-PESA payments, and communicate with your team.', color:C.gold },
-  { icon:Icons.file, title:'Document Editor', desc:'Built-in canvas-based document creator with smart templates for burial permits, death certificates, invoices, and release forms. Generate, sign, and share in minutes.', color:'#3B82F6' },
-  { icon:Icons.globe, title:'Integrated Marketplace', desc:'Turn your funeral home into a one-stop shop. Connect families with trusted florists, caterers, keepsake vendors. Earn up to 20% commission on every transaction.', color:'#8B5CF6' },
-  { icon:Icons.users, title:'Team Collaboration', desc:'Real-time coordination across directors, drivers, embalmers, and admin staff. Role-based permissions, shared calendars, task assignments, and full audit trails.', color:'#EC4899' },
-  { icon:Icons.barChart, title:'Reporting & Analytics', desc:'Live dashboard tracking revenue, case volumes, billing status, and staff performance. Export custom reports. Data-driven decisions for business growth.', color:'#F59E0B' },
-  { icon:Icons.truck, title:'Dispatch & Hearse Tracking', desc:'GPS-enabled dispatch tracking for hearses and vehicles. Real-time location updates, route optimization, and automated family notifications on arrival.', color:'#10B981' },
-  { icon:Icons.calendar, title:'Calendar & Scheduling', desc:'Manage funeral services, viewings, and team schedules in one place. Automated reminders, conflict detection, and shared team calendars.', color:'#6366F1' },
-  { icon:Icons.dollar, title:'Billing & Invoicing', desc:'Automated invoicing with M-PESA integration, payment tracking, and financial reporting. Reduce billing errors and accelerate payment collection.', color:'#14B8A6' },
+  { icon:Icons.zap, title:'Case Management', desc:'Track every service from first call to final arrangements. Real-time updates, timeline tracking, auto-notifications, and complete digital case history.', color:C.emerald, gradient:'linear-gradient(135deg, #059669 0%, #10B981 100%)' },
+  { icon:Icons.heart, title:'Family Portal', desc:'Families get a secure SMS link (no app needed) to view documents, track progress, receive billing, make M-PESA payments, and communicate with your team.', color:C.gold, gradient:'linear-gradient(135deg, #A67C52 0%, #C9A876 100%)' },
+  { icon:Icons.file, title:'Document Editor', desc:'Built-in canvas-based document creator with smart templates for burial permits, death certificates, invoices, and release forms. Generate, sign, and share in minutes.', color:C.blue, gradient:'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)' },
+  { icon:Icons.globe, title:'Integrated Marketplace', desc:'Turn your funeral home into a one-stop shop. Connect families with trusted florists, caterers, keepsake vendors. Earn up to 20% commission on every transaction.', color:C.purple, gradient:'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)' },
+  { icon:Icons.users, title:'Team Collaboration', desc:'Real-time coordination across directors, drivers, embalmers, and admin staff. Role-based permissions, shared calendars, task assignments, and full audit trails.', color:C.pink, gradient:'linear-gradient(135deg, #EC4899 0%, #F472B6 100%)' },
+  { icon:Icons.barChart, title:'Reporting & Analytics', desc:'Live dashboard tracking revenue, case volumes, billing status, and staff performance. Export custom reports. Data-driven decisions for business growth.', color:C.orange, gradient:'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)' },
+  { icon:Icons.truck, title:'Dispatch & Hearse Tracking', desc:'GPS-enabled dispatch tracking for hearses and vehicles. Real-time location updates, route optimization, and automated family notifications on arrival.', color:C.teal, gradient:'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)' },
+  { icon:Icons.calendar, title:'Calendar & Scheduling', desc:'Manage funeral services, viewings, and team schedules in one place. Automated reminders, conflict detection, and shared team calendars.', color:C.indigo, gradient:'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)' },
+  { icon:Icons.dollar, title:'Billing & Invoicing', desc:'Automated invoicing with M-PESA integration, payment tracking, and financial reporting. Reduce billing errors and accelerate payment collection.', color:C.emeraldLight, gradient:'linear-gradient(135deg, #10B981 0%, #34D399 100%)' },
 ];
 
 const REASONS = [
@@ -52,19 +63,19 @@ const REASONS = [
 ];
 
 const TESTIMONIALS = [
-  { author:'Sarah Chen', role:'Director, Eternal Rest', text:'Welt Tallis cut our admin time by 60%. Families are more satisfied.', stat:'60% time savings' },
-  { author:'James Okonkwo', role:'Manager, Heritage Services', text:'The Family Portal has been transformative. We\'ve seen more 5-star reviews.', stat:'45% more reviews' },
-  { author:'Maria Santos', role:'Owner, Compassionate Care', text:'The marketplace integration has opened new revenue opportunities.', stat:'+$8K/month' },
-  { author:'David Mwangi', role:'Director, Grace & Peace', text:'The memorial board is incredible. Families worldwide can light candles.', stat:'3x engagement' },
-  { author:'Grace Wanjiku', role:'Manager, Serene Rest', text:'GPS dispatch tracking has been a game-changer. Families love real-time updates.', stat:'70% fewer calls' },
-  { author:'Peter Ochieng', role:'Owner, Legacy Services', text:'The document editor saved us hours every week. Permits in minutes.', stat:'4x faster docs' },
+  { author:'Sarah Chen', role:'Director, Eternal Rest', text:'Welt Tallis cut our admin time by 60%. Families are more satisfied.', stat:'60% time savings', avatar:'SC' },
+  { author:'James Okonkwo', role:'Manager, Heritage Services', text:'The Family Portal has been transformative. We\'ve seen more 5-star reviews.', stat:'45% more reviews', avatar:'JO' },
+  { author:'Maria Santos', role:'Owner, Compassionate Care', text:'The marketplace integration has opened new revenue opportunities.', stat:'+$8K/month', avatar:'MS' },
+  { author:'David Mwangi', role:'Director, Grace & Peace', text:'The memorial board is incredible. Families worldwide can light candles.', stat:'3x engagement', avatar:'DM' },
+  { author:'Grace Wanjiku', role:'Manager, Serene Rest', text:'GPS dispatch tracking has been a game-changer. Families love real-time updates.', stat:'70% fewer calls', avatar:'GW' },
+  { author:'Peter Ochieng', role:'Owner, Legacy Services', text:'The document editor saved us hours every week. Permits in minutes.', stat:'4x faster docs', avatar:'PO' },
 ];
 
 const TRUST = [
-  { icon:Icons.lock, title:'Bank-Level Security', desc:'Enterprise-grade encryption, role-based access, and secure cloud infrastructure.' },
-  { icon:Icons.shield, title:'99.9% Uptime', desc:'Redundant systems, daily backups, and disaster recovery.' },
-  { icon:Icons.file, title:'Compliance Ready', desc:'Built for HIPAA, GDPR, and local regulations. Audit trails for every action.' },
-  { icon:Icons.globe, title:'Global Reach', desc:'Support families worldwide. Anyone can light candles and stay connected.' },
+  { icon:Icons.lock, title:'Bank-Level Security', desc:'Enterprise-grade encryption, role-based access, and secure cloud infrastructure.', stat:'256-bit SSL' },
+  { icon:Icons.shield, title:'99.9% Uptime', desc:'Redundant systems, daily backups, and disaster recovery.', stat:'24/7 Support' },
+  { icon:Icons.file, title:'Compliance Ready', desc:'Built for HIPAA, GDPR, and local regulations. Audit trails for every action.', stat:'100% Compliant' },
+  { icon:Icons.globe, title:'Global Reach', desc:'Support families worldwide. Anyone can light candles and stay connected.', stat:'50+ Countries' },
 ];
 
 const INITIAL_CANDLES = [
@@ -88,7 +99,20 @@ const INITIAL_CANDLES = [
 
 function Candle({ name, message, lit, onLight, delay = 0 }) {
   return (
-    <div onClick={onLight} style={{ display:'flex', flexDirection:'column', alignItems:'center', cursor:lit?'default':'pointer', gap:'.6rem', animation:`fadeInUp 0.6s ease ${delay}ms both`, transition:'transform 0.2s' }} onMouseEnter={e=>{if(!lit)e.currentTarget.style.transform='scale(1.1)'}} onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)'}}>
+    <div 
+      onClick={onLight} 
+      style={{ 
+        display:'flex', 
+        flexDirection:'column', 
+        alignItems:'center', 
+        cursor:lit?'default':'pointer', 
+        gap:'.6rem', 
+        animation:`fadeInUp 0.6s ease ${delay}ms both`, 
+        transition:'transform 0.2s' 
+      }} 
+      onMouseEnter={e=>{if(!lit)e.currentTarget.style.transform='scale(1.1)'}} 
+      onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)'}}
+    >
       <div style={{ position:'relative', height:'56px', display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
         {lit ? (
           <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center' }}>
@@ -123,7 +147,7 @@ function Loader({ onComplete }) {
       <style>{`@keyframes lp{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}@keyframes lf{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div style={{ display:'flex', alignItems:'center', gap:'.75rem', marginBottom:'2rem', animation:'lf 0.8s ease' }}>
         <div style={{ width:'12px', height:'12px', borderRadius:'50%', background:C.emerald, animation:'lp 2s ease-in-out infinite' }} />
-        <span style={{ fontFamily:"'Lora',serif", fontSize:'1.5rem', fontWeight:700, color:'white' }}>Rest Point</span>
+        <span style={{ fontFamily:"'Lora',serif", fontSize:'1.5rem', fontWeight:700, color:'white', letterSpacing:'-0.02em' }}>Rest Point</span>
       </div>
       <div style={{ display:'flex', gap:'1.5rem', marginBottom:'2rem', animation:'lf 1s ease 0.2s both' }}>
         {[0,1,2].map(i=>(
@@ -176,31 +200,50 @@ export default function App() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         *{margin:0;padding:0;box-sizing:border-box}
         html{scroll-behavior:smooth;background:${C.navy50}}
-        body{font-family:'Inter',sans-serif;color:${C.char700};background:${C.navy50}}
+        body{font-family:'Inter',sans-serif;color:${C.char700};background:${C.navy50};-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         ::selection{background:rgba(166,124,82,0.15);color:${C.gold}}
+        
         .wrap{max-width:1200px;margin:0 auto;padding:0 clamp(1rem,5vw,2.5rem)}
         .section{padding:clamp(4rem,10vw,7rem) 0}
-        h1,h2,h3{font-family:'Lora',serif;font-weight:500;line-height:1.2}
-        h1{font-size:clamp(2.5rem,8vw,4.5rem)}h2{font-size:clamp(1.8rem,6vw,3.2rem)}h3{font-size:clamp(1.2rem,3vw,1.8rem)}
+        
+        h1,h2,h3,h4{font-family:'Playfair Display',serif;font-weight:600;line-height:1.2;letter-spacing:-0.02em}
+        h1{font-size:clamp(2.5rem,8vw,4.5rem)}
+        h2{font-size:clamp(1.8rem,6vw,3.2rem)}
+        h3{font-size:clamp(1.2rem,3vw,1.8rem)}
+        h4{font-size:clamp(1rem,2.5vw,1.3rem)}
+        
         .eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${C.gold};margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
         .eyebrow::before{content:'';width:16px;height:1px;background:currentColor}
-        .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.75rem;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:all .22s;white-space:nowrap;font-family:'Inter',sans-serif}
+        
+        .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.75rem;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:all .22s;white-space:nowrap;font-family:'Inter',sans-serif;position:relative;overflow:hidden}
+        .btn::before{content:'';position:absolute;top:50%;left:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,0.15);transform:translate(-50%,-50%);transition:width 0.6s, height 0.6s}
+        .btn:active::before{width:300px;height:300px}
+        
         .btn-primary{background:${C.navy900};color:#fff;box-shadow:0 4px 16px -4px rgba(10,31,61,.4)}
         .btn-primary:hover{background:${C.navy800};transform:translateY(-2px);box-shadow:0 8px 24px -4px rgba(10,31,61,.6)}
+        
         .btn-secondary{background:transparent;color:${C.navy900};border:1.5px solid ${C.navy900}}
-        .btn-secondary:hover{background:rgba(10,31,61,.05)}
-        .btn-text{background:none;color:${C.navy900};padding:.5rem 0}.btn-text:hover{opacity:.8}
+        .btn-secondary:hover{background:rgba(10,31,61,.05);transform:translateY(-2px)}
+        
+        .btn-text{background:none;color:${C.navy900};padding:.5rem 0;border:none}
+        .btn-text:hover{opacity:.8}
+        
         .btn-gold{background:${C.gold};color:#fff;box-shadow:0 4px 16px -4px rgba(166,124,82,.4)}
-        .btn-gold:hover{background:${C.goldD};transform:translateY(-2px)}
-        nav{position:fixed;top:0;left:0;right:0;z-index:100;background:${scrolled?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.7)'};backdrop-filter:blur(12px);border-bottom:1px solid ${scrolled?C.char200:'transparent'};padding:1.2rem 0;transition:all .3s}
+        .btn-gold:hover{background:${C.goldD};transform:translateY(-2px);box-shadow:0 8px 24px -4px rgba(166,124,82,.6)}
+        
+        nav{position:fixed;top:0;left:0;right:0;z-index:100;background:${scrolled?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.7)'};backdrop-filter:blur(12px);border-bottom:1px solid ${scrolled?C.char200:'transparent'};padding:1.2rem 0;transition:all .3s}
         .nav-wrap{display:flex;justify-content:space-between;align-items:center}
-        .logo{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:700;color:${C.navy900};font-family:'Lora',serif;cursor:pointer}
-        .logo-dot{width:8px;height:8px;border-radius:50%;background:${C.emerald}}
+        .logo{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:700;color:${C.navy900};font-family:'Playfair Display',serif;cursor:pointer;letter-spacing:-0.02em}
+        .logo-dot{width:8px;height:8px;border-radius:50%;background:${C.emerald};box-shadow:0 0 8px rgba(16,185,129,0.4)}
         .nav-links{display:flex;gap:2.5rem}
-        .nav-link{font-size:.75rem;font-weight:600;color:${C.char600};text-decoration:none;transition:color .2s;cursor:pointer}.nav-link:hover{color:${C.gold}}
+        .nav-link{font-size:.75rem;font-weight:600;color:${C.char600};text-decoration:none;transition:color .2s;cursor:pointer;position:relative}
+        .nav-link::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:${C.gold};transition:width .3s}
+        .nav-link:hover{color:${C.gold}}
+        .nav-link:hover::after{width:100%}
         .nav-cta{display:flex;gap:1rem;align-items:center}
         .hamburger{display:none;background:none;border:none;cursor:pointer;color:${C.navy900};padding:.5rem;z-index:101;position:relative}
         .mobile-menu{display:block;position:fixed;top:0;left:0;bottom:0;width:280px;max-width:85vw;background:#fff;padding:5rem 1.25rem 1.25rem;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.12);transform:translateX(-100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);overflow-y:auto}
@@ -209,136 +252,199 @@ export default function App() {
         .mobile-cta{width:100%;margin-top:.75rem}
         @media(max-width:768px){.nav-links{display:none!important}.nav-cta{display:none!important}.hamburger{display:block!important}}
         @media(min-width:769px){.mobile-menu{display:none!important}}
+        
         @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes flame{0%,100%{transform:scaleX(1)scaleY(1)rotate(-1deg)}25%{transform:scaleX(1.04)scaleY(0.97)rotate(1deg)}50%{transform:scaleX(0.97)scaleY(1.04)rotate(-.5deg)}75%{transform:scaleX(1.03)scaleY(0.98)rotate(.8deg)}}
         @keyframes glow{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+        
         .hero{padding:clamp(6rem,12vw,8rem) 0 clamp(3rem,6vw,4rem);background:linear-gradient(135deg,${C.navy50} 0%,rgba(5,150,105,.03) 100%);position:relative;overflow:hidden}
+        .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(166,124,82,0.08) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+        .hero::after{content:'';position:absolute;bottom:-30%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+        
         .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;z-index:1}
         @media(max-width:768px){.hero-inner{grid-template-columns:1fr;gap:2rem}}
-        .hero-text h1{color:${C.navy900};margin-bottom:1.5rem}
-        .hero-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
-        .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem}
+        
+        .hero-text h1{color:${C.navy900};margin-bottom:1.5rem;line-height:1.1}
+        .hero-text p{font-size:1.05rem;color:${C.char700};line-height:1.7;margin-bottom:2rem;max-width:540px}
+        .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem}
         @media(max-width:640px){.hero-cta{flex-wrap:nowrap;gap:.75rem}.hero-cta .btn{flex:1;padding:.7rem 1rem;font-size:.65rem}}
+        
         .hero-trust{display:flex;gap:1.5rem;font-size:.85rem;color:${C.char600};flex-wrap:wrap}
         .hero-trust-item{display:flex;align-items:center;gap:.5rem}
         .trust-icon{color:${C.emerald};flex-shrink:0}
+        
         .hero-image{position:relative}
-        .dashboard-shell{background:#fff;border:1px solid ${C.char200};border-radius:12px;overflow:hidden;box-shadow:0 20px 60px -10px rgba(0,0,0,.08)}
+        .dashboard-shell{background:#fff;border:1px solid ${C.char200};border-radius:16px;overflow:hidden;box-shadow:0 20px 60px -10px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.05)}
         .chrome{display:flex;gap:.5rem;align-items:center;padding:.75rem 1rem;background:${C.char100};border-bottom:1px solid ${C.char200}}
         .dot{width:8px;height:8px;border-radius:50%}.d-red{background:#FF5F57}.d-yellow{background:#FEBC2E}.d-green{background:#28C840}
         .url{flex:1;background:#fff;border-radius:4px;padding:.4rem .7rem;font-size:.65rem;color:${C.char500};font-family:monospace}
         .dash-img{width:100%;display:block;background:linear-gradient(135deg,${C.char100},${C.navy50})}
-        .trust-section{background:#fff;padding:clamp(4rem,8vw,6rem) 0;border-top:1px solid ${C.char200};border-bottom:1px solid ${C.char200}}
+        
+        .trust-section{background:#fff;padding:clamp(4rem,8vw,6rem) 0;border-top:1px solid ${C.char200};border-bottom:1px solid ${C.char200};position:relative;overflow:hidden}
+        .trust-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.gold},transparent);opacity:.3}
         .trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem}
         @media(max-width:1024px){.trust-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:640px){.trust-grid{grid-template-columns:1fr}}
-        .trust-card{padding:2rem;text-align:center}
+        .trust-card{padding:2rem;text-align:center;position:relative;transition:transform .3s}
+        .trust-card:hover{transform:translateY(-4px)}
+        .trust-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:3px;background:${C.gold};border-radius:0 0 2px 2px;opacity:0;transition:opacity .3s}
+        .trust-card:hover::before{opacity:1}
         .trust-card h3{font-size:1.1rem;margin-bottom:.75rem;color:${C.navy900}}
         .trust-card p{font-size:.9rem;color:${C.char600};line-height:1.6}
-        .features-section{background:${C.navy50}}
+        .trust-stat{display:inline-block;margin-top:.75rem;padding:.25rem .75rem;background:rgba(166,124,82,0.1);color:${C.gold};border-radius:20px;font-size:.75rem;font-weight:700;letter-spacing:.05em}
+        
+        .features-section{background:${C.navy50};position:relative}
+        .features-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .features-header{text-align:center;margin-bottom:4rem}
         .features-header h2{color:${C.navy900};margin-bottom:1rem}
         .features-header p{font-size:1rem;color:${C.char700};max-width:600px;margin:0 auto}
         .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
         @media(max-width:1024px){.features-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:640px){.features-grid{grid-template-columns:1fr}}
-        .feature-card{background:#fff;padding:2rem;border-radius:12px;border:1px solid ${C.char200};transition:all .3s}
-        .feature-card:hover{border-color:${C.gold};transform:translateY(-4px);box-shadow:0 12px 36px -8px rgba(166,124,82,.2)}
-        .feature-card h3{margin-bottom:.75rem;color:${C.navy900}}
+        
+        .feature-card{background:#fff;padding:2rem;border-radius:16px;border:1px solid ${C.char200};transition:all .3s;position:relative;overflow:hidden}
+        .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-gradient);transform:scaleX(0);transition:transform .3s;transform-origin:left}
+        .feature-card:hover{border-color:${C.gold};transform:translateY(-6px);box-shadow:0 20px 40px -12px rgba(166,124,82,.25)}
+        .feature-card:hover::before{transform:scaleX(1)}
+        .feature-icon{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;background:var(--card-bg);color:#fff;box-shadow:0 8px 16px -4px var(--card-shadow)}
+        .feature-card h3{margin-bottom:.75rem;color:${C.navy900};font-size:1.15rem}
         .feature-card p{font-size:.9rem;color:${C.char600};line-height:1.6}
-        .reasons-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%)}
+        
+        .reasons-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
+        .reasons-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .reasons-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
         @media(max-width:1024px){.reasons-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:640px){.reasons-grid{grid-template-columns:1fr}}
-        .reason-card{display:flex;gap:1rem;padding:1.25rem;background:#fff;border-radius:10px;border:1px solid ${C.char200};transition:all .3s}
-        .reason-card:hover{border-color:${C.gold};transform:translateY(-2px);box-shadow:0 8px 24px -8px rgba(166,124,82,.15)}
-        .reason-card h4{font-size:.95rem;color:${C.navy900};margin-bottom:.25rem}
+        .reason-card{display:flex;gap:1rem;padding:1.5rem;background:#fff;border-radius:12px;border:1px solid ${C.char200};transition:all .3s}
+        .reason-card:hover{border-color:${C.gold};transform:translateY(-3px);box-shadow:0 12px 28px -8px rgba(166,124,82,.2)}
+        .reason-icon{width:40px;height:40px;border-radius:10px;background:rgba(166,124,82,0.1);color:${C.gold};display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .reason-card h4{font-size:.95rem;color:${C.navy900};margin-bottom:.5rem;font-family:'Inter',sans-serif;font-weight:600}
         .reason-card p{font-size:.85rem;color:${C.char600};line-height:1.5}
-        .family-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%)}
+        
+        .family-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
+        .family-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .family-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
         @media(max-width:768px){.family-inner{grid-template-columns:1fr;gap:2rem}}
         .family-text h2{color:${C.navy900};margin-bottom:1.5rem}
         .family-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
         .family-benefits{display:flex;flex-direction:column;gap:1rem}
         .benefit-item{display:flex;gap:1rem;font-size:.95rem;color:${C.char700}}
-        .benefit-item strong{color:${C.navy900}}
-        .family-image{background:#fff;border-radius:12px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-        .family-image img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+        .benefit-item strong{color:${C.navy900};font-weight:600}
+        .benefit-check{color:${C.emerald};font-weight:700;flex-shrink:0}
+        .family-image{background:#fff;border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
+        .family-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
+        
         .marketplace-section{background:#fff;position:relative;overflow:hidden}
+        .marketplace-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .marketplace-inner{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
         @media(max-width:768px){.marketplace-inner{grid-template-columns:1fr}}
         .marketplace-text h2{color:${C.navy900};margin-bottom:1.5rem}
         .marketplace-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
-        .marketplace-image{border-radius:12px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-        .marketplace-image img{width:100%;height:100%;object-fit:cover;border-radius:12px}
-        .security-section{background:#fff}
+        .marketplace-image{border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
+        .marketplace-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
+        
+        .security-section{background:#fff;position:relative}
+        .security-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .security-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
         @media(max-width:768px){.security-inner{grid-template-columns:1fr}}
         .security-text h2{color:${C.navy900};margin-bottom:1.5rem}
         .security-items{display:flex;flex-direction:column;gap:1.5rem}
-        .security-item{display:flex;gap:1rem}
-        .security-item h4{color:${C.navy900};margin-bottom:.25rem;font-size:.95rem}
-        .security-item p{font-size:.85rem;color:${C.char600}}
-        .security-image{border-radius:12px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-        .security-image img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+        .security-item{display:flex;gap:1rem;padding:1rem;background:${C.navy50};border-radius:10px;transition:all .3s}
+        .security-item:hover{background:#fff;box-shadow:0 4px 12px -4px rgba(0,0,0,.08);transform:translateX(4px)}
+        .security-item h4{color:${C.navy900};margin-bottom:.25rem;font-size:.95rem;font-family:'Inter',sans-serif;font-weight:600}
+        .security-item p{font-size:.85rem;color:${C.char600};line-height:1.5}
+        .security-icon{color:${C.emerald};flex-shrink:0;margin-top:2px}
+        .security-image{border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
+        .security-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
+        
         .memorial-section{background:linear-gradient(180deg,${C.navy900} 0%,${C.navy800} 50%,${C.navy900} 100%);color:#fff;position:relative;overflow:hidden}
-        .memorial-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(5,150,105,.08) 0%,transparent 60%);pointer-events:none}
+        .memorial-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(5,150,105,.1) 0%,transparent 60%);pointer-events:none}
+        .memorial-section::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
         .memorial-inner{position:relative;z-index:1;text-align:center}
-        .memorial-quote{font-family:'Lora',serif;font-size:1.2rem;font-style:italic;color:rgba(255,255,255,.9);max-width:600px;margin:0 auto 2.5rem;line-height:1.8}
+        .memorial-quote{font-family:'Playfair Display',serif;font-size:1.2rem;font-style:italic;color:rgba(255,255,255,.9);max-width:600px;margin:0 auto 2.5rem;line-height:1.8}
         .candle-input-row{display:flex;gap:.75rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
-        .candle-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.75rem 1rem;color:#fff;font-family:'Inter',sans-serif;font-size:.9rem;outline:none;min-width:250px}
+        .candle-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.85rem 1.25rem;color:#fff;font-family:'Inter',sans-serif;font-size:.9rem;outline:none;min-width:250px;transition:all .3s}
         .candle-input::placeholder{color:rgba(255,255,255,.5)}
-        .candle-input:focus{border-color:${C.gold}}
+        .candle-input:focus{border-color:${C.gold};background:rgba(255,255,255,.12);box-shadow:0 0 0 3px rgba(166,124,82,0.1)}
         .candle-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:1.5rem 1rem;justify-items:center;margin:2rem 0}
         @media(max-width:1024px){.candle-grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:640px){.candle-grid{grid-template-columns:repeat(3,1fr)}}
         .candle-counter{display:flex;align-items:center;gap:1rem;justify-content:center;margin:2rem 0;font-size:.85rem;color:rgba(255,255,255,.7)}
         .candle-counter span{color:${C.gold};font-weight:700;font-size:1.2rem}
-        .memorial-cta{background:rgba(166,124,82,.15);border:1px solid rgba(166,124,82,.3);border-radius:12px;padding:2rem;margin-top:2rem}
+        .memorial-cta{background:rgba(166,124,82,.15);border:1px solid rgba(166,124,82,.3);border-radius:16px;padding:2rem;margin-top:2rem;backdrop-filter:blur(10px)}
         .memorial-cta h3{color:#fff;margin-bottom:1rem}
         .memorial-cta p{color:rgba(255,255,255,.8);font-size:.95rem;line-height:1.6;margin-bottom:1.5rem}
-        .testimonials-section{background:${C.navy50}}
+        
+        .testimonials-section{background:${C.navy50};position:relative}
+        .testimonials-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
         @media(max-width:1024px){.testimonials-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:640px){.testimonials-grid{grid-template-columns:1fr}}
-        .testimonial-card{background:#fff;padding:2rem;border-radius:12px;border:1px solid ${C.char200}}
-        .testimonial-stat{font-size:1.4rem;font-weight:700;color:${C.gold};margin-bottom:1rem}
+        .testimonial-card{background:#fff;padding:2rem;border-radius:16px;border:1px solid ${C.char200};transition:all .3s;position:relative}
+        .testimonial-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${C.gold},${C.emerald});border-radius:16px 16px 0 0;transform:scaleX(0);transition:transform .3s;transform-origin:left}
+        .testimonial-card:hover{border-color:${C.gold};transform:translateY(-4px);box-shadow:0 16px 32px -8px rgba(166,124,82,.2)}
+        .testimonial-card:hover::before{transform:scaleX(1)}
+        .testimonial-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,${C.gold},${C.emerald});display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;margin-bottom:1rem;box-shadow:0 4px 12px -2px rgba(166,124,82,.3)}
+        .testimonial-stat{font-size:1.4rem;font-weight:700;color:${C.gold};margin-bottom:1rem;font-family:'Playfair Display',serif}
         .testimonial-text{font-size:.95rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem;font-style:italic}
         .testimonial-author{font-weight:600;color:${C.navy900};font-size:.9rem}
-        .testimonial-role{font-size:.8rem;color:${C.char600}}
-        .pricing-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%)}
+        .testimonial-role{font-size:.8rem;color:${C.char600)}
+        
+        .pricing-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
+        .pricing-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
         .pricing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2rem;max-width:900px;margin:0 auto}
         @media(max-width:768px){.pricing-grid{grid-template-columns:1fr}}
-        .pricing-card{background:#fff;padding:2.5rem;border-radius:12px;border:1px solid ${C.char200};position:relative}
-        .pricing-card.featured{border-color:${C.gold};box-shadow:0 20px 40px -10px rgba(166,124,82,.2)}
-        .pricing-badge{position:absolute;top:-12px;left:2rem;background:${C.gold};color:#fff;padding:.4rem 1rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.1em}
-        .pricing-label{font-size:.8rem;color:${C.gold};text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
-        .pricing-amount{font-size:2.5rem;font-weight:700;color:${C.navy900};margin-bottom:.25rem}
+        .pricing-card{background:#fff;padding:2.5rem;border-radius:16px;border:1px solid ${C.char200};position:relative;transition:all .3s}
+        .pricing-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -8px rgba(0,0,0,.1)}
+        .pricing-card.featured{border-color:${C.gold};box-shadow:0 20px 40px -10px rgba(166,124,82,.25)}
+        .pricing-badge{position:absolute;top:-12px;left:2rem;background:${C.gold};color:#fff;padding:.5rem 1.25rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.1em;box-shadow:0 4px 12px -2px rgba(166,124,82,.4)}
+        .pricing-label{font-size:.8rem;color:${C.gold};text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;font-weight:700}
+        .pricing-amount{font-size:2.5rem;font-weight:700;color:${C.navy900};margin-bottom:.25rem;font-family:'Playfair Display',serif}
         .pricing-period{font-size:.85rem;color:${C.char600};margin-bottom:1.5rem}
         .pricing-divider{height:1px;background:${C.char200};margin:1.5rem 0}
-        .pricing-item{display:flex;gap:.75rem;font-size:.9rem;color:${C.char700};margin-bottom:.75rem}
+        .pricing-item{display:flex;gap:.75rem;font-size:.9rem;color:${C.char700};margin-bottom:.75rem;align-items:center}
         .pricing-cta{width:100%;margin-top:2rem}
-        .cta-final{background:linear-gradient(135deg,${C.navy900} 0%,${C.navy800} 100%);color:#fff;text-align:center;padding:clamp(4rem,10vw,6rem) 0}
-        .cta-final-inner{max-width:700px;margin:0 auto;padding:0 1rem}
+        
+        .cta-final{background:linear-gradient(135deg,${C.navy900} 0%,${C.navy800} 100%);color:#fff;text-align:center;padding:clamp(4rem,10vw,6rem) 0;position:relative;overflow:hidden}
+        .cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(166,124,82,0.1) 0%,transparent 60%);pointer-events:none}
+        .cta-final::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
+        .cta-final-inner{max-width:700px;margin:0 auto;padding:0 1rem;position:relative;z-index:1}
         .cta-final h2{color:#fff;margin-bottom:1rem}
         .cta-final p{font-size:1rem;color:rgba(255,255,255,.9);margin-bottom:2rem;line-height:1.7}
         .cta-final-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-        footer{background:${C.navy900};color:#fff;border-top:1px solid ${C.navy800};padding:4rem 0 2rem}
+        
+        footer{background:${C.navy900};color:#fff;border-top:1px solid ${C.navy800};padding:4rem 0 2rem;position:relative}
+        footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.gold},transparent);opacity:.3}
         .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
         @media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr;gap:2rem}}
-        .footer-col h4{font-family:'Lora',serif;margin-bottom:1.5rem}
+        .footer-col h4{font-family:'Playfair Display',serif;margin-bottom:1.5rem;font-size:1.1rem}
         .footer-col p{font-size:.9rem;line-height:1.6;opacity:.8;margin-bottom:1rem}
         .footer-link{display:block;font-size:.85rem;color:rgba(255,255,255,.7);margin-bottom:.75rem;transition:color .2s;text-decoration:none;cursor:pointer}.footer-link:hover{color:${C.gold}}
         .footer-divider{height:1px;background:${C.navy800};margin:2rem 0}
         .footer-bottom{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:rgba(255,255,255,.6);flex-wrap:wrap;gap:1rem}
-        @media(max-width:480px){h1{font-size:1.8rem}h2{font-size:1.4rem}.btn{padding:.65rem 1.1rem;font-size:.65rem}.hero-cta .btn{flex:1}.hero-trust{flex-direction:column;gap:.6rem;font-size:.8rem}.candle-grid{gap:1rem .75rem}.cta-final-buttons{flex-direction:column}.cta-final-buttons .btn{width:100%}}
+        
+        @media(max-width:480px){
+          h1{font-size:1.8rem}
+          h2{font-size:1.4rem}
+          .btn{padding:.65rem 1.1rem;font-size:.65rem}
+          .hero-cta .btn{flex:1}
+          .hero-trust{flex-direction:column;gap:.6rem;font-size:.8rem}
+          .candle-grid{gap:1rem .75rem}
+          .cta-final-buttons{flex-direction:column}
+          .cta-final-buttons .btn{width:100%}
+        }
       `}</style>
 
       <nav>
         <div className="wrap nav-wrap">
-          <div className="logo" onClick={()=>window.scrollTo({top:0,behavior:'smooth'})}><span className="logo-dot"/><span>Rest Point</span></div>
+          <div className="logo" onClick={()=>window.scrollTo({top:0,behavior:'smooth'})}>
+            <span className="logo-dot"/>
+            <span>Rest Point</span>
+          </div>
           <div className="nav-links">
             <a href="#features" className="nav-link">Platform</a>
             <a href="#why" className="nav-link">Why Rest Point</a>
@@ -377,7 +483,7 @@ export default function App() {
             <div className="hero-inner">
               <div className="hero-text">
                 <div className="eyebrow">{Icons.star} Modern Funeral Home Management</div>
-                <h1>One platform. Complete peace of mind.</h1>
+                <h1>One platform.<br/>Complete peace of mind.</h1>
                 <p>Manage funeral operations, serve families through a dedicated portal, create documents with integrated tools, and grow revenue through our marketplace—all in one secure place built for compassion and excellence.</p>
                 <div className="hero-cta">
                   <button className="btn btn-primary" onClick={goStart}>{isLoggedIn?'Dashboard':'Start Free Trial'} {Icons.arrow}</button>
@@ -396,7 +502,7 @@ export default function App() {
                     <div className="url">restpoint.app/dashboard</div>
                   </div>
                   <div className="dash-img" style={{minHeight:'auto',position:'relative'}}>
-                    <img src="/landing.png" alt="Rest Point Dashboard" style={{width:'100%',height:'auto',display:'block',borderRadius:'0 0 12px 12px'}} onError={e=>{e.target.style.display='none';e.target.parentElement.innerHTML='<div style="padding:3rem;text-align:center;background:linear-gradient(135deg,#F3F4F6,#F9FAFB)"><div style="font-size:2.5rem;margin-bottom:1rem">📊</div><div style="color:#6B7280">Rest Point Dashboard</div></div>'}}/>
+                    <img src="/landing.png" alt="Rest Point Dashboard" style={{width:'100%',height:'auto',display:'block',borderRadius:'0 0 12px 12px'}} onError={e=>{e.target.style.display='none';e.target.parentElement.innerHTML='<div style="padding:3rem;text-align:center;background:linear-gradient(135deg,#F3F4F6,#F9FAFB)"><div style="font-size:2.5rem;margin-bottom:1rem">📊</div><div style="color:#6B7280;font-family:Inter,sans-serif">Rest Point Dashboard</div></div>'}}/>
                   </div>
                 </div>
               </div>
@@ -417,6 +523,7 @@ export default function App() {
                   <div style={{fontSize:'2.5rem',marginBottom:'1rem',color:C.gold}}>{t.icon}</div>
                   <h3>{t.title}</h3>
                   <p>{t.desc}</p>
+                  <span className="trust-stat">{t.stat}</span>
                 </div>
               ))}
             </div>
@@ -433,8 +540,8 @@ export default function App() {
             </div>
             <div className="features-grid">
               {FEATURES.map((f,i)=>(
-                <div key={i} className="feature-card">
-                  <div style={{marginBottom:'1rem',color:f.color}}>{f.icon}</div>
+                <div key={i} className="feature-card" style={{'--card-gradient':f.gradient,'--card-bg':f.gradient,'--card-shadow':f.color+'40'}}>
+                  <div className="feature-icon">{f.icon}</div>
                   <h3>{f.title}</h3>
                   <p>{f.desc}</p>
                 </div>
@@ -454,7 +561,7 @@ export default function App() {
             <div className="reasons-grid">
               {REASONS.map((r,i)=>(
                 <div key={i} className="reason-card">
-                  <div style={{color:C.gold,flexShrink:0,marginTop:'2px'}}>{r.icon}</div>
+                  <div className="reason-icon">{r.icon}</div>
                   <div>
                     <h4>{r.title}</h4>
                     <p>{r.desc}</p>
@@ -474,10 +581,10 @@ export default function App() {
                 <h2>Keep Families Connected & Informed</h2>
                 <p>Your families receive a secure SMS link—no app download required. They can view documents, track case progress, receive billing, make payments, and communicate with your team—all from their phone.</p>
                 <div className="family-benefits">
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Instant Communication</strong> — Automated SMS updates at every milestone</div></div>
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Document Access</strong> — Families download permits, certificates, and invoices</div></div>
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Secure Billing</strong> — View invoices and pay via M-PESA, card, or bank</div></div>
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Memorial Tributes</strong> — Light candles and leave messages of remembrance</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Instant Communication</strong> — Automated SMS updates at every milestone</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Document Access</strong> — Families download permits, certificates, and invoices</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Secure Billing</strong> — View invoices and pay via M-PESA, card, or bank</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Memorial Tributes</strong> — Light candles and leave messages of remembrance</div></div>
                 </div>
                 <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={goPortal}>Access Family Portal {Icons.arrow}</button></div>
               </div>
@@ -497,9 +604,9 @@ export default function App() {
                 <h2>New Revenue Streams for Your Funeral Home</h2>
                 <p>Our integrated marketplace connects families with trusted vendors for flowers, keepsakes, memorial items, catering, and more. Generate additional revenue while providing comprehensive service.</p>
                 <div className="family-benefits">
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Curated Vendors</strong> — Pre-screened, reliable local partners</div></div>
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Commission Revenue</strong> — Earn on every marketplace transaction</div></div>
-                  <div className="benefit-item"><span style={{color:C.emerald,fontWeight:600}}>✓</span><div><strong>Seamless Integration</strong> — Vendors and families connect through your platform</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Curated Vendors</strong> — Pre-screened, reliable local partners</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Commission Revenue</strong> — Earn on every marketplace transaction</div></div>
+                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Seamless Integration</strong> — Vendors and families connect through your platform</div></div>
                 </div>
                 <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={()=>navigate('/register')}>Learn More {Icons.arrow}</button></div>
               </div>
@@ -519,10 +626,10 @@ export default function App() {
                 <h2>Your Data. Protected. Always.</h2>
                 <p>We take data security seriously. Your funeral home's sensitive information — including postmortem reports, autopsy findings, medical records, and families' personal data — are protected by enterprise-grade security infrastructure.</p>
                 <div className="security-items" style={{marginTop:'2rem'}}>
-                  <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.lock}</div><div><h4>Contobo Security Family</h4><p>Enterprise-grade encryption at rest and in transit. SOC 2 compliant infrastructure with multi-layered security controls.</p></div></div>
-                  <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.shield}</div><div><h4>Role-Based Access Control</h4><p>Granular permissions for directors, managers, staff, and families. Every action is logged with complete audit trails.</p></div></div>
-                  <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.file}</div><div><h4>Critical Data Protection</h4><p>Postmortem reports, autopsy results, cause of death, medical history, and identification documents are encrypted and automatically masked. Prevents sensitive case information from being exposed.</p></div></div>
-                  <div className="security-item"><div style={{color:C.emerald,flexShrink:0}}>{Icons.globe}</div><div><h4>Disaster Recovery</h4><p>Automated daily backups, multi-region redundancy, and 99.9% uptime SLA.</p></div></div>
+                  <div className="security-item"><div className="security-icon">{Icons.lock}</div><div><h4>Contobo Security Family</h4><p>Enterprise-grade encryption at rest and in transit. SOC 2 compliant infrastructure with multi-layered security controls.</p></div></div>
+                  <div className="security-item"><div className="security-icon">{Icons.shield}</div><div><h4>Role-Based Access Control</h4><p>Granular permissions for directors, managers, staff, and families. Every action is logged with complete audit trails.</p></div></div>
+                  <div className="security-item"><div className="security-icon">{Icons.file}</div><div><h4>Critical Data Protection</h4><p>Postmortem reports, autopsy results, cause of death, medical history, and identification documents are encrypted and automatically masked. Prevents sensitive case information from being exposed.</p></div></div>
+                  <div className="security-item"><div className="security-icon">{Icons.globe}</div><div><h4>Disaster Recovery</h4><p>Automated daily backups, multi-region redundancy, and 99.9% uptime SLA.</p></div></div>
                 </div>
               </div>
               <div className="security-image">
@@ -569,6 +676,7 @@ export default function App() {
             <div className="testimonials-grid">
               {TESTIMONIALS.map((t,i)=>(
                 <div key={i} className="testimonial-card">
+                  <div className="testimonial-avatar">{t.avatar}</div>
                   <div className="testimonial-stat">{t.stat}</div>
                   <p className="testimonial-text">"{t.text}"</p>
                   <div className="testimonial-author">{t.author}</div>
@@ -584,31 +692,35 @@ export default function App() {
           <div className="wrap">
             <div style={{textAlign:'center',marginBottom:'3rem'}}>
               <div className="eyebrow" style={{justifyContent:'center'}}>Simple Pricing</div>
-              <h2 style={{color:C.navy900}}>Plans That Scale With You</h2>
-              <p style={{color:C.char600,marginTop:'1rem'}}>No hidden fees. Cancel anytime. 30-day free trial included.</p>
+              <h2 style={{color:C.navy900}}>Transparent Pricing. No Hidden Fees.</h2>
+              <p style={{color:C.char600,marginTop:'1rem'}}>One-time setup fee. Cancel anytime. Full onboarding support included.</p>
             </div>
             <div className="pricing-grid">
               <div className="pricing-card">
-                <div className="pricing-label">Starter</div>
-                <div className="pricing-amount">KES 7,500</div>
+                <div className="pricing-label">Single Tenant</div>
+                <div className="pricing-amount">KES 9,500</div>
                 <div className="pricing-period">per month</div>
                 <div className="pricing-divider"/>
-                {['Up to 50 deceased/month','Family Portal SMS','Basic Billing & Invoicing','Single Branch','WhatsApp Support'].map((f,i)=>(
+                {['One branch / location','Family Portal SMS','Basic Billing & Invoicing','Standard Support','All Core Features'].map((f,i)=>(
                   <div key={i} className="pricing-item"><span style={{color:C.emerald,flexShrink:0}}>{Icons.check}</span>{f}</div>
                 ))}
                 <button className="btn btn-secondary pricing-cta" onClick={goStart}>Get Started {Icons.arrow}</button>
               </div>
               <div className="pricing-card featured">
                 <div className="pricing-badge">MOST POPULAR</div>
-                <div className="pricing-label">Enterprise</div>
-                <div className="pricing-amount">KES 18,000</div>
+                <div className="pricing-label">Multi-Tenant</div>
+                <div className="pricing-amount">KES 18,500</div>
                 <div className="pricing-period">per month</div>
                 <div className="pricing-divider"/>
-                {['Unlimited deceased','Multi-branch Management','Advanced Analytics & Reports','Custom Compliance Settings','GPS Dispatch Tracking','Integrated Marketplace','24/7 Priority Support','Dedicated Account Manager'].map((f,i)=>(
+                {['Unlimited branches & locations','Unlimited deceased records','Advanced Analytics & Reports','Custom Compliance Settings','GPS Dispatch Tracking','Integrated Marketplace','24/7 Priority Support','Dedicated Account Manager','No Limitations'].map((f,i)=>(
                   <div key={i} className="pricing-item"><span style={{color:C.emerald,flexShrink:0}}>{Icons.check}</span>{f}</div>
                 ))}
                 <button className="btn btn-primary pricing-cta" onClick={goStart}>Start Free Trial {Icons.arrow}</button>
               </div>
+            </div>
+            <div style={{textAlign:'center',marginTop:'2rem',fontSize:'.85rem',color:C.char600}}>
+              <span style={{fontWeight:600,color:C.navy900}}>One-time Setup & Training Fee: KES 1,000</span>
+              <span style={{display:'block',marginTop:'.25rem'}}>Account reactivation after suspension: KES 1,000</span>
             </div>
           </div>
         </section>
