@@ -1,14 +1,22 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { safeQuery } = require('../../shared/database');
+const { safeMasterQuery } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
-const coffinRoutes = require('./routes/coffinRoutes.cjs');
+const invoiceRoutes = require('./routes/invoiceRoutes');
+const invoice = require('./routes/invoice');
+const printInvoiceRoute = require('./routes/printInvoiceRoute');
 
 const app = express();
-const PORT = process.env.PORT || 8108;
+const PORT = process.env.PORT || 5005;
 
-app.use(cors());
+// CORS configuration
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token', 'x-tenant-slug'],
+}));
 app.use(helmet());
 app.use(express.json());
 
@@ -31,14 +39,16 @@ app.use(async (req, res, next) => {
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
-    service: 'coffin-service',
+    service: 'invoice-service',
     tenant: req.tenantSlug,
     timestamp: new Date().toISOString()
   });
 });
 
-app.use('/api/v1/restpoint', coffinRoutes);
+app.use('/api/v2/restpoint', invoiceRoutes);
+app.use('/api/v2/restpoint', invoice);
+app.use('/api/v2/restpoint', printInvoiceRoute);
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`coffin-service is running on port ${PORT}`);
+  console.log(`invoice-service is running on port ${PORT}`);
 });

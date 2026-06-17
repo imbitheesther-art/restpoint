@@ -39,7 +39,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/api/onboarding', onboardingRoutes);
 
 // System Admin Routes - centralized tenant management
+// Mounted at both the internal path and the gateway-proxied path
 app.use('/api/system-admin', systemAdminRoutes);
+app.use('/api/v1/restpoint/system-admin', systemAdminRoutes);
 
 // ============================================
 // HEALTH CHECK
