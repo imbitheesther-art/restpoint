@@ -6,6 +6,7 @@ import ModernSidebar from '../components/layout/ModernSidebar';
 
 import LandingPage from '../modules/landing/LandingPage';
 import OnboardingFlow from '../modules/onboarding/OnboardingFlow';
+import PrivacyPolicy from '../components/privacy/PrivacyPolicy';
 import LoginPage from '../components/auth/login';
 import PortalLoginPage from '../components/auth/PortalLogin';
 import ForgotPassword from '../components/auth/ForgotPassword';
@@ -458,6 +459,7 @@ const AppRouter = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
       <Route path="/portal/login" element={<PortalLoginPage />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
       
       {/* Legacy dashboard redirect */}
       <Route path="/dashboard/*" element={

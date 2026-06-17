@@ -30,8 +30,7 @@
     "pdfkit": "^0.15.2",
     "escpos": "^3.0.0-alpha.6",
     "escpos-usb": "^3.0.0-alpha.4",
-    "escpos-network": "^3.0.0-alpha.5",
-    "node-bluetooth-serial": "^0.0.1"
+    "escpos-network": "^3.0.0-alpha.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

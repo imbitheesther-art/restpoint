@@ -203,8 +203,8 @@ export default function App() {
         .nav-link{font-size:.75rem;font-weight:600;color:${C.char600};text-decoration:none;transition:color .2s;cursor:pointer}.nav-link:hover{color:${C.gold}}
         .nav-cta{display:flex;gap:1rem;align-items:center}
         .hamburger{display:none;background:none;border:none;cursor:pointer;color:${C.navy900};padding:.5rem;z-index:101;position:relative}
-        .mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:#fff;border-bottom:2px solid ${C.char200};padding:1.25rem;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.12)}
-        .mobile-menu.open{display:block!important}
+        .mobile-menu{display:block;position:fixed;top:0;left:0;bottom:0;width:280px;max-width:85vw;background:#fff;padding:5rem 1.25rem 1.25rem;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.12);transform:translateX(-100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);overflow-y:auto}
+        .mobile-menu.open{transform:translateX(0)!important}
         .mobile-link{display:block;padding:.9rem 0;font-size:.9rem;font-weight:600;color:${C.char700};text-decoration:none;border-bottom:1px solid ${C.char100};transition:color .2s}.mobile-link:last-child{border-bottom:none}.mobile-link:hover{color:${C.gold}}
         .mobile-cta{width:100%;margin-top:.75rem}
         @media(max-width:768px){.nav-links{display:none!important}.nav-cta{display:none!important}.hamburger{display:block!important}}
@@ -354,6 +354,7 @@ export default function App() {
         </div>
       </nav>
 
+      <div className={`mobile-overlay ${mobileOpen?'open':''}`} onClick={()=>setMobileOpen(false)}/>
       <div className={`mobile-menu ${mobileOpen?'open':''}`}>
         <a href="#features" className="mobile-link" onClick={()=>setMobileOpen(false)}>Platform</a>
         <a href="#why" className="mobile-link" onClick={()=>setMobileOpen(false)}>Why Rest Point</a>

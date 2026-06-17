@@ -25,25 +25,25 @@ export default defineConfig({
       allow: ['..']
     },
     proxy: {
-      '/api/v2': {
-        target: 'http://localhost:8000',
+      '/api': {
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
-      '/api/v1': {
-        target: 'http://localhost:8000',
+      '/uploads': {
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
-      '/api/public': {
-        target: 'http://localhost:8000',
+      '/socket.io': {
+        target: 'http://localhost:5013',
+        ws: true,
         changeOrigin: true,
-        secure: false,
       },
     }
   },
   optimizeDeps: {
-    disabled: true,  // This bypasses the MIME type issue
+    disabled: true,
     exclude: [
       '@fullcalendar/react',
       '@fullcalendar/daygrid',
