@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// RestPoint API Gateway — Pure Node.js (no TypeScript compilation needed)
-// Run directly: node server.js
+// RestPoint API Gateway — Central routing
+// Run with memory limit: node --max-old-space-size=4096 server.js
+try { const v8 = require('v8'); v8.setFlagsFromString('--max-old-space-size=4096'); } catch(e){}
 
 const dotenv = require('dotenv');
 const express = require('express');
@@ -34,7 +35,7 @@ process.on('unhandledRejection', function(r) {
 
 function env(key, fallback) {
   var val = process.env[key];
-  return val || fallback;
+  return val || fallback || '';
 }
 
 var PORT = Number(process.env.PORT) || 5000;

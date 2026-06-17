@@ -3,17 +3,15 @@
   "version": "1.0.0",
   "description": "RestPoint API Gateway — Central routing for all microservices",
   "private": true,
-  "main": "dist/server.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "npx ts-node server.ts",
-    "dev:watch": "nodemon --watch . --ext ts --exec npx ts-node server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "dev": "node server.js",
+    "dev:watch": "nodemon --watch . --ext js --exec node server.js",
+    "start": "node server.js",
     "lint": "echo 'Gateway lint OK'",
     "lint:fix": "echo 'Gateway lint fix OK'",
     "test": "echo 'No tests yet'",
-    "typecheck": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "clean": "echo 'No build step required - JS only'"
   },
   "dependencies": {
     "cors": "^2.8.5",
