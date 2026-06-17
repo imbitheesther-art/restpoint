@@ -349,8 +349,8 @@ services:
   # ============================================
   billing-service:
     build:
-      context: .
-      dockerfile: services/billing-service/Dockerfile
+      context: services/billing-service
+      dockerfile: Dockerfile
     container_name: restpoint_billing
     ports:
       - "${BILLING_SERVICE_PORT:-5020}:5020"
@@ -374,8 +374,8 @@ services:
   # ============================================
   billing-service-python:
     build:
-      context: .
-      dockerfile: services/billing-service/Dockerfile.python
+      context: services/billing-service
+      dockerfile: Dockerfile.python
     container_name: restpoint_billing_python
     ports:
       - "${BILLING_SERVICE_PYTHON_PORT:-5021}:5021"
@@ -396,8 +396,8 @@ services:
   # ============================================
   billing-service-go:
     build:
-      context: .
-      dockerfile: services/billing-service/Dockerfile.go
+      context: services/billing-service
+      dockerfile: Dockerfile.go
     container_name: restpoint_billing_go
     ports:
       - "${BILLING_SERVICE_GO_PORT:-5022}:5022"
