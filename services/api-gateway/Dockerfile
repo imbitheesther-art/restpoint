@@ -10,9 +10,14 @@ WORKDIR /app
 # Install build dependencies
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Create workspace directory structure so yarn can resolve all workspaces
 COPY package.json ./
 COPY services/api-gateway/package.json ./services/api-gateway/
+RUN mkdir -p packages/shared-config packages/shared-logger packages/shared-services packages/shared-utils && \
+    echo '{"name":"@montezuma/shared-config","version":"1.0.0"}' > packages/shared-config/package.json && \
+    echo '{"name":"@montezuma/shared-logger","version":"1.0.0"}' > packages/shared-logger/package.json && \
+    echo '{"name":"@montezuma/shared-services","version":"1.0.0"}' > packages/shared-services/package.json && \
+    echo '{"name":"@montezuma/shared-utils","version":"1.0.0"}' > packages/shared-utils/package.json
 
 # Copy tsconfig
 COPY tsconfig.json tsconfig.base.json ./
@@ -35,15 +40,14 @@ WORKDIR /app
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
-# Copy production dependencies
-COPY package.json ./
-COPY services/api-gateway/package.json ./services/api-gateway/
-
-# Install only production dependencies
-RUN yarn install --production=true
-
 # Copy built artifacts from builder
 COPY --from=builder /app/services/api-gateway/dist ./services/api-gateway/dist
+
+# Copy only the api-gateway package.json (no workspace deps needed)
+COPY services/api-gateway/package.json ./services/api-gateway/
+
+# Install production dependencies directly (no yarn workspace)
+RUN cd services/api-gateway && npm install --omit=dev
 
 # Copy env
 COPY .env ./
