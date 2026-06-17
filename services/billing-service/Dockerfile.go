@@ -2,12 +2,14 @@ FROM golang:1.21-alpine
 
 WORKDIR /app
 
-# Copy Go module files
+# Copy go.mod first for better caching
 COPY fallback-billing-go/go.mod ./
-RUN go mod download
 
-# Copy Go source
-COPY fallback-billing-go/main.go ./
+# Download dependencies (generates go.sum)
+RUN go mod tidy
+
+# Now copy the rest of the source
+COPY fallback-billing-go/ ./
 
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -o fallback-billing-go main.go

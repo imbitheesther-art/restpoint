@@ -1,0 +1,4 @@
+github.com/go-sql-driver/mysql v1.7.1 h1:lUI6VrAP3y98LSRpbCiz0W72GYKMM+f5yBVS7xVXi7Y=
+github.com/go-sql-driver/mysql v1.7.1/go.mod h1:OXbvet3R8O6I0wqXx8U0T6cUYvGq7D7eB6l6V6l6V6l6=
+github.com/joho/godotenv v1.4.0 h1:3l4+N6zfMWnkbPEXZng6gz+H5gzLf5R1D2wE0byBhLk=
+github.com/joho/godotenv v1.4.0/go.mod h1:f4LDr5Voq0i2e/R5IXq6g+5GcX5G9tB1K9l5l5l5l5l5=

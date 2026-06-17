@@ -392,28 +392,6 @@ services:
       start_period: 40s
 
   # ============================================
-  # BILLING SERVICE - Go Fallback (Port 5022)
-  # ============================================
-  billing-service-go:
-    build:
-      context: services/billing-service
-      dockerfile: Dockerfile.go
-    container_name: restpoint_billing_go
-    ports:
-      - "${BILLING_SERVICE_GO_PORT:-5022}:5022"
-    env_file:
-      - .env
-    networks:
-      - restpoint_net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5022/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # ============================================
   # CHEMICAL SERVICE (Port 5105)
   # ============================================
   chemical-service:
