@@ -4,8 +4,8 @@ const helmet = require('helmet');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { safeQuery } = require('../../shared/dist/database');
-const { validateTenantActive } = require('../../shared/dist/tenancy');
+const { safeQuery } = require('../../shared/database');
+const { validateTenantActive } = require('../../shared/tenancy');
 
 const app = express();
 const PORT = process.env.PORT || 8112;

@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { safeQuery } = require('../../apps/shared/database');
-const { validateTenantActive } = require('../../apps/shared/tenancy');
+const { safeQuery } = require('../../shared/database');
+const { validateTenantActive } = require('../../shared/tenancy');
 const coffinRoutes = require('./routes/coffinRoutes');
 
 const app = express();

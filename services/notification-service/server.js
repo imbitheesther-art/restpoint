@@ -2,8 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const axios = require('axios');
-const { safeMasterQuery } = require('../../shared/dist/dbConfig');
-const { validateTenantActive } = require('../../shared/dist/tenancy');
+const { safeMasterQuery } = require('../../shared/dbConfig');
+const { validateTenantActive } = require('../../shared/tenancy');
 const notificationsController = require('./controllers/notifications');
 const supportTicketsRouter = require('./routes/supportTickets');
 

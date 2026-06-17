@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { safeQuery } = require('../../shared/dist/database');
-const { validateTenantActive } = require('../../shared/dist/tenancy');
+const { safeQuery } = require('../../shared/database');
+const { validateTenantActive } = require('../../shared/tenancy');
 
 const app = express();
 const PORT = process.env.PORT || 8110;

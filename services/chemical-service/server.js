@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { safeQuery, safeExecute } = require('../../shared/dbConfig');
+const { safeTenantQuery: safeQuery, safeTenantExecute: safeExecute } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
 const chemicalRoutes = require('./routes/chemicalRoutes');
 

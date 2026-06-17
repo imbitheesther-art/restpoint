@@ -1,7 +1,7 @@
 import express from 'express';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { authenticate } = require('../../../global/index');
+const { authenticate } = require('../../../../global/index');
 
 import {
   stkPushRequest,
