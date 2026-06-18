@@ -333,8 +333,8 @@ services:
   # ============================================
   billing-service:
     build:
-      context: services/billing-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/billing-service/Dockerfile
     container_name: restpoint_billing
     ports:
       - "${BILLING_SERVICE_PORT:-5020}:5020"
@@ -400,7 +400,7 @@ services:
       dockerfile: Dockerfile
     container_name: restpoint_frontend
     ports:
-      - "8082:8082"
+      - "8082:80"
     env_file:
       - .env
     depends_on:
