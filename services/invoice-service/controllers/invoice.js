@@ -9,27 +9,39 @@ const crypto = require('crypto');
 const { AppError } = require('../middlewares/errorHandler');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
 const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { loadTenantBranding } = require('./tenantBranding');
 
 
 const invoiceCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 
-const generateStampHash = () => {
+/**
+ * Generate tenant-specific stamp hash
+ * @param {string} prefix - Tenant invoice prefix (e.g., 'LEE', 'MONTE')
+ */
+const generateStampHash = (prefix = 'LFH') => {
   const date = new Date();
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
-  return `LFH-INV-${dd}-${mm}-${yyyy}`;
+  return `${prefix}-INV-${dd}-${mm}-${yyyy}`;
 };
 
-const generateInvoicePDFBuffer = async (invoice) => {
+const generateInvoicePDFBuffer = async (invoice, branding = null) => {
   return new Promise((resolve, reject) => {
     try {
+      const tenantName = branding?.tenant_name || 'Montezuma Monalisa Funeral Home';
+      const tenantAddress = branding?.company_address || branding?.location || 'Mbagathi Way, Opp. Forces Memorial Hospital';
+      const tenantPhone = branding?.company_phone || branding?.phone || '+254 722 268 566';
+      const tenantEmail = branding?.company_email || branding?.email || 'monte2lisa@yahoo.com';
+      const tenantLogo = branding?.logo_path || null;
+      const tenantSignature = branding?.signature_path || null;
+
       const doc = new PDFDocument({
         size: 'A4',
         margin: 50,
         info: {
           Title: `Invoice ${invoice.invoice_number}`,
-          Author: 'Montezuma Monalisa Funeral Home',
+          Author: tenantName,
         },
       });
       
@@ -39,9 +51,9 @@ const generateInvoicePDFBuffer = async (invoice) => {
 
       // HEADER SECTION 
       const headerTop = 40;
-      const logoPath = path.join(__dirname, '../../public/logo/montezuma.png');
+      const logoPath = tenantLogo || path.join(__dirname, '../../public/logo/montezuma.png');
 
-      if (fs.existsSync(logoPath)) {
+      if (logoPath && fs.existsSync(logoPath)) {
         //  white background behind logo 
         doc.rect(45, headerTop - 5, 90, 45)
           .fill('#ffffff')
@@ -49,7 +61,8 @@ const generateInvoicePDFBuffer = async (invoice) => {
         
         doc.image(logoPath, 50, headerTop, { width: 80 });
       } else {
-        // Fallback if no logo
+        // Fallback if no logo - use tenant initials
+        const initials = tenantName.split(' ').map(w => w[0]).filter(Boolean).slice(0, 4).join('').toUpperCase() || 'FH';
         doc.rect(45, headerTop - 5, 90, 45)
           .fill('#1a5276')
           .stroke('#0f172a');
@@ -57,7 +70,7 @@ const generateInvoicePDFBuffer = async (invoice) => {
         doc.fontSize(14)
           .font('Helvetica-Bold')
           .fillColor('#ffffff')
-          .text('LEE', 60, headerTop + 10);
+          .text(initials, 60, headerTop + 10);
       }
 
       // Company Name below logo
@@ -65,28 +78,16 @@ const generateInvoicePDFBuffer = async (invoice) => {
         .fontSize(16)
         .font('Helvetica-Bold')
         .fillColor('#0f172a')
-        .text('MONTEZUMA MONALISA  ', 50, headerTop + 50);
+        .text(tenantName.toUpperCase(), 50, headerTop + 50);
 
       // Contact Info on RIGHT side
       doc
         .fontSize(8)
         .font('Helvetica')
         .fillColor('#0f172a')
-        .text(
-          ' Mbagathi Way, Opp. Forces Memorial Hospital',
-          300,
-          headerTop + 10,
-        )
-        .text(
-          ' monte2lisa[@]yahoo.com | Fax: (020) 8068115',
-          300,
-          headerTop + 25,
-        )
-        .text(
-          '+254 722 268 566  |  +254 722 827 652',
-          300,
-          headerTop + 40,
-        );
+        .text(tenantAddress, 300, headerTop + 10)
+        .text(tenantEmail, 300, headerTop + 25)
+        .text(tenantPhone, 300, headerTop + 40);
 
       // Invoice   details  Sectio
       const detailsTop = headerTop + 100;
@@ -419,7 +420,7 @@ const generateInvoicePDFBuffer = async (invoice) => {
         .font('Helvetica')
         .fillColor('#2c3e50')
         .text(
-          'Thank you for choosing Lee Funeral Home. For inquiries:',
+          `Thank you for choosing ${tenantName}. For inquiries:`,
           50,
           footerTop + 35,
           { width: 300 }
@@ -430,19 +431,19 @@ const generateInvoicePDFBuffer = async (invoice) => {
         .font('Helvetica-Bold')
         .fillColor('#1a5276')
         .text(
-          '+254 740 045 355 | info@lf.services',
+          `${tenantPhone} | ${tenantEmail}`,
           50,
           footerTop + 50,
           { width: 300 }
         );
 
       // Signature Area - Right side
-      const signaturePath = path.join(
+      const signaturePath = tenantSignature || path.join(
         __dirname,
         '../../uploads/signature/signature.png',
       );
       
-      if (fs.existsSync(signaturePath)) {
+      if (signaturePath && fs.existsSync(signaturePath)) {
         doc.image(signaturePath, 400, footerTop + 25, {
           width: 50,
           height: 25,
@@ -461,7 +462,7 @@ const generateInvoicePDFBuffer = async (invoice) => {
         .fillColor('#1a5276')
         .text('Authorized Signature', 400, footerTop + 55)
         .fontSize(6)
-        .text('Lee Funeral Home', 400, footerTop + 65);
+        .text(tenantName, 400, footerTop + 65);
 
       // Terms note at bottom
       const termsY = footerTop + 80;
@@ -476,7 +477,7 @@ const generateInvoicePDFBuffer = async (invoice) => {
             { align: 'center', width: 495 },
           )
           .text(
-            'All payments should be made to Lee Funeral Home bank account as indicated above.',
+            `All payments should be made to ${tenantName} bank account as indicated above.`,
             50,
             termsY + 8,
             { align: 'center', width: 495 },
@@ -857,9 +858,14 @@ const createSystemInvoice = asyncHandler(async (req, res, next) => {
     systemTotal = 00;
   }
 
-  // === Invoice Metadata ===
-  const stamp_hash = generateStampHash();
-  const invoice_number = `SYS-INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+  // === Load tenant branding ===
+  const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-tenant-id'] || 'default';
+  const branding = await loadTenantBranding(tenantSlug, null);
+
+  // === Invoice Metadata with tenant info ===
+  const stampPrefix = branding.invoice_prefix?.split('-')[0] || 'SYS';
+  const stamp_hash = generateStampHash(stampPrefix);
+  const invoice_number = `${branding.invoice_prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
   const invoiceData = {
     deceased_name: deceased.full_name,
@@ -876,17 +882,18 @@ const createSystemInvoice = asyncHandler(async (req, res, next) => {
     amount_paid: amountPaid,
     tax_amount: 0,
     tax_rate: 0,
-    mortuary_name: 'Lee Funeral Home',
-    mortuary_phone: '+254 740 045 355',
+    mortuary_name: branding.tenant_name,
+    mortuary_phone: branding.phone,
     stamp_hash,
-    signature_url: '/uploads/signature/signature.png',
+    signature_url: branding.signature_path || '/uploads/signature/signature.png',
     created_at: getKenyaTimeISO(),
     invoice_number,
     deceased_id: deceased.id,
+    tenant_slug: tenantSlug,
   };
 
-  // === Generate PDF ===
-  const pdfBuffer = await generateInvoicePDFBuffer(invoiceData);
+  // === Generate PDF with tenant branding ===
+  const pdfBuffer = await generateInvoicePDFBuffer(invoiceData, branding);
   const baseInvoicesDir = path.join(__dirname, '../../uploads/invoices');
   if (!fs.existsSync(baseInvoicesDir)) fs.mkdirSync(baseInvoicesDir, { recursive: true });
 
