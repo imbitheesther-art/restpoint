@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { safeQuery } = require('../../../configurations/sqlConfig/db');
-const { Logger } = require('../../utilities/logger/logger');
+const { Logger } = require('../../packages/shared-logger/dist/logger');
 
 // === Advanced Analytics Controller ===
 const getMortuaryAnalytics = asyncHandler(async (req, res) => {

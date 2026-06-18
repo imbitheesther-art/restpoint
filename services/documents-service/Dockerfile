@@ -1,8 +1,22 @@
 FROM node:18-alpine
 WORKDIR /usr/src/app
-COPY services/documents-service/package.json ./
-RUN npm install --omit=dev
-COPY . .
-EXPOSE 8012
-ENV PORT=8012
+
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/documents-service/package.json ./services/documents-service/
+
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+
+COPY services/documents-service/ ./services/documents-service/
+
+EXPOSE 8005
+ENV PORT=8005
 CMD ["node", "services/documents-service/server.js"]

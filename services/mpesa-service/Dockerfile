@@ -1,28 +1,22 @@
-FROM node:22-alpine
-
+FROM node:18-alpine
 WORKDIR /usr/src/app
 
-# Copy package.json and install dependencies
-COPY services/mpesa-service/package.json ./services/mpesa-service/package.json
-RUN cd services/mpesa-service && npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retries 10 && \
-    npm install --omit=dev
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/mpesa-service/package.json ./services/mpesa-service/
 
-# Copy shared modules
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
-COPY packages/ ./packages/
 
-# Copy service source code
 COPY services/mpesa-service/ ./services/mpesa-service/
 
-# Copy startup script
-COPY scripts/docker-startup.sh ./scripts/docker-startup.sh
-RUN chmod +x ./scripts/docker-startup.sh
-
-EXPOSE 8007
-ENV PORT=8007
-
-ENTRYPOINT ["/usr/src/app/scripts/docker-startup.sh"]
+EXPOSE 8009
+ENV PORT=8009
 CMD ["node", "services/mpesa-service/server.js"]
