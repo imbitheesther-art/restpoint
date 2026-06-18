@@ -430,9 +430,18 @@ export default function App() {
                 opacity: loaded ? 1 : 0, transform: loaded ? 'scale(1)' : 'scale(0.97)',
                 transition: 'opacity 0.9s cubic-bezier(0.16,1,0.3,1) 180ms, transform 0.9s cubic-bezier(0.16,1,0.3,1) 180ms'
               }}>
-                <div className="frame">
-                  <div className="frame-grain" />
-                  <div className="frame-label">
+                <div style={{
+                  aspectRatio: '4/5', position: 'relative', overflow: 'hidden',
+                  border: `1px solid ${C.line}`, background: C.ink,
+                }}>
+                  <img src="/landing.png" alt="Rest Point Dashboard" style={{
+                    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                  }} />
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    background: 'linear-gradient(transparent, rgba(21,23,26,0.92) 40%)',
+                    padding: '1.4rem', display: 'flex', flexDirection: 'column', gap: '.5rem',
+                  }}>
                     <span className="label" style={{ color: C.brassLight, fontSize: '.68rem' }}>Case No. 0142 — Status: Arranged</span>
                     <span className="label" style={{ color: 'rgba(250,248,244,0.6)', fontSize: '.6rem' }}>Deceased: J. Otieno · Est. 1974 · Lang'ata Cemetery</span>
                     <span className="label" style={{ color: 'rgba(250,248,244,0.45)', fontSize: '.55rem' }}>Documentation: Complete · Balance: KES 0 · Family notified</span>

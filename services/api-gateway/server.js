@@ -41,26 +41,53 @@ function env(key, fallback) {
 var PORT = Number(process.env.PORT) || 5000;
 var HOST = process.env.HOST || '0.0.0.0';
 
+// =============================================================================
+// SERVICE URL CONFIGURATION
+// =============================================================================
+// All backend services are on port 5000 INTERNALLY (inside the Docker network)
+// The gateway resolves them by their Docker service name
+// =============================================================================
 var SVC = {};
-SVC.auth = env('AUTH_SERVICE_URL', 'http://localhost:5001');
-SVC.users = env('USERS_SERVICE_URL', 'http://localhost:5001');
-SVC.marketplace = env('MARKETPLACE_SERVICE_URL', 'http://localhost:5004');
-SVC.mpesa = env('MPESA_SERVICE_URL', 'http://localhost:5011');
-SVC.portal = env('PORTAL_SERVICE_URL', 'http://localhost:5019');
-SVC.tenant = env('TENANT_SERVICE_URL', 'http://localhost:5002');
-SVC.deceased = env('DECEASED_SERVICE_URL', 'http://localhost:5003');
-SVC.embalming = env('EMBALMING_SERVICE_URL', 'http://localhost:5105');
-SVC.invoices = env('INVOICES_SERVICE_URL', 'http://localhost:5005');
-SVC.coffin = env('COFFIN_SERVICE_URL', 'http://localhost:5006');
-SVC.visitors = env('VISITORS_SERVICE_URL', 'http://localhost:5014');
-SVC.notification = env('NOTIFICATION_SERVICE_URL', 'http://localhost:5111');
-SVC.documents = env('DOCUMENTS_SERVICE_URL', 'http://localhost:5007');
-SVC.analytics = env('ANALYTICS_SERVICE_URL', 'http://localhost:5009');
-SVC.bodycheckout = env('BODYCHECKOUT_SERVICE_URL', 'http://localhost:5015');
-SVC.edocuments = env('EDOCUMENTS_SERVICE_URL', 'http://localhost:5008');
-SVC.calendar = env('CALENDAR_SERVICE_URL', 'http://localhost:5010');
-SVC.chemicals = env('CHEMICAL_SERVICE_URL', 'http://localhost:5105');
 
+// Internal Docker network URLs (port 5000 for ALL services)
+const DOCKER_NETWORK = 'restpoint_restpoint_net';
+const isDocker = !!process.env.DOCKER_CONTAINER;
+
+function serviceUrl(serviceName, defaultPort) {
+  // In Docker, all services are accessible via container name on port 5000
+  if (isDocker || process.env[serviceName.toUpperCase() + '_SERVICE_URL']) {
+    return env(serviceName.toUpperCase() + '_SERVICE_URL', 'http://' + serviceName + ':5000');
+  }
+  return env(serviceName.toUpperCase() + '_SERVICE_URL', 'http://localhost:' + (defaultPort || '5000'));
+}
+
+SVC.auth        = serviceUrl('auth', '5001');
+SVC.users       = serviceUrl('users', '5001');
+SVC.marketplace = serviceUrl('marketplace', '5004');
+SVC.mpesa       = serviceUrl('mpesa', '5011');
+SVC.portal      = serviceUrl('portal', '5019');
+SVC.tenant      = serviceUrl('tenant', '5002');
+SVC.deceased    = serviceUrl('deceased', '5003');
+SVC.embalming   = serviceUrl('embalming', '5105');
+SVC.invoices    = serviceUrl('invoices', '5005');
+SVC.coffin      = serviceUrl('coffin', '5006');
+SVC.visitors    = serviceUrl('visitors', '5014');
+SVC.notification= serviceUrl('notification', '5111');
+SVC.documents   = serviceUrl('documents', '5007');
+SVC.analytics   = serviceUrl('analytics', '5009');
+SVC.bodycheckout= serviceUrl('bodycheckout', '5015');
+SVC.edocuments  = serviceUrl('edocuments', '5008');
+SVC.calendar    = serviceUrl('calendar', '5010');
+SVC.chemicals   = serviceUrl('chemicals', '5105');
+
+Logger.info('Service URLs:');
+Object.keys(SVC).forEach(function(key) {
+  Logger.info('  ' + key + ' -> ' + SVC[key]);
+});
+
+// =============================================================================
+// RATE LIMITING
+// =============================================================================
 var apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,
@@ -80,6 +107,11 @@ var authLimiter = rateLimit({
 
 var app = express();
 
+// =============================================================================
+// GLOBAL MIDDLEWARE
+// =============================================================================
+
+// CORS
 app.use(cors({
   origin: function(origin, cb) {
     if (!origin || origin.indexOf('localhost') >= 0) return cb(null, true);
@@ -127,8 +159,6 @@ app.use(function(req, res, next) {
 // =============================================================================
 
 // 1. Sensitive Data Masking Middleware
-// Masks sensitive/critical fields in all JSON responses to prevent data leakage
-// Protects: passwords, tokens, postmortem info, autopsy data, financial info, identification docs
 const sensitiveFields = [
   'password', 'email', 'phone', 'token', 'secret', 'apiKey',
    'idNumber', 'nationalId', 'passport',
@@ -166,7 +196,6 @@ app.use(function(req, res, next) {
 });
 
 // 2. File Upload Security Middleware
-// Validates upload size to prevent DoS attacks via large payloads
 app.use(function(req, res, next) {
   if (req.is && req.is('multipart/form-data')) {
     var contentLength = parseInt(req.headers['content-length'] || '0', 10);
@@ -179,8 +208,6 @@ app.use(function(req, res, next) {
 });
 
 // 3. Tenant/Mortuary Ownership Middleware
-// Ensures users can only access data from their own mortuary
-// Prevents data leakage between tenants
 app.use(function(req, res, next) {
   var tenantSlug = req.headers['x-tenant-slug'];
   var tenantId = req.headers['x-tenant-id'];
@@ -197,19 +224,28 @@ app.use(function(req, res, next) {
 });
 
 // =============================================================================
-// PROXY - FIXED VERSION
+// REQUEST LOGGING MIDDLEWARE
 // =============================================================================
-function createProxy(target) {
+app.use(function(req, res, next) {
+  // Log ALL requests with their original path
+  Logger.info('→ ' + req.method + ' ' + req.originalUrl);
+  next();
+});
+
+// =============================================================================
+// PROXY FUNCTION
+// =============================================================================
+// IMPORTANT: The gateway receives paths like /api/v1/restpoint/tenant/onboarding/organization
+// Backend services have routes MOUNTED at /api/v1/restpoint/... (WITH /api prefix)
+// So we forward the path AS-IS without stripping /api
+// =============================================================================
+function createProxy(target, serviceName) {
   var parts = new URL(target);
   return function(req, res) {
     var path = req.originalUrl || req.url || '/';
     
-    // FIX: Strip /api prefix before forwarding to backend services
-    // Backend services expect routes like /v1/restpoint/auth/login
-    // not /api/v1/restpoint/auth/login
-    if (path.startsWith('/api/')) {
-      path = path.substring(4); // Remove '/api' prefix
-    }
+    // DEBUG: Log the path being forwarded
+    Logger.debug('[PROXY] ' + serviceName + ' ← ' + req.method + ' ' + path + ' → ' + target + path);
     
     var opts = {
       hostname: parts.hostname,
@@ -221,14 +257,21 @@ function createProxy(target) {
     delete opts.headers['connection'];
 
     var proxy = http.request(opts, function(proxyRes) {
+      Logger.debug('[PROXY] ' + serviceName + ' → ' + proxyRes.statusCode + ' for ' + req.method + ' ' + path);
       res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
     });
 
     proxy.on('error', function(err) {
-      Logger.error('Proxy error: ' + target + ' - ' + err.message);
+      Logger.error('[PROXY] ' + serviceName + ' error: ' + target + path + ' - ' + err.message);
       if (!res.headersSent) {
-        res.status(503).json({ success: false, message: 'Service unavailable' });
+        res.status(503).json({ 
+          success: false, 
+          message: 'Service unavailable: ' + serviceName + ' (' + err.code + ')',
+          service: serviceName,
+          forwardedPath: path,
+          targetUrl: target + path
+        });
       }
     });
 
@@ -239,7 +282,14 @@ function createProxy(target) {
   };
 }
 
-// Route config: [path, serviceKey]
+// =============================================================================
+// ROUTE CONFIGURATION
+// =============================================================================
+// Format: [path, serviceKey]
+// Express app.use() matches all sub-paths automatically.
+// e.g. /api/v1/restpoint/tenant matches /api/v1/restpoint/tenant/onboarding/organization
+// The path is forwarded AS-IS to the target service (no /api stripping)
+// =============================================================================
 var routes = [
   ['/api/v1/restpoint/auth', 'auth'],
   ['/api/v1/restpoint/users', 'users'],
@@ -270,34 +320,197 @@ var routes = [
   ['/api/v1/edocuments', 'edocuments'],
 ];
 
+Logger.info('Registered routes:');
 for (var i = 0; i < routes.length; i++) {
-  app.use(routes[i][0], createProxy(SVC[routes[i][1]]));
+  Logger.info('  ' + routes[i][0] + ' → ' + routes[i][1] + ' (' + SVC[routes[i][1]] + ')');
+  app.use(routes[i][0], createProxy(SVC[routes[i][1]], routes[i][1]));
 }
 
-// Health
+// =============================================================================
+// DIAGNOSTIC ENDPOINTS
+// =============================================================================
+
+// Health check (accessible at both paths)
 app.get('/api/v1/health', function(req, res) {
-  res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now(), services: Object.keys(SVC) });
+  res.json({ 
+    success: true,
+    status: 'ok', 
+    uptime: process.uptime(), 
+    timestamp: Date.now(), 
+    services: Object.keys(SVC),
+    serviceCount: Object.keys(SVC).length,
+    routes: routes.length
+  });
 });
 
 app.get('/health', function(req, res) {
-  res.json({ status: 'ok', service: APP_NAME, version: APP_VERSION, port: PORT });
+  res.json({ 
+    success: true,
+    status: 'ok', 
+    service: APP_NAME, 
+    version: APP_VERSION, 
+    port: PORT,
+    uptime: process.uptime()
+  });
 });
 
-// 404
+// Debug: Show all registered routes (admin endpoint)
+app.get('/api/v1/debug/routes', function(req, res) {
+  var routeList = routes.map(function(r) {
+    return { path: r[0], service: r[1], targetUrl: SVC[r[1]] };
+  });
+  res.json({
+    success: true,
+    message: 'Gateway routes',
+    gatewayVersion: APP_VERSION,
+    serviceCount: Object.keys(SVC).length,
+    routeCount: routes.length,
+    routes: routeList,
+    services: SVC,
+    environment: {
+      nodeEnv: env('NODE_ENV', 'development'),
+      docker: isDocker,
+      network: DOCKER_NETWORK
+    }
+  });
+});
+
+// Debug: Test a specific service
+app.all('/api/v1/debug/test-service/:serviceName/:path(*)', function(req, res) {
+  var serviceName = req.params.serviceName;
+  var subPath = req.params.path || '';
+  var targetUrl = SVC[serviceName];
+  
+  if (!targetUrl) {
+    return res.status(400).json({
+      success: false,
+      message: 'Unknown service: ' + serviceName,
+      availableServices: Object.keys(SVC)
+    });
+  }
+
+  var testPath = '/api/v1/restpoint/' + serviceName + (subPath ? '/' + subPath : '');
+  
+  res.json({
+    success: true,
+    message: 'Debug info for ' + serviceName,
+    serviceName: serviceName,
+    serviceKey: serviceName,
+    targetUrl: targetUrl,
+    matchedRoute: '/api/v1/restpoint/' + serviceName,
+    forwardedPath: testPath,
+    fullForwardUrl: targetUrl + testPath,
+    frontendRequest: 'https://app.restpoint.co.ke' + testPath
+  });
+});
+
+// =============================================================================
+// WILDCATCH ROUTE — catch ALL remaining /api/v1/restpoint/* requests
+// This acts as a fallback for any routes not explicitly listed above
+// =============================================================================
+app.all('/api/v1/restpoint/:service/:path(*)', function(req, res) {
+  var serviceName = req.params.service;
+  var targetUrl = SVC[serviceName];
+  var subPath = req.params.path || '';
+  
+  Logger.warn('[WILDCARD] ' + req.method + ' /api/v1/restpoint/' + serviceName + '/' + subPath + ' → ' + (targetUrl || 'NO MATCH'));
+  
+  if (!targetUrl) {
+    return res.status(404).json({
+      success: false,
+      message: 'Unknown service: ' + serviceName,
+      originalUrl: req.originalUrl,
+      availableServices: Object.keys(SVC).sort()
+    });
+  }
+  
+  // Forward to the matched service
+  var path = '/api/v1/restpoint/' + serviceName + (subPath ? '/' + subPath : '');
+  var parts = new URL(targetUrl);
+  
+  Logger.debug('[WILDCARD PROXY] ' + serviceName + ' ← ' + req.method + ' ' + path + ' → ' + targetUrl + path);
+  
+  var opts = {
+    hostname: parts.hostname,
+    port: parts.port,
+    path: path,
+    method: req.method,
+    headers: Object.assign({}, req.headers, { host: parts.host }),
+  };
+  delete opts.headers['connection'];
+
+  var proxy = http.request(opts, function(proxyRes) {
+    res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+    proxyRes.pipe(res, { end: true });
+  });
+
+  proxy.on('error', function(err) {
+    Logger.error('[WILDCARD PROXY] Error: ' + targetUrl + path + ' - ' + err.message);
+    if (!res.headersSent) {
+      res.status(503).json({
+        success: false,
+        message: 'Service unavailable: ' + serviceName,
+        error: err.code
+      });
+    }
+  });
+
+  if (req.body && Object.keys(req.body).length > 0) {
+    proxy.write(JSON.stringify(req.body));
+  }
+  proxy.end();
+});
+
+// =============================================================================
+// 404 HANDLER
+// =============================================================================
 app.use(function(req, res) {
-  res.status(404).json({ success: false, message: 'Cannot ' + req.method + ' ' + req.originalUrl });
+  // Log the 404 with details
+  Logger.warn('[404] ' + req.method + ' ' + req.originalUrl + ' — No matching route');
+  
+  // Provide helpful error message with matched routes
+  var matchingRoutes = routes.filter(function(r) {
+    return req.originalUrl.indexOf(r[0]) >= 0;
+  });
+  
+  res.status(404).json({ 
+    success: false, 
+    message: 'Cannot ' + req.method + ' ' + req.originalUrl,
+    originalUrl: req.originalUrl,
+    matchedRoutes: matchingRoutes.length > 0 ? matchingRoutes.map(function(r) {
+      return { path: r[0], service: r[1], targetUrl: SVC[r[1]] };
+    }) : [],
+    hint: matchingRoutes.length > 0 
+      ? 'Route matched but proxy forwarding may have failed. Check if the target service is running.' 
+      : 'No matching route found. Check /api/v1/debug/routes for all registered routes.'
+  });
 });
 
-// Error handler
+// =============================================================================
+// ERROR HANDLER
+// =============================================================================
 app.use(function(err, req, res, next) {
   Logger.error('Internal: ' + err.message, { stack: err.stack });
-  res.status(500).json({ success: false, message: 'Internal Server Error' });
+  res.status(500).json({ 
+    success: false, 
+    message: 'Internal Server Error',
+    error: isProd ? undefined : err.message
+  });
 });
 
-// Start
+// =============================================================================
+// START SERVER
+// =============================================================================
 var server = app.listen(PORT, HOST, function() {
-  Logger.info(APP_NAME + ' running on http://' + HOST + ':' + PORT);
-  Logger.info('Proxying ' + Object.keys(SVC).length + ' services');
+  Logger.info('========================================');
+  Logger.info('  ' + APP_NAME + ' v' + APP_VERSION);
+  Logger.info('  Running on http://' + HOST + ':' + PORT);
+  Logger.info('  Environment: ' + env('NODE_ENV', 'development'));
+  Logger.info('  Proxying ' + Object.keys(SVC).length + ' services');
+  Logger.info('  Registered ' + routes.length + ' routes');
+  Logger.info('  Network: ' + DOCKER_NETWORK);
+  Logger.info('  Docker mode: ' + isDocker);
+  Logger.info('========================================');
 });
 
 function shutdown() {
