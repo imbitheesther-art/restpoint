@@ -297,22 +297,6 @@ services:
     restart: unless-stopped
 
   # ============================================
-  # UPDATES SERVICE
-  # ============================================
-  updates-service:
-    build:
-      context: .
-      dockerfile: services/updates/Dockerfile
-    container_name: restpoint_updates
-    ports:
-      - "${UPDATES_SERVICE_PORT:-5017}:5017"
-    env_file:
-      - .env
-    networks:
-      - restpoint_net
-    restart: unless-stopped
-
-  # ============================================
   # CALL SERVICE
   # ============================================
   call-service:
