@@ -40,9 +40,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // 1. Direct access: POST /api/onboarding/organization
 // 2. Gateway proxied: POST /api/v1/restpoint/tenant/onboarding/organization  
 // 3. Gateway alternative: POST /api/v1/restpoint/tenants/onboarding/organization
+// 4. Frontend calls: POST /api/v1/restpoint/tenants/register
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/v1/restpoint/tenant/onboarding', onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/onboarding', onboardingRoutes);
+app.use('/api/v1/restpoint/tenant', onboardingRoutes);
+app.use('/api/v1/restpoint/tenants', onboardingRoutes);
 
 // System Admin Routes - centralized tenant management
 // Mounted at both the internal path and the gateway-proxied path

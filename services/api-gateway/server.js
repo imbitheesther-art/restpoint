@@ -93,7 +93,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','x-tenant-slug','x-tenant-id'],
+  allowedHeaders: ['Content-Type','Authorization','x-tenant-slug','x-tenant-id','x-request-timestamp'],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));

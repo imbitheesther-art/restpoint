@@ -20,20 +20,31 @@ const STATIC_ASSETS = [
   '/pdf.worker.min.js',
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets (with per-file error handling)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => {
-        console.log('Static assets cached successfully');
+      .then(async (cache) => {
+        console.log('Caching static assets individually...');
+        const results = await Promise.allSettled(
+          STATIC_ASSETS.map((url) =>
+            cache.add(url).catch((err) => {
+              console.warn(`Failed to cache ${url}: ${err.message}`);
+            })
+          )
+        );
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          console.warn(`${failed.length} assets failed to cache (non-critical, continuing)`);
+        } else {
+          console.log('All static assets cached successfully');
+        }
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error('Failed to cache static assets:', error);
+        console.error('Fatal error during service worker install:', error);
+        // Still activate so the app works even without full caching
+        return self.skipWaiting();
       })
   );
 });
