@@ -1,8 +1,22 @@
 FROM node:18-alpine
 WORKDIR /usr/src/app
-COPY services/bodycheckout-service/package.json ./
-RUN npm install --omit=dev
-COPY . .
-EXPOSE 8015
-ENV PORT=8015
+
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/bodycheckout-service/package.json ./services/bodycheckout-service/
+
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+
+COPY services/bodycheckout-service/ ./services/bodycheckout-service/
+
+EXPOSE 8004
+ENV PORT=8004
 CMD ["node", "services/bodycheckout-service/server.js"]

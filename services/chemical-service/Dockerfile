@@ -1,24 +1,22 @@
-FROM node:20-alpine
-
+FROM node:18-alpine
 WORKDIR /usr/src/app
 
-# Step 1: Copy and install chemical service dependencies
-COPY services/chemical-service/package.json ./services/chemical-service/package.json
-RUN cd services/chemical-service && npm install --production
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/chemical-service/package.json ./services/chemical-service/
 
-# Step 2: Copy shared modules needed by the service
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
-COPY packages/ ./packages/
 
-# Step 3: Copy all service files
 COPY services/chemical-service/ ./services/chemical-service/
 
-# Step 4: Copy the startup script
-COPY scripts/docker-startup.sh ./scripts/docker-startup.sh
-RUN chmod +x ./scripts/docker-startup.sh
-
-EXPOSE 5105
-
-ENTRYPOINT ["/usr/src/app/scripts/docker-startup.sh"]
+EXPOSE 8015
+ENV PORT=8015
 CMD ["node", "services/chemical-service/server.js"]

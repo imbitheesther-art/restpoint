@@ -1,35 +1,22 @@
-FROM node:20-alpine AS builder
-WORKDIR /usr/src/app
-
-# Copy workspace-level config files
-COPY package.json tsconfig.json tsconfig.base.json ./
-
-# Copy all workspace package.json files for proper resolution
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-services/package.json ./packages/shared-services/
-COPY packages/shared-utils/package.json ./packages/shared-utils/
-COPY services/deceased-service/package.json ./services/deceased-service/
-
-RUN npm install
-
-COPY . .
-
 FROM node:20-alpine
 WORKDIR /usr/src/app
 
-# Copy workspace-level config files
-COPY package.json tsconfig.json tsconfig.base.json ./
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
-COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN npm install --omit=dev
-COPY --from=builder /usr/src/app /usr/src/app
-RUN npm install -g tsx
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
-EXPOSE 8004
-ENV PORT=8004
-CMD ["tsx", "services/deceased-service/server.ts"]
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+
+COPY services/deceased-service/ ./services/deceased-service/
+
+EXPOSE 8003
+ENV PORT=8003
+CMD ["node", "services/deceased-service/server.js"]
