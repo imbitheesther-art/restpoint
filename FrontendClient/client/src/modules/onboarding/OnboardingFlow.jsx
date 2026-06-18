@@ -248,12 +248,12 @@ const OnboardingFlow = () => {
               <p style={{ marginBottom: '1rem' }}>By using Rest Point, you agree to these terms:</p>
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {[
-                  'A one-time setup and training fee of KES 1,000 is required for account activation.',
+                  'A one-time setup and training fee of KES 10,000 per branch is required for account activation.',
                   'Monthly subscription: KES 9,500 for single-tenant plans.',
                   'Monthly subscription: KES 18,500 for multi-tenant plans with no limitations.',
                   'Subscription payments must be made on time. A 5-day grace period is provided after the due date.',
                   'Accounts may be suspended if payment is not received within 5 days.',
-                  'Account reactivation after suspension requires a KES 1,000 reactivation fee.',
+                  'Account reactivation after suspension requires a KES 10,000 reactivation fee.',
                   'Customer data remains securely stored during account suspension.',
                   'All customer data is securely isolated to prevent unauthorized access.',
                   'Rest Point uses multiple layers of security and encryption at rest and in transit.',
@@ -341,10 +341,10 @@ const OnboardingFlow = () => {
                 padding: '1rem 1.2rem', borderRadius: '2px',
               }}>
                 <p style={{ fontSize: '.8rem', color: C.ink, fontWeight: 600, marginBottom: '.3rem' }}>
-                  Service & Setup Fee — KES 1,000
+                  Service & Setup Fee — KES 10,000 per branch
                 </p>
                 <p style={{ fontSize: '.78rem', color: C.gray, marginBottom: '.6rem' }}>
-                  One-time facility registration & training fee. Includes setup support and onboarding assistance.
+                  One-time registration & training fee per branch. Includes setup support and onboarding assistance.
                 </p>
                 <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap' }}>
                   <span style={{ background: C.ink, color: C.bone, padding: '.15rem .5rem', fontSize: '.68rem' }}>Single: KES 9,500/mo</span>

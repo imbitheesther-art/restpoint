@@ -12,11 +12,30 @@ const PORT = process.env.PORT || 8001;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// ============================================
+// CORS — allow all headers the frontend sends
+// ============================================
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN || '*',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'x-csrf-token']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-CSRF-Token',
+        'x-csrf-token',
+        'x-tenant-slug',
+        'x-tenant-id',
+        'x-request-timestamp',
+        'x-client-id',
+        'x-session-fingerprint',
+        'X-Client-ID',
+        'X-Session-Fingerprint',
+        'Origin',
+        'X-Requested-With',
+        'Accept'
+    ]
 }));
 
 // Request logging
@@ -25,7 +44,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// HEALTH CHECK MUST COME BEFORE OTHER ROUTES
+// HEALTH CHECK
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
@@ -34,14 +53,18 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Mount auth routes at the correct base path
-// This ensures routes work when proxied from API gateway
+// ============================================
+// ROUTES — mount at ALL possible paths
+// ============================================
+// When proxied through API gateway: /api/v1/restpoint/auth/*
+// When accessed directly: /v1/restpoint/auth/* (gateway strips /api)
+// When accessed at root: /login (direct dev access)
 app.use('/api/v1/restpoint/auth', authRoutes);
-
-// Also support direct access without the full path for development
+app.use('/v1/restpoint/auth', authRoutes);
+app.use('/restpoint/auth', authRoutes);
 app.use(authRoutes);
 
-// 404 handler - ONLY FOR ROUTES THAT WEREN'T MATCHED
+// 404 handler
 app.use((req, res) => {
     console.log(`❌ 404 Not Found: ${req.method} ${req.url}`);
     res.status(404).json({

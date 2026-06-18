@@ -53,7 +53,7 @@ const Reveal = ({ children, delay = 0, style = {}, className = '' }) => {
   );
 };
 
-/* ---------- Mark (placeholder for real logo) ---------- */
+/* ---------- Mark ---------- */
 const Mark = ({ size = 28, color = C.ink }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
     <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1" />
@@ -88,7 +88,7 @@ const FAQItem = ({ q, a }) => {
   );
 };
 
-/* ---------- Showcase row (feature + mini mockup) ---------- */
+/* ---------- Showcase row ---------- */
 const Showcase = ({ no, title, desc, reverse, children }) => (
   <Reveal
     className="showcase-row"
@@ -103,7 +103,7 @@ const Showcase = ({ no, title, desc, reverse, children }) => (
   </Reveal>
 );
 
-/* ---------- Mock: Family portal (SMS link page) ---------- */
+/* ---------- Mock: Family portal ---------- */
 const MockPortal = () => (
   <div className="mock-frame mock-frame--phone">
     <div className="mock-topline">
@@ -128,14 +128,13 @@ const MockPortal = () => (
   </div>
 );
 
-/* ---------- Mock: Dispatch & fuel — live calculator ---------- */
+/* ---------- Mock: Dispatch & fuel ---------- */
 const MockDispatch = () => {
   const [distance, setDistance] = useState(38);
   const [rate, setRate] = useState(195);
   const consumption = 0.12;
   const litres = distance * consumption;
   const cost = Math.round(litres * rate);
-
   return (
     <div className="mock-frame">
       <div className="mock-topline">
@@ -144,20 +143,12 @@ const MockDispatch = () => {
       </div>
       <div className="mock-calc-row">
         <label className="mock-calc-label" htmlFor="dist">Distance (km)</label>
-        <input
-          id="dist" type="range" min="2" max="120" step="1" value={distance}
-          onChange={(e) => setDistance(Number(e.target.value))}
-          className="mock-range"
-        />
+        <input id="dist" type="range" min="2" max="120" step="1" value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="mock-range" />
         <span className="mock-calc-val">{distance}</span>
       </div>
       <div className="mock-calc-row">
         <label className="mock-calc-label" htmlFor="rate">Fuel rate (KES/L)</label>
-        <input
-          id="rate" type="range" min="150" max="250" step="1" value={rate}
-          onChange={(e) => setRate(Number(e.target.value))}
-          className="mock-range"
-        />
+        <input id="rate" type="range" min="150" max="250" step="1" value={rate} onChange={(e) => setRate(Number(e.target.value))} className="mock-range" />
         <span className="mock-calc-val">{rate}</span>
       </div>
       <div className="mock-calc-result">
@@ -198,6 +189,7 @@ const MockStorefront = () => (
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
+  const [billingYearly, setBillingYearly] = useState(false);
   const navigate = useNavigate();
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
@@ -205,9 +197,8 @@ export default function App() {
   const goStart = () => navigate('/register');
   const goAbout = () => navigate('/about');
   const goPortalLogin = () => navigate('/portal/login');
-
-  /* ---------- Terms & Privacy Modal ---------- */
-  const [showPolicy, setShowPolicy] = useState(null);
+  const goPrivacy = () => navigate('/privacy');
+  const goTerms = () => navigate('/terms');
 
   return (
     <>
@@ -283,9 +274,8 @@ export default function App() {
           border: 1px solid ${C.line};
         }
         .frame-grain { position: absolute; inset: 0; opacity: 0.5; background-image: radial-gradient(circle at 30% 20%, rgba(139,115,85,0.18), transparent 55%); }
-        .frame-label { position: absolute; bottom: 1.4rem; left: 1.4rem; right: 1.4rem; display: flex; justify-content: space-between; align-items: baseline; }
+        .frame-label { position: absolute; bottom: 1.4rem; left: 1.4rem; right: 1.4rem; display: flex; flex-direction: column; align-items: flex-start; gap: .6rem; }
 
-        /* Showcase mockups */
         .mock-frame {
           background: ${C.ink}; border: 1px solid ${C.line}; padding: 1.6rem 1.7rem 1.8rem;
           max-width: 420px;
@@ -360,7 +350,12 @@ export default function App() {
         .pricing-col.featured .label { color: ${C.brassLight}; }
         .pricing-col.featured p, .pricing-col.featured li { color: ${C.grayLight}; }
         .price { font-family: 'Fraunces', serif; font-size: 2.4rem; font-weight: 500; color: ${C.ink}; margin: 0.7rem 0 0.2rem; }
-        .price-period { font-size: 0.85rem; color: ${C.gray}; }
+        .price-period { font-size: 0.82rem; color: ${C.gray}; }
+        .price-savings { font-size: 0.72rem; color: ${C.brass}; font-weight: 500; margin-top: -0.1rem; }
+        .pricing-col.featured .price-savings { color: ${C.brassLight}; }
+        .pricing-billing-toggle { display: flex; gap: 0.4rem; margin-top: 1.4rem; justify-content: center; }
+        .pricing-billing-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; padding: 0.5rem 1rem; border: 1px solid ${C.line}; background: transparent; color: ${C.gray}; cursor: pointer; transition: all .2s; }
+        .pricing-billing-btn.active { background: ${C.ink}; color: ${C.bone}; border-color: ${C.ink}; }
         .pricing-list { list-style: none; margin: 2rem 0; padding: 0; border-top: 1px solid ${C.line}; }
         .pricing-col.featured .pricing-list { border-top: 1px solid rgba(250,248,244,0.16); }
         .pricing-list li { padding: 0.85rem 0; border-bottom: 1px solid ${C.line}; font-size: 0.92rem; display: flex; gap: 0.7rem; }
@@ -438,8 +433,10 @@ export default function App() {
                 <div className="frame">
                   <div className="frame-grain" />
                   <div className="frame-label">
-                    <span className="label" style={{ color: C.brassLight }}>Case No. 0142</span>
-                    <span className="label" style={{ color: 'rgba(250,248,244,0.5)' }}>Status — Arranged</span>
+                    <span className="label" style={{ color: C.brassLight, fontSize: '.68rem' }}>Case No. 0142 — Status: Arranged</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.6)', fontSize: '.6rem' }}>Deceased: J. Otieno · Est. 1974 · Lang'ata Cemetery</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.45)', fontSize: '.55rem' }}>Documentation: Complete · Balance: KES 0 · Family notified</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.3)', fontSize: '.5rem' }}>Google Drive backup: Synced · Last updated 14 Jul 2026</span>
                   </div>
                 </div>
               </div>
@@ -467,13 +464,13 @@ export default function App() {
           </div>
         </section>
 
-        {/* Capabilities — six entries with alternating verdigris backgrounds */}
+        {/* Seven entries — six + Google Drive backup */}
         <section id="capabilities" className="section">
           <div className="wrap">
             <Reveal>
               <div className="section-head">
                 <div className="label" style={{ marginBottom: '0.9rem' }}>The register</div>
-                <h2>Six entries. One system of record.</h2>
+                <h2>Seven entries. One system of record.</h2>
                 <p>Everything a funeral home runs on, kept in one place — built for how your team actually works.</p>
               </div>
             </Reveal>
@@ -484,8 +481,9 @@ export default function App() {
                 [40,  "02", "Family portal",      "Families follow progress, review documents, and pay invoices through a private SMS link — no app, no account to remember."],
                 [80,  "03", "Dispatch & fleet",   "GPS tracking and fuel estimation for every hearse movement, so the cost of a service is known before it's billed."],
                 [120, "04", "Documents",          "Permits, certificates, and invoices generated from templates your home already trusts, ready to sign in minutes."],
-                [160, "05", "Team & roles",       "Directors, drivers, and embalmers work from a shared calendar with permissions matched to their responsibility."],
-                [200, "06", "Storefront",         "Caskets, packages, and memorial keepsakes sold directly to families, with full revenue kept by your home."],
+                [220, "05", "Google Drive backup", "Every document, permit, invoice, and report is automatically stored as a secure copy in your own Google Drive. Your data stays yours — accessible even offline, on any device, independent of Rest Point."],
+                [160, "06", "Team & roles",       "Directors, drivers, and embalmers work from a shared calendar with permissions matched to their responsibility."],
+                [200, "07", "Storefront",         "Caskets, packages, and memorial keepsakes sold directly to families, with full revenue kept by your home."],
               ].map(([delay, no, title, desc], idx) => {
                 const hasBg = idx % 2 === 0;
                 return (
@@ -497,34 +495,13 @@ export default function App() {
                       color: hasBg ? C.bone : 'inherit',
                       borderRadius: '4px',
                     }}>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '88px 1fr',
-                        gap: '2rem',
-                      }}>
-                        <div style={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontSize: '0.78rem',
-                          color: hasBg ? C.brassLight : C.brass,
-                          letterSpacing: '0.02em',
-                          paddingTop: '0.2rem'
-                        }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '2rem' }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', color: hasBg ? C.brassLight : C.brass, letterSpacing: '0.02em', paddingTop: '0.2rem' }}>
                           No. {no}
                         </div>
                         <div>
-                          <h3 style={{ 
-                            color: hasBg ? C.bone : C.ink, 
-                            marginBottom: '0.6rem',
-                            fontFamily: "'Fraunces', serif",
-                            fontWeight: 500,
-                            fontSize: '1.3rem',
-                          }}>{title}</h3>
-                          <p style={{ 
-                            maxWidth: '560px',
-                            color: hasBg ? 'rgba(250,248,244,0.82)' : C.gray,
-                            lineHeight: 1.7,
-                            fontSize: '1rem',
-                          }}>{desc}</p>
+                          <h3 style={{ color: hasBg ? C.bone : C.ink, marginBottom: '0.6rem', fontFamily: "'Fraunces', serif", fontWeight: 500, fontSize: '1.3rem' }}>{title}</h3>
+                          <p style={{ maxWidth: '560px', color: hasBg ? 'rgba(250,248,244,0.82)' : C.gray, lineHeight: 1.7, fontSize: '1rem' }}>{desc}</p>
                         </div>
                       </div>
                     </div>
@@ -535,7 +512,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* Showcase — four capabilities in detail with live mockups */}
+        {/* Showcase — four capabilities in detail */}
         <section className="section" style={{ paddingTop: 0 }}>
           <div className="wrap">
             <Reveal>
@@ -561,7 +538,7 @@ export default function App() {
               <MockDocument />
             </Showcase>
 
-            <Showcase no="06" title="Storefront" reverse
+            <Showcase no="07" title="Storefront" reverse
               desc="List caskets, service packages, and memorial keepsakes for families to purchase directly. Every shilling of that revenue stays with your home — there is no commission on sales.">
               <MockStorefront />
             </Showcase>
@@ -595,11 +572,17 @@ export default function App() {
             </Reveal>
 
             <Reveal delay={100}>
-              <div className="pricing-grid">
+              <div className="pricing-billing-toggle">
+                <button className={`pricing-billing-btn${!billingYearly ? ' active' : ''}`} onClick={() => setBillingYearly(false)}>Monthly</button>
+                <button className={`pricing-billing-btn${billingYearly ? ' active' : ''}`} onClick={() => setBillingYearly(true)}>Yearly <span style={{ fontSize: '.6rem', color: C.brassLight, fontWeight: 600 }}>Save ~15%</span></button>
+              </div>
+
+              <div className="pricing-grid" style={{ marginTop: '1rem' }}>
                 <div className="pricing-col">
                   <div className="label">Single branch</div>
-                  <div className="price">KES 9,500</div>
-                  <div className="price-period">per month</div>
+                  <div className="price">{billingYearly ? 'KES 96,900' : 'KES 9,500'}</div>
+                  <div className="price-period">{billingYearly ? 'per year' : 'per month'}</div>
+                  {billingYearly && <div className="price-savings">Save KES 17,100</div>}
                   <ul className="pricing-list">
                     <li>One location</li>
                     <li>Family portal by SMS</li>
@@ -611,8 +594,9 @@ export default function App() {
                 </div>
                 <div className="pricing-col featured">
                   <div className="label">Multi-branch</div>
-                  <div className="price">KES 18,500</div>
-                  <div className="price-period">per month</div>
+                  <div className="price">{billingYearly ? 'KES 188,700' : 'KES 18,500'}</div>
+                  <div className="price-period">{billingYearly ? 'per year' : 'per month'}</div>
+                  {billingYearly && <div className="price-savings">Save KES 33,300</div>}
                   <ul className="pricing-list">
                     <li>Unlimited branches and records</li>
                     <li>Dispatch tracking & fuel estimation</li>
@@ -626,7 +610,7 @@ export default function App() {
             </Reveal>
             <Reveal delay={160}>
               <p style={{ marginTop: '1.6rem', fontSize: '0.88rem' }}>
-                Setup and onboarding: KES 1,000, one time. Thirty-day trial. No card required to start.
+                Setup and training: KES 10,000 per branch, one time. Thirty-day trial. No card required to start.
               </p>
             </Reveal>
           </div>
@@ -648,6 +632,7 @@ export default function App() {
                 <FAQItem q="Can we bring our existing records over?" a="Yes, at no extra cost. Migration is handled by our team with no downtime and no loss of historical records." />
                 <FAQItem q="Do families need to install anything?" a="No. Families receive a private link by SMS and use it in any browser — nothing to download, no account to create." />
                 <FAQItem q="What support is included?" a="Every account includes email support. Multi-branch accounts add 24-hour priority support and a named account manager." />
+                <FAQItem q="Is my data backed up to Google Drive?" a="Yes. Every document, permit, invoice, and report is automatically synced to your organization's Google Drive. You own the data — it remains accessible even if you leave Rest Point." />
               </div>
             </Reveal>
           </div>
@@ -693,8 +678,8 @@ export default function App() {
               <h4>Company</h4>
               <a className="footer-link" onClick={goAbout}>About</a>
               <a className="footer-link" href="mailto:info@restpoint.co.ke">Contact</a>
-              <a className="footer-link" onClick={() => setShowPolicy('privacy')}>Privacy policy</a>
-              <a className="footer-link" onClick={() => setShowPolicy('terms')}>Terms</a>
+              <a className="footer-link" onClick={goPrivacy}>Privacy policy</a>
+              <a className="footer-link" onClick={goTerms}>Terms</a>
             </div>
           </div>
           <div className="footer-bottom">
@@ -703,53 +688,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-
-      {/* Policy Modal */}
-      {showPolicy && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(21,23,26,0.88)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem',
-        }} onClick={() => setShowPolicy(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{
-            background: C.bone, border: `1px solid ${C.line}`, padding: '2.4rem',
-            maxWidth: '600px', width: '100%', maxHeight: '80vh', overflow: 'auto',
-            boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.6rem' }}>
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.3rem', color: C.ink, fontWeight: 500 }}>
-                {showPolicy === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
-              </h3>
-              <button onClick={() => setShowPolicy(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: C.gray, padding: '.3rem' }}>✕</button>
-            </div>
-            {showPolicy === 'privacy' ? (
-              <>
-                <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>At Rest Point, we take your data privacy seriously. This policy describes how we collect, use, and protect your information.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>1. Information We Collect</h4>
-                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>We collect information you provide directly: name, email, phone number, funeral home details, and deceased records necessary for service provision.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>2. How We Use Information</h4>
-                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>Information is used solely to operate the Rest Point platform, facilitate communication with families, and comply with legal obligations.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>3. Data Security</h4>
-                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>We implement encryption at rest and in transit, role-based access controls, and regular security audits to protect your data.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>4. Contact</h4>
-                <p style={{ fontSize: '.88rem' }}>For privacy inquiries, contact us at privacy@restpoint.co.ke</p>
-              </>
-            ) : (
-              <>
-                <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>These terms govern your use of the Rest Point platform. By using our service, you agree to these terms.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>1. Service Description</h4>
-                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>Rest Point provides mortuary management software for funeral homes, including case management, family communication, dispatch, billing, and related services.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>2. Account Responsibility</h4>
-                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>3. Payment Terms</h4>
-                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>Services are billed monthly in advance. All fees are non-refundable except as expressly stated in our refund policy.</p>
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>4. Limitation of Liability</h4>
-                <p style={{ fontSize: '.88rem' }}>Rest Point shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform.</p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }
