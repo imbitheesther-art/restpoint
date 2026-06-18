@@ -2,18 +2,22 @@ FROM node:22-alpine
 
 WORKDIR /usr/src/app
 
-# Copy package.json and install dependencies
-COPY services/qrcode-service/package.json ./services/qrcode-service/package.json
-RUN cd services/qrcode-service && npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retries 10 && \
-    npm install --omit=dev
+# Copy root workspace config first
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/qrcode-service/package.json ./services/qrcode-service/
 
-# Copy shared modules (needed by configurations/sqlConfig/db.js)
-COPY shared/ ./shared/
-COPY global/ ./global/
+# Install all workspace dependencies
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+# Copy shared modules
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
 
 # Copy service source code
 COPY services/qrcode-service/ ./services/qrcode-service/

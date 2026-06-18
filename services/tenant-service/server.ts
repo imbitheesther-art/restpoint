@@ -36,7 +36,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ============================================
 // ROUTES
 // ============================================
+// Mount onboarding routes at multiple paths to support:
+// 1. Direct access: POST /api/onboarding/organization
+// 2. Gateway proxied: POST /api/v1/restpoint/tenant/onboarding/organization  
+// 3. Gateway alternative: POST /api/v1/restpoint/tenants/onboarding/organization
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/v1/restpoint/tenant/onboarding', onboardingRoutes);
+app.use('/api/v1/restpoint/tenants/onboarding', onboardingRoutes);
 
 // System Admin Routes - centralized tenant management
 // Mounted at both the internal path and the gateway-proxied path

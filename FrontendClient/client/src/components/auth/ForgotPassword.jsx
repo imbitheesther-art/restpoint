@@ -4,25 +4,44 @@ import { authApi } from '../../api/authApi';
 import { ENDPOINTS } from '../../api/endpoints';
 import api from '../../api/axios';
 
-const LPC = {
-  navy900: '#0A1F3D', navy800: '#0F2847', navy700: '#1a3a52',
-  navy50: '#F9FAFB', char900: '#111827', char700: '#374151',
-  char600: '#4B5563', char500: '#6B7280', char300: '#D1D5DB',
-  char200: '#E5E7EB', char100: '#F3F4F6',
-  gold: '#A67C52', goldL: '#C9A876', goldD: '#8B6340',
-  emerald: '#059669', emeraldL: '#10B981',
+/* ============================================================
+   REST POINT — Forgot password
+   Same system as login / marketing site: ink, bone, brass, verdigris.
+   Fraunces for display, Inter for UI, JetBrains Mono for labels.
+   Three labeled steps instead of unlabeled dots.
+   ============================================================ */
+
+const C = {
+  ink: '#15171A',
+  bone: '#FAF8F4',
+  bone2: '#F3EFE6',
+  brass: '#8B7355',
+  brassLight: '#A98F6E',
+  verdigris: '#3D4F47',
+  line: '#E3DDD0',
+  gray: '#6B6862',
+  red: '#9B4A3F',
+  redBg: '#F7ECE9',
+  redLine: '#E8D2CC',
 };
 
-const T = {
-  bg0: LPC.navy900, bg1: LPC.navy800, bg2: LPC.navy700,
-  bg3: '#f8f9fa', bg4: '#ffffff',
-  line: LPC.char200, line2: LPC.char300,
-  dim: LPC.char500, sub: LPC.char600, muted: LPC.char500,
-  mid: LPC.char700, light: LPC.char900, white: '#111827',
-  g: LPC.gold, gd: LPC.goldD, gl: LPC.goldL,
-  ga: 'rgba(166,124,82,0.12)', ga2: 'rgba(166,124,82,0.06)',
-  ga3: 'rgba(166,124,82,0.04)', gs: `0 0 30px rgba(166,124,82,0.2)`,
-};
+const Mark = ({ size = 24, color = C.ink }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1" />
+    <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1" />
+    <circle cx="16" cy="16" r="2.5" fill={color} />
+  </svg>
+);
+
+const checkIcon = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.verdigris} strokeWidth="2.2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+);
+
+const STEPS = [
+  { n: '01', label: 'Email' },
+  { n: '02', label: 'Code' },
+  { n: '03', label: 'New password' },
+];
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -33,33 +52,26 @@ const ForgotPassword = () => {
   const [step, setStep] = useState(1); // 1=email, 2=code, 3=reset
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [navScrolled, setNavScrolled] = useState(false);
-
-  React.useEffect(() => {
-    const fn = () => setNavScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
 
   const handleSendCode = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
-      setMessage({ type: 'error', text: 'Please enter your email address' });
+      setMessage({ type: 'error', text: 'Please enter your email address.' });
       return;
     }
     setIsLoading(true);
     setMessage({ type: '', text: '' });
-    
+
     try {
       const response = await api.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { email: email.trim() });
       if (response.data?.success) {
-        setMessage({ type: 'success', text: 'A 6-digit verification code has been sent to your email' });
+        setMessage({ type: 'success', text: 'A 6-digit code is on its way to your email.' });
         setTimeout(() => { setStep(2); setMessage({ type: '', text: '' }); }, 1000);
       } else {
-        setMessage({ type: 'error', text: response.data?.message || 'Failed to send code' });
+        setMessage({ type: 'error', text: response.data?.message || 'We could not send the code.' });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to send verification code. Please try again.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'We could not send the code. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +82,6 @@ const ForgotPassword = () => {
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    // Auto-advance to next field
     if (value && index < 5) {
       const nextInput = document.getElementById(`code-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -81,22 +92,22 @@ const ForgotPassword = () => {
     e.preventDefault();
     const codeStr = code.join('');
     if (codeStr.length !== 6) {
-      setMessage({ type: 'error', text: 'Please enter the full 6-digit code' });
+      setMessage({ type: 'error', text: 'Enter the full 6-digit code.' });
       return;
     }
     setIsLoading(true);
     setMessage({ type: '', text: '' });
-    
+
     try {
       const response = await api.post(ENDPOINTS.AUTH.VERIFY_CODE, { email: email.trim(), code: codeStr });
       if (response.data?.success) {
-        setMessage({ type: 'success', text: 'Code verified! Set your new password.' });
+        setMessage({ type: 'success', text: 'Code verified. Set your new password below.' });
         setTimeout(() => { setStep(3); setMessage({ type: '', text: '' }); }, 1000);
       } else {
-        setMessage({ type: 'error', text: response.data?.message || 'Invalid code' });
+        setMessage({ type: 'error', text: response.data?.message || 'That code did not match.' });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to verify code' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'We could not verify that code.' });
     } finally {
       setIsLoading(false);
     }
@@ -105,16 +116,16 @@ const ForgotPassword = () => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters.' });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'Passwords do not match' });
+      setMessage({ type: 'error', text: 'Passwords do not match.' });
       return;
     }
     setIsLoading(true);
     setMessage({ type: '', text: '' });
-    
+
     try {
       const response = await api.post(ENDPOINTS.AUTH.RESET_PASSWORD, {
         email: email.trim(),
@@ -122,109 +133,107 @@ const ForgotPassword = () => {
         password: newPassword,
       });
       if (response.data?.success) {
-        setMessage({ type: 'success', text: 'Password reset successful! Redirecting to login...' });
-        setTimeout(() => navigate('/login'), 2000);
+        setMessage({ type: 'success', text: 'Password reset. Taking you to sign in.' });
+        setTimeout(() => navigate('/login'), 1800);
       } else {
-        setMessage({ type: 'error', text: response.data?.message || 'Failed to reset password' });
+        setMessage({ type: 'error', text: response.data?.message || 'We could not reset your password.' });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to reset password' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'We could not reset your password.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const codeInputStyle = {
-    width: '48px', height: '56px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 700,
-    border: `2px solid ${T.char300}`, borderRadius: '12px', outline: 'none',
-    transition: 'all 0.2s', color: T.light, background: T.bg4,
-  };
-
   return (
-    <div style={{ minHeight: '100vh', background: T.bg0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: C.bone, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@400;500&display=swap');
-        .cg{font-family:'Cormorant Garamond',Georgia,serif;}
-        .syne{font-family:'Syne',sans-serif;}
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
-        body{font-family:'DM Sans',sans-serif;background:${T.bg0};}
-        .inp:focus{outline:none;border-color:${T.g}!important;box-shadow:0 0 0 3px ${T.ga};}
-        input.code-input:focus{border-color:${T.g}!important;box-shadow:0 0 0 3px ${T.ga};}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .fade-in{animation:fadeIn .3s ease forwards;}
+        body{font-family:'Inter',sans-serif;background:${C.bone};}
+        .fp-inp:focus{outline:none;border-color:${C.brass}!important;box-shadow:0 0 0 3px rgba(139,115,85,0.12);}
+        .fp-code:focus{outline:none;border-color:${C.brass}!important;box-shadow:0 0 0 3px rgba(139,115,85,0.12);}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        .fade-in{animation:fadeUp .4s cubic-bezier(0.16,1,0.3,1) both;}
+        .label-mono{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:${C.brass};}
       `}</style>
 
-      <div style={{
-        maxWidth: '440px', width: '100%', margin: '0 auto', padding: '2rem 1.5rem',
-      }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: T.ga, border: `1px solid rgba(166,124,82,0.2)`, borderRadius: '8px', padding: '8px 16px', marginBottom: '1rem' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.g, boxShadow: `0 0 10px ${T.g}` }} />
-            <span className="syne" style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '.16em', color: T.g }}>REST POINT</span>
+      <div style={{ maxWidth: '440px', width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '.6rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <Mark size={22} />
+            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.1rem', fontWeight: 500, color: C.ink }}>Rest Point</span>
           </div>
         </div>
 
-        <div style={{
-          background: T.bg3, borderRadius: '16px', padding: '2rem',
-          border: `1px solid ${T.line}`, boxShadow: '0 40px 80px -20px rgba(0,0,0,.8)',
-        }}>
-          {/* Step Indicator */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '1.5rem' }}>
-            {[1, 2, 3].map(s => (
-              <div key={s} style={{
-                width: '32px', height: '4px', borderRadius: '2px',
-                background: step >= s ? T.g : T.char300, transition: 'all 0.3s',
-              }} />
-            ))}
+        <div style={{ background: '#fff', border: `1px solid ${C.line}`, padding: '2.2rem', boxShadow: '0 30px 70px -24px rgba(21,23,26,0.16)' }}>
+
+          {/* Step indicator — labeled */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.8rem', paddingBottom: '1.4rem', borderBottom: `1px solid ${C.line}` }}>
+            {STEPS.map((s, i) => {
+              const n = i + 1;
+              const active = step === n;
+              const done = step > n;
+              return (
+                <div key={s.n} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', opacity: active || done ? 1 : 0.4 }}>
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: '.74rem',
+                    color: done ? C.verdigris : active ? C.brass : C.gray,
+                  }}>
+                    {done ? checkIcon : s.n}
+                  </span>
+                  <span style={{ fontSize: '.78rem', color: active ? C.ink : C.gray, fontWeight: active ? 500 : 400 }}>{s.label}</span>
+                </div>
+              );
+            })}
           </div>
 
           {message.text && (
             <div className="fade-in" style={{
-              padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem',
-              display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem',
-              background: message.type === 'error' ? 'rgba(201,76,76,.1)' : T.ga,
-              border: `1px solid ${message.type === 'error' ? 'rgba(201,76,76,.3)' : 'rgba(166,124,82,.3)'}`,
-              color: message.type === 'error' ? '#ff6b6b' : T.g,
+              padding: '.75rem .9rem', borderRadius: '4px', marginBottom: '1.25rem',
+              fontSize: '.82rem',
+              background: message.type === 'error' ? C.redBg : '#EEF3EC',
+              border: `1px solid ${message.type === 'error' ? C.redLine : '#DCE6D9'}`,
+              color: message.type === 'error' ? C.red : '#475A43',
             }}>
-              {message.type === 'error' ? '⚠️' : '✅'} {message.text}
+              {message.text}
             </div>
           )}
 
           {/* Step 1: Email */}
           {step === 1 && (
             <div className="fade-in">
-              <h2 className="cg" style={{ fontSize: '1.5rem', fontWeight: 600, color: T.white, marginBottom: '0.5rem', textAlign: 'center' }}>
-                Forgot Password?
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.4rem', fontWeight: 500, color: C.ink, marginBottom: '.5rem' }}>
+                Forgot your password?
               </h2>
-              <p style={{ fontSize: '0.85rem', color: T.muted, textAlign: 'center', marginBottom: '1.5rem' }}>
-                Enter your email and we'll send you a 6-digit verification code
+              <p style={{ fontSize: '.86rem', color: C.gray, marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                Enter your email and we'll send a 6-digit code to verify it's you.
               </p>
               <form onSubmit={handleSendCode}>
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label className="syne" style={{ display: 'block', fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: T.muted, marginBottom: '.5rem', fontWeight: 600 }}>
-                    Email Address
-                  </label>
+                  <label className="label-mono" style={{ display: 'block', marginBottom: '.55rem', color: C.gray }}>Email address</label>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@funeralhome.co.ke"
-                    className="inp"
+                    placeholder="director@yourfuneralhome.co.ke"
+                    className="fp-inp"
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', background: T.bg4,
-                      border: `1px solid ${T.line2}`, borderRadius: '8px', fontSize: '0.88rem', color: T.light,
-                      transition: 'all .2s',
+                      width: '100%', padding: '.78rem .9rem', background: '#fff',
+                      border: `1px solid ${C.line}`, borderRadius: '4px', fontSize: '.92rem', color: C.ink,
+                      transition: 'all .2s', fontFamily: "'Inter', sans-serif",
                     }}
                   />
                 </div>
                 <button type="submit" disabled={isLoading}
                   style={{
-                    width: '100%', padding: '0.75rem', border: 'none', borderRadius: '8px',
-                    fontSize: '0.7rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
-                    background: isLoading ? T.dim : T.g, color: isLoading ? T.muted : '#000',
-                    cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1,
-                    boxShadow: isLoading ? 'none' : '0 4px 24px -6px rgba(166,124,82,.5)',
-                    transition: 'all .22s',
-                  }}>
-                  {isLoading ? 'Sending...' : 'Send Verification Code'}
+                    width: '100%', padding: '.85rem', border: 'none', borderRadius: '2px',
+                    fontSize: '.88rem', fontWeight: 500,
+                    background: isLoading ? C.line : C.ink, color: isLoading ? C.gray : C.bone,
+                    cursor: isLoading ? 'default' : 'pointer', transition: 'background .2s',
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                  onMouseEnter={(e) => { if (!isLoading) e.target.style.background = '#000'; }}
+                  onMouseLeave={(e) => { if (!isLoading) e.target.style.background = C.ink; }}
+                >
+                  {isLoading ? 'Sending…' : 'Send verification code'}
                 </button>
               </form>
             </div>
@@ -233,14 +242,14 @@ const ForgotPassword = () => {
           {/* Step 2: Enter Code */}
           {step === 2 && (
             <div className="fade-in">
-              <h2 className="cg" style={{ fontSize: '1.5rem', fontWeight: 600, color: T.white, marginBottom: '0.5rem', textAlign: 'center' }}>
-                Enter Code
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.4rem', fontWeight: 500, color: C.ink, marginBottom: '.5rem' }}>
+                Enter the code
               </h2>
-              <p style={{ fontSize: '0.85rem', color: T.muted, textAlign: 'center', marginBottom: '1.5rem' }}>
-                Enter the 6-digit code sent to<br/><strong style={{ color: T.g }}>{email}</strong>
+              <p style={{ fontSize: '.86rem', color: C.gray, marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                Sent to <span style={{ color: C.ink, fontWeight: 500 }}>{email}</span>
               </p>
               <form onSubmit={handleVerifyCode}>
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1.6rem' }}>
                   {code.map((digit, index) => (
                     <input
                       key={index}
@@ -255,25 +264,36 @@ const ForgotPassword = () => {
                           if (prevInput) prevInput.focus();
                         }
                       }}
-                      className="code-input"
-                      style={codeInputStyle}
+                      className="fp-code"
+                      style={{
+                        width: '46px', height: '54px', textAlign: 'center', fontSize: '1.3rem', fontWeight: 500,
+                        border: `1px solid ${C.line}`, borderRadius: '4px', outline: 'none',
+                        transition: 'all .2s', color: C.ink, background: '#fff',
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
                       autoFocus={index === 0}
                     />
                   ))}
                 </div>
                 <button type="submit" disabled={isLoading}
                   style={{
-                    width: '100%', padding: '0.75rem', border: 'none', borderRadius: '8px',
-                    fontSize: '0.7rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
-                    background: isLoading ? T.dim : T.g, color: isLoading ? T.muted : '#000',
-                    cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1,
-                    transition: 'all .22s', marginBottom: '1rem',
-                  }}>
-                  {isLoading ? 'Verifying...' : 'Verify Code'}
+                    width: '100%', padding: '.85rem', border: 'none', borderRadius: '2px',
+                    fontSize: '.88rem', fontWeight: 500,
+                    background: isLoading ? C.line : C.ink, color: isLoading ? C.gray : C.bone,
+                    cursor: isLoading ? 'default' : 'pointer', transition: 'background .2s', marginBottom: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                  onMouseEnter={(e) => { if (!isLoading) e.target.style.background = '#000'; }}
+                  onMouseLeave={(e) => { if (!isLoading) e.target.style.background = C.ink; }}
+                >
+                  {isLoading ? 'Verifying…' : 'Verify code'}
                 </button>
                 <button type="button" onClick={() => { setStep(1); setCode(['','','','','','']); }}
-                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', color: T.g, fontSize: '0.8rem', textDecoration: 'underline' }}>
-                  Back to email
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', color: C.gray, fontSize: '.82rem', textDecoration: 'underline', textDecorationColor: C.line, fontFamily: "'Inter', sans-serif" }}
+                  onMouseEnter={(e) => e.target.style.color = C.ink}
+                  onMouseLeave={(e) => e.target.style.color = C.gray}
+                >
+                  Use a different email
                 </button>
               </form>
             </div>
@@ -282,53 +302,56 @@ const ForgotPassword = () => {
           {/* Step 3: New Password */}
           {step === 3 && (
             <div className="fade-in">
-              <h2 className="cg" style={{ fontSize: '1.5rem', fontWeight: 600, color: T.white, marginBottom: '1.5rem', textAlign: 'center' }}>
-                Set New Password
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.4rem', fontWeight: 500, color: C.ink, marginBottom: '1.5rem' }}>
+                Set a new password
               </h2>
               <form onSubmit={handleResetPassword}>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: T.muted, marginBottom: '0.4rem' }}>
-                    New Password
-                  </label>
+                <div style={{ marginBottom: '1.1rem' }}>
+                  <label className="label-mono" style={{ display: 'block', marginBottom: '.55rem', color: C.gray }}>New password</label>
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min. 6 characters" className="inp"
+                    placeholder="At least 6 characters" className="fp-inp"
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', background: T.bg4,
-                      border: `1px solid ${T.line2}`, borderRadius: '8px', fontSize: '0.88rem', color: T.light,
+                      width: '100%', padding: '.78rem .9rem', background: '#fff',
+                      border: `1px solid ${C.line}`, borderRadius: '4px', fontSize: '.92rem', color: C.ink,
+                      fontFamily: "'Inter', sans-serif",
                     }}
                   />
                 </div>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: T.muted, marginBottom: '0.4rem' }}>
-                    Confirm Password
-                  </label>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="label-mono" style={{ display: 'block', marginBottom: '.55rem', color: C.gray }}>Confirm password</label>
                   <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat password" className="inp"
+                    placeholder="Repeat password" className="fp-inp"
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', background: T.bg4,
-                      border: `1px solid ${T.line2}`, borderRadius: '8px', fontSize: '0.88rem', color: T.light,
+                      width: '100%', padding: '.78rem .9rem', background: '#fff',
+                      border: `1px solid ${C.line}`, borderRadius: '4px', fontSize: '.92rem', color: C.ink,
+                      fontFamily: "'Inter', sans-serif",
                     }}
                   />
                 </div>
                 <button type="submit" disabled={isLoading}
                   style={{
-                    width: '100%', padding: '0.75rem', border: 'none', borderRadius: '8px',
-                    fontSize: '0.7rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
-                    background: isLoading ? T.dim : T.g, color: isLoading ? T.muted : '#000',
-                    cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1,
-                    transition: 'all .22s',
-                  }}>
-                  {isLoading ? 'Resetting...' : 'Reset Password'}
+                    width: '100%', padding: '.85rem', border: 'none', borderRadius: '2px',
+                    fontSize: '.88rem', fontWeight: 500,
+                    background: isLoading ? C.line : C.ink, color: isLoading ? C.gray : C.bone,
+                    cursor: isLoading ? 'default' : 'pointer', transition: 'background .2s',
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                  onMouseEnter={(e) => { if (!isLoading) e.target.style.background = '#000'; }}
+                  onMouseLeave={(e) => { if (!isLoading) e.target.style.background = C.ink; }}
+                >
+                  {isLoading ? 'Resetting…' : 'Reset password'}
                 </button>
               </form>
             </div>
           )}
 
-          {/* Back to login */}
-          <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+          <div style={{ textAlign: 'center', marginTop: '1.3rem', paddingTop: '1.1rem', borderTop: `1px solid ${C.line}` }}>
             <button onClick={() => navigate('/login')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: '0.8rem', textDecoration: 'underline', textDecorationColor: 'rgba(166,124,82,.4)' }}>
-              Back to login
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.gray, fontSize: '.82rem', textDecoration: 'underline', textDecorationColor: C.line, fontFamily: "'Inter', sans-serif" }}
+              onMouseEnter={(e) => e.target.style.color = C.ink}
+              onMouseLeave={(e) => e.target.style.color = C.gray}
+            >
+              Back to sign in
             </button>
           </div>
         </div>

@@ -1,751 +1,688 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 
-const ImageWithFallback = ({ src, alt, style, fallbackContent }) => {
-  const [imgError, setImgError] = useState(false);
-
-  if (imgError) {
-    return <div style={style} dangerouslySetInnerHTML={{ __html: fallbackContent }} />;
-  }
-
-  return <img src={src} alt={alt} style={style} onError={() => setImgError(true)} />;
-};
+/* ============================================================
+   REST POINT — Funeral home operating system
+   Design direction: enterprise-grade, dignified, ledger-inspired.
+   Palette: ink, bone, brass, verdigris. No gradients, no emoji,
+   no card-bounce. Motion is a single orchestrated entrance.
+   ============================================================ */
 
 const C = {
-  navy900:'#0A1F3D', navy800:'#0F2847', navy700:'#152D4A', navy50:'#F9FAFB',
-  char700:'#374151', char600:'#4B5563', char500:'#6B7280', char300:'#D1D5DB',
-  char200:'#E5E7EB', char100:'#F3F4F6', gold:'#A67C52', goldD:'#8B6340',
-  emerald:'#059669', emeraldLight:'#10B981', purple:'#8B5CF6', blue:'#3B82F6',
-  pink:'#EC4899', orange:'#F59E0B', teal:'#14B8A6', indigo:'#6366F1'
+  ink: '#15171A',
+  bone: '#FAF8F4',
+  bone2: '#F3EFE6',
+  brass: '#8B7355',
+  brassLight: '#A98F6E',
+  verdigris: '#3D4F47',
+  line: '#E3DDD0',
+  lineDark: 'rgba(250,248,244,0.14)',
+  gray: '#6B6862',
+  grayLight: 'rgba(250,248,244,0.62)',
 };
 
-const Svg = ({d, sw=2, size=18}) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+/* ---------- Reveal-on-scroll ---------- */
+function useReveal() {
+  const ref = useRef(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setShown(true); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, shown];
+}
+
+const Reveal = ({ children, delay = 0, style = {}, className = '' }) => {
+  const [ref, shown] = useReveal();
+  return (
+    <div ref={ref} className={className} style={{
+      opacity: shown ? 1 : 0,
+      transform: shown ? 'translateY(0)' : 'translateY(18px)',
+      transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+      ...style
+    }}>
+      {children}
+    </div>
+  );
+};
+
+/* ---------- Mark (placeholder for real logo) ---------- */
+const Mark = ({ size = 28, color = C.ink }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1" />
+    <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1" />
+    <circle cx="16" cy="16" r="2.5" fill={color} />
+  </svg>
 );
 
-const Icons = {
-  arrow: <Svg d={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>} size={16}/>,
-  check: <Svg d={<><polyline points="20 6 9 17 4 12"/></>} size={18} sw={2.5}/>,
-  lock: <Svg d={<><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>}/>,
-  shield: <Svg d={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>}/>,
-  users: <Svg d={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}/>,
-  zap: <Svg d={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>}/>,
-  file: <Svg d={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="13" x2="8" y2="13"/><line x1="12" y1="17" x2="8" y2="17"/></>}/>,
-  globe: <Svg d={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>}/>,
-  heart: <Svg d={<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>}/>,
-  menu: <Svg d={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>}/>,
-  close: <Svg d={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}/>,
-  truck: <Svg d={<><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>}/>,
-  award: <Svg d={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>}/>,
-  barChart: <Svg d={<><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>}/>,
-  sms: <Svg d={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>}/>,
-  calendar: <Svg d={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>}/>,
-  fuel: <Svg d={<><path d="M3 22V8l4-4h6l4 4v14"/><path d="M11 10V2"/><path d="M15 10v4"/><path d="M7 22h12"/><path d="M3 22h18"/></>}/>,
-  gps: <Svg d={<><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="3"/></>}/>,
-  route: <Svg d={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>}/>,
+/* ---------- Ledger entry (replaces feature cards) ---------- */
+const LedgerEntry = ({ no, title, desc, delay }) => (
+  <Reveal delay={delay} style={{
+    display: 'grid',
+    gridTemplateColumns: '88px 1fr',
+    gap: '2rem',
+    padding: '2.4rem 0',
+    borderTop: `1px solid ${C.line}`,
+  }}>
+    <div style={{
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: '0.78rem',
+      color: C.brass,
+      letterSpacing: '0.02em',
+      paddingTop: '0.2rem'
+    }}>
+      No. {no}
+    </div>
+    <div>
+      <h3 style={{ color: C.ink, marginBottom: '0.6rem' }}>{title}</h3>
+      <p style={{ maxWidth: '560px' }}>{desc}</p>
+    </div>
+  </Reveal>
+);
+
+/* ---------- FAQ ---------- */
+const FAQItem = ({ q, a }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderTop: `1px solid ${C.line}`, padding: '1.6rem 0' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', background: 'none', border: 'none', padding: 0,
+          textAlign: 'left', cursor: 'pointer', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'baseline', gap: '1.5rem'
+        }}
+      >
+        <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.08rem', color: C.ink, fontWeight: 500 }}>{q}</span>
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace", fontSize: '0.95rem', color: C.brass,
+          flexShrink: 0, transition: 'transform 0.3s', transform: open ? 'rotate(45deg)' : 'rotate(0deg)'
+        }}>+</span>
+      </button>
+      {open && (
+        <p style={{ marginTop: '1rem', maxWidth: '600px', animation: 'fadeIn 0.4s ease' }}>{a}</p>
+      )}
+    </div>
+  );
 };
 
-const FEATURES = [
-  { icon:Icons.zap, title:'Case Management', desc:'Track every service from first call to final arrangements with real-time updates and complete digital case history.', color:'#059669', gradient:'linear-gradient(135deg, #059669 0%, #10B981 100%)' },
-  { icon:Icons.heart, title:'Family Portal', desc:'Secure SMS link for families to view documents, track progress, and make payments. No app required.', color:'#A67C52', gradient:'linear-gradient(135deg, #A67C52 0%, #C9A876 100%)' },
-  { icon:Icons.file, title:'Document Editor', desc:'Generate burial permits, death certificates, and invoices with smart templates. Sign and share in minutes.', color:'#3B82F6', gradient:'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)' },
-  { icon:Icons.globe, title:'Marketplace', desc:'Connect families with vendors and earn commission. Turn your funeral home into a complete service center.', color:'#8B5CF6', gradient:'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)' },
-  { icon:Icons.users, title:'Team Collaboration', desc:'Coordinate across directors, drivers, and staff with role-based permissions and shared calendars.', color:'#EC4899', gradient:'linear-gradient(135deg, #EC4899 0%, #F472B6 100%)' },
-  { icon:Icons.barChart, title:'Analytics', desc:'Live dashboard tracking revenue, case volumes, and staff performance. Data-driven decisions for growth.', color:'#F59E0B', gradient:'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)' },
-  { icon:Icons.truck, title:'Dispatch Tracking', desc:'GPS-enabled hearse tracking with fuel estimation and automated family notifications on arrival.', color:'#14B8A6', gradient:'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)' },
-  { icon:Icons.calendar, title:'Scheduling', desc:'Manage funeral services and team schedules with automated reminders and conflict detection.', color:'#6366F1', gradient:'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)' },
-  { icon:Icons.dollar, title:'Billing & Invoicing', desc:'Automated invoicing with M-PESA integration, payment tracking, and financial reporting.', color:'#10B981', gradient:'linear-gradient(135deg, #10B981 0%, #34D399 100%)' },
-  { icon:Icons.shield, title:'Billing Never Stops', desc:'3-tier failover system ensures billing runs 24/7. If one service fails, another takes over automatically. Zero downtime, zero missed charges.', color:'#EF4444', gradient:'linear-gradient(135deg, #EF4444 0%, #F87171 100%)' },
-];
+/* ---------- Showcase row (feature + mini mockup) ---------- */
+const Showcase = ({ no, title, desc, reverse, children }) => (
+  <Reveal
+    className="showcase-row"
+    style={{ gridTemplateColumns: reverse ? '1fr 0.92fr' : '0.92fr 1fr' }}
+  >
+    <div style={{ order: reverse ? 2 : 1 }}>
+      <div className="label" style={{ marginBottom: '0.9rem' }}>No. {no}</div>
+      <h3 style={{ marginBottom: '0.8rem' }}>{title}</h3>
+      <p style={{ maxWidth: '420px' }}>{desc}</p>
+    </div>
+    <div style={{ order: reverse ? 1 : 2 }}>{children}</div>
+  </Reveal>
+);
 
-const INITIAL_CANDLES = [
-  { name:'Michael R.', message:'Forever in our hearts', lit:true },
-  { name:'Elena S.', message:'Rest peacefully', lit:true },
-  { name:'Light one', message:'', lit:false },
-  { name:'James P.', message:'Your legacy lives on', lit:true },
-  { name:'Light one', message:'', lit:false },
-  { name:'Grace T.', message:'In loving memory', lit:true },
-  { name:'Light one', message:'', lit:false },
-  { name:'David W.', message:'Always remembered', lit:true },
-  { name:'Light one', message:'', lit:false },
-  { name:'Anna K.', message:'Gone but never forgotten', lit:true },
-  { name:'Light one', message:'', lit:false },
-  { name:'Robert M.', message:'Your light shines on', lit:true },
-  { name:'Light one', message:'', lit:false },
-  { name:'Light one', message:'', lit:false },
-  { name:'Light one', message:'', lit:false },
-  { name:'Light one', message:'', lit:false },
-];
+/* ---------- Mock: Family portal (SMS link page) ---------- */
+const MockPortal = () => (
+  <div className="mock-frame mock-frame--phone">
+    <div className="mock-topline">
+      <span className="label" style={{ color: C.brassLight }}>Mwangi family</span>
+      <span className="label" style={{ color: 'rgba(250,248,244,0.45)' }}>Via SMS link</span>
+    </div>
+    <div className="mock-status">Arranged</div>
+    <div className="mock-rows">
+      <div className="mock-row">
+        <span>Burial permit.pdf</span>
+        <span className="mock-action">Download</span>
+      </div>
+      <div className="mock-row">
+        <span>Service invoice</span>
+        <span className="mock-action">KES 84,000</span>
+      </div>
+      <div className="mock-row">
+        <span>Outstanding balance</span>
+        <span className="mock-action mock-action--pay">Pay now</span>
+      </div>
+    </div>
+  </div>
+);
 
-function Candle({ name, message, lit, onLight, delay = 0 }) {
+/* ---------- Mock: Dispatch & fuel — live calculator ---------- */
+const MockDispatch = () => {
+  const [distance, setDistance] = useState(38);
+  const [rate, setRate] = useState(195);
+  const consumption = 0.12; // litres per km, fixed assumption for hearse class
+  const litres = distance * consumption;
+  const cost = Math.round(litres * rate);
+
   return (
-    <div
-      onClick={onLight}
-      style={{
-        display:'flex', flexDirection:'column', alignItems:'center',
-        cursor:lit?'default':'pointer', gap:'.6rem',
-        animation:`fadeInUp 0.6s ease ${delay}ms both`,
-        transition:'transform 0.2s'
-      }}
-      onMouseEnter={e=>{if(!lit)e.currentTarget.style.transform='scale(1.1)'}}
-      onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)'}}
-    >
-      <div style={{ position:'relative', height:'56px', display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
-        {lit ? (
-          <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center' }}>
-            <div style={{ position:'absolute', bottom:'0', left:'50%', transform:'translateX(-50%)', width:'40px', height:'40px', borderRadius:'50%', background:'radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)', animation:'glow 2.2s ease-in-out infinite' }} />
-            <div style={{ width:'12px', height:'30px', background:'radial-gradient(ellipse at 50% 80%, #F59E0B 0%, #FBBF24 40%, #F97316 100%)', borderRadius:'50% 50% 30% 30%', animation:'flame 1.8s ease-in-out infinite', filter:'blur(0.5px)', boxShadow:'0 0 14px #F59E0B, 0 0 28px rgba(245,158,11,0.35)' }} />
-          </div>
-        ) : (
-          <div style={{ width:'18px', height:'18px', borderRadius:'50%', border:`2px dashed ${C.char200}`, display:'flex', alignItems:'center', justifyContent:'center', color:C.char300, fontSize:'.7rem' }}>+</div>
-        )}
+    <div className="mock-frame">
+      <div className="mock-topline">
+        <span className="label" style={{ color: C.brassLight }}>Route — Karen to Lang'ata</span>
+        <span className="label" style={{ color: 'rgba(250,248,244,0.45)' }}>Hearse 02</span>
       </div>
-      <div style={{ width:'16px', height:'56px', borderRadius:'3px', background:lit?'linear-gradient(180deg,#FEF3C7 0%,#FCD34D 30%,#F59E0B 70%,#B45309 100%)':`linear-gradient(180deg,${C.char200} 0%,${C.char300} 100%)`, position:'relative', boxShadow:lit?'0 0 24px rgba(245,158,11,0.3)':'none', transition:'all 0.6s ease' }}>
-        <div style={{ position:'absolute', top:'-7px', left:'50%', transform:'translateX(-50%)', width:'2.5px', height:'7px', background:lit?'#78350F':C.char300, borderRadius:'1px' }} />
+      <div className="mock-calc-row">
+        <label className="mock-calc-label" htmlFor="dist">Distance (km)</label>
+        <input
+          id="dist" type="range" min="2" max="120" step="1" value={distance}
+          onChange={(e) => setDistance(Number(e.target.value))}
+          className="mock-range"
+        />
+        <span className="mock-calc-val">{distance}</span>
       </div>
-      <div style={{ fontFamily:"'Lora',serif", fontSize:'.75rem', color:lit?C.gold:C.char300, textAlign:'center', maxWidth:'80px', lineHeight:1.3, fontStyle:'italic', fontWeight:500 }}>{name}</div>
-      {lit && message && <div style={{ fontFamily:"'Inter',sans-serif", fontSize:'.62rem', color:C.char500, textAlign:'center', maxWidth:'88px', lineHeight:1.4 }}>"{message}"</div>}
+      <div className="mock-calc-row">
+        <label className="mock-calc-label" htmlFor="rate">Fuel rate (KES/L)</label>
+        <input
+          id="rate" type="range" min="150" max="250" step="1" value={rate}
+          onChange={(e) => setRate(Number(e.target.value))}
+          className="mock-range"
+        />
+        <span className="mock-calc-val">{rate}</span>
+      </div>
+      <div className="mock-calc-result">
+        <span className="label" style={{ color: 'rgba(250,248,244,0.5)' }}>Estimated trip cost</span>
+        <span className="mock-result-num">KES {cost.toLocaleString()}</span>
+      </div>
     </div>
   );
-}
+};
 
-function Loader({ onComplete }) {
-  const [progress, setProgress] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
-  useEffect(() => {
-    const iv = setInterval(() => setProgress(p => {
-      if (p >= 100) { clearInterval(iv); setFadeOut(true); setTimeout(onComplete, 600); return 100; }
-      return p + Math.random() * 15 + 5;
-    }), 120);
-    return () => clearInterval(iv);
-  }, [onComplete]);
-  return (
-    <div style={{ position:'fixed', inset:0, zIndex:9999, background:'linear-gradient(135deg,#0A1F3D 0%,#0F2847 50%,#1a3a52 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', transition:'opacity 0.6s', opacity:fadeOut?0:1, pointerEvents:fadeOut?'none':'auto' }}>
-      <style>{`@keyframes lp{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}@keyframes lf{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <div style={{ display:'flex', alignItems:'center', gap:'.75rem', marginBottom:'2rem', animation:'lf 0.8s ease' }}>
-        <div style={{ width:'12px', height:'12px', borderRadius:'50%', background:C.emerald, animation:'lp 2s ease-in-out infinite' }} />
-        <span style={{ fontFamily:"'Lora',serif", fontSize:'1.5rem', fontWeight:700, color:'white', letterSpacing:'-0.02em' }}>Rest Point</span>
-      </div>
-      <div style={{ display:'flex', gap:'1.5rem', marginBottom:'2rem', animation:'lf 1s ease 0.2s both' }}>
-        {[0,1,2].map(i=>(
-          <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'.5rem' }}>
-            <div style={{ width:'10px', height:'24px', background:'radial-gradient(ellipse at 50% 80%,#F59E0B 0%,#FBBF24 40%,#F97316 100%)', borderRadius:'50% 50% 30% 30%', animation:`flame 1.8s ease-in-out ${i*0.3}s infinite`, filter:'blur(0.5px)', boxShadow:'0 0 14px #F59E0B' }} />
-            <div style={{ width:'12px', height:'40px', borderRadius:'3px', background:'linear-gradient(180deg,#FEF3C7,#F59E0B 70%,#B45309)', boxShadow:'0 0 16px rgba(245,158,11,0.3)' }} />
-          </div>
-        ))}
-      </div>
-      <div style={{ width:'200px', height:'3px', background:'rgba(255,255,255,0.1)', borderRadius:'2px', overflow:'hidden', animation:'lf 1s ease 0.4s both' }}>
-        <div style={{ width:`${Math.min(progress,100)}%`, height:'100%', background:'linear-gradient(90deg,#A67C52,#C9A876)', borderRadius:'2px', transition:'width 0.3s' }} />
-      </div>
-      <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'.75rem', marginTop:'1rem', animation:'lf 1s ease 0.6s both' }}>Preparing your experience...</p>
+/* ---------- Mock: Documents ---------- */
+const MockDocument = () => (
+  <div className="mock-frame mock-frame--paper">
+    <div className="mock-doc-head">
+      <span className="label" style={{ color: C.brass }}>Burial permit</span>
+      <span className="label" style={{ color: C.gray }}>Draft</span>
     </div>
-  );
-}
+    <div className="mock-doc-line"><span>Deceased</span><span>J. Otieno</span></div>
+    <div className="mock-doc-line"><span>Date of service</span><span>14 Jul 2026</span></div>
+    <div className="mock-doc-line"><span>Cemetery</span><span>Lang'ata Cemetery</span></div>
+    <div className="mock-doc-line"><span>Authorised by</span><span>—</span></div>
+    <div className="mock-doc-sign">Awaiting signature</div>
+  </div>
+);
+
+/* ---------- Mock: Storefront ---------- */
+const MockStorefront = () => (
+  <div className="mock-frame">
+    <div className="mock-topline">
+      <span className="label" style={{ color: C.brassLight }}>Storefront</span>
+      <span className="label" style={{ color: 'rgba(250,248,244,0.45)' }}>100% kept by your home</span>
+    </div>
+    <div className="mock-product"><span>Mahogany casket — classic</span><span>KES 65,000</span></div>
+    <div className="mock-product"><span>Full service package</span><span>KES 140,000</span></div>
+    <div className="mock-product"><span>Memorial keepsake set</span><span>KES 6,500</span></div>
+  </div>
+);
 
 export default function App() {
-  const navigate = useNavigate();
-  const [candles, setCandles] = useState(INITIAL_CANDLES);
-  const [candleName, setCandleName] = useState('');
-  const [litCount, setLitCount] = useState(INITIAL_CANDLES.filter(c=>c.lit).length);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
-  useEffect(() => {
-    const t = localStorage.getItem('authToken');
-    if (t && t !== 'undefined' && t !== 'null') setIsLoggedIn(true);
-    const h = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', h);
-    return () => window.removeEventListener('scroll', h);
-  }, []);
-
-  const lightCandle = useCallback((idx) => {
-    if (candles[idx].lit) return;
-    const n = candleName.trim() || 'Anonymous';
-    setCandles(p => { const x = [...p]; x[idx] = {...x[idx], name:n, message:'In our hearts', lit:true}; return x; });
-    setLitCount(c => c + 1);
-    setCandleName('');
-  }, [candles, candleName]);
-
-  const goLogin = () => navigate('/login');
-  const goStart = () => navigate('/login');
-  const goPortal = () => navigate('/portal/login');
-
-  if (loading) return <Loader onComplete={()=>setLoading(false)} />;
+  const goLogin = () => console.log('navigate /login');
+  const goStart = () => console.log('navigate /login');
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-        *{margin:0;padding:0;box-sizing:border-box}
-        html{scroll-behavior:smooth;background:${C.navy50}}
-        body{font-family:'Inter',sans-serif;color:${C.char700};background:${C.navy50};-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-        ::selection{background:rgba(166,124,82,0.15);color:${C.gold}}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; color: ${C.gray}; background: ${C.bone}; -webkit-font-smoothing: antialiased; }
 
-        .wrap{max-width:1200px;margin:0 auto;padding:0 clamp(1rem,5vw,2.5rem)}
-        .section{padding:clamp(4rem,10vw,7rem) 0}
+        h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; color: ${C.ink}; }
+        h1 { font-size: clamp(2.6rem, 6.4vw, 4.4rem); line-height: 1.06; }
+        h2 { font-size: clamp(1.9rem, 4.2vw, 2.6rem); line-height: 1.18; }
+        h3 { font-size: 1.3rem; line-height: 1.3; }
+        p { line-height: 1.7; font-size: 1rem; }
 
-        h1,h2,h3,h4{font-family:'Playfair Display',serif;font-weight:600;line-height:1.2;letter-spacing:-0.02em}
-        h1{font-size:clamp(2.5rem,8vw,4.5rem)}
-        h2{font-size:clamp(1.8rem,6vw,3.2rem)}
-        h3{font-size:clamp(1.2rem,3vw,1.8rem)}
-        h4{font-size:clamp(1rem,2.5vw,1.3rem)}
+        a { color: inherit; }
 
-        .eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:${C.gold};margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
-        .eyebrow::before{content:'';width:16px;height:1px;background:currentColor}
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInSoft { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.75rem;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:all .22s;white-space:nowrap;font-family:'Inter',sans-serif;position:relative;overflow:hidden}
-        .btn::before{content:'';position:absolute;top:50%;left:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,0.15);transform:translate(-50%,-50%);transition:width 0.6s, height 0.6s}
-        .btn:active::before{width:300px;height:300px}
-
-        .btn-primary{background:${C.navy900};color:#fff;box-shadow:0 4px 16px -4px rgba(10,31,61,.4)}
-        .btn-primary:hover{background:${C.navy800};transform:translateY(-2px);box-shadow:0 8px 24px -4px rgba(10,31,61,.6)}
-
-        .btn-secondary{background:transparent;color:${C.navy900};border:1.5px solid ${C.navy900}}
-        .btn-secondary:hover{background:rgba(10,31,61,.05);transform:translateY(-2px)}
-
-        .btn-text{background:none;color:${C.navy900};padding:.5rem 0;border:none}
-        .btn-text:hover{opacity:.8}
-
-        .btn-gold{background:${C.gold};color:#fff;box-shadow:0 4px 16px -4px rgba(166,124,82,.4)}
-        .btn-gold:hover{background:${C.goldD};transform:translateY(-2px);box-shadow:0 8px 24px -4px rgba(166,124,82,.6)}
-
-        .btn-outline-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
-        .btn-outline-light:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
-
-        nav{position:fixed;top:0;left:0;right:0;z-index:100;background:${scrolled?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.7)'};backdrop-filter:blur(12px);border-bottom:1px solid ${scrolled?C.char200:'transparent'};padding:1.2rem 0;transition:all .3s}
-        .nav-wrap{display:flex;justify-content:space-between;align-items:center}
-        .logo{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:700;color:${C.navy900};font-family:'Playfair Display',serif;cursor:pointer;letter-spacing:-0.02em}
-        .logo-dot{width:8px;height:8px;border-radius:50%;background:${C.emerald};box-shadow:0 0 8px rgba(16,185,129,0.4)}
-        .nav-links{display:flex;gap:2.5rem}
-        .nav-link{font-size:.75rem;font-weight:600;color:${C.char600};text-decoration:none;transition:color .2s;cursor:pointer;position:relative}
-        .nav-link::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:${C.gold};transition:width .3s}
-        .nav-link:hover{color:${C.gold}}
-        .nav-link:hover::after{width:100%}
-        .nav-cta{display:flex;gap:1rem;align-items:center}
-        .hamburger{display:none;background:none;border:none;cursor:pointer;color:${C.navy900};padding:.5rem;z-index:101;position:relative}
-        .mobile-menu{display:block;position:fixed;top:0;left:0;bottom:0;width:280px;max-width:85vw;background:#fff;padding:5rem 1.25rem 1.25rem;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.12);transform:translateX(-100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);overflow-y:auto}
-        .mobile-menu.open{transform:translateX(0)!important}
-        .mobile-link{display:block;padding:.9rem 0;font-size:.9rem;font-weight:600;color:${C.char700};text-decoration:none;border-bottom:1px solid ${C.char100};transition:color .2s}.mobile-link:last-child{border-bottom:none}.mobile-link:hover{color:${C.gold}}
-        .mobile-cta{width:100%;margin-top:.75rem}
-        @media(max-width:768px){.nav-links{display:none!important}.nav-cta{display:none!important}.hamburger{display:block!important}}
-        @media(min-width:769px){.mobile-menu{display:none!important}}
-
-        @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes flame{0%,100%{transform:scaleX(1)scaleY(1)rotate(-1deg)}25%{transform:scaleX(1.04)scaleY(0.97)rotate(1deg)}50%{transform:scaleX(0.97)scaleY(1.04)rotate(-.5deg)}75%{transform:scaleX(1.03)scaleY(0.98)rotate(.8deg)}}
-        @keyframes glow{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-        @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
-
-        @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
-        @keyframes fadeRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes fadeLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-        @keyframes rotate3d{from{transform:perspective(1000px) rotateY(0deg)}to{transform:perspective(1000px) rotateY(360deg)}}
-        @keyframes floatUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-        @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(166,124,82,0.2)}50%{box-shadow:0 0 40px rgba(166,124,82,0.4)}}
-        @keyframes cardHover{from{transform:translateY(0)scale(1)}to{transform:translateY(-8px)scale(1.02)}}
-
-        .hero{padding:clamp(6rem,12vw,8rem) 0 clamp(3rem,6vw,4rem);background:linear-gradient(135deg,${C.navy50} 0%,rgba(5,150,105,.03) 100%);position:relative;overflow:hidden}
-        .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:800px;height:800px;background:radial-gradient(circle,rgba(166,124,82,0.08) 0%,transparent 70%);border-radius:50%;pointer-events:none}
-        .hero::after{content:'';position:absolute;bottom:-30%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none}
-
-        @keyframes textReveal{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
-        .anim-1{animation:textReveal 0.8s ease 0.1s both}
-        .anim-2{animation:textReveal 0.8s ease 0.3s both}
-        .anim-3{animation:textReveal 0.8s ease 0.5s both}
-        .anim-4{animation:textReveal 0.8s ease 0.7s both}
-        .anim-5{animation:textReveal 0.8s ease 0.9s both}
-        .anim-scale{animation:fadeScale 0.8s ease 0.3s both}
-
-        .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;z-index:1}
-        @media(max-width:768px){.hero-inner{grid-template-columns:1fr;gap:2rem}}
-
-        .hero-text h1{color:${C.navy900};margin-bottom:1.5rem;line-height:1.1}
-        .hero-text p{font-size:1.05rem;color:${C.char700};line-height:1.7;margin-bottom:2rem;max-width:540px}
-        .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem}
-        @media(max-width:640px){.hero-cta{flex-wrap:nowrap;gap:.75rem}.hero-cta .btn{flex:1;padding:.7rem 1rem;font-size:.65rem}}
-
-        .hero-trust{display:flex;gap:1.5rem;font-size:.85rem;color:${C.char600};flex-wrap:wrap}
-        .hero-trust-item{display:flex;align-items:center;gap:.5rem}
-        .trust-icon{color:${C.emerald};flex-shrink:0}
-
-        .hero-image{position:relative}
-        .dashboard-shell{background:#fff;border:1px solid ${C.char200};border-radius:16px;overflow:hidden;box-shadow:0 20px 60px -10px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.05)}
-        .chrome{display:flex;gap:.5rem;align-items:center;padding:.75rem 1rem;background:${C.char100};border-bottom:1px solid ${C.char200}}
-        .dot{width:8px;height:8px;border-radius:50%}.d-red{background:#FF5F57}.d-yellow{background:#FEBC2E}.d-green{background:#28C840}
-        .url{flex:1;background:#fff;border-radius:4px;padding:.4rem .7rem;font-size:.65rem;color:${C.char500};font-family:monospace}
-        .dash-img{width:100%;display:block;background:linear-gradient(135deg,${C.char100},${C.navy50});max-height:420px;overflow:hidden}
-        .dash-img img{width:100%;height:auto;max-height:420px;object-fit:cover;display:block}
-
-        .features-section{background:${C.navy50};position:relative}
-        .features-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .features-header{text-align:center;margin-bottom:4rem}
-        .features-header h2{color:${C.navy900};margin-bottom:1rem}
-        .features-header p{font-size:1rem;color:${C.char700};max-width:600px;margin:0 auto}
-        .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
-        @media(max-width:1024px){.features-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:640px){.features-grid{grid-template-columns:1fr}}
-
-        .feature-card{background:#fff;padding:2rem;border-radius:16px;border:1px solid ${C.char200};transition:all .4s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden}
-        .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-gradient);transform:scaleX(0);transition:transform .4s cubic-bezier(0.4,0,0.2,1);transform-origin:left}
-        .feature-card::after{content:'';position:absolute;top:50%;left:50%;width:300px;height:300px;border-radius:50%;background:var(--card-gradient);opacity:0;transform:translate(-50%,-50%)scale(0);transition:opacity .5s,transform .5s;pointer-events:none;z-index:0}
-        .feature-card:hover{border-color:${C.gold};transform:translateY(-8px);box-shadow:0 24px 48px -16px rgba(166,124,82,.25)}
-        .feature-card:hover::before{transform:scaleX(1)}
-        .feature-card:hover::after{opacity:.03;transform:translate(-50%,-50%)scale(1)}
-        .feature-card>*{position:relative;z-index:1}
-        .feature-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;background:var(--card-bg);color:#fff;box-shadow:0 8px 16px -4px var(--card-shadow);transition:transform .4s}
-        .feature-card:hover .feature-icon{transform:scale(1.1)rotate(-5deg)}
-        .feature-card h3{margin-bottom:.75rem;color:${C.navy900};font-size:1.15rem}
-        .feature-card p{font-size:.9rem;color:${C.char600};line-height:1.6}
-
-        .dispatch-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
-        .dispatch-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .dispatch-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-        @media(max-width:768px){.dispatch-inner{grid-template-columns:1fr;gap:2rem}}
-        .dispatch-text h2{color:${C.navy900};margin-bottom:1.5rem}
-        .dispatch-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
-        .dispatch-benefits{display:flex;flex-direction:column;gap:1rem}
-        .dispatch-benefit{display:flex;gap:1rem;font-size:.95rem;color:${C.char700};padding:1rem;background:#fff;border-radius:10px;border:1px solid ${C.char200};transition:all .3s}
-        .dispatch-benefit:hover{transform:translateX(6px);border-color:${C.teal};box-shadow:0 4px 12px -4px rgba(20,184,166,.15)}
-        .dispatch-benefit strong{color:${C.navy900};font-weight:600}
-        .dispatch-check{color:${C.teal};font-weight:700;flex-shrink:0}
-        .dispatch-image{background:#fff;border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
-        .dispatch-image img{width:100%;height:auto;object-fit:cover;border-radius:16px}
-
-        .family-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
-        .family-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .family-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-        @media(max-width:768px){.family-inner{grid-template-columns:1fr;gap:2rem}}
-        .family-text h2{color:${C.navy900};margin-bottom:1.5rem}
-        .family-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
-        .family-benefits{display:flex;flex-direction:column;gap:1rem}
-        .benefit-item{display:flex;gap:1rem;font-size:.95rem;color:${C.char700};padding:.75rem;background:#fff;border-radius:10px;border:1px solid ${C.char200};transition:all .3s}
-        .benefit-item:hover{transform:translateX(6px);border-color:${C.gold};box-shadow:0 4px 12px -4px rgba(166,124,82,.15)}
-        .benefit-item strong{color:${C.navy900};font-weight:600}
-        .benefit-check{color:${C.emerald};font-weight:700;flex-shrink:0}
-        .family-image{background:#fff;border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
-        .family-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
-
-        .storefront-section{background:#fff;position:relative;overflow:hidden}
-        .storefront-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .storefront-inner{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-        @media(max-width:768px){.storefront-inner{grid-template-columns:1fr}}
-        .storefront-text h2{color:${C.navy900};margin-bottom:1.5rem}
-        .storefront-text p{font-size:1rem;color:${C.char700};line-height:1.7;margin-bottom:1.5rem}
-
-        .security-section{background:#fff;position:relative}
-        .security-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .security-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-        @media(max-width:768px){.security-inner{grid-template-columns:1fr;gap:2rem}}
-        .security-text h2{color:${C.navy900};margin-bottom:1.5rem}
-        .security-items{display:flex;flex-direction:column;gap:1.5rem}
-        .security-item{display:flex;gap:1rem;padding:1rem;background:${C.navy50};border-radius:10px;transition:all .3s}
-        .security-item:hover{background:#fff;box-shadow:0 4px 12px -4px rgba(0,0,0,.08);transform:translateX(6px)}
-        .security-item h4{color:${C.navy900};margin-bottom:.25rem;font-size:.95rem;font-family:'Inter',sans-serif;font-weight:600}
-        .security-item p{font-size:.85rem;color:${C.char600};line-height:1.5}
-        .security-icon{color:${C.emerald};flex-shrink:0;margin-top:2px}
-        .security-image{border-radius:16px;border:1px solid ${C.char200};min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 32px -8px rgba(0,0,0,.08)}
-        .security-image img{width:100%;height:100%;object-fit:cover;border-radius:16px}
-
-        .memorial-section{background:linear-gradient(180deg,${C.navy900} 0%,${C.navy800} 50%,${C.navy900} 100%);color:#fff;position:relative;overflow:hidden}
-        .memorial-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(5,150,105,.1) 0%,transparent 60%);pointer-events:none}
-        .memorial-section::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
-        .memorial-inner{position:relative;z-index:1;text-align:center}
-        .memorial-quote{font-family:'Playfair Display',serif;font-size:1.2rem;font-style:italic;color:rgba(255,255,255,.9);max-width:600px;margin:0 auto 2.5rem;line-height:1.8}
-        .candle-input-row{display:flex;gap:.75rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
-        .candle-input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.85rem 1.25rem;color:#fff;font-family:'Inter',sans-serif;font-size:.9rem;outline:none;min-width:250px;transition:all .3s}
-        .candle-input::placeholder{color:rgba(255,255,255,.5)}
-        .candle-input:focus{border-color:${C.gold};background:rgba(255,255,255,.12);box-shadow:0 0 0 3px rgba(166,124,82,0.1)}
-        .candle-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:1.5rem 1rem;justify-items:center;margin:2rem 0}
-        @media(max-width:1024px){.candle-grid{grid-template-columns:repeat(4,1fr)}}
-        @media(max-width:640px){.candle-grid{grid-template-columns:repeat(3,1fr)}}
-        .candle-counter{display:flex;align-items:center;gap:1rem;justify-content:center;margin:2rem 0;font-size:.85rem;color:rgba(255,255,255,.7)}
-        .candle-counter span{color:${C.gold};font-weight:700;font-size:1.2rem}
-        .memorial-cta{background:rgba(166,124,82,.15);border:1px solid rgba(166,124,82,.3);border-radius:16px;padding:2rem;margin-top:2rem;backdrop-filter:blur(10px)}
-        .memorial-cta h3{color:#fff;margin-bottom:1rem}
-        .memorial-cta p{color:rgba(255,255,255,.8);font-size:.95rem;line-height:1.6;margin-bottom:1.5rem}
-
-        .pricing-section{background:linear-gradient(135deg,rgba(5,150,105,.05) 0%,rgba(166,124,82,.03) 100%);position:relative}
-        .pricing-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.char300},transparent)}
-        .pricing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2rem;max-width:900px;margin:0 auto}
-        @media(max-width:768px){.pricing-grid{grid-template-columns:1fr}}
-        .pricing-card{background:#fff;padding:2.5rem;border-radius:16px;border:1px solid ${C.char200};position:relative;transition:all .4s}
-        .pricing-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px -12px rgba(0,0,0,.12)}
-        .pricing-card.featured{border-color:${C.gold};box-shadow:0 20px 40px -10px rgba(166,124,82,.25)}
-        .pricing-card.featured:hover{box-shadow:0 24px 48px -12px rgba(166,124,82,.35)}
-        .pricing-badge{position:absolute;top:-12px;left:2rem;background:${C.gold};color:#fff;padding:.5rem 1.25rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.1em;box-shadow:0 4px 12px -2px rgba(166,124,82,.4)}
-        .pricing-label{font-size:.8rem;color:${C.gold};text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;font-weight:700}
-        .pricing-amount{font-size:2.5rem;font-weight:700;color:${C.navy900};margin-bottom:.25rem;font-family:'Playfair Display',serif}
-        .pricing-period{font-size:.85rem;color:${C.char600};margin-bottom:1.5rem}
-        .pricing-divider{height:1px;background:${C.char200};margin:1.5rem 0}
-        .pricing-item{display:flex;gap:.75rem;font-size:.9rem;color:${C.char700};margin-bottom:.75rem;align-items:center}
-        .pricing-cta{width:100%;margin-top:2rem}
-
-        .cta-final{background:linear-gradient(135deg,${C.navy900} 0%,${C.navy800} 100%);color:#fff;text-align:center;padding:clamp(4rem,10vw,6rem) 0;position:relative;overflow:hidden}
-        .cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(166,124,82,0.1) 0%,transparent 60%);pointer-events:none}
-        .cta-final::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
-        .cta-final-inner{max-width:700px;margin:0 auto;padding:0 1rem;position:relative;z-index:1}
-        .cta-final h2{color:#fff;margin-bottom:1rem}
-        .cta-final p{font-size:1rem;color:rgba(255,255,255,.9);margin-bottom:2rem;line-height:1.7}
-        .cta-final-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-
-        footer{background:${C.navy900};color:#fff;border-top:1px solid ${C.navy800};padding:4rem 0 2rem;position:relative}
-        footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,${C.gold},transparent);opacity:.3}
-        .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
-        @media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr;gap:2rem}}
-        .footer-col h4{font-family:'Playfair Display',serif;margin-bottom:1.5rem;font-size:1.1rem}
-        .footer-col p{font-size:.9rem;line-height:1.6;opacity:.8;margin-bottom:1rem}
-        .footer-link{display:block;font-size:.85rem;color:rgba(255,255,255,.7);margin-bottom:.75rem;transition:color .2s;text-decoration:none;cursor:pointer}.footer-link:hover{color:${C.gold}}
-        .footer-divider{height:1px;background:${C.navy800};margin:2rem 0}
-        .footer-bottom{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:rgba(255,255,255,.6);flex-wrap:wrap;gap:1rem}
-
-        @media(max-width:480px){
-          h1{font-size:1.8rem}
-          h2{font-size:1.4rem}
-          .btn{padding:.65rem 1.1rem;font-size:.65rem}
-          .hero-cta .btn{flex:1}
-          .hero-trust{flex-direction:column;gap:.6rem;font-size:.8rem}
-          .candle-grid{gap:1rem .75rem}
-          .cta-final-buttons{flex-direction:column}
-          .cta-final-buttons .btn{width:100%}
+        .label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.74rem;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: ${C.brass};
         }
+
+        .btn {
+          display: inline-flex; align-items: center; gap: 0.5rem;
+          padding: 0.85rem 1.7rem; font-size: 0.85rem; font-weight: 500;
+          font-family: 'Inter', sans-serif;
+          border: 1px solid transparent; border-radius: 2px;
+          cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
+          letter-spacing: 0.01em;
+        }
+        .btn-dark { background: ${C.ink}; color: ${C.bone}; }
+        .btn-dark:hover { background: #000; }
+        .btn-line { background: transparent; color: ${C.ink}; border-color: ${C.ink}; }
+        .btn-line:hover { background: ${C.ink}; color: ${C.bone}; }
+        .btn-on-dark { background: transparent; color: ${C.bone}; border-color: ${C.lineDark}; }
+        .btn-on-dark:hover { background: rgba(250,248,244,0.08); border-color: rgba(250,248,244,0.4); }
+        .btn-brass { background: ${C.brass}; color: ${C.bone}; }
+        .btn-brass:hover { background: ${C.brassLight}; }
+
+        .wrap { max-width: 1080px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2rem); }
+        .section { padding: clamp(4.5rem, 9vw, 6.5rem) 0; }
+
+        nav {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+          background: rgba(250,248,244,0.92); backdrop-filter: blur(10px);
+          border-bottom: 1px solid ${C.line};
+          padding: 1.15rem 0;
+        }
+        .nav-wrap { display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 0.65rem; font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 500; color: ${C.ink}; cursor: pointer; }
+        .nav-links { display: flex; gap: 2.4rem; }
+        .nav-link { font-size: 0.84rem; color: ${C.gray}; text-decoration: none; cursor: pointer; transition: color 0.2s; }
+        .nav-link:hover { color: ${C.ink}; }
+        .nav-cta { display: flex; gap: 0.75rem; }
+        @media (max-width: 760px) { .nav-links { display: none; } }
+
+        .hero { padding-top: 152px; padding-bottom: clamp(3rem, 6vw, 4rem); position: relative; }
+        .hero-rule { height: 1px; background: ${C.line}; margin-bottom: 2.4rem; }
+        .hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 4rem; align-items: end; }
+        @media (max-width: 860px) { .hero-grid { grid-template-columns: 1fr; gap: 2.2rem; } }
+        .hero-desc { font-size: 1.08rem; max-width: 420px; margin-top: 1.6rem; color: ${C.gray}; }
+        .hero-buttons { display: flex; gap: 0.9rem; margin-top: 2.4rem; flex-wrap: wrap; }
+
+        .frame {
+          aspect-ratio: 4/5; background: ${C.ink}; position: relative; overflow: hidden;
+          border: 1px solid ${C.line};
+        }
+        .frame-grain { position: absolute; inset: 0; opacity: 0.5; background-image: radial-gradient(circle at 30% 20%, rgba(139,115,85,0.18), transparent 55%); }
+        .frame-label { position: absolute; bottom: 1.4rem; left: 1.4rem; right: 1.4rem; display: flex; justify-content: space-between; align-items: baseline; }
+
+        /* Showcase mockups */
+        .mock-frame {
+          background: ${C.ink}; border: 1px solid ${C.line}; padding: 1.6rem 1.7rem 1.8rem;
+          max-width: 420px;
+        }
+        .mock-frame--phone { max-width: 300px; }
+        .mock-topline { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.2rem; }
+        .mock-status {
+          display: inline-block; font-family: 'Fraunces', serif; font-size: 1.3rem; color: ${C.bone};
+          margin-bottom: 1.2rem; font-weight: 500;
+        }
+        .mock-rows { border-top: 1px solid rgba(250,248,244,0.14); }
+        .mock-row {
+          display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+          padding: 0.85rem 0; border-bottom: 1px solid rgba(250,248,244,0.14);
+          font-size: 0.84rem; color: ${C.grayLight};
+        }
+        .mock-action { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: ${C.brassLight}; }
+        .mock-action--pay { color: ${C.bone}; background: ${C.brass}; padding: 0.3rem 0.7rem; }
+
+        .mock-calc-row { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem; }
+        .mock-calc-label { font-size: 0.78rem; color: ${C.grayLight}; }
+        .mock-calc-val { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: ${C.bone}; text-align: right; }
+        .mock-range {
+          -webkit-appearance: none; width: 100%; height: 1px; background: rgba(250,248,244,0.25);
+          outline: none; cursor: pointer;
+        }
+        .mock-range::-webkit-slider-thumb {
+          -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+          background: ${C.brassLight}; cursor: pointer;
+        }
+        .mock-range::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: ${C.brassLight}; border: none; cursor: pointer; }
+        .mock-calc-result {
+          display: flex; justify-content: space-between; align-items: baseline;
+          border-top: 1px solid rgba(250,248,244,0.14); padding-top: 1.1rem; margin-top: 0.6rem;
+        }
+        .mock-result-num { font-family: 'Fraunces', serif; font-size: 1.5rem; color: ${C.bone}; font-weight: 500; }
+
+        .mock-frame--paper { background: ${C.bone2}; border-color: ${C.line}; }
+        .mock-doc-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid ${C.line}; }
+        .mock-doc-line { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid ${C.line}; font-size: 0.85rem; color: ${C.ink}; }
+        .mock-doc-line span:first-child { color: ${C.gray}; }
+        .mock-doc-sign { margin-top: 1.2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: ${C.brass}; }
+
+        .mock-product { display: flex; justify-content: space-between; padding: 0.85rem 0; border-bottom: 1px solid rgba(250,248,244,0.14); font-size: 0.86rem; color: ${C.grayLight}; }
+        .mock-product span:last-child { color: ${C.bone}; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+
+        @media (max-width: 760px) { .mock-frame { max-width: 100%; } }
+
+        .proof { border-top: 1px solid ${C.line}; border-bottom: 1px solid ${C.line}; padding: 2.6rem 0; }
+        .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 640px) { .proof-grid { grid-template-columns: 1fr; gap: 1.6rem; } }
+        .proof-item { text-align: left; padding: 0 1.5rem; border-left: 1px solid ${C.line}; }
+        .proof-item:first-child { border-left: none; padding-left: 0; }
+        @media (max-width: 640px) { .proof-item { border-left: none; padding-left: 0; } }
+        .proof-num { font-family: 'JetBrains Mono', monospace; font-size: 1.9rem; color: ${C.ink}; margin-bottom: 0.3rem; }
+        .proof-cap { font-size: 0.85rem; color: ${C.gray}; }
+
+        .section-head { max-width: 620px; margin-bottom: 1rem; }
+        .section-head p { margin-top: 1rem; font-size: 1.05rem; }
+
+        .dark-section { background: ${C.ink}; color: ${C.grayLight}; }
+        .dark-section h2, .dark-section h3 { color: ${C.bone}; }
+        .dark-section p { color: ${C.grayLight}; }
+
+        .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid ${C.line}; margin-top: 2.6rem; }
+        @media (max-width: 760px) { .pricing-grid { grid-template-columns: 1fr; } }
+        .pricing-col { padding: 2.6rem; }
+        .pricing-col + .pricing-col { border-left: 1px solid ${C.line}; }
+        @media (max-width: 760px) { .pricing-col + .pricing-col { border-left: none; border-top: 1px solid ${C.line}; } }
+        .pricing-col.featured { background: ${C.ink}; }
+        .pricing-col.featured h3, .pricing-col.featured .price { color: ${C.bone}; }
+        .pricing-col.featured .label { color: ${C.brassLight}; }
+        .pricing-col.featured p, .pricing-col.featured li { color: ${C.grayLight}; }
+        .price { font-family: 'Fraunces', serif; font-size: 2.4rem; font-weight: 500; color: ${C.ink}; margin: 0.7rem 0 0.2rem; }
+        .price-period { font-size: 0.85rem; color: ${C.gray}; }
+        .pricing-list { list-style: none; margin: 2rem 0; padding: 0; border-top: 1px solid ${C.line}; }
+        .pricing-col.featured .pricing-list { border-top: 1px solid rgba(250,248,244,0.16); }
+        .pricing-list li { padding: 0.85rem 0; border-bottom: 1px solid ${C.line}; font-size: 0.92rem; display: flex; gap: 0.7rem; }
+        .pricing-col.featured .pricing-list li { border-bottom: 1px solid rgba(250,248,244,0.16); }
+        .pricing-list li::before { content: '—'; color: ${C.brass}; flex-shrink: 0; }
+
+        .showcase-row { display: grid; gap: 3.2rem; align-items: center; padding: 3rem 0; border-top: 1px solid ${C.line}; }
+        @media (max-width: 760px) {
+          .showcase-row { grid-template-columns: 1fr !important; gap: 1.6rem; }
+          .showcase-row > div { order: 0 !important; }
+        }
+
+        .cta-section { background: ${C.verdigris}; color: ${C.bone}; text-align: left; padding: clamp(4rem, 9vw, 5.5rem) 0; }
+        .cta-section h2 { color: ${C.bone}; max-width: 600px; }
+        .cta-section p { color: rgba(250,248,244,0.78); max-width: 480px; margin-top: 1.2rem; font-size: 1.05rem; }
+        .cta-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; flex-wrap: wrap; }
+        .cta-buttons { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+
+        footer { background: ${C.ink}; color: ${C.grayLight}; padding: 3.5rem 0 2rem; }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; padding-bottom: 2.6rem; border-bottom: 1px solid rgba(250,248,244,0.12); }
+        @media (max-width: 700px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; } }
+        .footer-col h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: ${C.brassLight}; margin-bottom: 1.2rem; font-weight: 400; }
+        .footer-link { display: block; font-size: 0.88rem; color: ${C.grayLight}; margin-bottom: 0.7rem; text-decoration: none; cursor: pointer; transition: color 0.2s; }
+        .footer-link:hover { color: ${C.bone}; }
+        .footer-bottom { display: flex; justify-content: space-between; font-size: 0.78rem; color: rgba(250,248,244,0.45); padding-top: 1.6rem; flex-wrap: wrap; gap: 0.8rem; }
+
+        @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
       `}</style>
 
+      {/* Navigation */}
       <nav>
         <div className="wrap nav-wrap">
-          <div className="logo" onClick={()=>window.scrollTo({top:0,behavior:'smooth'})}>
-            <span className="logo-dot"/>
-            <span>Rest Point</span>
-          </div>
+          <div className="logo"><Mark size={22} /><span>Rest Point</span></div>
           <div className="nav-links">
-            <a href="#features" className="nav-link">Platform</a>
-            <a href="#dispatch" className="nav-link">Dispatch</a>
-            <a href="#family" className="nav-link">Family Portal</a>
-            <a href="#storefront" className="nav-link">Storefront</a>
+            <a href="#capabilities" className="nav-link">Capabilities</a>
             <a href="#pricing" className="nav-link">Pricing</a>
+            <a href="#faq" className="nav-link">Questions</a>
           </div>
           <div className="nav-cta">
-            <><button className="btn btn-text" onClick={goLogin}>Log In</button><button className="btn btn-primary" onClick={goStart}>Start Free Trial {Icons.arrow}</button></>
+            <button className="btn btn-line" onClick={goLogin} style={{ padding: '0.65rem 1.3rem', fontSize: '0.8rem' }}>Log in</button>
+            <button className="btn btn-dark" onClick={goStart} style={{ padding: '0.65rem 1.3rem', fontSize: '0.8rem' }}>Request access</button>
           </div>
-          <button className="hamburger" onClick={()=>setMobileOpen(!mobileOpen)}>{mobileOpen?Icons.close:Icons.menu}</button>
         </div>
       </nav>
 
-      <div className={`mobile-overlay ${mobileOpen?'open':''}`} onClick={()=>setMobileOpen(false)}/>
-        <div className={`mobile-menu ${mobileOpen?'open':''}`}>
-          <a href="#features" className="mobile-link" onClick={()=>setMobileOpen(false)}>Platform</a>
-          <a href="#dispatch" className="mobile-link" onClick={()=>setMobileOpen(false)}>Dispatch</a>
-          <a href="#family" className="mobile-link" onClick={()=>setMobileOpen(false)}>Family Portal</a>
-          <a href="#storefront" className="mobile-link" onClick={()=>setMobileOpen(false)}>Storefront</a>
-          <a href="#pricing" className="mobile-link" onClick={()=>setMobileOpen(false)}>Pricing</a>
-          <div className="mobile-cta">
-            <>
-              <button className="btn btn-secondary" style={{width:'100%',justifyContent:'center',marginBottom:'.5rem'}} onClick={()=>{setMobileOpen(false);goLogin()}}>Log In</button>
-              <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={()=>{setMobileOpen(false);goStart()}}>Start Free Trial {Icons.arrow}</button>
-            </>
-          </div>
-        </div>
-
-      <main style={{paddingTop:'60px'}}>
+      <main>
         {/* HERO */}
         <section className="hero">
           <div className="wrap">
-            <div className="hero-inner">
-              <div className="hero-text">
-                <div className="eyebrow anim-1">{Icons.star} Modern Funeral Home Management</div>
-                <h1 className="anim-2">One platform.<br/>Complete peace of mind.</h1>
-                <p className="anim-3">Manage funeral operations, serve families through a dedicated portal, track dispatch with fuel estimation, create documents with integrated tools, and grow revenue through our storefront—all in one secure platform built for compassion and excellence.</p>
-                <div className="hero-cta anim-4">
-                  <button className="btn btn-primary" onClick={goStart}>{isLoggedIn?'Dashboard':'Start Free Trial'} {Icons.arrow}</button>
-                  <button className="btn btn-gold" onClick={goPortal}>Family Portal {Icons.arrow}</button>
-                </div>
-                <div className="hero-trust anim-5">
-                  <div className="hero-trust-item"><span className="trust-icon">{Icons.check}</span>30-day free trial</div>
-                  <div className="hero-trust-item"><span className="trust-icon">{Icons.check}</span>No credit card needed</div>
-                  <div className="hero-trust-item"><span className="trust-icon">{Icons.check}</span>Full onboarding support</div>
+            <div style={{
+              opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(14px)',
+              transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)'
+            }}>
+              <div className="label" style={{ marginBottom: '1.4rem' }}>Funeral home operating system — est. partners across East Africa</div>
+              <div className="hero-rule" />
+            </div>
+            <div className="hero-grid">
+              <div style={{
+                opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(18px)',
+                transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1) 100ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) 100ms'
+              }}>
+                <h1>A record worthy of the families you serve.</h1>
+                <p className="hero-desc">
+                  Rest Point is the system of record for funeral homes that take their reputation seriously — case management, family communication, dispatch, and billing, run with the same care you bring to every service.
+                </p>
+                <div className="hero-buttons">
+                  <button className="btn btn-dark" onClick={goStart}>Request access</button>
+                  <button className="btn btn-line" onClick={goLogin}>See how it works</button>
                 </div>
               </div>
-              <div className="hero-image anim-scale">
-                <div className="dashboard-shell">
-                  <div className="chrome">
-                    <div style={{display:'flex',gap:'.4rem'}}><div className="dot d-red"/><div className="dot d-yellow"/><div className="dot d-green"/></div>
-                    <div className="url">restpoint.app/dashboard</div>
+              <div style={{
+                opacity: loaded ? 1 : 0, transform: loaded ? 'scale(1)' : 'scale(0.97)',
+                transition: 'opacity 0.9s cubic-bezier(0.16,1,0.3,1) 180ms, transform 0.9s cubic-bezier(0.16,1,0.3,1) 180ms'
+              }}>
+                <div className="frame">
+                  <div className="frame-grain" />
+                  <div className="frame-label">
+                    <span className="label" style={{ color: C.brassLight }}>Case No. 0142</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.5)' }}>Status — Arranged</span>
                   </div>
-                  <div className="dash-img" style={{minHeight:'auto',position:'relative'}}>
-                    <ImageWithFallback src="/landing.png" alt="Rest Point Dashboard" style={{borderRadius:'0 0 12px 12px'}}
-                      fallbackContent='<div style="padding:3rem;text-align:center;background:linear-gradient(135deg,#F3F4F6,#F9FAFB)"><div style="font-size:2.5rem;margin-bottom:1rem">📊</div><div style="color:#6B7280;font-family:Inter,sans-serif">Rest Point Dashboard</div></div>'/>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* FEATURES */}
-        <section id="features" className="section features-section">
+        {/* Proof */}
+        <section className="proof">
           <div className="wrap">
-            <div className="features-header">
-              <div className="eyebrow" style={{justifyContent:'center'}}>{Icons.zap} Core Platform</div>
-              <h2>Everything Your Funeral Home Needs</h2>
-              <p>Nine integrated modules designed around the real workflows of modern funeral homes.</p>
-            </div>
-            <div className="features-grid">
-              {FEATURES.map((f,i)=>(
-                <div key={i} className="feature-card" style={{'--card-gradient':f.gradient,'--card-bg':f.gradient,'--card-shadow':f.color+'40',animation:`slideUp 0.6s ease ${i*0.08}s both`}}>
-                  <div className="feature-icon">{f.icon}</div>
-                  <h3>{f.title}</h3>
-                  <p>{f.desc}</p>
-                </div>
-              ))}
+            <div className="proof-grid">
+              <div className="proof-item">
+                <div className="proof-num">100+</div>
+                <div className="proof-cap">Funeral homes on Rest Point</div>
+              </div>
+              <div className="proof-item">
+                <div className="proof-num">50,000+</div>
+                <div className="proof-cap">Families served through the platform</div>
+              </div>
+              <div className="proof-item">
+                <div className="proof-num">99.9%</div>
+                <div className="proof-cap">Platform uptime, every month</div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* DISPATCH & FUEL TRACKING */}
-        <section id="dispatch" className="section dispatch-section">
+        {/* Capabilities — ledger style */}
+        <section id="capabilities" className="section">
           <div className="wrap">
-            <div className="dispatch-inner">
-              <div className="dispatch-text">
-                <div className="eyebrow">{Icons.truck} Dispatch & Fuel Tracking</div>
-                <h2>Track Every Kilometer. Estimate Every Fuel Cost.</h2>
-                <p>GPS-enabled dispatch tracking with intelligent fuel consumption estimation. Know exactly how much fuel your hearses consume based on distance, vehicle type, and current fuel prices — so you can bill accurately and reduce operational guesswork.</p>
-                <div className="dispatch-benefits">
-                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.gps}</span><div><strong>Real-Time GPS Tracking</strong> — Live location of every hearse. Families get arrival alerts automatically.</div></div>
-                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.fuel}</span><div><strong>Smart Fuel Estimation</strong> — Calculate distance from funeral home to dispatch destination and estimate fuel consumption in real-time.</div></div>
-                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.route}</span><div><strong>Route Optimization</strong> — Find the most efficient route. Reduce fuel costs and response times by up to 30%.</div></div>
-                  <div className="dispatch-benefit"><span className="dispatch-check">{Icons.dollar}</span><div><strong>Fuel Cost Billing</strong> — Automatically include fuel costs in dispatch charges. Accurate, transparent billing for families.</div></div>
-                </div>
-                <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={goStart}>Learn More {Icons.arrow}</button></div>
+            <Reveal>
+              <div className="section-head">
+                <div className="label" style={{ marginBottom: '0.9rem' }}>The register</div>
+                <h2>Six entries. One system of record.</h2>
+                <p>Everything a funeral home runs on, kept in one place — built around how your team actually works, not how software usually expects you to.</p>
               </div>
-              <div className="dispatch-image">
-                <ImageWithFallback src="/location.png" alt="GPS Dispatch & Fuel Tracking"
-                  fallbackContent='<div style="padding:3rem;text-align:center;color:#6B7280"><div style="font-size:3rem;margin-bottom:1rem">🗺️</div><div style="font-weight:600;margin-bottom:.5rem">GPS Dispatch & Fuel Tracking</div><div style="font-size:.85rem">Real-time hearse location & fuel estimation</div></div>'/>
-              </div>
+            </Reveal>
+
+            <div>
+              <LedgerEntry no="01" delay={0}
+                title="Case management"
+                desc="Every service tracked from first call to final arrangements, with a clear record of who did what, and when." />
+              <LedgerEntry no="02" delay={40}
+                title="Family portal"
+                desc="Families follow progress, review documents, and pay invoices through a private SMS link — no app, no account to remember." />
+              <LedgerEntry no="03" delay={80}
+                title="Dispatch & fleet"
+                desc="GPS tracking and fuel estimation for every hearse movement, so the cost of a service is known before it's billed." />
+              <LedgerEntry no="04" delay={120}
+                title="Documents"
+                desc="Permits, certificates, and invoices generated from templates your home already trusts, ready to sign in minutes." />
+              <LedgerEntry no="05" delay={160}
+                title="Team & roles"
+                desc="Directors, drivers, and embalmers work from a shared calendar with permissions matched to their responsibility." />
+              <LedgerEntry no="06" delay={200}
+                title="Storefront"
+                desc="Caskets, packages, and memorial keepsakes sold directly to families, with full revenue kept by your home." />
             </div>
           </div>
         </section>
 
-        {/* FAMILY PORTAL */}
-        <section id="family" className="section family-section">
+        {/* Showcase — four capabilities in detail with live mockups */}
+        <section className="section" style={{ paddingTop: 0 }}>
           <div className="wrap">
-            <div className="family-inner">
-              <div className="family-text">
-                <div className="eyebrow">{Icons.heart} Family Portal</div>
-                <h2>Keep Families Connected & Informed</h2>
-                <p>Your families receive a secure SMS link—no app download required. They can view documents, track case progress, receive billing, make payments, and communicate with your team—all from their phone.</p>
-                <div className="family-benefits">
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Instant Communication</strong> — Automated SMS updates at every milestone</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Document Access</strong> — Families download permits, certificates, and invoices</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Secure Billing</strong> — View invoices and pay via M-PESA, card, or bank. Avoid billing calls.</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Memorial Tributes</strong> — Light candles and leave messages of remembrance</div></div>
-                </div>
-                <div style={{marginTop:'1.5rem'}}><button className="btn btn-primary" onClick={goPortal}>Access Family Portal {Icons.arrow}</button></div>
+            <Reveal>
+              <div className="section-head">
+                <div className="label" style={{ marginBottom: '0.9rem' }}>A closer look</div>
+                <h2>Four entries, opened up.</h2>
+                <p>The parts families and finance teams actually touch — shown as they run, not described from a distance.</p>
               </div>
-              <div className="family-image">
-                <ImageWithFallback src="/familyportal.png" alt="Family Portal"
-                  fallbackContent='<div style="padding:3rem;text-align:center">👨‍👩‍👧‍👦 Family Portal</div>'/>
-              </div>
-            </div>
+            </Reveal>
+
+            <Showcase no="02" title="Family portal"
+              desc="One private link, sent by SMS, gives a family everything they need: live status, downloadable documents, and a way to settle the balance. No app to install, no password to lose.">
+              <MockPortal />
+            </Showcase>
+
+            <Showcase no="03" title="Dispatch & fuel" reverse
+              desc="Every hearse movement is logged with distance and a fuel rate, so the estimated cost of a trip is known before the bill is written. Try the calculator — drag the distance or the fuel rate and watch the estimate update.">
+              <MockDispatch />
+            </Showcase>
+
+            <Showcase no="04" title="Document editor"
+              desc="Permits, certificates, and invoices are generated from templates already familiar to your team, with the fields that matter laid out clearly and ready for signature.">
+              <MockDocument />
+            </Showcase>
+
+            <Showcase no="06" title="Storefront" reverse
+              desc="List caskets, service packages, and memorial keepsakes for families to purchase directly. Every shilling of that revenue stays with your home — there is no commission on sales.">
+              <MockStorefront />
+            </Showcase>
           </div>
         </section>
 
-        {/* STOREFRONT / MARKETPLACE */}
-        <section id="storefront" className="section marketplace-section">
+        {/* Dark statement section */}
+        <section className="section dark-section">
+          <div className="wrap" style={{ maxWidth: '720px' }}>
+            <Reveal>
+              <div className="label" style={{ color: C.brassLight, marginBottom: '1.4rem' }}>Why it's built this way</div>
+              <h2 style={{ fontStyle: 'italic', fontWeight: 500 }}>
+                Families remember how they were treated long after they forget what was said. The systems behind that care should be just as deliberate.
+              </h2>
+              <p style={{ marginTop: '1.6rem', maxWidth: '560px' }}>
+                Rest Point exists because the software available to funeral homes was built for everything except funeral homes. We built the register first, and the features around it.
+              </p>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="section">
           <div className="wrap">
-            <div className="marketplace-inner">
-              <div className="marketplace-text">
-                <div className="eyebrow">{Icons.shop} Funeral Home Storefront</div>
-                <h2>A Place for Funeral Homes to Sell</h2>
-                <p>Turn your funeral home into a complete service center. Your dedicated storefront lets families browse and purchase coffins, caskets, funeral packages, memorial keepsakes, and floral arrangements — directly from your home. No third-party commissions.</p>
-                <div className="family-benefits">
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Your Products, Your Brand</strong> — List coffins, caskets, and funeral merchandise with custom pricing. Families browse your full catalog.</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>Built-in Order Management</strong> — Track orders from placement to delivery. Manage inventory, receive payments, and generate invoices.</div></div>
-                  <div className="benefit-item"><span className="benefit-check">✓</span><div><strong>New Revenue Stream</strong> — Sell funeral packages, memorial keepsakes, flowers, and more. You keep 100% of the revenue.</div></div>
+            <Reveal>
+              <div className="section-head">
+                <div className="label" style={{ marginBottom: '0.9rem' }}>Account types</div>
+                <h2>Two ways to hold an account.</h2>
+                <p>One rate, billed monthly. No setup tricks, no commissions on family payments.</p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={100}>
+              <div className="pricing-grid">
+                <div className="pricing-col">
+                  <div className="label">Single branch</div>
+                  <div className="price">KES 9,500</div>
+                  <div className="price-period">per month</div>
+                  <ul className="pricing-list">
+                    <li>One location</li>
+                    <li>Family portal by SMS</li>
+                    <li>Standard billing & invoicing</li>
+                    <li>Email support</li>
+                    <li>All core capabilities</li>
+                  </ul>
+                  <button className="btn btn-line" onClick={goStart} style={{ width: '100%', justifyContent: 'center' }}>Get started</button>
                 </div>
-                <div style={{marginTop:'1.5rem'}}>
-                  <button className="btn btn-primary" onClick={()=>navigate('/marketplace')}>Browse Storefront {Icons.arrow}</button>
+                <div className="pricing-col featured">
+                  <div className="label">Multi-branch</div>
+                  <div className="price">KES 18,500</div>
+                  <div className="price-period">per month</div>
+                  <ul className="pricing-list">
+                    <li>Unlimited branches and records</li>
+                    <li>Dispatch tracking & fuel estimation</li>
+                    <li>Storefront marketplace</li>
+                    <li>Priority support, 24 hours</li>
+                    <li>A dedicated account manager</li>
+                  </ul>
+                  <button className="btn btn-brass" onClick={goStart} style={{ width: '100%', justifyContent: 'center' }}>Request access</button>
                 </div>
               </div>
-              <div className="marketplace-image">
-                <ImageWithFallback src="/storefront.png" alt="Funeral Home Storefront"
-                  fallbackContent='<div style="padding:3rem;text-align:center;color:#6B7280;min-height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:4rem;margin-bottom:1rem">🏪</div><div style="font-size:1.2rem;font-weight:600;margin-bottom:.5rem">Funeral Home Storefront</div><div style="font-size:.9rem">Sell coffins, caskets & funeral packages</div></div>'/>
-              </div>
-            </div>
+            </Reveal>
+            <Reveal delay={160}>
+              <p style={{ marginTop: '1.6rem', fontSize: '0.88rem' }}>
+                Setup and onboarding: KES 1,000, one time. Thirty-day trial. No card required to start.
+              </p>
+            </Reveal>
           </div>
         </section>
 
-        {/* SECURITY */}
-        <section id="security" className="section security-section">
+        {/* FAQ */}
+        <section id="faq" className="section" style={{ paddingTop: 0 }}>
+          <div className="wrap" style={{ maxWidth: '720px' }}>
+            <Reveal>
+              <div className="section-head">
+                <div className="label" style={{ marginBottom: '0.9rem' }}>Questions</div>
+                <h2>What homes ask before they switch.</h2>
+              </div>
+            </Reveal>
+            <Reveal delay={80}>
+              <div>
+                <FAQItem q="How long does it take to get running?" a="Most homes are fully operating within two to three days. We handle onboarding and train your team directly, on your own cases." />
+                <FAQItem q="Is our data secure?" a="Yes. Infrastructure is SOC 2 compliant, with encryption at rest and in transit, and access controlled by role." />
+                <FAQItem q="Can we bring our existing records over?" a="Yes, at no extra cost. Migration is handled by our team with no downtime and no loss of historical records." />
+                <FAQItem q="Do families need to install anything?" a="No. Families receive a private link by SMS and use it in any browser — nothing to download, no account to create." />
+                <FAQItem q="What support is included?" a="Every account includes email support. Multi-branch accounts add 24-hour priority support and a named account manager." />
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="cta-section">
           <div className="wrap">
-            <div className="security-inner">
-              <div className="security-text">
-                <div className="eyebrow">{Icons.shield} Enterprise Security</div>
-                <h2>Your Data. Protected. Always.</h2>
-                <p>We take data security seriously. Your funeral home's sensitive information — including postmortem reports, autopsy findings, medical records, and families' personal data — are protected by enterprise-grade security infrastructure.</p>
-                <div className="security-items" style={{marginTop:'2rem'}}>
-                  <div className="security-item"><div className="security-icon">{Icons.lock}</div><div><h4>Contobo Security Family</h4><p>Enterprise-grade encryption at rest and in transit. SOC 2 compliant infrastructure with multi-layered security controls.</p></div></div>
-                  <div className="security-item"><div className="security-icon">{Icons.shield}</div><div><h4>Role-Based Access Control</h4><p>Granular permissions for directors, managers, staff, and families. Every action is logged with complete audit trails.</p></div></div>
-                  <div className="security-item"><div className="security-icon">{Icons.file}</div><div><h4>Critical Data Protection</h4><p>Postmortem reports, autopsy results, cause of death, medical history, and identification documents are encrypted and automatically masked.</p></div></div>
-                  <div className="security-item"><div className="security-icon">{Icons.globe}</div><div><h4>Disaster Recovery</h4><p>Automated daily backups, multi-region redundancy, and 99.9% uptime SLA.</p></div></div>
+            <Reveal>
+              <div className="cta-row">
+                <div>
+                  <h2>Ready to put your home's record in order?</h2>
+                  <p>Join the funeral homes across Kenya and East Africa already running on Rest Point.</p>
+                </div>
+                <div className="cta-buttons">
+                  <button className="btn btn-brass" onClick={goStart}>Request access</button>
+                  <button className="btn btn-on-dark" onClick={goLogin}>Schedule a demo</button>
                 </div>
               </div>
-              <div className="security-image">
-                <ImageWithFallback src="/cloud.png" alt="Enterprise Security"
-                  fallbackContent='<div style="padding:3rem;text-align:center;color:#6B7280">🔒 Enterprise Security</div>'/>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* MEMORIAL */}
-        <section className="section memorial-section">
-          <div className="wrap">
-            <div className="memorial-inner">
-              <div style={{marginBottom:'1.5rem'}}>
-                <div className="eyebrow" style={{color:C.gold,justifyContent:'center'}}>{Icons.flame} Global Memorial Board</div>
-                <h2 style={{color:'#fff'}}>Light a Candle. Leave a Memory.</h2>
-              </div>
-              <p className="memorial-quote">"Every life leaves a mark. Join our global community in honoring those we've loved and lost."</p>
-              <div className="candle-input-row">
-                <input className="candle-input" placeholder="Your name..." value={candleName} onChange={e=>setCandleName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){const idx=candles.findIndex(c=>!c.lit);if(idx>=0)lightCandle(idx)}}}/>
-              </div>
-              <div className="candle-grid">
-                {candles.map((c,i)=><Candle key={i} {...c} delay={i*80} onLight={()=>lightCandle(i)}/>)}
-              </div>
-              <div className="candle-counter">
-                <span>{litCount}</span> lights burning <span style={{opacity:.5}}>•</span> Join the community
-              </div>
-              <div className="memorial-cta">
-                <h3>Create a Memorial Page</h3>
-                <p>Funeral homes can create dedicated memorial pages for each family, allowing friends and relatives worldwide to participate, share memories, and offer support.</p>
-                <button className="btn btn-gold" onClick={goStart}>Learn More {Icons.arrow}</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* PRICING */}
-        <section id="pricing" className="section pricing-section">
-          <div className="wrap">
-            <div style={{textAlign:'center',marginBottom:'3rem'}}>
-              <div className="eyebrow" style={{justifyContent:'center'}}>Simple Pricing</div>
-              <h2 style={{color:C.navy900}}>Transparent Pricing. No Hidden Fees.</h2>
-              <p style={{color:C.char600,marginTop:'1rem'}}>One-time setup fee. Cancel anytime. Full onboarding support included.</p>
-            </div>
-            <div className="pricing-grid">
-              <div className="pricing-card">
-                <div className="pricing-label">Single Tenant</div>
-                <div className="pricing-amount">KES 9,500</div>
-                <div className="pricing-period">per month</div>
-                <div className="pricing-divider"/>
-                {['One branch / location','Family Portal SMS','Basic Billing & Invoicing','Standard Support','All Core Features'].map((f,i)=>(
-                  <div key={i} className="pricing-item"><span style={{color:C.emerald,flexShrink:0}}>{Icons.check}</span>{f}</div>
-                ))}
-                <button className="btn btn-secondary pricing-cta" onClick={goStart}>Get Started {Icons.arrow}</button>
-              </div>
-              <div className="pricing-card featured">
-                <div className="pricing-badge">MOST POPULAR</div>
-                <div className="pricing-label">Multi-Tenant</div>
-                <div className="pricing-amount">KES 18,500</div>
-                <div className="pricing-period">per month</div>
-                <div className="pricing-divider"/>
-                {['Unlimited branches & locations','Unlimited deceased records','Advanced Analytics & Reports','Custom Compliance Settings','GPS Dispatch & Fuel Tracking','Storefront Marketplace','24/7 Priority Support','Dedicated Account Manager','No Limitations'].map((f,i)=>(
-                  <div key={i} className="pricing-item"><span style={{color:C.emerald,flexShrink:0}}>{Icons.check}</span>{f}</div>
-                ))}
-                <button className="btn btn-primary pricing-cta" onClick={goStart}>Start Free Trial {Icons.arrow}</button>
-              </div>
-            </div>
-            <div style={{textAlign:'center',marginTop:'2rem',fontSize:'.85rem',color:C.char600}}>
-              <span style={{fontWeight:600,color:C.navy900}}>One-time Setup & Training Fee: KES 1,000</span>
-              <span style={{display:'block',marginTop:'.25rem'}}>Account reactivation after suspension: KES 1,000</span>
-            </div>
-            <div style={{maxWidth:'900px',margin:'2rem auto 0',padding:'1.5rem',background:'#fff',borderRadius:'12px',border:'1px solid #E5E7EB'}}>
-              <h4 style={{textAlign:'center',color:'#0A1F3D',marginBottom:'1rem',fontSize:'1rem'}}>Additional Services</h4>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))',gap:'1rem',fontSize:'.85rem'}}>
-                <div style={{padding:'.75rem',background:'#F9FAFB',borderRadius:'8px'}}>
-                  <div style={{fontWeight:600,color:'#0A1F3D',marginBottom:'.25rem'}}>☁️ Google Drive Backup</div>
-                  <div style={{color:'#6B7280'}}>Automatic daily encrypted backups to your Google Drive</div>
-                </div>
-                <div style={{padding:'.75rem',background:'#F9FAFB',borderRadius:'8px'}}>
-                  <div style={{fontWeight:600,color:'#0A1F3D',marginBottom:'.25rem'}}>🎓 Staff Training</div>
-                  <div style={{color:'#6B7280'}}><strong>KES 10,000 per branch</strong> — Hands-on sessions & certification</div>
-                </div>
-                <div style={{padding:'.75rem',background:'#F9FAFB',borderRadius:'8px',border:'1px solid #10B981'}}>
-                  <div style={{fontWeight:600,color:'#0A1F3D',marginBottom:'.25rem'}}>📊 Data Migration</div>
-                  <div style={{color:'#6B7280'}}><strong>KES 2,000 per branch</strong></div>
-                  <div style={{color:'#059669',fontWeight:600,marginTop:'.25rem'}}>✓ Zero downtime, zero data loss guarantee</div>
-                  <div style={{color:'#6B7280',fontSize:'.8rem',marginTop:'.25rem'}}>We handle everything—no worries about your data</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FINAL CTA */}
-        <section className="cta-final">
-          <div className="cta-final-inner">
-            <h2>Ready to Transform Your Funeral Home Operations?</h2>
-            <p>Join 100+ funeral homes across Kenya and East Africa already using Rest Point to streamline operations, serve families better, track dispatch costs, and grow their business.</p>
-            <div className="cta-final-buttons">
-              <button className="btn btn-gold" onClick={goStart}>{isLoggedIn?'Go to Dashboard':'Start Free Trial'} {Icons.arrow}</button>
-              <button className="btn btn-outline-light" onClick={goLogin}>Schedule a Demo {Icons.arrow}</button>
-            </div>
+            </Reveal>
           </div>
         </section>
       </main>
 
+      {/* Footer */}
       <footer>
         <div className="wrap">
           <div className="footer-grid">
-            <div className="footer-col" style={{gridColumn:'1 / -1'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'.5rem',marginBottom:'1rem'}}><div className="logo-dot"/><h4 style={{margin:0}}>Rest Point</h4></div>
-              <p style={{maxWidth:'600px'}}>Enterprise funeral home management platform built for compassion, compliance, and growth. Built by <span style={{color:C.gold}}>Welt Tallis Technologies</span>.</p>
-              <div style={{display:'flex',gap:'1rem',marginTop:'1.25rem'}}>
-                {[{l:'Twitter',p:'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z'},{l:'Facebook',p:'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'},{l:'LinkedIn',p:'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'},{l:'Instagram',p:'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z'}].map((s,i)=>(
-                  <a key={i} href="#" style={{color:'rgba(255,255,255,.6)',transition:'color .2s',cursor:'pointer'}} onMouseEnter={e=>e.target.style.color=C.gold} onMouseLeave={e=>e.target.style.color='rgba(255,255,255,.6)'} title={s.l}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d={s.p}/></svg>
-                  </a>
-                ))}
+            <div className="footer-col">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+                <Mark size={20} color={C.bone} />
+                <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.1rem', color: C.bone }}>Rest Point</span>
               </div>
+              <p style={{ maxWidth: '320px', fontSize: '0.88rem' }}>The operating system for funeral homes that take their reputation seriously. Built by Welt Tallis Technologies.</p>
             </div>
             <div className="footer-col">
               <h4>Platform</h4>
-              <a href="#features" className="footer-link">Features</a>
-              <a href="#storefront" className="footer-link">Storefront</a>
-              <a href="#security" className="footer-link">Security</a>
+              <a href="#capabilities" className="footer-link">Capabilities</a>
               <a href="#pricing" className="footer-link">Pricing</a>
-              <a className="footer-link" onClick={()=>navigate('/register')}>Start Free Trial</a>
-            </div>
-            <div className="footer-col">
-              <h4>Services</h4>
-              <a href="#dispatch" className="footer-link">Dispatch & Fuel Tracking</a>
-              <a href="#family" className="footer-link">Family Portal</a>
-              <a className="footer-link" onClick={()=>navigate('/marketplace')}>Marketplace</a>
-              <a className="footer-link" onClick={()=>document.querySelector('.memorial-section')?.scrollIntoView({behavior:'smooth'})}>Memorial Board</a>
+              <a href="#faq" className="footer-link">Questions</a>
             </div>
             <div className="footer-col">
               <h4>Company</h4>
-              <a className="footer-link" onClick={()=>navigate('/about')}>About Us</a>
-              <a className="footer-link" onClick={()=>navigate('/contact')}>Contact</a>
-              <a className="footer-link" onClick={()=>navigate('/privacy')}>Privacy Policy</a>
-              <a className="footer-link" onClick={()=>navigate('/terms')}>Terms of Service</a>
-              <a className="footer-link" onClick={()=>navigate('/why-us')}>Why Us</a>
-              <a className="footer-link" href="mailto:info@restpoint.co.ke">info@restpoint.co.ke</a>
+              <a className="footer-link">About</a>
+              <a className="footer-link" href="mailto:info@restpoint.co.ke">Contact</a>
+              <a className="footer-link">Privacy policy</a>
+              <a className="footer-link">Terms</a>
             </div>
           </div>
-          <div className="footer-divider"/>
           <div className="footer-bottom">
-            <div>© 2024 Rest Point by Welt Tallis Technologies. All rights reserved.</div>
-            <div style={{display:'flex',gap:'.5rem',alignItems:'center'}}>
-              <span style={{width:'6px',height:'6px',borderRadius:'50%',background:C.emerald,display:'inline-block'}}/>
-              Built with compassion for funeral professionals across Africa.
-            </div>
+            <div>© 2026 Rest Point. All rights reserved.</div>
+            <div>Built for African funeral professionals</div>
           </div>
         </div>
       </footer>

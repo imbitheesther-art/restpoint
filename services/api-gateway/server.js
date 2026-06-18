@@ -86,7 +86,7 @@ app.use(cors({
     var allowed = [
       'https://restpoint.co.ke',
       'https://app.restpoint.co.ke',
-      'https://api.restpoint.co.ke',
+      'https://portal.restpoint.co.ke',
     ];
     if (allowed.indexOf(origin) >= 0) return cb(null, true);
     return cb(new Error('Origin not allowed: ' + origin));
