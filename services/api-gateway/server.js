@@ -197,12 +197,20 @@ app.use(function(req, res, next) {
 });
 
 // =============================================================================
-// PROXY
+// PROXY - FIXED VERSION
 // =============================================================================
 function createProxy(target) {
   var parts = new URL(target);
   return function(req, res) {
     var path = req.originalUrl || req.url || '/';
+    
+    // FIX: Strip /api prefix before forwarding to backend services
+    // Backend services expect routes like /v1/restpoint/auth/login
+    // not /api/v1/restpoint/auth/login
+    if (path.startsWith('/api/')) {
+      path = path.substring(4); // Remove '/api' prefix
+    }
+    
     var opts = {
       hostname: parts.hostname,
       port: parts.port,
