@@ -17,7 +17,6 @@
 	visitors-up visitors-down visitors-logs \
 	bodycheckout-up bodycheckout-down bodycheckout-logs \
 	extra-up extra-down extra-logs \
-	updates-up updates-down updates-logs \
 	call-up call-down call-logs \
 	portal-up portal-down portal-logs \
 	chemical-up chemical-down chemical-logs \
@@ -288,19 +287,6 @@ extra-down: ## Stop extra-services
 
 extra-logs: ## Show extra-services logs
 	docker compose logs -f extra-services
-
-# ============================================
-# UPDATES SERVICE
-# ============================================
-
-updates-up: ## Start updates-service only
-	docker compose up -d updates-service
-
-updates-down: ## Stop updates-service
-	docker compose stop updates-service
-
-updates-logs: ## Show updates-service logs
-	docker compose logs -f updates-service
 
 # ============================================
 # CALL SERVICE
