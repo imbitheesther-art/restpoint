@@ -14,7 +14,9 @@ import { createClient, RedisClientType, RedisModules, RedisFunctions, RedisScrip
 
 type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
 
-const DEFAULT_REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const DEFAULT_REDIS_URL = process.env.REDIS_URL || process.env.REDIS_HOST
+  ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`
+  : 'redis://redis:6379';
 const DEFAULT_TTL_SECONDS = parseInt(process.env.REDIS_DEFAULT_TTL || '3600', 10); // 1 hour
 
 // ─── Client Pool ───────────────────────────────────────────────────────────

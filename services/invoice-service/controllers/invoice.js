@@ -6,9 +6,9 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 
-const { AppError } = require('../../middlewares/errorHandler/errorHandler');
+const { AppError } = require('../middlewares/errorHandler');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/src/timestamps');
+const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
 
 
 const invoiceCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });

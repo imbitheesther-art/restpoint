@@ -11,7 +11,9 @@ const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.SOCKET_PORT || 8010;
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+const REDIS_URL = process.env.REDIS_URL || process.env.REDIS_HOST 
+  ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`
+  : "redis://redis:6379";
 
 const io = new Server(server, {
   cors: {

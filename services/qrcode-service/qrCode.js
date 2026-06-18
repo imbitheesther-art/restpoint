@@ -1,6 +1,6 @@
 const QRCode = require('qrcode');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/src/timestamps');
+const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
 
 async function generateQRCodeForDeceased(deceasedId) {
   try {

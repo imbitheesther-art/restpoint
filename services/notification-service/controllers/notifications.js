@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { safeTenantQuery, safeMasterQuery } = require('../../../shared/dbConfig');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/src/timestamps');
+const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
 
 const SOCKETIO_URL = process.env.SOCKETIO_SERVICE_URL || 'http://localhost:8010';
 
