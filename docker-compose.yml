@@ -1,6 +1,48 @@
 version: "3.8"
 
 services:
+  # ============================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================
+  mariadb:
+    image: mariadb:10.11
+    container_name: restpoint_mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-RestPoint2024!}
+      MARIADB_DATABASE: ${DB_NAME:-restpoint_main}
+      MARIADB_USER: ${DB_USER:-restpoint_user}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: restpoint_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RestPointRedis2024}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-RestPointRedis2024}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: restpoint_rabbitmq
@@ -9,8 +51,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-restpoint}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-RestPointRabbit2024}
     ports:
-      - "${RABBITMQ_EXTERNAL_PORT:-5673}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
+      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -21,15 +63,9 @@ services:
       timeout: 5s
       retries: 5
 
-networks:
-  restpoint:
-    driver: bridge
-    name: restpoint
-
-volumes:
-  rabbitmq_data:
-    driver: local
-
+  # ============================================
+  # CORE MICROSERVICES
+  # ============================================
   api-gateway:
     build:
       context: .
@@ -45,6 +81,8 @@ volumes:
       NODE_ENV: production
       PORT: 5000
     depends_on:
+      redis:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -64,6 +102,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -82,11 +125,18 @@ volumes:
       NODE_ENV: production
       PORT: 5000
     depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
       - restpoint
 
+  # ============================================
+  # BUSINESS SERVICES
+  # ============================================
   deceased-service:
     build:
       context: .
@@ -101,6 +151,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -118,6 +173,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -135,6 +195,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -152,6 +217,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -169,6 +239,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -203,6 +278,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -213,13 +293,18 @@ volumes:
     container_name: restpoint_calender_service
     restart: unless-stopped
     ports:
-      - "${CALENDER_SERVICE_EXTERNAL_PORT:-5010}:5000"
+      - "${CALENDAR_SERVICE_EXTERNAL_PORT:-5010}:5000"
     env_file:
       - .env
       - services/calender-service/.env
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -318,6 +403,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -335,6 +425,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -429,6 +524,11 @@ volumes:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - restpoint
 
@@ -444,7 +544,7 @@ volumes:
       - .env
     depends_on:
       api-gateway:
-        condition: service_healthy
+        condition: service_started
     networks:
       - restpoint
     healthcheck:
@@ -460,5 +560,9 @@ networks:
     name: restpoint
 
 volumes:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
   rabbitmq_data:
     driver: local

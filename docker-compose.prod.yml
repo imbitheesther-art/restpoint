@@ -1,139 +1,268 @@
-version: '3.8'
+version: "3.8"
+
+# Production-Grade Docker Compose
+# Features: Resource limits, health checks, logging, persistent storage, networking
 
 services:
-  # ============================================
-  # DATABASE SERVICES
-  # ============================================
   mariadb:
     image: mariadb:10.11
-    container_name: restpoint_mariadb
-    restart: unless-stopped
+    container_name: restpoint_mariadb_prod
+    restart: always
     environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-RestPoint2024!}
-      MARIADB_DATABASE: restpoint_main
-      MARIADB_USER: restpoint_user
-      MARIADB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306"
+      - "${MARIADB_EXTERNAL_PORT:-3306}:3306"
     volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./scripts/init-db:/docker-entrypoint-initdb.d
+      - mariadb_prod_data:/var/lib/mysql
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
     networks:
-      - restpoint
+      - restpoint_prod
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "1"
+          memory: 1G
 
   redis:
     image: redis:7-alpine
-    container_name: restpoint_redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RestPointRedis2024}
+    container_name: restpoint_redis_prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 1gb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
     volumes:
-      - redis_data:/data
+      - redis_prod_data:/data
     networks:
-      - restpoint
+      - restpoint_prod
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-RestPointRedis2024}", "ping"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 15s
+      timeout: 10s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: restpoint_rabbitmq
-    restart: unless-stopped
+    container_name: restpoint_rabbitmq_prod
+    restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-restpoint}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-RestPointRabbit2024}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: /
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_prod_data:/var/lib/rabbitmq
     networks:
-      - restpoint
+      - restpoint_prod
     healthcheck:
       test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 10s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
 
   # ============================================
-  # CORE SERVICES
+  # CORE SERVICES (Replicated for HA)
   # ============================================
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    container_name: restpoint_gateway
-    restart: unless-stopped
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+      cache_from:
+        - api-gateway:latest
+    image: api-gateway:latest
+    restart: always
     ports:
       - "${API_GATEWAY_EXTERNAL_PORT:-5000}:5000"
     env_file:
-      - .env
+      - .env.production
       - services/api-gateway/.env
     environment:
       NODE_ENV: production
       PORT: 5000
+      LOG_LEVEL: info
     depends_on:
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   auth-service:
     build:
       context: .
       dockerfile: services/auth-service/Dockerfile
-    container_name: restpoint_auth
-    restart: unless-stopped
+      cache_from:
+        - auth-service:latest
+    image: auth-service:latest
+    restart: always
     ports:
       - "${AUTH_SERVICE_EXTERNAL_PORT:-5001}:5000"
     env_file:
-      - .env
+      - .env.production
       - services/auth-service/.env
     environment:
       NODE_ENV: production
       PORT: 5000
+      LOG_LEVEL: info
     depends_on:
       mariadb:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   tenant-service:
     build:
       context: .
       dockerfile: services/tenant-service/Dockerfile
-    container_name: restpoint_tenant
-    restart: unless-stopped
+      cache_from:
+        - tenant-service:latest
+    image: tenant-service:latest
+    restart: always
     ports:
       - "${TENANT_SERVICE_EXTERNAL_PORT:-5002}:5000"
     env_file:
-      - .env
+      - .env.production
       - services/tenant-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      LOG_LEVEL: info
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  # ============================================
+  # BUSINESS SERVICES (Simplified for prod)
+  # ============================================
+  deceased-service:
+    build:
+      context: .
+      dockerfile: services/deceased-service/Dockerfile
+    restart: always
+    ports:
+      - "${DECEASED_SERVICE_EXTERNAL_PORT:-5003}:5000"
+    env_file:
+      - .env.production
+      - services/deceased-service/.env
     environment:
       NODE_ENV: production
       PORT: 5000
@@ -142,202 +271,504 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks:
-      - restpoint
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 40s
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
-  # ============================================
-  # BUSINESS SERVICES
-  # ============================================
-  deceased-service:
+  marketplace-service:
     build:
-      context: ./services/deceased-service
-      dockerfile: Dockerfile
-    container_name: restpoint_deceased
-    restart: unless-stopped
+      context: .
+      dockerfile: services/marketplace-service/Dockerfile
+    restart: always
     ports:
-      - "8004:8004"
+      - "${MARKETPLACE_SERVICE_EXTERNAL_PORT:-5004}:5000"
+    env_file:
+      - .env.production
+      - services/marketplace-service/.env
     environment:
       NODE_ENV: production
-      PORT: 8004
-      DB_HOST: mariadb
-      DB_PORT: 3306
-      DB_NAME: restpoint_main
-      DB_USER: restpoint_user
-      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      PORT: 5000
     depends_on:
       mariadb:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   invoice-service:
     build:
-      context: ./services/invoice-service
-      dockerfile: Dockerfile
-    container_name: restpoint_invoice
-    restart: unless-stopped
+      context: .
+      dockerfile: services/invoice-service/Dockerfile
+    restart: always
     ports:
-      - "8005:8005"
+      - "${INVOICE_SERVICE_EXTERNAL_PORT:-5005}:5000"
+    env_file:
+      - .env.production
+      - services/invoice-service/.env
     environment:
       NODE_ENV: production
-      PORT: 8005
-      DB_HOST: mariadb
-      DB_PORT: 3306
-      DB_NAME: restpoint_main
-      DB_USER: restpoint_user
-      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      PORT: 5000
     depends_on:
       mariadb:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
-  calendar-service:
+  coffin-service:
     build:
-      context: ./services/calender-service
-      dockerfile: Dockerfile
-    container_name: restpoint_calendar
-    restart: unless-stopped
+      context: .
+      dockerfile: services/coffin-service/Dockerfile
+    restart: always
     ports:
-      - "8006:8006"
+      - "${COFFIN_SERVICE_EXTERNAL_PORT:-5006}:5000"
+    env_file:
+      - .env.production
+      - services/coffin-service/.env
     environment:
       NODE_ENV: production
-      PORT: 8006
-    environment:
-      NODE_ENV: production
-      PORT: 8006
-      DB_HOST: mariadb
-      DB_PORT: 3306
-      DB_NAME: restpoint_main
-      DB_USER: restpoint_user
-      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
+      PORT: 5000
     depends_on:
       mariadb:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  documents-service:
+    build:
+      context: .
+      dockerfile: services/documents-service/Dockerfile
+    restart: always
+    ports:
+      - "${DOCUMENTS_SERVICE_EXTERNAL_PORT:-5007}:5000"
+    env_file:
+      - .env.production
+      - services/documents-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  edocuments-service:
+    build:
+      context: .
+      dockerfile: services/edocuments-service/Dockerfile
+    restart: always
+    ports:
+      - "${EDOCUMENTS_SERVICE_EXTERNAL_PORT:-8116}:5000"
+    env_file:
+      - .env.production
+      - services/edocuments-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: services/analytics-service/Dockerfile
+    restart: always
+    ports:
+      - "${ANALYTICS_SERVICE_EXTERNAL_PORT:-5009}:5000"
+    env_file:
+      - .env.production
+      - services/analytics-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  calender-service:
+    build:
+      context: .
+      dockerfile: services/calender-service/Dockerfile
+    restart: always
+    ports:
+      - "${CALENDAR_SERVICE_EXTERNAL_PORT:-5010}:5000"
+    env_file:
+      - .env.production
+      - services/calender-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   mpesa-service:
     build:
-      context: ./services/mpesa-service
-      dockerfile: Dockerfile
-    container_name: restpoint_mpesa
-    restart: unless-stopped
+      context: .
+      dockerfile: services/mpesa-service/Dockerfile
+    restart: always
     ports:
-      - "8007:8007"
+      - "${MPESA_SERVICE_EXTERNAL_PORT:-5011}:5000"
+    env_file:
+      - .env.production
+      - services/mpesa-service/.env
     environment:
       NODE_ENV: production
-      PORT: 8007
-      DB_HOST: mariadb
-      DB_PORT: 3306
-      DB_NAME: restpoint_main
-      DB_USER: restpoint_user
-      DB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
-      MPESA_ENVIRONMENT: ${MPESA_ENVIRONMENT:-sandbox}
-      MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY:-}
-      MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET:-}
+      PORT: 5000
     depends_on:
       mariadb:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   notification-service:
     build:
-      context: ./services/notification-service
-      dockerfile: Dockerfile
-    container_name: restpoint_notification
-    restart: unless-stopped
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    restart: always
     ports:
-      - "8008:8008"
+      - "${NOTIFICATION_SERVICE_EXTERNAL_PORT:-5111}:5000"
+    env_file:
+      - .env.production
+      - services/notification-service/.env
     environment:
       NODE_ENV: production
-      PORT: 8008
-      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-restpoint}:${RABBITMQ_PASSWORD:-RestPointRabbit2024}@rabbitmq:5672
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
+      PORT: 5000
     depends_on:
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      mariadb:
+        condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  qrcode-service:
+    build:
+      context: .
+      dockerfile: services/qrcode-service/Dockerfile
+    restart: always
+    ports:
+      - "${QRCODE_SERVICE_EXTERNAL_PORT:-5012}:5000"
+    env_file:
+      - .env.production
+      - services/qrcode-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   socketio-service:
     build:
-      context: ./services/socketio-service
-      dockerfile: Dockerfile
-    container_name: restpoint_socketio
-    restart: unless-stopped
+      context: .
+      dockerfile: services/socketio-service/Dockerfile
+    restart: always
     ports:
-      - "3000:3000"
+      - "${SOCKETIO_SERVICE_EXTERNAL_PORT:-5013}:5000"
+    env_file:
+      - .env.production
+      - services/socketio-service/.env
     environment:
       NODE_ENV: production
-      PORT: 3000
-      REDIS_URL: redis://:${REDIS_PASSWORD:-RestPointRedis2024}@redis:6379
-      JWT_SECRET: ${JWT_SECRET:-RestPointJWTSecret2024ChangeMe}
+      PORT: 5000
     depends_on:
       redis:
         condition: service_healthy
     networks:
-      - restpoint
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    deploy:
+      replicas: 2
 
-  # ============================================
-  # FRONTEND
-  # ============================================
+  visitors-service:
+    build:
+      context: .
+      dockerfile: services/visitors-service/Dockerfile
+    restart: always
+    ports:
+      - "${VISITORS_SERVICE_EXTERNAL_PORT:-5014}:5000"
+    env_file:
+      - .env.production
+      - services/visitors-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  bodycheckout-service:
+    build:
+      context: .
+      dockerfile: services/bodycheckout-service/Dockerfile
+    restart: always
+    ports:
+      - "${BODYCHECKOUT_SERVICE_EXTERNAL_PORT:-5015}:5000"
+    env_file:
+      - .env.production
+      - services/bodycheckout-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  extra-services:
+    build:
+      context: .
+      dockerfile: services/extra-services/Dockerfile
+    restart: always
+    ports:
+      - "${EXTRA_SERVICES_EXTERNAL_PORT:-5016}:5000"
+    env_file:
+      - .env.production
+      - services/extra-services/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  call-service:
+    build:
+      context: .
+      dockerfile: services/call-service/Dockerfile
+    restart: always
+    ports:
+      - "${CALL_SERVICE_EXTERNAL_PORT:-5018}:5000"
+    env_file:
+      - .env.production
+      - services/call-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  portal-service:
+    build:
+      context: .
+      dockerfile: services/portal-service/Dockerfile
+    restart: always
+    ports:
+      - "${PORTAL_SERVICE_EXTERNAL_PORT:-5019}:5000"
+    env_file:
+      - .env.production
+      - services/portal-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  chemical-service:
+    build:
+      context: .
+      dockerfile: services/chemical-service/Dockerfile
+    restart: always
+    ports:
+      - "${CHEMICAL_SERVICE_EXTERNAL_PORT:-5105}:5000"
+    env_file:
+      - .env.production
+      - services/chemical-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: services/billing-service/Dockerfile
+    restart: always
+    ports:
+      - "${BILLING_SERVICE_EXTERNAL_PORT:-5020}:5000"
+    env_file:
+      - .env.production
+      - services/billing-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint_prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
   frontend:
     build:
       context: ./FrontendClient/client
       dockerfile: Dockerfile
-    container_name: restpoint_frontend
-    restart: unless-stopped
+    restart: always
     ports:
-      - "80:80"
+      - "${FRONTEND_EXTERNAL_PORT:-8082}:80"
+    env_file:
+      - .env.production
     depends_on:
       api-gateway:
-        condition: service_healthy
+        condition: service_started
     networks:
-      - restpoint
+      - restpoint_prod
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
       start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
 
 networks:
-  restpoint:
+  restpoint_prod:
     driver: bridge
-    name: restpoint
+    name: restpoint_prod
 
 volumes:
-  mariadb_data:
+  mariadb_prod_data:
     driver: local
-  redis_data:
+  redis_prod_data:
     driver: local
-  rabbitmq_data:
+  rabbitmq_prod_data:
     driver: local

@@ -1,4 +1,4 @@
-.PHONY: help build build-no-cache up down restart logs logs-service clean health test dev prod stop ps shell exec
+.PHONY: help build build-no-cache up down restart logs logs-service clean health test dev prod stop ps shell exec deploy-prod deploy-staging backup restore
 
 # Colors for output
 BLUE := \033[0;34m
@@ -7,37 +7,46 @@ RED := \033[0;31m
 YELLOW := \033[0;33m
 NC := \033[0m # No Color
 
+# Environment
+COMPOSE := docker-compose
+COMPOSE_PROD := docker-compose -f docker-compose.prod.yml
+
 help:
-	@echo "$(BLUE)RestPoint Docker Makefile$(NC)"
+	@echo "$(BLUE)RestPoint Docker Makefile - Production Grade$(NC)"
 	@echo ""
 	@echo "$(GREEN)Build Commands:$(NC)"
-	@echo "  make build                - Build all Docker images"
+	@echo "  make build                - Build all Docker images (dev)"
 	@echo "  make build-no-cache       - Rebuild all images from scratch"
-	@echo "  make build-service SVC=X  - Build specific service (e.g., make build-service SVC=auth-service)"
+	@echo "  make build-service SVC=X  - Build specific service"
 	@echo ""
-	@echo "$(GREEN)Container Commands:$(NC)"
-	@echo "  make up                   - Start all services"
+	@echo "$(GREEN)Development:$(NC)"
+	@echo "  make up                   - Start all services (dev)"
 	@echo "  make down                 - Stop all services"
 	@echo "  make restart              - Restart all services"
-	@echo "  make stop                 - Stop without removing containers"
-	@echo "  make kill                 - Kill all containers immediately"
-	@echo "  make clean                - Remove containers, networks, volumes (DESTRUCTIVE)"
+	@echo "  make dev                  - Set up dev environment"
 	@echo ""
-	@echo "$(GREEN)Monitoring:$(NC)"
-	@echo "  make logs                 - Show all service logs"
-	@echo "  make logs-service SVC=X   - Show logs for specific service"
-	@echo "  make health               - Check all services health"
-	@echo "  make ps                   - List running containers"
+	@echo "$(GREEN)Production Deployment:$(NC)"
+	@echo "  make deploy-prod          - Deploy to production (docker-compose.prod.yml)"
+	@echo "  make deploy-staging       - Deploy to staging"
+	@echo "  make prod-up              - Start production services"
+	@echo "  make prod-down            - Stop production services"
+	@echo "  make prod-logs            - Production logs"
 	@echo ""
-	@echo "$(GREEN)Environment:$(NC)"
-	@echo "  make dev                  - Set up development environment"
-	@echo "  make prod                 - Set up production environment"
-	@echo "  make shell SVC=X          - Open shell in service container"
-	@echo "  make exec SVC=X CMD='cmd' - Execute command in service"
+	@echo "$(GREEN)Operations:$(NC)"
+	@echo "  make backup               - Backup database and data"
+	@echo "  make restore              - Restore from backup"
+	@echo "  make logs                 - Show all logs"
+	@echo "  make logs-service SVC=X   - Show logs for service"
+	@echo "  make health               - Check all services"
+	@echo "  make ps                   - List containers"
+	@echo "  make shell SVC=X          - Shell into service"
+	@echo "  make exec SVC=X CMD='cmd' - Execute command"
+	@echo "  make stats                - Docker resource usage"
 	@echo ""
-	@echo "$(GREEN)Testing:$(NC)"
-	@echo "  make test                 - Run all tests"
-	@echo "  make validate             - Validate docker-compose.yml"
+	@echo "$(GREEN)Maintenance:$(NC)"
+	@echo "  make clean                - Remove containers & volumes (DESTRUCTIVE)"
+	@echo "  make validate             - Validate docker-compose files"
+	@echo "  make prune                - Remove unused resources"
 	@echo ""
 
 # Build targets
@@ -154,8 +163,69 @@ prod:
 
 # Validation
 validate:
-	@echo "$(BLUE)Validating docker-compose.yml...$(NC)"
-	@docker-compose config > /dev/null && echo "$(GREEN)✓ docker-compose.yml is valid$(NC)" || exit 1
+	@echo "$(BLUE)Validating docker-compose files...$(NC)"
+	@$(COMPOSE) config > /dev/null && echo "$(GREEN)✓ docker-compose.yml is valid$(NC)" || exit 1
+	@$(COMPOSE_PROD) config > /dev/null && echo "$(GREEN)✓ docker-compose.prod.yml is valid$(NC)" || exit 1
+
+# Production Deployment Targets
+deploy-prod: validate
+	@echo "$(BLUE)Deploying to PRODUCTION...$(NC)"
+	@if [ ! -f .env.production ]; then \
+		echo "$(RED)Error: .env.production not found!$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Configuring production environment...$(NC)"
+	@cp .env.production .env
+	@echo "$(BLUE)Building production images...$(NC)"
+	@$(COMPOSE_PROD) build --no-cache
+	@echo "$(GREEN)✓ Production build complete$(NC)"
+	@echo "$(BLUE)Starting production services...$(NC)"
+	@$(COMPOSE_PROD) up -d
+	@echo "$(GREEN)✓ Production deployment complete$(NC)"
+	@echo "Waiting 30s for services to stabilize..."
+	@sleep 30
+	@$(COMPOSE_PROD) ps
+
+deploy-staging:
+	@echo "$(BLUE)Deploying to STAGING...$(NC)"
+	@$(COMPOSE) build
+	@$(COMPOSE) up -d
+	@echo "$(GREEN)✓ Staging deployment complete$(NC)"
+
+prod-up: validate
+	@echo "$(BLUE)Starting production services (docker-compose.prod.yml)...$(NC)"
+	@$(COMPOSE_PROD) up -d
+	@echo "$(GREEN)✓ Production services started$(NC)"
+	@sleep 30
+	@$(COMPOSE_PROD) ps
+
+prod-down:
+	@echo "$(BLUE)Stopping production services...$(NC)"
+	@$(COMPOSE_PROD) down
+	@echo "$(GREEN)✓ Production services stopped$(NC)"
+
+prod-logs:
+	@$(COMPOSE_PROD) logs -f --tail=100
+
+# Backup & Recovery
+backup:
+	@echo "$(BLUE)Creating backup...$(NC)"
+	@mkdir -p ./backups
+	@BACKUP_FILE="./backups/restpoint_$(shell date +%Y%m%d_%H%M%S).tar.gz"; \
+	docker-compose exec -T mariadb mysqldump -uroot -p$$DB_ROOT_PASSWORD --all-databases | gzip > $$BACKUP_FILE; \
+	echo "$(GREEN)✓ Database backup created: $$BACKUP_FILE$(NC)"
+
+restore:
+	@echo "$(RED)WARNING: This will overwrite the current database!$(NC)"
+	@read -p "Enter backup file path: " backup_file; \
+	if [ -f "$$backup_file" ]; then \
+		echo "$(BLUE)Restoring from $$backup_file...$(NC)"; \
+		docker-compose exec -T mariadb mysql -uroot -p$$DB_ROOT_PASSWORD < $$backup_file; \
+		echo "$(GREEN)✓ Restore complete$(NC)"; \
+	else \
+		echo "$(RED)Backup file not found: $$backup_file$(NC)"; \
+		exit 1; \
+	fi
 
 # Testing
 test:

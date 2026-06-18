@@ -17,6 +17,8 @@ COPY global/ ./global/
 
 COPY services/deceased-service/ ./services/deceased-service/
 
+RUN npm run build --workspace=services/deceased-service
+
 EXPOSE 5000
 ENV PORT=5000
-CMD ["node", "services/deceased-service/server.js"]
+CMD ["node", "services/deceased-service/dist/server.js"]
