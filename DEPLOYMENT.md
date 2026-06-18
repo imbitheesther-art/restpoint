@@ -1,255 +1,253 @@
-# Rest Point Production Deployment Guide
+# RestPoint Docker Deployment Guide
+
+## Overview
+
+RestPoint is a complete microservices architecture with 22+ services orchestrated by Docker Compose. All services are standardized to use port 5000 internally and communicate via Docker DNS service names.
+
+## Complete Service Port Map
+
+| Service | Container | Internal | External | Status |
+|---------|-----------|----------|----------|--------|
+| API Gateway | restpoint_gateway | 5000 | 5000 | Core |
+| Auth Service | restpoint_auth | 5000 | 5001 | Core |
+| Tenant Service | restpoint_tenant | 5000 | 5002 | Core |
+| Deceased Service | restpoint_deceased | 5000 | 5003 | Business |
+| Marketplace Service | restpoint_marketplace | 5000 | 5004 | Business |
+| Invoice Service | restpoint_invoice | 5000 | 5005 | Business |
+| Coffin Service | restpoint_coffin | 5000 | 5006 | Business |
+| Documents Service | restpoint_documents | 5000 | 5007 | Business |
+| EDocuments Service | restpoint_edocuments | 5000 | 8116 | Business |
+| Analytics Service | restpoint_analytics | 5000 | 5009 | Business |
+| Calendar Service | restpoint_calendar | 5000 | 5010 | Business |
+| M-Pesa Service | restpoint_mpesa | 5000 | 5011 | Business |
+| Notification Service | restpoint_notification | 5000 | 5111 | Business |
+| QR Code Service | restpoint_qrcode | 5000 | 5012 | Business |
+| SocketIO Service | restpoint_socketio | 5000 | 5013 | Business |
+| Visitors Service | restpoint_visitors | 5000 | 5014 | Business |
+| Body Checkout Service | restpoint_bodycheckout | 5000 | 5015 | Business |
+| Extra Services | restpoint_extra | 5000 | 5016 | Business |
+| Call Service | restpoint_call | 5000 | 5018 | Business |
+| Portal Service | restpoint_portal | 5000 | 5019 | Business |
+| Chemical Service | restpoint_chemical | 5000 | 5105 | Business |
+| Billing Service | restpoint_billing | 5000 | 5020 | Business |
+| Frontend | restpoint_frontend | 80 | 8082 | UI |
+| MariaDB | restpoint_mariadb | 3306 | 3306 | Infrastructure |
+| Redis | restpoint_redis | 6379 | 6379 | Infrastructure |
+| RabbitMQ | restpoint_rabbitmq | 5672 | 5672 | Infrastructure |
+
+## Architecture
+
+### Service Discovery
+- Services communicate using Docker DNS: `http://service-name:5000`
+- All services are on the same Docker network: `restpoint`
+- Environment variables in each service's `.env` file contain service URLs
+
+### Configuration
+- **Root `.env`**: Shared infrastructure settings (DB, Redis, RabbitMQ, JWT secrets)
+- **Service `.env` files**: Individual service configuration in `services/{service}/.env`
+- Environment variables override defaults in Dockerfiles
+
+### Frontend
+- Nginx server proxies API requests to `http://api-gateway:5000/api`
+- React SPA routing handled by Nginx (all routes → index.html)
+- Static assets cached for 1 year
+- Health check endpoint: `http://localhost/health`
 
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose installed
-- Make installed (optional but recommended)
-- At least 4GB RAM available
-- Ports 80, 3306, 6379, 5672 available
+- Docker & Docker Compose installed
+- 4GB+ RAM available
+- 20GB+ disk space
 
-### One-Command Deployment
-
+### Step 1: Start Services
 ```bash
-# Clone repository
-git clone https://github.com/imbitheesther-art/REST-POINT.git
-cd REST-POINT
-
-# Copy environment file
-cp .env.example .env
-
-# Deploy everything
-make deploy
+./scripts/01-start-services.sh
 ```
 
-### Default Login Credentials
-- **Email:** infowelttallis@gmail.com
-- **Password:** 40045355
-- **Domain:** http://app.restpoint.co.ke (or http://localhost)
+This will:
+1. Validate docker-compose.yml
+2. Build Docker images
+3. Start infrastructure (MariaDB, Redis, RabbitMQ)
+4. Start core services (API Gateway, Auth, Tenant)
+5. Start remaining services
+6. Display running services
 
-## Manual Deployment Steps
-
-### 1. Environment Setup
-
+### Step 2: Verify Health
 ```bash
-# Copy and configure environment
-cp .env.example .env
-
-# Edit .env with your values (optional)
-nano .env
+./scripts/02-health-check.sh
 ```
 
-### 2. Build and Start Services
+This checks all 22 services and reports their status.
 
-```bash
-# Create Docker network
-docker network create restpoint
+### Step 3: Access Services
+- **Frontend**: http://localhost:8082
+- **API Gateway**: http://localhost:5000
+- **RabbitMQ Management**: http://localhost:15672
+- **Database**: localhost:3306
 
-# Build all services
-docker-compose -f docker-compose.prod.yml build
+## Environment Configuration
 
-# Start all services
-docker-compose -f docker-compose.prod.yml up -d
+### Root .env Variables
+```
+NODE_ENV=production
+DB_HOST=mariadb
+DB_PORT=3306
+DB_NAME=restpoint_main
+DB_USER=restpoint_user
+DB_PASSWORD=RestPointUser2024
 
-# Check status
-docker-compose -f docker-compose.prod.yml ps
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=RestPointRedis2024
+
+JWT_SECRET=YourSecretHere
 ```
 
-### 3. View Logs
-
-```bash
-# All services
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Specific service
-docker-compose -f docker-compose.prod.yml logs -f api-gateway
-```
-
-## Makefile Commands
-
-| Command | Description |
-|---------|-------------|
-| `make up` | Start all services |
-| `make up-backend` | Start only backend services |
-| `make up-frontend` | Start only frontend |
-| `make down` | Stop all services |
-| `make logs` | View all logs |
-| `make build` | Build all services |
-| `make rebuild` | Rebuild and restart |
-| `make migrate` | Run database migrations |
-| `make seed` | Seed database with defaults |
-| `make clean` | Remove everything |
-| `make ps` | Show running containers |
-| `make deploy` | Full deployment |
-
-## Service Architecture
-
-### Ports
-- **80** - Frontend (nginx)
-- **8000** - API Gateway
-- **8001** - Auth Service
-- **8002** - Tenant Service
-- **8004** - Deceased Service
-- **8005** - Invoice Service
-- **8006** - Calendar Service
-- **8007** - MPESA Service
-- **8008** - Notification Service
-- **3000** - Socket.IO Service
-- **3306** - MariaDB
-- **6379** - Redis
-- **5672** - RabbitMQ
-- **15672** - RabbitMQ Management
-
-### Network
-All services communicate through the `restpoint` Docker network.
-
-## Tenant Onboarding
-
-When a new tenant is registered:
-
-1. **Tenant Service** creates tenant database
-2. **Auth Service** creates tenant admin user
-3. **Migrations** run automatically on tenant database
-4. **Default data** is seeded
-
-### Manual Tenant Creation
-
-```bash
-# Access tenant service shell
-make shell service=tenant-service
-
-# Create tenant via API
-curl -X POST http://localhost:8002/api/v1/restpoint/tenants/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "New Mortuary",
-    "slug": "new-mortuary",
-    "email": "admin@newmortuary.com",
-    "password": "securepassword"
-  }'
-```
-
-## Database Migrations
-
-Migrations run automatically on service startup. To run manually:
-
-```bash
-make migrate
-```
-
-## Backup and Restore
-
-### Backup Database
-
-```bash
-docker exec restpoint_mariadb mysqldump -u root -pRestPoint2024! restpoint_main > backup.sql
-```
-
-### Restore Database
-
-```bash
-docker exec -i restpoint_mariadb mysql -u root -pRestPoint2024! restpoint_main < backup.sql
-```
-
-## Monitoring
-
-### Health Checks
-
-All services have health check endpoints:
-
-```bash
-# Check all services
-docker-compose -f docker-compose.prod.yml ps
-
-# Individual health check
-curl http://localhost:8000/health
-curl http://localhost:8001/health
-curl http://localhost:8002/health
-```
-
-### Logs
-
-```bash
-# Real-time logs
-make logs
-
-# Last 100 lines
-docker-compose -f docker-compose.prod.yml logs --tail=100
-
-# Specific service
-docker-compose -f docker-compose.prod.yml logs -f api-gateway
-```
+### Service-Specific Configuration
+Each service has a `.env` file at `services/{service-name}/.env` with:
+- PORT=5000 (standardized)
+- Database credentials
+- Redis connection
+- Service-to-service URLs using Docker DNS
 
 ## Troubleshooting
 
-### Services Won't Start
-
-1. Check if ports are available:
+### Check Service Logs
 ```bash
-netstat -tulpn | grep :80
+docker-compose logs -f service-name
 ```
 
-2. Check Docker logs:
+### Interactive Troubleshooting
 ```bash
-docker-compose -f docker-compose.prod.yml logs [service-name]
+./scripts/03-troubleshoot.sh
 ```
 
-3. Restart services:
+### Common Issues
+
+**Services not communicating:**
+- Verify all services use Docker DNS: `http://service-name:5000`
+- Check service `.env` files have correct service URLs
+- Ensure all services are healthy: `./scripts/02-health-check.sh`
+
+**Database connection errors:**
+- Verify MariaDB is running: `docker-compose ps mariadb`
+- Check database credentials in `.env`
+- Ensure DB_HOST=mariadb (not localhost)
+
+**Port conflicts:**
+- Check external ports in `.env` are not in use
+- Modify `EXTERNAL_PORT` variables if needed
+
+**High memory usage:**
+- Reduce services: comment out unused services in docker-compose.yml
+- Monitor with: `docker stats`
+
+## Deployment Scripts
+
+### 01-start-services.sh
+Starts all services with dependency order and health checks.
+
+### 02-health-check.sh
+Verifies all 22 services are responding to health checks.
+
+### 03-troubleshoot.sh
+Interactive tool for debugging services with log viewing, connectivity tests, and container management.
+
+### 04-cleanup.sh
+Stops all services and optionally removes volumes for a clean reset.
+
+## Service Dependencies
+
+### Infrastructure (Always Started First)
+- mariadb (provides: database)
+- redis (provides: cache)
+- rabbitmq (provides: messaging)
+
+### Core Services (Depend on Infrastructure)
+- api-gateway (depends: redis, rabbitmq)
+- auth-service (depends: mariadb, redis)
+- tenant-service (depends: mariadb, redis, rabbitmq)
+
+### Business Services
+- Most depend on mariadb and/or redis
+- Some have no dependencies (qrcode, edocuments, call)
+
+### Frontend
+- Depends on api-gateway being healthy
+
+## Monitoring
+
+### Docker Stats
 ```bash
-make rebuild
+docker stats
 ```
 
-### Database Connection Issues
-
+### Service Health
 ```bash
-# Check if database is running
-docker exec restpoint_mariadb mysql -u root -pRestPoint2024! -e "SHOW DATABASES;"
-
-# Restart database
-docker restart restpoint_mariadb
+docker-compose ps
 ```
 
-### Frontend Not Loading
-
-1. Check if frontend is running:
+### Logs
 ```bash
-docker logs restpoint_frontend
-```
-
-2. Check nginx configuration:
-```bash
-docker exec restpoint_frontend nginx -t
+docker-compose logs -f --tail=100
 ```
 
 ## Production Considerations
 
-### Security
-1. Change all default passwords in `.env`
-2. Use strong JWT_SECRET
-3. Enable HTTPS (configure in nginx)
-4. Set up firewall rules
-5. Use SSL certificates (Let's Encrypt)
+1. **Secrets Management**: Use Docker secrets or external secret management instead of .env files
+2. **Resource Limits**: Add mem_limit and cpus limits to services
+3. **Persistence**: Configure proper backup strategy for MariaDB volumes
+4. **Monitoring**: Add Prometheus, Grafana, or similar monitoring
+5. **Logging**: Use ELK stack or similar for centralized logging
+6. **SSL/TLS**: Configure SSL certificates for production domains
+7. **API Gateway**: Add rate limiting, authentication middleware
+8. **Database**: Set up replication and backup strategy
 
-### Performance
-1. Increase database connection pool
-2. Configure Redis persistence
-3. Set up monitoring (Prometheus/Grafana)
-4. Enable logging aggregation
-5. Configure backup schedules
+## File Structure
 
-### Scaling
-1. Use Docker Swarm or Kubernetes for orchestration
-2. Set up load balancer
-3. Configure horizontal pod autoscaling
-4. Use external database service
-5. Use managed Redis and RabbitMQ
+```
+new-repo/
+├── .env                          # Root configuration
+├── docker-compose.yml            # Service orchestration
+├── nginx.conf                    # Frontend nginx config
+├── DEPLOYMENT.md                 # This file
+├── scripts/
+│   ├── 01-start-services.sh
+│   ├── 02-health-check.sh
+│   ├── 03-troubleshoot.sh
+│   └── 04-cleanup.sh
+├── services/
+│   ├── api-gateway/
+│   │   ├── Dockerfile
+│   │   └── .env
+│   ├── auth-service/
+│   │   ├── Dockerfile
+│   │   └── .env
+│   └── [20 more services with same structure]
+└── FrontendClient/
+    └── client/
+        ├── Dockerfile
+        └── nginx.conf (copied by build)
+```
+
+## Next Steps
+
+1. Update `.env` with your production secrets
+2. Update service `.env` files with specific configurations
+3. Run `./scripts/01-start-services.sh`
+4. Verify with `./scripts/02-health-check.sh`
+5. Access frontend at http://localhost:8082
 
 ## Support
 
-For issues and questions:
-- GitHub Issues: https://github.com/imbitheesther-art/REST-POINT/issues
-- Email: support@restpoint.co.ke
+For issues:
+1. Check logs: `docker-compose logs -f service-name`
+2. Run troubleshooting: `./scripts/03-troubleshoot.sh`
+3. Verify environment variables are set correctly
+4. Ensure Docker daemon has sufficient resources
 
-## License
+---
 
-Proprietary - Rest Point 2024
+**Last Updated**: June 2026
+**Version**: 1.0.0

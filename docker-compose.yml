@@ -71,7 +71,6 @@ volumes:
     driver: local
   rabbitmq_data:
     driver: local
-services:
 
   api-gateway:
     build:
@@ -557,3 +556,16 @@ services:
       timeout: 3s
       retries: 3
       start_period: 30s
+
+networks:
+  restpoint:
+    driver: bridge
+    name: restpoint
+
+volumes:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
