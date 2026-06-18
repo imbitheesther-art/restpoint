@@ -1,18 +1,22 @@
-FROM node:20-alpine
-
+FROM node:18-alpine
 WORKDIR /usr/src/app
 
-# Install build dependencies for sharp
-RUN apk add --no-cache python3 make g++ vips-dev
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/edocuments-service/package.json ./services/edocuments-service/
 
-COPY services/edocuments-service/package.json ./
-RUN npm install --production
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
-COPY services/edocuments-service/ .
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
 
-# Create uploads directories
-RUN mkdir -p uploads/_templates uploads/_documents
+COPY services/edocuments-service/ ./services/edocuments-service/
 
-EXPOSE 8116
-
-CMD ["node", "server.js"]
+EXPOSE 5000
+ENV PORT=5000
+CMD ["node", "services/edocuments-service/server.js"]

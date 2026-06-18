@@ -10,6 +10,10 @@
  * - Graceful fallback when Redis is unavailable
  */
 
+
+
+
+
 import { createClient, RedisClientType, RedisModules, RedisFunctions, RedisScripts } from 'redis';
 
 type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
@@ -19,12 +23,12 @@ const DEFAULT_REDIS_URL = process.env.REDIS_URL || process.env.REDIS_HOST
   : 'redis://redis:6379';
 const DEFAULT_TTL_SECONDS = parseInt(process.env.REDIS_DEFAULT_TTL || '3600', 10); // 1 hour
 
-// ─── Client Pool ───────────────────────────────────────────────────────────
+// ─── Client Pool ──────  
 
 let client: RedisClient | null = null;
-let isConnected = false;
-let connectionAttempted = false;
-
+let isConnected = false;          
+let connectionAttempted = false;              
+                        
 /**
  * Get or create the shared Redis client (lazy initialization)
  * All services share one connection pool to Redis
@@ -73,8 +77,8 @@ export async function getRedisClient(): Promise<RedisClient | null> {
     isConnected = true;
     return client;
   } catch (error: any) {
-    console.error(`[Redis] ❌ Failed to connect: ${error.message}`);
-    console.warn('[Redis] ⚠️ Running without Redis - caching disabled');
+    console.error(`[Redis]  Failed to connect: ${error.message}`);
+    console.warn('[Redis]   Running without Redis - caching disabled');
     client = null;
     isConnected = false;
     return null;
@@ -119,10 +123,14 @@ export async function tenantSet(
     await r.setEx(fullKey, ttlSeconds, serialized);
     return true;
   } catch (error: any) {
-    console.warn(`[Redis] ⚠️ tenantSet failed: ${error.message}`);
+    console.warn(`[Redis]  tenantSet failed: ${error.message}`);
     return false;
   }
 }
+
+
+
+
 
 /**
  * Get a cached value for a specific tenant
@@ -142,7 +150,7 @@ export async function tenantGet<T = any>(tenantSlug: string, key: string): Promi
       return value as unknown as T;
     }
   } catch (error: any) {
-    console.warn(`[Redis] ⚠️ tenantGet failed: ${error.message}`);
+    console.warn(`[Redis]  tenantGet failed: ${error.message}`);
     return null;
   }
 }
@@ -159,10 +167,18 @@ export async function tenantDel(tenantSlug: string, key: string): Promise<boolea
     await r.del(fullKey);
     return true;
   } catch (error: any) {
-    console.warn(`[Redis] ⚠️ tenantDel failed: ${error.message}`);
+    console.warn(`[Redis]  tenantDel failed: ${error.message}`);
     return false;
   }
 }
+
+
+
+
+
+
+
+
 
 /**
  * Clear ALL cached values for a specific tenant (used on tenant suspend/delete)
@@ -188,10 +204,10 @@ export async function clearTenantCache(tenantSlug: string): Promise<number> {
       }
     } while (cursor !== 0);
 
-    console.log(`[Redis] 🧹 Cleared ${deletedCount} cache entries for tenant "${tenantSlug}"`);
+    console.log(`[Redis]  Cleared ${deletedCount} cache entries for tenant "${tenantSlug}"`);
     return deletedCount;
   } catch (error: any) {
-    console.error(`[Redis] ❌ clearTenantCache failed: ${error.message}`);
+    console.error(`[Redis]  clearTenantCache failed: ${error.message}`);
     return 0;
   }
 }
@@ -247,11 +263,11 @@ export async function invalidateBalanceCache(tenantSlug: string): Promise<boolea
     } while (cursor !== 0);
 
     if (deletedCount > 0) {
-      console.log(`[Redis] 💰 Invalidated ${deletedCount} balance caches for "${tenantSlug}"`);
+      console.log(`[Redis]  Invalidated ${deletedCount} balance caches for "${tenantSlug}"`);
     }
     return true;
   } catch (error: any) {
-    console.warn(`[Redis] ⚠️ invalidateBalanceCache failed: ${error.message}`);
+    console.warn(`[Redis]  invalidateBalanceCache failed: ${error.message}`);
     return false;
   }
 }
@@ -265,10 +281,10 @@ export async function closeRedis(): Promise<void> {
   try {
     if (client && isConnected) {
       await client.quit();
-      console.log('[Redis] 🔌 Connection closed gracefully');
+      console.log('[Redis]  Connection closed gracefully');
     }
   } catch (error: any) {
-    console.error('[Redis] ❌ Error closing connection:', error.message);
+    console.error('[Redis]  Error closing connection:', error.message);
   } finally {
     client = null;
     isConnected = false;
@@ -293,15 +309,21 @@ export async function redisHealth(): Promise<{ status: string; latencyMs: number
   }
 }
 
+
+
+
+
+
+
 export default {
-  getRedisClient,
+  getRedisClient,    
   tenantSet,
-  tenantGet,
+  tenantGet,     
   tenantDel,
-  clearTenantCache,
+  clearTenantCache,   
   getCachedBalance,
   setCachedBalance,
-  invalidateBalanceCache,
+  invalidateBalanceCache,   
   closeRedis,
-  redisHealth,
+  redisHealth,      
 };

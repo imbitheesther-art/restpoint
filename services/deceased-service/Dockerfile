@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/deceased-service/ ./services/deceased-service/
 
-EXPOSE 8003
-ENV PORT=8003
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/deceased-service/server.js"]

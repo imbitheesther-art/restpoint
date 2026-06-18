@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/visitors-service/ ./services/visitors-service/
 
-EXPOSE 8017
-ENV PORT=8017
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/visitors-service/server.js"]

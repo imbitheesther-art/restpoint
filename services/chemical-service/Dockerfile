@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/chemical-service/ ./services/chemical-service/
 
-EXPOSE 8015
-ENV PORT=8015
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/chemical-service/server.js"]

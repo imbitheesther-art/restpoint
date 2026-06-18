@@ -21,6 +21,6 @@ COPY global/ ./global/
 # Copy service source code
 COPY services/notification-service/ ./services/notification-service/
 
-EXPOSE 8011
-ENV PORT=8011
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/notification-service/server.js"]

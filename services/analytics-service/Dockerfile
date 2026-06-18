@@ -20,6 +20,6 @@ COPY global/ ./global/
 # Copy service source code
 COPY services/analytics-service/ ./services/analytics-service/
 
-EXPOSE 8013
-ENV PORT=8013
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/analytics-service/server.js"]

@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/bodycheckout-service/ ./services/bodycheckout-service/
 
-EXPOSE 8004
-ENV PORT=8004
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/bodycheckout-service/server.js"]

@@ -17,7 +17,7 @@ import {
   Gauge,
   Settings,
   Send,
-MessageSquare as WhatsApp,
+  WhatsApp,
   Users,
   Clock,
   AlertCircle,

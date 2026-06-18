@@ -26,8 +26,8 @@ COPY services/qrcode-service/ ./services/qrcode-service/
 COPY scripts/docker-startup.sh ./scripts/docker-startup.sh
 RUN chmod +x ./scripts/docker-startup.sh
 
-EXPOSE 8012
-ENV PORT=8012
+EXPOSE 5000
+ENV PORT=5000
 
 ENTRYPOINT ["/usr/src/app/scripts/docker-startup.sh"]
 CMD ["node", "services/qrcode-service/server.js"]

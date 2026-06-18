@@ -22,6 +22,6 @@ COPY global/ ./global/
 # Copy service source code
 COPY services/portal-service/ ./services/portal-service/
 
-EXPOSE 5019
+EXPOSE 5000
 
 CMD ["node", "services/portal-service/server.js"]

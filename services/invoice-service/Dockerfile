@@ -21,6 +21,6 @@ COPY global/ ./global/
 # Copy service source code
 COPY services/invoice-service/ ./services/invoice-service/
 
-EXPOSE 8006
-ENV PORT=8006
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/invoice-service/server.js"]

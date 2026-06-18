@@ -1,50 +1,25 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
-  X,
-  Save,
-  Download,
-  Printer as Print,        // Print doesn't exist, use Printer
-  Undo,
-  Redo,
-  ZoomIn,
-  ZoomOut,
-  Pen,
-  Eraser,
-  Type,
-  Square,
-  Circle,
-  Image as ImageIcon,
-  PenTool as Signature,     // Signature doesn't exist, use PenTool
-  Trash2,
-  Eye,
-  Check,
-  Upload,
-  Move,
-  RefreshCw,
-  AlertCircle,
-  Lock,
-  Cloud,
+  X, Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
+  Pen, Eraser, Type, Square, Circle, Image as ImageIcon, Signature,
+  Trash2, Eye, Check, Upload, Move, RefreshCw, AlertCircle, Lock, Cloud
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
-import * as fabric from "fabric";
-
-
-
-
+import { fabric } from 'fabric';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
-// ==
+// ============================================
 // PRODUCTION CONFIGURATION
-// ==
+// ============================================
 
 const CONFIG = {
-  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v2/restpoint',
+  API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1/restpoint',
   AUTO_SAVE_INTERVAL: 30000, // 30 seconds
-  MAX_CANVAS_SIZE: { width: 1200, height: 1131 }, // A4
+  MAX_CANVAS_SIZE: { width: 800, height: 1131 }, // A4
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   HISTORY_MAX_STATES: 50,
   SUPPORTED_FILE_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'],
@@ -53,9 +28,9 @@ const CONFIG = {
   ISOLATION_LEVEL: 'strict' // strict = verify tenant on every API call
 };
 
-// ==
+// ============================================
 // UTILITY FUNCTIONS
-// ==
+// ============================================
 
 const dataURItoBlob = (dataURI) => {
   try {
@@ -96,9 +71,9 @@ const getTenantInfo = () => {
   };
 };
 
-// ==
+// ============================================
 // MAIN COMPONENT
-// ==
+// ============================================
 
 const DocumentEditor = ({
   document: initialDocument,
@@ -150,9 +125,9 @@ const DocumentEditor = ({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  // ==
+  // ============================================
   // SECURITY & INITIALIZATION
-  // ==
+  // ============================================
 
   // Verify tenant on mount
   useEffect(() => {
@@ -169,9 +144,9 @@ const DocumentEditor = ({
     }
   }, [tenantInfo]);
 
-  // ==
+  // ============================================
   // HISTORY MANAGEMENT
-  // ==
+  // ============================================
 
   const saveHistoryState = useCallback((fabricCanvas) => {
     if (!fabricCanvas || fabricCanvas._loadingState) return;
@@ -254,9 +229,9 @@ const DocumentEditor = ({
     }
   }, [canvas]);
 
-  // ==
+  // ============================================
   // CANVAS INITIALIZATION
-  // ==
+  // ============================================
 
   useEffect(() => {
     if (!canvasRef.current || !tenantInfo.slug || securityStatus !== 'verified') return;
@@ -359,9 +334,9 @@ const DocumentEditor = ({
     }
   }, [tenantInfo, securityStatus, saveHistoryState]);
 
-  // ==
+  // ============================================
   // BRUSH CONFIGURATION
-  // ==
+  // ============================================
 
   useEffect(() => {
     if (!canvas) return;
@@ -385,9 +360,9 @@ const DocumentEditor = ({
     }
   }, [activeTool, brushColor, brushSize, canvas]);
 
-  // ==
+  // ============================================
   // KEYBOARD SHORTCUTS
-  // ==
+  // ============================================
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -417,9 +392,9 @@ const DocumentEditor = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canvas, handleUndo, handleRedo]);
 
-  // ==
+  // ============================================
   // AUTO-SAVE MECHANISM
-  // ==
+  // ============================================
 
   const autoSaveDocument = useCallback(async () => {
     if (!canvas || !isDirty || isSaving || !tenantInfo.slug) return;
@@ -478,16 +453,16 @@ const DocumentEditor = ({
     };
   }, [autoSaveDocument]);
 
-  // ==
+  // ============================================
   // BACKGROUND LOADING
-  // ==
+  // ============================================
 
   const loadBackground = async (fabricCanvas) => {
     const file = fileRef.current;
     const doc = documentRef.current;
     const template = templateRef.current;
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const setFabricBackgroundImage = (url) => {
         try {
           fabricCanvas._loadingState = true;
@@ -608,9 +583,9 @@ const DocumentEditor = ({
     });
   };
 
-  // ==
+  // ============================================
   // CANVAS OPERATIONS
-  // ==
+  // ============================================
 
   const addTextBox = useCallback(() => {
     if (!canvas) return;
@@ -741,9 +716,9 @@ const DocumentEditor = ({
     }
   }, [canvas, saveHistoryState]);
 
-  // ==
+  // ============================================
   // SIGNATURE HANDLING
-  // ==
+  // ============================================
 
   const signatureStart = useCallback((e) => {
     if (e.type === 'touchstart') e.preventDefault();
@@ -852,9 +827,9 @@ const DocumentEditor = ({
     }
   }, [canvas, signatureData, saveHistoryState]);
 
-  // ==
+  // ============================================
   // DOCUMENT OPERATIONS
-  // ==
+  // ============================================
 
   const saveDocument = useCallback(async () => {
     if (!canvas || !tenantInfo.slug) return;
@@ -986,9 +961,9 @@ const DocumentEditor = ({
     }
   }, [canvas, documentTitle]);
 
-  // ==
+  // ============================================
   // RENDER
-  // ==
+  // ============================================
 
   const colorPresets = [
     '#000000', '#FFFFFF', '#D97706', '#DC2626', '#2563EB', '#16A34A',
@@ -1318,9 +1293,9 @@ const DocumentEditor = ({
   );
 };
 
-// ==
+// ============================================
 // STYLING (Production-Grade)
-// ==
+// ============================================
 
 const editorContainerStyle = {
   position: 'fixed',
@@ -1532,4 +1507,3 @@ const closeModalButtonStyle = {
 };
 
 export default DocumentEditor;
-

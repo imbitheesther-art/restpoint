@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/call-service/ ./services/call-service/
 
-EXPOSE 8016
-ENV PORT=8016
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/call-service/server.js"]

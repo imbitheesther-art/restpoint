@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/calender-service/ ./services/calender-service/
 
-EXPOSE 8007
-ENV PORT=8007
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/calender-service/server.js"]

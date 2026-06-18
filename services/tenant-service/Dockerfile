@@ -58,11 +58,11 @@ RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
 USER nodejs
 
 # Expose port - Match docker-compose expected port
-EXPOSE 5002
+EXPOSE 5000
 
 # Set environment
 ENV NODE_ENV=production
-ENV PORT=5002
+ENV PORT=5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

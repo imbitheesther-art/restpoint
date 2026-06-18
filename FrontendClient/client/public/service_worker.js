@@ -1,5 +1,5 @@
 // Service Worker for MONTEZUMA FH PWA
-const CACHE_NAME = 'montezuma-fh-cache-v1';
+const CACHE_NAME = 'montezuma-fh-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

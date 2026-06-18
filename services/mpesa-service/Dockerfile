@@ -1,22 +1,14 @@
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /usr/src/app
 
-COPY package.json tsconfig.base.json ./
-COPY packages/shared-utils/package.json ./packages/shared-utils/
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-services/package.json ./packages/shared-services/
-COPY services/mpesa-service/package.json ./services/mpesa-service/
+COPY package*.json ./
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 10 && \
+    npm install --omit=dev
 
-RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+COPY . .
 
-COPY configurations/ ./configurations/
-COPY packages/ ./packages/
-COPY shared/ ./shared/
-COPY global/ ./global/
-
-COPY services/mpesa-service/ ./services/mpesa-service/
-
-EXPOSE 8009
-ENV PORT=8009
-CMD ["node", "services/mpesa-service/server.js"]
+EXPOSE 5000
+ENV PORT=5000
+CMD ["node", "server.js"]

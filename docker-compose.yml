@@ -1,446 +1,559 @@
+version: "3.8"
+
 services:
-  # ============================================
-  # RESTPOINT GATEWAY
-  # Uses http-proxy-middleware for reliable routing
-  # Forwards FULL path AS-IS (no /api stripping)
-  # ============================================
-  restpoint-gateway:
+  mariadb:
+    image: mariadb:10.11
+    container_name: restpoint_mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-RestPoint2024!}
+      MARIADB_DATABASE: ${DB_NAME:-restpoint_main}
+      MARIADB_USER: ${DB_USER:-restpoint_user}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-RestPointUser2024}
+    ports:
+      - "${MARIADB_EXTERNAL_PORT:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: restpoint_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - restpoint
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-RestPointRedis2024}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: restpoint_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-restpoint}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-RestPointRabbit2024}
+    ports:
+      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - restpoint
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  restpoint:
+    driver: bridge
+    name: restpoint
+
+volumes:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+services:
+
+  api-gateway:
     build:
       context: .
       dockerfile: services/api-gateway/Dockerfile
-    container_name: restpoint_gateway
+    container_name: restpoint_api_gateway
     restart: unless-stopped
     ports:
-      - "${API_GATEWAY_PORT:-5000}:5000"
+      - "${API_GATEWAY_EXTERNAL_PORT:-5000}:5000"
     env_file:
       - .env
+      - services/api-gateway/.env
     environment:
-      - NODE_ENV=production
-      - SERVICE_NAME=restpoint-gateway
-      - PORT=5000
-      # Service URLs — all services use port 5000 internally
-      - AUTH_SERVICE_URL=http://auth-service:5000
-      - USERS_SERVICE_URL=http://auth-service:5000
-      - TENANT_SERVICE_URL=http://tenant-service:5000
-      - DECEASED_SERVICE_URL=http://deceased-service:5000
-      - MARKETPLACE_SERVICE_URL=http://marketplace-service:5000
-      - INVOICES_SERVICE_URL=http://invoice-service:5000
-      - COFFIN_SERVICE_URL=http://coffin-service:5000
-      - DOCUMENTS_SERVICE_URL=http://documents-service:5000
-      - EDOCUMENTS_SERVICE_URL=http://edocuments-service:5000
-      - ANALYTICS_SERVICE_URL=http://analytics-service:5000
-      - CALENDAR_SERVICE_URL=http://calender-service:5000
-      - MPESA_SERVICE_URL=http://mpesa-service:5000
-      - NOTIFICATION_SERVICE_URL=http://notification-service:5000
-      - VISITORS_SERVICE_URL=http://visitors-service:5000
-      - BODYCHECKOUT_SERVICE_URL=http://bodycheckout-service:5000
-      - PORTAL_SERVICE_URL=http://portal-service:5000
-      - CHEMICAL_SERVICE_URL=http://chemical-service:5000
-      - EMBALMING_SERVICE_URL=http://deceased-service:5000
+      NODE_ENV: production
+      PORT: 5000
     depends_on:
-      auth-service:
-        condition: service_started
-      tenant-service:
-        condition: service_started
-      deceased-service:
-        condition: service_started
-    volumes:
-      - ./global:/app/global
-      - ./.env:/app/.env
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+      - restpoint
 
-  # ============================================
-  # AUTH SERVICE
-  # ============================================
   auth-service:
     build:
       context: .
       dockerfile: services/auth-service/Dockerfile
-    container_name: restpoint_auth
+    container_name: restpoint_auth_service
+    restart: unless-stopped
     ports:
-      - "${AUTH_SERVICE_PORT:-5001}:5001"
+      - "${AUTH_SERVICE_EXTERNAL_PORT:-5001}:5000"
     env_file:
       - .env
+      - services/auth-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # TENANT SERVICE
-  # ============================================
   tenant-service:
     build:
       context: .
       dockerfile: services/tenant-service/Dockerfile
-    container_name: restpoint_tenant
+    container_name: restpoint_tenant_service
+    restart: unless-stopped
     ports:
-      - "${TENANT_SERVICE_PORT:-5002}:5002"
+      - "${TENANT_SERVICE_EXTERNAL_PORT:-5002}:5000"
     env_file:
       - .env
+      - services/tenant-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # DECEASED SERVICE
-  # ============================================
   deceased-service:
     build:
       context: .
       dockerfile: services/deceased-service/Dockerfile
-    container_name: restpoint_deceased
+    container_name: restpoint_deceased_service
+    restart: unless-stopped
     ports:
-      - "${DECEASED_SERVICE_PORT:-5003}:5003"
+      - "${DECEASED_SERVICE_EXTERNAL_PORT:-5003}:5000"
     env_file:
       - .env
+      - services/deceased-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # MARKETPLACE SERVICE
-  # ============================================
   marketplace-service:
     build:
       context: .
       dockerfile: services/marketplace-service/Dockerfile
-    container_name: restpoint_marketplace
+    container_name: restpoint_marketplace_service
+    restart: unless-stopped
     ports:
-      - "${MARKETPLACE_SERVICE_PORT:-5004}:5004"
+      - "${MARKETPLACE_SERVICE_EXTERNAL_PORT:-5004}:5000"
     env_file:
       - .env
+      - services/marketplace-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # INVOICE SERVICE
-  # ============================================
   invoice-service:
     build:
       context: .
       dockerfile: services/invoice-service/Dockerfile
-    container_name: restpoint_invoice
+    container_name: restpoint_invoice_service
+    restart: unless-stopped
     ports:
-      - "${INVOICE_SERVICE_PORT:-5005}:5005"
+      - "${INVOICE_SERVICE_EXTERNAL_PORT:-5005}:5000"
     env_file:
       - .env
+      - services/invoice-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # COFFIN SERVICE
-  # ============================================
   coffin-service:
     build:
       context: .
       dockerfile: services/coffin-service/Dockerfile
-    container_name: restpoint_coffin
+    container_name: restpoint_coffin_service
+    restart: unless-stopped
     ports:
-      - "${COFFIN_SERVICE_PORT:-5006}:5006"
+      - "${COFFIN_SERVICE_EXTERNAL_PORT:-5006}:5000"
     env_file:
       - .env
+      - services/coffin-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # DOCUMENTS SERVICE
-  # ============================================
   documents-service:
     build:
       context: .
       dockerfile: services/documents-service/Dockerfile
-    container_name: restpoint_documents
+    container_name: restpoint_documents_service
+    restart: unless-stopped
     ports:
-      - "${DOCUMENTS_SERVICE_PORT:-5007}:5007"
+      - "${DOCUMENTS_SERVICE_EXTERNAL_PORT:-5007}:5000"
     env_file:
       - .env
+      - services/documents-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # EDOCUMENTS SERVICE
-  # ============================================
   edocuments-service:
     build:
       context: .
       dockerfile: services/edocuments-service/Dockerfile
-    container_name: restpoint_edocuments
+    container_name: restpoint_edocuments_service
+    restart: unless-stopped
     ports:
-      - "${EDOCUMENTS_SERVICE_PORT:-5008}:5008"
+      - "${EDOCUMENTS_SERVICE_EXTERNAL_PORT:-8116}:5000"
     env_file:
       - .env
+      - services/edocuments-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # ANALYTICS SERVICE
-  # ============================================
   analytics-service:
     build:
       context: .
       dockerfile: services/analytics-service/Dockerfile
-    container_name: restpoint_analytics
+    container_name: restpoint_analytics_service
+    restart: unless-stopped
     ports:
-      - "${ANALYTICS_SERVICE_PORT:-5009}:5009"
+      - "${ANALYTICS_SERVICE_EXTERNAL_PORT:-5009}:5000"
     env_file:
       - .env
+      - services/analytics-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # CALENDER SERVICE
-  # ============================================
   calender-service:
     build:
       context: .
       dockerfile: services/calender-service/Dockerfile
-    container_name: restpoint_calender
+    container_name: restpoint_calender_service
+    restart: unless-stopped
     ports:
-      - "${CALENDER_SERVICE_PORT:-5010}:5010"
+      - "${CALENDER_SERVICE_EXTERNAL_PORT:-5010}:5000"
     env_file:
       - .env
+      - services/calender-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # MPESA SERVICE
-  # ============================================
   mpesa-service:
     build:
       context: .
       dockerfile: services/mpesa-service/Dockerfile
-    container_name: restpoint_mpesa
+    container_name: restpoint_mpesa_service
+    restart: unless-stopped
     ports:
-      - "${MPESA_SERVICE_PORT:-5011}:5011"
+      - "${MPESA_SERVICE_EXTERNAL_PORT:-5011}:5000"
     env_file:
       - .env
+      - services/mpesa-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # NOTIFICATION SERVICE
-  # ============================================
   notification-service:
     build:
       context: .
       dockerfile: services/notification-service/Dockerfile
-    container_name: restpoint_notification
+    container_name: restpoint_notification_service
+    restart: unless-stopped
     ports:
-      - "${NOTIFICATION_SERVICE_PORT:-5111}:5111"
+      - "${NOTIFICATION_SERVICE_EXTERNAL_PORT:-5111}:5000"
     env_file:
       - .env
+      - services/notification-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mariadb:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # QR CODE SERVICE
-  # ============================================
   qrcode-service:
     build:
       context: .
       dockerfile: services/qrcode-service/Dockerfile
-    container_name: restpoint_qrcode
+    container_name: restpoint_qrcode_service
+    restart: unless-stopped
     ports:
-      - "${QR_CODE_SERVICE_PORT:-5012}:5012"
+      - "${QRCODE_SERVICE_EXTERNAL_PORT:-5012}:5000"
     env_file:
       - .env
+      - services/qrcode-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # SOCKETIO SERVICE
-  # ============================================
   socketio-service:
     build:
       context: .
       dockerfile: services/socketio-service/Dockerfile
-    container_name: restpoint_socketio
+    container_name: restpoint_socketio_service
+    restart: unless-stopped
     ports:
-      - "${SOCKETIO_SERVICE_PORT:-5013}:5013"
+      - "${SOCKETIO_SERVICE_EXTERNAL_PORT:-5013}:5000"
     env_file:
       - .env
+      - services/socketio-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # VISITORS SERVICE
-  # ============================================
   visitors-service:
     build:
       context: .
       dockerfile: services/visitors-service/Dockerfile
-    container_name: restpoint_visitors
+    container_name: restpoint_visitors_service
+    restart: unless-stopped
     ports:
-      - "${VISITORS_SERVICE_PORT:-5014}:5014"
+      - "${VISITORS_SERVICE_EXTERNAL_PORT:-5014}:5000"
     env_file:
       - .env
+      - services/visitors-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # BODYCHECKOUT SERVICE
-  # ============================================
   bodycheckout-service:
     build:
       context: .
       dockerfile: services/bodycheckout-service/Dockerfile
-    container_name: restpoint_bodycheckout
+    container_name: restpoint_bodycheckout_service
+    restart: unless-stopped
     ports:
-      - "${BODYCHECKOUT_SERVICE_PORT:-5015}:5015"
+      - "${BODYCHECKOUT_SERVICE_EXTERNAL_PORT:-5015}:5000"
     env_file:
       - .env
+      - services/bodycheckout-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # EXTRA SERVICES
-  # ============================================
   extra-services:
     build:
       context: .
       dockerfile: services/extra-services/Dockerfile
-    container_name: restpoint_extra
+    container_name: restpoint_extra_services
+    restart: unless-stopped
     ports:
-      - "${EXTRA_SERVICES_PORT:-5016}:5016"
+      - "${EXTRA_SERVICES_EXTERNAL_PORT:-5016}:5000"
     env_file:
       - .env
+      - services/extra-services/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # CALL SERVICE
-  # ============================================
   call-service:
     build:
       context: .
       dockerfile: services/call-service/Dockerfile
-    container_name: restpoint_call
+    container_name: restpoint_call_service
+    restart: unless-stopped
     ports:
-      - "${CALL_SERVICE_PORT:-5018}:5018"
+      - "${CALL_SERVICE_EXTERNAL_PORT:-5018}:5000"
     env_file:
       - .env
+      - services/call-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # PORTAL SERVICE
-  # ============================================
   portal-service:
     build:
       context: .
       dockerfile: services/portal-service/Dockerfile
-    container_name: restpoint_portal
-    ports:
-      - "${PORTAL_SERVICE_PORT:-5019}:5019"
-    env_file:
-      - .env
-    networks:
-      - restpoint_net
+    container_name: restpoint_portal_service
     restart: unless-stopped
-
-  # ============================================
-  # BILLING SERVICE - TypeScript Primary (Port 5020)
-  # ============================================
-  billing-service:
-    build:
-      context: .
-      dockerfile: services/billing-service/Dockerfile
-    container_name: restpoint_billing
     ports:
-      - "${BILLING_SERVICE_PORT:-5020}:5020"
+      - "${PORTAL_SERVICE_EXTERNAL_PORT:-5019}:5000"
     env_file:
       - .env
+      - services/portal-service/.env
     environment:
-      - PYTHON_FALLBACK_URL=http://billing-service-python:5021
-      - GO_FALLBACK_URL=http://billing-service-go:5022
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5020/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - restpoint
 
-  # ============================================
-  # BILLING SERVICE - Python Fallback (Port 5021)
-  # ============================================
-  billing-service-python:
-    build:
-      context: services/billing-service
-      dockerfile: Dockerfile.python
-    container_name: restpoint_billing_python
-    ports:
-      - "${BILLING_SERVICE_PYTHON_PORT:-5021}:5021"
-    env_file:
-      - .env
-    networks:
-      - restpoint_net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5021/health').read()"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # ============================================
-  # CHEMICAL SERVICE (Port 5105)
-  # ============================================
   chemical-service:
     build:
       context: .
       dockerfile: services/chemical-service/Dockerfile
-    container_name: restpoint_chemical
+    container_name: restpoint_chemical_service
+    restart: unless-stopped
     ports:
-      - "${CHEMICAL_SERVICE_PORT:-5105}:5105"
+      - "${CHEMICAL_SERVICE_EXTERNAL_PORT:-5105}:5000"
     env_file:
       - .env
+      - services/chemical-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
+      - restpoint
 
-  # ============================================
-  # FRONTEND - React UI (Port 8082)
-  # ============================================
+  billing-service:
+    build:
+      context: .
+      dockerfile: services/billing-service/Dockerfile
+    container_name: restpoint_billing_service
+    restart: unless-stopped
+    ports:
+      - "${BILLING_SERVICE_EXTERNAL_PORT:-5020}:5000"
+    env_file:
+      - .env
+      - services/billing-service/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - restpoint
+
   frontend:
     build:
       context: ./FrontendClient/client
       dockerfile: Dockerfile
     container_name: restpoint_frontend
+    restart: unless-stopped
     ports:
-      - "8082:80"
+      - "${FRONTEND_EXTERNAL_PORT:-8082}:80"
     env_file:
       - .env
     depends_on:
-      - restpoint-gateway
+      api-gateway:
+        condition: service_healthy
     networks:
-      - restpoint_net
-    restart: unless-stopped
-
-networks:
-  restpoint_net:
-    driver: bridge
+      - restpoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s

@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/coffin-service/ ./services/coffin-service/
 
-EXPOSE 8019
-ENV PORT=8019
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/coffin-service/server.js"]

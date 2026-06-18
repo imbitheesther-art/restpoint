@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/extra-services/ ./services/extra-services/
 
-EXPOSE 8014
-ENV PORT=8014
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/extra-services/server.js"]

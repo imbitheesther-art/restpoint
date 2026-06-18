@@ -26,7 +26,7 @@ COPY services/billing-service/ ./services/billing-service/
 RUN mkdir -p services/billing-service/logs
 
 # Expose port
-EXPOSE 5020
+EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

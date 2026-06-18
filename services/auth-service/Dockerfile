@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/auth-service/ ./services/auth-service/
 
-EXPOSE 8001
-ENV PORT=8001
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/auth-service/server.js"]

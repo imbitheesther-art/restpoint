@@ -17,6 +17,6 @@ COPY global/ ./global/
 
 COPY services/documents-service/ ./services/documents-service/
 
-EXPOSE 8005
-ENV PORT=8005
+EXPOSE 5000
+ENV PORT=5000
 CMD ["node", "services/documents-service/server.js"]
