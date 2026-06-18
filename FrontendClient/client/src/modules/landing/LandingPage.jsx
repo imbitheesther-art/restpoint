@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 /* ============================================================
    REST POINT — Funeral home operating system
@@ -14,6 +15,7 @@ const C = {
   brass: '#8B7355',
   brassLight: '#A98F6E',
   verdigris: '#3D4F47',
+  verdigrisDark: '#2E3F37',
   line: '#E3DDD0',
   lineDark: 'rgba(250,248,244,0.14)',
   gray: '#6B6862',
@@ -58,31 +60,6 @@ const Mark = ({ size = 28, color = C.ink }) => (
     <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1" />
     <circle cx="16" cy="16" r="2.5" fill={color} />
   </svg>
-);
-
-/* ---------- Ledger entry (replaces feature cards) ---------- */
-const LedgerEntry = ({ no, title, desc, delay }) => (
-  <Reveal delay={delay} style={{
-    display: 'grid',
-    gridTemplateColumns: '88px 1fr',
-    gap: '2rem',
-    padding: '2.4rem 0',
-    borderTop: `1px solid ${C.line}`,
-  }}>
-    <div style={{
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: '0.78rem',
-      color: C.brass,
-      letterSpacing: '0.02em',
-      paddingTop: '0.2rem'
-    }}>
-      No. {no}
-    </div>
-    <div>
-      <h3 style={{ color: C.ink, marginBottom: '0.6rem' }}>{title}</h3>
-      <p style={{ maxWidth: '560px' }}>{desc}</p>
-    </div>
-  </Reveal>
 );
 
 /* ---------- FAQ ---------- */
@@ -155,7 +132,7 @@ const MockPortal = () => (
 const MockDispatch = () => {
   const [distance, setDistance] = useState(38);
   const [rate, setRate] = useState(195);
-  const consumption = 0.12; // litres per km, fixed assumption for hearse class
+  const consumption = 0.12;
   const litres = distance * consumption;
   const cost = Math.round(litres * rate);
 
@@ -221,10 +198,16 @@ const MockStorefront = () => (
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
+  const navigate = useNavigate();
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
-  const goLogin = () => console.log('navigate /login');
-  const goStart = () => console.log('navigate /login');
+  const goLogin = () => navigate('/login');
+  const goStart = () => navigate('/register');
+  const goAbout = () => navigate('/about');
+  const goPortalLogin = () => navigate('/portal/login');
+
+  /* ---------- Terms & Privacy Modal ---------- */
+  const [showPolicy, setShowPolicy] = useState(null);
 
   return (
     <>
@@ -484,36 +467,70 @@ export default function App() {
           </div>
         </section>
 
-        {/* Capabilities — ledger style */}
+        {/* Capabilities — six entries with alternating verdigris backgrounds */}
         <section id="capabilities" className="section">
           <div className="wrap">
             <Reveal>
               <div className="section-head">
                 <div className="label" style={{ marginBottom: '0.9rem' }}>The register</div>
                 <h2>Six entries. One system of record.</h2>
-                <p>Everything a funeral home runs on, kept in one place — built around how your team actually works, not how software usually expects you to.</p>
+                <p>Everything a funeral home runs on, kept in one place — built for how your team actually works.</p>
               </div>
             </Reveal>
 
             <div>
-              <LedgerEntry no="01" delay={0}
-                title="Case management"
-                desc="Every service tracked from first call to final arrangements, with a clear record of who did what, and when." />
-              <LedgerEntry no="02" delay={40}
-                title="Family portal"
-                desc="Families follow progress, review documents, and pay invoices through a private SMS link — no app, no account to remember." />
-              <LedgerEntry no="03" delay={80}
-                title="Dispatch & fleet"
-                desc="GPS tracking and fuel estimation for every hearse movement, so the cost of a service is known before it's billed." />
-              <LedgerEntry no="04" delay={120}
-                title="Documents"
-                desc="Permits, certificates, and invoices generated from templates your home already trusts, ready to sign in minutes." />
-              <LedgerEntry no="05" delay={160}
-                title="Team & roles"
-                desc="Directors, drivers, and embalmers work from a shared calendar with permissions matched to their responsibility." />
-              <LedgerEntry no="06" delay={200}
-                title="Storefront"
-                desc="Caskets, packages, and memorial keepsakes sold directly to families, with full revenue kept by your home." />
+              {[
+                [0,   "01", "Case management",    "Every service tracked from first call to final arrangements, with a clear record of who did what, and when."],
+                [40,  "02", "Family portal",      "Families follow progress, review documents, and pay invoices through a private SMS link — no app, no account to remember."],
+                [80,  "03", "Dispatch & fleet",   "GPS tracking and fuel estimation for every hearse movement, so the cost of a service is known before it's billed."],
+                [120, "04", "Documents",          "Permits, certificates, and invoices generated from templates your home already trusts, ready to sign in minutes."],
+                [160, "05", "Team & roles",       "Directors, drivers, and embalmers work from a shared calendar with permissions matched to their responsibility."],
+                [200, "06", "Storefront",         "Caskets, packages, and memorial keepsakes sold directly to families, with full revenue kept by your home."],
+              ].map(([delay, no, title, desc], idx) => {
+                const hasBg = idx % 2 === 0;
+                return (
+                  <Reveal key={no} delay={delay}>
+                    <div style={{
+                      padding: '2.4rem 1.6rem',
+                      margin: hasBg ? '0 -1.6rem' : '0',
+                      background: hasBg ? `linear-gradient(135deg, ${C.verdigris} 0%, ${C.verdigrisDark} 100%)` : 'transparent',
+                      color: hasBg ? C.bone : 'inherit',
+                      borderRadius: '4px',
+                    }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '88px 1fr',
+                        gap: '2rem',
+                      }}>
+                        <div style={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontSize: '0.78rem',
+                          color: hasBg ? C.brassLight : C.brass,
+                          letterSpacing: '0.02em',
+                          paddingTop: '0.2rem'
+                        }}>
+                          No. {no}
+                        </div>
+                        <div>
+                          <h3 style={{ 
+                            color: hasBg ? C.bone : C.ink, 
+                            marginBottom: '0.6rem',
+                            fontFamily: "'Fraunces', serif",
+                            fontWeight: 500,
+                            fontSize: '1.3rem',
+                          }}>{title}</h3>
+                          <p style={{ 
+                            maxWidth: '560px',
+                            color: hasBg ? 'rgba(250,248,244,0.82)' : C.gray,
+                            lineHeight: 1.7,
+                            fontSize: '1rem',
+                          }}>{desc}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -674,10 +691,10 @@ export default function App() {
             </div>
             <div className="footer-col">
               <h4>Company</h4>
-              <a className="footer-link">About</a>
+              <a className="footer-link" onClick={goAbout}>About</a>
               <a className="footer-link" href="mailto:info@restpoint.co.ke">Contact</a>
-              <a className="footer-link">Privacy policy</a>
-              <a className="footer-link">Terms</a>
+              <a className="footer-link" onClick={() => setShowPolicy('privacy')}>Privacy policy</a>
+              <a className="footer-link" onClick={() => setShowPolicy('terms')}>Terms</a>
             </div>
           </div>
           <div className="footer-bottom">
@@ -686,6 +703,53 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Policy Modal */}
+      {showPolicy && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(21,23,26,0.88)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem',
+        }} onClick={() => setShowPolicy(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            background: C.bone, border: `1px solid ${C.line}`, padding: '2.4rem',
+            maxWidth: '600px', width: '100%', maxHeight: '80vh', overflow: 'auto',
+            boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.6rem' }}>
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.3rem', color: C.ink, fontWeight: 500 }}>
+                {showPolicy === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
+              </h3>
+              <button onClick={() => setShowPolicy(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: C.gray, padding: '.3rem' }}>✕</button>
+            </div>
+            {showPolicy === 'privacy' ? (
+              <>
+                <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>At Rest Point, we take your data privacy seriously. This policy describes how we collect, use, and protect your information.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>1. Information We Collect</h4>
+                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>We collect information you provide directly: name, email, phone number, funeral home details, and deceased records necessary for service provision.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>2. How We Use Information</h4>
+                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>Information is used solely to operate the Rest Point platform, facilitate communication with families, and comply with legal obligations.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>3. Data Security</h4>
+                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>We implement encryption at rest and in transit, role-based access controls, and regular security audits to protect your data.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>4. Contact</h4>
+                <p style={{ fontSize: '.88rem' }}>For privacy inquiries, contact us at privacy@restpoint.co.ke</p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>These terms govern your use of the Rest Point platform. By using our service, you agree to these terms.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>1. Service Description</h4>
+                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>Rest Point provides mortuary management software for funeral homes, including case management, family communication, dispatch, billing, and related services.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>2. Account Responsibility</h4>
+                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>3. Payment Terms</h4>
+                <p style={{ fontSize: '.88rem', marginBottom: '.8rem' }}>Services are billed monthly in advance. All fees are non-refundable except as expressly stated in our refund policy.</p>
+                <h4 style={{ fontFamily: "'Fraunces', serif", color: C.ink, margin: '1rem 0 .4rem' }}>4. Limitation of Liability</h4>
+                <p style={{ fontSize: '.88rem' }}>Rest Point shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform.</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

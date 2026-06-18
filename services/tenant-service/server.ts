@@ -16,11 +16,27 @@ const PORT = process.env.PORT || 8002;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ============================================
+// CORS — allow all headers the frontend sends
+// ============================================
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-CSRF-Token',
+    'x-tenant-slug',
+    'x-tenant-id',
+    'x-request-timestamp',
+    'x-client-id',
+    'x-session-fingerprint',
+    'Origin',
+    'X-Requested-With',
+    'Accept'
+  ]
 }));
 
 // Serve uploaded files
@@ -36,19 +52,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ============================================
 // ROUTES
 // ============================================
-// Mount onboarding routes at multiple paths to support:
-// 1. Direct access: POST /api/onboarding/organization
-// 2. Gateway proxied: POST /api/v1/restpoint/tenant/onboarding/organization  
-// 3. Gateway alternative: POST /api/v1/restpoint/tenants/onboarding/organization
-// 4. Frontend calls: POST /api/v1/restpoint/tenants/register
-app.use('/api/onboarding', onboardingRoutes);
+// Mount onboarding routes — careful ordering to avoid path conflicts
+// Most specific paths FIRST, generic paths LAST
 app.use('/api/v1/restpoint/tenant/onboarding', onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/onboarding', onboardingRoutes);
-app.use('/api/v1/restpoint/tenant', onboardingRoutes);
-app.use('/api/v1/restpoint/tenants', onboardingRoutes);
+app.use('/api/v1/restpoint/tenants/register', onboardingRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
-// System Admin Routes - centralized tenant management
-// Mounted at both the internal path and the gateway-proxied path
+// System Admin Routes
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/v1/restpoint/system-admin', systemAdminRoutes);
 
@@ -70,6 +81,7 @@ app.get('/test', (req: Request, res: Response) => {
     message: 'Tenant service is running!',
     endpoints: {
       register: 'POST /api/onboarding/organization',
+      registerViaGateway: 'POST /api/v1/restpoint/tenant/onboarding/organization',
       login: 'POST /api/onboarding/login',
       getOrg: 'GET /api/onboarding/organization',
       health: 'GET /health'

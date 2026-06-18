@@ -93,7 +93,21 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','x-tenant-slug','x-tenant-id','x-request-timestamp'],
+ allowedHeaders: [
+  'Content-Type',
+  'Authorization',
+  'x-tenant-slug',
+  'x-tenant-id',
+  'x-request-timestamp',
+  'x-session-fingerprint',
+  'X-Session-Fingerprint',
+  'x-client-id',
+  'X-Client-ID',
+  'X-CSRF-Token',
+  'Origin',
+  'X-Requested-With',
+  'Accept'
+],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));

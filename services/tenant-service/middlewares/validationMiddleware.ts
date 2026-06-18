@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const validateOnboarding = (req: Request, res: Response, next: NextFunction) => {
-  // Get data from either body or fields (multipart form-data)
   const data = req.body || {};
-  const organizationName = data.organizationName || req.body.organizationName;
-  const email = data.email || req.body.email;
-  const location = data.location || req.body.location;
-  const password = data.password || req.body.password;
+  
+  // Accept both frontend field names (organizationName) and backend field names (tenant_name)
+  const organizationName = data.organizationName || data.tenant_name || '';
+  const email = data.email || '';
+  const location = data.location || '';
+  const password = data.password || '';
+  const full_name = data.full_name || data.fullName || 'Admin';
   const termsAccepted = data.termsAccepted === true || data.termsAccepted === 'true' || data.termsAccepted === 1;
 
   const errors: string[] = [];
@@ -21,12 +23,16 @@ export const validateOnboarding = (req: Request, res: Response, next: NextFuncti
     return res.status(400).json({ success: false, errors });
   }
 
-  // Attach validated data to request body for controller
+  // Map to what controller.createOrganization expects
   req.body = {
-    organizationName,
+    tenant_name: organizationName,
     email,
     location,
     password,
+    full_name,
+    phone: data.phone || '',
+    country: data.country || 'Kenya',
+    branches: data.branches || [],
     termsAccepted
   };
 
@@ -35,8 +41,8 @@ export const validateOnboarding = (req: Request, res: Response, next: NextFuncti
 
 export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
   const data = req.body || {};
-  const email = data.email || req.body.email;
-  const password = data.password || req.body.password;
+  const email = data.email || data.identifier || '';
+  const password = data.password || '';
 
   const errors: string[] = [];
 
@@ -46,6 +52,8 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction) =
   if (errors.length > 0) {
     return res.status(400).json({ success: false, errors });
   }
+
+  req.body = { email, password };
 
   next();
 };
