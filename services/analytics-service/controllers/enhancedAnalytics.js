@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const AnalyticsService = require('../services/analyticsService');
 const AnalyticsModel = require('../models/analyticsModel');
-const { Logger } = require('../../utilities/logger/logger');
+const { Logger } = require('../../../packages/shared-logger/src/logger');
 
 // Get dashboard overview
 exports.getDashboard = asyncHandler(async (req, res) => {

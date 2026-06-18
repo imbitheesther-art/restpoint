@@ -1,7 +1,7 @@
 // controllers/burialNotificationController.js
 const asyncHandler = require('express-async-handler');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps');
+const { getKenyaTimeISO } = require('../../packages/shared-utils/src/timestamps');
 
 // Generate unique notification number
 function generateNotificationNumber() {

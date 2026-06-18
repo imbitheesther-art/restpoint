@@ -665,6 +665,25 @@ export default function App() {
               <span style={{fontWeight:600,color:C.navy900}}>One-time Setup & Training Fee: KES 1,000</span>
               <span style={{display:'block',marginTop:'.25rem'}}>Account reactivation after suspension: KES 1,000</span>
             </div>
+            <div style={{maxWidth:'900px',margin:'2rem auto 0',padding:'1.5rem',background:'#fff',borderRadius:'12px',border:'1px solid #E5E7EB'}}>
+              <h4 style={{textAlign:'center',color:'#0A1F3D',marginBottom:'1rem',fontSize:'1rem'}}>Additional Services</h4>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))',gap:'1rem',fontSize:'.85rem'}}>
+                <div style={{padding:'.75rem',background:'#F9FAFB',borderRadius:'8px'}}>
+                  <div style={{fontWeight:600,color:'#0A1F3D',marginBottom:'.25rem'}}>☁️ Google Drive Backup</div>
+                  <div style={{color:'#6B7280'}}>Automatic daily encrypted backups to your Google Drive</div>
+                </div>
+                <div style={{padding:'.75rem',background:'#F9FAFB',borderRadius:'8px'}}>
+                  <div style={{fontWeight:600,color:'#0A1F3D',marginBottom:'.25rem'}}>🎓 Staff Training</div>
+                  <div style={{color:'#6B7280'}}><strong>KES 10,000 per branch</strong> — Hands-on sessions & certification</div>
+                </div>
+                <div style={{padding:'.75rem',background:'#F9FAFB',borderRadius:'8px',border:'1px solid #10B981'}}>
+                  <div style={{fontWeight:600,color:'#0A1F3D',marginBottom:'.25rem'}}>📊 Data Migration</div>
+                  <div style={{color:'#6B7280'}}><strong>KES 2,000 per branch</strong></div>
+                  <div style={{color:'#059669',fontWeight:600,marginTop:'.25rem'}}>✓ Zero downtime, zero data loss guarantee</div>
+                  <div style={{color:'#6B7280',fontSize:'.8rem',marginTop:'.25rem'}}>We handle everything—no worries about your data</div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

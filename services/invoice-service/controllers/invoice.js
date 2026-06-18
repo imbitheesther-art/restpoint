@@ -8,7 +8,7 @@ const crypto = require('crypto');
 
 const { AppError } = require('../../middlewares/errorHandler/errorHandler');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps');
+const { getKenyaTimeISO } = require('../../packages/shared-utils/src/timestamps');
 
 
 const invoiceCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });

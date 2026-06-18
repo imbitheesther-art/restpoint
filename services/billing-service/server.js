@@ -8,7 +8,7 @@ const winston = require('winston');
 const rateLimit = require('express-rate-limit');
 
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps');
+const { getKenyaTimeISO } = require('../../packages/shared-utils/src/timestamps');
 
 const app = express();
 const PORT = process.env.PORT || 5020;

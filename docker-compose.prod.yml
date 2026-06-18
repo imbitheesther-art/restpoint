@@ -323,7 +323,7 @@ services:
     container_name: restpoint_frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8082:80"
     depends_on:
       api-gateway:
         condition: service_healthy

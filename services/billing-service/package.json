@@ -1,13 +1,11 @@
 {
   "name": "billing-service",
   "version": "1.0.0",
-  "description": "Robust TypeScript billing service with Python and Go fallbacks",
-  "main": "dist/server.js",
+  "description": "Robust billing service with Python and Go fallbacks",
+  "main": "server.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "health": "node dist/healthCheck.js",
+    "start": "node server.js",
+    "dev": "node server.js",
     "fallback-python": "python3 fallback_billing.py",
     "fallback-go": "./fallback-billing-go"
   },
