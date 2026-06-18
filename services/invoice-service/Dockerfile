@@ -2,7 +2,7 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 # Copy package.json files for workspace resolution
-COPY package.json tsconfig.json tsconfig.base.json ./
+COPY package.json tsconfig.base.json ./
 COPY services/invoice-service/package.json ./services/invoice-service/package.json
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/

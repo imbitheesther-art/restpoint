@@ -7,7 +7,7 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /usr/src/app
 
 # Copy workspace-level config files
-COPY package.json tsconfig.json tsconfig.base.json ./
+COPY package.json tsconfig.base.json ./
 
 # Copy all workspace package.json files for proper resolution
 COPY packages/shared-config/package.json ./packages/shared-config/
@@ -35,7 +35,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /usr/src/app
 
 # Copy workspace-level config files
-COPY package.json tsconfig.json tsconfig.base.json ./
+COPY package.json tsconfig.base.json ./
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
