@@ -167,6 +167,10 @@ validate:
 	@$(COMPOSE) config > /dev/null && echo "$(GREEN)✓ docker-compose.yml is valid$(NC)" || exit 1
 	@$(COMPOSE_PROD) config > /dev/null && echo "$(GREEN)✓ docker-compose.prod.yml is valid$(NC)" || exit 1
 
+validate-dockerfiles:
+	@echo "$(BLUE)Validating all Dockerfiles...$(NC)"
+	@bash scripts/validate-dockerfiles.sh
+
 # Production Deployment Targets
 deploy-prod: validate
 	@echo "$(BLUE)Deploying to PRODUCTION...$(NC)"

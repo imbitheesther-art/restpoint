@@ -8,7 +8,8 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+# Install ALL dependencies (including dev for TypeScript compilation)
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -17,7 +18,11 @@ COPY global/ ./global/
 
 COPY services/deceased-service/ ./services/deceased-service/
 
+# Build TypeScript
 RUN npm run build --workspace=services/deceased-service
+
+# Remove dev dependencies to reduce image size
+RUN npm prune --omit=dev
 
 EXPOSE 5000
 ENV PORT=5000
