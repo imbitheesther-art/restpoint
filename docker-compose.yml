@@ -1,28 +1,60 @@
 services:
   # ============================================
   # RESTPOINT GATEWAY
+  # Uses http-proxy-middleware for reliable routing
+  # Forwards FULL path AS-IS (no /api stripping)
   # ============================================
   restpoint-gateway:
     build:
       context: .
       dockerfile: services/api-gateway/Dockerfile
     container_name: restpoint_gateway
+    restart: unless-stopped
     ports:
       - "${API_GATEWAY_PORT:-5000}:5000"
     env_file:
       - .env
     environment:
+      - NODE_ENV=production
       - SERVICE_NAME=restpoint-gateway
       - PORT=5000
+      # Service URLs — all services use port 5000 internally
+      - AUTH_SERVICE_URL=http://auth-service:5000
+      - USERS_SERVICE_URL=http://auth-service:5000
+      - TENANT_SERVICE_URL=http://tenant-service:5000
+      - DECEASED_SERVICE_URL=http://deceased-service:5000
+      - MARKETPLACE_SERVICE_URL=http://marketplace-service:5000
+      - INVOICES_SERVICE_URL=http://invoice-service:5000
+      - COFFIN_SERVICE_URL=http://coffin-service:5000
+      - DOCUMENTS_SERVICE_URL=http://documents-service:5000
+      - EDOCUMENTS_SERVICE_URL=http://edocuments-service:5000
+      - ANALYTICS_SERVICE_URL=http://analytics-service:5000
+      - CALENDAR_SERVICE_URL=http://calender-service:5000
+      - MPESA_SERVICE_URL=http://mpesa-service:5000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5000
+      - VISITORS_SERVICE_URL=http://visitors-service:5000
+      - BODYCHECKOUT_SERVICE_URL=http://bodycheckout-service:5000
+      - PORTAL_SERVICE_URL=http://portal-service:5000
+      - CHEMICAL_SERVICE_URL=http://chemical-service:5000
+      - EMBALMING_SERVICE_URL=http://deceased-service:5000
+    depends_on:
+      auth-service:
+        condition: service_started
+      tenant-service:
+        condition: service_started
+      deceased-service:
+        condition: service_started
+    volumes:
+      - ./global:/app/global
+      - ./.env:/app/.env
     networks:
       - restpoint_net
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
   # ============================================
   # AUTH SERVICE
