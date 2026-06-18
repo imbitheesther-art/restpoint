@@ -1,4 +1,4 @@
-import bcrypt  from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import mysql from 'mysql2/promise';
 import slugify from 'slugify';
 
@@ -501,22 +501,41 @@ export class TenantModel {
         const tenantId = (result as any).insertId;
         
         // Step 5: Get the created tenant
-        const [tenants] = await serverConn.query(
+        const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_id = ?',
             [tenantId]
         );
         
-        const tenant = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
+        // Safely access the tenant data
+        const tenantRow = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
         
-        if (!tenant) {
+        if (!tenantRow) {
             throw new Error('Failed to create tenant');
         }
+        
+        // Build tenant object safely
+        const tenant: Tenant = {
+            tenant_id: tenantRow.tenant_id,
+            tenant_name: tenantRow.tenant_name,
+            tenant_slug: tenantRow.tenant_slug,
+            db_name: tenantRow.db_name,
+            email: tenantRow.email,
+            phone: tenantRow.phone || null,
+            location: tenantRow.location || null,
+            country: tenantRow.country || null,
+            logo_url: tenantRow.logo_url || null,
+            status: tenantRow.status || 'active',
+            subscription_status: tenantRow.subscription_status || 'trial',
+            subscription_expires_at: tenantRow.subscription_expires_at || null,
+            created_at: tenantRow.created_at,
+            updated_at: tenantRow.updated_at
+        };
         
         // Step 6: Create tenant folder structure for file uploads
         try {
             const { createTenantFolders, initializeUploadsDirectory } = require('../../global/services/fileStorageService');
             await initializeUploadsDirectory();
-            const folderResult = await createTenantFolders(subdomain);
+            const folderResult = await createTenantFolders(tenant.tenant_slug);
             if (folderResult.success) {
                 console.log(`📂 Tenant folders created: ${JSON.stringify(folderResult.paths)}`);
             }
@@ -538,12 +557,12 @@ export class TenantModel {
             { expiresIn: '7d' }
         );
         
-        console.log(`✅ Tenant registered: ${tenant_name} (${tenant.tenant_slug})`);
-        console.log(`📁 Dedicated Database: ${dbName}`);
-        console.log(`🌍 Country: ${country || 'Not specified'}`);
+        console.log(`✅ Tenant registered: ${tenant.tenant_name} (${tenant.tenant_slug})`);
+        console.log(`📁 Dedicated Database: ${tenant.db_name}`);
+        console.log(`🌍 Country: ${tenant.country || 'Not specified'}`);
         console.log(`🏢 Branches: ${branches?.length || 1}`);
         
-        return { tenant: tenant as Tenant, token };
+        return { tenant, token };
     }
     
     // ─── Branch Operations ───────────────────────────────────────────────
@@ -718,37 +737,88 @@ export class TenantModel {
     static async findBySubdomain(slug: string): Promise<Tenant | null> {
         const serverConn = await getServerConnection();
         
-        const [tenants] = await serverConn.query(
+        const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active"',
             [slug]
         );
         
-        const tenant = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
-        return tenant as Tenant | null;
+        const tenantRow = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
+        if (!tenantRow) return null;
+        
+        return {
+            tenant_id: tenantRow.tenant_id,
+            tenant_name: tenantRow.tenant_name,
+            tenant_slug: tenantRow.tenant_slug,
+            db_name: tenantRow.db_name,
+            email: tenantRow.email,
+            phone: tenantRow.phone || null,
+            location: tenantRow.location || null,
+            country: tenantRow.country || null,
+            logo_url: tenantRow.logo_url || null,
+            status: tenantRow.status || 'active',
+            subscription_status: tenantRow.subscription_status || 'trial',
+            subscription_expires_at: tenantRow.subscription_expires_at || null,
+            created_at: tenantRow.created_at,
+            updated_at: tenantRow.updated_at
+        };
     }
     
     static async findById(tenantId: number): Promise<Tenant | null> {
         const serverConn = await getServerConnection();
         
-        const [tenants] = await serverConn.query(
+        const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_id = ?',
             [tenantId]
         );
         
-        const tenant = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
-        return tenant as Tenant | null;
+        const tenantRow = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
+        if (!tenantRow) return null;
+        
+        return {
+            tenant_id: tenantRow.tenant_id,
+            tenant_name: tenantRow.tenant_name,
+            tenant_slug: tenantRow.tenant_slug,
+            db_name: tenantRow.db_name,
+            email: tenantRow.email,
+            phone: tenantRow.phone || null,
+            location: tenantRow.location || null,
+            country: tenantRow.country || null,
+            logo_url: tenantRow.logo_url || null,
+            status: tenantRow.status || 'active',
+            subscription_status: tenantRow.subscription_status || 'trial',
+            subscription_expires_at: tenantRow.subscription_expires_at || null,
+            created_at: tenantRow.created_at,
+            updated_at: tenantRow.updated_at
+        };
     }
     
     static async findByEmail(email: string): Promise<Tenant | null> {
         const serverConn = await getServerConnection();
         
-        const [tenants] = await serverConn.query(
+        const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE email = ? AND status = "active"',
             [email]
         );
         
-        const tenant = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
-        return tenant as Tenant | null;
+        const tenantRow = Array.isArray(tenants) && tenants.length > 0 ? tenants[0] : null;
+        if (!tenantRow) return null;
+        
+        return {
+            tenant_id: tenantRow.tenant_id,
+            tenant_name: tenantRow.tenant_name,
+            tenant_slug: tenantRow.tenant_slug,
+            db_name: tenantRow.db_name,
+            email: tenantRow.email,
+            phone: tenantRow.phone || null,
+            location: tenantRow.location || null,
+            country: tenantRow.country || null,
+            logo_url: tenantRow.logo_url || null,
+            status: tenantRow.status || 'active',
+            subscription_status: tenantRow.subscription_status || 'trial',
+            subscription_expires_at: tenantRow.subscription_expires_at || null,
+            created_at: tenantRow.created_at,
+            updated_at: tenantRow.updated_at
+        };
     }
     
     static async updateStatus(tenantId: number, status: 'active' | 'suspended' | 'deleted'): Promise<void> {
@@ -763,11 +833,26 @@ export class TenantModel {
     static async getAllTenants(): Promise<Tenant[]> {
         const serverConn = await getServerConnection();
         
-        const [tenants] = await serverConn.query(
-            'SELECT tenant_id, tenant_name, tenant_slug, email, country, status, created_at FROM tenant_tracking.tenants ORDER BY created_at DESC'
+        const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
+            'SELECT * FROM tenant_tracking.tenants ORDER BY created_at DESC'
         );
         
-        return tenants as Tenant[];
+        return (tenants || []).map((tenantRow: any) => ({
+            tenant_id: tenantRow.tenant_id,
+            tenant_name: tenantRow.tenant_name,
+            tenant_slug: tenantRow.tenant_slug,
+            db_name: tenantRow.db_name,
+            email: tenantRow.email,
+            phone: tenantRow.phone || null,
+            location: tenantRow.location || null,
+            country: tenantRow.country || null,
+            logo_url: tenantRow.logo_url || null,
+            status: tenantRow.status || 'active',
+            subscription_status: tenantRow.subscription_status || 'trial',
+            subscription_expires_at: tenantRow.subscription_expires_at || null,
+            created_at: tenantRow.created_at,
+            updated_at: tenantRow.updated_at
+        }));
     }
     
     static async getTenantDatabase(tenantId: number): Promise<mysql.Connection | null> {

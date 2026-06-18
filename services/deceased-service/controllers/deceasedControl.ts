@@ -578,6 +578,7 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
  * Export deceased records to Excel
  * GET /api/v1/restpoint/deceased/export-excel
  */
+
 export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): Promise<Response> => {
     const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
     
