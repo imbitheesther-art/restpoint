@@ -6,6 +6,10 @@
 # Run this if the deployment breaks anything
 # ============================================
 
+
+
+
+
 set -e
 
 GATEWAY_CONTAINER="restpoint_gateway"
