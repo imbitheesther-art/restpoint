@@ -1,15 +1,18 @@
+
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "..",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
     "strict": false,
     "noImplicitAny": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+    "skipLibCheck": true,
+    "types": ["node"]
   },
   "include": [
     "server.ts",
@@ -18,7 +21,9 @@
     "models/**/*.ts",
     "services/**/*.ts",
     "utils/**/*.ts",
-    "config/**/*.ts"
+    "config/**/*.ts",
+    "../../shared/**/*.ts",
+    "../../global/**/*.ts"
   ],
   "exclude": [
     "node_modules",
