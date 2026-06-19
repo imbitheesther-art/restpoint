@@ -1,8 +1,9 @@
+
 {
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "dom"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -20,8 +21,11 @@
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "@montezuma/*": ["services/*/src"],
-      "@restpoint/*": ["services/*/src"]
+      "@montezuma/shared-config": ["packages/shared-config/src"],
+      "@montezuma/shared-logger": ["packages/shared-logger/src"],
+      "@montezuma/shared-utils": ["packages/shared-utils/src"],
+      "@montezuma/shared-services": ["packages/shared-services/src"],
+      "@restpoint/*": ["packages/*/src"]
     }
   },
   "exclude": ["node_modules", "dist", "**/*.test.ts", "frontend"]

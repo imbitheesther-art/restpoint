@@ -3,10 +3,8 @@
  * CENTRALIZED: Exports all shared services
  */
 
-export { fileStorageService } from './fileStorageService';
+import { fileStorageService, FolderCategory } from './fileStorageService';
+
+export { fileStorageService, FolderCategory };
 export * from './redisService';
 export * from './rabbitmqService';
-
-export default {
-  fileStorageService: require('./fileStorageService').fileStorageService,
-};

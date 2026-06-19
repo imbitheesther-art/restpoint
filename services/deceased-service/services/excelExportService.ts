@@ -2,71 +2,7 @@ import ExcelJS from 'exceljs';
 import { DateTime } from 'luxon';
 import fs from 'fs';
 import path from 'path';
-
-// FIX: Import fileStorageService from the correct location
-// Since it might not exist, we'll create a local implementation
-interface IFileStorageService {
-  saveFile(buffer: Buffer, fileName: string, options?: any): Promise<any>;
-  getFile(filePath: string): Promise<Buffer>;
-  deleteFile(filePath: string): Promise<boolean>;
-}
-
-// Local fallback implementation if the shared one doesn't exist
-const createLocalFileStorage = (): IFileStorageService => {
-  return {
-    async saveFile(buffer: Buffer, fileName: string, options?: any): Promise<any> {
-      const exportsDir = path.join(process.cwd(), 'exports');
-      if (!fs.existsSync(exportsDir)) {
-        fs.mkdirSync(exportsDir, { recursive: true });
-      }
-      
-      const tenantSlug = options?.tenantSlug || 'default';
-      const tenantDir = path.join(exportsDir, tenantSlug);
-      if (!fs.existsSync(tenantDir)) {
-        fs.mkdirSync(tenantDir, { recursive: true });
-      }
-      
-      const filePath = path.join(tenantDir, fileName);
-      await fs.promises.writeFile(filePath, buffer);
-      
-      return {
-        path: filePath,
-        relativePath: `${tenantSlug}/${fileName}`,
-        fileName: fileName,
-        size: buffer.length
-      };
-    },
-    
-    async getFile(filePath: string): Promise<Buffer> {
-      return await fs.promises.readFile(filePath);
-    },
-    
-    async deleteFile(filePath: string): Promise<boolean> {
-      try {
-        await fs.promises.unlink(filePath);
-        return true;
-      } catch {
-        return false;
-      }
-    }
-  };
-};
-
-// Try to import from shared-services, fallback to local
-let fileStorageService: IFileStorageService;
-try {
-  // This will work if the shared package is available
-  const sharedServices = require('@montezuma/shared-services');
-  fileStorageService = sharedServices.fileStorageService;
-  console.log('✅ Using fileStorageService from @montezuma/shared-services');
-} catch (error) {
-  // Fallback to local implementation
-  fileStorageService = createLocalFileStorage();
-  console.log('📁 Using local fileStorageService fallback');
-}
-
-// Export for use in other files
-export { fileStorageService };
+import { fileStorageService, FolderCategory } from '@montezuma/shared-services';
 
 // Enhanced Professional Color Palette
 const COLORS = {
@@ -455,39 +391,14 @@ export class ExcelExportService {
     
     // Save the file using the fileStorageService
     try {
-      if (fileStorageService && typeof fileStorageService.saveFile === 'function') {
-        const tenantSlug = options.tenantTheme?.companyName?.replace(/\s+/g, '-').toLowerCase() || 'default';
-        
-        let savedFile;
-        try {
-          savedFile = await fileStorageService.saveFile(fileBuffer, fileName, {
-            tenantSlug: tenantSlug,
-            category: 'exports'
-          });
-        } catch (err1) {
-          try {
-            savedFile = await fileStorageService.saveFile(fileBuffer, fileName, {
-              folder: 'exports',
-              subFolder: tenantSlug
-            });
-          } catch (err2) {
-            savedFile = await fileStorageService.saveFile(fileBuffer, fileName);
-          }
-        }
-        
-        if (savedFile) {
-          console.log(`📊 Export saved to: ${savedFile.path || savedFile.relativePath || 'unknown location'}`);
-        }
-      } else {
-        // Fallback: save locally
-        const exportsDir = path.join(process.cwd(), 'exports');
-        if (!fs.existsSync(exportsDir)) {
-          fs.mkdirSync(exportsDir, { recursive: true });
-        }
-        const filePath = path.join(exportsDir, fileName);
-        await fs.promises.writeFile(filePath, fileBuffer);
-        console.log(`📊 Export saved locally: ${filePath}`);
-      }
+      const tenantSlug = options.tenantTheme?.companyName?.replace(/\s+/g, '-').toLowerCase() || 'default';
+      const uploadPath = fileStorageService.getUploadPath({
+        tenantSlug,
+        category: FolderCategory.EXPORTS
+      });
+      const filePath = path.join(uploadPath, fileName);
+      await fs.promises.writeFile(filePath, fileBuffer);
+      console.log(`📊 Export saved to: ${filePath}`);
     } catch (error: any) {
       console.warn(`⚠️ Could not save file: ${error.message}`);
     }

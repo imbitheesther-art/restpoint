@@ -12,6 +12,7 @@
   "dependencies": {
     "@montezuma/shared-config": "file:../../packages/shared-config",
     "@montezuma/shared-logger": "file:../../packages/shared-logger",
+    "@montezuma/shared-services": "file:../../packages/shared-services",
     "@montezuma/shared-utils": "file:../../packages/shared-utils",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
