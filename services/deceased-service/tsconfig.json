@@ -23,7 +23,8 @@
     "utils/**/*.ts",
     "config/**/*.ts",
     "../shared/**/*.ts",
-    "../global/**/*.ts"
+    "../global/**/*.ts",
+    "../../packages/**/*.ts"
   ],
   "exclude": [
     "node_modules",
