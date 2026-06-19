@@ -138,6 +138,23 @@ export default function PortalLoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        textAlign: 'center', padding: '1.5rem',
+        color: 'rgba(255,255,255,0.45)', fontSize: '.74rem',
+      }}>
+        <div style={{ maxWidth: '404px', margin: '0 auto' }}>
+          <p>&copy; 2026 Rest Point. All rights reserved.</p>
+          <p style={{ marginTop: '.35rem' }}>
+            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', marginRight: '.8rem' }} onMouseEnter={e => e.target.style.color = '#fff'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Privacy</a>
+            <a href="/terms" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', marginRight: '.8rem' }} onMouseEnter={e => e.target.style.color = '#fff'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Terms</a>
+            <a href="/contact" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }} onMouseEnter={e => e.target.style.color = '#fff'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.6)'}>Contact</a>
+          </p>
+          <p style={{ marginTop: '.35rem', color: 'rgba(255,255,255,0.35)' }}>Built by Welt Tallis Technologies</p>
+        </div>
+      </footer>
     </div>
   );
 }

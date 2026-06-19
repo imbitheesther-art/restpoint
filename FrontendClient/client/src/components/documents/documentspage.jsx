@@ -8,19 +8,16 @@ import {
   ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, Smartphone, Wifi, WifiOff,
   Upload, Plus, ScanBarcode, Copy, QrCode
 } from 'lucide-react';
-import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useReactToPrint } from 'react-to-print';
 import { playWarningSound, confirmWithWarning } from '../../utils/deleteWarning';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-
-// API Configuration - Centralized API Gateway
-const API_GATEWAY = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const BASE_API = `${API_GATEWAY}/api/v2/restpoint`;
 
 // Enhanced Styled Components with minimal padding
 const PageContainer = styled.div`
@@ -1385,16 +1382,7 @@ const DocumentsPage = () => {
     try {
       setIsLoading(true);
       
-      // Fetch documents for this specific deceased from centralized API
-      const API_URL = `${BASE_API}/documents/${deceasedId}`;
-
-      const response = await axios.get(API_URL, {
-        timeout: 15000,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-tenant-slug': localStorage.getItem('tenantSlug') || 'system_shared'
-        }
-      });
+      const response = await api.get(ENDPOINTS.DOCUMENTS.LIST(deceasedId));
       
       if (response.data && response.data.success) {
         setDocuments(response.data.files || []);
@@ -1424,13 +1412,7 @@ const DocumentsPage = () => {
 
   const fetchDeceasedDetails = async () => {
     try {
-      // Fetch deceased details from the portal API
-      const response = await axios.get(`${BASE_API}/deceased/${deceasedId}`, {
-        timeout: 10000,
-        headers: {
-          'x-tenant-slug': localStorage.getItem('tenantSlug') || 'system_shared'
-        }
-      });
+      const response = await api.get(ENDPOINTS.DECEASED.DETAIL(deceasedId));
       
       if (response.data && response.data.data) {
         setDeceasedData(response.data.data);
@@ -1463,7 +1445,7 @@ const DocumentsPage = () => {
 
   const handleDownload = async (document) => {
     try {
-      const downloadUrl = `${BASE_API}/documents/download/${document.documentId}`;
+      const downloadUrl = ENDPOINTS.DOCUMENTS.DOWNLOAD(document.documentId);
       
       const response = await fetch(downloadUrl, {
         headers: {
@@ -1494,7 +1476,7 @@ const DocumentsPage = () => {
 
   const handleView = async (document) => {
     try {
-      const viewUrl = `${BASE_API}/documents/download/${document.documentId}`;
+      const viewUrl = ENDPOINTS.DOCUMENTS.DOWNLOAD(document.documentId);
       
       if (document.mimeType === 'application/pdf' || document.originalName?.toLowerCase().endsWith('.pdf')) {
         setViewingDocument({
@@ -1530,7 +1512,7 @@ const DocumentsPage = () => {
 
   const handlePrint = async (document) => {
     try {
-      const printUrl = `${BASE_API}/documents/download/${document.documentId}`;
+      const printUrl = ENDPOINTS.DOCUMENTS.DOWNLOAD(document.documentId);
       
       const response = await fetch(printUrl, {
         headers: {
@@ -1607,16 +1589,12 @@ const DocumentsPage = () => {
       setIsSharing(true);
 
       try {
-        await axios.post(`${BASE_API}/documents/share`, {
+        await api.post(ENDPOINTS.DOCUMENTS.LIST + '/share', {
           documentId: sharingDocument.documentId,
           recipientEmail: shareForm.email,
           method: shareForm.method,
           message: shareForm.message,
           documentName: sharingDocument.originalName
-        }, {
-          headers: {
-            'x-tenant-slug': localStorage.getItem('tenantSlug') || 'system_shared'
-          }
         });
 
         toast.success(`Document shared successfully via email to ${shareForm.email}`);
@@ -1631,7 +1609,7 @@ const DocumentsPage = () => {
       setIsSharing(true);
 
       try {
-        const downloadUrl = `${BASE_API}/documents/download/${sharingDocument.documentId}`;
+        const downloadUrl = ENDPOINTS.DOCUMENTS.DOWNLOAD(sharingDocument.documentId);
         
         const response = await fetch(downloadUrl, {
           headers: {
@@ -1688,11 +1666,8 @@ const DocumentsPage = () => {
       try {
         setIsDeleting(true);
         
-        await axios.delete(`${BASE_API}/documents/${deceasedId}/${documentId}`, {
-          data: { deletedBy: getUsername() },
-          headers: {
-            'x-tenant-slug': localStorage.getItem('tenantSlug') || 'system_shared'
-          }
+        await api.delete(ENDPOINTS.DOCUMENTS.DETAIL(documentId), {
+          data: { deletedBy: getUsername() }
         });
         
         setDocuments(prev => prev.filter(doc => doc.documentId !== documentId));
@@ -1728,13 +1703,12 @@ const DocumentsPage = () => {
       formData.append('category', uploadCategory);
       formData.append('uploadedBy', getUsername());
 
-      await axios.post(
-        `${BASE_API}/documents/${deceasedId}/upload`,
+      await api.post(
+        ENDPOINTS.DOCUMENTS.UPLOAD,
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-            'x-tenant-slug': localStorage.getItem('tenantSlug') || 'system_shared'
+            'Content-Type': 'multipart/form-data'
           }
         }
       );

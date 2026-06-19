@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import {
   X, Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
   Pen, Eraser, Type, Square, Circle, Image as ImageIcon,
@@ -8,6 +7,8 @@ import {
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as fabric from "fabric";
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -17,7 +18,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 // ============================================
 
 const CONFIG = {
-  API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1/restpoint',
   AUTO_SAVE_INTERVAL: 30000,
   MAX_CANVAS_SIZE: { width: 800, height: 1131 },
   MAX_FILE_SIZE: 50 * 1024 * 1024,
@@ -396,8 +396,8 @@ const DocumentEditor = ({
 
       const doc = documentRef.current;
       if (doc?.id) {
-        await axios.put(
-          `${CONFIG.API_BASE_URL}/edocuments/${doc.id}`,
+        await api.put(
+          ENDPOINTS.EDOCUMENTS.UPDATE(doc.id),
           {
             title: documentTitle,
             canvasState: canvasState,
@@ -405,13 +405,6 @@ const DocumentEditor = ({
             status: 'draft',
             fieldValues: fieldValues,
             autoSaved: true
-          },
-          {
-            headers: {
-              'x-tenant-slug': tenantInfo.slug,
-              'Content-Type': 'application/json'
-            },
-            timeout: 10000
           }
         );
 
@@ -843,21 +836,14 @@ const DocumentEditor = ({
       const doc = documentRef.current;
 
       if (doc?.id) {
-        response = await axios.put(
-          `${CONFIG.API_BASE_URL}/edocuments/${doc.id}`,
+        response = await api.put(
+          ENDPOINTS.EDOCUMENTS.UPDATE(doc.id),
           {
             title: documentTitle,
             canvasState: canvasState,
             image: dataUrl,
             status: 'completed',
             fieldValues: fieldValues
-          },
-          {
-            headers: {
-              'x-tenant-slug': tenantInfo.slug,
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000
           }
         );
       } else {
@@ -878,16 +864,9 @@ const DocumentEditor = ({
         formData.append('canvasState', canvasState);
         formData.append('fieldValues', JSON.stringify(fieldValues));
 
-        response = await axios.post(
-          `${CONFIG.API_BASE_URL}/edocuments`,
-          formData,
-          {
-            headers: {
-              'x-tenant-slug': tenantInfo.slug,
-              'Content-Type': 'multipart/form-data'
-            },
-            timeout: 30000
-          }
+        response = await api.post(
+          ENDPOINTS.EDOCUMENTS.CREATE,
+          formData
         );
       }
 

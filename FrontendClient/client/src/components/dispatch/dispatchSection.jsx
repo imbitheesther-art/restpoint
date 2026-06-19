@@ -23,7 +23,8 @@ import {
   Navigation,
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 // Unified Color Palette (matching deceasedDetailPage.jsx)
 const Colors = {
@@ -715,8 +716,8 @@ const calculateBillingUpToDay = (dispatchDate, ratePerDay = 5000) => {
 const updateDeceasedBilling = async (deceasedId, dispatchData, tenantSlug) => {
   try {
     const billingAmount = calculateBillingUpToDay(dispatchData.dispatch_date);
-    const response = await axios.put(
-      `${API_BASE_URL}/api/v1/restpoint/deceased/${deceasedId}/billing`,
+    const response = await api.put(
+      ENDPOINTS.DECEASED.UPDATE(deceasedId) + '/billing',
       {
         dispatch_set_date: dispatchData.dispatch_date,
         dispatch_id: dispatchData.dispatch_id,
@@ -724,12 +725,6 @@ const updateDeceasedBilling = async (deceasedId, dispatchData, tenantSlug) => {
         dispatch_destination: dispatchData.destination_address,
         billing_amount: billingAmount,
         last_updated: new Date().toISOString(),
-      },
-      {
-        headers: {
-          'x-tenant-slug': tenantSlug,
-          'Content-Type': 'application/json',
-        },
       }
     );
     return response.data;
@@ -745,9 +740,8 @@ const updateDeceasedBilling = async (deceasedId, dispatchData, tenantSlug) => {
 
 const sendDispatchNotification = async (driverPhone, dispatchData) => {
   try {
-    const API_BASE_URL = 'http://localhost:8000';
-    const response = await axios.post(
-      `${API_BASE_URL}/api/v1/restpoint/dispatch/send-notification`,
+    const response = await api.post(
+      ENDPOINTS.HEARSE.DISPATCH,
       {
         phone: driverPhone,
         message: `🚐 *NEW DISPATCH ASSIGNMENT*\n\n` +
@@ -758,11 +752,6 @@ const sendDispatchNotification = async (driverPhone, dispatchData) => {
           `📏 *Distance:* ${dispatchData.distance} km (one way)\n` +
           `⏱️ *Est. Time:* ${dispatchData.travelTime}\n\n` +
           `Please confirm receipt. Drive safely! 🙏`,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
       }
     );
     return response.data;
@@ -818,8 +807,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [transportCost, setTransportCost] = useState(null);
   const [totalCost, setTotalCost] = useState(null);
 
-  // Centralized API base URL
-  const API_BASE_URL = 'http://localhost:8000';
+// Using centralized API client (api) and ENDPOINTS
 
   // Helper to get tenant slug
   const getTenantSlug = () => {
@@ -855,15 +843,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
     }
     try {
       setIsLoadingTrips(true);
-      const tenantSlug = getTenantSlug();
-      const response = await axios.get(
-        `${API_BASE_URL}/api/v1/restpoint/dispatch/${effectiveDeceasedId}`,
-        {
-          headers: {
-            'x-tenant-slug': tenantSlug,
-          },
-        }
-      );
+      const response = await api.get(ENDPOINTS.HEARSE.DETAIL(effectiveDeceasedId));
       if (response.data.success || response.data) {
         setTrips(response.data.data || response.data.trips || []);
       } else {
@@ -879,15 +859,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
   const fetchAvailableVehicles = async () => {
     try {
-      const tenantSlug = getTenantSlug();
-      const response = await axios.get(
-        `${API_BASE_URL}/api/v1/restpoint/vehicles/available`,
-        {
-          headers: {
-            'x-tenant-slug': tenantSlug,
-          },
-        }
-      );
+      const response = await api.get(ENDPOINTS.HEARSE.VEHICLES);
       if (response.data.success || response.data) {
         setAvailableVehicles(response.data.data || response.data.vehicles || []);
       } else {
@@ -1078,17 +1050,15 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
       let dispatchResponse;
       if (editingId) {
-        dispatchResponse = await axios.put(
-          `${API_BASE_URL}/api/v1/restpoint/dispatch/${editingId}`,
-          tripData,
-          { headers }
+        dispatchResponse = await api.put(
+          `${ENDPOINTS.HEARSE.DETAIL(editingId)}`,
+          tripData
         );
         setMessage('Trip updated successfully!');
       } else {
-        dispatchResponse = await axios.post(
-          `${API_BASE_URL}/api/v1/restpoint/dispatch`,
-          tripData,
-          { headers }
+        dispatchResponse = await api.post(
+          ENDPOINTS.HEARSE.CREATE,
+          tripData
         );
         setMessage('Trip created successfully!');
       }
@@ -1122,15 +1092,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
       return;
     }
     try {
-      const tenantSlug = getTenantSlug();
-      await axios.delete(
-        `${API_BASE_URL}/api/v1/restpoint/dispatch/${tripId}`,
-        {
-          headers: {
-            'x-tenant-slug': tenantSlug,
-          },
-        }
-      );
+      await api.delete(ENDPOINTS.HEARSE.DETAIL(tripId));
       await fetchTrips();
       await fetchAvailableVehicles();
       onUpdate?.();

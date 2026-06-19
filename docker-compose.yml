@@ -6,7 +6,7 @@ version: "3.8"
 services:
   mariadb:
     image: mariadb:10.11
-    container_name: restpoint_mariadb_prod
+    container_name: restpoint_mariadb
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
@@ -42,7 +42,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: restpoint_redis_prod
+    container_name: restpoint_redis
     restart: always
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 1gb --maxmemory-policy allkeys-lru
     ports:
@@ -72,7 +72,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: restpoint_rabbitmq_prod
+    container_name: restpoint_rabbitmq
     restart: always
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
@@ -105,15 +105,14 @@ services:
           memory: 256M
 
   # ============================================
-  # CORE SERVICES (Replicated for HA)
+  # CORE SERVICES
   # ============================================
   api-gateway:
     build:
       context: .
       dockerfile: services/api-gateway/Dockerfile
-      cache_from:
-        - api-gateway:latest
-    image: api-gateway:latest
+    image: restpoint-api-gateway:latest
+    container_name: restpoint_api_gateway
     restart: always
     ports:
       - "${API_GATEWAY_EXTERNAL_PORT:-5000}:5000"
@@ -143,10 +142,6 @@ services:
         max-size: "10m"
         max-file: "5"
     deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 30s
       resources:
         limits:
           cpus: "0.5"
@@ -159,9 +154,8 @@ services:
     build:
       context: .
       dockerfile: services/auth-service/Dockerfile
-      cache_from:
-        - auth-service:latest
-    image: auth-service:latest
+    image: restpoint-auth-service:latest
+    container_name: restpoint_auth_service
     restart: always
     ports:
       - "${AUTH_SERVICE_EXTERNAL_PORT:-5001}:5000"
@@ -191,10 +185,6 @@ services:
         max-size: "10m"
         max-file: "5"
     deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 30s
       resources:
         limits:
           cpus: "0.5"
@@ -207,9 +197,8 @@ services:
     build:
       context: .
       dockerfile: services/tenant-service/Dockerfile
-      cache_from:
-        - tenant-service:latest
-    image: tenant-service:latest
+    image: restpoint-tenant-service:latest
+    container_name: restpoint_tenant_service
     restart: always
     ports:
       - "${TENANT_SERVICE_EXTERNAL_PORT:-5002}:5000"
@@ -241,7 +230,6 @@ services:
         max-size: "10m"
         max-file: "5"
     deploy:
-      replicas: 1
       resources:
         limits:
           cpus: "0.5"
@@ -251,12 +239,14 @@ services:
           memory: 256M
 
   # ============================================
-  # BUSINESS SERVICES (Simplified for prod)
+  # BUSINESS SERVICES
   # ============================================
   deceased-service:
     build:
       context: .
       dockerfile: services/deceased-service/Dockerfile
+    image: restpoint-deceased-service:latest
+    container_name: restpoint_deceased_service
     restart: always
     ports:
       - "${DECEASED_SERVICE_EXTERNAL_PORT:-5003}:5000"
@@ -271,6 +261,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - deceased_service_data:/usr/src/app/data
+      - ./services/deceased-service/uploads:/usr/src/app/uploads
     networks:
       - restpoint_prod
     logging:
@@ -283,6 +276,8 @@ services:
     build:
       context: .
       dockerfile: services/marketplace-service/Dockerfile
+    image: restpoint-marketplace-service:latest
+    container_name: restpoint_marketplace_service
     restart: always
     ports:
       - "${MARKETPLACE_SERVICE_EXTERNAL_PORT:-5004}:5000"
@@ -297,6 +292,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - marketplace_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -309,6 +306,8 @@ services:
     build:
       context: .
       dockerfile: services/invoice-service/Dockerfile
+    image: restpoint-invoice-service:latest
+    container_name: restpoint_invoice_service
     restart: always
     ports:
       - "${INVOICE_SERVICE_EXTERNAL_PORT:-5005}:5000"
@@ -323,6 +322,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - invoice_service_data:/usr/src/app/data
+      - ./services/invoice-service/generated:/usr/src/app/generated
     networks:
       - restpoint_prod
     logging:
@@ -335,6 +337,8 @@ services:
     build:
       context: .
       dockerfile: services/coffin-service/Dockerfile
+    image: restpoint-coffin-service:latest
+    container_name: restpoint_coffin_service
     restart: always
     ports:
       - "${COFFIN_SERVICE_EXTERNAL_PORT:-5006}:5000"
@@ -349,6 +353,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - coffin_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -361,6 +367,8 @@ services:
     build:
       context: .
       dockerfile: services/documents-service/Dockerfile
+    image: restpoint-documents-service:latest
+    container_name: restpoint_documents_service
     restart: always
     ports:
       - "${DOCUMENTS_SERVICE_EXTERNAL_PORT:-5007}:5000"
@@ -375,6 +383,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - documents_service_data:/usr/src/app/data
+      - ./services/documents-service/uploads:/usr/src/app/uploads
     networks:
       - restpoint_prod
     logging:
@@ -387,6 +398,8 @@ services:
     build:
       context: .
       dockerfile: services/edocuments-service/Dockerfile
+    image: restpoint-edocuments-service:latest
+    container_name: restpoint_edocuments_service
     restart: always
     ports:
       - "${EDOCUMENTS_SERVICE_EXTERNAL_PORT:-8116}:5000"
@@ -396,6 +409,14 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - edocuments_service_data:/usr/src/app/data
+      - ./services/edocuments-service/uploads:/usr/src/app/uploads
     networks:
       - restpoint_prod
     logging:
@@ -408,6 +429,8 @@ services:
     build:
       context: .
       dockerfile: services/analytics-service/Dockerfile
+    image: restpoint-analytics-service:latest
+    container_name: restpoint_analytics_service
     restart: always
     ports:
       - "${ANALYTICS_SERVICE_EXTERNAL_PORT:-5009}:5000"
@@ -422,6 +445,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - analytics_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -434,6 +459,8 @@ services:
     build:
       context: .
       dockerfile: services/calender-service/Dockerfile
+    image: restpoint-calender-service:latest
+    container_name: restpoint_calender_service
     restart: always
     ports:
       - "${CALENDAR_SERVICE_EXTERNAL_PORT:-5010}:5000"
@@ -448,6 +475,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - calender_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -460,6 +489,8 @@ services:
     build:
       context: .
       dockerfile: services/mpesa-service/Dockerfile
+    image: restpoint-mpesa-service:latest
+    container_name: restpoint_mpesa_service
     restart: always
     ports:
       - "${MPESA_SERVICE_EXTERNAL_PORT:-5011}:5000"
@@ -472,6 +503,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+    volumes:
+      - mpesa_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -484,6 +517,8 @@ services:
     build:
       context: .
       dockerfile: services/notification-service/Dockerfile
+    image: restpoint-notification-service:latest
+    container_name: restpoint_notification_service
     restart: always
     ports:
       - "${NOTIFICATION_SERVICE_EXTERNAL_PORT:-5111}:5000"
@@ -500,6 +535,8 @@ services:
         condition: service_healthy
       mariadb:
         condition: service_healthy
+    volumes:
+      - notification_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -512,6 +549,8 @@ services:
     build:
       context: .
       dockerfile: services/qrcode-service/Dockerfile
+    image: restpoint-qrcode-service:latest
+    container_name: restpoint_qrcode_service
     restart: always
     ports:
       - "${QRCODE_SERVICE_EXTERNAL_PORT:-5012}:5000"
@@ -521,6 +560,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - qrcode_service_data:/usr/src/app/data
+      - ./services/qrcode-service/generated:/usr/src/app/generated
     networks:
       - restpoint_prod
     logging:
@@ -533,6 +578,8 @@ services:
     build:
       context: .
       dockerfile: services/socketio-service/Dockerfile
+    image: restpoint-socketio-service:latest
+    container_name: restpoint_socketio_service
     restart: always
     ports:
       - "${SOCKETIO_SERVICE_EXTERNAL_PORT:-5013}:5000"
@@ -545,6 +592,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - socketio_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -552,13 +601,13 @@ services:
       options:
         max-size: "5m"
         max-file: "3"
-    deploy:
-      replicas: 2
 
   visitors-service:
     build:
       context: .
       dockerfile: services/visitors-service/Dockerfile
+    image: restpoint-visitors-service:latest
+    container_name: restpoint_visitors_service
     restart: always
     ports:
       - "${VISITORS_SERVICE_EXTERNAL_PORT:-5014}:5000"
@@ -573,6 +622,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - visitors_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -585,6 +636,8 @@ services:
     build:
       context: .
       dockerfile: services/bodycheckout-service/Dockerfile
+    image: restpoint-bodycheckout-service:latest
+    container_name: restpoint_bodycheckout_service
     restart: always
     ports:
       - "${BODYCHECKOUT_SERVICE_EXTERNAL_PORT:-5015}:5000"
@@ -599,6 +652,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - bodycheckout_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -611,6 +666,8 @@ services:
     build:
       context: .
       dockerfile: services/extra-services/Dockerfile
+    image: restpoint-extra-services:latest
+    container_name: restpoint_extra_services
     restart: always
     ports:
       - "${EXTRA_SERVICES_EXTERNAL_PORT:-5016}:5000"
@@ -623,6 +680,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+    volumes:
+      - extra_services_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -635,6 +694,8 @@ services:
     build:
       context: .
       dockerfile: services/call-service/Dockerfile
+    image: restpoint-call-service:latest
+    container_name: restpoint_call_service
     restart: always
     ports:
       - "${CALL_SERVICE_EXTERNAL_PORT:-5018}:5000"
@@ -644,6 +705,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - call_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -656,6 +722,8 @@ services:
     build:
       context: .
       dockerfile: services/portal-service/Dockerfile
+    image: restpoint-portal-service:latest
+    container_name: restpoint_portal_service
     restart: always
     ports:
       - "${PORTAL_SERVICE_EXTERNAL_PORT:-5019}:5000"
@@ -668,6 +736,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+    volumes:
+      - portal_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -680,6 +750,8 @@ services:
     build:
       context: .
       dockerfile: services/chemical-service/Dockerfile
+    image: restpoint-chemical-service:latest
+    container_name: restpoint_chemical_service
     restart: always
     ports:
       - "${CHEMICAL_SERVICE_EXTERNAL_PORT:-5105}:5000"
@@ -692,6 +764,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+    volumes:
+      - chemical_service_data:/usr/src/app/data
     networks:
       - restpoint_prod
     logging:
@@ -704,6 +778,8 @@ services:
     build:
       context: .
       dockerfile: services/billing-service/Dockerfile
+    image: restpoint-billing-service:latest
+    container_name: restpoint_billing_service
     restart: always
     ports:
       - "${BILLING_SERVICE_EXTERNAL_PORT:-5020}:5000"
@@ -718,6 +794,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - billing_service_data:/usr/src/app/data
+      - ./services/billing-service/invoices:/usr/src/app/invoices
     networks:
       - restpoint_prod
     logging:
@@ -730,6 +809,8 @@ services:
     build:
       context: ./FrontendClient/client
       dockerfile: Dockerfile
+    image: restpoint-frontend:latest
+    container_name: restpoint_frontend
     restart: always
     ports:
       - "${FRONTEND_EXTERNAL_PORT:-8082}:80"
@@ -771,4 +852,42 @@ volumes:
   redis_prod_data:
     driver: local
   rabbitmq_prod_data:
+    driver: local
+  deceased_service_data:
+    driver: local
+  marketplace_service_data:
+    driver: local
+  invoice_service_data:
+    driver: local
+  coffin_service_data:
+    driver: local
+  documents_service_data:
+    driver: local
+  edocuments_service_data:
+    driver: local
+  analytics_service_data:
+    driver: local
+  calender_service_data:
+    driver: local
+  mpesa_service_data:
+    driver: local
+  notification_service_data:
+    driver: local
+  qrcode_service_data:
+    driver: local
+  socketio_service_data:
+    driver: local
+  visitors_service_data:
+    driver: local
+  bodycheckout_service_data:
+    driver: local
+  extra_services_data:
+    driver: local
+  call_service_data:
+    driver: local
+  portal_service_data:
+    driver: local
+  chemical_service_data:
+    driver: local
+  billing_service_data:
     driver: local

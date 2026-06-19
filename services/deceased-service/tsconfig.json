@@ -1,9 +1,8 @@
-
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "../..",
+    "rootDir": "../../",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -22,9 +21,7 @@
     "services/**/*.ts",
     "utils/**/*.ts",
     "config/**/*.ts",
-    "../../shared/**/*.ts",
-    "../global/**/*.ts",
-    "../../packages/**/*.ts"
+    "../../shared/**/*.ts"
   ],
   "exclude": [
     "node_modules",

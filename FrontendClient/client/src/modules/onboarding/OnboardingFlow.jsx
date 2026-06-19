@@ -268,6 +268,10 @@ const OnboardingFlow = () => {
               </ul>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 500, color: C.ink, marginTop: '1.2rem', marginBottom: '.5rem', fontSize: '1rem' }}>Ownership</h3>
               <p style={{ fontSize: '.82rem' }}>Rest Point is independently owned, operated, and managed. All software, branding, intellectual property, and platform services remain the exclusive property of Rest Point.</p>
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: `1px solid ${C.line}`, display: 'flex', gap: '1rem', justifyContent: 'center', fontSize: '.8rem' }}>
+                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: C.brass, textDecoration: 'underline' }}>Full Terms of Service</a>
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: C.brass, textDecoration: 'underline' }}>Privacy Policy</a>
+              </div>
             </div>
             <button onClick={() => setShowTermsModal(false)} style={{
               marginTop: '1.5rem', width: '100%', background: C.ink, color: C.bone,

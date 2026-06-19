@@ -10,6 +10,8 @@ import PrivacyPolicy from '../components/privacy/PrivacyPolicy';
 import TermsOfService from '../components/privacy/TermsOfService';
 import AccountDeletion from '../components/privacy/AccountDeletion';
 import WhyUsPage from '../components/pages/WhyUsPage';
+import AboutPage from '../components/pages/AboutPage';
+import ContactPage from '../components/pages/ContactPage';
 import LoginPage from '../components/auth/login';
 import PortalLoginPage from '../components/auth/PortalLogin';
 import ForgotPassword from '../components/auth/ForgotPassword';
@@ -466,6 +468,8 @@ const AppRouter = () => {
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/account-deletion" element={<AccountDeletion />} />
       <Route path="/why-us" element={<WhyUsPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       
       {/* Legacy dashboard redirect */}
       <Route path="/dashboard/*" element={

@@ -3,8 +3,10 @@
 // Centralized configuration for the application environment
 
 const env = {
-  // Use Vite's environment variables, fallback to relative path for nginx proxy
-  API_URL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000'),
+  // In production (nginx proxy), use relative path /api/
+  // In development, use localhost:8000
+  // Can be overridden with VITE_API_URL env var
+  API_URL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000'),
   
   // Timeout for API requests in milliseconds
   API_TIMEOUT: 30000,

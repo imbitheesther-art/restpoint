@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /usr/src/app
 
 COPY package.json tsconfig.base.json ./
@@ -14,7 +14,6 @@ COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
-
 COPY services/auth-service/ ./services/auth-service/
 
 EXPOSE 5000

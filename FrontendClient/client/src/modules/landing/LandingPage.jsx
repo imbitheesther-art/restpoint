@@ -196,6 +196,7 @@ export default function App() {
   const goLogin = () => navigate('/login');
   const goStart = () => navigate('/register');
   const goAbout = () => navigate('/about');
+  const goContact = () => navigate('/contact');
   const goPortalLogin = () => navigate('/portal/login');
   const goPrivacy = () => navigate('/privacy');
   const goTerms = () => navigate('/terms');
@@ -687,7 +688,7 @@ export default function App() {
             <div className="footer-col">
               <h4>Company</h4>
               <a className="footer-link" onClick={goAbout}>About</a>
-              <a className="footer-link" href="mailto:info@restpoint.co.ke">Contact</a>
+              <a className="footer-link" onClick={goContact}>Contact</a>
               <a className="footer-link" onClick={goPrivacy}>Privacy policy</a>
               <a className="footer-link" onClick={goTerms}>Terms</a>
               <a className="footer-link" href="/account-deletion">Account deletion</a>

@@ -1,4 +1,4 @@
-FROM node:22-alpine
+FROM node:20-alpine
 WORKDIR /usr/src/app
 
 # Copy monorepo root files
@@ -13,15 +13,18 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 # Copy service package.json
 COPY services/api-gateway/package.json ./services/api-gateway/
 
-# Install dependencies with retry configuration
+# Install dependencies
 RUN npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-retries 10 && \
     npm install --omit=dev --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy monorepo structure
+# Copy all required source files
 COPY packages/ ./packages/
+COPY configurations/ ./configurations/
+COPY shared/ ./shared/
+COPY global/ ./global/
 COPY services/api-gateway/ ./services/api-gateway/
 
 EXPOSE 5000

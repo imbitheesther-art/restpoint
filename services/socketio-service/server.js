@@ -4,6 +4,7 @@ const { Server } = require("socket.io");
 const { createClient } = require("redis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const dotenv = require("dotenv");
+const { tenantMiddleware } = require("../../global/middlewares/tenant-validation");
 
 dotenv.config();
 

@@ -25,11 +25,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ExportModal from './ExportModal';
 import RaiseTicketModal from '../support/RaiseTicketModal';
 
-// API Configuration
-const API_GATEWAY_URL = 'http://localhost:8000';
-const DECEASED_BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
-
-// Use API client that handles auth and tenant slug
+// Use centralized API client that handles auth, tenant slug, and base URL
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
@@ -834,16 +830,7 @@ const AllDeceasedPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('authToken');
-      const tenantSlug = getTenantSlug();
-      
-      const response = await axios.get(`${DECEASED_BASE_URL}/deceased-all`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-tenant-slug': tenantSlug,
-        },
-      });
-      
+      const response = await api.get(ENDPOINTS.DECEASED.LIST);
       const result = response.data;
       const records = result.data;
       
@@ -896,13 +883,9 @@ const AllDeceasedPage = () => {
       }
       queryParams.append('format', exportOptions.format);
 
-      const url = `${DECEASED_BASE_URL}/export-excel?${queryParams.toString()}`;
+      const url = `${ENDPOINTS.DECEASED.EXPORT_EXCEL}?${queryParams.toString()}`;
       
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-tenant-slug': tenantSlug,
-        },
+      const response = await api.get(url, {
         responseType: 'blob',
       });
 
