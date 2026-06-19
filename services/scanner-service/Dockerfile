@@ -7,9 +7,14 @@ RUN apk add --no-cache git make
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
+# Configure Go module behavior for local builds without go.sum
+ENV GONOSUMDB=* GOFLAGS=-mod=mod
+
+# Copy go mod files first to cache deps
 COPY go.mod ./
-RUN GONOSUMDB=* GOFLAGS=-mod=mod go mod download
+
+# Tidy & download dependencies (generates go.sum from imports)
+RUN go mod tidy && go mod download
 
 # Copy source code
 COPY cmd/ ./cmd/
