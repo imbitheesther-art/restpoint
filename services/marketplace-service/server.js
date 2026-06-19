@@ -31,7 +31,7 @@ const httpRequestDurationMicroseconds = { startTimer: () => () => {} };
 dotenv.config();
 
 // Import local modules
-const corsMiddleware = require("../global/middlewares/corsMiddleware");
+const corsMiddleware = require("../../global/middlewares/corsMiddleware");
 const { initDB, safeQuery } = require("./src/configurations/db");
 const knexConfig = require("./knexfile");
 

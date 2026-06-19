@@ -6,8 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "npx ts-node server.ts",
-    "dev:watch": "nodemon --watch . --ext ts --exec npx ts-node server.ts",
+    "dev": "npx ts-node server.js",
+    "dev:watch": "nodemon --watch . --ext js --exec npx ts-node server.js",
     "clean": "rimraf dist",
     "type-check": "tsc --noEmit"
   },
