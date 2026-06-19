@@ -163,7 +163,7 @@ services:
   # Frontend Client
   frontend:
     build:
-      context: ./FrontendClient
+      context: ./FrontendClient/client
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
