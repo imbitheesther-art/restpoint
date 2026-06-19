@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import db from './src/config/db.js';
 import mpesaRoutes from './src/routes/mpesa.routes.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { tenantMiddleware } = require('../../global/middlewares/tenant-validation');
 
 dotenv.config();
 
@@ -25,6 +28,9 @@ const PORT = process.env.PORT || 8011;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// Apply tenant validation to all API routes
+app.use('/api/v1/mpesa', tenantMiddleware);
 
 // Routes
 app.use('/api/v1/mpesa', mpesaRoutes);

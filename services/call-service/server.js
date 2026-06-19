@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
+const { tenantMiddleware } = require('../../global/middlewares/tenant-validation');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +21,13 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is required');
+}
+
+// Apply tenant validation to all API routes
+app.use('/api/v2/restpoint/call', tenantMiddleware);
 
 // Room mapping: tenantSlug -> { activeUsers: Set<socketId>, roomId: string, branchName: string }
 const rooms = new Map();
