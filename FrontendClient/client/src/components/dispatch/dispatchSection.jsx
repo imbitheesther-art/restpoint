@@ -17,7 +17,6 @@ import {
   Gauge,
   Settings,
   Send,
-  WhatsApp,
   Users,
   Clock,
   AlertCircle,
@@ -107,7 +106,7 @@ const StyledButton = styled.button`
   }
 `;
 
-const WhatsAppButton = styled.button`
+const SendButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -116,13 +115,13 @@ const WhatsAppButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   border: none;
-  background-color: ${Colors.whatsappGreen};
+  background-color: ${Colors.accentBlue};
   color: white;
   transition: all 0.2s ease;
   font-size: 0.8rem;
 
   &:hover {
-    background-color: #1ebe57;
+    background-color: ${Colors.buttonHover};
     transform: translateY(-1px);
   }
 
@@ -741,14 +740,14 @@ const updateDeceasedBilling = async (deceasedId, dispatchData, tenantSlug) => {
 };
 
 // ============================================
-// WHATSAPP NOTIFICATION SERVICE
+// SEND NOTIFICATION SERVICE (WhatsApp removed)
 // ============================================
 
-const sendDispatchWhatsApp = async (driverPhone, dispatchData) => {
+const sendDispatchNotification = async (driverPhone, dispatchData) => {
   try {
     const API_BASE_URL = 'http://localhost:8000';
     const response = await axios.post(
-      `${API_BASE_URL}/api/v1/restpoint/dispatch/send-whatsapp`,
+      `${API_BASE_URL}/api/v1/restpoint/dispatch/send-notification`,
       {
         phone: driverPhone,
         message: `🚐 *NEW DISPATCH ASSIGNMENT*\n\n` +
@@ -768,7 +767,7 @@ const sendDispatchWhatsApp = async (driverPhone, dispatchData) => {
     );
     return response.data;
   } catch (error) {
-    console.error('WhatsApp dispatch notification failed:', error);
+    console.error('Notification dispatch failed:', error);
     throw error;
   }
 };
@@ -789,7 +788,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [trips, setTrips] = useState([]);
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [routeSteps, setRouteSteps] = useState([]);
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
 
   // Form state
   const [tripName, setTripName] = useState('');
@@ -942,6 +941,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
         setFuelCost(null);
         setTransportCost(null);
         setTotalCost(0);
+        setFuelEstimate(null);
       }
     } else {
       setFuelCost(null);
@@ -1164,13 +1164,13 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
     setShowModal(true);
   };
 
-  const sendToDriverWhatsApp = async (trip) => {
+  const sendToDriverNotification = async (trip) => {
     if (!trip.driver_contact) {
       setMessage('No driver phone number available');
       return;
     }
 
-    setIsSendingWhatsApp(true);
+    setIsSendingNotification(true);
     try {
       const dispatchData = {
         origin: trip.origin_address || DEFAULT_MORTUARY.address,
@@ -1182,13 +1182,13 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
         travelTime: trip.travel_time,
       };
 
-      await sendDispatchWhatsApp(trip.driver_contact, dispatchData);
-      setMessage('✅ Dispatch details sent to driver via WhatsApp!');
+      await sendDispatchNotification(trip.driver_contact, dispatchData);
+      setMessage('✅ Dispatch details sent to driver successfully!');
     } catch (error) {
-      console.error('WhatsApp error:', error);
-      setMessage('❌ Failed to send WhatsApp: ' + (error.response?.data?.message || error.message));
+      console.error('Notification error:', error);
+      setMessage('❌ Failed to send notification: ' + (error.response?.data?.message || error.message));
     } finally {
-      setIsSendingWhatsApp(false);
+      setIsSendingNotification(false);
       setTimeout(() => setMessage(''), 5000);
     }
   };
@@ -1395,14 +1395,14 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
                 <ActionButtons>
                   {trip.driver_contact && (
-                    <WhatsAppButton onClick={() => sendToDriverWhatsApp(trip)} disabled={isSendingWhatsApp}>
-                      {isSendingWhatsApp ? (
+                    <SendButton onClick={() => sendToDriverNotification(trip)} disabled={isSendingNotification}>
+                      {isSendingNotification ? (
                         <Loader2 size={14} className="animate-spin" />
                       ) : (
-                        <WhatsApp size={14} />
+                        <Send size={14} />
                       )}
                       Send to Driver
-                    </WhatsAppButton>
+                    </SendButton>
                   )}
                   <ActionButton onClick={() => handleEdit(trip)}>
                     <Edit size={14} /> Edit

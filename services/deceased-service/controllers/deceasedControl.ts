@@ -2,9 +2,8 @@ import { Request, Response } from 'express';
 import { DateTime } from 'luxon';
 import crypto from 'crypto';
 import axios from 'axios';
-import { lookupTenantDatabase, safeTenantExecute, safeTenantQuery } from '../../../shared/dbConfig';
-import ExcelExportService from '../services/excelExportService';
 import mysql from 'mysql2/promise';
+import ExcelExportService from '../services/excelExportService';
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
@@ -24,6 +23,104 @@ const logError = (error: any, context: string) => {
         stack: error?.stack,
         timestamp: nowNairobi()
     });
+};
+
+/**
+ * Multi-Tenant Database Lookup
+ * Finds the correct database for a given tenant slug
+ * Uses the tenant_tracking database to map tenant -> database
+ */
+const lookupTenantDatabase = async (tenantSlug: string): Promise<string | null> => {
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        console.warn('⚠️ Invalid tenant slug provided for database lookup');
+        return null;
+    }
+
+    try {
+        // Connect to the tracking database (central tenant registry)
+        const trackingConn = await mysql.createConnection({
+            host: process.env.DB_HOST || 'localhost',
+            port: parseInt(process.env.DB_PORT || '3306'),
+            user: process.env.DB_USER || 'root',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.TENANT_TRACKING_DB || 'tenant_tracking'
+        });
+        
+        try {
+            // Look up the tenant's database name
+            const [rows] = await trackingConn.execute(
+                'SELECT database_name, tenant_name, status FROM tenants WHERE tenant_slug = ? AND status = "active"',
+                [tenantSlug]
+            );
+            await trackingConn.end();
+            
+            if (rows && (rows as any[]).length > 0) {
+                const tenant = (rows as any[])[0];
+                console.log(`✅ Found database '${tenant.database_name}' for tenant: ${tenantSlug}`);
+                return tenant.database_name;
+            }
+            
+            console.warn(`⚠️ No active tenant found for slug: ${tenantSlug}`);
+            return null;
+        } catch (err) {
+            await trackingConn.end();
+            throw err;
+        }
+    } catch (error) {
+        console.error(`❌ Failed to lookup database for tenant ${tenantSlug}:`, error);
+        return null;
+    }
+};
+
+/**
+ * Execute a query on a tenant's database
+ * Creates a new connection each time for isolation
+ */
+const safeTenantQuery = async (dbName: string, query: string, params: any[]): Promise<any> => {
+    if (!dbName) {
+        throw new Error('Database name is required for tenant query');
+    }
+
+    const connection = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: dbName,
+        multipleStatements: false // Security: prevent SQL injection via multiple statements
+    });
+    
+    try {
+        const [rows] = await connection.execute(query, params);
+        return rows;
+    } finally {
+        await connection.end();
+    }
+};
+
+/**
+ * Execute a write operation on a tenant's database
+ * Creates a new connection each time for isolation
+ */
+const safeTenantExecute = async (dbName: string, query: string, params: any[]): Promise<any> => {
+    if (!dbName) {
+        throw new Error('Database name is required for tenant execute');
+    }
+
+    const connection = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: dbName
+    });
+    
+    try {
+        const [result] = await connection.execute(query, params);
+        return result;
+    } finally {
+        await connection.end();
+    }
 };
 
 const generateUniqueDeceasedId = (fullName: string, tenantSlug: string): string => {
@@ -82,6 +179,11 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
 /**
  * Register a new deceased person
  * POST /api/v1/restpoint/deceased/register-deceased
+ * 
+ * Multi-tenant flow:
+ * 1. Extract tenantSlug from header
+ * 2. Look up tenant's database
+ * 3. Execute query on tenant's database
  */
 export const registerDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
     const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
@@ -128,6 +230,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             });
         }
 
+        // Multi-tenant: Look up the tenant's database
         console.log(`🔍 Looking up database for tenant slug: ${tenantSlug}`);
         const dbName = await lookupTenantDatabase(tenantSlug);
         
@@ -139,8 +242,9 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             });
         }
         
-        console.log(`✅ Found database: ${dbName}`);
+        console.log(`✅ Found database: ${dbName} for tenant: ${tenantSlug}`);
 
+        // Ensure the deceased table exists in the tenant's database
         await ensureDeceasedTable(dbName, tenantSlug);
 
         const deceased_id = generateUniqueDeceasedId(full_name, tenantSlug);
@@ -149,7 +253,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
         const admissionNum = admission_number || `ADM-${Date.now()}`;
         const admittedDate = date_admitted || now;
 
-        console.log(`📝 Inserting deceased record with ID: ${deceased_id}`);
+        console.log(`📝 Inserting deceased record with ID: ${deceased_id} into database: ${dbName}`);
 
         const insertQuery = `
             INSERT INTO deceased (
@@ -159,6 +263,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
+        // Execute on the tenant's database
         const result = await safeTenantExecute(dbName, insertQuery, [
             deceased_id,
             admissionNum,
@@ -178,7 +283,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             null
         ]);
 
-        console.log(`✅ Deceased registered successfully. Insert ID: ${result.insertId}`);
+        console.log(`✅ Deceased registered successfully in database ${dbName}. Insert ID: ${result.insertId}`);
 
         // Create notification for new deceased registration
         try {
@@ -241,6 +346,7 @@ export const getAllDeceased = async (req: TenantRequest, res: Response): Promise
     }
 
     try {
+        // Multi-tenant: Look up the tenant's database
         const dbName = await lookupTenantDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
@@ -305,7 +411,7 @@ export const getAllDeceased = async (req: TenantRequest, res: Response): Promise
 };
 
 /**
- * Get deceased record by ID (supports both numeric id and string deceased_id)
+ * Get deceased record by ID
  * GET /api/v1/restpoint/deceased/deceased-id/:id
  */
 export const getDeceasedById = async (req: TenantRequest, res: Response): Promise<Response> => {
@@ -334,6 +440,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
     }
 
     try {
+        // Multi-tenant: Look up the tenant's database
         const dbName = await lookupTenantDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
@@ -346,7 +453,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
         const isNumeric = /^\d+$/.test(id);
         
         if (isNumeric) {
-            console.log(`🔍 Searching by numeric ID: ${id}`);
+            console.log(`🔍 Searching by numeric ID: ${id} in database: ${dbName}`);
             const selectQuery = `
                 SELECT 
                     id, deceased_id, full_name, date_of_death, date_of_birth,
@@ -361,7 +468,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
             const records = await safeTenantQuery(dbName, selectQuery, [parseInt(id)]);
             if (records && records.length > 0) deceased = records[0];
         } else {
-            console.log(`🔍 Searching by deceased_id: ${id}`);
+            console.log(`🔍 Searching by deceased_id: ${id} in database: ${dbName}`);
             const selectQuery = `
                 SELECT 
                     id, deceased_id, full_name, date_of_death, date_of_birth,
@@ -378,7 +485,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
         }
 
         if (!deceased) {
-            console.log(`❌ No record found for: ${id}`);
+            console.log(`❌ No record found for: ${id} in database: ${dbName}`);
             return res.status(404).json({
                 success: false,
                 message: 'Deceased record not found'
@@ -417,6 +524,7 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
     }
 
     try {
+        // Multi-tenant: Look up the tenant's database
         const dbName = await lookupTenantDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
@@ -484,6 +592,7 @@ export const deleteDeceased = async (req: TenantRequest, res: Response): Promise
     }
 
     try {
+        // Multi-tenant: Look up the tenant's database
         const dbName = await lookupTenantDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
@@ -532,6 +641,7 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
     }
 
     try {
+        // Multi-tenant: Look up the tenant's database
         const dbName = await lookupTenantDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
@@ -591,6 +701,7 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
     }
 
     try {
+        // Multi-tenant: Look up the tenant's database
         const dbName = await lookupTenantDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
@@ -606,12 +717,12 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             port: parseInt(process.env.DB_PORT || '3306'),
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || '',
-            database: 'tenant_tracking'
+            database: process.env.TENANT_TRACKING_DB || 'tenant_tracking'
         });
         
         try {
             const [tenants] = await trackingConn.execute(
-                'SELECT tenant_name FROM tenants WHERE tenant_slug = ?',
+                'SELECT tenant_name FROM tenants WHERE tenant_slug = ? AND status = "active"',
                 [tenantSlug]
             );
             if (tenants && (tenants as any[]).length > 0) {
@@ -643,7 +754,7 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             params.push(start, end);
         }
         
-        // Get records
+        // Get records from tenant's database
         const selectQuery = `
             SELECT 
                 id, deceased_id, admission_number, full_name, gender,

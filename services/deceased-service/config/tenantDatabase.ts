@@ -1,16 +1,39 @@
 /**
  * Tenant database configuration wrapper
- * Re-exports from shared config for backward compatibility
+ * Uses shared config exports
  */
-import { getTenantDB, safeTenantQuery, safeTenantExecute } from '@montezuma/shared-config';
+import { pool, safeQuery, safeQueryOne } from '@montezuma/shared-config';
 
-// Create a wrapper class/object that matches the expected interface
+// Helper to get tenant-specific database connection
+const getTenantDB = async (tenantSlug: string) => {
+  // If you have tenant-specific database connections, implement here
+  // Otherwise, use the default pool
+  return pool;
+};
+
+// Safe tenant query wrapper
+const safeTenantQuery = async (query: string, params: any[]) => {
+  return safeQuery(query, params);
+};
+
+// Safe tenant execute wrapper
+const safeTenantExecute = async (query: string, params: any[]) => {
+  const connection = await pool.getConnection();
+  try {
+    const [result] = await connection.execute(query, params);
+    return result;
+  } finally {
+    connection.release();
+  }
+};
+
+// Create a wrapper that matches the expected interface
 export const tenantDB = {
   async getConnection(tenantSlug: string) {
-    const pool = await getTenantDB(tenantSlug);
+    const dbPool = await getTenantDB(tenantSlug);
     return {
       async execute(sql: string, params: any[]) {
-        const [rows] = await pool.query(sql, params);
+        const [rows] = await dbPool.query(sql, params);
         return [rows];
       },
       release() {
@@ -20,4 +43,4 @@ export const tenantDB = {
   }
 };
 
-export { safeTenantQuery, safeTenantExecute };
+export { getTenantDB, safeTenantQuery, safeTenantExecute };

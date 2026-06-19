@@ -2,15 +2,12 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
   X, Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
-  Pen, Eraser, Type, Square, Circle, Image as ImageIcon,  Pen,
+  Pen, Eraser, Type, Square, Circle, Image as ImageIcon,
   Trash2, Eye, Check, Upload, Move, RefreshCw, AlertCircle, Lock, Cloud
 } from 'lucide-react';
-
-
-
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
-import fabric from "fabric";
+import * as fabric from "fabric";
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -449,7 +446,6 @@ const DocumentEditor = ({
   // BACKGROUND LOADING - FIXED VERSION
   // ============================================
 
-  // This is the key fix - loadPDF is now async
   const loadPDF = async (url) => {
     try {
       const response = await fetch(url, {
@@ -459,7 +455,6 @@ const DocumentEditor = ({
       await loadPDFBackground(new Uint8Array(buffer));
     } catch (error) {
       console.error('Error loading PDF:', error);
-      // Fallback to image if PDF fails
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = url;
@@ -566,17 +561,15 @@ const DocumentEditor = ({
             reader.onerror = () => reject(new Error('Failed to read image file'));
             reader.readAsDataURL(file);
           }
-     } else if (doc?.fileUrl) {
-  const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
-  if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
-    // Wrap the await in an async IIFE
-    (async () => {
-      await loadPDF(url);
-    })();
-  } else {
-    setFabricBackgroundImage(url);
-  }
-
+        } else if (doc?.fileUrl) {
+          const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
+          if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
+            (async () => {
+              await loadPDF(url);
+            })();
+          } else {
+            setFabricBackgroundImage(url);
+          }
         } else if (template?.fileName) {
           const url = `${CONFIG.API_BASE_URL}/edocuments/templates/download/${template.fileName}`;
           setFabricBackgroundImage(url);
@@ -1147,7 +1140,7 @@ const DocumentEditor = ({
           <h4 style={toolbarHeadingStyle}>Insert</h4>
           <div style={toolGroupStyle}>
             <button onClick={() => { setActiveTool('select'); setShowSignatureModal(true); }} style={toolbarSquareButtonStyle} title="Add Signature" disabled={isLoading}>
-              <Signature size={18} />
+              <Pen size={18} />
               <span style={{ fontSize: '10px', marginTop: '4px' }}>Signature</span>
             </button>
             <button onClick={() => fileInputRef.current?.click()} style={toolbarSquareButtonStyle} title="Upload Logo" disabled={isLoading}>
