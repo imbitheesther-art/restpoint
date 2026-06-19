@@ -170,14 +170,14 @@ export class OnboardingController {
             role: user.role,
             branchId: user.branch_id
           },
-          process.env.JWT_SECRET || 'your-secret-key',
+          process.env.JWT_SECRET,
           { expiresIn: '7d' }
         );
 
         // Generate refresh token
         const refreshToken = jwt.sign(
           { userId: user.user_id, tenantSlug: tenant.tenant_slug },
-          process.env.REFRESH_TOKEN_SECRET || 'refresh-secret-key',
+          process.env.REFRESH_TOKEN_SECRET,
           { expiresIn: '30d' }
         );
 
@@ -532,7 +532,7 @@ router.get('/portal/lookup', async (req: Request, res: Response) => {
         deceasedId: result.deceased.deceased_id,
         type: 'portal'
       },
-      process.env.JWT_SECRET || 'portal-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 

@@ -35,20 +35,25 @@ export interface Tenant {
     updated_at: Date;
 }
 
-// Connection to MariaDB server (NO DATABASE SELECTED)
-let serverConnection: mysql.Connection | null = null;
+// Connection pool to MariaDB server (NO DATABASE SELECTED) — prevents connection exhaustion
+let serverPool: mysql.Pool | null = null;
 
-async function getServerConnection(): Promise<mysql.Connection> {
-    if (!serverConnection) {
-        serverConnection = await mysql.createConnection({
+async function getServerPool(): Promise<mysql.Pool> {
+    if (!serverPool) {
+        serverPool = mysql.createPool({
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT || '3306'),
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || '',
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            enableKeepAlive: true,
+            keepAliveInitialDelay: 0,
         });
-        
+        console.log('✅ Tenant service server pool created');
     }
-    return serverConnection;
+    return serverPool;
 }
 
 function generateSlug(tenantName: string): string {
@@ -75,7 +80,7 @@ async function createCompleteTenantDatabase(
     
     console.log(`📦 Creating complete tenant database: ${dbName}`);
     
-    const serverConn = await getServerConnection();
+    const serverConn = await getServerPool();
     
     // Step 1: Create the database
     await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
@@ -427,9 +432,9 @@ export class TenantModel {
         const subdomain = generateSlug(tenant_name);
         const password_hash = await bcrypt.hash(password, 10);
         
-        const serverConn = await getServerConnection();
-        
-        // Step 1: Create the tenants tracking table if it doesn't exist
+    const serverConn = await getServerPool();
+    
+    // Step 1: Create the tenants tracking table if it doesn't exist
         await serverConn.query(`
             CREATE DATABASE IF NOT EXISTS tenant_tracking
         `);
@@ -553,7 +558,7 @@ export class TenantModel {
                 email: email,
                 role: 'admin'
             },
-            process.env.JWT_SECRET || 'your-secret-key',
+            process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
         
@@ -735,7 +740,7 @@ export class TenantModel {
     // ─── Existing Methods ─────────────────────────────────────────────────
     
     static async findBySubdomain(slug: string): Promise<Tenant | null> {
-        const serverConn = await getServerConnection();
+        const serverConn = await getServerPool();
         
         const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active"',
@@ -764,7 +769,7 @@ export class TenantModel {
     }
     
     static async findById(tenantId: number): Promise<Tenant | null> {
-        const serverConn = await getServerConnection();
+        const serverConn = await getServerPool();
         
         const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_id = ?',
@@ -793,7 +798,7 @@ export class TenantModel {
     }
     
     static async findByEmail(email: string): Promise<Tenant | null> {
-        const serverConn = await getServerConnection();
+        const serverConn = await getServerPool();
         
         const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants WHERE email = ? AND status = "active"',
@@ -822,7 +827,7 @@ export class TenantModel {
     }
     
     static async updateStatus(tenantId: number, status: 'active' | 'suspended' | 'deleted'): Promise<void> {
-        const serverConn = await getServerConnection();
+        const serverConn = await getServerPool();
         
         await serverConn.query(
             'UPDATE tenant_tracking.tenants SET status = ?, updated_at = NOW() WHERE tenant_id = ?',
@@ -831,7 +836,7 @@ export class TenantModel {
     }
     
     static async getAllTenants(): Promise<Tenant[]> {
-        const serverConn = await getServerConnection();
+        const serverConn = await getServerPool();
         
         const [tenants] = await serverConn.query<mysql.RowDataPacket[]>(
             'SELECT * FROM tenant_tracking.tenants ORDER BY created_at DESC'

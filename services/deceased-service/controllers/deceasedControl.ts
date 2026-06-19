@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import mysql from 'mysql2/promise';
 import ExcelExportService from '../services/excelExportService';
-import { lookupTenantDatabase, safeTenantQuery, safeTenantExecute } from '../../shared/dbConfig';
+import { lookupTenantDatabase, safeTenantQuery, safeTenantExecute } from '../../shared/dbConfig.ts';
 
 interface TenantRequest extends Request {
     tenantSlug?: string;

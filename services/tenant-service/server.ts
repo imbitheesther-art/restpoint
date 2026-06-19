@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import onboardingRoutes from './routes/onboardingRoutes';
 import systemAdminRoutes from './routes/systemAdminRoutes';
 
@@ -18,10 +19,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ============================================
-// CORS — allow all headers the frontend sends
+// CORS — strict whitelist (no wildcard in production)
 // ============================================
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:8082').split(',');
+  if (!origin || allowedOrigins.some(o => origin.includes(o.replace(/https?:\/\//, '')))) {
+    return callback(null, true);
+  }
+  return callback(new Error('Origin not allowed by CORS: ' + origin));
+};
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -50,14 +59,33 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ============================================
+// RATE LIMITING
+// ============================================
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, message: 'Too many auth attempts. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ============================================
 // ROUTES
 // ============================================
 // Mount onboarding routes — careful ordering to avoid path conflicts
 // Most specific paths FIRST, generic paths LAST
-app.use('/api/v1/restpoint/tenant/onboarding', onboardingRoutes);
-app.use('/api/v1/restpoint/tenants/onboarding', onboardingRoutes);
-app.use('/api/v1/restpoint/tenants/register', onboardingRoutes);
-app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
+app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
+app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
+app.use('/api/onboarding', authLimiter, onboardingRoutes);
 
 // System Admin Routes
 app.use('/api/system-admin', systemAdminRoutes);
