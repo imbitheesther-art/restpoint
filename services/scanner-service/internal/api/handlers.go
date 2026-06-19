@@ -1,14 +1,10 @@
 package api
 
 import (
-	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,20 +13,19 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"scanner-service/internal/scanner"
-	"scanner-service/internal/storage"
 	"scanner-service/pkg/models"
 )
 
 // Handler handles API requests
 type Handler struct {
 	scannerManager *scanner.Manager
-	storage        storage.Storage
+	storage        scanner.Storage
 	upgrader       websocket.Upgrader
 	wsClients      map[string]*websocket.Conn
 }
 
 // NewHandler creates a new API handler
-func NewHandler(scannerManager *scanner.Manager, storage storage.Storage) *Handler {
+func NewHandler(scannerManager *scanner.Manager, storage scanner.Storage) *Handler {
 	return &Handler{
 		scannerManager: scannerManager,
 		storage:        storage,
@@ -270,7 +265,7 @@ func (h *Handler) UploadMobileScan(c *gin.Context) {
 
 // GetDocuments returns documents for a deceased
 func (h *Handler) GetDocuments(c *gin.Context) {
-	deceasedID := c.Param("deceasedId")
+	_ = c.Param("deceasedId")
 	
 	// In production, query from database
 	// For now, return empty list
@@ -283,7 +278,7 @@ func (h *Handler) GetDocuments(c *gin.Context) {
 
 // DownloadDocument serves a document for download
 func (h *Handler) DownloadDocument(c *gin.Context) {
-	documentID := c.Param("documentId")
+	_ = c.Param("documentId")
 	
 	// In production, query from database
 	// For now, return not found
@@ -295,7 +290,7 @@ func (h *Handler) DownloadDocument(c *gin.Context) {
 
 // DeleteDocument deletes a document
 func (h *Handler) DeleteDocument(c *gin.Context) {
-	documentID := c.Param("documentId")
+	_ = c.Param("documentId")
 	
 	// In production, delete from database and filesystem
 	c.JSON(http.StatusOK, gin.H{
