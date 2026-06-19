@@ -5,19 +5,19 @@ FROM golang:1.21-alpine AS builder
 RUN apk add --no-cache git make
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/services/scanner-service
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY services/scanner-service/go.mod services/scanner-service/go.sum ./
 RUN go mod download
 
 # Copy source code
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
-COPY pkg/ ./pkg/
+COPY services/scanner-service/cmd/ ./cmd/
+COPY services/scanner-service/internal/ ./internal/
+COPY services/scanner-service/pkg/ ./pkg/
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o scanner-service ./cmd/server/
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/scanner-service ./cmd/server/
 
 # Final stage
 FROM alpine:latest
