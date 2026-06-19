@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Copy go mod files
 COPY go.mod ./
-RUN go mod download
+RUN GONOSUMDB=* GOFLAGS=-mod=mod go mod download
 
 # Copy source code
 COPY cmd/ ./cmd/
