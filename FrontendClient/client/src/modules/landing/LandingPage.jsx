@@ -431,21 +431,22 @@ export default function App() {
                 transition: 'opacity 0.9s cubic-bezier(0.16,1,0.3,1) 180ms, transform 0.9s cubic-bezier(0.16,1,0.3,1) 180ms'
               }}>
                 <div style={{
-                  aspectRatio: '4/5', position: 'relative', overflow: 'hidden',
+                  aspectRatio: '16/10', position: 'relative', overflow: 'hidden',
                   border: `1px solid ${C.line}`, background: C.ink,
+                  borderRadius: '4px',
                 }}>
                   <img src="/landing.png" alt="Rest Point Dashboard" style={{
-                    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                    width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block',
                   }} />
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0,
-                    background: 'linear-gradient(transparent, rgba(21,23,26,0.92) 40%)',
-                    padding: '1.4rem', display: 'flex', flexDirection: 'column', gap: '.5rem',
+                    background: 'linear-gradient(transparent, rgba(21,23,26,0.92) 45%)',
+                    padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '.4rem',
                   }}>
-                    <span className="label" style={{ color: C.brassLight, fontSize: '.68rem' }}>Case No. 0142 — Status: Arranged</span>
-                    <span className="label" style={{ color: 'rgba(250,248,244,0.6)', fontSize: '.6rem' }}>Deceased: J. Otieno · Est. 1974 · Lang'ata Cemetery</span>
-                    <span className="label" style={{ color: 'rgba(250,248,244,0.45)', fontSize: '.55rem' }}>Documentation: Complete · Balance: KES 0 · Family notified</span>
-                    <span className="label" style={{ color: 'rgba(250,248,244,0.3)', fontSize: '.5rem' }}>Google Drive backup: Synced · Last updated 14 Jul 2026</span>
+                    <span className="label" style={{ color: C.brassLight, fontSize: '.72rem' }}>Case No. 0142 — Status: Arranged</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.65)', fontSize: '.64rem' }}>Deceased: J. Otieno · Est. 1974 · Lang'ata Cemetery</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.5)', fontSize: '.6rem' }}>Documentation: Complete · Balance: KES 0 · Family notified</span>
+                    <span className="label" style={{ color: 'rgba(250,248,244,0.38)', fontSize: '.56rem' }}>Google Drive backup: Synced · Last updated 14 Jul 2026</span>
                   </div>
                 </div>
               </div>
@@ -689,6 +690,7 @@ export default function App() {
               <a className="footer-link" href="mailto:info@restpoint.co.ke">Contact</a>
               <a className="footer-link" onClick={goPrivacy}>Privacy policy</a>
               <a className="footer-link" onClick={goTerms}>Terms</a>
+              <a className="footer-link" href="/account-deletion">Account deletion</a>
             </div>
           </div>
           <div className="footer-bottom">
