@@ -2,8 +2,6 @@ package scanner
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"scanner-service/pkg/models"
 )
