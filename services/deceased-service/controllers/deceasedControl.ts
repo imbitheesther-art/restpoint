@@ -4,9 +4,11 @@ import crypto from 'crypto';
 import axios from 'axios';
 import mysql from 'mysql2/promise';
 import ExcelExportService from '../services/excelExportService';
+import { lookupTenantDatabase, safeTenantQuery, safeTenantExecute } from '../../shared/dbConfig';
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
+    dbName?: string | null;
 }
 
 const nowNairobi = (): string => {
@@ -25,103 +27,7 @@ const logError = (error: any, context: string) => {
     });
 };
 
-/**
- * Multi-Tenant Database Lookup
- * Finds the correct database for a given tenant slug
- * Uses the tenant_tracking database to map tenant -> database
- */
-const lookupTenantDatabase = async (tenantSlug: string): Promise<string | null> => {
-    if (!tenantSlug || tenantSlug === 'system_shared') {
-        console.warn('⚠️ Invalid tenant slug provided for database lookup');
-        return null;
-    }
 
-    try {
-        // Connect to the tracking database (central tenant registry)
-        const trackingConn = await mysql.createConnection({
-            host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT || '3306'),
-            user: process.env.DB_USER || 'root',
-            password: process.env.DB_PASSWORD || '',
-            database: process.env.TENANT_TRACKING_DB || 'tenant_tracking'
-        });
-        
-        try {
-            // Look up the tenant's database name
-            const [rows] = await trackingConn.execute(
-                'SELECT database_name, tenant_name, status FROM tenants WHERE tenant_slug = ? AND status = "active"',
-                [tenantSlug]
-            );
-            await trackingConn.end();
-            
-            if (rows && (rows as any[]).length > 0) {
-                const tenant = (rows as any[])[0];
-                console.log(`✅ Found database '${tenant.database_name}' for tenant: ${tenantSlug}`);
-                return tenant.database_name;
-            }
-            
-            console.warn(`⚠️ No active tenant found for slug: ${tenantSlug}`);
-            return null;
-        } catch (err) {
-            await trackingConn.end();
-            throw err;
-        }
-    } catch (error) {
-        console.error(`❌ Failed to lookup database for tenant ${tenantSlug}:`, error);
-        return null;
-    }
-};
-
-/**
- * Execute a query on a tenant's database
- * Creates a new connection each time for isolation
- */
-const safeTenantQuery = async (dbName: string, query: string, params: any[]): Promise<any> => {
-    if (!dbName) {
-        throw new Error('Database name is required for tenant query');
-    }
-
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: dbName,
-        multipleStatements: false // Security: prevent SQL injection via multiple statements
-    });
-    
-    try {
-        const [rows] = await connection.execute(query, params);
-        return rows;
-    } finally {
-        await connection.end();
-    }
-};
-
-/**
- * Execute a write operation on a tenant's database
- * Creates a new connection each time for isolation
- */
-const safeTenantExecute = async (dbName: string, query: string, params: any[]): Promise<any> => {
-    if (!dbName) {
-        throw new Error('Database name is required for tenant execute');
-    }
-
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: dbName
-    });
-    
-    try {
-        const [result] = await connection.execute(query, params);
-        return result;
-    } finally {
-        await connection.end();
-    }
-};
 
 const generateUniqueDeceasedId = (fullName: string, tenantSlug: string): string => {
     const tenantPrefix = tenantSlug.substring(0, 3).toUpperCase();
@@ -186,7 +92,7 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
  * 3. Execute query on tenant's database
  */
 export const registerDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     
     console.log('📝 Register deceased request received');
     console.log('🏢 Tenant slug:', tenantSlug);
@@ -334,7 +240,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
  * GET /api/v1/restpoint/deceased/deceased-all
  */
 export const getAllDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
 
     console.log('📋 Get all deceased request for tenant:', tenantSlug);
 
@@ -415,7 +321,7 @@ export const getAllDeceased = async (req: TenantRequest, res: Response): Promise
  * GET /api/v1/restpoint/deceased/deceased-id/:id
  */
 export const getDeceasedById = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     const rawId = req.params.id || req.query.id;
     const id = (() => {
         if (Array.isArray(rawId)) {
@@ -513,7 +419,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
  * PUT /api/v1/restpoint/deceased/update-deceased/:id
  */
 export const updateDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     const { id } = req.params;
 
     if (!id || !tenantSlug) {
@@ -581,7 +487,7 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
  * DELETE /api/v1/restpoint/deceased/delete-deceased/:id
  */
 export const deleteDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     const { id } = req.params;
 
     if (!id || !tenantSlug) {
@@ -689,7 +595,7 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
  * GET /api/v1/restpoint/deceased/export-excel
  */
 export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     
     console.log('📊 Export deceased records to Excel for tenant:', tenantSlug);
 
@@ -793,9 +699,9 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
         
         const filename = `${tenantSlug}_deceased_report_${DateTime.now().toFormat('yyyyMMdd_HHmmss')}.xlsx`;
         
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Length', exportResult.buffer.length);
+        (res as any).setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        (res as any).setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        (res as any).setHeader('Content-Length', exportResult.buffer.length);
         
         return res.send(exportResult.buffer);
         

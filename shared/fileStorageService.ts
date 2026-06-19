@@ -11,11 +11,11 @@ export {
   FolderCategory,
   FileType,
   default
-} from '../../../packages/shared-services/src/fileStorageService';
+} from '../packages/shared-services/src/fileStorageService';
 
 export type {
   UploadConfig,
   UploadedFile,
   TenantFolderInfo,
   MulterFile
-} from '../../../packages/shared-services/src/fileStorageService';
+} from '../packages/shared-services/src/fileStorageService';

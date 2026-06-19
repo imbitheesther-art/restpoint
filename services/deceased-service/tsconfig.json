@@ -22,7 +22,7 @@
     "services/**/*.ts",
     "utils/**/*.ts",
     "config/**/*.ts",
-    "../shared/**/*.ts",
+    "../../shared/**/*.ts",
     "../global/**/*.ts",
     "../../packages/**/*.ts"
   ],

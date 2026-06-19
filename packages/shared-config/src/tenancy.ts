@@ -48,8 +48,8 @@ export async function validateTenantActive(tenantSlug: string): Promise<TenantVa
  * Express middleware to validate and set tenant on request
  */
 export const tenantMiddleware: RequestHandler = async (req, res, next) => {
-  const tenantSlug = req.headers['x-tenant-slug'] as string || req.params.tenantSlug || 'system_shared';
-  
+  const tenantSlug = String(req.headers['x-tenant-slug'] || req.params.tenantSlug || 'system_shared');
+
   if (tenantSlug !== 'system_shared') {
     const result = await validateTenantActive(tenantSlug);
     if (!result.active) {
@@ -57,7 +57,7 @@ export const tenantMiddleware: RequestHandler = async (req, res, next) => {
     }
     req.tenant = result.tenant;
   }
-  
+
   req.tenantSlug = tenantSlug;
   next();
 };

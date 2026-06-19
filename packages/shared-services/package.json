@@ -10,6 +10,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "amqplib": "^0.10.7",
     "redis": "^4.6.12"
   },
   "devDependencies": {
