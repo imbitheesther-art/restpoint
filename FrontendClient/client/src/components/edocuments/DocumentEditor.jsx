@@ -2,12 +2,15 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
   X, Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
-  Pen, Eraser, Type, Square, Circle, Image as ImageIcon, Signature,
+  Pen, Eraser, Type, Square, Circle, Image as ImageIcon,  Pen,
   Trash2, Eye, Check, Upload, Move, RefreshCw, AlertCircle, Lock, Cloud
 } from 'lucide-react';
+
+
+
 import Swal from 'sweetalert2';
 import * as pdfjsLib from 'pdfjs-dist';
-import { fabric } from 'fabric';
+import fabric from "fabric";
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -563,13 +566,17 @@ const DocumentEditor = ({
             reader.onerror = () => reject(new Error('Failed to read image file'));
             reader.readAsDataURL(file);
           }
-        } else if (doc?.fileUrl) {
-          const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
-          if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
-            await loadPDF(url);
-          } else {
-            setFabricBackgroundImage(url);
-          }
+     } else if (doc?.fileUrl) {
+  const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
+  if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
+    // Wrap the await in an async IIFE
+    (async () => {
+      await loadPDF(url);
+    })();
+  } else {
+    setFabricBackgroundImage(url);
+  }
+
         } else if (template?.fileName) {
           const url = `${CONFIG.API_BASE_URL}/edocuments/templates/download/${template.fileName}`;
           setFabricBackgroundImage(url);
