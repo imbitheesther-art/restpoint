@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make
@@ -8,7 +8,7 @@ RUN apk add --no-cache git make
 WORKDIR /app
 
 # Configure Go module behavior for local builds without go.sum
-ENV GONOSUMDB=* GOFLAGS=-mod=mod
+ENV GONOSUMDB=* GOFLAGS=-mod=mod GOTOOLCHAIN=auto
 
 # Copy go mod files first to cache deps
 COPY go.mod ./
