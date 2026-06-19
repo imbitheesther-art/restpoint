@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const fs = require('fs');
 const path = require('path');
 

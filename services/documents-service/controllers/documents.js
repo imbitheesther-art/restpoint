@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 
 /**
  * Ensure folder exists with retry mechanism

@@ -8,7 +8,7 @@ const crypto = require('crypto');
 
 const { AppError } = require('../middlewares/errorHandler');
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const { loadTenantBranding } = require('./tenantBranding');
 
 
