@@ -245,31 +245,9 @@ const OnboardingFlow = () => {
               Rest Point <span style={{ color: C.brass }}>Service Agreement</span>
             </h2>
             <div style={{ color: C.gray, lineHeight: 1.7, fontSize: '.85rem' }}>
-              <p style={{ marginBottom: '1rem' }}>By using Rest Point, you agree to these terms:</p>
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {[
-                  'A one-time setup and training fee of KES 10,000 per branch is required for account activation.',
-                  'Monthly subscription: KES 9,500 for single-tenant plans.',
-                  'Monthly subscription: KES 18,500 for multi-tenant plans with no limitations.',
-                  'Subscription payments must be made on time. A 5-day grace period is provided after the due date.',
-                  'Accounts may be suspended if payment is not received within 5 days.',
-                  'Account reactivation after suspension requires a KES 10,000 reactivation fee.',
-                  'Customer data remains securely stored during account suspension.',
-                  'All customer data is securely isolated to prevent unauthorized access.',
-                  'Rest Point uses multiple layers of security and encryption at rest and in transit.',
-                  'Customers retain ownership of their data at all times.',
-                  'Users are responsible for maintaining account credential confidentiality.',
-                ].map((item, i) => (
-                  <li key={i} style={{ marginBottom: '.6rem', display: 'flex', alignItems: 'start', gap: '.6rem', fontSize: '.82rem', color: C.gray }}>
-                    <span style={{ color: C.brass, marginTop: '.15rem', flexShrink: 0 }}>{I.check}</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 500, color: C.ink, marginTop: '1.2rem', marginBottom: '.5rem', fontSize: '1rem' }}>Ownership</h3>
-              <p style={{ fontSize: '.82rem' }}>Rest Point is independently owned, operated, and managed. All software, branding, intellectual property, and platform services remain the exclusive property of Rest Point.</p>
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: `1px solid ${C.line}`, display: 'flex', gap: '1rem', justifyContent: 'center', fontSize: '.8rem' }}>
-                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: C.brass, textDecoration: 'underline' }}>Full Terms of Service</a>
+              <p style={{ marginBottom: '1rem' }}>Please review our full terms before creating your account:</p>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', fontSize: '.8rem', padding: '1rem 0' }}>
+                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: C.brass, textDecoration: 'underline' }}>Terms of Service</a>
                 <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: C.brass, textDecoration: 'underline' }}>Privacy Policy</a>
               </div>
             </div>

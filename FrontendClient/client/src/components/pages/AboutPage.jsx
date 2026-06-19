@@ -71,13 +71,31 @@ export default function AboutPage() {
           <div className="wrap">
             <h2>The Story</h2>
             <p>
-              Rest Point was conceived from a simple observation: the software available to funeral homes was built for everything except funeral homes. General-purpose CRMs, spreadsheets, and paper records were never designed to handle the gravity, sensitivity, and operational complexity of funeral service.
+              One day, I found myself at a funeral home, standing beside a loved one. The mortician told me the cause of death was acute kidney and diabetes. Just a few words. Just a line. Just spoken by mouth.
             </p>
             <p style={{ marginTop: '1.2rem' }}>
-              We built Rest Point from the ground up — starting with the register, then expanding to every capability a modern funeral home needs. Our platform is designed for <strong>scale, security, and stability</strong> above all else, with zero downtime as a non-negotiable requirement.
+              No report. No document. Nothing to hold. Nothing to read.
             </p>
             <p style={{ marginTop: '1.2rem' }}>
-              This is <strong>version 2</strong> of the platform. Version 3 will bring payment and card integration. Version 4 will be the definitive stable build of the entire system — purpose-built for integration across Africa.
+              I left that place with questions. I wanted to see the full report. I wanted to understand exactly what happened. I didn't want to be told — I wanted to read it for myself, on my phone, in my own time, with clarity and dignity.
+            </p>
+            <p style={{ marginTop: '1.2rem' }}>
+              That moment changed everything.
+            </p>
+            <p style={{ marginTop: '1.2rem' }}>
+              I realized that families deserve more than words spoken in a room. They deserve access. They deserve transparency. They deserve the complete picture — not just what they're told, but what the data actually says.
+            </p>
+            <p style={{ marginTop: '1.2rem' }}>
+              So I built Rest Point.
+            </p>
+            <p style={{ marginTop: '1.2rem' }}>
+              Not for the morticians. Not for the system. For the families. For the ones left behind. For anyone who has ever sat in a funeral home and wondered: What really happened?
+            </p>
+            <p style={{ marginTop: '1.2rem' }}>
+              Rest Point gives families the full report — the actual data, the complete picture — right on their phone. Because in moments of loss, truth matters.
+            </p>
+            <p style={{ marginTop: '1.2rem' }}>
+              That is why Rest Point exists. That is the story.
             </p>
           </div>
         </section>
@@ -152,7 +170,6 @@ export default function AboutPage() {
         <section style={{ padding: '3rem 0', borderTop: `1px solid ${C.line}` }}>
           <div className="wrap" style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '.88rem', color: C.gray }}>
-              Built with care by <strong>Welt Tallis Technologies</strong>.<br />
               <a href="mailto:info@restpoint.co.ke" style={{ color: C.brass }}>info@restpoint.co.ke</a>
             </p>
           </div>

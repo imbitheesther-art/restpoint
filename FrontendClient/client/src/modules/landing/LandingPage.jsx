@@ -393,7 +393,7 @@ export default function App() {
           <div className="nav-links">
             <a href="#capabilities" className="nav-link">Capabilities</a>
             <a href="#pricing" className="nav-link">Pricing</a>
-            <a href="#faq" className="nav-link">Questions</a>
+            <a href="#faq" className="nav-link">Questions about</a>
           </div>
           <div className="nav-cta">
             <button className="btn btn-line" onClick={goLogin} style={{ padding: '0.65rem 1.3rem', fontSize: '0.8rem' }}>Log in</button>
@@ -632,7 +632,7 @@ export default function App() {
           <div className="wrap" style={{ maxWidth: '720px' }}>
             <Reveal>
               <div className="section-head">
-                <div className="label" style={{ marginBottom: '0.9rem' }}>Questions</div>
+                <div className="label" style={{ marginBottom: '0.9rem' }}>Questions about</div>
                 <h2>What homes ask before they switch.</h2>
               </div>
             </Reveal>
@@ -683,7 +683,7 @@ export default function App() {
               <h4>Platform</h4>
               <a href="#capabilities" className="footer-link">Capabilities</a>
               <a href="#pricing" className="footer-link">Pricing</a>
-              <a href="#faq" className="footer-link">Questions</a>
+              <a href="#faq" className="footer-link">Questions about</a>
             </div>
             <div className="footer-col">
               <h4>Company</h4>

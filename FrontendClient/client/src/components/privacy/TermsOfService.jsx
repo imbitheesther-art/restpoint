@@ -17,8 +17,7 @@ export default function TermsOfService() {
         <p style={{ color: C.char500, fontSize: '0.85rem', marginBottom: '2rem' }}>Last updated: June 2026 · Rest Point v2</p>
 
         <div style={{ background: 'rgba(166,124,82,0.06)', border: `1px solid rgba(166,124,82,0.2)`, borderRadius: '10px', padding: '1.25rem', marginBottom: '2rem' }}>
-          <p style={{ color: C.navy900, fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem' }}>Built by Welt Tallis Technologies</p>
-          <p style={{ color: C.char700, fontSize: '0.9rem' }}>Rest Point is <strong>version 2</strong> of the platform. Version 3 will bring payment and card integration. Version 4 will be the definitive stable build of the entire system. Our biggest responsibility is to <strong>protect your data at all costs</strong>. We do not share your data with anyone. We do not manipulate your data. You never need to worry about anything — your data is backed up to your own Google Drive, a NAS device attached to your network, and our secure infrastructure. Built for integration across Africa with scale, security, and stability — zero downtime.</p>
+          <p style={{ color: C.char700, fontSize: '0.9rem' }}>These terms govern your use of Rest Point. By using the platform, you agree to these terms. We reserve the right to update these terms with notice. Continued use after changes constitutes acceptance. Questions? Contact <a href="mailto:legal@restpoint.co.ke" style={{ color: C.gold }}>legal@restpoint.co.ke</a>.</p>
         </div>
 
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.3rem', marginTop: '2rem' }}>1. Acceptance of Terms</h2>
@@ -60,8 +59,7 @@ export default function TermsOfService() {
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.3rem', marginTop: '2rem' }}>13. Contact</h2>
         <p style={{ color: C.char700 }}>
           Email: <a href="mailto:legal@restpoint.co.ke" style={{ color: C.gold }}>legal@restpoint.co.ke</a><br/>
-          Data requests: <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.gold }}>privacy@restpoint.co.ke</a><br/>
-          Built with care by <strong>Welt Tallis Technologies</strong>
+          Data requests: <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.gold }}>privacy@restpoint.co.ke</a>
         </p>
       </div>
     </div>

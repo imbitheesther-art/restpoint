@@ -35,6 +35,9 @@ import {
 } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
 
+// Import Scanner Component
+import ScannerComponent from '../scanner/ScannerComponent';
+
 // API Gateway URL - Centralized
 const API_GATEWAY_URL = 'http://localhost:8000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
@@ -1012,6 +1015,11 @@ const DeceasedDetails = () => {
     fetchDeceasedData();
   };
 
+  const handleScanComplete = (scanData) => {
+    toast.success('Document scanned successfully');
+    fetchDeceasedData();
+  };
+
   const calculateAge = (dob, dod) => {
     if (!dob || !dod) return { years: 'N/A', category: 'Unknown' };
     const birthDate = new Date(dob);
@@ -1318,6 +1326,20 @@ const DeceasedDetails = () => {
                 deceasedId={currentDeceasedId}
                 nextOfKin={deceasedData?.next_of_kin}
                 onUpdate={fetchDeceasedData}
+              />
+            </Suspense>
+          </Card>
+
+          {/* Scanner Section - NEW */}
+          <Card>
+            <CardTitle><Printer size={14} /> Document Scanner</CardTitle>
+            <Suspense fallback={<LoadingFallback />}>
+              <ScannerComponent
+                key={`scanner-${refreshKey}`}
+                deceasedId={currentDeceasedId}
+                deceasedData={deceasedData}
+                onScanComplete={handleScanComplete}
+                onUploadSuccess={handleDocumentUploadSuccess}
               />
             </Suspense>
           </Card>
