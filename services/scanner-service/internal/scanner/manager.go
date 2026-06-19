@@ -1,6 +1,10 @@
 package scanner
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	"scanner-service/pkg/models"
 )
 
@@ -40,7 +44,7 @@ func (m *Manager) RegisterDriver(driver ScannerDriver) {
 func (m *Manager) DiscoverScanners() error {
 	var allScanners []models.ScannerDevice
 
-	for driverType, driver := range m.drivers {
+	for _, driver := range m.drivers {
 		scanners, err := driver.GetScanners()
 		if err != nil {
 			continue
@@ -118,7 +122,6 @@ func (m *Manager) ScanDocument(ctx context.Context, params ScanParameters) (*mod
 		job.FilePath = result.FilePath
 		job.FileName = result.FileName
 		job.FileSize = result.FileSize
-		job.Pages = result.Pages
 		job.Progress = 100
 		job.CompletedAt = models.GetCurrentTime()
 	}()
@@ -137,4 +140,9 @@ func (m *Manager) Cleanup() {
 	for _, driver := range m.drivers {
 		driver.Cleanup()
 	}
+}
+
+// Helper function to generate unique job ID
+func generateJobID() string {
+	return fmt.Sprintf("scan_%d", time.Now().UnixNano())
 }

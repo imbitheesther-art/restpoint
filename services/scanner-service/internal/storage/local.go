@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"scanner-service/pkg/models"
 )
 
 // LocalStorage implements file storage on local filesystem
