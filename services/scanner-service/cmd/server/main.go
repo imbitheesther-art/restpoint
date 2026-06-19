@@ -1,14 +1,14 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
+	"syscall"
+
 	"scanner-service/internal/api"
 	"scanner-service/internal/scanner"
 	"scanner-service/internal/storage"
 	"scanner-service/pkg/models"
-	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -40,7 +40,7 @@ func main() {
 	viper.SetDefault("scanner.default_format", "pdf")
 
 	// Initialize storage backend
-	var storageBackend storage.Storage
+	var storageBackend scanner.Storage
 	storageType := viper.GetString("storage.type")
 	
 	switch storageType {
