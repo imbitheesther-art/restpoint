@@ -19,9 +19,7 @@ services:
 
   # Scanner Service (NEW - Go-based document scanner)
   scanner-service:
-    build:
-      context: .
-      dockerfile: ./services/scanner-service/Dockerfile
+    build: ./services/scanner-service
     ports:
       - "2024:2024"
     environment:
