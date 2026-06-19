@@ -3,7 +3,9 @@ version: '3.8'
 services:
   # API Gateway
   api-gateway:
-    build: ./services/api-gateway
+    build:
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
     ports:
       - "8000:8000"
     environment:
