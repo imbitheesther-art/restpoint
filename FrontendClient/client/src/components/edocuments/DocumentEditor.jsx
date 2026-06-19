@@ -18,14 +18,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 const CONFIG = {
   API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1/restpoint',
-  AUTO_SAVE_INTERVAL: 30000, // 30 seconds
-  MAX_CANVAS_SIZE: { width: 800, height: 1131 }, // A4
-  MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
+  AUTO_SAVE_INTERVAL: 30000,
+  MAX_CANVAS_SIZE: { width: 800, height: 1131 },
+  MAX_FILE_SIZE: 50 * 1024 * 1024,
   HISTORY_MAX_STATES: 50,
   SUPPORTED_FILE_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'],
   PRODUCTION: process.env.NODE_ENV === 'production',
   ENABLE_AUTO_SAVE: true,
-  ISOLATION_LEVEL: 'strict' // strict = verify tenant on every API call
+  ISOLATION_LEVEL: 'strict'
 };
 
 // ============================================
@@ -48,7 +48,6 @@ const dataURItoBlob = (dataURI) => {
   }
 };
 
-// Tenant isolation helper - verify tenant before any operation
 const getTenantInfo = () => {
   const tenantSlug = localStorage.getItem('tenantSlug') ||
                      localStorage.getItem('tenant_slug') ||
@@ -87,17 +86,14 @@ const DocumentEditor = ({
   const fileInputRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
 
-  // Refs to prevent closure stale values
   const documentRef = useRef(initialDocument);
   const templateRef = useRef(initialTemplate);
   const fileRef = useRef(initialFile);
 
-  // Tenant & Security
   const [tenantInfo] = useState(() => getTenantInfo());
   const [securityStatus, setSecurityStatus] = useState('verified');
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
-  // Editor states
   const [canvas, setCanvas] = useState(null);
   const [zoom, setZoom] = useState(100);
   const [activeTool, setActiveTool] = useState('select');
@@ -105,12 +101,10 @@ const DocumentEditor = ({
   const [brushSize, setBrushSize] = useState(3);
   const [selectedObject, setSelectedObject] = useState(null);
 
-  // Signature pad states
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
   const [isSigning, setIsSigning] = useState(false);
 
-  // Document info
   const [documentTitle, setDocumentTitle] = useState(initialDocument?.title || initialTemplate?.name || 'Untitled Document');
   const [isSaving, setIsSaving] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -119,7 +113,6 @@ const DocumentEditor = ({
   const [loadError, setLoadError] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
 
-  // History Undo/Redo states
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
   const [canUndo, setCanUndo] = useState(false);
@@ -129,7 +122,6 @@ const DocumentEditor = ({
   // SECURITY & INITIALIZATION
   // ============================================
 
-  // Verify tenant on mount
   useEffect(() => {
     try {
       if (!tenantInfo.slug) {
@@ -249,7 +241,6 @@ const DocumentEditor = ({
 
       setCanvas(fabricCanvas);
 
-      // Event listeners with error handling
       const handleObjectAdded = (e) => {
         try {
           if (e.target && !e.target.isBackground) {
@@ -309,7 +300,6 @@ const DocumentEditor = ({
       fabricCanvas.on('selection:updated', handleSelectionUpdated);
       fabricCanvas.on('selection:cleared', handleSelectionCleared);
 
-      // Load background
       loadBackground(fabricCanvas).then(() => {
         setIsLoading(false);
       }).catch((error) => {
@@ -438,7 +428,6 @@ const DocumentEditor = ({
     }
   }, [canvas, isDirty, isSaving, tenantInfo, documentTitle, fieldValues]);
 
-  // Set up auto-save interval
   useEffect(() => {
     if (!CONFIG.ENABLE_AUTO_SAVE) return;
 
@@ -454,8 +443,26 @@ const DocumentEditor = ({
   }, [autoSaveDocument]);
 
   // ============================================
-  // BACKGROUND LOADING
+  // BACKGROUND LOADING - FIXED VERSION
   // ============================================
+
+  // This is the key fix - loadPDF is now async
+  const loadPDF = async (url) => {
+    try {
+      const response = await fetch(url, {
+        headers: { 'x-tenant-slug': tenantInfo.slug }
+      });
+      const buffer = await response.arrayBuffer();
+      await loadPDFBackground(new Uint8Array(buffer));
+    } catch (error) {
+      console.error('Error loading PDF:', error);
+      // Fallback to image if PDF fails
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = url;
+      img.onload = () => setFabricBackgroundImage(url);
+    }
+  };
 
   const loadBackground = async (fabricCanvas) => {
     const file = fileRef.current;
@@ -559,15 +566,7 @@ const DocumentEditor = ({
         } else if (doc?.fileUrl) {
           const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
           if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
-            try {
-              const response = await fetch(url, {
-                headers: { 'x-tenant-slug': tenantInfo.slug }
-              });
-              const buffer = await response.arrayBuffer();
-              await loadPDFBackground(new Uint8Array(buffer));
-            } catch (error) {
-              setFabricBackgroundImage(url);
-            }
+            await loadPDF(url);
           } else {
             setFabricBackgroundImage(url);
           }
@@ -1046,7 +1045,6 @@ const DocumentEditor = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Zoom Controls */}
           <button onClick={() => setZoom(Math.max(50, zoom - 15))} style={actionButtonStyle} title="Zoom Out" disabled={isLoading}>
             <ZoomOut size={16} />
           </button>
@@ -1059,7 +1057,6 @@ const DocumentEditor = ({
 
           <div style={dividerStyle} />
 
-          {/* Undo / Redo */}
           <button onClick={handleUndo} disabled={!canUndo || isLoading} style={{ ...actionButtonStyle, opacity: canUndo ? 1 : 0.4 }} title="Undo (Ctrl+Z)">
             <Undo size={16} />
           </button>
@@ -1069,7 +1066,6 @@ const DocumentEditor = ({
 
           <div style={dividerStyle} />
 
-          {/* Save / Export / Close */}
           <button onClick={saveDocument} disabled={isSaving || isLoading} style={{ ...actionButtonStyle, backgroundColor: '#059669', color: '#fff' }} title="Save Document (Ctrl+S)">
             <Save size={16} style={{ marginRight: '6px' }} />
             {isSaving ? 'Saving...' : 'Save'}
@@ -1141,7 +1137,6 @@ const DocumentEditor = ({
 
           <div style={dividerHorizontalStyle} />
 
-          {/* Signatures & Images */}
           <h4 style={toolbarHeadingStyle}>Insert</h4>
           <div style={toolGroupStyle}>
             <button onClick={() => { setActiveTool('select'); setShowSignatureModal(true); }} style={toolbarSquareButtonStyle} title="Add Signature" disabled={isLoading}>
@@ -1163,7 +1158,6 @@ const DocumentEditor = ({
 
           <div style={dividerHorizontalStyle} />
 
-          {/* Color Presets */}
           <h4 style={toolbarHeadingStyle}>Brush Color</h4>
           <div style={colorPaletteGridStyle}>
             {colorPresets.map(color => (
@@ -1187,7 +1181,6 @@ const DocumentEditor = ({
 
           <div style={dividerHorizontalStyle} />
 
-          {/* Brush Size */}
           <h4 style={toolbarHeadingStyle}>Brush Size: {brushSize}px</h4>
           <input
             type="range"
@@ -1294,7 +1287,7 @@ const DocumentEditor = ({
 };
 
 // ============================================
-// STYLING (Production-Grade)
+// STYLING
 // ============================================
 
 const editorContainerStyle = {

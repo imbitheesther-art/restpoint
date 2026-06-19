@@ -1,28 +1,31 @@
 FROM node:20-alpine
 WORKDIR /usr/src/app
 
-COPY package.json tsconfig.base.json ./
-COPY packages/shared-utils/package.json ./packages/shared-utils/
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-services/package.json ./packages/shared-services/
+# Copy package management files
+COPY package.json yarn.lock ./
+COPY services/shared-config/package.json ./services/shared-config/
+COPY services/shared-logger/package.json ./services/shared-logger/
+COPY services/shared-utils/package.json ./services/shared-utils/
+COPY services/shared-services/package.json ./services/shared-services/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-# Install ALL dependencies (including dev for TypeScript compilation)
-RUN npm install --legacy-peer-deps && npm cache clean --force
+# Install dependencies
+RUN yarn install --frozen-lockfile
 
-COPY configurations/ ./configurations/
-COPY packages/ ./packages/
-COPY shared/ ./shared/
-COPY global/ ./global/
+# Copy all source code
+COPY . .
 
-COPY services/deceased-service/ ./services/deceased-service/
+# Build shared packages first
+RUN cd services/shared-config && yarn build || npm run build || true
+RUN cd services/shared-logger && yarn build || npm run build || true
+RUN cd services/shared-utils && yarn build || npm run build || true
+RUN cd services/shared-services && yarn build || npm run build || true
 
-# Build TypeScript
-RUN npm run build --workspace=services/deceased-service
+# Build the deceased-service
+RUN cd services/deceased-service && yarn build || npm run build
 
-# Remove dev dependencies to reduce image size
-RUN npm prune --omit=dev
+# Prune dev dependencies
+RUN yarn install --production --frozen-lockfile
 
 EXPOSE 5000
 ENV PORT=5000
