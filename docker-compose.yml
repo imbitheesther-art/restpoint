@@ -19,7 +19,9 @@ services:
 
   # Scanner Service (NEW - Go-based document scanner)
   scanner-service:
-    build: ./services/scanner-service
+    build:
+      context: .
+      dockerfile: ./services/scanner-service/Dockerfile
     ports:
       - "2024:2024"
     environment:
@@ -47,7 +49,9 @@ services:
 
   # Documents Service
   documents-service:
-    build: ./services/documents-service
+    build:
+      context: .
+      dockerfile: ./services/documents-service/Dockerfile
     ports:
       - "8112:8112"
     volumes:
@@ -64,7 +68,9 @@ services:
 
   # Deceased Service
   deceased-service:
-    build: ./services/deceased-service
+    build:
+      context: .
+      dockerfile: ./services/deceased-service/Dockerfile
     ports:
       - "5001:5001"
     volumes:
@@ -81,7 +87,9 @@ services:
 
   # Auth Service
   auth-service:
-    build: ./services/auth-service
+    build:
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
     ports:
       - "5002:5002"
     volumes:
@@ -99,7 +107,9 @@ services:
 
   # Billing Service
   billing-service:
-    build: ./services/billing-service
+    build:
+      context: .
+      dockerfile: ./services/billing-service/Dockerfile
     ports:
       - "5003:5003"
     volumes:
@@ -116,7 +126,9 @@ services:
 
   # Notification Service
   notification-service:
-    build: ./services/notification-service
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
     ports:
       - "5004:5004"
     volumes:
@@ -133,7 +145,9 @@ services:
 
   # Socket.io Service
   socketio-service:
-    build: ./services/socketio-service
+    build:
+      context: .
+      dockerfile: ./services/socketio-service/Dockerfile
     ports:
       - "5005:5005"
     volumes:
@@ -150,7 +164,9 @@ services:
 
   # Frontend Client
   frontend:
-    build: ./FrontendClient
+    build:
+      context: ./FrontendClient
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
