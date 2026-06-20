@@ -59,7 +59,6 @@ export default function AccountDeletion() {
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.3rem', marginTop: '2rem' }}>8. Contact</h2>
         <p style={{ color: C.char700 }}>
           Deletion requests: <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.gold }}>privacy@restpoint.co.ke</a><br/>
-          Data Protection Officer: <a href="mailto:dpo@restpoint.co.ke" style={{ color: C.gold }}>dpo@restpoint.co.ke</a><br/>
           General inquiries: <a href="mailto:info@restpoint.co.ke" style={{ color: C.gold }}>info@restpoint.co.ke</a><br/>
           
         </p>

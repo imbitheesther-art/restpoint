@@ -193,13 +193,13 @@ export default function App() {
   const navigate = useNavigate();
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
-  const goLogin = () => navigate('/login');
-  const goStart = () => navigate('/register');
-  const goAbout = () => navigate('/about');
-  const goContact = () => navigate('/contact');
-  const goPortalLogin = () => navigate('/portal/login');
-  const goPrivacy = () => navigate('/privacy');
-  const goTerms = () => navigate('/terms');
+  const goLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/login'); };
+  const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
+  const goAbout = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/about'); };
+  const goContact = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/contact'); };
+  const goPortalLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/portal/login'); };
+  const goPrivacy = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/privacy'); };
+  const goTerms = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); };
 
   return (
     <>
@@ -391,9 +391,9 @@ export default function App() {
         <div className="wrap nav-wrap">
           <div className="logo"><Mark size={22} /><span>Rest Point</span></div>
           <div className="nav-links">
-            <a href="#capabilities" className="nav-link">Capabilities</a>
+            <a href="#about" className="nav-link">About</a>
             <a href="#pricing" className="nav-link">Pricing</a>
-            <a href="#faq" className="nav-link">Questions about</a>
+            <a className="nav-link" onClick={goTerms}>Terms</a>
           </div>
           <div className="nav-cta">
             <button className="btn btn-line" onClick={goLogin} style={{ padding: '0.65rem 1.3rem', fontSize: '0.8rem' }}>Log in</button>
@@ -556,16 +556,16 @@ export default function App() {
           </div>
         </section>
 
-        {/* Dark statement section */}
-        <section className="section dark-section">
+        {/* About / Mission section */}
+        <section id="about" className="section dark-section">
           <div className="wrap" style={{ maxWidth: '720px' }}>
             <Reveal>
-              <div className="label" style={{ color: C.brassLight, marginBottom: '1.4rem' }}>Why it's built this way</div>
+              <div className="label" style={{ color: C.brassLight, marginBottom: '1.4rem' }}>About Rest Point</div>
               <h2 style={{ fontStyle: 'italic', fontWeight: 500 }}>
-                Families remember how they were treated long after they forget what was said. The systems behind that care should be just as deliberate.
+                We immerse young people in a world of technology, engineering, and sustainability using real-world remote-controlled simulations.
               </h2>
               <p style={{ marginTop: '1.6rem', maxWidth: '560px' }}>
-                Rest Point exists because the software available to funeral homes was built for everything except funeral homes. We built the register first, and the features around it.
+                Rest Point is built by Welt Tallis Technologies — a team that believes the best software is built by people who understand the work. We built the register first, and the features around it.
               </p>
             </Reveal>
           </div>
@@ -632,7 +632,7 @@ export default function App() {
           <div className="wrap" style={{ maxWidth: '720px' }}>
             <Reveal>
               <div className="section-head">
-                <div className="label" style={{ marginBottom: '0.9rem' }}>Questions about</div>
+                <div className="label" style={{ marginBottom: '0.9rem' }}>FAQ</div>
                 <h2>What homes ask before they switch.</h2>
               </div>
             </Reveal>
@@ -681,9 +681,9 @@ export default function App() {
             </div>
             <div className="footer-col">
               <h4>Platform</h4>
-              <a href="#capabilities" className="footer-link">Capabilities</a>
+              <a href="#about" className="footer-link">About</a>
               <a href="#pricing" className="footer-link">Pricing</a>
-              <a href="#faq" className="footer-link">Questions about</a>
+              <a href="#faq" className="footer-link">FAQ</a>
             </div>
             <div className="footer-col">
               <h4>Company</h4>

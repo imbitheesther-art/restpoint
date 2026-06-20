@@ -17,7 +17,7 @@ export default function TermsOfService() {
         <p style={{ color: C.char500, fontSize: '0.85rem', marginBottom: '2rem' }}>Last updated: June 2026 · Rest Point v2</p>
 
         <div style={{ background: 'rgba(166,124,82,0.06)', border: `1px solid rgba(166,124,82,0.2)`, borderRadius: '10px', padding: '1.25rem', marginBottom: '2rem' }}>
-          <p style={{ color: C.char700, fontSize: '0.9rem' }}>These terms govern your use of Rest Point. By using the platform, you agree to these terms. We reserve the right to update these terms with notice. Continued use after changes constitutes acceptance. Questions? Contact <a href="mailto:legal@restpoint.co.ke" style={{ color: C.gold }}>legal@restpoint.co.ke</a>.</p>
+          <p style={{ color: C.char700, fontSize: '0.9rem' }}>These terms govern your use of Rest Point. By using the platform, you agree to these terms. We reserve the right to update these terms with notice. Continued use after changes constitutes acceptance.</p>
         </div>
 
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.3rem', marginTop: '2rem' }}>1. Acceptance of Terms</h2>
@@ -58,7 +58,6 @@ export default function TermsOfService() {
 
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.3rem', marginTop: '2rem' }}>13. Contact</h2>
         <p style={{ color: C.char700 }}>
-          Email: <a href="mailto:legal@restpoint.co.ke" style={{ color: C.gold }}>legal@restpoint.co.ke</a><br/>
           Data requests: <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.gold }}>privacy@restpoint.co.ke</a>
         </p>
       </div>

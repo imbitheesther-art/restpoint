@@ -1,5 +1,3 @@
-version: "3.8"
-
 # PRODUCTION Docker Compose - Matches docker-compose.yml
 # All services have fixed container_names to prevent duplicate containers
 # All use node:20-alpine for consistency
@@ -174,6 +172,12 @@ services:
       - ./services/deceased-service/uploads:/usr/src/app/uploads
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   marketplace-service:
     build:
@@ -198,6 +202,12 @@ services:
       - marketplace_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   invoice-service:
     build:
@@ -223,6 +233,12 @@ services:
       - ./services/invoice-service/generated:/usr/src/app/generated
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   coffin-service:
     build:
@@ -247,6 +263,12 @@ services:
       - coffin_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   documents-service:
     build:
@@ -297,6 +319,12 @@ services:
       - ./services/edocuments-service/uploads:/usr/src/app/uploads
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   analytics-service:
     build:
@@ -321,6 +349,12 @@ services:
       - analytics_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   calender-service:
     build:
@@ -345,6 +379,12 @@ services:
       - calender_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   mpesa-service:
     build:
@@ -367,6 +407,12 @@ services:
       - mpesa_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   notification-service:
     build:
@@ -393,6 +439,12 @@ services:
       - notification_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   qrcode-service:
     build:
@@ -416,6 +468,12 @@ services:
       - ./services/qrcode-service/generated:/usr/src/app/generated
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   socketio-service:
     build:
@@ -431,6 +489,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       redis:
         condition: service_healthy
@@ -438,6 +497,12 @@ services:
       - socketio_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   visitors-service:
     build:
@@ -462,6 +527,12 @@ services:
       - visitors_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   bodycheckout-service:
     build:
@@ -486,6 +557,12 @@ services:
       - bodycheckout_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   extra-services:
     build:
@@ -508,6 +585,12 @@ services:
       - extra_services_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   call-service:
     build:
@@ -530,6 +613,12 @@ services:
       - call_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   portal-service:
     build:
@@ -552,6 +641,12 @@ services:
       - portal_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   chemical-service:
     build:
@@ -574,6 +669,12 @@ services:
       - chemical_service_data:/usr/src/app/data
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   billing-service:
     build:
@@ -599,6 +700,12 @@ services:
       - ./services/billing-service/invoices:/usr/src/app/invoices
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:

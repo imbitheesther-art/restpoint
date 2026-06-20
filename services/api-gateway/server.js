@@ -49,27 +49,32 @@ const HOST = process.env.HOST || '0.0.0.0';
 const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
 // =============================================================================
-// SERVICE URLS — Defaults match the .env file (production-proven URLs)
+// SERVICE URLS — All services use port 5000 internally in Docker network
+// External ports (5001, 5002, etc.) are only for host access
 // =============================================================================
 const SERVICES = {
-  auth:        (process.env.AUTH_SERVICE_URL        || 'http://auth-service:5001').trim(),
-  users:       (process.env.USERS_SERVICE_URL       || 'http://auth-service:5001').trim(),
-  tenant:      (process.env.TENANT_SERVICE_URL      || 'http://tenant-service:5002').trim(),
-  deceased:    (process.env.DECEASED_SERVICE_URL    || 'http://deceased-service:5003').trim(),
-  marketplace: (process.env.MARKETPLACE_SERVICE_URL || 'http://marketplace-service:5004').trim(),
-  mpesa:       (process.env.MPESA_SERVICE_URL       || 'http://mpesa-service:5011').trim(),
-  portal:      (process.env.PORTAL_SERVICE_URL      || 'http://portal-service:5019').trim(),
-  invoices:    (process.env.INVOICES_SERVICE_URL    || 'http://invoice-service:5005').trim(),
-  coffin:      (process.env.COFFIN_SERVICE_URL      || 'http://coffin-service:5006').trim(),
-  visitors:    (process.env.VISITORS_SERVICE_URL    || 'http://visitors-service:5014').trim(),
-  notification:(process.env.NOTIFICATION_SERVICE_URL|| 'http://notification-service:5111').trim(),
-  documents:   (process.env.DOCUMENTS_SERVICE_URL   || 'http://documents-service:5007').trim(),
-  analytics:   (process.env.ANALYTICS_SERVICE_URL   || 'http://analytics-service:5009').trim(),
-  bodycheckout:(process.env.BODYCHECKOUT_SERVICE_URL|| 'http://bodycheckout-service:5015').trim(),
-  edocuments:  (process.env.EDOCUMENTS_SERVICE_URL  || 'http://edocuments-service:5008').trim(),
-  calendar:    (process.env.CALENDAR_SERVICE_URL    || 'http://calender-service:5010').trim(),
-  chemicals:   (process.env.CHEMICAL_SERVICE_URL    || 'http://chemical-service:5105').trim(),
-  embalming:   (process.env.EMBALMING_SERVICE_URL   || 'http://deceased-service:5003').trim(),
+  auth:         (process.env.AUTH_SERVICE_URL         || 'http://auth-service:5000').trim(),
+  users:        (process.env.USERS_SERVICE_URL        || 'http://auth-service:5000').trim(),
+  tenant:       (process.env.TENANT_SERVICE_URL       || 'http://tenant-service:5000').trim(),
+  deceased:     (process.env.DECEASED_SERVICE_URL     || 'http://deceased-service:5000').trim(),
+  marketplace:  (process.env.MARKETPLACE_SERVICE_URL  || 'http://marketplace-service:5000').trim(),
+  mpesa:        (process.env.MPESA_SERVICE_URL        || 'http://mpesa-service:5000').trim(),
+  portal:       (process.env.PORTAL_SERVICE_URL       || 'http://portal-service:5000').trim(),
+  invoices:     (process.env.INVOICES_SERVICE_URL     || 'http://invoice-service:5000').trim(),
+  coffin:       (process.env.COFFIN_SERVICE_URL       || 'http://coffin-service:5000').trim(),
+  visitors:     (process.env.VISITORS_SERVICE_URL     || 'http://visitors-service:5000').trim(),
+  notification: (process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:5000').trim(),
+  documents:    (process.env.DOCUMENTS_SERVICE_URL    || 'http://documents-service:5000').trim(),
+  analytics:    (process.env.ANALYTICS_SERVICE_URL    || 'http://analytics-service:5000').trim(),
+  bodycheckout: (process.env.BODYCHECKOUT_SERVICE_URL || 'http://bodycheckout-service:5000').trim(),
+  edocuments:   (process.env.EDOCUMENTS_SERVICE_URL   || 'http://edocuments-service:5000').trim(),
+  calendar:     (process.env.CALENDAR_SERVICE_URL     || 'http://calender-service:5000').trim(),
+  chemicals:    (process.env.CHEMICAL_SERVICE_URL     || 'http://chemical-service:5000').trim(),
+  billing:      (process.env.BILLING_SERVICE_URL      || 'http://billing-service:5000').trim(),
+  socketio:     (process.env.SOCKETIO_SERVICE_URL     || 'http://socketio-service:5000').trim(),
+  extra:        (process.env.EXTRA_SERVICES_URL       || 'http://extra-services:5000').trim(),
+  call:         (process.env.CALL_SERVICE_URL         || 'http://call-service:5000').trim(),
+  qrcode:       (process.env.QRCODE_SERVICE_URL       || 'http://qrcode-service:5000').trim(),
 };
 
 Logger.info('Service URLs:');
@@ -141,12 +146,12 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false 
 
 // Body parsers — only for non-proxied routes (health, debug, etc.)
 app.use((req, res, next) => {
-  const isProxied = req.path.startsWith('/api/v1/') || req.path.startsWith('/api/');
+  const isProxied = req.path.startsWith('/api/v1/') || req.path.startsWith('/v1/');
   if (isProxied) return next();
   express.json({ limit: '1mb' })(req, res, next);
 });
 app.use((req, res, next) => {
-  const isProxied = req.path.startsWith('/api/v1/') || req.path.startsWith('/api/');
+  const isProxied = req.path.startsWith('/api/v1/') || req.path.startsWith('/v1/');
   if (isProxied) return next();
   express.urlencoded({ extended: true, limit: '1mb' })(req, res, next);
 });
@@ -201,25 +206,32 @@ const proxyOptions = {
 };
 
 // =============================================================================
-// ROUTE MAPPING
+// ROUTE MAPPING — ALL 23 SERVICES
+// Both /api/v1/restpoint/* and /v1/restpoint/* for compatibility
+// Path rewrite strips /api prefix when present
 // =============================================================================
 const routes = [
-  { paths: ['/api/v1/restpoint/auth', '/api/v1/restpoint/users', '/api/v1/users'], target: SERVICES.auth },
-  { paths: ['/api/v1/restpoint/tenant', '/api/v1/restpoint/tenants', '/api/v1/restpoint/system-admin', '/api/onboarding'], target: SERVICES.tenant },
-  { paths: ['/api/v1/restpoint/deceased', '/api/v1/restpoint/embalming'], target: SERVICES.deceased },
-  { paths: ['/api/v1/restpoint/marketplace', '/api/v1/marketplace'], target: SERVICES.marketplace },
-  { paths: ['/api/v1/restpoint/mpesa', '/api/v1/mpesa'], target: SERVICES.mpesa },
-  { paths: ['/api/v1/restpoint/portal'], target: SERVICES.portal },
-  { paths: ['/api/v1/restpoint/invoices'], target: SERVICES.invoices },
-  { paths: ['/api/v1/restpoint/coffin'], target: SERVICES.coffin },
-  { paths: ['/api/v1/restpoint/visitors'], target: SERVICES.visitors },
-  { paths: ['/api/v1/restpoint/notification'], target: SERVICES.notification },
-  { paths: ['/api/v1/restpoint/documents'], target: SERVICES.documents },
-  { paths: ['/api/v1/restpoint/analytics', '/api/v1/restpoint/performance'], target: SERVICES.analytics },
-  { paths: ['/api/v1/restpoint/bodycheckout'], target: SERVICES.bodycheckout },
-  { paths: ['/api/v1/restpoint/edocuments', '/api/v1/edocuments'], target: SERVICES.edocuments },
-  { paths: ['/api/v1/restpoint/calendar', '/api/v1/calendar'], target: SERVICES.calendar },
-  { paths: ['/api/v1/restpoint/chemicals'], target: SERVICES.chemicals },
+  { paths: ['/api/v1/restpoint/auth', '/api/v1/restpoint/users', '/api/v1/users', '/v1/restpoint/auth', '/v1/restpoint/users'], target: SERVICES.auth },
+  { paths: ['/api/v1/restpoint/tenant', '/api/v1/restpoint/tenants', '/api/v1/restpoint/system-admin', '/api/onboarding', '/v1/restpoint/tenant', '/v1/restpoint/tenants'], target: SERVICES.tenant },
+  { paths: ['/api/v1/restpoint/deceased', '/api/v1/restpoint/embalming', '/v1/restpoint/deceased', '/v1/restpoint/embalming'], target: SERVICES.deceased },
+  { paths: ['/api/v1/restpoint/marketplace', '/api/v1/marketplace', '/v1/restpoint/marketplace'], target: SERVICES.marketplace },
+  { paths: ['/api/v1/restpoint/mpesa', '/api/v1/mpesa', '/v1/restpoint/mpesa'], target: SERVICES.mpesa },
+  { paths: ['/api/v1/restpoint/portal', '/v1/restpoint/portal'], target: SERVICES.portal },
+  { paths: ['/api/v1/restpoint/invoices', '/v1/restpoint/invoices'], target: SERVICES.invoices },
+  { paths: ['/api/v1/restpoint/coffin', '/v1/restpoint/coffin'], target: SERVICES.coffin },
+  { paths: ['/api/v1/restpoint/visitors', '/v1/restpoint/visitors'], target: SERVICES.visitors },
+  { paths: ['/api/v1/restpoint/notification', '/v1/restpoint/notification'], target: SERVICES.notification },
+  { paths: ['/api/v1/restpoint/documents', '/v1/restpoint/documents'], target: SERVICES.documents },
+  { paths: ['/api/v1/restpoint/analytics', '/api/v1/restpoint/performance', '/v1/restpoint/analytics', '/v1/restpoint/performance'], target: SERVICES.analytics },
+  { paths: ['/api/v1/restpoint/bodycheckout', '/v1/restpoint/bodycheckout'], target: SERVICES.bodycheckout },
+  { paths: ['/api/v1/restpoint/edocuments', '/api/v1/edocuments', '/v1/restpoint/edocuments'], target: SERVICES.edocuments },
+  { paths: ['/api/v1/restpoint/calendar', '/api/v1/calendar', '/v1/restpoint/calendar'], target: SERVICES.calendar },
+  { paths: ['/api/v1/restpoint/chemicals', '/v1/restpoint/chemicals'], target: SERVICES.chemicals },
+  { paths: ['/api/v1/restpoint/billing', '/v1/restpoint/billing'], target: SERVICES.billing },
+  { paths: ['/api/v1/restpoint/socketio', '/api/v1/socketio', '/v1/restpoint/socketio', '/socket.io'], target: SERVICES.socketio },
+  { paths: ['/api/v1/restpoint/extra', '/v1/restpoint/extra'], target: SERVICES.extra },
+  { paths: ['/api/v1/restpoint/call', '/v1/restpoint/call'], target: SERVICES.call },
+  { paths: ['/api/v1/restpoint/qrcode', '/v1/restpoint/qrcode'], target: SERVICES.qrcode },
 ];
 
 Logger.info('Registered routes:');
@@ -229,7 +241,10 @@ Logger.info('Registered routes:');
       app.use(path, createProxyMiddleware({
         ...proxyOptions,
         target: route.target,
-        pathRewrite: (path, req) => path,
+        pathRewrite: (path, req) => {
+          // Strip /api prefix if present, keep /v1 prefix
+          return path.replace(/^\/api/, '');
+        },
       }));
     });
   });
@@ -237,12 +252,12 @@ Logger.info('Registered routes:');
 // =============================================================================
 // HEALTH & DIAGNOSTIC ENDPOINTS
 // =============================================================================
-app.get('/api/v1/health', (req, res) => {
-  res.json({ success: true, status: 'ok', uptime: process.uptime(), timestamp: Date.now(), services: Object.keys(SERVICES), serviceCount: Object.keys(SERVICES).length, routeCount: routes.reduce((acc, r) => acc + r.paths.length, 0) });
-});
-
 app.get('/health', (req, res) => {
   res.json({ success: true, status: 'ok', service: APP_NAME, version: APP_VERSION, port: PORT, uptime: process.uptime() });
+});
+
+app.get('/api/v1/health', (req, res) => {
+  res.json({ success: true, status: 'ok', uptime: process.uptime(), timestamp: Date.now(), services: Object.keys(SERVICES), serviceCount: Object.keys(SERVICES).length, routeCount: routes.reduce((acc, r) => acc + r.paths.length, 0) });
 });
 
 app.get('/api/v1/debug/routes', (req, res) => {

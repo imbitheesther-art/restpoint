@@ -60,7 +60,6 @@ export default function PrivacyPolicy() {
 
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.3rem', marginTop: '2rem' }}>11. Contact</h2>
         <p style={{ color: C.char700 }}>
-          Data Protection Officer: <a href="mailto:dpo@restpoint.co.ke" style={{ color: C.gold }}>dpo@restpoint.co.ke</a><br/>
           Privacy Requests: <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.gold }}>privacy@restpoint.co.ke</a><br/>
           
         </p>

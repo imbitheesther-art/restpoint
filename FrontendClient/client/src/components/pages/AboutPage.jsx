@@ -145,12 +145,12 @@ export default function AboutPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '.8rem' }}>
                 <div style={{ width: '44px', height: '44px', borderRadius: '4px', background: C.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.bone, fontFamily: "'Fraunces', serif", fontSize: '1.2rem', fontWeight: 600 }}>BN</div>
                 <div>
-                  <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', color: C.ink, fontWeight: 500 }}>BuildersNation</div>
-                  <div style={{ fontSize: '.8rem', color: C.gray }}>Construction project management platform</div>
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', color: C.ink, fontWeight: 500 }}>Rest Point</div>
+                <div style={{ fontSize: '.8rem', color: C.gray }}>Funeral home operating system</div>
                 </div>
               </div>
               <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>
-                BuildersNation connects construction professionals with projects, materials, and tools — streamlining the entire building lifecycle from planning to completion.
+                Rest Point is the complete operating system for funeral homes — case management, family communication, dispatch, and billing in one dignified platform.
               </p>
               <a href="https://buildersnation.netlify.app/" target="_blank" rel="noopener noreferrer" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '.4rem',
@@ -161,7 +161,7 @@ export default function AboutPage() {
               onMouseEnter={(e) => e.target.style.color = C.brassLight}
               onMouseLeave={(e) => e.target.style.color = C.brass}
               >
-                Visit BuildersNation →
+                Visit Rest Point →
               </a>
             </div>
           </div>
