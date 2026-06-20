@@ -6,6 +6,7 @@ services:
     build:
       context: .
       dockerfile: ./services/api-gateway/Dockerfile
+    container_name: restpoint_api_gateway
     ports:
       - "5000:5000"
     environment:
@@ -19,9 +20,6 @@ services:
       - RABBITMQ_PORT=5672
     env_file:
       - .env
-    volumes:
-      - ./services/api-gateway:/app
-      - /app/node_modules
     networks:
       - restpoint_network
     restart: unless-stopped
@@ -42,6 +40,7 @@ services:
   # Scanner Service (Go-based document scanner)
   scanner-service:
     build: ./services/scanner-service
+    container_name: restpoint_scanner_service
     ports:
       - "2024:2024"
     environment:
@@ -72,6 +71,7 @@ services:
     build:
       context: .
       dockerfile: ./services/auth-service/Dockerfile
+    container_name: restpoint_auth_service
     ports:
       - "5001:5000"
     volumes:
@@ -110,6 +110,7 @@ services:
     build:
       context: .
       dockerfile: ./services/tenant-service/Dockerfile
+    container_name: restpoint_tenant_service
     ports:
       - "5002:5000"
     volumes:
@@ -147,6 +148,7 @@ services:
     build:
       context: .
       dockerfile: ./services/deceased-service/Dockerfile
+    container_name: restpoint_deceased_service
     ports:
       - "5003:5000"
     volumes:
@@ -181,6 +183,7 @@ services:
     build:
       context: .
       dockerfile: ./services/billing-service/Dockerfile
+    container_name: restpoint_billing_service
     ports:
       - "5020:5000"
     volumes:
@@ -215,6 +218,7 @@ services:
     build:
       context: .
       dockerfile: ./services/notification-service/Dockerfile
+    container_name: restpoint_notification_service
     ports:
       - "5111:5000"
     volumes:
@@ -252,6 +256,7 @@ services:
     build:
       context: .
       dockerfile: ./services/documents-service/Dockerfile
+    container_name: restpoint_documents_service
     ports:
       - "5007:5000"
     volumes:
@@ -286,6 +291,7 @@ services:
     build:
       context: .
       dockerfile: ./services/socketio-service/Dockerfile
+    container_name: restpoint_socketio_service
     ports:
       - "5013:5000"
     volumes:
@@ -378,6 +384,7 @@ services:
     build:
       context: ./FrontendClient/client
       dockerfile: Dockerfile
+    container_name: restpoint_frontend
     ports:
       - "8082:80"
     depends_on:
