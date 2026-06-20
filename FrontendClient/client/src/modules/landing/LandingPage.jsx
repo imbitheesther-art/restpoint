@@ -187,6 +187,8 @@ const MockStorefront = () => (
   </div>
 );
 
+
+
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [billingYearly, setBillingYearly] = useState(false);

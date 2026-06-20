@@ -53,7 +53,7 @@ RestPoint is a complete microservices architecture with 22+ services orchestrate
 - Static assets cached for 1 year
 - Health check endpoint: `http://localhost/health`
 
-## Quick Start
+## Quick Start  
 
 ### Prerequisites
 - Docker & Docker Compose installed
