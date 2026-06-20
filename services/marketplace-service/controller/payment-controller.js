@@ -3,7 +3,7 @@ const { safeQuery, safeQueryOne } = require("../configurations/db");
 const Logger = require("../utils/logger/logger");
 
 const MPESA_SERVICE_URL = process.env.MPESA_SERVICE_URL || 'http://localhost:8011/api/v1/mpesa';
-const INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET || 'siasahub_internal_secret_2026';
+const INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET || 'RestPointInternalSecret2024';
 
 /**
  * Initiate M-Pesa Payment for an Order

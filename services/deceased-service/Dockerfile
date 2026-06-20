@@ -1,36 +1,79 @@
-FROM node:20-alpine
+# Production Dockerfile for Deceased Service - Multi-stage build with health checks
+FROM node:20-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /usr/src/app
 
-# Copy root workspace config first
+# Copy workspace-level config files
 COPY package.json tsconfig.base.json ./
 
-# Copy shared package.json files
-COPY packages/shared-utils/package.json ./packages/shared-utils/
+# Copy all workspace package.json files for proper resolution
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
-
-# Copy service package.json
+COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-# Install ALL dependencies (including dev for building shared packages)
-RUN npm install --legacy-peer-deps && npm cache clean --force
+# Install ALL dependencies (including dev for building)
+RUN npm install --legacy-peer-deps
 
-# Copy shared source modules first
-COPY configurations/ ./configurations/
-COPY packages/ ./packages/
-COPY shared/ ./shared/
-COPY global/ ./global/
+# Copy source code
+COPY . .
 
-# Build shared packages first (CRITICAL for TypeScript imports!)
+# BUILD shared packages first (CRITICAL!)
 RUN cd packages/shared-config && npm run build || true
 RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-# Copy service source code
-COPY services/deceased-service/ ./services/deceased-service/
+# Build the TypeScript service
+RUN cd services/deceased-service && npm run build
 
+# Production stage
+FROM node:20-alpine AS production
+
+# Install runtime dependencies
+RUN apk add --no-cache dumb-init
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+WORKDIR /usr/src/app
+
+# Copy workspace-level config files
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY services/deceased-service/package.json ./services/deceased-service/
+
+# Install production dependencies
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+# Copy source from builder
+COPY --from=builder /usr/src/app /usr/src/app
+
+# Create uploads directory
+RUN mkdir -p /usr/src/app/services/deceased-service/uploads && chown -R nodejs:nodejs /usr/src/app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port - Match docker-compose expected port
 EXPOSE 5000
+
+# Set environment
+ENV NODE_ENV=production
 ENV PORT=5000
-CMD ["node", "services/deceased-service/server.js"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+
+# Start application with dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "services/deceased-service/dist/server.js"]

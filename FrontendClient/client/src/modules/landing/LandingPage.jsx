@@ -393,7 +393,7 @@ export default function App() {
           <div className="nav-links">
             <a href="#about" className="nav-link">About</a>
             <a href="#pricing" className="nav-link">Pricing</a>
-            <a className="nav-link" onClick={goTerms}>Terms</a>
+            <button className="nav-link" onClick={goTerms}>Terms</button>
           </div>
           <div className="nav-cta">
             <button className="btn btn-line" onClick={goLogin} style={{ padding: '0.65rem 1.3rem', fontSize: '0.8rem' }}>Log in</button>
@@ -687,10 +687,10 @@ export default function App() {
             </div>
             <div className="footer-col">
               <h4>Company</h4>
-              <a className="footer-link" onClick={goAbout}>About</a>
-              <a className="footer-link" onClick={goContact}>Contact</a>
-              <a className="footer-link" onClick={goPrivacy}>Privacy policy</a>
-              <a className="footer-link" onClick={goTerms}>Terms</a>
+              <button className="footer-link" onClick={goAbout}>About</button>
+              <button className="footer-link" onClick={goContact}>Contact</button>
+              <button className="footer-link" onClick={goPrivacy}>Privacy policy</button>
+              <button className="footer-link" onClick={goTerms}>Terms</button>
               <a className="footer-link" href="/account-deletion">Account deletion</a>
             </div>
           </div>

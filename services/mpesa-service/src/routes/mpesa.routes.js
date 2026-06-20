@@ -20,7 +20,7 @@ const router = express.Router();
  */
 const internalOrAuth = (req, res, next) => {
   const internalSecret = req.headers['x-internal-secret'] || req.headers['X-Internal-Secret'];
-  const expectedSecret = process.env.INTERNAL_SERVICE_SECRET || 'siasahub_internal_secret_2026';
+  const expectedSecret = process.env.INTERNAL_SERVICE_SECRET || 'RestPointInternalSecret2024';
   
   if (internalSecret && internalSecret === expectedSecret) {
     req.user = { userId: req.body.userId || 'INTERNAL', role: 'service' };

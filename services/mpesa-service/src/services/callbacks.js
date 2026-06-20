@@ -99,7 +99,7 @@ const notifyService = async (origin, data) => {
   if (url) {
     try {
       await axios.post(url, data, {
-        headers: { 'X-Internal-Secret': process.env.INTERNAL_SERVICE_SECRET || 'siasahub_internal_secret_2026' }
+        headers: { 'X-Internal-Secret': process.env.INTERNAL_SERVICE_SECRET || 'RestPointInternalSecret2024' }
       });
       Logger.info(`📡 Successfully notified ${origin} service`);
     } catch (error) {

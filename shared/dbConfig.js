@@ -15,7 +15,7 @@ const DB_CONFIG = {
   password: process.env.DB_PASSWORD || '',
 };
 
-const TRACKING_DB_NAME = process.env.TRACKING_DB_NAME || 'tenant_tracking';
+const TRACKING_DB_NAME = process.env.TRACKING_DB_NAME || process.env.DB_NAME || 'restpoint_main';
 
 // ─── Connection Pool Caches ──────────────────────────────────────────────────
 let rootPool = null;

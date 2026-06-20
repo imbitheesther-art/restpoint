@@ -1,4 +1,13 @@
+# Production Dockerfile for Notification Service
 FROM node:20-alpine
+
+# Install runtime dependencies
+RUN apk add --no-cache dumb-init
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
 WORKDIR /usr/src/app
 
 # Copy root workspace config first
@@ -31,6 +40,19 @@ RUN cd packages/shared-services && npm run build || true
 # Copy service source code
 COPY services/notification-service/ ./services/notification-service/
 
+RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
+
+# Switch to non-root user
+USER nodejs
+
 EXPOSE 5000
+ENV NODE_ENV=production
 ENV PORT=5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+
+# Start application with dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/notification-service/server.js"]
