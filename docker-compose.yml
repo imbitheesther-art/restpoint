@@ -159,9 +159,9 @@ services:
     environment:
       - PORT=5013
       - NODE_ENV=development
-      - REDIS_HOST=redis
+      - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     networks:
       - mortuary-network
     restart: unless-stopped
