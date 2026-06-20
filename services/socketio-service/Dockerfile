@@ -1,28 +1,35 @@
-FROM node:22-alpine
+FROM node:20-alpine
 WORKDIR /usr/src/app
 
-# Copy root workspace config and service package.json
+# Copy root workspace config first
 COPY package.json tsconfig.base.json ./
-COPY services/socketio-service/package.json ./services/socketio-service/
+
+# Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 
-# Install ALL dependencies (including dev for building)
-RUN npm install --legacy-peer-deps
+# Copy service package.json
+COPY services/socketio-service/package.json ./services/socketio-service/
 
-# Copy source code
-COPY . .
+# Install ALL dependencies (including dev for building shared packages)
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
-# BUILD shared packages first (CRITICAL!)
+# Copy shared source modules first
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+
+# Build shared packages first (CRITICAL for TypeScript imports!)
 RUN cd packages/shared-config && npm run build || true
 RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-# Install production dependencies only (after building)
-RUN npm prune --omit=dev
+# Copy service source code
+COPY services/socketio-service/ ./services/socketio-service/
 
 EXPOSE 5000
 ENV PORT=5000

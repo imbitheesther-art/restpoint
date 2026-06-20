@@ -1,53 +1,92 @@
 #!/bin/bash
-# Validate all Dockerfiles for common build errors
+# Validate all Dockerfiles have required structure
 
-echo "🔍 Validating all Dockerfiles..."
+set -e
+
+echo "🔍 Validating Dockerfiles..."
 echo ""
 
 ERRORS=0
-WARNINGS=0
+SERVICES=(
+  "auth-service"
+  "tenant-service"
+  "deceased-service"
+  "marketplace-service"
+  "invoice-service"
+  "coffin-service"
+  "documents-service"
+  "edocuments-service"
+  "analytics-service"
+  "calender-service"
+  "mpesa-service"
+  "notification-service"
+  "qrcode-service"
+  "socketio-service"
+  "visitors-service"
+  "bodycheckout-service"
+  "extra-services"
+  "call-service"
+  "portal-service"
+  "chemical-service"
+  "billing-service"
+)
 
-# Check each service Dockerfile
-for dockerfile in services/*/Dockerfile; do
-  service=$(dirname "$dockerfile" | sed 's|services/||')
-
-  echo -n "Checking $service... "
-
-  # Check for npm install without dev when build is needed
-  if grep -q "npm run build" "$dockerfile" 2>/dev/null; then
-    if grep -q "npm install.*--omit=dev" "$dockerfile" && ! grep -q "npm install.*--legacy-peer-deps" "$dockerfile" | head -1; then
-      echo "❌ ERROR: Has build step but installs with --omit=dev (missing TypeScript)"
-      ((ERRORS++))
-      continue
+for service in "${SERVICES[@]}"; do
+  DOCKERFILE="services/${service}/Dockerfile"
+  
+  if [ ! -f "$DOCKERFILE" ]; then
+    echo "❌ MISSING: $DOCKERFILE"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
+  
+  # Check required elements
+  checks=(
+    "FROM node:20-alpine"
+    "WORKDIR /usr/src/app"
+    "COPY package.json tsconfig.base.json"
+    "COPY packages/shared-utils/package.json"
+    "COPY packages/shared-config/package.json"
+    "COPY packages/shared-logger/package.json"
+    "COPY packages/shared-services/package.json"
+    "COPY services/${service}/package.json"
+    "RUN npm install --legacy-peer-deps"
+    "COPY configurations/"
+    "COPY packages/"
+    "COPY shared/"
+    "COPY global/"
+    "RUN cd packages/shared-config && npm run build"
+    "RUN cd packages/shared-logger && npm run build"
+    "RUN cd packages/shared-utils && npm run build"
+    "RUN cd packages/shared-services && npm run build"
+    "COPY services/${service}/"
+    "EXPOSE 5000"
+    "ENV PORT=5000"
+    "CMD"
+  )
+  
+  service_errors=0
+  for check in "${checks[@]}"; do
+    if ! grep -q "$check" "$DOCKERFILE"; then
+      echo "⚠️  $DOCKERFILE missing: $check"
+      service_errors=$((service_errors + 1))
     fi
+  done
+  
+  if [ $service_errors -eq 0 ]; then
+    echo "✅ $service"
+  else
+    echo "⚠️  $service ($service_errors issues)"
+    ERRORS=$((ERRORS + service_errors))
   fi
-
-  # Check for proper working directory
-  if ! grep -q "WORKDIR /usr/src/app" "$dockerfile"; then
-    echo "⚠ WARNING: Non-standard WORKDIR"
-    ((WARNINGS++))
-    continue
-  fi
-
-  # Check for PORT exposure
-  if ! grep -q "EXPOSE 5000" "$dockerfile"; then
-    echo "⚠ WARNING: Not exposing port 5000"
-    ((WARNINGS++))
-    continue
-  fi
-
-  # Check for CMD
-  if ! grep -q "^CMD" "$dockerfile"; then
-    echo "❌ ERROR: Missing CMD"
-    ((ERRORS++))
-    continue
-  fi
-
-  echo "✅"
 done
 
 echo ""
-echo "Results: $ERRORS errors, $WARNINGS warnings"
-[ $ERRORS -eq 0 ] && echo "✅ All Dockerfiles valid!" && exit 0
-echo "❌ Fix errors above before deploying"
-exit 1
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ $ERRORS -eq 0 ]; then
+  echo "✅ All Dockerfiles validated successfully!"
+  exit 0
+else
+  echo "❌ Found $ERRORS issues across Dockerfiles"
+  exit 1
+fi

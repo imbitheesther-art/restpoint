@@ -9,16 +9,37 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=5000
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    env_file:
+      - .env
     volumes:
       - ./services/api-gateway:/app
       - /app/node_modules
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # Scanner Service (NEW - Go-based document scanner)
+  # Scanner Service (Go-based document scanner)
   scanner-service:
     build: ./services/scanner-service
     ports:
@@ -26,7 +47,7 @@ services:
     environment:
       - SERVER_PORT=2024
       - SERVER_HOST=0.0.0.0
-      - SERVER_ENV=development
+      - SERVER_ENV=production
       - STORAGE_TYPE=local
       - STORAGE_UPLOAD_PATH=./uploads/scanned
       - SCANNER_AUTO_DETECT=true
@@ -34,10 +55,10 @@ services:
       - SCANNER_DEFAULT_FORMAT=pdf
       - TZ=Africa/Nairobi
     volumes:
-      - ./services/scanner-service/uploads:/app/uploads
-      - ./services/scanner-service/config:/app/config
+      - scanner_uploads:/app/uploads
+      - scanner_config:/app/config
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health"]
@@ -46,24 +67,80 @@ services:
       retries: 3
       start_period: 5s
 
-  # Documents Service
-  documents-service:
+  # Auth Service
+  auth-service:
     build:
       context: .
-      dockerfile: ./services/documents-service/Dockerfile
+      dockerfile: ./services/auth-service/Dockerfile
     ports:
-      - "5007:5007"
+      - "5001:5000"
     volumes:
-      - ./services/documents-service/uploads:/app/uploads
-      - ./services/documents-service/config:/app/config
+      - auth_service_data:/usr/src/app/data
     environment:
-      - PORT=5007
-      - NODE_ENV=development
+      - PORT=5000
+      - NODE_ENV=production
+      - SERVICE_PORT=5001
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - JWT_EXPIRY=24h
+      - REFRESH_TOKEN_EXPIRY=7d
+    env_file:
+      - .env
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
     depends_on:
-      - api-gateway
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Tenant Service
+  tenant-service:
+    build:
+      context: .
+      dockerfile: ./services/tenant-service/Dockerfile
+    ports:
+      - "5002:5000"
+    volumes:
+      - tenant_service_data:/usr/src/app/data
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Deceased Service
   deceased-service:
@@ -71,41 +148,33 @@ services:
       context: .
       dockerfile: ./services/deceased-service/Dockerfile
     ports:
-      - "5001:5001"
+      - "5003:5000"
     volumes:
-      - ./services/deceased-service:/app
-      - /app/node_modules
+      - deceased_service_data:/usr/src/app/data
+      - ./services/deceased-service/uploads:/usr/src/app/uploads
     environment:
-      - PORT=5001
-      - NODE_ENV=development
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
     depends_on:
-      - api-gateway
-
-  # Auth Service
-  auth-service:
-    build:
-      context: .
-      dockerfile: ./services/auth-service/Dockerfile
-    ports:
-      - "5002:5002"
-    volumes:
-      - ./services/auth-service:/app
-      - /app/node_modules
-    environment:
-      - PORT=5002
-      - NODE_ENV=development
-      - JWT_SECRET=your-jwt-secret-key-here
-      - REFRESH_TOKEN_SECRET=your-refresh-token-secret-key-here
-      - JWT_EXPIRY=24h
-      - REFRESH_TOKEN_EXPIRY=7d
-    networks:
-      - mortuary-network
-    restart: unless-stopped
-    depends_on:
-      - api-gateway
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Billing Service
   billing-service:
@@ -113,18 +182,33 @@ services:
       context: .
       dockerfile: ./services/billing-service/Dockerfile
     ports:
-      - "5003:5003"
+      - "5020:5000"
     volumes:
-      - ./services/billing-service:/app
-      - /app/node_modules
+      - billing_service_data:/usr/src/app/data
+      - ./services/billing-service/invoices:/usr/src/app/invoices
     environment:
-      - PORT=5003
-      - NODE_ENV=development
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
     depends_on:
-      - api-gateway
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Notification Service
   notification-service:
@@ -132,18 +216,70 @@ services:
       context: .
       dockerfile: ./services/notification-service/Dockerfile
     ports:
-      - "5111:5111"
+      - "5111:5000"
     volumes:
-      - ./services/notification-service:/app
-      - /app/node_modules
+      - notification_service_data:/usr/src/app/data
     environment:
-      - PORT=5111
-      - NODE_ENV=development
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    env_file:
+      - .env
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
     depends_on:
-      - api-gateway
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Documents Service
+  documents-service:
+    build:
+      context: .
+      dockerfile: ./services/documents-service/Dockerfile
+    ports:
+      - "5007:5000"
+    volumes:
+      - documents_service_data:/usr/src/app/data
+      - ./services/documents-service/uploads:/usr/src/app/uploads
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Socket.io Service
   socketio-service:
@@ -151,40 +287,91 @@ services:
       context: .
       dockerfile: ./services/socketio-service/Dockerfile
     ports:
-      - "5013:5013"
+      - "5013:5000"
     volumes:
-      - ./services/socketio-service:/app
-      - /app/node_modules
+      - socketio_service_data:/usr/src/app/data
     environment:
-      - PORT=5013
-      - NODE_ENV=development
+      - PORT=5000
+      - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    env_file:
+      - .env
     networks:
-      - mortuary-network
+      - restpoint_network
     restart: unless-stopped
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # Redis
+  # MariaDB Database
+  mariadb:
+    image: mariadb:10.11
+    container_name: restpoint_mariadb
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${MARIADB_EXTERNAL_PORT:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - restpoint_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Redis Cache
   redis:
     image: redis:7-alpine
+    container_name: restpoint_redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 1gb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
     volumes:
-      - redis-data:/data
+      - redis_data:/data
     networks:
-      - mortuary-network
-    restart: unless-stopped
+      - restpoint_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 5s
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: restpoint_rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - restpoint_network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
   # Frontend Client
   frontend:
@@ -193,25 +380,46 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8082:80"
-    volumes:
-      - ./FrontendClient:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - REACT_APP_API_URL=http://localhost:5000/api/v1
-      - REACT_APP_SOCKETIO_URL=http://localhost:5013
-    networks:
-      - mortuary-network
-    restart: unless-stopped
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
-  mortuary-network:
+  restpoint_network:
     driver: bridge
+    name: restpoint_network
 
 volumes:
-  uploads:
-  scanned:
-  database:
-  redis-data:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  scanner_uploads:
+    driver: local
+  scanner_config:
+    driver: local
+  auth_service_data:
+    driver: local
+  tenant_service_data:
+    driver: local
+  deceased_service_data:
+    driver: local
+  billing_service_data:
+    driver: local
+  notification_service_data:
+    driver: local
+  documents_service_data:
+    driver: local
+  socketio_service_data:
+    driver: local

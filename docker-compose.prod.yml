@@ -1,9 +1,14 @@
-# PRODUCTION Docker Compose - Matches docker-compose.yml
-# All services have fixed container_names to prevent duplicate containers
-# All use node:20-alpine for consistency
-# All services have persistent volumes
+# PRODUCTION Docker Compose - Single Network Configuration
+# All services on restpoint_network (NO mortuary-network, NO restpoint_net)
+# All container names use service names without _1 suffix
+# All internal services run on port 5000
+# All services have health checks and proper dependencies
 
 services:
+  # =============================================================================
+  # INFRASTRUCTURE SERVICES
+  # =============================================================================
+  
   mariadb:
     image: mariadb:10.11
     container_name: restpoint_mariadb
@@ -52,6 +57,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -62,6 +68,10 @@ services:
       timeout: 10s
       retries: 5
 
+  # =============================================================================
+  # API GATEWAY
+  # =============================================================================
+  
   api-gateway:
     build:
       context: .
@@ -76,7 +86,31 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+      # Service URLs - use service names (no _1 suffix) since all on same network
+      AUTH_SERVICE_URL: http://auth-service:5000
+      TENANT_SERVICE_URL: http://tenant-service:5000
+      DECEASED_SERVICE_URL: http://deceased-service:5000
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:5000
+      MPESA_SERVICE_URL: http://mpesa-service:5000
+      PORTAL_SERVICE_URL: http://portal-service:5000
+      INVOICES_SERVICE_URL: http://invoice-service:5000
+      COFFIN_SERVICE_URL: http://coffin-service:5000
+      VISITORS_SERVICE_URL: http://visitors-service:5000
+      NOTIFICATION_SERVICE_URL: http://notification-service:5000
+      DOCUMENTS_SERVICE_URL: http://documents-service:5000
+      ANALYTICS_SERVICE_URL: http://analytics-service:5000
+      BODYCHECKOUT_SERVICE_URL: http://bodycheckout-service:5000
+      EDOCUMENTS_SERVICE_URL: http://edocuments-service:5000
+      CALENDAR_SERVICE_URL: http://calender-service:5000
+      CHEMICALS_SERVICE_URL: http://chemical-service:5000
+      BILLING_SERVICE_URL: http://billing-service:5000
+      SOCKETIO_SERVICE_URL: http://socketio-service:5000
+      EXTRA_SERVICES_URL: http://extra-services:5000
+      CALL_SERVICE_URL: http://call-service:5000
+      QRCODE_SERVICE_URL: http://qrcode-service:5000
     depends_on:
+      mariadb:
+        condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
@@ -89,6 +123,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # =============================================================================
+  # APPLICATION SERVICES
+  # =============================================================================
 
   auth-service:
     build:
@@ -104,6 +142,15 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+      SERVICE_NAME: auth-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      JWT_EXPIRY: 24h
+      REFRESH_TOKEN_EXPIRY: 7d
     depends_on:
       mariadb:
         condition: service_healthy
@@ -132,6 +179,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+      SERVICE_NAME: tenant-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
     depends_on:
       mariadb:
         condition: service_healthy
@@ -162,11 +216,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: deceased-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - deceased_service_data:/usr/src/app/data
       - ./services/deceased-service/uploads:/usr/src/app/uploads
@@ -193,11 +247,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: marketplace-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - marketplace_service_data:/usr/src/app/data
     networks:
@@ -223,11 +277,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: invoice-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - invoice_service_data:/usr/src/app/data
       - ./services/invoice-service/generated:/usr/src/app/generated
@@ -254,11 +308,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: coffin-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - coffin_service_data:/usr/src/app/data
     networks:
@@ -284,16 +338,22 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: documents-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - documents_service_data:/usr/src/app/data
       - ./services/documents-service/uploads:/usr/src/app/uploads
     networks:
       - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   edocuments-service:
     build:
@@ -309,11 +369,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: edocuments-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - edocuments_service_data:/usr/src/app/data
       - ./services/edocuments-service/uploads:/usr/src/app/uploads
@@ -340,11 +400,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: analytics-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - analytics_service_data:/usr/src/app/data
     networks:
@@ -370,11 +430,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: calender-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - calender_service_data:/usr/src/app/data
     networks:
@@ -400,9 +460,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: mpesa-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
     volumes:
       - mpesa_service_data:/usr/src/app/data
     networks:
@@ -428,13 +488,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: notification-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
     volumes:
       - notification_service_data:/usr/src/app/data
     networks:
@@ -460,9 +520,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: qrcode-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
     volumes:
       - qrcode_service_data:/usr/src/app/data
       - ./services/qrcode-service/generated:/usr/src/app/generated
@@ -489,10 +549,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+      SERVICE_NAME: socketio-service
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    depends_on:
-      redis:
-        condition: service_healthy
     volumes:
       - socketio_service_data:/usr/src/app/data
     networks:
@@ -518,11 +578,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: visitors-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - visitors_service_data:/usr/src/app/data
     networks:
@@ -548,11 +608,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: bodycheckout-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - bodycheckout_service_data:/usr/src/app/data
     networks:
@@ -578,9 +638,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: extra-services
+      DB_HOST: mariadb
+      DB_PORT: 3306
     volumes:
       - extra_services_data:/usr/src/app/data
     networks:
@@ -606,9 +666,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: call-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
     volumes:
       - call_service_data:/usr/src/app/data
     networks:
@@ -634,9 +694,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: portal-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
     volumes:
       - portal_service_data:/usr/src/app/data
     networks:
@@ -662,9 +722,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      SERVICE_NAME: chemical-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
     volumes:
       - chemical_service_data:/usr/src/app/data
     networks:
@@ -690,11 +750,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      SERVICE_NAME: billing-service
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - billing_service_data:/usr/src/app/data
       - ./services/billing-service/invoices:/usr/src/app/invoices
@@ -707,6 +767,10 @@ services:
       retries: 3
       start_period: 40s
 
+  # =============================================================================
+  # FRONTEND
+  # =============================================================================
+  
   frontend:
     build:
       context: ./FrontendClient/client
@@ -717,7 +781,8 @@ services:
     ports:
       - "${FRONTEND_EXTERNAL_PORT:-8082}:80"
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
     networks:
       - restpoint_network
     healthcheck:
@@ -727,17 +792,32 @@ services:
       retries: 3
       start_period: 30s
 
+# =============================================================================
+# NETWORK DEFINITION - ONLY ONE NETWORK
+# =============================================================================
 networks:
   restpoint_network:
     driver: bridge
     name: restpoint_network
+    attachable: true
 
+# =============================================================================
+# VOLUMES
+# =============================================================================
 volumes:
   mariadb_data:
     driver: local
   redis_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  scanner_uploads:
+    driver: local
+  scanner_config:
+    driver: local
+  auth_service_data:
+    driver: local
+  tenant_service_data:
     driver: local
   deceased_service_data:
     driver: local

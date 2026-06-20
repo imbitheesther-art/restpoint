@@ -1,34 +1,36 @@
 FROM node:20-alpine
 WORKDIR /usr/src/app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy root workspace config first
+COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
+COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-services/package.json ./packages/shared-services/
+
+# Copy service package.json
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Install ALL dependencies (including dev for building shared packages)
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
-# Copy source code
-COPY . .
+# Copy shared source modules first
+COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
 
-# Build shared packages first
+# Build shared packages first (CRITICAL for TypeScript imports!)
 RUN cd packages/shared-config && npm run build || true
 RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-# Install ts-node
-RUN npm install -g ts-node
-
-# Create a symlink for shared folder (makes imports work at runtime)
-RUN ln -sf /usr/src/app/shared /usr/src/app/services/deceased-service/shared 2>/dev/null || true
+# Copy service source code
+COPY services/deceased-service/ ./services/deceased-service/
 
 EXPOSE 5000
 ENV PORT=5000
-
-# Run with ts-node --transpile-only (removed unsupported --ignore-warnings flag)
-CMD ["npx", "ts-node", "--transpile-only", "services/deceased-service/server.ts"]
+CMD ["node", "services/deceased-service/server.js"]

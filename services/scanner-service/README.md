@@ -5,10 +5,10 @@ A production-grade Go-based document scanner service that integrates with the mo
 ## Features
 
 ### 1. Multi-Scanner Support
-- **Physical Scanners**: TWAIN (Windows), WIA (Windows), SANE (Linux/Mac)
-- **Mobile Devices**: Camera scanning via mobile web interface
-- **Network Scanners**: eSCL/AirPrint compatible network scanners
-- **Web Fallback**: Browser-based scanning using Dynamic Web TWAIN SDK
+- **Physical Scanners (NO client install)**: TWAIN (Windows), WIA (Windows), SANE (Linux/Mac) — when Go service runs on the same PC as the scanner
+- **Network Scanners (NO client install)**: eSCL/AirPrint compatible network scanners — scan over the network directly
+- **Mobile Devices**: Camera scanning via mobile web interface — no install needed
+- **Web Fallback (requires client install)**: Dynamic Web TWAIN SDK — only needed when browser is on a different PC from the scanner
 
 ### 2. Document Processing
 - **PDF Generation**: Convert scanned images to high-quality PDFs
@@ -107,8 +107,13 @@ scanner-service/
 ### Prerequisites
 - Go 1.21 or higher
 - Docker and Docker Compose (for containerized deployment)
-- SANE backend (for Linux/Mac scanner support)
-- TWAIN/WIA drivers (for Windows scanner support)
+- SANE backend (for Linux/Mac scanner support when running directly on the scanner PC)
+- TWAIN/WIA drivers (for Windows scanner support when running directly on the scanner PC)
+
+### NO Client Installation Required For:
+1. **Server-hosted scanning**: Run the Go scanner service on the SAME Windows PC that has the scanner connected via USB. The service accesses TWAIN/WIA directly — no browser plugin needed.
+2. **Network scanners**: eSCL/AirPrint scanners connect over the network — any browser can trigger scans with zero client software.
+3. **Mobile scanning**: Uses the phone's camera directly through the browser.
 
 ### Local Development
 
@@ -199,6 +204,19 @@ import ScannerComponent from '../scanner/ScannerComponent';
   }}
 />
 ```
+
+### Zero-Client-Install Mode
+
+For physical USB scanners connected to the **same PC running this Go service**, simply point your browser to the scanner service directly:
+
+```
+http://localhost:2024/scanner    — Web-based scanner UI (no install)
+http://localhost:2024/mobile-scanner — Mobile camera scanner
+```
+
+The React app can embed these iframe URLs. No Dynamic Web TWAIN helper service is needed when:
+- The Go service runs on the same machine as the USB scanner (uses native TWAIN/WIA/SANE), OR
+- The scanner is a network/eSCL scanner
 
 ### API Client Example
 
@@ -331,31 +349,40 @@ ws://localhost:2024/api/v1/scanner/ws/scan/{scanId}
 
 ### Scanner Not Detected
 
-1. **Check scanner connection**
-   ```bash
-   # Linux/Mac - List SANE devices
-   scanimage -L
-   
-   # Windows - Check TWAIN/WIA in Device Manager
-   ```
+1. **Check scanner connection (same PC as Go service)**
+    ```bash
+    # Linux/Mac - List SANE devices
+    scanimage -L
+    
+    # Windows - Check TWAIN/WIA in Device Manager
+    ```
 
-2. **Verify scanner permissions**
-   ```bash
-   # Linux - Add user to scanner group
-   sudo usermod -aG scanner $USER
-   ```
+2. **For Docker: pass USB device through to container**
+    ```bash
+    # Linux - run scanner service with device access
+    docker run --device=/dev/bus/usb ...
+    
+    # Windows - ensure scanner is shared with Docker Desktop
+    ```
 
-3. **Check service logs**
-   ```bash
-   docker-compose logs -f scanner-service
-   ```
+3. **Verify scanner permissions**
+    ```bash
+    # Linux - Add user to scanner group
+    sudo usermod -aG scanner $USER
+    ```
+
+4. **Check service logs**
+    ```bash
+    docker-compose logs -f scanner-service
+    ```
 
 ### Common Issues
 
 | Issue | Solution |
 |-------|----------|
-| Scanner not found | Ensure scanner is connected and drivers installed |
-| Permission denied | Check file permissions on upload directory |
+| Scanner not found in Docker | Pass USB device through with `--device=/dev/bus/usb` on Linux, or enable scanner sharing in Docker Desktop on Windows |
+| Scanner not found on network | Ensure eSCL/AirPrint is enabled on the scanner and port 443/80 is reachable |
+| Permission denied | Run service on the scanner PC with a user in the `scanner` group (Linux), or grant access in Docker Desktop settings |
 | Scan timeout | Increase timeout in frontend polling configuration |
 | PDF generation fails | Verify pdfcpu library compatibility |
 

@@ -1,30 +1,34 @@
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /usr/src/app
 
+# Copy root workspace config first
 COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
+
+# Copy service package.json
 COPY services/edocuments-service/package.json ./services/edocuments-service/
 
-# Install ALL dependencies (including dev for building)
+# Install ALL dependencies (including dev for building shared packages)
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
+# Copy shared source modules first
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
 
-# BUILD shared packages first (CRITICAL!)
+# Build shared packages first (CRITICAL for TypeScript imports!)
 RUN cd packages/shared-config && npm run build || true
 RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-# Install production dependencies only (after building)
-RUN npm prune --omit=dev
-
+# Copy service source code
 COPY services/edocuments-service/ ./services/edocuments-service/
 
 EXPOSE 5000
