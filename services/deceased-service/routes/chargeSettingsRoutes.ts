@@ -8,6 +8,12 @@ import {
 
 const router = Router();
 
+// Import authentication middleware
+const { protect } = require('../../../global/middlewares/authMiddleware');
+
+// All routes are protected with JWT authentication
+router.use(protect);
+
 // Charge Settings routes - Full paths
 router.get('/api/v1/restpoint/deceased/charge-settings', getChargeSettings);
 router.put('/api/v1/restpoint/deceased/charge-settings/:id', updateChargeSettings);

@@ -80,16 +80,33 @@ const authLimiter = rateLimit({
 // ============================================
 // ROUTES
 // ============================================
-// Mount onboarding routes — careful ordering to avoid path conflicts
-// Most specific paths FIRST, generic paths LAST
+// ═══════════════════════════════════════════════════════════════════
+// ROUTE MOUNTS — Tenant Onboarding + System Admin
+// ═══════════════════════════════════════════════════════════════════
+// IMPORTANT: The API gateway's pathRewrite strips /api prefix from forwarded paths.
+// Example: Client→Gateway: /api/v1/restpoint/tenant/onboarding/organization
+//          Gateway→Service: /v1/restpoint/tenant/onboarding/organization
+// So we MUST mount on BOTH /api/v1/* AND /v1/* paths.
+// ═══════════════════════════════════════════════════════════════════
+
+// --- Onboarding routes (api prefix) ---
 app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
 app.use('/api/onboarding', authLimiter, onboardingRoutes);
 
-// System Admin Routes
+// --- Onboarding routes (v1 prefix — after gateway strips /api) ---
+app.use('/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
+app.use('/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
+app.use('/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
+app.use('/v1/onboarding', authLimiter, onboardingRoutes);
+
+// --- System Admin Routes ---
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/v1/restpoint/system-admin', systemAdminRoutes);
+// System admin via gateway (after /api strip)
+app.use('/v1/restpoint/system-admin', systemAdminRoutes);
+app.use('/v1/system-admin', systemAdminRoutes);
 
 // ============================================
 // HEALTH CHECK

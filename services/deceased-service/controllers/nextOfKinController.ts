@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { NextOfKinModel, CreateNextOfKinDTO, UpdateNextOfKinDTO } from '../models/NextOfKin';
-import { tenantDB } from '../config/tenantDatabase';
+import { query, execute } from '../config/tenantDatabase';
+
 
 // Validation function for Next of Kin data
 const validateNextOfKinData = (data: CreateNextOfKinDTO): string[] => {
@@ -38,8 +39,8 @@ export const nextOfKinRegister = async (req: Request, res: Response): Promise<Re
     alternative_contact
   } = req.body;
 
-  // Get tenant slug from header or subdomain
-  const tenantSlug = req.headers['x-tenant-slug'] as string || 'default';
+  // Get slug from unified x-slug header (supports both tenant and branch slugs)
+  const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || 'default';
 
   // Validate required fields
   const validationErrors = validateNextOfKinData({ deceased_id, full_name, relationship, contact, email });
@@ -52,33 +53,31 @@ export const nextOfKinRegister = async (req: Request, res: Response): Promise<Re
   }
 
   try {
-    // Check if deceased exists
-    const conn = await tenantDB.getConnection(tenantSlug);
-    try {
-      const [deceasedCheck] = await conn.execute(
-        'SELECT deceased_id FROM deceased WHERE deceased_id = ? AND is_deleted = FALSE',
-        [deceased_id]
-      );
+    // Check if deceased exists using global query executor
+    const deceasedCheck = await query(req, 
+      'SELECT deceased_id FROM deceased WHERE deceased_id = ? AND is_deleted = FALSE',
+      [deceased_id]
+    );
 
-      if ((deceasedCheck as any[]).length === 0) {
-        return res.status(404).json({
-          message: 'Deceased person not found'
-        });
-      }
+    if (deceasedCheck.length === 0) {
+      return res.status(404).json({
+        message: 'Deceased person not found'
+      });
+    }
 
-      const createData: CreateNextOfKinDTO = {
-        deceased_id,
-        full_name,
-        relationship,
-        contact,
-        email,
-        is_primary,
-        address,
-        alternative_contact,
-        created_by: (req as any).user?.userId || null
-      };
+    const createData: CreateNextOfKinDTO = {
+      deceased_id,
+      full_name,
+      relationship,
+      contact,
+      email,
+      is_primary,
+      address,
+      alternative_contact,
+      created_by: (req as any).user?.userId || null
+    };
 
-      const result = await NextOfKinModel.create(tenantSlug, createData);
+    const result = await NextOfKinModel.create(req, createData);
 
       if (!result) {
         res.status(500).json({
@@ -98,7 +97,7 @@ export const nextOfKinRegister = async (req: Request, res: Response): Promise<Re
           message: `New next of kin added: ${full_name} (${relationship}) for deceased ID: ${deceased_id}`
         }, {
           headers: {
-            'x-tenant-slug': tenantSlug,
+            'x-slug': tenantSlug,
             'Content-Type': 'application/json'
           }
         }).catch(err => {
@@ -114,9 +113,6 @@ export const nextOfKinRegister = async (req: Request, res: Response): Promise<Re
         kin_id: result.id,
         is_primary: result.is_primary
       });
-    } finally {
-      conn.release();
-    }
   } catch (error: any) {
     console.error('Error inserting next of kin:', error.message);
     
@@ -126,9 +122,9 @@ export const nextOfKinRegister = async (req: Request, res: Response): Promise<Re
       });
     }
     
+    // Don't expose internal errors to client
     return res.status(500).json({
-      message: 'Failed to register next of kin',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Failed to register next of kin'
     });
   }
 };
@@ -143,10 +139,10 @@ export const getNextOfKinByDeceasedId = async (req: Request, res: Response): Pro
     });
   }
 
-  const tenantSlug = req.headers['x-tenant-slug'] as string || 'default';
+  const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || 'default';
 
   try {
-    const rows = await NextOfKinModel.getByDeceasedId(tenantSlug, deceased_id);
+    const rows = await NextOfKinModel.getByDeceasedId(req, deceased_id);
 
     console.log(`Next of kin fetched for deceased ${deceased_id}: ${rows.length}`);
 
@@ -159,9 +155,9 @@ export const getNextOfKinByDeceasedId = async (req: Request, res: Response): Pro
   } catch (error: any) {
     console.error('Error fetching next of kin:', error.message);
     
+    // Don't expose internal errors to client
     return res.status(500).json({
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Internal server error'
     });
   }
 };
@@ -175,7 +171,7 @@ export const updateNextOfKin = async (req: Request, res: Response): Promise<Resp
     return res.status(400).json({ message: 'Next of kin ID is required' });
   }
 
-  const tenantSlug = req.headers['x-tenant-slug'] as string || 'default';
+  const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || 'default';
   
   try {
     const updateData: UpdateNextOfKinDTO = {};
@@ -191,7 +187,7 @@ export const updateNextOfKin = async (req: Request, res: Response): Promise<Resp
       return res.status(400).json({ message: 'No valid fields to update' });
     }
 
-    const result = await NextOfKinModel.update(tenantSlug, parseInt(id), updateData);
+    const result = await NextOfKinModel.update(req, parseInt(id), updateData);
     
     if (!result) {
       return res.status(404).json({ message: 'Next of kin record not found' });
@@ -206,9 +202,9 @@ export const updateNextOfKin = async (req: Request, res: Response): Promise<Resp
   } catch (error: any) {
     console.error('Error updating next of kin:', error.message);
     
+    // Don't expose internal errors to client
     return res.status(500).json({
-      message: 'Failed to update next of kin',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Failed to update next of kin'
     });
   }
 };
@@ -221,10 +217,10 @@ export const deleteNextOfKin = async (req: Request, res: Response): Promise<Resp
     return res.status(400).json({ message: 'Next of kin ID is required' });
   }
 
-  const tenantSlug = req.headers['x-tenant-slug'] as string || 'default';
+  const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || 'default';
   
   try {
-    const result = await NextOfKinModel.delete(tenantSlug, parseInt(id));
+    const result = await NextOfKinModel.delete(req, parseInt(id));
     
     if (!result) {
       return res.status(404).json({ message: 'Next of kin record not found' });
@@ -239,9 +235,9 @@ export const deleteNextOfKin = async (req: Request, res: Response): Promise<Resp
   } catch (error: any) {
     console.error('Error deleting next of kin:', error.message);
     
+    // Don't expose internal errors to client
     return res.status(500).json({
-      message: 'Failed to delete next of kin',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Failed to delete next of kin'
     });
   }
 };
@@ -254,10 +250,10 @@ export const markAsNotified = async (req: Request, res: Response): Promise<Respo
     return res.status(400).json({ message: 'Next of kin ID is required' });
   }
 
-  const tenantSlug = req.headers['x-tenant-slug'] as string || 'default';
+  const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || 'default';
   
   try {
-    const result = await NextOfKinModel.markNotified(tenantSlug, parseInt(id));
+    const result = await NextOfKinModel.markNotified(req, parseInt(id));
     
     if (!result) {
       return res.status(404).json({ message: 'Next of kin record not found' });
@@ -270,6 +266,7 @@ export const markAsNotified = async (req: Request, res: Response): Promise<Respo
   } catch (error: any) {
     console.error('Error marking next of kin as notified:', error.message);
     
+    // Don't expose internal errors to client
     return res.status(500).json({
       message: 'Failed to mark as notified'
     });

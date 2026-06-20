@@ -8,6 +8,12 @@ import {
 
 const router = Router();
 
+// Import authentication middleware
+const { protect } = require('../../../global/middlewares/authMiddleware');
+
+// All routes are protected with JWT authentication
+router.use(protect);
+
 // Charges routes - Full paths
 router.get('/api/v1/restpoint/deceased/charges/:deceased_id', getCharges);
 router.post('/api/v1/restpoint/deceased/charges', addCharge);

@@ -9,6 +9,12 @@ import {
 
 const router = Router();
 
+// Import authentication middleware
+const { protect } = require('../../../global/middlewares/authMiddleware');
+
+// All routes are protected with JWT authentication
+router.use(protect);
+
 // Postmortem/Autopsy routes - Full paths
 router.post('/api/v1/restpoint/deceased/postmortem/save', savePostmortem);
 router.get('/api/v1/restpoint/deceased/postmortem/:deceased_id', getPostmortemByDeceasedId);

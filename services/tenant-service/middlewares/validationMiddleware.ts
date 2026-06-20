@@ -41,19 +41,20 @@ export const validateOnboarding = (req: Request, res: Response, next: NextFuncti
 
 export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
   const data = req.body || {};
-  const email = data.email || data.identifier || '';
+  const identifier = data.identifier || data.email || '';
   const password = data.password || '';
 
   const errors: string[] = [];
 
-  if (!email) errors.push('Email is required');
+  if (!identifier) errors.push('Email or username is required');
   if (!password) errors.push('Password is required');
 
   if (errors.length > 0) {
     return res.status(400).json({ success: false, errors });
   }
 
-  req.body = { email, password };
+  // Pass identifier through to the controller (not just email)
+  req.body = { identifier, password };
 
   next();
 };

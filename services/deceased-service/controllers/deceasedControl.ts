@@ -4,7 +4,9 @@ import crypto from 'crypto';
 import axios from 'axios';
 import mysql from 'mysql2/promise';
 import ExcelExportService from '../services/excelExportService';
-import { lookupTenantDatabase, safeTenantQuery, safeTenantExecute } from '../../shared/dbConfig';
+import { safeTenantQuery, safeTenantExecute } from '../../shared/dbConfig';
+import { resolveDatabase } from '../config/tenantDatabase';
+
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
@@ -92,7 +94,7 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
  * 3. Execute query on tenant's database
  */
 export const registerDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     
     console.log('📝 Register deceased request received');
     console.log('🏢 Tenant slug:', tenantSlug);
@@ -136,19 +138,19 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             });
         }
 
-        // Multi-tenant: Look up the tenant's database
-        console.log(`🔍 Looking up database for tenant slug: ${tenantSlug}`);
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug (single-branch or multi-branch)
+        console.log(`🔍 Resolving database for slug: ${tenantSlug}`);
+        const dbName = await resolveDatabase(tenantSlug);
         
         if (!dbName) {
-            console.error(`❌ No database found for tenant: ${tenantSlug}`);
+            console.error(`❌ No database found for slug: ${tenantSlug}`);
             return res.status(404).json({
                 success: false,
-                message: `No database configured for tenant: ${tenantSlug}. Please onboard the tenant first.`
+                message: `No database configured for: ${tenantSlug}. Please onboard the tenant first.`
             });
         }
         
-        console.log(`✅ Found database: ${dbName} for tenant: ${tenantSlug}`);
+        console.log(`✅ Using database: ${dbName}`);
 
         // Ensure the deceased table exists in the tenant's database
         await ensureDeceasedTable(dbName, tenantSlug);
@@ -240,20 +242,20 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
  * GET /api/v1/restpoint/deceased/deceased-all
  */
 export const getAllDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
 
-    console.log('📋 Get all deceased request for tenant:', tenantSlug);
+    console.log('📋 Get all deceased request for slug:', tenantSlug);
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return res.status(400).json({ 
             success: false, 
-            message: 'Valid tenant required. Please provide x-tenant-slug header' 
+            message: 'Valid tenant required. Please provide x-slug header' 
         });
     }
 
     try {
-        // Multi-tenant: Look up the tenant's database
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -321,7 +323,7 @@ export const getAllDeceased = async (req: TenantRequest, res: Response): Promise
  * GET /api/v1/restpoint/deceased/deceased-id/:id
  */
 export const getDeceasedById = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     const rawId = req.params.id || req.query.id;
     const id = (() => {
         if (Array.isArray(rawId)) {
@@ -346,8 +348,8 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
     }
 
     try {
-        // Multi-tenant: Look up the tenant's database
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -419,7 +421,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
  * PUT /api/v1/restpoint/deceased/update-deceased/:id
  */
 export const updateDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     const { id } = req.params;
 
     if (!id || !tenantSlug) {
@@ -430,8 +432,8 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
     }
 
     try {
-        // Multi-tenant: Look up the tenant's database
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -487,7 +489,7 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
  * DELETE /api/v1/restpoint/deceased/delete-deceased/:id
  */
 export const deleteDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     const { id } = req.params;
 
     if (!id || !tenantSlug) {
@@ -498,8 +500,8 @@ export const deleteDeceased = async (req: TenantRequest, res: Response): Promise
     }
 
     try {
-        // Multi-tenant: Look up the tenant's database
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -537,7 +539,7 @@ export const deleteDeceased = async (req: TenantRequest, res: Response): Promise
  * GET /api/v1/restpoint/deceased/stats
  */
 export const getDeceasedStats = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
 
     if (!tenantSlug) {
         return res.status(400).json({ 
@@ -547,8 +549,8 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
     }
 
     try {
-        // Multi-tenant: Look up the tenant's database
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -595,7 +597,7 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
  * GET /api/v1/restpoint/deceased/export-excel
  */
 export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
     
     console.log('📊 Export deceased records to Excel for tenant:', tenantSlug);
 
@@ -607,8 +609,8 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
     }
 
     try {
-        // Multi-tenant: Look up the tenant's database
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        // Resolve database from unified x-slug
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,

@@ -3,7 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit'; // Fixed: default import
 import { DateTime } from 'luxon';
-import { lookupTenantDatabase, safeTenantExecute, safeTenantQuery } from '../../../shared/dbConfig';
+import { safeTenantExecute, safeTenantQuery } from '../../../shared/dbConfig';
+import { resolveDatabase } from '../config/tenantDatabase';
+
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
@@ -135,7 +137,7 @@ const ensurePostmortemTable = async (dbName: string): Promise<void> => {
  * POST /api/v1/restpoint/deceased/postmortem/save
  */
 export const savePostmortem = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return res.status(400).json({
@@ -169,7 +171,7 @@ export const savePostmortem = async (req: TenantRequest, res: Response): Promise
         }
 
         console.log(`📝 Saving postmortem data for deceased: ${deceased_id}`);
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        const dbName = await resolveDatabase(tenantSlug);
 
         if (!dbName) {
             return res.status(404).json({
@@ -283,7 +285,7 @@ export const savePostmortem = async (req: TenantRequest, res: Response): Promise
  */
 
 export const getPostmortemByDeceasedId = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
     const { deceased_id } = req.params;
 
     if (!deceased_id || !tenantSlug) {
@@ -294,7 +296,7 @@ export const getPostmortemByDeceasedId = async (req: TenantRequest, res: Respons
     }
 
     try {
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -355,7 +357,7 @@ export const getPostmortemByDeceasedId = async (req: TenantRequest, res: Respons
  * PUT /api/v1/restpoint/deceased/postmortem/:id
  */
 export const updatePostmortem = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
     const { id } = req.params;
 
     if (!id || !tenantSlug) {
@@ -366,7 +368,7 @@ export const updatePostmortem = async (req: TenantRequest, res: Response): Promi
     }
 
     try {
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -426,7 +428,7 @@ export const updatePostmortem = async (req: TenantRequest, res: Response): Promi
  * DELETE /api/v1/restpoint/deceased/postmortem/:id
  */
 export const deletePostmortem = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
     const { id } = req.params;
 
     if (!id || !tenantSlug) {
@@ -437,7 +439,7 @@ export const deletePostmortem = async (req: TenantRequest, res: Response): Promi
     }
 
     try {
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             return res.status(404).json({
                 success: false,
@@ -466,7 +468,7 @@ export const deletePostmortem = async (req: TenantRequest, res: Response): Promi
  * GET /api/v1/restpoint/deceased/postmortem/:deceased_id/pdf
  */
 export const generatePostmortemPDF = async (req: TenantRequest, res: Response): Promise<void> => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
     const { deceased_id } = req.params;
 
     if (!deceased_id || !tenantSlug) {
@@ -478,7 +480,7 @@ export const generatePostmortemPDF = async (req: TenantRequest, res: Response): 
     }
 
     try {
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
             res.status(404).json({
                 success: false,
