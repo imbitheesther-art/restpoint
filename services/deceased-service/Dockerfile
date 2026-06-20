@@ -1,4 +1,4 @@
-# Production Dockerfile for Deceased Service - Multi-stage build with health checks
+# Production Dockerfile for Deceased Service — Uses tsx to run TypeScript directly
 FROM node:20-alpine AS builder
 
 # Install build dependencies
@@ -28,9 +28,6 @@ RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-# Build the TypeScript service
-RUN cd services/deceased-service && npm run build
-
 # Production stage
 FROM node:20-alpine AS production
 
@@ -57,6 +54,9 @@ RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 # Copy source from builder
 COPY --from=builder /usr/src/app /usr/src/app
 
+# Install tsx for running TypeScript directly
+RUN npm install -g tsx
+
 # Create uploads directory
 RUN mkdir -p /usr/src/app/services/deceased-service/uploads && chown -R nodejs:nodejs /usr/src/app
 
@@ -76,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 # Start application with dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/deceased-service/dist/server.js"]
+CMD ["tsx", "services/deceased-service/server.ts"]

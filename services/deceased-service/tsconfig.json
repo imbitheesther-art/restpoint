@@ -21,7 +21,13 @@
     "services/**/*.ts",
     "utils/**/*.ts",
     "config/**/*.ts",
-    "../../shared/**/*.ts"
+    "../../shared/**/*.ts",
+    "../../packages/shared-config/src/**/*.ts",
+    "../../packages/shared-logger/src/**/*.ts",
+    "../../packages/shared-utils/src/**/*.ts",
+    "../../packages/shared-services/src/**/*.ts",
+    "../../global/**/*.ts",
+    "../../configurations/**/*.ts"
   ],
   "exclude": [
     "node_modules",
