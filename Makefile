@@ -68,8 +68,10 @@ build-service:
 
 # Startup targets
 up: validate
+	@echo "$(BLUE)Stopping old containers and starting fresh...$(NC)"
+	docker-compose down --remove-orphans 2>/dev/null || true
 	@echo "$(BLUE)Starting all services...$(NC)"
-	docker-compose up -d
+	docker-compose up -d --remove-orphans
 	@echo "$(GREEN)✓ Services started$(NC)"
 	@echo "Waiting for services to be healthy..."
 	@sleep 30
@@ -77,10 +79,14 @@ up: validate
 
 down:
 	@echo "$(BLUE)Stopping all services...$(NC)"
-	docker-compose down
+	docker-compose down --remove-orphans
 	@echo "$(GREEN)✓ Services stopped$(NC)"
 
-restart: down up
+restart:
+	@echo "$(BLUE)Restarting all services...$(NC)"
+	docker-compose down --remove-orphans
+	@echo "$(BLUE)Starting fresh...$(NC)"
+	docker-compose up -d --remove-orphans
 	@echo "$(GREEN)✓ Services restarted$(NC)"
 
 stop:

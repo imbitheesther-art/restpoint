@@ -8,12 +8,22 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/call-service/package.json ./services/call-service/
 
-RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+# Install ALL dependencies (including dev for building)
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
+
+# BUILD shared packages first (CRITICAL!)
+RUN cd packages/shared-config && npm run build || true
+RUN cd packages/shared-logger && npm run build || true
+RUN cd packages/shared-utils && npm run build || true
+RUN cd packages/shared-services && npm run build || true
+
+# Install production dependencies only (after building)
+RUN npm prune --omit=dev
 
 COPY services/call-service/ ./services/call-service/
 

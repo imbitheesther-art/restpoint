@@ -16,11 +16,17 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/tenant-service/package.json ./services/tenant-service/
 
-# Install dependencies (including devDependencies for build)
+# Install ALL dependencies (including dev for building)
 RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
+
+# BUILD shared packages first (CRITICAL!)
+RUN cd packages/shared-config && npm run build || true
+RUN cd packages/shared-logger && npm run build || true
+RUN cd packages/shared-utils && npm run build || true
+RUN cd packages/shared-services && npm run build || true
 
 # Production stage
 FROM node:20-alpine AS production

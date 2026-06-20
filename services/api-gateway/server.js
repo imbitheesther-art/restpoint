@@ -223,16 +223,16 @@ const routes = [
 ];
 
 Logger.info('Registered routes:');
-routes.forEach(route => {
-  route.paths.forEach(path => {
-    Logger.info(`  ${path} → ${route.target}`);
-    app.use(path, createProxyMiddleware({
-      ...proxyOptions,
-      target: route.target,
-      pathRewrite: (path, req) => req.originalUrl,
-    }));
+  routes.forEach(route => {
+    route.paths.forEach(path => {
+      Logger.info(`  ${path} → ${route.target}`);
+      app.use(path, createProxyMiddleware({
+        ...proxyOptions,
+        target: route.target,
+        pathRewrite: (path, req) => path,
+      }));
+    });
   });
-});
 
 // =============================================================================
 // HEALTH & DIAGNOSTIC ENDPOINTS

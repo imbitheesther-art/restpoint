@@ -30,5 +30,5 @@ RUN ln -sf /usr/src/app/shared /usr/src/app/services/deceased-service/shared 2>/
 EXPOSE 5000
 ENV PORT=5000
 
-# Run with ts-node - bypasses compilation issues
-CMD ["npx", "ts-node", "--transpile-only", "--ignore-warnings", "services/deceased-service/server.ts"]
+# Run with ts-node --transpile-only (removed unsupported --ignore-warnings flag)
+CMD ["npx", "ts-node", "--transpile-only", "services/deceased-service/server.ts"]
