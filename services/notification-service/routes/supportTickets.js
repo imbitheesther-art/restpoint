@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { safeMasterQuery } = require('../../../shared/dist/dbConfig');
+const { safeMasterQuery } = require('../../../shared/dbConfig');
 const { sendTicketNotification } = require('../services/resendEmailService');
 
 // Create a support ticket
-router.post('/api/v2/restpoint/support/tickets', async (req, res) => {
+router.post('/api/v1/restpoint/support/tickets', async (req, res) => {
   try {
     const { type, subject, message, tenantName, userEmail, userName } = req.body;
     const tenantSlug = req.headers['x-tenant-slug'] || 'system_shared';
@@ -48,7 +48,7 @@ router.post('/api/v2/restpoint/support/tickets', async (req, res) => {
 });
 
 // Get support tickets (for admin dashboard)
-router.get('/api/v2/restpoint/support/tickets', async (req, res) => {
+router.get('/api/v1/restpoint/support/tickets', async (req, res) => {
   try {
     const [tickets] = await safeMasterQuery(
       'SELECT * FROM tenant_tracking.support_tickets ORDER BY created_at DESC LIMIT 100'
@@ -62,7 +62,7 @@ router.get('/api/v2/restpoint/support/tickets', async (req, res) => {
 });
 
 // Update ticket status
-router.patch('/api/v2/restpoint/support/tickets/:id', async (req, res) => {
+router.patch('/api/v1/restpoint/support/tickets/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;

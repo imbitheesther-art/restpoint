@@ -45,9 +45,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.use('/api/v2/restpoint', invoiceRoutes);
-app.use('/api/v2/restpoint', invoice);
-app.use('/api/v2/restpoint', printInvoiceRoute);
+app.use('/api/v1/restpoint', invoiceRoutes);
+app.use('/api/v1/restpoint', invoice);
+app.use('/api/v1/restpoint', printInvoiceRoute);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`invoice-service is running on port ${PORT}`);

@@ -50,7 +50,6 @@ const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
 // =============================================================================
 // SERVICE URLS — All services use port 5000 internally in Docker network
-// External ports (5001, 5002, etc.) are only for host access
 // =============================================================================
 const SERVICES = {
   auth:         (process.env.AUTH_SERVICE_URL         || 'http://auth-service:5000').trim(),
@@ -235,19 +234,19 @@ const routes = [
 ];
 
 Logger.info('Registered routes:');
-  routes.forEach(route => {
-    route.paths.forEach(path => {
-      Logger.info(`  ${path} → ${route.target}`);
-      app.use(path, createProxyMiddleware({
-        ...proxyOptions,
-        target: route.target,
-        pathRewrite: (path, req) => {
-          // Strip /api prefix if present, keep /v1 prefix
-          return path.replace(/^\/api/, '');
-        },
-      }));
-    });
+routes.forEach(route => {
+  route.paths.forEach(path => {
+    Logger.info(`  ${path} → ${route.target}`);
+    app.use(path, createProxyMiddleware({
+      ...proxyOptions,
+      target: route.target,
+      pathRewrite: (path, req) => {
+        // Strip /api prefix if present, keep /v1 prefix
+        return path.replace(/^\/api/, '');
+      },
+    }));
   });
+});
 
 // =============================================================================
 // HEALTH & DIAGNOSTIC ENDPOINTS

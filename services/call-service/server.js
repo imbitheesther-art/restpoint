@@ -27,7 +27,7 @@ if (!JWT_SECRET) {
 }
 
 // Apply tenant validation to all API routes
-app.use('/api/v2/restpoint/call', tenantMiddleware);
+app.use('/api/v1/restpoint/call', tenantMiddleware);
 
 // Room mapping: tenantSlug -> { activeUsers: Set<socketId>, roomId: string, branchName: string }
 const rooms = new Map();
@@ -50,7 +50,7 @@ app.get('/health', (req, res) => {
 });
 
 // API: Get or create a room for a tenant (each mortuary gets their own room)
-app.get('/api/v2/restpoint/call/room/:tenantSlug', (req, res) => {
+app.get('/api/v1/restpoint/call/room/:tenantSlug', (req, res) => {
   const { tenantSlug } = req.params;
   const authHeader = req.headers.authorization;
   
@@ -94,7 +94,7 @@ app.get('/api/v2/restpoint/call/room/:tenantSlug', (req, res) => {
 });
 
 // API: List all active call rooms with online users directory
-app.get('/api/v2/restpoint/call/rooms', (req, res) => {
+app.get('/api/v1/restpoint/call/rooms', (req, res) => {
   const roomsList = [];
   for (const [tenantSlug, room] of rooms.entries()) {
     roomsList.push({
@@ -117,7 +117,7 @@ app.get('/api/v2/restpoint/call/rooms', (req, res) => {
 });
 
 // API: Get online user directory for all tenants (cross-branch directory)
-app.get('/api/v2/restpoint/call/directory', (req, res) => {
+app.get('/api/v1/restpoint/call/directory', (req, res) => {
   const directory = [];
   for (const [tenantSlug, users] of userDirectory.entries()) {
     directory.push({
@@ -130,7 +130,7 @@ app.get('/api/v2/restpoint/call/directory', (req, res) => {
 });
 
 // API: Initiate a call to another tenant/user (cross-mortuary calling)
-app.post('/api/v2/restpoint/call/call-tenant', (req, res) => {
+app.post('/api/v1/restpoint/call/call-tenant', (req, res) => {
   const { targetTenantSlug, callerTenantSlug, targetUserId } = req.body;
   const authHeader = req.headers.authorization;
   
@@ -350,5 +350,5 @@ io.on('connection', (socket) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`📞 Call Service running on port ${PORT}`);
   console.log(`   WebSocket: ws://0.0.0.0:${PORT}`);
-  console.log(`   REST API:  http://0.0.0.0:${PORT}/api/v2/restpoint/call`);
+  console.log(`   REST API:  http://0.0.0.0:${PORT}/api/v1/restpoint/call`);
 });
