@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { NextOfKinModel, CreateNextOfKinDTO, UpdateNextOfKinDTO } from '../models/NextOfKin';
-import { query, execute } from '../config/tenantDatabase';
+import { query, execute } from '../../../shared/dbConfig';
+
 
 
 // Validation function for Next of Kin data

@@ -437,9 +437,9 @@ const DashboardRedirect = () => {
     
     // If there was a specific route they were trying to access, redirect there
     if (from && from !== '/login' && from !== '/') {
-      navigate(`/rptenant/${finalSlug}${from}`, { replace: true });
+      navigate(`/tenant/${finalSlug}${from}`, { replace: true });
     } else {
-      navigate(`/rptenant/${finalSlug}/all-deceased`, { replace: true });
+      navigate(`/tenant/${finalSlug}/all-deceased`, { replace: true });
     }
   }, [navigate, location]);
   
@@ -478,8 +478,8 @@ const AppRouter = () => {
         </ProtectedRoute>
       } />
       
-      {/* Tenant Routes: /rptenant/:slug/* - Protected */}
-      <Route path="/rptenant/:slug/*" element={
+      {/* Tenant Routes: /tenant/:slug/* - Protected */}
+      <Route path="/tenant/:slug/*" element={
         <ProtectedRoute>
           <TenantResolver />
         </ProtectedRoute>

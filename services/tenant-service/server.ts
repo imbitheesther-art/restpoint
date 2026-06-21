@@ -37,6 +37,7 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'X-CSRF-Token',
+    'x-slug',
     'x-tenant-slug',
     'x-tenant-id',
     'x-request-timestamp',
@@ -100,6 +101,8 @@ app.use('/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
 app.use('/v1/onboarding', authLimiter, onboardingRoutes);
+// Gateway strips /api → /onboarding, so mount without /v1 too
+app.use('/onboarding', authLimiter, onboardingRoutes);
 
 // --- System Admin Routes ---
 app.use('/api/system-admin', systemAdminRoutes);

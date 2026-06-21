@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './modules/landing/LandingPage';
 import OnboardingFlow from './modules/onboarding/OnboardingFlow';
 import LoginPage from './components/auth/login';
@@ -27,20 +27,20 @@ const App = () => {
     const tenantSlug = hostname.split('.')[0];
     
     return (
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to={`/t/${tenantSlug}`} replace />} />
+          <Route path="/" element={<Navigate to={`/tenant/${tenantSlug}`} replace />} />
           <Route path="*" element={<AppRouter />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     );
   }
 
-  // Default: hash-based routing (/#/t/tenant-slug)
+  // Default: clean path-based routing (/tenant/tenant-slug)
   return (
-    <HashRouter>
+    <BrowserRouter>
       <AppRouter />
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 

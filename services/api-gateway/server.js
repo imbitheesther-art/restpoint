@@ -124,6 +124,7 @@ app.use(cors({
   allowedHeaders: [
     'Content-Type',
     'Authorization',
+    'x-slug',
     'x-tenant-slug',
     'x-tenant-id',
     'x-request-timestamp',
@@ -185,6 +186,7 @@ const proxyOptions = {
     proxyReq: (proxyReq, req) => {
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
       if (req.headers.cookie) proxyReq.setHeader('Cookie', req.headers.cookie);
+      if (req.headers['x-slug']) proxyReq.setHeader('x-slug', req.headers['x-slug']);
       if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
       if (req.headers['x-tenant-id']) proxyReq.setHeader('x-tenant-id', req.headers['x-tenant-id']);
       if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.headers['content-type']) {

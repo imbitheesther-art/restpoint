@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import { query, execute, resolveDatabase } from '../../../shared/dbConfig';
+
 
 // Mock data for development - will be replaced with actual DB queries
 let mockCharges: any[] = [];
@@ -12,7 +14,7 @@ let mockCharges: any[] = [];
 export const getCharges = async (req: Request, res: Response) => {
   try {
     const { deceased_id } = req.params;
-    const tenantSlug = (req as any).tenantSlug || 'system_shared';
+    const tenantSlug = (req as any).headers['x-slug'] || (req as any).headers['x-tenant-slug'] || 'system_shared';
     
     // Filter charges for this deceased
     const charges = mockCharges.filter(c => c.deceased_id === deceased_id);
@@ -35,6 +37,7 @@ export const getCharges = async (req: Request, res: Response) => {
  * POST /charges
  * Add a new charge
  */
+
 export const addCharge = async (req: Request, res: Response) => {
   try {
     const chargeData = req.body;
@@ -94,7 +97,13 @@ export const updateCharge = async (req: Request, res: Response) => {
       message: error.message || 'Failed to update charge'
     });
   }
-};
+}; 
+
+
+
+
+
+
 
 /**
  * DELETE /charges/:id

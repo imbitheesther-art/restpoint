@@ -1,6 +1,6 @@
 // productController.js - PRODUCTION READY (Redis Caching Fixed)
 
-const { safeQuery, safeQueryOne } = require("../configurations/db");
+const { tenantQuery, tenantExecute, safeQuery, safeQueryOne, getTenantDbFromRequest } = require("../configurations/db");
 const Logger = require("../utils/logger/logger");
 const slugify = require("slugify");
 
@@ -256,7 +256,9 @@ const getProducts = async (req, res) => {
     sql += ` LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), parseInt(offset));
 
-    const products = await safeQuery(sql, params);
+    // Get tenant DB from request header
+    const dbName = await getTenantDbFromRequest(req);
+    const products = await safeQuery({ dbName, query: sql, params });
 
     // Count query (same filters)
     let countSql = `SELECT COUNT(*) as total FROM products WHERE status = 'active'`;
@@ -285,7 +287,8 @@ const getProducts = async (req, res) => {
       countParams.push(parseFloat(maxPrice));
     }
 
-    const totalResult = await safeQueryOne(countSql, countParams);
+    const dbName = await getTenantDbFromRequest(req);
+    const totalResult = await safeQueryOne({ dbName, query: countSql, params: countParams });
 
     const response = {
       success: true,
@@ -329,14 +332,14 @@ const getProductById = async (req, res) => {
         const cachedBySlug = await redisGet(cacheKey);
         if (cachedBySlug) return res.json(cachedBySlug);
       }
+      const dbName = await getTenantDbFromRequest(req);
       product = await safeQueryOne(
-        `SELECT * FROM products WHERE slug = ? AND status = 'active'`,
-        [id]
+        { dbName, query: `SELECT * FROM products WHERE slug = ? AND status = 'active'`, params: [id] }
       );
     } else {
+      const dbName = await getTenantDbFromRequest(req);
       product = await safeQueryOne(
-        `SELECT * FROM products WHERE id = ? AND status = 'active'`,
-        [id]
+        { dbName, query: `SELECT * FROM products WHERE id = ? AND status = 'active'`, params: [id] }
       );
     }
 
@@ -366,9 +369,9 @@ const getProductBySlug = async (req, res) => {
       if (cached) return res.json(cached);
     }
 
+    const dbName = await getTenantDbFromRequest(req);
     const product = await safeQueryOne(
-      `SELECT * FROM products WHERE slug = ? AND status = 'active'`,
-      [slug]
+      { dbName, query: `SELECT * FROM products WHERE slug = ? AND status = 'active'`, params: [slug] }
     );
 
     if (!product) {
@@ -416,7 +419,8 @@ const createProduct = async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())
     `;
 
-    const result = await safeQuery(sql, [
+    const dbName = await getTenantDbFromRequest(req);
+    const result = await safeQuery({ dbName, query: sql, params: [
       cleanedName,
       cleanUndefined(cleanedTitle),
       cleanUndefined(description),
@@ -432,7 +436,7 @@ const createProduct = async (req, res) => {
       slug
     ]);
 
-    const newProduct = await safeQueryOne(`SELECT * FROM products WHERE id = ?`, [result.insertId]);
+    const newProduct = await safeQueryOne({ dbName, query: `SELECT * FROM products WHERE id = ?`, params: [result.insertId] });
 
     await clearProductCache(newProduct.id, slug);
 
@@ -456,11 +460,13 @@ const updateProduct = async (req, res) => {
     let originalProduct = null;
     
     if (isNaN(productId)) {
-      originalProduct = await safeQueryOne(`SELECT id, slug FROM products WHERE slug = ?`, [id]);
+      const dbName = await getTenantDbFromRequest(req);
+      originalProduct = await safeQueryOne({ dbName, query: `SELECT id, slug FROM products WHERE slug = ?`, params: [id] });
       if (!originalProduct) return res.status(404).json({ success: false, message: "Product not found" });
       productId = originalProduct.id;
     } else {
-      originalProduct = await safeQueryOne(`SELECT id, slug FROM products WHERE id = ?`, [productId]);
+      const dbName = await getTenantDbFromRequest(req);
+      originalProduct = await safeQueryOne({ dbName, query: `SELECT id, slug FROM products WHERE id = ?`, params: [productId] });
       if (!originalProduct) return res.status(404).json({ success: false, message: "Product not found" });
     }
 
@@ -501,10 +507,11 @@ const updateProduct = async (req, res) => {
     }
 
     values.push(productId);
+    const dbName = await getTenantDbFromRequest(req);
     const sql = `UPDATE products SET ${fields.join(", ")}, updated_at = NOW() WHERE id = ?`;
-    await safeQuery(sql, values);
+    await safeQuery({ dbName, query: sql, params: values });
 
-    const updatedProduct = await safeQueryOne(`SELECT * FROM products WHERE id = ?`, [productId]);
+    const updatedProduct = await safeQueryOne({ dbName, query: `SELECT * FROM products WHERE id = ?`, params: [productId] });
     await clearProductCache(productId, originalProduct.slug);
     if (updatedProduct.slug !== originalProduct.slug) {
        await clearProductCache(null, updatedProduct.slug);
@@ -527,15 +534,18 @@ const deleteProduct = async (req, res) => {
     let originalProduct = null;
 
     if (isNaN(productId)) {
-      originalProduct = await safeQueryOne(`SELECT id, slug FROM products WHERE slug = ?`, [id]);
+      const dbName = await getTenantDbFromRequest(req);
+      originalProduct = await safeQueryOne({ dbName, query: `SELECT id, slug FROM products WHERE slug = ?`, params: [id] });
       if (!originalProduct) return res.status(404).json({ success: false, message: "Product not found" });
       productId = originalProduct.id;
     } else {
-      originalProduct = await safeQueryOne(`SELECT id, slug FROM products WHERE id = ?`, [productId]);
+      const dbName = await getTenantDbFromRequest(req);
+      originalProduct = await safeQueryOne({ dbName, query: `SELECT id, slug FROM products WHERE id = ?`, params: [productId] });
       if (!originalProduct) return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    await safeQuery(`UPDATE products SET status = 'inactive', updated_at = NOW() WHERE id = ?`, [productId]);
+    const dbName = await getTenantDbFromRequest(req);
+    await safeQuery({ dbName, query: `UPDATE products SET status = 'inactive', updated_at = NOW() WHERE id = ?`, params: [productId] });
     await clearProductCache(productId, originalProduct.slug);
     
     res.json({ success: true, message: "Product deleted successfully" });
@@ -555,8 +565,9 @@ const getCategories = async (req, res) => {
       if (cached) return res.json(cached);
     }
 
+    const dbName = await getTenantDbFromRequest(req);
     const categories = await safeQuery(
-      `SELECT DISTINCT category, COUNT(*) as count FROM products WHERE status = 'active' GROUP BY category`
+      { dbName, query: `SELECT DISTINCT category, COUNT(*) as count FROM products WHERE status = 'active' GROUP BY category` }
     );
 
     const response = { success: true, data: categories };
@@ -581,13 +592,9 @@ const getLatestProducts = async (req, res) => {
       if (cached) return res.json(cached);
     }
 
+    const dbName = await getTenantDbFromRequest(req);
     const products = await safeQuery(
-      `SELECT id, name, title, price, mrp, image, seller, category, slug, created_at
-       FROM products
-       WHERE status = 'active'
-       ORDER BY created_at DESC
-       LIMIT ?`,
-      [parseInt(limit)]
+      { dbName, query: `SELECT id, name, title, price, mrp, image, seller, category, slug, created_at FROM products WHERE status = 'active' ORDER BY created_at DESC LIMIT ?`, params: [parseInt(limit)] }
     );
 
     const response = { success: true, data: products };
@@ -613,12 +620,7 @@ const getHotProducts = async (req, res) => {
     }
 
     const products = await safeQuery(
-      `SELECT id, name, title, price, mrp, image, seller, category, slug
-       FROM products
-       WHERE status = 'active'
-       ORDER BY created_at DESC
-       LIMIT ?`,
-      [limit]
+      { dbName, query: `SELECT id, name, title, price, mrp, image, seller, category, slug FROM products WHERE status = 'active' ORDER BY created_at DESC LIMIT ?`, params: [parseInt(limit)] }
     );
 
     const response = { success: true, data: products };
@@ -645,8 +647,7 @@ const getProductsByCategory = async (req, res) => {
     }
 
     const products = await safeQuery(
-      `SELECT * FROM products WHERE category = ? AND status = 'active' ORDER BY featured DESC, created_at DESC LIMIT ?`,
-      [category, parseInt(limit)]
+      { dbName, query: `SELECT * FROM products WHERE category = ? AND status = 'active' ORDER BY featured DESC, created_at DESC LIMIT ?`, params: [category, parseInt(limit)] }
     );
 
     const response = { success: true, data: products };
@@ -673,8 +674,7 @@ const getFeaturedProducts = async (req, res) => {
     }
 
     const products = await safeQuery(
-      `SELECT * FROM products WHERE featured = 1 AND status = 'active' ORDER BY created_at DESC LIMIT ?`,
-      [parseInt(limit)]
+      { dbName, query: `SELECT * FROM products WHERE featured = 1 AND status = 'active' ORDER BY created_at DESC LIMIT ?`, params: [parseInt(limit)] }
     );
 
     const response = { success: true, data: products };
@@ -699,12 +699,7 @@ const getPersonalizedFeed = async (req, res) => {
     
     // Fallback: Just fetch a mix for the personalized feed
     const products = await safeQuery(
-      `SELECT id, name, title, price, mrp, image, seller, category, slug, rating, stock, featured 
-       FROM products 
-       WHERE status = 'active' 
-       ORDER BY featured DESC, RAND() 
-       LIMIT ?`,
-      [parseInt(limit)]
+      { dbName, query: `SELECT id, name, title, price, mrp, image, seller, category, slug, rating, stock, featured FROM products WHERE status = 'active' ORDER BY featured DESC, RAND() LIMIT ?`, params: [parseInt(limit)] }
     );
 
     res.json({ success: true, data: products });

@@ -1,5 +1,6 @@
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-import { query, execute } from '../config/tenantDatabase';
+import { query, execute } from '../../../shared/dbConfig';
+
 
 export interface NextOfKinRecord {
   id: number;
