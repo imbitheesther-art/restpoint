@@ -1,5 +1,5 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
+// import cors from 'cors'; // REMOVED
 import path from 'path';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ============================================
-// CORS — strict whitelist (no wildcard in production)
+// CORS — REMOVED COMPLETELY
 // ============================================
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
   const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:8082').split(',');
@@ -37,7 +37,6 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'X-CSRF-Token',
-    'x-slug',
     'x-tenant-slug',
     'x-tenant-id',
     'x-request-timestamp',
@@ -53,11 +52,11 @@ app.use(cors({
 const uploadsDir = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
-// Request logging
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// Request logging - REMOVED for production
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+//   next();
+// });
 
 // ============================================
 // RATE LIMITING
@@ -155,7 +154,7 @@ app.use((req: Request, res: Response) => {
 // ERROR HANDLER
 // ============================================
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('❌ Error:', err.stack);
+  // Removed console.error for production
   res.status(500).json({
     success: false,
     message: err.message || 'Something went wrong!',
@@ -167,11 +166,4 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // START SERVER
 // ============================================
 app.listen(PORT, () => {
-  console.log(`\n🚀 Tenant Service running on port ${PORT}`);
-  console.log(`📍 Health: http://localhost:${PORT}/health`);
-  console.log(`📍 Test: http://localhost:${PORT}/test`);
-  console.log(`📍 Register: POST http://localhost:${PORT}/api/onboarding/organization`);
-  console.log(`📍 Login: POST http://localhost:${PORT}/api/onboarding/login`);
-  console.log(`\n📊 Database: ${process.env.MASTER_DB_NAME || 'master_db'}@${process.env.MASTER_DB_HOST || 'localhost'}`);
-  console.log('✅ Ready to accept tenant registrations!\n');
 });

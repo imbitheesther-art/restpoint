@@ -4,7 +4,7 @@ import api from '../../api/axios';
 
 const C = {
   ink: '#15171A', bone: '#FAF8F4', bone2: '#F3EFE6', brass: '#8B7355', brassLight: '#A98F6E',
-  verdigris: '#3D4F47', line: '#E3DDD0', gray: '#6B6862', grayLight: 'rgba(250,248,244,0.62)',
+  verdigris: '#3D4F47', line: '#E3DDD0', lineDark: '#2C2F33', gray: '#6B6862', grayLight: 'rgba(250,248,244,0.62)',
   red: '#9B4A3F', redBg: '#F7ECE9',
 };
 
@@ -29,7 +29,11 @@ const OnboardingFlow = () => {
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
+
+  useEffect(() => { 
+    const t = setTimeout(() => setLoaded(true), 60); 
+    return () => clearTimeout(t); 
+  }, []);
 
   const [formData, setFormData] = useState({ organizationName: '', email: '', location: '', password: '', verifyPassword: '' });
   const [errors, setErrors] = useState({});
@@ -41,7 +45,16 @@ const OnboardingFlow = () => {
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errs.push('One special character');
     return errs;
   };
-  const getPasswordStrength = (p) => { if (!p) return 0; let s = 0; if (p.length >= 8) s++; if (/[A-Z]/.test(p)) s++; if (/[!@#$%^&*(),.?":{}|<>]/.test(p)) s++; return s; };
+
+  const getPasswordStrength = (p) => { 
+    if (!p) return 0; 
+    let s = 0; 
+    if (p.length >= 8) s++; 
+    if (/[A-Z]/.test(p)) s++; 
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(p)) s++; 
+    return s; 
+  };
+
   const getPasswordStrengthColor = (s) => s === 0 ? C.gray : s === 1 ? C.red : s === 2 ? C.brass : C.verdigris;
   const getPasswordStrengthText = (s) => s === 0 ? 'Enter password' : s === 1 ? 'Weak' : s === 2 ? 'Medium' : 'Strong';
 
@@ -49,7 +62,9 @@ const OnboardingFlow = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-    if (name === 'password' || name === 'verifyPassword') { if (errors.passwordMatch) setErrors(prev => ({ ...prev, passwordMatch: '' })); }
+    if (name === 'password' || name === 'verifyPassword') { 
+      if (errors.passwordMatch) setErrors(prev => ({ ...prev, passwordMatch: '' })); 
+    }
     setApiError('');
   };
 
@@ -72,7 +87,10 @@ const OnboardingFlow = () => {
     else if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) newErrors.email = 'Valid email is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
     if (!formData.password) newErrors.password = 'Password is required';
-    else { const pe = validatePassword(formData.password); if (pe.length > 0) newErrors.password = `Password must have: ${pe.join(', ')}`; }
+    else { 
+      const pe = validatePassword(formData.password); 
+      if (pe.length > 0) newErrors.password = `Password must have: ${pe.join(', ')}`; 
+    }
     if (!formData.verifyPassword) newErrors.verifyPassword = 'Please verify your password';
     else if (formData.password !== formData.verifyPassword) newErrors.passwordMatch = 'Passwords do not match';
     if (!agreeTerms) newErrors.terms = 'You must agree to the terms and conditions';
@@ -93,6 +111,7 @@ const OnboardingFlow = () => {
       submitData.append('password', formData.password);
       submitData.append('termsAccepted', agreeTerms);
       if (logoFile) submitData.append('logo', logoFile);
+      
       const response = await api.post('/api/v1/restpoint/tenant/onboarding/organization', submitData, {
         headers: { 'Content-Type': 'multipart/form-data', 'x-tenant-slug': '' }, timeout: 30000,
       });
@@ -151,7 +170,7 @@ const OnboardingFlow = () => {
                 <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color:C.brass,textDecoration:'underline' }}>Privacy Policy</a>
               </div>
             </div>
-            <button onClick={() => setShowTermsModal(false)} style={{ marginTop:'1.5rem',width:'100%',background:C.ink,color:C.bone,border:'none',padding:'.8rem',fontSize:'.8rem',fontWeight:500,cursor:'pointer',transition:'background .2s' }} onMouseEnter={(e) => e.target.style.background='#000'} onMouseLeave={(e) => e.target.style.background=C.ink}>I Understand</button>
+            <button onClick={() => setShowTermsModal(false)} style={{ marginTop:'1.5rem',width:'100%',background:C.ink,color:C.bone,border:'none',padding:'.8rem',fontSize:'.8rem',fontWeight:500,cursor:'pointer',transition:'background .2s' }}>I Understand</button>
           </div>
         </div>
       )}
@@ -165,7 +184,7 @@ const OnboardingFlow = () => {
           </div>
           <div style={{ display:'flex',alignItems:'center',gap:'1rem' }}>
             <span className="label-mono" style={{ fontSize:'.72rem' }}>Create Account</span>
-            <button onClick={() => navigate('/login')} style={{ background:'transparent',color:C.ink,border:`1px solid ${C.ink}`,padding:'.5rem 1rem',fontSize:'.78rem',fontWeight:500,cursor:'pointer',transition:'all .2s',fontFamily:"'Inter',sans-serif" }} onMouseEnter={(e) => { e.target.style.background=C.ink; e.target.style.color=C.bone; }} onMouseLeave={(e) => { e.target.style.background='transparent'; e.target.style.color=C.ink; }}>Log in</button>
+            <button onClick={() => navigate('/login')} style={{ background:'transparent',color:C.ink,border:`1px solid ${C.ink}`,padding:'.5rem 1rem',fontSize:'.78rem',fontWeight:500,cursor:'pointer',transition:'all .2s',fontFamily:"'Inter',sans-serif" }}>Log in</button>
           </div>
         </div>
       </nav>
@@ -212,7 +231,7 @@ const OnboardingFlow = () => {
                   {/* Logo Upload */}
                   <div style={{ marginBottom:'1.5rem',textAlign:'center' }}>
                     <div className="label-mono" style={{ marginBottom:'.75rem' }}>Organization Logo <span style={{ color:C.brass }}>*</span></div>
-                    <div style={{ width:'90px',height:'90px',margin:'0 auto',border:`2px dashed ${errors.logo ? C.red : (logoPreview ? C.brass : C.line)}`,borderRadius:'50%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',background:C.bone2,transition:'all .25s' }} onClick={() => document.getElementById('logoUpload').click()} onMouseEnter={(e) => { if (!logoPreview) { e.target.style.borderColor=C.brass; e.target.style.background='rgba(139,115,85,0.08)'; } }} onMouseLeave={(e) => { if (!logoPreview) { e.target.style.borderColor=errors.logo ? C.red : C.line; e.target.style.background=C.bone2; } }}>
+                    <div style={{ width:'90px',height:'90px',margin:'0 auto',border:`2px dashed ${errors.logo ? C.red : (logoPreview ? C.brass : C.line)}`,borderRadius:'50%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',background:C.bone2,transition:'all .25s' }} onClick={() => document.getElementById('logoUpload').click()}>
                       {logoPreview ? <img src={logoPreview} alt="Logo" style={{ width:'100%',height:'100%',objectFit:'cover' }} /> : <><div style={{ color:C.gray,marginBottom:'.25rem' }}>{I.upload}</div><span style={{ fontSize:'.65rem',color:C.gray }}>Upload</span></>}
                     </div>
                     <input id="logoUpload" type="file" accept="image/jpeg,image/png,image/jpg,image/svg+xml" onChange={handleLogoUpload} style={{ display:'none' }} />
@@ -246,7 +265,7 @@ const OnboardingFlow = () => {
                     <div className="label-mono" style={{ marginBottom:'.45rem' }}>Password <span style={{ color:C.brass }}>*</span></div>
                     <div style={{ position:'relative' }}>
                       <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} placeholder="Create a strong password" className="inp" style={{ width:'100%',padding:'.7rem .8rem',paddingRight:'2.4rem',background:C.bone,border:`1px solid ${errors.password ? C.red : C.line}`,borderRadius:'2px',fontSize:'.88rem',color:C.ink,transition:'all .2s',fontFamily:"'Inter',sans-serif" }} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute',right:'.7rem',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:C.gray,padding:'.2rem',display:'flex' }} onMouseEnter={(e) => e.target.style.color=C.ink} onMouseLeave={(e) => e.target.style.color=C.gray}>{showPassword ? I.eyeOff : I.eye}</button>
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute',right:'.7rem',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:C.gray,padding:'.2rem',display:'flex' }}>{showPassword ? I.eyeOff : I.eye}</button>
                     </div>
                     {formData.password && (
                       <div style={{ marginTop:'.4rem' }}>
@@ -266,7 +285,7 @@ const OnboardingFlow = () => {
                     <div className="label-mono" style={{ marginBottom:'.45rem' }}>Verify Password <span style={{ color:C.brass }}>*</span></div>
                     <div style={{ position:'relative' }}>
                       <input type={showVerifyPassword ? 'text' : 'password'} name="verifyPassword" value={formData.verifyPassword} onChange={handleChange} placeholder="Confirm your password" className="inp" style={{ width:'100%',padding:'.7rem .8rem',paddingRight:'2.4rem',background:C.bone,border:`1px solid ${(errors.verifyPassword||errors.passwordMatch)?C.red:C.line}`,borderRadius:'2px',fontSize:'.88rem',color:C.ink,transition:'all .2s',fontFamily:"'Inter',sans-serif" }} />
-                      <button type="button" onClick={() => setShowVerifyPassword(!showVerifyPassword)} style={{ position:'absolute',right:'.7rem',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:C.gray,padding:'.2rem',display:'flex' }} onMouseEnter={(e) => e.target.style.color=C.ink} onMouseLeave={(e) => e.target.style.color=C.gray}>{showVerifyPassword ? I.eyeOff : I.eye}</button>
+                      <button type="button" onClick={() => setShowVerifyPassword(!showVerifyPassword)} style={{ position:'absolute',right:'.7rem',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:C.gray,padding:'.2rem',display:'flex' }}>{showVerifyPassword ? I.eyeOff : I.eye}</button>
                     </div>
                     {formData.verifyPassword && formData.password === formData.verifyPassword && formData.password && (
                       <div style={{ fontSize:'.7rem',color:C.verdigris,marginTop:'.25rem',display:'flex',alignItems:'center',gap:'.3rem' }}>{I.check} Passwords match</div>
@@ -279,13 +298,13 @@ const OnboardingFlow = () => {
                   <div style={{ marginBottom:'1.6rem' }}>
                     <label style={{ display:'flex',alignItems:'flex-start',gap:'.7rem',cursor:'pointer' }}>
                       <input type="checkbox" checked={agreeTerms} onChange={(e) => { setAgreeTerms(e.target.checked); if (errors.terms) setErrors(prev => ({ ...prev, terms:'' })); }} style={{ width:'1rem',height:'1rem',cursor:'pointer',marginTop:'.15rem',flexShrink:0,accentColor:C.brass }} />
-                      <span style={{ fontSize:'.8rem',color:C.gray,lineHeight:1.5 }}>I agree to the <button type="button" onClick={() => setShowTermsModal(true)} style={{ background:'none',border:'none',color:C.brass,cursor:'pointer',textDecoration:'underline',fontSize:'.8rem',fontFamily:"'Inter',sans-serif",padding:0 }} onMouseEnter={(e) => e.target.style.color=C.brassLight} onMouseLeave={(e) => e.target.style.color=C.brass}>Terms and Conditions</button>. I confirm that I am authorized to set up an organization account.</span>
+                      <span style={{ fontSize:'.8rem',color:C.gray,lineHeight:1.5 }}>I agree to the <button type="button" onClick={() => setShowTermsModal(true)} style={{ background:'none',border:'none',color:C.brass,cursor:'pointer',textDecoration:'underline',fontSize:'.8rem',fontFamily:"'Inter',sans-serif",padding:0 }}>Terms and Conditions</button>. I confirm that I am authorized to set up an organization account.</span>
                     </label>
                     {errors.terms && <div style={{ color:C.red,fontSize:'.72rem',marginTop:'.4rem' }}>{errors.terms}</div>}
                   </div>
 
                   {/* Submit */}
-                  <button type="submit" disabled={isSubmitting} style={{ width:'100%',background:isSubmitting?C.line:C.ink,color:isSubmitting?C.gray:C.bone,border:'none',padding:'.85rem',fontSize:'.85rem',fontWeight:500,cursor:isSubmitting?'default':'pointer',transition:'background .2s',display:'flex',alignItems:'center',justifyContent:'center',gap:'.5rem',fontFamily:"'Inter',sans-serif" }} onMouseEnter={(e) => { if (!isSubmitting) e.target.style.background='#000'; }} onMouseLeave={(e) => { if (!isSubmitting) e.target.style.background=C.ink; }}>
+                  <button type="submit" disabled={isSubmitting} style={{ width:'100%',background:isSubmitting?C.line:C.ink,color:isSubmitting?C.gray:C.bone,border:'none',padding:'.85rem',fontSize:'.85rem',fontWeight:500,cursor:isSubmitting?'default':'pointer',transition:'background .2s',display:'flex',alignItems:'center',justifyContent:'center',gap:'.5rem',fontFamily:"'Inter',sans-serif" }}>
                     {isSubmitting ? <><span className="spinner" /> Creating Account...</> : <>Create Account {I.arr}</>}
                   </button>
                 </form>
@@ -341,20 +360,19 @@ const OnboardingFlow = () => {
             </div>
             <div>
               <div style={{ fontSize:'.7rem',color:C.brassLight,letterSpacing:'.1em',textTransform:'uppercase',marginBottom:'.8rem',fontFamily:"'JetBrains Mono',monospace" }}>Product</div>
-              {['Features','Family Portal','Marketplace','Pricing'].map(l => <div key={l} style={{ fontSize:'.82rem',color:C.grayLight,marginBottom:'.5rem',cursor:'pointer',transition:'color .18s' }} onMouseEnter={e => e.target.style.color=C.bone} onMouseLeave={e => e.target.style.color=C.grayLight}>{l}</div>)}
+              {['Features','Family Portal','Marketplace','Pricing'].map(l => <div key={l} style={{ fontSize:'.82rem',color:C.grayLight,marginBottom:'.5rem',cursor:'pointer' }}>{l}</div>)}
             </div>
             <div>
               <div style={{ fontSize:'.7rem',color:C.brassLight,letterSpacing:'.1em',textTransform:'uppercase',marginBottom:'.8rem',fontFamily:"'JetBrains Mono',monospace" }}>Company</div>
-              {['About','Blog','Careers','Contact'].map(l => <div key={l} style={{ fontSize:'.82rem',color:C.grayLight,marginBottom:'.5rem',cursor:'pointer',transition:'color .18s' }} onMouseEnter={e => e.target.style.color=C.bone} onMouseLeave={e => e.target.style.color=C.grayLight}>{l}</div>)}
+              {['About','Blog','Careers','Contact'].map(l => <div key={l} style={{ fontSize:'.82rem',color:C.grayLight,marginBottom:'.5rem',cursor:'pointer' }}>{l}</div>)}
             </div>
             <div>
               <div style={{ fontSize:'.7rem',color:C.brassLight,letterSpacing:'.1em',textTransform:'uppercase',marginBottom:'.8rem',fontFamily:"'JetBrains Mono',monospace" }}>Legal</div>
-              {['Privacy Policy','Terms of Service','Security'].map(l => <div key={l} style={{ fontSize:'.82rem',color:C.grayLight,marginBottom:'.5rem',cursor:'pointer',transition:'color .18s' }} onMouseEnter={e => e.target.style.color=C.bone} onMouseLeave={e => e.target.style.color=C.grayLight}>{l}</div>)}
+              {['Privacy Policy','Terms of Service','Security'].map(l => <div key={l} style={{ fontSize:'.82rem',color:C.grayLight,marginBottom:'.5rem',cursor:'pointer' }}>{l}</div>)}
             </div>
           </div>
           <div style={{ display:'flex',justifyContent:'space-between',fontSize:'.74rem',color:'rgba(250,248,244,0.45)',flexWrap:'wrap',gap:'.5rem' }}>
-            <span>© {new Date().getFullYear()} Rest Point. All rights reserved.</span>
-            <span>Built with compassion for funeral professionals across Africa.</span>
+            <span>&copy; {new Date().getFullYear()} Rest Point Technologies. All rights reserved.</span>
           </div>
         </div>
       </footer>
