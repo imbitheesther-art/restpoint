@@ -62,6 +62,42 @@ const Mark = ({ size = 28, color = C.ink }) => (
   </svg>
 );
 
+/* ---------- Footer social icons (inline, no external icon font needed) ---------- */
+const IconX = (p) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" {...p}>
+    <path d="M18.146 3h3.04l-6.64 7.59L22.5 21h-6.118l-4.79-6.27L5.99 21H2.948l7.103-8.12L1.5 3h6.273l4.33 5.73L18.146 3Zm-1.067 16.2h1.685L7.01 4.71H5.2l11.879 14.49Z" fill="currentColor"/>
+  </svg>
+);
+const IconLinkedIn = (p) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" {...p}>
+    <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm7 0h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.55 4.78 5.87V21h-4v-5.6c0-1.34-.02-3.06-1.87-3.06-1.87 0-2.16 1.46-2.16 2.97V21h-4V9Z" fill="currentColor"/>
+  </svg>
+);
+const IconWhatsApp = (p) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" {...p}>
+    <path d="M17.47 14.38c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.5-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.47 0 1.46 1.07 2.87 1.22 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35Z" fill="currentColor"/>
+    <path d="M12.04 2C6.58 2 2.13 6.42 2.13 11.87c0 1.83.5 3.55 1.36 5.03L2 22l5.27-1.38a9.9 9.9 0 0 0 4.77 1.22h.01c5.46 0 9.9-4.42 9.9-9.87C21.96 6.42 17.51 2 12.04 2Zm0 18.05h-.01a8.17 8.17 0 0 1-4.16-1.14l-.3-.18-3.13.82.83-3.04-.2-.31a8.14 8.14 0 0 1-1.25-4.33c0-4.5 3.67-8.16 8.2-8.16 2.19 0 4.25.85 5.8 2.4a8.1 8.1 0 0 1 2.4 5.77c0 4.5-3.68 8.17-8.18 8.17Z" fill="currentColor"/>
+  </svg>
+);
+const IconMail = (p) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" {...p}>
+    <rect x="2.5" y="4.5" width="19" height="15" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M3.5 6 12 12.5 20.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const SocialLink = ({ href, label, children }) => (
+  <a
+    href={href}
+    aria-label={label}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="social-link"
+  >
+    {children}
+  </a>
+);
+
 /* ---------- FAQ ---------- */
 const FAQItem = ({ q, a }) => {
   const [open, setOpen] = useState(false);
@@ -377,13 +413,38 @@ export default function App() {
         .cta-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; flex-wrap: wrap; }
         .cta-buttons { display: flex; gap: 0.9rem; flex-wrap: wrap; }
 
-        footer { background: ${C.ink}; color: ${C.grayLight}; padding: 3.5rem 0 2rem; }
-        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; padding-bottom: 2.6rem; border-bottom: 1px solid rgba(250,248,244,0.12); }
-        @media (max-width: 700px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; } }
-        .footer-col h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: ${C.brassLight}; margin-bottom: 1.2rem; font-weight: 400; }
-        .footer-link { display: block; font-size: 0.88rem; color: ${C.grayLight}; margin-bottom: 0.7rem; text-decoration: none; cursor: pointer; transition: color 0.2s; }
+        /* ---------- Footer (redesigned) ---------- */
+        footer { background: ${C.ink}; color: ${C.grayLight}; padding: 4.2rem 0 0; }
+        .footer-top { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 3rem; padding-bottom: 3rem; }
+        @media (max-width: 860px) { .footer-top { grid-template-columns: 1fr 1fr; row-gap: 2.4rem; } }
+        @media (max-width: 480px) { .footer-top { grid-template-columns: 1fr; } }
+
+        .footer-brand-mark { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.1rem; }
+        .footer-brand-name { font-family: 'Fraunces', serif; font-size: 1.15rem; color: ${C.bone}; }
+        .footer-brand-desc { max-width: 300px; font-size: 0.88rem; line-height: 1.65; color: ${C.grayLight}; margin-bottom: 1.6rem; }
+
+        .social-row { display: flex; gap: 0.6rem; }
+        .social-link {
+          width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+          border: 1px solid rgba(250,248,244,0.16); border-radius: 2px;
+          color: ${C.grayLight}; text-decoration: none;
+          transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+        }
+        .social-link:hover { color: ${C.bone}; border-color: ${C.brassLight}; background: rgba(169,143,110,0.1); }
+
+        .footer-col h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: ${C.brassLight}; margin-bottom: 1.3rem; font-weight: 400; }
+        .footer-link { display: block; font-size: 0.88rem; color: ${C.grayLight}; margin-bottom: 0.75rem; text-decoration: none; cursor: pointer; transition: color 0.2s; background: none; border: none; padding: 0; text-align: left; font-family: 'Inter', sans-serif; }
         .footer-link:hover { color: ${C.bone}; }
-        .footer-bottom { display: flex; justify-content: space-between; font-size: 0.78rem; color: rgba(250,248,244,0.45); padding-top: 1.6rem; flex-wrap: wrap; gap: 0.8rem; }
+
+        .footer-divider { border: none; border-top: 1px solid rgba(250,248,244,0.12); margin: 0; }
+
+        .footer-bottom {
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 0.78rem; color: rgba(250,248,244,0.4); padding: 1.5rem 0; flex-wrap: wrap; gap: 0.8rem;
+        }
+        .footer-bottom-right { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
+        .footer-status { display: inline-flex; align-items: center; gap: 0.45rem; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.04em; }
+        .footer-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #6FA989; flex-shrink: 0; }
 
         @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
       `}</style>
@@ -670,35 +731,60 @@ export default function App() {
         </section>
       </main>
 
-      {/* Footer */}
+      {/* Footer — redesigned: working icon-based social row, four-column grid, status line */}
       <footer>
         <div className="wrap">
-          <div className="footer-grid">
+          <div className="footer-top">
             <div className="footer-col">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+              <div className="footer-brand-mark">
                 <Mark size={20} color={C.bone} />
-                <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.1rem', color: C.bone }}>Rest Point</span>
+                <span className="footer-brand-name">Rest Point</span>
               </div>
-              <p style={{ maxWidth: '320px', fontSize: '0.88rem' }}>The operating system for funeral homes that take their reputation seriously. Built by Welt Tallis Technologies.</p>
+              <p className="footer-brand-desc">
+                The operating system for funeral homes that take their reputation seriously. Built by Welt Tallis Technologies.
+              </p>
+              <div className="social-row">
+                <SocialLink href="https://wa.me/254700000000" label="Chat on WhatsApp"><IconWhatsApp /></SocialLink>
+                <SocialLink href="https://www.linkedin.com" label="Rest Point on LinkedIn"><IconLinkedIn /></SocialLink>
+                <SocialLink href="https://twitter.com" label="Rest Point on X"><IconX /></SocialLink>
+                <SocialLink href="mailto:hello@restpoint.co.ke" label="Email Rest Point"><IconMail /></SocialLink>
+              </div>
             </div>
+
             <div className="footer-col">
               <h4>Platform</h4>
-              <a href="#about" className="footer-link">About</a>
+              <a href="#capabilities" className="footer-link">Capabilities</a>
               <a href="#pricing" className="footer-link">Pricing</a>
               <a href="#faq" className="footer-link">FAQ</a>
+              <button className="footer-link" onClick={goPortalLogin}>Family portal</button>
             </div>
+
             <div className="footer-col">
               <h4>Company</h4>
               <button className="footer-link" onClick={goAbout}>About</button>
               <button className="footer-link" onClick={goContact}>Contact</button>
+              <button className="footer-link" onClick={goStart}>Request access</button>
+            </div>
+
+            <div className="footer-col">
+              <h4>Legal</h4>
               <button className="footer-link" onClick={goPrivacy}>Privacy policy</button>
               <button className="footer-link" onClick={goTerms}>Terms</button>
               <a className="footer-link" href="/account-deletion">Account deletion</a>
             </div>
           </div>
+
+          <hr className="footer-divider" />
+
           <div className="footer-bottom">
             <div>© 2026 Rest Point. All rights reserved.</div>
-            <div>Built for African funeral professionals</div>
+            <div className="footer-bottom-right">
+              <span className="footer-status">
+                <span className="footer-status-dot" />
+                All systems operational
+              </span>
+              <span>Built for African funeral professionals</span>
+            </div>
           </div>
         </div>
       </footer>
