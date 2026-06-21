@@ -257,7 +257,7 @@ const runDailyBilling = async () => {
     // Get all active tenants
     const tenantsSql = `
       SELECT tenant_slug, tenant_name 
-      FROM tenant_tracking.tenants 
+      FROM tenants 
       WHERE status = 'active'
     `;
     const tenants = await safeQuery(tenantsSql);

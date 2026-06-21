@@ -8,29 +8,71 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
+// Excel/CSV support for QuickBooks-style invoice imports
+let xlsx, csvParser;
+try { xlsx = require('xlsx'); } catch(e) { xlsx = null; console.warn('xlsx not available'); }
+try { csvParser = require('csv-parse/sync'); } catch(e) { csvParser = null; console.warn('csv-parse not available'); }
+
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8116;
+const PORT = process.env.PORT || 5000;
 
-// Ensure uploads directory exists
+// =============================================================================
+// FILE SYSTEM STORAGE (persistent, not in-memory)
+// =============================================================================
+const EDOCS_ROOT = path.join(__dirname, 'data');
 const uploadsDir = path.join(__dirname, 'uploads');
 const templatesDir = path.join(uploadsDir, '_templates');
 const documentsDir = path.join(uploadsDir, '_documents');
 
-[uploadsDir, templatesDir, documentsDir].forEach(dir => {
+// Ensure all directories exist
+[EDOCS_ROOT, uploadsDir, templatesDir, documentsDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
-// In-memory storage for demo (in production, use database)
-const documentsStore = new Map(); // key: tenantSlug-docId
-const templatesStore = new Map(); // key: tenantSlug-templateId
+// =============================================================================
+// PERSISTENT STORAGE HELPERS (replaces in-memory Maps)
+// =============================================================================
+function loadStore(name) {
+  const filePath = path.join(EDOCS_ROOT, `${name}.json`);
+  try {
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch(e) { console.error(`Failed to load ${name}:`, e.message); }
+  return {};
+}
 
-// Initialize default templates with placeholder fields for autofill
-const initializeTemplates = () => {
-  const defaultTemplates = [
+function saveStore(name, data) {
+  const filePath = path.join(EDOCS_ROOT, `${name}.json`);
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  } catch(e) { console.error(`Failed to save ${name}:`, e.message); }
+}
+
+// Persistent stores
+let documentsStore = loadStore('documents'); // { [tenantSlug-docId]: doc }
+let templatesStore = loadStore('templates'); // { [tenantSlug-templateId]: template }
+let documentHistory = loadStore('history'); // { [tenantSlug]: [historyEntry] }
+let tenantSettings = loadStore('settings'); // { [tenantSlug]: { colors, fonts, etc } }
+
+// Auto-save every 5 seconds
+setInterval(() => {
+  saveStore('documents', documentsStore);
+  saveStore('templates', templatesStore);
+  saveStore('history', documentHistory);
+  saveStore('settings', tenantSettings);
+}, 5000);
+
+// =============================================================================
+// DEFAULT TEMPLATES
+// =============================================================================
+function getDefaultTemplates() {
+  return [
     {
       id: 'invoice-template',
       name: 'Invoice',
@@ -187,24 +229,62 @@ const initializeTemplates = () => {
       ],
       isDefault: true,
       createdAt: new Date().toISOString()
+    },
+    // Excel/CSV/Spreadsheet templates (QuickBooks replacement)
+    {
+      id: 'invoice-spreadsheet',
+      name: 'Invoice Spreadsheet (Excel)',
+      type: 'spreadsheet',
+      description: 'Excel-style invoice with line items, taxes, and totals',
+      fields: [
+        { key: 'invoiceNumber', label: 'Invoice #', placeholder: 'INV-001', type: 'text' },
+        { key: 'issueDate', label: 'Issue Date', placeholder: '{{issueDate}}', type: 'date' },
+        { key: 'dueDate', label: 'Due Date', placeholder: '{{dueDate}}', type: 'date' },
+        { key: 'billTo', label: 'Bill To', placeholder: '{{billTo}}', type: 'textarea' },
+        { key: 'lineItems', label: 'Line Items (JSON array)', placeholder: '[{"description":"Service","qty":1,"rate":1000}]', type: 'textarea' },
+        { key: 'subtotal', label: 'Subtotal', placeholder: '{{subtotal}}', type: 'number' },
+        { key: 'taxRate', label: 'Tax Rate %', placeholder: '16', type: 'number' },
+        { key: 'taxAmount', label: 'Tax Amount', placeholder: '{{taxAmount}}', type: 'number' },
+        { key: 'totalAmount', label: 'Total Amount', placeholder: '{{totalAmount}}', type: 'number' },
+        { key: 'notes', label: 'Notes', placeholder: '{{notes}}', type: 'textarea' }
+      ],
+      columnHeaders: ['#', 'Description', 'Quantity', 'Unit Price (KES)', 'Total (KES)'],
+      isDefault: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'payment-ledger',
+      name: 'Payment Ledger (Excel)',
+      type: 'spreadsheet',
+      description: 'Payment tracking spreadsheet with running balance',
+      fields: [
+        { key: 'ledgerName', label: 'Ledger Name', placeholder: '{{ledgerName}}', type: 'text' },
+        { key: 'entries', label: 'Entries (JSON array)', placeholder: '[{"date":"2024-01-01","description":"Payment","amount":5000}]', type: 'textarea' }
+      ],
+      columnHeaders: ['Date', 'Description', 'Reference', 'Debit (KES)', 'Credit (KES)', 'Balance (KES)'],
+      isDefault: true,
+      createdAt: new Date().toISOString()
     }
   ];
+}
 
-  // Store default templates with 'system' tenant prefix
-  defaultTemplates.forEach(t => {
-    templatesStore.set(`system-${t.id}`, t);
+// Initialize default templates if empty
+if (Object.keys(templatesStore).length === 0) {
+  getDefaultTemplates().forEach(t => {
+    const key = `system-${t.id}`;
+    if (!templatesStore[key]) {
+      templatesStore[key] = t;
+    }
   });
-};
+}
 
-initializeTemplates();
-
-// Configure multer for file uploads
+// =============================================================================
+// MULTER CONFIG
+// =============================================================================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const tenantDir = path.join(documentsDir, req.tenantSlug);
-    if (!fs.existsSync(tenantDir)) {
-      fs.mkdirSync(tenantDir, { recursive: true });
-    }
+    if (!fs.existsSync(tenantDir)) fs.mkdirSync(tenantDir, { recursive: true });
     cb(null, tenantDir);
   },
   filename: (req, file, cb) => {
@@ -215,13 +295,10 @@ const storage = multer.diskStorage({
   }
 });
 
-// Template-specific storage
 const templateStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const tenantDir = path.join(templatesDir, req.tenantSlug);
-    if (!fs.existsSync(tenantDir)) {
-      fs.mkdirSync(tenantDir, { recursive: true });
-    }
+    if (!fs.existsSync(tenantDir)) fs.mkdirSync(tenantDir, { recursive: true });
     cb(null, tenantDir);
   },
   filename: (req, file, cb) => {
@@ -233,718 +310,450 @@ const templateStorage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
-      'application/pdf',
-      'application/msword',
+      'application/pdf', 'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/png',
-      'image/gif'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+      'application/vnd.ms-excel', // xls
+      'text/csv', 'text/plain',
+      'image/jpeg', 'image/png', 'image/gif'
     ];
-    
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Invalid file type: ${file.mimetype}`));
-    }
+    if (allowedMimes.includes(file.mimetype)) return cb(null, true);
+    cb(new Error(`Invalid file type: ${file.mimetype}. Allowed: PDF, Word, Excel, CSV, JPEG, PNG, GIF`));
   }
 });
 
 const templateUpload = multer({
   storage: templateStorage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
-      'application/pdf',
-      'application/msword',
+      'application/pdf', 'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'text/plain'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel', 'text/csv', 'text/plain',
+      'image/jpeg', 'image/png', 'image/gif'
     ];
-    
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Invalid template file type: ${file.mimetype}`));
-    }
+    if (allowedMimes.includes(file.mimetype)) return cb(null, true);
+    cb(new Error(`Invalid template file type: ${file.mimetype}`));
   }
 });
 
-// CORS configuration
+// =============================================================================
+// MIDDLEWARE
+// =============================================================================
 app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token', 'x-tenant-slug', 'x-tenant-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token', 'x-tenant-slug', 'x-tenant-id', 'x-request-timestamp'],
 }));
 
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Static files for uploads
 app.use('/uploads', express.static(uploadsDir));
 
-// Tenant Resolution Middleware - CRITICAL for multi-tenancy
+// Tenant Resolution Middleware
 app.use((req, res, next) => {
   const tenantSlug = req.headers['x-tenant-slug'];
-  
-  if (!tenantSlug) {
-    return res.status(400).json({
-      success: false,
-      message: 'Missing required header: x-tenant-slug'
-    });
+  if (!tenantSlug && req.path !== '/health' && !req.path.startsWith('/settings/public')) {
+    return res.status(400).json({ success: false, message: 'Missing required header: x-tenant-slug' });
   }
-  
-  req.tenantSlug = tenantSlug;
-  req.tenantId = req.headers['x-tenant-id'];
+  req.tenantSlug = tenantSlug || 'system';
+  req.tenantId = req.headers['x-tenant-id'] || 'system';
   next();
 });
 
-// Request logging middleware
+// Request logging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} | Tenant: ${req.tenantSlug}`);
   next();
 });
 
-// Health check
+// =============================================================================
+// HEALTH CHECK
+// =============================================================================
 app.get('/health', (req, res) => {
-  try {
-    res.status(200).json({
-      status: 'UP',
-      service: 'edocuments-service',
-      version: '2.0.0',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'DOWN',
-      error: error.message
-    });
-  }
+  res.status(200).json({
+    status: 'UP',
+    service: 'edocuments-service',
+    version: '3.0.0',
+    features: ['documents', 'templates', 'autofill', 'pdf-export', 'excel-import', 'canvas-editor', 'history', 'multi-tenant'],
+    storage: 'persistent',
+    stats: {
+      documents: Object.keys(documentsStore).length,
+      templates: Object.keys(templatesStore).length,
+      history: Object.keys(documentHistory).length,
+      tenants: Object.keys(tenantSettings).length
+    },
+    timestamp: new Date().toISOString()
+  });
 });
 
-// ===== TEMPLATE MANAGEMENT ROUTES =====
+// =============================================================================
+// TENANT SETTINGS (colors, fonts, branding)
+// =============================================================================
+app.get('/settings', (req, res) => {
+  const settings = tenantSettings[req.tenantSlug] || {
+    primaryColor: '#1a237e',
+    secondaryColor: '#0d47a1',
+    fontFamily: 'Helvetica',
+    fontSize: 12,
+    logo: null,
+    companyName: '',
+    address: '',
+    phone: '',
+    email: '',
+    currency: 'KES',
+    taxRate: 16,
+    invoicePrefix: 'INV-',
+    receiptPrefix: 'RCT-'
+  };
+  res.json({ success: true, data: settings });
+});
 
-// Get all templates (default + tenant-specific)
+app.put('/settings', (req, res) => {
+  const current = tenantSettings[req.tenantSlug] || {};
+  tenantSettings[req.tenantSlug] = { ...current, ...req.body, updatedAt: new Date().toISOString() };
+  saveStore('settings', tenantSettings);
+  res.json({ success: true, data: tenantSettings[req.tenantSlug] });
+});
+
+// Public settings (no tenant slug needed)
+app.get('/settings/public', (req, res) => {
+  res.json({ success: true, data: { status: 'edocuments-service', version: '3.0.0' } });
+});
+
+// =============================================================================
+// TEMPLATE MANAGEMENT
+// =============================================================================
 app.get('/templates', (req, res) => {
   try {
     const { search, type } = req.query;
-    
-    // Get default system templates
-    const systemTemplates = Array.from(templatesStore.entries())
+    const systemTemplates = Object.entries(templatesStore)
       .filter(([key]) => key.startsWith('system-'))
-      .map(([, template]) => template);
-    
-    // Get tenant-specific templates
-    const tenantTemplates = Array.from(templatesStore.entries())
+      .map(([, t]) => t);
+    const tenantTemplates = Object.entries(templatesStore)
       .filter(([key]) => key.startsWith(`${req.tenantSlug}-`))
-      .map(([, template]) => template);
-    
-    let allTemplates = [...systemTemplates, ...tenantTemplates];
-    
-    // Apply search filter
+      .map(([, t]) => t);
+    let all = [...systemTemplates, ...tenantTemplates];
     if (search) {
-      const searchTerm = search.toLowerCase();
-      allTemplates = allTemplates.filter(t => 
-        t.name.toLowerCase().includes(searchTerm) ||
-        (t.description && t.description.toLowerCase().includes(searchTerm)) ||
-        t.type.toLowerCase().includes(searchTerm)
-      );
+      const s = search.toLowerCase();
+      all = all.filter(t => t.name.toLowerCase().includes(s) || (t.description || '').toLowerCase().includes(s));
     }
-    
-    // Apply type filter
-    if (type && type !== 'all') {
-      allTemplates = allTemplates.filter(t => t.type === type);
-    }
-    
-    // Sort by creation date
-    allTemplates.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    res.json({
-      success: true,
-      message: 'Document templates retrieved successfully',
-      data: {
-        templates: allTemplates || [],
-        count: allTemplates.length,
-        filters: { search: search || '', type: type || 'all' },
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[TEMPLATES] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve templates'
-    });
+    if (type && type !== 'all') all = all.filter(t => t.type === type);
+    all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({ success: true, data: { templates: all, count: all.length }, tenant: req.tenantSlug });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Get specific template
 app.get('/templates/:templateId', (req, res) => {
   try {
-    const { templateId } = req.params;
-    
-    // Try tenant-specific first, then system
-    let template = templatesStore.get(`${req.tenantSlug}-${templateId}`);
-    if (!template) {
-      template = templatesStore.get(`system-${templateId}`);
-    }
-
-    if (!template) {
-      return res.status(404).json({
-        success: false,
-        message: 'Template not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Template retrieved successfully',
-      data: {
-        ...template,
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[TEMPLATE GET] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve template'
-    });
+    let t = templatesStore[`${req.tenantSlug}-${req.params.templateId}`];
+    if (!t) t = templatesStore[`system-${req.params.templateId}`];
+    if (!t) return res.status(404).json({ success: false, message: 'Template not found' });
+    res.json({ success: true, data: { ...t, tenant: req.tenantSlug } });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Upload/Create new template
 app.post('/templates', templateUpload.single('templateFile'), (req, res) => {
   try {
     const { name, description, type, fields, canvasState } = req.body;
-    
-    // Validation
-    if (!name || !name.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required field: name'
-      });
-    }
-
-    if (!type || !type.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required field: type'
-      });
-    }
-
-    // Parse fields if provided as JSON string
+    if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name required' });
+    if (!type || !type.trim()) return res.status(400).json({ success: false, message: 'Type required' });
     let parsedFields = [];
-    if (fields) {
-      try {
-        parsedFields = typeof fields === 'string' ? JSON.parse(fields) : fields;
-      } catch (e) {
-        parsedFields = [];
-      }
-    }
-
-    // Parse canvas state if provided
-    let parsedCanvasState = null;
-    if (canvasState) {
-      try {
-        parsedCanvasState = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState;
-      } catch (e) {
-        parsedCanvasState = null;
-      }
-    }
-
+    if (fields) { try { parsedFields = typeof fields === 'string' ? JSON.parse(fields) : fields; } catch(e) {} }
+    let parsedCanvas = null;
+    if (canvasState) { try { parsedCanvas = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState; } catch(e) {} }
     const templateId = `custom-${Date.now()}`;
-    const storeKey = `${req.tenantSlug}-${templateId}`;
-    
     const template = {
-      id: templateId,
-      name: name.trim(),
-      description: description ? description.trim() : '',
-      type: type.trim(),
-      fields: parsedFields,
-      canvasState: parsedCanvasState,
-      fileName: req.file ? req.file.filename : null,
-      originalName: req.file ? req.file.originalname : null,
-      fileSize: req.file ? req.file.size : null,
-      mimeType: req.file ? req.file.mimetype : null,
+      id: templateId, name: name.trim(), description: description ? description.trim() : '',
+      type: type.trim(), fields: parsedFields, canvasState: parsedCanvas,
+      fileName: req.file ? req.file.filename : null, originalName: req.file ? req.file.originalname : null,
+      fileSize: req.file ? req.file.size : null, mimeType: req.file ? req.file.mimetype : null,
       url: req.file ? `/api/v1/restpoint/edocuments/templates/download/${req.file.filename}` : null,
-      isDefault: false,
-      tenant: req.tenantSlug,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      isDefault: false, tenant: req.tenantSlug, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
     };
-
-    templatesStore.set(storeKey, template);
-
-    res.status(201).json({
-      success: true,
-      message: 'Template created successfully',
-      data: template
-    });
-  } catch (error) {
-    console.error('[TEMPLATE CREATE] Error:', error.message);
-    
-    // Clean up uploaded file if there was an error
-    if (req.file) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (e) {
-        console.error('Failed to cleanup file:', e.message);
-      }
-    }
-
-    if (error.message.includes('Invalid template file type')) {
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create template'
-    });
+    templatesStore[`${req.tenantSlug}-${templateId}`] = template;
+    saveStore('templates', templatesStore);
+    res.status(201).json({ success: true, message: 'Template created', data: template });
+  } catch (e) {
+    if (req.file) { try { fs.unlinkSync(req.file.path); } catch(ex) {} }
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Update template
 app.put('/templates/:templateId', (req, res) => {
   try {
-    const { templateId } = req.params;
+    const key = `${req.tenantSlug}-${req.params.templateId}`;
+    const t = templatesStore[key];
+    if (!t) return res.status(404).json({ success: false, message: 'Template not found' });
+    if (t.isDefault) return res.status(403).json({ success: false, message: 'Cannot modify default templates' });
     const { name, description, type, fields, canvasState } = req.body;
-    
-    // Try tenant-specific first
-    let storeKey = `${req.tenantSlug}-${templateId}`;
-    let template = templatesStore.get(storeKey);
-    
-    if (!template) {
-      return res.status(404).json({
-        success: false,
-        message: 'Template not found or not authorized to modify'
-      });
-    }
-
-    // Don't allow modifying default templates
-    if (template.isDefault) {
-      return res.status(403).json({
-        success: false,
-        message: 'Cannot modify default system templates'
-      });
-    }
-
-    // Update only provided fields
-    if (name !== undefined) template.name = name.trim();
-    if (description !== undefined) template.description = description.trim();
-    if (type !== undefined) template.type = type.trim();
-    if (fields !== undefined) {
-      template.fields = typeof fields === 'string' ? JSON.parse(fields) : fields;
-    }
-    if (canvasState !== undefined) {
-      template.canvasState = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState;
-    }
-    template.updatedAt = new Date().toISOString();
-
-    templatesStore.set(storeKey, template);
-
-    res.json({
-      success: true,
-      message: 'Template updated successfully',
-      data: template
-    });
-  } catch (error) {
-    console.error('[TEMPLATE UPDATE] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update template'
-    });
+    if (name !== undefined) t.name = name.trim();
+    if (description !== undefined) t.description = description.trim();
+    if (type !== undefined) t.type = type.trim();
+    if (fields !== undefined) t.fields = typeof fields === 'string' ? JSON.parse(fields) : fields;
+    if (canvasState !== undefined) t.canvasState = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState;
+    t.updatedAt = new Date().toISOString();
+    templatesStore[key] = t;
+    saveStore('templates', templatesStore);
+    res.json({ success: true, message: 'Template updated', data: t });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Delete template
 app.delete('/templates/:templateId', (req, res) => {
   try {
-    const { templateId } = req.params;
-    const storeKey = `${req.tenantSlug}-${templateId}`;
-    
-    const template = templatesStore.get(storeKey);
-    if (!template) {
-      return res.status(404).json({
-        success: false,
-        message: 'Template not found or not authorized to delete'
-      });
+    const key = `${req.tenantSlug}-${req.params.templateId}`;
+    const t = templatesStore[key];
+    if (!t) return res.status(404).json({ success: false, message: 'Template not found' });
+    if (t.isDefault) return res.status(403).json({ success: false, message: 'Cannot delete default templates' });
+    if (t.fileName) {
+      try { const fp = path.join(templatesDir, req.tenantSlug, t.fileName); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(ex) {}
     }
-
-    // Don't allow deleting default templates
-    if (template.isDefault) {
-      return res.status(403).json({
-        success: false,
-        message: 'Cannot delete default system templates'
-      });
-    }
-
-    // Try to delete the actual file
-    if (template.fileName) {
-      try {
-        const filePath = path.join(templatesDir, req.tenantSlug, template.fileName);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      } catch (e) {
-        console.warn(`Failed to delete template file: ${e.message}`);
-      }
-    }
-
-    templatesStore.delete(storeKey);
-
-    res.json({
-      success: true,
-      message: 'Template deleted successfully',
-      data: {
-        id: templateId,
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[TEMPLATE DELETE] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete template'
-    });
+    delete templatesStore[key];
+    saveStore('templates', templatesStore);
+    res.json({ success: true, message: 'Template deleted' });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Download template file
 app.get('/templates/download/:filename', (req, res) => {
   try {
     const { filename } = req.params;
-    
-    // First try tenant-specific templates directory
-    let filePath = path.join(templatesDir, req.tenantSlug, filename);
-    
-    // Security check - ensure filename contains tenant slug
-    if (!filename.startsWith(req.tenantSlug)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized access'
-      });
-    }
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'Template file not found'
-      });
-    }
-
-    res.download(filePath, (err) => {
-      if (err && err.code !== 'ERR_HTTP_REQUEST_TIMEOUT') {
-        console.error('Download error:', err.message);
-      }
-    });
-  } catch (error) {
-    console.error('[TEMPLATE DOWNLOAD] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to download template'
-    });
+    if (!filename.startsWith(req.tenantSlug)) return res.status(403).json({ success: false, message: 'Unauthorized' });
+    let fp = path.join(templatesDir, req.tenantSlug, filename);
+    if (!fs.existsSync(fp)) return res.status(404).json({ success: false, message: 'File not found' });
+    res.download(fp);
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// ===== DOCUMENT AUTOFFILL ROUTE =====
-
-// Generate document from template with autofill
+// =============================================================================
+// DOCUMENT GENERATION (AUTOFILL)
+// =============================================================================
 app.post('/generate', (req, res) => {
   try {
-    const { templateId, fieldValues, title, description } = req.body;
-    
-    if (!templateId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required field: templateId'
+    const { templateId, fieldValues, title, description, format } = req.body;
+    if (!templateId) return res.status(400).json({ success: false, message: 'templateId required' });
+    if (!fieldValues) return res.status(400).json({ success: false, message: 'fieldValues required' });
+    let t = templatesStore[`${req.tenantSlug}-${templateId}`];
+    if (!t) t = templatesStore[`system-${templateId}`];
+    if (!t) return res.status(404).json({ success: false, message: 'Template not found' });
+
+    // Generate content
+    let content = `${t.name}\n${'='.repeat(50)}\n\n`;
+    const filled = [];
+    if (t.fields) {
+      t.fields.forEach(f => {
+        const val = fieldValues[f.key] || f.placeholder || '';
+        content += `${f.label}: ${val}\n`;
+        filled.push({ key: f.key, label: f.label, value: val });
       });
     }
+    content += `\n${'='.repeat(50)}\nGenerated: ${new Date().toISOString()}\n`;
 
-    if (!fieldValues || typeof fieldValues !== 'object') {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required field: fieldValues'
-      });
-    }
-
-    // Get template
-    let template = templatesStore.get(`${req.tenantSlug}-${templateId}`);
-    if (!template) {
-      template = templatesStore.get(`system-${templateId}`);
-    }
-
-    if (!template) {
-      return res.status(404).json({
-        success: false,
-        message: 'Template not found'
-      });
-    }
-
-    // Generate document content with autofill
-    let generatedContent = '';
-    const filledFields = [];
-    
-    if (template.fields && template.fields.length > 0) {
-      generatedContent += `${template.name}\n`;
-      generatedContent += `${'='.repeat(50)}\n\n`;
-      
-      template.fields.forEach(field => {
-        const value = fieldValues[field.key] || field.placeholder;
-        generatedContent += `${field.label}: ${value}\n`;
-        filledFields.push({
-          key: field.key,
-          label: field.label,
-          value: value,
-          wasPlaceholder: !fieldValues[field.key]
-        });
-      });
-      
-      generatedContent += `\n${'='.repeat(50)}\n`;
-      generatedContent += `Generated: ${new Date().toISOString()}\n`;
-    }
-
-    // Create document record
     const docId = `gen-${Date.now()}`;
-    const storeKey = `${req.tenantSlug}-${docId}`;
-    
-    const document = {
-      id: docId,
-      title: title || `${template.name} - Auto-generated`,
-      description: description || `Generated from template: ${template.name}`,
-      documentType: template.type,
-      category: 'generated',
-      templateId: template.id,
-      templateName: template.name,
-      generatedContent: generatedContent,
-      filledFields: filledFields,
-      fieldValues: fieldValues,
-      status: 'active',
-      tenant: req.tenantSlug,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    const doc = {
+      id: docId, title: title || `${t.name} - Auto-generated`,
+      description: description || `Generated from ${t.name}`,
+      documentType: t.type, category: 'generated', templateId: t.id, templateName: t.name,
+      generatedContent: content, filledFields: filled, fieldValues: fieldValues || {},
+      status: 'active', format: format || 'text',
+      tenant: req.tenantSlug, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
     };
-
-    documentsStore.set(storeKey, document);
-
-    res.status(201).json({
-      success: true,
-      message: 'Document generated successfully from template',
-      data: document
-    });
-  } catch (error) {
-    console.error('[DOCUMENT GENERATE] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate document from template'
-    });
+    documentsStore[`${req.tenantSlug}-${docId}`] = doc;
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'generate', docId, `${t.name} generated`);
+    res.status(201).json({ success: true, message: 'Document generated', data: doc });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// ===== EDOCUMENTS ROUTES =====
+// =============================================================================
+// EXCEL/CSV IMPORT (QuickBooks replacement)
+// =============================================================================
+app.post('/import-spreadsheet', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    let rows = [];
+    let headers = [];
 
-// Get all documents for tenant
+    if (ext === '.csv' && csvParser) {
+      const raw = fs.readFileSync(req.file.path, 'utf8');
+      const parsed = csvParser.parse(raw, { columns: true, skip_empty_lines: true });
+      if (parsed.length > 0) headers = Object.keys(parsed[0]);
+      rows = parsed;
+    } else if (ext === '.xlsx' && xlsx) {
+      const wb = xlsx.readFile(req.file.path);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = xlsx.utils.sheet_to_json(ws);
+      if (data.length > 0) headers = Object.keys(data[0]);
+      rows = data;
+    } else if (ext === '.xls' && xlsx) {
+      const wb = xlsx.readFile(req.file.path);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = xlsx.utils.sheet_to_json(ws);
+      if (data.length > 0) headers = Object.keys(data[0]);
+      rows = data;
+    } else {
+      // Plain text - try to parse as simple CSV
+      const raw = fs.readFileSync(req.file.path, 'utf8');
+      const lines = raw.split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        headers = lines[0].split(',').map(h => h.trim());
+        rows = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim());
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = vals[i] || '');
+          return obj;
+        });
+      }
+    }
+
+    const docId = `import-${Date.now()}`;
+    documentsStore[`${req.tenantSlug}-${docId}`] = {
+      id: docId, title: req.body.title || `Imported: ${req.file.originalname}`,
+      description: `Imported from ${req.file.originalname}`,
+      documentType: 'spreadsheet', category: 'imported',
+      fileName: req.file.filename, originalName: req.file.originalname,
+      fileSize: req.file.size, mimeType: req.file.mimetype,
+      importedData: { headers, rows, rowCount: rows.length },
+      url: `/api/v1/restpoint/edocuments/download/${req.file.filename}`,
+      status: 'active', tenant: req.tenantSlug,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    };
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'import', docId, `Imported ${req.file.originalname} (${rows.length} rows)`);
+    res.json({ success: true, message: `Imported ${rows.length} rows from ${req.file.originalname}`, data: { docId, headers, rowCount: rows.length } });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// =============================================================================
+// EXPORT TO EXCEL
+// =============================================================================
+app.post('/:id/export-excel', (req, res) => {
+  try {
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (!xlsx) return res.status(400).json({ success: false, message: 'Excel export not available (xlsx module missing)' });
+
+    const wb = xlsx.utils.book_new();
+    let data = [];
+
+    if (doc.importedData && doc.importedData.rows) {
+      data = doc.importedData.rows;
+    } else if (doc.fieldValues) {
+      data = [doc.fieldValues];
+    } else {
+      data = [{ title: doc.title, description: doc.description, type: doc.documentType, created: doc.createdAt }];
+    }
+
+    const ws = xlsx.utils.json_to_sheet(data);
+    xlsx.utils.book_append_sheet(wb, ws, 'Data');
+
+    // Auto-size columns
+    const colWidths = Object.keys(data[0] || {}).map(k => ({ wch: Math.max(k.length, 15) }));
+    ws['!cols'] = colWidths;
+
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${doc.title || 'export'}.xlsx"`);
+    res.send(buf);
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// =============================================================================
+// DOCUMENTS CRUD
+// =============================================================================
 app.get('/', (req, res) => {
   try {
-    const { type, status, templateId, limit = '10', offset = '0' } = req.query;
-    const limitNum = Math.min(parseInt(limit) || 10, 100);
-    const offsetNum = parseInt(offset) || 0;
-
-    // Filter documents for this tenant only
-    const allDocs = Array.from(documentsStore.entries())
-      .filter(([key]) => key.startsWith(req.tenantSlug))
-      .map(([, doc]) => doc);
-
-    // Apply filters
-    let filtered = allDocs;
-    if (type && type !== 'all') {
-      filtered = filtered.filter(doc => doc.documentType === type);
-    }
-    if (status) {
-      filtered = filtered.filter(doc => doc.status === status);
-    }
-    if (templateId && templateId !== 'all') {
-      filtered = filtered.filter(doc => doc.templateId === templateId);
-    }
-
-    // Sort by createdAt descending
-    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    // Pagination
-    const total = filtered.length;
-    const documents = filtered.slice(offsetNum, offsetNum + limitNum);
-
-    res.json({
-      success: true,
-      message: 'Electronic documents retrieved successfully',
-      data: {
-        documents: documents || [],
-        total: total,
-        count: documents.length,
-        filters: { type: type || 'all', status: status || 'all', templateId: templateId || 'all' },
-        pagination: { limit: limitNum, offset: offsetNum, hasMore: offsetNum + limitNum < total },
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[DOCUMENTS GET] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve documents'
-    });
+    const { type, status, templateId, search, limit = '10', offset = '0' } = req.query;
+    const lim = Math.min(parseInt(limit) || 10, 100);
+    const off = parseInt(offset) || 0;
+    let all = Object.entries(documentsStore)
+      .filter(([k]) => k.startsWith(req.tenantSlug))
+      .map(([, d]) => d);
+    if (type && type !== 'all') all = all.filter(d => d.documentType === type);
+    if (status) all = all.filter(d => d.status === status);
+    if (templateId && templateId !== 'all') all = all.filter(d => d.templateId === templateId);
+    if (search) { const s = search.toLowerCase(); all = all.filter(d => (d.title || '').toLowerCase().includes(s) || (d.description || '').toLowerCase().includes(s)); }
+    all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const total = all.length;
+    const docs = all.slice(off, off + lim);
+    res.json({ success: true, data: { documents: docs, total, count: docs.length, pagination: { limit: lim, offset: off, hasMore: off + lim < total } }, tenant: req.tenantSlug });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Get specific document
 app.get('/:id', (req, res) => {
   try {
-    const { id } = req.params;
-    const key = `${req.tenantSlug}-${id}`;
-    const doc = documentsStore.get(key);
-
-    if (!doc) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Electronic document retrieved successfully',
-      data: doc
-    });
-  } catch (error) {
-    console.error('[DOCUMENT GET] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve document'
-    });
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    res.json({ success: true, data: doc });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Create/Upload new document
 app.post('/', upload.single('document'), (req, res) => {
   try {
     const { title, description, documentType, category, deceasedId, invoiceId, canvasState, fieldValues } = req.body;
-    
-    // Validation
-    if (!title || !title.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required field: title'
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required field: document file'
-      });
-    }
-
+    if (!title || !title.trim()) return res.status(400).json({ success: false, message: 'Title required' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
     const docId = Date.now().toString();
-    const storeKey = `${req.tenantSlug}-${docId}`;
-    
-    // Parse canvas state and field values
-    let parsedCanvasState = null;
-    if (canvasState) {
-      try {
-        parsedCanvasState = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState;
-      } catch (e) {
-        parsedCanvasState = null;
-      }
-    }
-
-    let parsedFieldValues = {};
-    if (fieldValues) {
-      try {
-        parsedFieldValues = typeof fieldValues === 'string' ? JSON.parse(fieldValues) : fieldValues;
-      } catch (e) {
-        parsedFieldValues = {};
-      }
-    }
-
-    const document = {
-      id: docId,
-      title: title.trim(),
-      description: description ? description.trim() : '',
-      documentType: documentType || 'general',
-      category: category || 'general',
-      deceasedId: deceasedId || null,
-      invoiceId: invoiceId || null,
-      fileName: req.file.filename,
-      originalName: req.file.originalname,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
+    let ps = null, pf = {};
+    if (canvasState) { try { ps = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState; } catch(e) {} }
+    if (fieldValues) { try { pf = typeof fieldValues === 'string' ? JSON.parse(fieldValues) : fieldValues; } catch(e) {} }
+    const doc = {
+      id: docId, title: title.trim(), description: description ? description.trim() : '',
+      documentType: documentType || 'general', category: category || 'general',
+      deceasedId: deceasedId || null, invoiceId: invoiceId || null,
+      fileName: req.file.filename, originalName: req.file.originalname,
+      fileSize: req.file.size, mimeType: req.file.mimetype,
       url: `/api/v1/restpoint/edocuments/download/${req.file.filename}`,
-      status: 'active',
-      tenant: req.tenantSlug,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      canvasState: parsedCanvasState,
-      fieldValues: parsedFieldValues
+      status: 'active', tenant: req.tenantSlug,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      canvasState: ps, fieldValues: pf
     };
-
-    documentsStore.set(storeKey, document);
-
-    res.status(201).json({
-      success: true,
-      message: 'Electronic document created successfully',
-      data: document
-    });
-  } catch (error) {
-    console.error('[DOCUMENT CREATE] Error:', error.message);
-    
-    // Clean up uploaded file if there was an error
-    if (req.file) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (e) {
-        console.error('Failed to cleanup file:', e.message);
-      }
-    }
-
-    if (error.message.includes('Invalid file type')) {
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upload document'
-    });
+    documentsStore[`${req.tenantSlug}-${docId}`] = doc;
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'create', docId, `Created: ${title}`);
+    res.status(201).json({ success: true, message: 'Document created', data: doc });
+  } catch (e) {
+    if (req.file) { try { fs.unlinkSync(req.file.path); } catch(ex) {} }
+    if (e.message && e.message.includes('Invalid file type')) return res.status(400).json({ success: false, message: e.message });
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Update document metadata and content
 app.put('/:id', (req, res) => {
   try {
-    const { id } = req.params;
+    const key = `${req.tenantSlug}-${req.params.id}`;
+    const doc = documentsStore[key];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     const { title, description, documentType, category, status, fieldValues, canvasState, image } = req.body;
-    const key = `${req.tenantSlug}-${id}`;
-    
-    const doc = documentsStore.get(key);
-    if (!doc) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-
-    // Update only provided fields
     if (title !== undefined) doc.title = title.trim();
     if (description !== undefined) doc.description = description.trim();
     if (documentType !== undefined) doc.documentType = documentType;
@@ -953,429 +762,317 @@ app.put('/:id', (req, res) => {
     if (fieldValues !== undefined) doc.fieldValues = typeof fieldValues === 'string' ? JSON.parse(fieldValues) : fieldValues;
     if (canvasState !== undefined) doc.canvasState = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState;
 
-    // Handle image update (from canvas export)
+    // Handle canvas image update
     if (image) {
       try {
-        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
-        const dataBuffer = Buffer.from(base64Data, 'base64');
-        
-        let fileName = doc.fileName;
-        if (!fileName) {
-          fileName = `${req.tenantSlug}-doc-${id}-${Date.now()}.png`;
-          doc.fileName = fileName;
+        const b64 = image.replace(/^data:image\/\w+;base64,/, '');
+        const buf = Buffer.from(b64, 'base64');
+        let fn = doc.fileName;
+        if (!fn) { fn = `${req.tenantSlug}-doc-${req.params.id}-${Date.now()}.png`; doc.fileName = fn; }
+        if (fn.toLowerCase().endsWith('.pdf')) {
+          try { const op = path.join(documentsDir, req.tenantSlug, fn); if (fs.existsSync(op)) fs.unlinkSync(op); } catch(ex) {}
+          fn = fn.replace(/\.pdf$/i, '.png'); doc.fileName = fn; doc.mimeType = 'image/png';
+          doc.url = `/api/v1/restpoint/edocuments/download/${fn}`;
         }
-
-        // If the original file was a PDF, rename it to PNG
-        if (fileName.toLowerCase().endsWith('.pdf')) {
-          try {
-            const oldPath = path.join(documentsDir, req.tenantSlug, doc.fileName);
-            if (fs.existsSync(oldPath)) {
-              fs.unlinkSync(oldPath);
-            }
-          } catch (e) {
-            console.warn('Failed to delete old PDF:', e.message);
-          }
-          fileName = fileName.replace(/\.pdf$/i, '.png');
-          doc.fileName = fileName;
-          doc.mimeType = 'image/png';
-          doc.url = `/api/v1/restpoint/edocuments/download/${fileName}`;
-        }
-        
-        const filePath = path.join(documentsDir, req.tenantSlug, fileName);
-        fs.writeFileSync(filePath, dataBuffer);
-        doc.fileSize = dataBuffer.length;
-      } catch (err) {
-        console.error('Failed to write image file:', err.message);
-      }
+        fs.writeFileSync(path.join(documentsDir, req.tenantSlug, fn), buf);
+        doc.fileSize = buf.length;
+      } catch(err) { console.error('Image write error:', err.message); }
     }
     doc.updatedAt = new Date().toISOString();
-
-    documentsStore.set(key, doc);
-
-    res.json({
-      success: true,
-      message: 'Electronic document updated successfully',
-      data: doc
-    });
-  } catch (error) {
-    console.error('[DOCUMENT UPDATE] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update document'
-    });
+    documentsStore[key] = doc;
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'update', req.params.id, `Updated: ${doc.title}`);
+    res.json({ success: true, message: 'Document updated', data: doc });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Delete document
 app.delete('/:id', (req, res) => {
   try {
-    const { id } = req.params;
-    const key = `${req.tenantSlug}-${id}`;
-    
-    const doc = documentsStore.get(key);
-    if (!doc) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-
-    // Try to delete the actual file
+    const key = `${req.tenantSlug}-${req.params.id}`;
+    const doc = documentsStore[key];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     if (doc.fileName) {
-      try {
-        const filePath = path.join(documentsDir, req.tenantSlug, doc.fileName);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      } catch (e) {
-        console.warn(`Failed to delete file: ${e.message}`);
-      }
+      try { const fp = path.join(documentsDir, req.tenantSlug, doc.fileName); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(ex) {}
     }
-
-    documentsStore.delete(key);
-
-    res.json({
-      success: true,
-      message: 'Electronic document deleted successfully',
-      data: {
-        id,
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[DOCUMENT DELETE] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete document'
-    });
+    delete documentsStore[key];
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'delete', req.params.id, `Deleted: ${doc.title}`);
+    res.json({ success: true, message: 'Document deleted' });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Download document
+// =============================================================================
+// DOWNLOAD
+// =============================================================================
 app.get('/download/:filename', (req, res) => {
   try {
     const { filename } = req.params;
-    const filePath = path.join(documentsDir, req.tenantSlug, filename);
-
-    // Security check - ensure filename contains tenant slug
-    if (!filename.startsWith(req.tenantSlug)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized access'
-      });
-    }
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document file not found'
-      });
-    }
-
-    res.download(filePath, (err) => {
-      if (err && err.code !== 'ERR_HTTP_REQUEST_TIMEOUT') {
-        console.error('Download error:', err.message);
-      }
-    });
-  } catch (error) {
-    console.error('[DOCUMENT DOWNLOAD] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to download document'
-    });
+    if (!filename.startsWith(req.tenantSlug)) return res.status(403).json({ success: false, message: 'Unauthorized' });
+    const fp = path.join(documentsDir, req.tenantSlug, filename);
+    if (!fs.existsSync(fp)) return res.status(404).json({ success: false, message: 'File not found' });
+    trackHistory(req.tenantSlug, 'download', filename, `Downloaded: ${filename}`);
+    res.download(fp);
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Get documents by deceased
-app.get('/deceased/:deceasedId', (req, res) => {
-  try {
-    const { deceasedId } = req.params;
-
-    const allDocs = Array.from(documentsStore.entries())
-      .filter(([key]) => key.startsWith(req.tenantSlug))
-      .map(([, doc]) => doc)
-      .filter(doc => doc.deceasedId === deceasedId);
-
-    res.json({
-      success: true,
-      message: 'Documents for deceased retrieved successfully',
-      data: {
-        deceasedId,
-        documents: allDocs || [],
-        count: allDocs.length,
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[DECEASED DOCS] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve documents'
-    });
-  }
-});
-
-// Get documents by invoice
-app.get('/invoice/:invoiceId', (req, res) => {
-  try {
-    const { invoiceId } = req.params;
-
-    const allDocs = Array.from(documentsStore.entries())
-      .filter(([key]) => key.startsWith(req.tenantSlug))
-      .map(([, doc]) => doc)
-      .filter(doc => doc.invoiceId === invoiceId);
-
-    res.json({
-      success: true,
-      message: 'Documents for invoice retrieved successfully',
-      data: {
-        invoiceId,
-        documents: allDocs || [],
-        count: allDocs.length,
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[INVOICE DOCS] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve documents'
-    });
-  }
-});
-
-// Search documents
+// =============================================================================
+// SEARCH
+// =============================================================================
 app.post('/search', (req, res) => {
   try {
     const { query, type, status, templateId } = req.body;
-
-    if (!query || query.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query is required'
-      });
-    }
-
-    const searchTerm = query.toLowerCase();
-    const allDocs = Array.from(documentsStore.entries())
-      .filter(([key]) => key.startsWith(req.tenantSlug))
-      .map(([, doc]) => doc);
-
-    let results = allDocs.filter(doc =>
-      doc.title.toLowerCase().includes(searchTerm) ||
-      (doc.description && doc.description.toLowerCase().includes(searchTerm)) ||
-      (doc.generatedContent && doc.generatedContent.toLowerCase().includes(searchTerm))
-    );
-
-    if (type && type !== 'all') {
-      results = results.filter(doc => doc.documentType === type);
-    }
-    if (status && status !== 'all') {
-      results = results.filter(doc => doc.status === status);
-    }
-    if (templateId && templateId !== 'all') {
-      results = results.filter(doc => doc.templateId === templateId);
-    }
-
-    res.json({
-      success: true,
-      message: 'Search completed successfully',
-      data: {
-        results: results,
-        count: results.length,
-        query,
-        tenant: req.tenantSlug
-      }
-    });
-  } catch (error) {
-    console.error('[SEARCH] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to search documents'
-    });
+    if (!query || !query.trim()) return res.status(400).json({ success: false, message: 'Query required' });
+    const s = query.toLowerCase();
+    let results = Object.entries(documentsStore)
+      .filter(([k]) => k.startsWith(req.tenantSlug))
+      .map(([, d]) => d)
+      .filter(d => (d.title || '').toLowerCase().includes(s) || (d.description || '').toLowerCase().includes(s) || (d.generatedContent || '').toLowerCase().includes(s));
+    if (type && type !== 'all') results = results.filter(d => d.documentType === type);
+    if (status && status !== 'all') results = results.filter(d => d.status === status);
+    if (templateId && templateId !== 'all') results = results.filter(d => d.templateId === templateId);
+    res.json({ success: true, data: { results, count: results.length, query }, tenant: req.tenantSlug });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// Get generated document content as text
-app.get('/:id/content', (req, res) => {
-  try {
-    const { id } = req.params;
-    const key = `${req.tenantSlug}-${id}`;
-    const doc = documentsStore.get(key);
+// =============================================================================
+// DOCUMENT HISTORY
+// =============================================================================
+function trackHistory(tenantSlug, action, ref, description) {
+  if (!documentHistory[tenantSlug]) documentHistory[tenantSlug] = [];
+  documentHistory[tenantSlug].unshift({
+    id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    action, ref, description,
+    timestamp: new Date().toISOString()
+  });
+  // Keep last 500 entries
+  if (documentHistory[tenantSlug].length > 500) documentHistory[tenantSlug] = documentHistory[tenantSlug].slice(0, 500);
+}
 
-    if (!doc) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-
-    if (!doc.generatedContent) {
-      return res.status(400).json({
-        success: false,
-        message: 'This document does not have generated content'
-      });
-    }
-
-    res.type('text/plain');
-    res.send(doc.generatedContent);
-  } catch (error) {
-    console.error('[DOCUMENT CONTENT] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve document content'
-    });
-  }
+app.get('/history', (req, res) => {
+  const history = documentHistory[req.tenantSlug] || [];
+  res.json({ success: true, data: { history, count: history.length }, tenant: req.tenantSlug });
 });
 
-// Export document as PDF with filled fields
+app.get('/history/:action', (req, res) => {
+  const history = (documentHistory[req.tenantSlug] || []).filter(h => h.action === req.params.action);
+  res.json({ success: true, data: { history, count: history.length }, tenant: req.tenantSlug });
+});
+
+// =============================================================================
+// DEPRECATED / REMOVED SERVICES (now part of this unified service)
+// =============================================================================
+// - documents-service: Use /api/v1/restpoint/edocuments instead
+// - invoice generation: Use template 'invoice-template' with POST /generate
+// - QuickBooks replacement: Use POST /import-spreadsheet for Excel/CSV
+
+// =============================================================================
+// EXPORT PDF
+// =============================================================================
 app.post('/:id/export-pdf', async (req, res) => {
   try {
-    const { id } = req.params;
-    const key = `${req.tenantSlug}-${id}`;
-    const doc = documentsStore.get(key);
-
-    if (!doc) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-
-    // Create a new PDF document
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
+    let page = pdfDoc.addPage([595.28, 841.89]);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    
-    // Add title
-    page.drawText(doc.title || 'Document', {
-      x: 50,
-      y: 800,
-      size: 20,
-      font: font,
-      color: rgb(0, 0, 0)
-    });
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    let y = 800;
 
-    // Add filled fields
-    let yPosition = 750;
-    if (doc.fieldValues) {
-      Object.entries(doc.fieldValues).forEach(([key, value]) => {
-        if (yPosition < 50) {
-          page = pdfDoc.addPage([595.28, 841.89]);
-          yPosition = 800;
-        }
-        
-        const label = key.replace(/([A-Z])/g, ' $1').trim();
-        page.drawText(`${label}: ${value}`, {
-          x: 50,
-          y: yPosition,
-          size: 12,
-          font: font,
-          color: rgb(0, 0, 0)
-        });
-        
-        yPosition -= 25;
-      });
+    // Title
+    page.drawText(doc.title || 'Document', { x: 50, y, size: 22, font: boldFont, color: rgb(0.1, 0.14, 0.49) });
+    y -= 35;
+
+    // Description
+    if (doc.description) {
+      page.drawText(doc.description, { x: 50, y, size: 11, font, color: rgb(0.4, 0.4, 0.4) });
+      y -= 25;
     }
 
-    // Serialize the PDFDocument to bytes (a Uint8Array)
+    // Separator
+    y -= 10;
+    page.drawLine({ start: { x: 50, y }, end: { x: 545, y }, color: rgb(0.8, 0.8, 0.8), thickness: 1 });
+    y -= 20;
+
+    // Filled fields
+    if (doc.fieldValues) {
+      for (const [key, value] of Object.entries(doc.fieldValues)) {
+        if (y < 60) { page = pdfDoc.addPage([595.28, 841.89]); y = 800; }
+        const label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim();
+        page.drawText(`${label}:`, { x: 50, y, size: 10, font: boldFont, color: rgb(0.3, 0.3, 0.3) });
+        page.drawText(String(value || ''), { x: 200, y, size: 10, font, color: rgb(0, 0, 0) });
+        y -= 22;
+      }
+    }
+
+    // Generated content
+    if (doc.generatedContent) {
+      if (y < 80) { page = pdfDoc.addPage([595.28, 841.89]); y = 800; }
+      const lines = doc.generatedContent.split('\n');
+      for (const line of lines) {
+        if (y < 40) { page = pdfDoc.addPage([595.28, 841.89]); y = 800; }
+        page.drawText(line, { x: 50, y, size: 10, font, color: rgb(0, 0, 0) });
+        y -= 16;
+      }
+    }
+
+    // Footer
+    page.drawLine({ start: { x: 50, y: 30 }, end: { x: 545, y: 30 }, color: rgb(0.8, 0.8, 0.8), thickness: 0.5 });
+    page.drawText(`Generated by RestPoint eDocuments v3.0.0 | ${new Date().toISOString()}`, { x: 50, y: 18, size: 7, font, color: rgb(0.6, 0.6, 0.6) });
+
     const pdfBytes = await pdfDoc.save();
-
-    // Send the PDF as response
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${doc.title || 'document'}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${(doc.title || 'document').replace(/[^a-z0-9]/gi, '_')}.pdf"`);
     res.send(Buffer.from(pdfBytes));
-  } catch (error) {
-    console.error('[EXPORT PDF] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to export PDF',
-      error: error.message
-    });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// 404 handler
+// =============================================================================
+// DOCUMENT CONTENT
+// =============================================================================
+app.get('/:id/content', (req, res) => {
+  try {
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (!doc.generatedContent) return res.status(400).json({ success: false, message: 'No generated content' });
+    res.type('text/plain').send(doc.generatedContent);
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// =============================================================================
+// DECEASED/INVOICE LOOKUP
+// =============================================================================
+app.get('/deceased/:deceasedId', (req, res) => {
+  try {
+    const docs = Object.entries(documentsStore)
+      .filter(([k]) => k.startsWith(req.tenantSlug))
+      .map(([, d]) => d)
+      .filter(d => d.deceasedId === req.params.deceasedId);
+    res.json({ success: true, data: { deceasedId: req.params.deceasedId, documents: docs, count: docs.length }, tenant: req.tenantSlug });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.get('/invoice/:invoiceId', (req, res) => {
+  try {
+    const docs = Object.entries(documentsStore)
+      .filter(([k]) => k.startsWith(req.tenantSlug))
+      .map(([, d]) => d)
+      .filter(d => d.invoiceId === req.params.invoiceId);
+    res.json({ success: true, data: { invoiceId: req.params.invoiceId, documents: docs, count: docs.length }, tenant: req.tenantSlug });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// =============================================================================
+// DASHBOARD / STATS
+// =============================================================================
+app.get('/dashboard/stats', (req, res) => {
+  const docs = Object.entries(documentsStore).filter(([k]) => k.startsWith(req.tenantSlug)).map(([, d]) => d);
+  const recent = docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+  const byType = {};
+  docs.forEach(d => { byType[d.documentType] = (byType[d.documentType] || 0) + 1; });
+  const byStatus = {};
+  docs.forEach(d => { byStatus[d.status] = (byStatus[d.status] || 0) + 1; });
+  const templates = Object.entries(templatesStore).filter(([k]) => k.startsWith(req.tenantSlug)).length;
+  res.json({
+    success: true, data: {
+      totalDocuments: docs.length, totalTemplates: templates,
+      recentDocuments: recent, byType, byStatus,
+      storageUsed: docs.reduce((acc, d) => acc + (d.fileSize || 0), 0)
+    }, tenant: req.tenantSlug
+  });
+});
+
+// =============================================================================
+// 404 HANDLER
+// =============================================================================
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Cannot ${req.method} ${req.originalUrl}`,
-    path: req.originalUrl
-  });
+  res.status(404).json({ success: false, message: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
-// Error handler - CRITICAL for production
+// =============================================================================
+// ERROR HANDLER
+// =============================================================================
 app.use((err, req, res, next) => {
-  console.error(`\n[ERROR] ${new Date().toISOString()}`);
-  console.error(`Message: ${err.message}`);
-  console.error(`Stack: ${err.stack}\n`);
-
-  // Handle multer errors
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
-      success: false,
-      message: 'File size exceeds 50MB limit'
-    });
-  }
-
-  if (err.code === 'LIMIT_PART_COUNT') {
-    return res.status(400).json({
-      success: false,
-      message: 'Too many parts in form'
-    });
-  }
-
-  if (err.message && err.message.includes('Invalid file type')) {
-    return res.status(400).json({
-      success: false,
-      message: err.message
-    });
-  }
-
-  // Generic error response
-  res.status(err.status || 500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
-  });
+  console.error(`\n[ERROR] ${new Date().toISOString()} | ${err.message}`);
+  if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'File size exceeds 50MB limit' });
+  if (err.message && err.message.includes('Invalid file type')) return res.status(400).json({ success: false, message: err.message });
+  res.status(err.status || 500).json({ success: false, message: 'Internal Server Error' });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('\n[SHUTDOWN] SIGTERM received, shutting down gracefully...');
-  process.exit(0);
-});
+// =============================================================================
+// GRACEFUL SHUTDOWN
+// =============================================================================
+process.on('SIGTERM', () => { console.log('\n[SHUTDOWN] SIGTERM'); saveAll(); process.exit(0); });
+process.on('SIGINT', () => { console.log('\n[SHUTDOWN] SIGINT'); saveAll(); process.exit(0); });
 
-process.on('SIGINT', () => {
-  console.log('\n[SHUTDOWN] SIGINT received, shutting down gracefully...');
-  process.exit(0);
-});
+function saveAll() {
+  saveStore('documents', documentsStore);
+  saveStore('templates', templatesStore);
+  saveStore('history', documentHistory);
+  saveStore('settings', tenantSettings);
+}
 
-// Start server
+// =============================================================================
+// START
+// =============================================================================
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('\n' + '='.repeat(60));
-  console.log('✅ EDocuments Service Started (v2.0.0 - Full Features)');
-  console.log('='.repeat(60));
-  console.log(`📌 Service: edocuments-service v2.0.0`);
-  console.log(`🔗 URL: http://0.0.0.0:${PORT}`);
-  console.log(`📖 Health: http://localhost:${PORT}/health`);
-  console.log(`📄 Endpoints:`);
-  console.log(`   GET    /api/v1/restpoint/edocuments`);
-  console.log(`   POST   /api/v1/restpoint/edocuments`);
-  console.log(`   GET    /api/v1/restpoint/edocuments/:id`);
-  console.log(`   PUT    /api/v1/restpoint/edocuments/:id`);
-  console.log(`   DELETE /api/v1/restpoint/edocuments/:id`);
-  console.log(`   POST   /api/v1/restpoint/edocuments/generate (autofill from template)`);
-  console.log(`   POST   /api/v1/restpoint/edocuments/:id/export-pdf`);
-  console.log(`   GET    /api/v1/restpoint/edocuments/templates`);
-  console.log(`   POST   /api/v1/restpoint/edocuments/templates`);
-  console.log(`   GET    /api/v1/restpoint/edocuments/templates/:id`);
-  console.log(`   PUT    /api/v1/restpoint/edocuments/templates/:id`);
-  console.log(`   DELETE /api/v1/restpoint/edocuments/templates/:id`);
-  console.log(`   POST   /api/v1/restpoint/edocuments/search`);
-  console.log(`📊 Upload Limit: 50MB`);
-  console.log(`👥 Multi-tenant: Enabled (requires x-tenant-slug header)`);
-  console.log(`📝 Templates: Default templates with autofill fields included`);
-  console.log('='.repeat(60) + '\n');
+  console.log('\n' + '='.repeat(70));
+  console.log('📄  EDOCUMENTS SERVICE v3.0.0 — Full QuickBooks Replacement');
+  console.log('='.repeat(70));
+  console.log(`  📌  Port: ${PORT}`);
+  console.log(`  📁  Storage: ${EDOCS_ROOT}`);
+  console.log(`  👥  Multi-tenant: Enabled (x-tenant-slug header)`);
+  console.log(`  📊  Documents: ${Object.keys(documentsStore).length}`);
+  console.log(`  📋  Templates: ${Object.keys(templatesStore).length}`);
+  console.log(`  📈  History: ${Object.keys(documentHistory).length} entries`);
+  console.log(`  🔤  Excel (.xlsx): ${xlsx ? '✓' : '✗ (npm install xlsx)'}`);
+  console.log(`  📝  CSV: ${csvParser ? '✓' : '✗ (npm install csv-parse)'}`);
+  console.log('');
+  console.log('  📖  ENDPOINTS (via API Gateway):');
+  console.log('  ────────────────────────────────────────────');
+  console.log('  📄  Documents:');
+  console.log('       GET    /api/v1/restpoint/edocuments');
+  console.log('       POST   /api/v1/restpoint/edocuments');
+  console.log('       GET    /api/v1/restpoint/edocuments/:id');
+  console.log('       PUT    /api/v1/restpoint/edocuments/:id');
+  console.log('       DELETE /api/v1/restpoint/edocuments/:id');
+  console.log('       GET    /api/v1/restpoint/edocuments/download/:file');
+  console.log('  📋  Templates:');
+  console.log('       GET    /api/v1/restpoint/edocuments/templates');
+  console.log('       POST   /api/v1/restpoint/edocuments/templates');
+  console.log('       GET    /api/v1/restpoint/edocuments/templates/:id');
+  console.log('       PUT    /api/v1/restpoint/edocuments/templates/:id');
+  console.log('       DELETE /api/v1/restpoint/edocuments/templates/:id');
+  console.log('  🔄  Generation & Import:');
+  console.log('       POST   /api/v1/restpoint/edocuments/generate');
+  console.log('       POST   /api/v1/restpoint/edocuments/import-spreadsheet');
+  console.log('       POST   /api/v1/restpoint/edocuments/:id/export-pdf');
+  console.log('       POST   /api/v1/restpoint/edocuments/:id/export-excel');
+  console.log('  🔍  Search & History:');
+  console.log('       POST   /api/v1/restpoint/edocuments/search');
+  console.log('       GET    /api/v1/restpoint/edocuments/history');
+  console.log('       GET    /api/v1/restpoint/edocuments/dashboard/stats');
+  console.log('  ⚙️  Settings:');
+  console.log('       GET    /api/v1/restpoint/edocuments/settings');
+  console.log('       PUT    /api/v1/restpoint/edocuments/settings');
+  console.log('  💰  QuickBooks Replacement (Excel/CSV):');
+  console.log('       POST   /api/v1/restpoint/edocuments/import-spreadsheet');
+  console.log('       POST   /api/v1/restpoint/edocuments/:id/export-excel');
+  console.log('       Template: invoice-spreadsheet, payment-ledger');
+  console.log('='.repeat(70) + '\n');
 });
-
-module.exports = app;

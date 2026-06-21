@@ -30,9 +30,9 @@ async function loadTenantBranding(tenantSlug, tenantDbName) {
   };
 
   try {
-    // 1. Try to get from tenant_tracking.tenants (central)
+    // 1. Try to get from tenants (central tracking DB)
     const tenantRows = await safeQuery(
-      'SELECT tenant_name, email, phone, location, country FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
+      'SELECT tenant_name, email, phone, location, country FROM tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
       [tenantSlug]
     );
 

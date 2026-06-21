@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const axios = require('axios');
-const { safeMasterQuery } = require('../../shared/dbConfig');
+const { safeMasterQuery, lookupTenantDatabase } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
 const notificationsController = require('./controllers/notifications');
 const supportTicketsRouter = require('./routes/supportTickets');
@@ -40,9 +40,9 @@ app.use(async (req, res, next) => {
         console.error('[TenantAuth] Error validating tenant:', err.message);
         // Allow request to proceed - use tenantSlug to derive db_name
         try {
-          const tenants = await safeMasterQuery(`SELECT db_name FROM tenants WHERE tenant_slug = ?`, [tenantSlug]);
-          if (tenants && tenants.length > 0 && tenants[0].db_name) {
-            req.tenantDbName = tenants[0].db_name;
+          const dbName = await lookupTenantDatabase(tenantSlug);
+          if (dbName) {
+            req.tenantDbName = dbName;
           }
         } catch (dbErr) {
           console.error('[TenantAuth] Fallback DB lookup failed:', dbErr.message);
@@ -69,6 +69,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+
 app.get('/api/v1/restpoint/notification', async (req, res) => {
   res.json({
     success: true,
@@ -76,6 +77,8 @@ app.get('/api/v1/restpoint/notification', async (req, res) => {
     tenant: req.tenantSlug
   });
 });
+
+
 
 // Notification REST endpoints
 app.get('/api/v1/restpoint/notification/notifications', async (req, res) => {
@@ -101,9 +104,9 @@ app.post('/api/v1/restpoint/notification/notifications', async (req, res) => {
     const tenantSlug = req.headers['x-tenant-slug'];
     if (tenantSlug) {
       try {
-        const tenants = await safeMasterQuery(`SELECT db_name FROM tenants WHERE tenant_slug = ?`, [tenantSlug]);
-        if (tenants && tenants.length > 0 && tenants[0].db_name) {
-          req.tenantDbName = tenants[0].db_name;
+        const dbName = await lookupTenantDatabase(tenantSlug);
+        if (dbName) {
+          req.tenantDbName = dbName;
         }
       } catch (err) {
         console.error('[CreateNotification] DB lookup error:', err.message);
@@ -113,11 +116,13 @@ app.post('/api/v1/restpoint/notification/notifications', async (req, res) => {
   return notificationsController.createNotification(req, res);
 });
 
+
 // Subscribe endpoint placeholder (store subscription in tenant DB or push service)
 app.post('/api/v1/restpoint/notification/subscribe', async (req, res) => {
   console.log('Received push subscription (placeholder)');
   return res.status(200).json({ success: true, message: 'Subscribed (placeholder)' });
 });
+
 
 // Support Ticket Routes
 app.use(supportTicketsRouter);
@@ -137,5 +142,7 @@ app.listen(PORT, '0.0.0.0', () => {
     } catch (err) {
       console.error('Notification background job error:', err);
     }
+    
   }, 60 * 1000);
+  
 });

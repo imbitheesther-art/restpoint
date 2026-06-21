@@ -938,6 +938,71 @@ const VISITORS_SERVICE_MIGRATIONS: Migration[] = [
   },
 ];
 
+// ─── Helper Functions (for main tenant vs branch database migrations) ─────────
+
+/**
+ * Returns migrations for the main tenant database (users, settings, branch tracking).
+ * The main DB stores users, branch-to-database mapping, and global settings.
+ * Uses TENANT_SERVICE_MIGRATIONS as the core tenant tables.
+ */
+export function getMainTenantMigrations(): Migration[] {
+  return [
+    ...TENANT_SERVICE_MIGRATIONS,
+  ];
+}
+
+/**
+ * Returns migrations for a branch-specific database (deceased, charges, marketplace, etc.).
+ * Each branch gets its own isolated database so data never mixes.
+ * Uses all non-tenant service migrations.
+ */
+export function getBranchMigrations(): Migration[] {
+  return [
+    ...DECEASED_SERVICE_MIGRATIONS,
+    ...MARKETPLACE_SERVICE_MIGRATIONS,
+    ...INVOICE_SERVICE_MIGRATIONS,
+    ...DOCUMENTS_SERVICE_MIGRATIONS,
+    ...NOTIFICATIONS_SERVICE_MIGRATIONS,
+    ...CALENDAR_SERVICE_MIGRATIONS,
+    ...BODY_CHECKOUT_SERVICE_MIGRATIONS,
+    ...COFFIN_SERVICE_MIGRATIONS,
+    ...PORTAL_SERVICE_MIGRATIONS,
+    ...QRCODE_SERVICE_MIGRATIONS,
+    ...ANALYTICS_SERVICE_MIGRATIONS,
+    ...EDOCUMENTS_SERVICE_MIGRATIONS,
+    ...VISITORS_SERVICE_MIGRATIONS,
+  ];
+}
+
+/**
+ * Returns all migrations (both main and branch) for backwards compatibility.
+ */
+export function getAllTenantMigrations(): Migration[] {
+  return ALL_SERVICE_MIGRATIONS;
+}
+
+/**
+ * Returns all migrations grouped by category for reporting.
+ */
+export function getMigrationsByCategory(): Record<string, Migration[]> {
+  return {
+    tenant: TENANT_SERVICE_MIGRATIONS,
+    deceased: DECEASED_SERVICE_MIGRATIONS,
+    marketplace: MARKETPLACE_SERVICE_MIGRATIONS,
+    invoice: INVOICE_SERVICE_MIGRATIONS,
+    documents: DOCUMENTS_SERVICE_MIGRATIONS,
+    notifications: NOTIFICATIONS_SERVICE_MIGRATIONS,
+    calendar: CALENDAR_SERVICE_MIGRATIONS,
+    bodyCheckout: BODY_CHECKOUT_SERVICE_MIGRATIONS,
+    coffin: COFFIN_SERVICE_MIGRATIONS,
+    portal: PORTAL_SERVICE_MIGRATIONS,
+    qrcode: QRCODE_SERVICE_MIGRATIONS,
+    analytics: ANALYTICS_SERVICE_MIGRATIONS,
+    edocuments: EDOCUMENTS_SERVICE_MIGRATIONS,
+    visitors: VISITORS_SERVICE_MIGRATIONS,
+  };
+}
+
 // ─── All Service Migrations (Exported) ───────────────────────────────────────
 
 /**

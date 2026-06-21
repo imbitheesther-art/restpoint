@@ -14,7 +14,7 @@ router.post('/api/v1/restpoint/support/tickets', async (req, res) => {
     }
 
     const [result] = await safeMasterQuery(
-      `INSERT INTO tenant_tracking.support_tickets (tenant_slug, tenant_name, user_email, user_name, type, subject, message)
+      `INSERT INTO support_tickets (tenant_slug, tenant_name, user_email, user_name, type, subject, message)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [tenantSlug, tenantName || 'Unknown Tenant', userEmail || '', userName || '', type || 'help', subject, message]
     );
@@ -51,7 +51,7 @@ router.post('/api/v1/restpoint/support/tickets', async (req, res) => {
 router.get('/api/v1/restpoint/support/tickets', async (req, res) => {
   try {
     const [tickets] = await safeMasterQuery(
-      'SELECT * FROM tenant_tracking.support_tickets ORDER BY created_at DESC LIMIT 100'
+      'SELECT * FROM support_tickets ORDER BY created_at DESC LIMIT 100'
     );
 
     res.json({ success: true, tickets });
@@ -68,7 +68,7 @@ router.patch('/api/v1/restpoint/support/tickets/:id', async (req, res) => {
     const { status } = req.body;
 
     await safeMasterQuery(
-      'UPDATE tenant_tracking.support_tickets SET status = ? WHERE ticket_id = ?',
+      'UPDATE support_tickets SET status = ? WHERE ticket_id = ?',
       [status, id]
     );
 

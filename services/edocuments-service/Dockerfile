@@ -1,13 +1,15 @@
-# Production Dockerfile for eDocuments Service
-FROM node:20-alpine
+# RestPoint eDocuments Service — Clean Dockerfile
+# Full QuickBooks replacement: invoices, receipts, Excel/CSV, PDF, canvas editing
+FROM node:22-alpine
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
+# Copy root workspace config
 COPY package.json tsconfig.base.json ./
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
@@ -17,6 +19,7 @@ COPY services/edocuments-service/package.json ./services/edocuments-service/
 
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
+# Copy shared source code
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
@@ -27,9 +30,15 @@ RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-COPY services/edocuments-service/ ./services/edocuments-service/
+# Copy ONLY the Node.js server (NO PHP Laravel)
+COPY services/edocuments-service/server.js ./services/edocuments-service/
+COPY services/edocuments-service/uploads ./services/edocuments-service/uploads
 
-RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
+# Create storage directories
+RUN mkdir -p /usr/src/app/services/edocuments-service/data && \
+    mkdir -p /usr/src/app/services/edocuments-service/uploads/_documents && \
+    mkdir -p /usr/src/app/services/edocuments-service/uploads/_templates && \
+    chown -R nodejs:nodejs /usr/src/app
 
 USER nodejs
 

@@ -1,8 +1,7 @@
 import bcrypt from 'bcryptjs';
 import mysql from 'mysql2/promise';
 import slugify from 'slugify';
-import { MigrationService } from '../services/migration-service';
-import { getMainTenantMigrations, getBranchMigrations } from '../services/all-service-migrations';
+import { MigrationService, getMainTenantMigrations, getBranchMigrations } from '../../shared/services/all-service-migrations';
 
 export interface RegisterTenantData {
     tenant_name: string;

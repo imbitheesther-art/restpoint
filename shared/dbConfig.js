@@ -15,7 +15,7 @@ const DB_CONFIG = {
   password: process.env.DB_PASSWORD || '',
 };
 
-const TRACKING_DB_NAME = process.env.TRACKING_DB_NAME || process.env.DB_NAME || 'restpoint_main';
+const TRACKING_DB_NAME = process.env.TRACKING_DB_NAME || process.env.DB_NAME || 'tenant_tracking';
 
 // ─── Connection Pool Caches ──────────────────────────────────────────────────
 let rootPool = null;
@@ -26,6 +26,7 @@ const getRootPool = async () => {
   if (!rootPool) {
     rootPool = mysql.createPool({
       ...DB_CONFIG,
+      database: 'tenant_tracking',
       waitForConnections: true,
       connectionLimit: 5,
       queueLimit: 0,
@@ -41,8 +42,10 @@ const getRootPool = async () => {
 const lookupTenantDatabase = async (tenantSlug) => {
   try {
     const pool = await getRootPool();
+    // Since the root pool now has TRACKING_DB_NAME as default database,
+    // query directly on the tenants table
     const [rows] = await pool.query(
-      `SELECT db_name FROM ${TRACKING_DB_NAME}.tenants WHERE tenant_slug = ? AND status = 'active' LIMIT 1`,
+      `SELECT db_name FROM tenants WHERE tenant_slug = ? AND status = 'active' LIMIT 1`,
       [tenantSlug]
     );
     if (rows.length > 0 && rows[0].db_name) {
