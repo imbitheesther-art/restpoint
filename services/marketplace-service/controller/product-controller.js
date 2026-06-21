@@ -48,11 +48,11 @@ const cleanProductTitle = (title) => {
   const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   
   // List of words to completely filter out or replace
-  let clean = title.replace(/presidential taste/gi, "Premium Edition")
-                   .replace(/aspirant taste/gi, "Classic Edition")
+  let clean = title.replace(/coffins/gi, "Premium coffins ")
+                   .replace(/floers/gi, "Classic Edition")
                    .replace(/sample data/gi, "")
-                   .replace(/campaign taste/gi, "Campaign Edition")
-                   .replace(/rep taste/gi, "Standard Edition");
+                   .replace(/wraths taste/gi, "Campaign Edition")
+                   .replace(/orbituries taste/gi, "Standard Edition");
 
   // Remove multiple spaces
   clean = clean.replace(/\s+/g, " ").trim();

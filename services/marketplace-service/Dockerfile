@@ -1,5 +1,5 @@
 # Production Dockerfile for Marketplace Service
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install runtime dependencies
 RUN apk add --no-cache dumb-init

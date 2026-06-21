@@ -1,32 +1,44 @@
 # ============================================
-# Rest Point — Frontend Dockerfile
-# Production: app.restpoint.co.ke:8082
+# Rest Point — Frontend Dockerfile (OPTIMIZED)
+# BuildKit caching, multi-stage, fast builds
 # ============================================
 
-# Stage 1: Build
+# Stage 1: Dependencies - cache layer
+FROM node:20-alpine AS deps
+LABEL stage=deps
+
+WORKDIR /app
+
+# Copy only dependency files (cached layer)
+COPY package.json package-lock.json ./
+
+# Install with frozen lockfile for reproducibility
+RUN npm ci --legacy-peer-deps --prefer-offline 2>/dev/null || \
+    npm install --legacy-peer-deps --prefer-offline
+
+# Stage 2: Builder
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Copy node_modules from deps stage (cached)
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/package-lock.json ./package-lock.json
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application (uses cached node_modules)
 RUN npm run build
 
-# Stage 2: Production with nginx
+# Stage 3: Production with nginx
 FROM nginx:alpine AS production
 
 # Install certbot for SSL (optional)
 RUN apk add --no-cache certbot certbot-nginx
 
-# Copy custom nginx config (listens on port 8082)
+# Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder stage

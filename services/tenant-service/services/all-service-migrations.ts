@@ -625,5 +625,4 @@ export function getMigrationsByCategory(): Record<string, Migration[]> {
   };
 }
 
-export { getMainTenantMigrations, getBranchMigrations };
 export default getAllTenantMigrations;

@@ -391,8 +391,7 @@ services:
     ports:
       - "8082:80"
     depends_on:
-      api-gateway:
-        condition: service_healthy
+      - api-gateway
     networks:
       - restpoint_network
     restart: unless-stopped

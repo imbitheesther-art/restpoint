@@ -1,5 +1,5 @@
 # Production Dockerfile for Portal Service
-FROM node:20-alpine
+FROM node:22-alpine
 
 RUN apk add --no-cache dumb-init
 
