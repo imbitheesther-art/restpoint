@@ -81,7 +81,7 @@ export default function TermsOfService() {
           Agreement
         </h2>
         <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
-          Payments are due monthly with a one-month grace period. Late payments may result in 
+          Payments are due monthly. Monthly subscribers have a 7-day grace period. Yearly subscribers have a one-month grace period. Late payments may result in 
           suspension. Reactivation fee: KES 1,000.
         </p>
 
