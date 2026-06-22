@@ -5,12 +5,13 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { AppError } from '../middlewares/errorHandler';
+
 const { safeQuery } = require('../../configurations/sqlConfig/db');
-import { getKenyaTimeISO } from '../../../packages/shared-utils/dist/timestamps';
-import { loadTenantBranding } from './tenantBranding';
+const { getKenyaTimeISO, getKenyaTimeFormatted } = require('../../../packages/shared-utils/dist/timestamps');
+const { loadTenantBranding } = require('./tenantBranding');
 
 // Redis client for caching
-let redisClient: Redis | null = null;
+let redisClient: Redis.Redis | null = null;
 
 /**
  * Get tenant slug from request headers
