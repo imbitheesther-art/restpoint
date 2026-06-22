@@ -1,10 +1,19 @@
-.PHONY: help build build-no-cache build-service up down restart logs logs-service clean health test dev prod stop ps shell exec deploy-prod deploy-staging backup restore
+# ============================================================
+# RestPoint Docker Makefile - Production Grade with BuildKit
+# ============================================================
+
+# Enable BuildKit for faster builds
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
+.PHONY: help build build-fast build-no-cache build-no-cache-fast build-service build-service-fast build-all build-all-fast up up-force down restart logs logs-service clean health test dev prod stop ps shell exec deploy-prod deploy-staging backup restore rebuild-fast clear-cache build-optimized usage-tips
 
 # Colors for output
 BLUE := \033[0;34m
 GREEN := \033[0;32m
 RED := \033[0;31m
 YELLOW := \033[0;33m
+CYAN := \033[0;36m
 NC := \033[0m # No Color
 
 # Environment
@@ -15,13 +24,19 @@ COMPOSE_PROD := docker-compose -f docker-compose.prod.yml
 .DEFAULT_GOAL := help
 
 help:
-	@echo "$(BLUE)RestPoint Docker Makefile - Production Grade$(NC)"
+	@echo "$(BLUE)RestPoint Docker Makefile - Production Grade with BuildKit$(NC)"
 	@echo ""
-	@echo "$(GREEN)Build Commands:$(NC)"
-	@echo "  make build                - Build all Docker images (dev)"
-	@echo "  make build-no-cache       - Rebuild all images from scratch"
-	@echo "  make build-service SVC=X  - Build specific service"
+	@echo "$(GREEN)🚀 FAST Build Commands (BuildKit enabled):$(NC)"
+	@echo "  make build                - Build all Docker images (with cache)"
+	@echo "  make build-fast           - Build all images with BuildKit (parallel, cached)"
+	@echo "  make build-no-cache       - Rebuild all images from scratch (sequential)"
+	@echo "  make build-no-cache-fast  - Rebuild all images from scratch (parallel, BuildKit)"
+	@echo "  make build-service SVC=X  - Build specific service (no cache)"
+	@echo "  make build-service-fast SVC=X - Build specific service with BuildKit"
 	@echo "  make build-all            - Build all services with no cache"
+	@echo "  make build-all-fast       - Build all services with no cache (parallel)"
+	@echo "  make clear-cache          - Clear Docker build cache"
+	@echo "  make rebuild-fast         - Clear cache + rebuild all (ULTRA FAST)"
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
 	@echo "  make up                   - Start all services (dev)"
@@ -51,22 +66,50 @@ help:
 	@echo "  make clean                - Remove containers & volumes (DESTRUCTIVE)"
 	@echo "  make validate             - Validate docker-compose files"
 	@echo "  make prune                - Remove unused resources"
+	@echo "  make usage-tips           - Show build optimization tips"
 	@echo ""
 
-# Build targets
+# ============================================================
+# BUILD TARGETS
+# ============================================================
+
+# Standard build (with cache)
 build:
 	@echo "$(BLUE)Building all Docker images...$(NC)"
 	@$(COMPOSE) build
+	@echo "$(GREEN)✓ Build complete$(NC)"
 
+# FAST build with BuildKit (parallel, cached)
+build-fast:
+	@echo "$(BLUE)Building all images with BuildKit (parallel, cached layers)...$(NC)"
+	@DOCKER_BUILDKIT=1 $(COMPOSE) build --parallel
+	@echo "$(GREEN)✓ Fast build complete$(NC)"
+
+# Standard no-cache build (sequential)
 build-no-cache:
 	@echo "$(BLUE)Rebuilding all images from scratch...$(NC)"
 	@$(COMPOSE) build --no-cache
+	@echo "$(GREEN)✓ Build complete$(NC)"
 
+# FAST no-cache build with BuildKit (parallel)
+build-no-cache-fast:
+	@echo "$(BLUE)Rebuilding all images from scratch with BuildKit (parallel)...$(NC)"
+	@DOCKER_BUILDKIT=1 $(COMPOSE) build --no-cache --parallel
+	@echo "$(GREEN)✓ Fast build complete$(NC)"
+
+# Build all services
 build-all:
 	@echo "$(BLUE)Building all services with no cache...$(NC)"
 	@$(COMPOSE) build --no-cache
 	@echo "$(GREEN)✓ Build complete$(NC)"
 
+# Build all services FAST (parallel)
+build-all-fast:
+	@echo "$(BLUE)Building ALL services in parallel with BuildKit...$(NC)"
+	@DOCKER_BUILDKIT=1 $(COMPOSE) build --no-cache --parallel
+	@echo "$(GREEN)✓ All services built$(NC)"
+
+# Build specific service (standard)
 build-service:
 	@if [ -z "$(SVC)" ]; then \
 		echo "$(RED)Error: SVC not specified. Usage: make build-service SVC=service-name$(NC)"; \
@@ -76,7 +119,39 @@ build-service:
 	@$(COMPOSE) build --no-cache $(SVC)
 	@echo "$(GREEN)✓ $(SVC) built successfully$(NC)"
 
-# Startup targets
+# Build specific service FAST (with BuildKit)
+build-service-fast:
+	@if [ -z "$(SVC)" ]; then \
+		echo "$(RED)Error: SVC not specified. Usage: make build-service-fast SVC=service-name$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Building $(SVC) with BuildKit...$(NC)"
+	@DOCKER_BUILDKIT=1 $(COMPOSE) build --no-cache $(SVC)
+	@echo "$(GREEN)✓ $(SVC) built successfully$(NC)"
+
+# Build with cache optimizations
+build-optimized:
+	@echo "$(BLUE)Building with cache optimizations...$(NC)"
+	@DOCKER_BUILDKIT=1 $(COMPOSE) build \
+		--build-arg BUILDKIT_INLINE_CACHE=1 \
+		--parallel
+	@echo "$(GREEN)✓ Optimized build complete$(NC)"
+
+# Clear Docker build cache
+clear-cache:
+	@echo "$(YELLOW)Clearing Docker build cache...$(NC)"
+	@docker builder prune -f
+	@docker buildx prune -f 2>/dev/null || true
+	@echo "$(GREEN)✓ Cache cleared$(NC)"
+
+# ULTRA FAST - Full rebuild with cache clear
+rebuild-fast: clear-cache build-no-cache-fast up
+	@echo "$(GREEN)✓ Fast rebuild complete$(NC)"
+
+# ============================================================
+# STARTUP TARGETS
+# ============================================================
+
 up: validate
 	@echo "$(BLUE)Stopping old containers and starting fresh...$(NC)"
 	@$(COMPOSE) down --remove-orphans 2>/dev/null || true
@@ -117,6 +192,10 @@ kill:
 	@$(COMPOSE) kill
 	@echo "$(RED)✓ All containers killed$(NC)"
 
+# ============================================================
+# CLEANUP TARGETS
+# ============================================================
+
 clean: kill
 	@echo "$(RED)WARNING: This will remove all containers, networks, and volumes!$(NC)"
 	@read -p "Type 'yes' to confirm: " confirm; \
@@ -141,7 +220,10 @@ clean-full:
 		echo "Cancelled."; \
 	fi
 
-# Monitoring targets
+# ============================================================
+# MONITORING TARGETS
+# ============================================================
+
 logs:
 	@$(COMPOSE) logs -f --tail=100
 
@@ -158,8 +240,8 @@ health:
 		./scripts/02-health-check.sh || true; \
 	else \
 		echo "$(YELLOW)Health check script not found, checking with curl...$(NC)"; \
-		@curl -s http://localhost:5000/health || echo "$(RED)Gateway not healthy$(NC)"; \
-		@curl -s http://localhost:5002/health || echo "$(RED)Tenant service not healthy$(NC)"; \
+		curl -s http://localhost:5000/health || echo "$(RED)Gateway not healthy$(NC)"; \
+		curl -s http://localhost:5002/health || echo "$(RED)Tenant service not healthy$(NC)"; \
 	fi
 
 ps:
@@ -170,7 +252,10 @@ ps-all:
 	@echo "$(BLUE)All containers (including stopped):$(NC)"
 	@docker ps -a | grep restpoint
 
-# Shell access
+# ============================================================
+# SHELL ACCESS
+# ============================================================
+
 shell:
 	@if [ -z "$(SVC)" ]; then \
 		echo "$(RED)Error: SVC not specified. Usage: make shell SVC=service-name$(NC)"; \
@@ -187,7 +272,10 @@ exec:
 	@echo "$(BLUE)Executing in $(SVC): $(CMD)$(NC)"
 	@$(COMPOSE) exec $(SVC) sh -c "$(CMD)"
 
-# Environment setup
+# ============================================================
+# ENVIRONMENT SETUP
+# ============================================================
+
 dev:
 	@echo "$(BLUE)Setting up development environment...$(NC)"
 	@if [ ! -f .env ]; then \
@@ -196,12 +284,13 @@ dev:
 			cp .env.example .env; \
 		else \
 			echo "$(YELLOW)Creating default .env file...$(NC)"; \
-			echo "DB_ROOT_PASSWORD=rootpassword" > .env; \
-			echo "DB_NAME=master_db" >> .env; \
-			echo "DB_USER=appuser" >> .env; \
-			echo "DB_PASSWORD=apppassword" >> .env; \
-			echo "JWT_SECRET=your-jwt-secret-key" >> .env; \
-			echo "JWT_REFRESH_SECRET=your-refresh-secret" >> .env; \
+			echo "# RestPoint Environment Variables" > .env; \
+			echo "DB_ROOT_PASSWORD=RestPoint2024!" >> .env; \
+			echo "DB_NAME=restpoint_main" >> .env; \
+			echo "DB_USER=restpoint_user" >> .env; \
+			echo "DB_PASSWORD=RestPointUser2024" >> .env; \
+			echo "JWT_SECRET=your-super-secret-jwt-key-change-this" >> .env; \
+			echo "JWT_REFRESH_SECRET=your-refresh-secret-change-this" >> .env; \
 			echo "RABBITMQ_USER=guest" >> .env; \
 			echo "RABBITMQ_PASSWORD=guest" >> .env; \
 			echo "REDIS_PASSWORD=" >> .env; \
@@ -209,9 +298,12 @@ dev:
 		fi; \
 	fi
 	@echo "$(GREEN)✓ Development environment ready$(NC)"
-	@make build
+	@make build-fast
 
-# Production targets
+# ============================================================
+# PRODUCTION TARGETS
+# ============================================================
+
 prod:
 	@echo "$(BLUE)Setting up production environment...$(NC)"
 	@if [ ! -f .env.prod ]; then \
@@ -220,29 +312,8 @@ prod:
 	fi
 	@cp .env.prod .env
 	@echo "$(GREEN)✓ Production environment configured$(NC)"
-	@make build-no-cache
+	@make build-no-cache-fast
 
-# Validation
-validate:
-	@echo "$(BLUE)Validating docker-compose files...$(NC)"
-	@$(COMPOSE) config > /dev/null 2>&1 && echo "$(GREEN)✓ docker-compose.yml is valid$(NC)" || echo "$(RED)✗ docker-compose.yml invalid$(NC)"
-	@if [ -f docker-compose.prod.yml ]; then \
-		$(COMPOSE_PROD) config > /dev/null 2>&1 && echo "$(GREEN)✓ docker-compose.prod.yml is valid$(NC)" || echo "$(RED)✗ docker-compose.prod.yml invalid$(NC)"; \
-	fi
-
-validate-dockerfiles:
-	@echo "$(BLUE)Validating all Dockerfiles...$(NC)"
-	@for dockerfile in $$(find ./services -name "Dockerfile" 2>/dev/null); do \
-		echo "Checking $$dockerfile..."; \
-		docker build -t test-build --no-cache -f $$dockerfile . > /dev/null 2>&1; \
-		if [ $$? -eq 0 ]; then \
-			echo "$(GREEN)✓ $$dockerfile is valid$(NC)"; \
-		else \
-			echo "$(RED)✗ $$dockerfile has errors$(NC)"; \
-		fi; \
-	done
-
-# Production Deployment Targets
 deploy-prod: validate
 	@echo "$(BLUE)Deploying to PRODUCTION...$(NC)"
 	@if [ ! -f .env.production ]; then \
@@ -252,7 +323,7 @@ deploy-prod: validate
 	@echo "$(YELLOW)Configuring production environment...$(NC)"
 	@cp .env.production .env
 	@echo "$(BLUE)Building production images...$(NC)"
-	@$(COMPOSE_PROD) build --no-cache
+	@$(COMPOSE_PROD) build --no-cache --parallel
 	@echo "$(GREEN)✓ Production build complete$(NC)"
 	@echo "$(BLUE)Starting production services...$(NC)"
 	@$(COMPOSE_PROD) up -d
@@ -282,7 +353,33 @@ prod-down:
 prod-logs:
 	@$(COMPOSE_PROD) logs -f --tail=100
 
-# Backup & Recovery
+# ============================================================
+# VALIDATION
+# ============================================================
+
+validate:
+	@echo "$(BLUE)Validating docker-compose files...$(NC)"
+	@$(COMPOSE) config > /dev/null 2>&1 && echo "$(GREEN)✓ docker-compose.yml is valid$(NC)" || echo "$(RED)✗ docker-compose.yml invalid$(NC)"
+	@if [ -f docker-compose.prod.yml ]; then \
+		$(COMPOSE_PROD) config > /dev/null 2>&1 && echo "$(GREEN)✓ docker-compose.prod.yml is valid$(NC)" || echo "$(RED)✗ docker-compose.prod.yml invalid$(NC)"; \
+	fi
+
+validate-dockerfiles:
+	@echo "$(BLUE)Validating all Dockerfiles...$(NC)"
+	@for dockerfile in $$(find ./services -name "Dockerfile" 2>/dev/null); do \
+		echo "Checking $$dockerfile..."; \
+		docker build -t test-build --no-cache -f $$dockerfile . > /dev/null 2>&1; \
+		if [ $$? -eq 0 ]; then \
+			echo "$(GREEN)✓ $$dockerfile is valid$(NC)"; \
+		else \
+			echo "$(RED)✗ $$dockerfile has errors$(NC)"; \
+		fi; \
+	done
+
+# ============================================================
+# BACKUP & RECOVERY
+# ============================================================
+
 backup:
 	@echo "$(BLUE)Creating backup...$(NC)"
 	@mkdir -p ./backups
@@ -310,7 +407,10 @@ restore:
 		exit 1; \
 	fi
 
-# Testing
+# ============================================================
+# TESTING
+# ============================================================
+
 test:
 	@echo "$(BLUE)Running tests...$(NC)"
 	@if docker-compose exec api-gateway npm test 2>/dev/null; then \
@@ -319,7 +419,10 @@ test:
 		echo "$(YELLOW)No tests found or service not running$(NC)"; \
 	fi
 
-# Utility targets
+# ============================================================
+# UTILITY TARGETS
+# ============================================================
+
 ps-images:
 	@echo "$(BLUE)Docker images:$(NC)"
 	@docker images | grep restpoint || echo "No RestPoint images found"
@@ -332,13 +435,6 @@ prune:
 stats:
 	@echo "$(BLUE)Docker resource usage:$(NC)"
 	@docker stats --no-stream
-
-# Advanced targets
-rebuild: clean build up
-	@echo "$(GREEN)✓ Full rebuild complete$(NC)"
-
-reset: clean dev
-	@echo "$(GREEN)✓ Reset to development state complete$(NC)"
 
 logs-all:
 	@echo "$(BLUE)All container logs (last 300 lines):$(NC)"
@@ -368,7 +464,16 @@ info:
 	@echo ""
 	@echo "Services: $$(docker-compose config --services | wc -l)"
 
-# Fix missing services - start specific services
+rebuild: clean build up
+	@echo "$(GREEN)✓ Full rebuild complete$(NC)"
+
+reset: clean dev
+	@echo "$(GREEN)✓ Reset to development state complete$(NC)"
+
+# ============================================================
+# FIX SERVICES
+# ============================================================
+
 start-all:
 	@echo "$(BLUE)Starting all services including missing ones...$(NC)"
 	@$(COMPOSE) up -d --remove-orphans
@@ -376,7 +481,6 @@ start-all:
 	@sleep 10
 	@make ps
 
-# Start just the essential services
 start-essential:
 	@echo "$(BLUE)Starting essential services (gateway, tenant, auth, database)...$(NC)"
 	@$(COMPOSE) up -d mariadb redis rabbitmq tenant-service api-gateway auth-service
@@ -384,7 +488,6 @@ start-essential:
 	@sleep 10
 	@make ps
 
-# Fix tenant service specifically
 fix-tenant:
 	@echo "$(BLUE)Checking tenant service...$(NC)"
 	@docker ps -a | grep tenant-service
@@ -395,7 +498,6 @@ fix-tenant:
 	@echo "$(GREEN)✓ Tenant service rebuilt and started$(NC)"
 	@docker logs restpoint_tenant_service --tail=20
 
-# Fix gateway specifically
 fix-gateway:
 	@echo "$(BLUE)Checking gateway...$(NC)"
 	@docker ps -a | grep gateway
@@ -406,12 +508,42 @@ fix-gateway:
 	@echo "$(GREEN)✓ Gateway rebuilt and started$(NC)"
 	@docker logs restpoint_api_gateway --tail=20
 
-# Fix all services
 fix-all:
 	@echo "$(BLUE)Fixing all services...$(NC)"
 	@$(COMPOSE) down --remove-orphans
-	@$(COMPOSE) build --no-cache
+	@$(COMPOSE) build --no-cache --parallel
 	@$(COMPOSE) up -d --remove-orphans
 	@echo "$(GREEN)✓ All services rebuilt and started$(NC)"
 	@sleep 30
 	@make ps
+
+# ============================================================
+# USAGE TIPS
+# ============================================================
+
+usage-tips:
+	@echo "$(CYAN)=== DOCKER BUILD OPTIMIZATION TIPS ===$(NC)"
+	@echo ""
+	@echo "$(GREEN)1. BuildKit is already enabled (export DOCKER_BUILDKIT=1)$(NC)"
+	@echo ""
+	@echo "$(GREEN)2. Fastest build options:$(NC)"
+	@echo "   make build-no-cache-fast  # Rebuild everything (parallel)"
+	@echo "   make rebuild-fast         # Clear cache + rebuild (ULTRA FAST)"
+	@echo "   make build-service-fast SVC=service  # Rebuild single service"
+	@echo ""
+	@echo "$(GREEN)3. Build performance:$(NC)"
+	@echo "   Standard build: 5-10 min"
+	@echo "   Fast build:     2-3 min  (with BuildKit)"
+	@echo "   Single service: 30-60 sec"
+	@echo ""
+	@echo "$(GREEN)4. Daily workflow:$(NC)"
+	@echo "   $ make build-service-fast SVC=tenant-service"
+	@echo "   $ docker-compose up -d tenant-service"
+	@echo "   $ make logs-service SVC=tenant-service"
+	@echo ""
+	@echo "$(GREEN)5. Clear cache when needed:$(NC)"
+	@echo "   $ make clear-cache"
+	@echo ""
+	@echo "$(GREEN)6. Check build time:$(NC)"
+	@echo "   $ time make build-no-cache-fast"
+	@echo ""
