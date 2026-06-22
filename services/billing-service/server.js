@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const cron = require('node-cron');
 const axios = require('axios');
@@ -34,10 +33,6 @@ const logger = winston.createLogger({
 });
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true
-}));
 app.use(helmet());
 app.use(express.json());
 

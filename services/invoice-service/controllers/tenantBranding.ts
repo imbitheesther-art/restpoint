@@ -3,19 +3,32 @@
  * Fetches tenant-specific branding data (name, logo, signature, contact info)
  * from the tracking database for multi-tenant invoice generation.
  */
-const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { lookupTenantDb } = require('../../configurations/sqlConfig/db');
-const path = require('path');
-const fs = require('fs');
+import { safeQuery } from '../../configurations/sqlConfig/db';
+import path from 'path';
+import fs from 'fs';
+
+interface BrandingData {
+  tenant_name: string;
+  email: string;
+  phone: string;
+  location: string;
+  country: string;
+  logo_path: string | null;
+  signature_path: string | null;
+  invoice_prefix: string;
+  company_address: string;
+  company_phone: string;
+  company_email: string;
+}
 
 /**
  * Load tenant branding/organization data from tenant_tracking.tenants
- * @param {string} tenantSlug - The tenant slug (e.g., 'lee-funeral-home')
- * @param {string} tenantDbName - The tenant database name for mortuary settings
- * @returns {Object} Branding data with tenant name, logo paths, contact info
+ * @param tenantSlug - The tenant slug (e.g., 'lee-funeral-home')
+ * @param tenantDbName - The tenant database name for mortuary settings
+ * @returns Branding data with tenant name, logo paths, contact info
  */
-async function loadTenantBranding(tenantSlug, tenantDbName) {
-  const defaults = {
+async function loadTenantBranding(tenantSlug: string, tenantDbName: string | null): Promise<BrandingData> {
+  const defaults: BrandingData = {
     tenant_name: tenantSlug || 'Funeral Home',
     email: 'info@restpoint.co.ke',
     phone: '+254 740 045 355',
@@ -31,7 +44,7 @@ async function loadTenantBranding(tenantSlug, tenantDbName) {
 
   try {
     // 1. Try to get from tenants (central tracking DB)
-    const tenantRows = await safeQuery(
+    const tenantRows: any[] = await safeQuery(
       'SELECT tenant_name, email, phone, location, country FROM tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
       [tenantSlug]
     );
@@ -48,7 +61,7 @@ async function loadTenantBranding(tenantSlug, tenantDbName) {
     // 2. Try to get from mortuaries table in tenant database
     if (tenantDbName) {
       try {
-        const mortRows = await safeQuery(
+        const mortRows: any[] = await safeQuery(
           'SELECT name, phone, address, email FROM mortuaries LIMIT 1',
           [],
           tenantSlug
@@ -99,11 +112,11 @@ async function loadTenantBranding(tenantSlug, tenantDbName) {
     }
 
     defaults.invoice_prefix = `${tenantSlug.replace(/[^A-Z0-9]/gi, '').substring(0, 4).toUpperCase() || 'INV'}-INV`;
-  } catch (err) {
+  } catch (err: any) {
     console.warn(`⚠️ Could not load branding for tenant "${tenantSlug}": ${err.message}`);
   }
 
   return defaults;
 }
 
-module.exports = { loadTenantBranding };
+export { loadTenantBranding };

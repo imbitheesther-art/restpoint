@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 
@@ -13,30 +12,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ============================================
-// CORS — allow all headers the frontend sends
-// ============================================
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'X-CSRF-Token',
-        'x-csrf-token',
-        'x-tenant-slug',
-        'x-tenant-id',
-        'x-request-timestamp',
-        'x-client-id',
-        'x-session-fingerprint',
-        'X-Client-ID',
-        'X-Session-Fingerprint',
-        'Origin',
-        'X-Requested-With',
-        'Accept'
-    ]
-}));
 
 // Request logging
 app.use((req, res, next) => {

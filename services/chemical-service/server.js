@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const { safeTenantQuery: safeQuery, safeTenantExecute: safeExecute } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
@@ -8,13 +7,6 @@ const chemicalRoutes = require('./routes/chemicalRoutes');
 const app = express();
 const PORT = process.env.PORT || 5105;
 
-// CORS
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token', 'x-tenant-slug'],
-}));
 app.use(helmet());
 app.use(express.json());
 

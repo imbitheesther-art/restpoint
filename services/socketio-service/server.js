@@ -11,7 +11,6 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-
 const PORT = process.env.SOCKET_PORT || 8010;
 const REDIS_URL = process.env.REDIS_URL
   ? process.env.REDIS_URL

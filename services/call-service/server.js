@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const cors = require('cors');
 const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const { tenantMiddleware } = require('../../global/middlewares/tenant-validation');
@@ -17,7 +16,6 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 8120;
 
-app.use(cors());
 app.use(helmet());
 app.use(express.json());
 

@@ -1,16 +1,16 @@
 // controllers/invoice.ts
 import { Request, Response, NextFunction } from 'express';
-import { createClient } from 'redis';
+import Redis from 'ioredis';
 import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { AppError } from '../middlewares/errorHandler';
-import { safeQuery } from '../../configurations/sqlConfig/db';
+const { safeQuery } = require('../../configurations/sqlConfig/db');
 import { getKenyaTimeISO } from '../../../packages/shared-utils/dist/timestamps';
 import { loadTenantBranding } from './tenantBranding';
 
 // Redis client for caching
-let redisClient: ReturnType<typeof createClient> | null = null;
+let redisClient: Redis | null = null;
 
 /**
  * Get tenant slug from request headers
@@ -26,25 +26,22 @@ const tenantQuery = async (req: Request, sql: string, params: any[] = []): Promi
   return safeQuery(sql, params, getTenantSlug(req));
 };
 
-async function getRedisClient() {
+async function getRedisClient(): Promise<Redis> {
   if (!redisClient) {
-    redisClient = createClient({
-      socket: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-      },
+    redisClient = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD || undefined,
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      maxRetriesPerRequest: 3,
     });
-    redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-    await redisClient.connect();
+    redisClient.on('error', (err: Error) => console.error('Redis Client Error:', err));
   }
   return redisClient;
 }
-
-// Type declarations for Node.js globals
-declare const __dirname: string;
-declare const Buffer: typeof Buffer;
-declare const process: any;
 
 // Redis cache helper functions
 async function getCachedInvoice(invoiceNumber: string): Promise<any | null> {
@@ -60,7 +57,7 @@ async function getCachedInvoice(invoiceNumber: string): Promise<any | null> {
 async function setCachedInvoice(invoiceNumber: string, data: any): Promise<void> {
   try {
     const client = await getRedisClient();
-    await client.setEx(`invoice:${invoiceNumber}`, 3600, JSON.stringify(data));
+    await client.setex(`invoice:${invoiceNumber}`, 3600, JSON.stringify(data));
   } catch (error) {
     console.error('Redis cache error:', error);
   }
@@ -1002,48 +999,86 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
     id,
   ]);
 
-  await setCachedInvoice((currentInvoice as any).invoice_number, updatedInvoice);
+  await deleteCachedInvoice((currentInvoice as any).invoice_number);
 
   res.json({
     status: 'success',
     message: 'Invoice updated successfully',
-    data: updatedInvoice,
+    invoice: updatedInvoice,
   });
 };
 
 export const deleteInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
-  const [invoice] = await tenantQuery(req, 'SELECT * FROM invoices WHERE id = ?', [id]);
 
+  const [invoice] = await tenantQuery(req, 'SELECT * FROM invoices WHERE id = ?', [id]);
   if (!invoice) {
     throw new AppError('Invoice not found', 404);
   }
 
-  try {
-    if (fs.existsSync((invoice as any).pdf_url)) {
-      await fs.promises.unlink((invoice as any).pdf_url);
-    }
-  } catch (error) {
-    console.log('PDF file not found, continuing with database deletion');
+  // Delete PDF file if it exists
+  if ((invoice as any).pdf_url && fs.existsSync((invoice as any).pdf_url)) {
+    fs.unlinkSync((invoice as any).pdf_url);
   }
 
   await tenantQuery(req, 'DELETE FROM invoices WHERE id = ?', [id]);
   await deleteCachedInvoice((invoice as any).invoice_number);
 
-  res.json({ status: 'success', message: 'Invoice deleted successfully' });
+  res.json({
+    status: 'success',
+    message: 'Invoice deleted successfully',
+  });
 };
 
-export const downloadInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getInvoicePDF = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
-  const [invoice] = await tenantQuery(req, 'SELECT pdf_url FROM invoices WHERE id = ?', [id]);
 
-  if (!invoice || !(invoice as any).pdf_url) {
-    throw new AppError('Invoice or PDF not found', 404);
+  const invoices = await tenantQuery(req, `
+    SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death,
+           d.date_admitted, d.location, d.county, d.national_id, nk.full_name as nok_name,
+           nk.contact as nok_contact, COALESCE(SUM(p.amount), 0) as amount_paid
+    FROM invoices i
+    LEFT JOIN deceased d ON i.deceased_id = d.id
+    LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
+    LEFT JOIN payments p ON d.id = p.deceased_id
+    WHERE i.id = ? GROUP BY i.id
+  `, [id]);
+
+  if (invoices.length === 0) {
+    throw new AppError('Invoice not found', 404);
   }
 
-  if (!fs.existsSync((invoice as any).pdf_url)) {
-    throw new AppError('PDF file not found', 404);
-  }
+  const invoice = invoices[0];
+  invoice.items = typeof invoice.items === 'string' ? JSON.parse(invoice.items) : invoice.items;
 
-  res.download((invoice as any).pdf_url, `invoice-${id}.pdf`);
+  const branding = await loadTenantBranding(getTenantSlug(req), null);
+
+  const pdfData: InvoiceData = {
+    deceased_name: invoice.deceased_name || 'Unknown',
+    nok: invoice.nok_name || 'N/A',
+    admission_number: invoice.admission_number || invoice.deceased_id || 'N/A',
+    id_number: invoice.national_id || 'N/A',
+    dod: invoice.date_of_death ? new Date(invoice.date_of_death).toLocaleDateString('en-GB') : 'N/A',
+    date_of_admission: invoice.date_admitted ? new Date(invoice.date_admitted).toLocaleDateString('en-GB') : 'N/A',
+    address: `${invoice.location || 'N/A'}, ${invoice.county || 'N/A'}`,
+    phone: invoice.nok_contact || 'N/A',
+    items: invoice.items,
+    total_amount: parseFloat(String(invoice.total_amount || 0)),
+    subtotal: parseFloat(String(invoice.total_amount || 0)),
+    amount_paid: parseFloat(String(invoice.amount_paid || 0)),
+    tax_amount: 0,
+    tax_rate: 0,
+    mortuary_name: branding.tenant_name,
+    mortuary_phone: branding.phone,
+    stamp_hash: invoice.stamp_hash,
+    signature_url: invoice.signature_url,
+    created_at: invoice.created_at,
+    invoice_number: invoice.invoice_number,
+  };
+
+  const pdfBuffer = await generateInvoicePDFBuffer(pdfData, branding);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${invoice.invoice_number}.pdf"`);
+  res.send(pdfBuffer);
 };

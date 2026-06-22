@@ -1,25 +1,8 @@
 /**
- * CORS Middleware
- * Provides CORS configuration for all services
+ * CORS Middleware - Pass-through only
+ * CORS is handled exclusively by the API Gateway.
+ * This middleware does nothing but pass requests through.
  */
-const cors = require('cors');
-
-const corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'x-csrf-token',
-    'x-tenant-slug',
-    'x-tenant-id',
-    'Origin',
-    'Accept'
-  ]
+module.exports = (req, res, next) => {
+  next();
 };
-
-const corsMiddleware = cors(corsOptions);
-
-module.exports = corsMiddleware;
