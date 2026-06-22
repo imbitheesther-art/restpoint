@@ -4,7 +4,8 @@ const {
   register,
   login,
   refresh,
-  logout
+  logout,
+  createUser
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -13,8 +14,9 @@ router.post('/login', login);
 router.post('/register', register);
 router.post('/refresh', refresh);
 
-// Protected routes
+// Protected routes - require authentication
 router.post('/logout', protect, logout);
+router.post('/users', protect, createUser); // Create additional users
 
 // Health check
 router.get('/health', (req, res) => {

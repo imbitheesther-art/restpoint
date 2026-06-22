@@ -1,690 +1,490 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/authApi';
 
 // ============================================================
-// PROFESSIONAL FAMILY PORTAL LOGIN
-// Clean, maintainable, accessible design
+// PREMIUM FAMILY PORTAL LOGIN — Bank-Grade Design
+// Luxury aesthetic, dignified, secure, professional
 // ============================================================
 
-// Design System Constants
 const THEME = {
   colors: {
-    primary: '#1a1a2e',
-    secondary: '#c9a84c',
-    secondaryHover: '#a8883a',
-    secondaryLight: '#e8d5a3',
-    background: '#f7f5f0',
-    cardBg: '#ffffff',
-    textPrimary: '#1a1a2e',
-    textSecondary: '#4a4a5a',
-    textMuted: '#8a8a9a',
-    border: '#e8e4de',
-    error: '#9e2a2b',
-    errorBg: '#fdf0ef',
-    errorBorder: '#f5d6d6',
-    success: '#2d6a4f',
-    successBg: '#eef6ef',
-    successBorder: '#d4e6d6',
-    white: '#ffffff',
-    shadow: 'rgba(26, 26, 46, 0.10)',
+    ink: '#15171A',
+    bone: '#FAF8F4',
+    bone2: '#F3EFE6',
+    brass: '#8B7355',
+    brassLight: '#A98F6E',
+    verdigris: '#3D4F47',
+    verdigrisDark: '#2E3F37',
+    line: '#E3DDD0',
+    lineDark: 'rgba(250,248,244,0.14)',
+    gray: '#6B6862',
+    grayLight: 'rgba(250,248,244,0.62)',
+    red: '#9B4A3F',
+    redBg: '#F7ECE9',
+    redLine: '#E8D2CC',
+    success: '#475A43',
+    successBg: '#EEF3EC',
+    white: '#FFFFFF',
+    shadow: 'rgba(21,23,26,0.08)',
+    shadowMed: 'rgba(21,23,26,0.12)',
   },
   typography: {
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    heroTitle: '20px',
-    heroSubtitle: '18px',
-    body: '14px',
-    small: '12px',
-    tiny: '11px',
-  },
-  spacing: {
-    xs: '4px',
-    sm: '8px',
-    md: '16px',
-    lg: '24px',
-    xl: '32px',
-    xxl: '40px',
-  },
-  borderRadius: {
-    sm: '8px',
-    md: '12px',
-    lg: '16px',
-    xl: '20px',
-    full: '9999px',
-  },
-  breakpoints: {
-    mobile: '768px',
-    tablet: '1024px',
-    desktop: '1280px',
+    display: "'Fraunces', serif",
+    body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    mono: "'JetBrains Mono', monospace",
   },
 };
 
-// Utility Functions
-const formatPhoneNumber = (value) => {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
-};
-
-const getRawPhone = (formatted) => formatted.replace(/\D/g, '');
-
-const isValidPhone = (phone) => {
-  const raw = getRawPhone(phone);
-  return raw.length >= 10;
-};
-
-// Custom Hooks
-const useFormState = (initialState) => {
-  const [state, setState] = useState(initialState);
-  
-  const update = useCallback((updates) => {
-    setState(prev => ({ ...prev, ...updates }));
-  }, []);
-  
-  const reset = useCallback(() => {
-    setState(initialState);
-  }, [initialState]);
-  
-  return [state, update, reset];
-};
-
-// Sub-Components
-const Logo = () => (
-  <svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true">
-    <circle cx="17" cy="17" r="15.5" stroke={THEME.colors.secondary} strokeWidth="1.5" />
-    <path d="M17 9V25M9 17H25" stroke={THEME.colors.secondary} strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="17" cy="17" r="3" fill={THEME.colors.secondary} />
+// Logo Component
+const Logo = ({ size = 24, color = THEME.colors.ink }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1.2" />
+    <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1.2" />
+    <circle cx="16" cy="16" r="2.5" fill={color} />
   </svg>
 );
 
+// Spinner
 const Spinner = () => (
-  <span className="spinner" aria-label="Loading" />
+  <span style={{
+    width: '16px',
+    height: '16px',
+    border: '2px solid rgba(250,248,244,0.3)',
+    borderTopColor: THEME.colors.bone,
+    borderRadius: '50%',
+    animation: 'spin 0.65s linear infinite',
+    display: 'inline-block',
+  }} />
 );
 
+// Alert Component
 const AlertMessage = ({ type, text }) => {
   if (!text) return null;
   
-  const styles = {
-    error: {
-      background: THEME.colors.errorBg,
-      color: THEME.colors.error,
-      border: `1px solid ${THEME.colors.errorBorder}`,
-    },
-    success: {
-      background: THEME.colors.successBg,
-      color: THEME.colors.success,
-      border: `1px solid ${THEME.colors.successBorder}`,
-    },
+  const config = {
+    error: { bg: THEME.colors.redBg, color: THEME.colors.red, border: THEME.colors.redLine },
+    success: { bg: THEME.colors.successBg, color: THEME.colors.success, border: '#DCE6D9' },
   };
   
+  const style = config[type] || config.error;
+  
   return (
-    <div 
-      className="alert-message"
-      style={styles[type] || styles.error}
-      role="alert"
-      aria-live="polite"
-    >
+    <div style={{
+      background: style.bg,
+      color: style.color,
+      border: `1px solid ${style.border}`,
+      padding: '0.9rem 1rem',
+      borderRadius: '6px',
+      fontSize: '0.85rem',
+      fontWeight: 500,
+      lineHeight: 1.5,
+      animation: 'slideDown 0.3s cubic-bezier(0.16,1,0.3,1) both',
+      marginBottom: '1.2rem',
+    }} role="alert" aria-live="polite">
       {text}
     </div>
   );
 };
 
-const Footer = () => (
-  <footer className="portal-footer">
-    <p className="footer-text">
-      Need help? Contact your funeral home.
-    </p>
-    <nav className="footer-links" aria-label="Legal and contact links">
-      <a href="/privacy" className="footer-link">Privacy</a>
-      <span className="footer-divider" aria-hidden="true">|</span>
-      <a href="/terms" className="footer-link">Terms</a>
-      <span className="footer-divider" aria-hidden="true">|</span>
-      <a href="/contact" className="footer-link">Contact</a>
-    </nav>
-  </footer>
-);
-
 // Main Component
 export default function PortalLoginPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
-  const [formState, setFormState, resetFormState] = useFormState({
-    loading: false,
-    message: { type: '', text: '' },
-  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const formatPhoneNumber = (value) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+  };
+
+  const getRawPhone = (formatted) => formatted.replace(/\D/g, '');
+  const isValidPhone = (p) => getRawPhone(p).length >= 10;
 
   const handlePhoneChange = useCallback((e) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhone(formatted);
-    // Clear error when user starts typing
-    if (formState.message.text) {
-      setFormState({ message: { type: '', text: '' } });
-    }
-  }, [formState.message.text, setFormState]);
+    setPhone(formatPhoneNumber(e.target.value));
+    if (message.text) setMessage({ type: '', text: '' });
+  }, [message.text]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (!isValidPhone(phone)) {
-      setFormState({
-        message: { 
-          type: 'error', 
-          text: 'Please enter a valid phone number (at least 10 digits).' 
-        },
-      });
+      setMessage({ type: 'error', text: 'Please enter a valid 10-digit phone number.' });
       return;
     }
 
-    setFormState({ loading: true, message: { type: '', text: '' } });
+    setLoading(true);
+    setMessage({ type: '', text: '' });
 
     try {
       const rawPhone = getRawPhone(phone);
       const data = await authApi.portalLogin({ phone: rawPhone });
       
       if (data?.success) {
-        // Store authentication data
         localStorage.setItem('sessionToken', data.sessionToken || data.session_token);
         localStorage.setItem('tenantSlug', data.tenantSlug);
-        localStorage.setItem('deceasedId', data.deceased?.deceased_id);
+        if (data.deceased?.deceased_id) {
+          localStorage.setItem('deceasedId', data.deceased.deceased_id);
+        }
         
-        // Navigate to dashboard
-        navigate('/portal/dashboard');
+        setMessage({ type: 'success', text: 'Link sent! Check your SMS.' });
+        setTimeout(() => navigate('/portal/dashboard'), 2000);
       } else {
-        setFormState({
-          message: { 
-            type: 'error', 
-            text: data?.message || 'Phone number not found. Please try again.' 
-          },
+        setMessage({ 
+          type: 'error', 
+          text: data?.message || 'Phone number not found. Please try again.' 
         });
       }
     } catch (error) {
       console.error('Portal login error:', error);
-      setFormState({
-        message: { 
-          type: 'error', 
-          text: 'Unable to connect to server. Please check your connection and try again.' 
-        },
+      setMessage({ 
+        type: 'error', 
+        text: 'Connection error. Please check and try again.' 
       });
     } finally {
-      setFormState({ loading: false });
+      setLoading(false);
     }
-  }, [phone, setFormState, navigate]);
-
-  const isFormValid = isValidPhone(phone);
-  const isLoading = formState.loading;
+  }, [phone, navigate, message.text]);
 
   return (
-    <div className="portal-login-container">
+    <div style={{
+      minHeight: '100vh',
+      background: THEME.colors.bone,
+      fontFamily: THEME.typography.body,
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
       <style>{`
-        /* ============================================
-           GLOBAL STYLES
-           ============================================ */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
         
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: ${THEME.colors.bone}; }
         
-        .portal-login-container {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: ${THEME.colors.background};
-          font-family: ${THEME.typography.fontFamily};
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-        
-        /* ============================================
-           HERO IMAGE SECTION
-           ============================================ */
-        .hero-section {
-          position: relative;
-          width: 100%;
-          height: 45vh;
-          min-height: 280px;
-          max-height: 420px;
-          overflow: hidden;
-          background: linear-gradient(135deg, ${THEME.colors.primary} 0%, #2a2a4e 100%);
-        }
-        
-        .hero-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center 30%;
-          opacity: 0.9;
-        }
-        
-        .hero-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(26, 26, 46, 0.3) 0%,
-            rgba(26, 26, 46, 0.1) 50%,
-            rgba(26, 26, 46, 0.4) 100%
-          );
-        }
-        
-        /* ============================================
-           CARD CONTAINER
-           ============================================ */
-        .card-wrapper {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: ${THEME.spacing.lg} ${THEME.spacing.md} ${THEME.spacing.xxl};
-          margin-top: -40px;
-          position: relative;
-          z-index: 1;
-        }
-        
-        .login-card {
-          width: 100%;
-          max-width: 420px;
-          background: ${THEME.colors.cardBg};
-          border-radius: ${THEME.borderRadius.xl};
-          padding: ${THEME.spacing.xxl} ${THEME.spacing.xl};
-          box-shadow: 
-            0 4px 6px ${THEME.colors.shadow},
-            0 10px 40px ${THEME.colors.shadow};
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        /* ============================================
-           HEADER SECTION
-           ============================================ */
-        .card-header {
-          text-align: center;
-          margin-bottom: ${THEME.spacing.xl};
-        }
-        
-        .logo-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: ${THEME.spacing.sm};
-          margin-bottom: ${THEME.spacing.md};
-        }
-        
-        .logo-text {
-          font-size: ${THEME.typography.heroTitle};
-          font-weight: 700;
-          color: ${THEME.colors.primary};
-          letter-spacing: -0.5px;
-        }
-        
-        .card-title {
-          font-size: ${THEME.typography.heroSubtitle};
-          font-weight: 600;
-          color: ${THEME.colors.textPrimary};
-          margin: ${THEME.spacing.xs} 0 ${THEME.spacing.sm};
-        }
-        
-        .card-subtitle {
-          font-size: ${THEME.typography.body};
-          color: ${THEME.colors.textSecondary};
-          line-height: 1.5;
-          max-width: 280px;
-          margin: 0 auto;
-        }
-        
-        /* ============================================
-           FORM ELEMENTS
-           ============================================ */
-        .form-group {
-          margin-bottom: ${THEME.spacing.lg};
-        }
-        
-        .form-label {
-          display: block;
-          font-size: ${THEME.typography.small};
-          font-weight: 600;
-          color: ${THEME.colors.textPrimary};
-          margin-bottom: ${THEME.spacing.sm};
-          letter-spacing: 0.3px;
-        }
-        
-        .form-input {
-          width: 100%;
-          padding: ${THEME.spacing.md} ${THEME.spacing.md};
-          font-size: ${THEME.typography.body};
-          font-family: ${THEME.typography.fontFamily};
-          border: 2px solid ${THEME.colors.border};
-          border-radius: ${THEME.borderRadius.md};
-          background: ${THEME.colors.background};
-          color: ${THEME.colors.textPrimary};
-          transition: all 0.2s ease;
-          outline: none;
-        }
-        
-        .form-input:focus {
-          border-color: ${THEME.colors.secondary};
-          background: ${THEME.colors.white};
-          box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.15);
-        }
-        
-        .form-input:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          background: ${THEME.colors.background};
-        }
-        
-        .form-input::placeholder {
-          color: ${THEME.colors.textMuted};
-          opacity: 0.7;
-        }
-        
-        .form-hint {
-          display: block;
-          font-size: ${THEME.typography.tiny};
-          color: ${THEME.colors.textMuted};
-          margin-top: ${THEME.spacing.sm};
-          line-height: 1.4;
-        }
-        
-        /* ============================================
-           ALERT MESSAGES
-           ============================================ */
-        .alert-message {
-          padding: ${THEME.spacing.md};
-          border-radius: ${THEME.borderRadius.md};
-          font-size: ${THEME.typography.small};
-          font-weight: 500;
-          line-height: 1.4;
-          animation: fadeIn 0.2s ease;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
         }
         
-        /* ============================================
-           BUTTONS
-           ============================================ */
-        .submit-button {
-          width: 100%;
-          padding: ${THEME.spacing.md} ${THEME.spacing.lg};
-          font-size: ${THEME.typography.body};
-          font-weight: 600;
-          font-family: ${THEME.typography.fontFamily};
-          border: none;
-          border-radius: ${THEME.borderRadius.md};
-          cursor: pointer;
-          background: ${THEME.colors.secondary};
-          color: ${THEME.colors.white};
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: ${THEME.spacing.sm};
-          min-height: 52px;
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         
-        .submit-button:hover:not(:disabled) {
-          background: ${THEME.colors.secondaryHover};
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
-        }
-        
-        .submit-button:active:not(:disabled) {
-          transform: translateY(0);
-        }
-        
-        .submit-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        
-        .button-content {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: ${THEME.spacing.sm};
-        }
-        
-        /* ============================================
-           SPINNER
-           ============================================ */
-        .spinner {
-          display: inline-block;
-          width: 18px;
-          height: 18px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: ${THEME.colors.white};
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
         
-        /* ============================================
-           FOOTER
-           ============================================ */
-        .portal-footer {
-          text-align: center;
-          padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
-          border-top: 1px solid ${THEME.colors.border};
-          margin-top: ${THEME.spacing.lg};
+        @keyframes shimmer {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
         
-        .footer-text {
-          font-size: ${THEME.typography.small};
-          color: ${THEME.colors.textMuted};
-          margin: 0 0 ${THEME.spacing.sm};
-        }
-        
-        .footer-links {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: ${THEME.spacing.sm};
-          flex-wrap: wrap;
-        }
-        
-        .footer-link {
-          font-size: ${THEME.typography.small};
-          color: ${THEME.colors.textMuted};
-          text-decoration: none;
-          font-weight: 500;
-          transition: color 0.2s ease;
-        }
-        
-        .footer-link:hover {
-          color: ${THEME.colors.textSecondary};
-          text-decoration: underline;
-        }
-        
-        .footer-divider {
-          color: ${THEME.colors.border};
-          user-select: none;
-        }
-        
-        .security-badge {
-          margin-top: ${THEME.spacing.md};
-          font-size: ${THEME.typography.tiny};
-          color: ${THEME.colors.textMuted};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: ${THEME.spacing.xs};
-        }
-        
-        /* ============================================
-           RESPONSIVE DESIGN
-           ============================================ */
-        @media (min-width: ${THEME.breakpoints.mobile}) {
-          .hero-section {
-            height: 50vh;
-            max-height: 500px;
-          }
-          
-          .login-card {
-            padding: ${THEME.spacing.xxl} ${THEME.spacing.xl};
-          }
-          
-          .card-wrapper {
-            padding: ${THEME.spacing.xl} ${THEME.spacing.lg} ${THEME.spacing.xxl};
-          }
-          
-          .portal-footer {
-            padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
-          }
-        }
-        
-        @media (min-width: ${THEME.breakpoints.tablet}) {
-          .login-card {
-            max-width: 440px;
-          }
-          
-          .portal-footer {
-            padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
-          }
-        }
-        
-        @media (min-width: ${THEME.breakpoints.desktop}) {
-          .portal-login-container {
-            max-width: 1440px;
-            margin: 0 auto;
-          }
-          
-          .portal-footer {
-            padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
-          }
-        }
-        
-        /* ============================================
-           ACCESSIBILITY
-           ============================================ */
-        @media (prefers-reduced-motion: reduce) {
-          .login-card {
-            animation: none;
-          }
-          
-          .spinner {
-            animation: none;
-          }
-          
-          .submit-button {
-            transition: none;
-          }
-        }
-        
-        /* Focus visible for keyboard navigation */
-        .form-input:focus-visible,
-        .submit-button:focus-visible,
-        .footer-link:focus-visible {
-          outline: 2px solid ${THEME.colors.secondary};
+        input:focus-visible, button:focus-visible {
+          outline: 2px solid ${THEME.colors.brass};
           outline-offset: 2px;
         }
       `}</style>
 
-      {/* Hero Image Section */}
-      <section className="hero-section" aria-label="Welcome banner">
-        <img
-          src="/familyportal.png"
-          alt="Family Portal"
-          className="hero-image"
-          onError={(e) => {
-            e.target.style.display = 'none';
-          }}
-        />
-        <div className="hero-overlay" aria-hidden="true" />
-      </section>
+      {/* Navigation Bar */}
+      <nav style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1.2rem 2rem',
+        background: THEME.colors.white,
+        borderBottom: `1px solid ${THEME.colors.line}`,
+        animation: mounted ? 'fadeIn 0.5s ease 0ms both' : 'none',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+          <Logo size={22} color={THEME.colors.brass} />
+          <span style={{
+            fontFamily: THEME.typography.display,
+            fontSize: '1.1rem',
+            fontWeight: 500,
+            color: THEME.colors.ink,
+            letterSpacing: '-0.5px',
+          }}>Rest Point</span>
+        </div>
+        <span style={{ fontSize: '0.75rem', fontFamily: THEME.typography.mono, letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.brass }}>
+          Family Portal
+        </span>
+      </nav>
 
-      {/* Login Card */}
-      <main className="card-wrapper">
-        <div className="login-card">
-          {/* Header */}
-          <header className="card-header">
-            <div className="logo-container">
-              <Logo />
-              <span className="logo-text">Rest Point</span>
-            </div>
-            <h1 className="card-title">Family Portal</h1>
-            <p className="card-subtitle">
-              Access your family's arrangements and stay connected
-            </p>
-          </header>
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} noValidate>
-            <div className="form-group">
-              <label htmlFor="phone" className="form-label">
-                Phone Number
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder="0712 345 678"
-                disabled={isLoading}
-                className="form-input"
-                autoComplete="tel"
-                autoFocus
-                aria-describedby="phone-hint"
-                aria-invalid={!isFormValid && phone.length > 0}
-              />
-              <span id="phone-hint" className="form-hint">
-                Enter the phone number registered with the funeral home
-              </span>
-            </div>
-
-            <AlertMessage 
-              type={formState.message.type} 
-              text={formState.message.text} 
-            />
-
-            <button
-              type="submit"
-              disabled={isLoading || !isFormValid}
-              className="submit-button"
-              aria-busy={isLoading}
-            >
-              <span className="button-content">
-                {isLoading && <Spinner />}
-                <span>{isLoading ? 'Sending your link...' : 'Send me my private link'}</span>
-              </span>
-            </button>
-          </form>
-
-          {/* Footer */}
-          <Footer />
+      {/* Main Content */}
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '460px',
+          animation: mounted ? 'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) 100ms both' : 'none',
+        }}>
           
-          {/* Security Badge */}
-          <div className="security-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <span>Secured by Rest Point</span>
+          {/* Card */}
+          <div style={{
+            background: THEME.colors.white,
+            borderRadius: '12px',
+            border: `1px solid ${THEME.colors.line}`,
+            padding: '2.5rem 2rem',
+            boxShadow: `0 20px 60px -16px ${THEME.colors.shadow}, 0 4px 12px ${THEME.colors.shadowMed}`,
+          }}>
+            
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '2.2rem' }}>
+              <div style={{
+                fontFamily: THEME.typography.display,
+                fontSize: '2rem',
+                fontWeight: 500,
+                color: THEME.colors.ink,
+                marginBottom: '0.4rem',
+                lineHeight: 1.1,
+              }}>
+                Your Arrangement
+              </div>
+              <p style={{
+                fontSize: '0.95rem',
+                color: THEME.colors.gray,
+                lineHeight: 1.6,
+                maxWidth: '320px',
+                margin: '0 auto',
+              }}>
+                Enter your phone number to access your family's care details, documents, and payment information.
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+              <AlertMessage type={message.type} text={message.text} />
+
+              {/* Phone Input */}
+              <div style={{ marginBottom: '1.8rem' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.8rem',
+                  fontFamily: THEME.typography.mono,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: THEME.colors.brass,
+                  marginBottom: '0.6rem',
+                  fontWeight: 600,
+                }}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  placeholder="0712 345 678"
+                  disabled={loading}
+                  autoFocus
+                  autoComplete="tel"
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.1rem',
+                    fontSize: '1rem',
+                    fontFamily: THEME.typography.body,
+                    border: `2px solid ${THEME.colors.line}`,
+                    borderRadius: '8px',
+                    background: THEME.colors.bone2,
+                    color: THEME.colors.ink,
+                    transition: 'all 0.2s ease',
+                    outline: 'none',
+                    fontWeight: '500',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = THEME.colors.brass;
+                    e.target.style.background = THEME.colors.white;
+                    e.target.style.boxShadow = `0 0 0 4px rgba(139,115,85,0.12)`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = THEME.colors.line;
+                    e.target.style.background = THEME.colors.bone2;
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+                <span style={{
+                  display: 'block',
+                  fontSize: '0.8rem',
+                  color: THEME.colors.gray,
+                  marginTop: '0.5rem',
+                  lineHeight: 1.4,
+                }}>
+                  The number you registered with the funeral home
+                </span>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading || !isValidPhone(phone)}
+                style={{
+                  width: '100%',
+                  padding: '1rem 1.2rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  fontFamily: THEME.typography.body,
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: loading || !isValidPhone(phone) 
+                    ? THEME.colors.grayLight 
+                    : THEME.colors.verdigris,
+                  color: THEME.colors.bone,
+                  cursor: loading || !isValidPhone(phone) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.7rem',
+                  minHeight: '52px',
+                  opacity: loading || !isValidPhone(phone) ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && isValidPhone(phone)) {
+                    e.target.style.background = THEME.colors.verdigrisDark;
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = `0 8px 20px rgba(61,79,71,0.25)`;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading && isValidPhone(phone)) {
+                    e.target.style.background = THEME.colors.verdigris;
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }
+                }}
+              >
+                {loading && <Spinner />}
+                <span>{loading ? 'Sending your link...' : 'Send me my link'}</span>
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              margin: '1.8rem 0',
+            }}>
+              <div style={{ flex: 1, height: '1px', background: THEME.colors.line }} />
+              <span style={{ fontSize: '0.8rem', color: THEME.colors.gray }}>or</span>
+              <div style={{ flex: 1, height: '1px', background: THEME.colors.line }} />
+            </div>
+
+            {/* Alternative Contact */}
+            <div style={{
+              padding: '1.2rem 1.4rem',
+              background: THEME.colors.bone2,
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              color: THEME.colors.gray,
+              lineHeight: 1.6,
+              textAlign: 'center',
+            }}>
+              Need help? <a href="/contact" style={{ color: THEME.colors.brass, fontWeight: 600, textDecoration: 'none' }}>Contact your funeral home</a> directly.
+            </div>
+
+            {/* Security Info */}
+            <div style={{
+              marginTop: '1.8rem',
+              paddingTop: '1.8rem',
+              borderTop: `1px solid ${THEME.colors.line}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              fontSize: '0.75rem',
+              color: THEME.colors.gray,
+              fontFamily: THEME.typography.mono,
+              letterSpacing: '0.05em',
+              textAlign: 'center',
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <span>Secured & Encrypted • Your data is private</span>
+            </div>
+          </div>
+
+          {/* Trust Badges */}
+          <div style={{
+            display: 'flex',
+            gap: '0.8rem',
+            justifyContent: 'center',
+            marginTop: '2rem',
+            flexWrap: 'wrap',
+            animation: mounted ? 'fadeIn 0.6s ease 300ms both' : 'none',
+          }}>
+            {[
+              { icon: '🔒', label: 'Encrypted' },
+              { icon: '✓', label: 'Verified' },
+              { icon: '🛡️', label: 'Secure' },
+            ].map((badge) => (
+              <div key={badge.label} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.5rem 0.9rem',
+                background: THEME.colors.white,
+                border: `1px solid ${THEME.colors.line}`,
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                color: THEME.colors.gray,
+                fontWeight: 500,
+              }}>
+                <span>{badge.icon}</span>
+                <span>{badge.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer style={{
+        borderTop: `1px solid ${THEME.colors.line}`,
+        padding: '1.5rem 2rem',
+        textAlign: 'center',
+        background: THEME.colors.white,
+        animation: mounted ? 'fadeIn 0.5s ease 400ms both' : 'none',
+      }}>
+        <nav style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          {[
+            { label: 'Privacy', href: '/privacy' },
+            { label: 'Terms', href: '/terms' },
+            { label: 'Support', href: '/support' },
+          ].map((link) => (
+            <a 
+              key={link.label}
+              href={link.href} 
+              style={{
+                fontSize: '0.8rem',
+                color: THEME.colors.gray,
+                textDecoration: 'none',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.target.style.color = THEME.colors.brass}
+              onMouseLeave={(e) => e.target.style.color = THEME.colors.gray}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+        <p style={{ fontSize: '0.75rem', color: THEME.colors.gray, margin: 0 }}>
+          © 2026 Rest Point. All rights reserved. Built for East African families.
+        </p>
+      </footer>
     </div>
   );
 }

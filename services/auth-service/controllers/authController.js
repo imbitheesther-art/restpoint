@@ -302,6 +302,94 @@ exports.register = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route POST /users
+ * @desc Create additional user in tenant database
+ * @body { email, password, full_name, phone, role }
+ * @access Private (requires authentication)
+ */
+exports.createUser = asyncHandler(async (req, res) => {
+  const { email, password, full_name, phone, role } = req.body;
+  
+  // Get tenant info from authenticated user
+  const tenantDbName = req.user.dbName;
+  const tenantId = req.user.tenantId;
+  
+  if (!tenantDbName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Tenant database not found in token'
+    });
+  }
+  
+  // Validation
+  if (!email || !password || !full_name) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email, password, and full name are required'
+    });
+  }
+  
+  if (password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 6 characters'
+    });
+  }
+  
+  try {
+    // Check if user already exists
+    const existingUser = await findUserInTenantDB(tenantDbName, email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+    
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+    
+    // Insert new user
+    const tenantConn = await getTenantConnection(tenantDbName);
+    const [result] = await tenantConn.execute(
+      `INSERT INTO users (email, password_hash, full_name, phone, role, is_active, is_verified) 
+       VALUES (?, ?, ?, ?, ?, 1, 1)`,
+      [email.toLowerCase(), password_hash, full_name, phone || null, role || 'staff']
+    );
+    
+    await tenantConn.end();
+    
+    // Get created user
+    const newUser = await findUserInTenantDB(tenantDbName, email);
+    
+    console.log(`✅ User created: ${email} in tenant ${tenantDbName}`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      user: {
+        userId: newUser.user_id,
+        email: newUser.email,
+        fullName: newUser.full_name,
+        phone: newUser.phone,
+        role: newUser.role,
+        isActive: newUser.is_active === 1,
+        isVerified: newUser.is_verified === 1
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error creating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create user',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
  * @route POST /refresh
  * @desc Refresh access token
  */

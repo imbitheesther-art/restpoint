@@ -86,28 +86,28 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      # Service URLs - use service names (no _1 suffix) since all on same network
-      AUTH_SERVICE_URL: http://auth-service:5000
-      TENANT_SERVICE_URL: http://tenant-service:5000
-      DECEASED_SERVICE_URL: http://deceased-service:5000
-      MARKETPLACE_SERVICE_URL: http://marketplace-service:5000
-      MPESA_SERVICE_URL: http://mpesa-service:5000
-      PORTAL_SERVICE_URL: http://portal-service:5000
-      INVOICES_SERVICE_URL: http://invoice-service:5000
-      COFFIN_SERVICE_URL: http://coffin-service:5000
-      VISITORS_SERVICE_URL: http://visitors-service:5000
-      NOTIFICATION_SERVICE_URL: http://notification-service:5000
-      DOCUMENTS_SERVICE_URL: http://documents-service:5000
-      ANALYTICS_SERVICE_URL: http://analytics-service:5000
-      BODYCHECKOUT_SERVICE_URL: http://bodycheckout-service:5000
-      EDOCUMENTS_SERVICE_URL: http://edocuments-service:5000
-      CALENDAR_SERVICE_URL: http://calender-service:5000
-      CHEMICALS_SERVICE_URL: http://chemical-service:5000
-      BILLING_SERVICE_URL: http://billing-service:5000
-      SOCKETIO_SERVICE_URL: http://socketio-service:5000
-      EXTRA_SERVICES_URL: http://extra-services:5000
-      CALL_SERVICE_URL: http://call-service:5000
-      QRCODE_SERVICE_URL: http://qrcode-service:5000
+      # Service URLs - FIX: use restpoint_ prefix to match container names
+      AUTH_SERVICE_URL: http://restpoint_auth_service:5000
+      TENANT_SERVICE_URL: http://restpoint_tenant_service:5000
+      DECEASED_SERVICE_URL: http://restpoint_deceased_service:5000
+      MARKETPLACE_SERVICE_URL: http://restpoint_marketplace_service:5000
+      MPESA_SERVICE_URL: http://restpoint_mpesa_service:5000
+      PORTAL_SERVICE_URL: http://restpoint_portal_service:5000
+      INVOICES_SERVICE_URL: http://restpoint_invoice_service:5000
+      COFFIN_SERVICE_URL: http://restpoint_coffin_service:5000
+      VISITORS_SERVICE_URL: http://restpoint_visitors_service:5000
+      NOTIFICATION_SERVICE_URL: http://restpoint_notification_service:5000
+      DOCUMENTS_SERVICE_URL: http://restpoint_documents_service:5000
+      ANALYTICS_SERVICE_URL: http://restpoint_analytics_service:5000
+      BODYCHECKOUT_SERVICE_URL: http://restpoint_bodycheckout_service:5000
+      EDOCUMENTS_SERVICE_URL: http://restpoint_edocuments_service:5000
+      CALENDAR_SERVICE_URL: http://restpoint_calender_service:5000
+      CHEMICALS_SERVICE_URL: http://restpoint_chemical_service:5000
+      BILLING_SERVICE_URL: http://restpoint_billing_service:5000
+      SOCKETIO_SERVICE_URL: http://restpoint_socketio_service:5000
+      EXTRA_SERVICES_URL: http://restpoint_extra_services:5000
+      CALL_SERVICE_URL: http://restpoint_call_service:5000
+      QRCODE_SERVICE_URL: http://restpoint_qrcode_service:5000
     depends_on:
       mariadb:
         condition: service_healthy
@@ -143,9 +143,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: auth-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
@@ -180,11 +180,11 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: tenant-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: restpoint_rabbitmq
       RABBITMQ_PORT: 5672
     depends_on:
       mariadb:
@@ -217,9 +217,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: deceased-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - deceased_service_data:/usr/src/app/data
@@ -248,9 +248,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: marketplace-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - marketplace_service_data:/usr/src/app/data
@@ -278,9 +278,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: invoice-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - invoice_service_data:/usr/src/app/data
@@ -309,9 +309,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: coffin-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - coffin_service_data:/usr/src/app/data
@@ -339,9 +339,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: documents-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - documents_service_data:/usr/src/app/data
@@ -370,9 +370,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: edocuments-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - edocuments_service_data:/usr/src/app/data
@@ -401,9 +401,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: analytics-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - analytics_service_data:/usr/src/app/data
@@ -431,9 +431,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: calender-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - calender_service_data:/usr/src/app/data
@@ -461,7 +461,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: mpesa-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
     volumes:
       - mpesa_service_data:/usr/src/app/data
@@ -489,11 +489,11 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: notification-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: restpoint_rabbitmq
       RABBITMQ_PORT: 5672
     volumes:
       - notification_service_data:/usr/src/app/data
@@ -521,7 +521,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: qrcode-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
     volumes:
       - qrcode_service_data:/usr/src/app/data
@@ -550,7 +550,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: socketio-service
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
@@ -579,9 +579,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: visitors-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - visitors_service_data:/usr/src/app/data
@@ -609,9 +609,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: bodycheckout-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - bodycheckout_service_data:/usr/src/app/data
@@ -639,7 +639,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: extra-services
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
     volumes:
       - extra_services_data:/usr/src/app/data
@@ -667,7 +667,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: call-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
     volumes:
       - call_service_data:/usr/src/app/data
@@ -695,7 +695,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: portal-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
     volumes:
       - portal_service_data:/usr/src/app/data
@@ -723,7 +723,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: chemical-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
     volumes:
       - chemical_service_data:/usr/src/app/data
@@ -751,9 +751,9 @@ services:
       NODE_ENV: production
       PORT: 5000
       SERVICE_NAME: billing-service
-      DB_HOST: mariadb
+      DB_HOST: restpoint_mariadb
       DB_PORT: 3306
-      REDIS_HOST: redis
+      REDIS_HOST: restpoint_redis
       REDIS_PORT: 6379
     volumes:
       - billing_service_data:/usr/src/app/data

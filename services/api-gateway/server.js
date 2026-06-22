@@ -46,34 +46,34 @@ const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
 // =============================================================================
 // SERVICE URLS â€” All services use port 5000 internally in Docker network
-// FIX: 'calender-service' typo corrected to 'calendar-service'.
+// FIX: All service URLs use restpoint_ prefix to match docker container names
 // NOTE: if your actual docker-compose service name differs from any of these
 // defaults, set the matching *_SERVICE_URL env var to override it â€” do not
 // rely on the fallback strings being correct for your deployment.
 // =============================================================================
 const SERVICES = {
-  auth:         (process.env.AUTH_SERVICE_URL         || 'http://auth-service:5000').trim(),
-  users:        (process.env.USERS_SERVICE_URL        || 'http://auth-service:5000').trim(),
-  tenant:       (process.env.TENANT_SERVICE_URL       || 'http://tenant-service:5000').trim(),
-  deceased:     (process.env.DECEASED_SERVICE_URL     || 'http://deceased-service:5000').trim(),
-  marketplace:  (process.env.MARKETPLACE_SERVICE_URL  || 'http://marketplace-service:5000').trim(),
-  mpesa:        (process.env.MPESA_SERVICE_URL        || 'http://mpesa-service:5000').trim(),
-  portal:       (process.env.PORTAL_SERVICE_URL       || 'http://portal-service:5000').trim(),
-  invoices:     (process.env.INVOICES_SERVICE_URL     || 'http://invoice-service:5000').trim(),
-  coffin:       (process.env.COFFIN_SERVICE_URL       || 'http://coffin-service:5000').trim(),
-  visitors:     (process.env.VISITORS_SERVICE_URL     || 'http://visitors-service:5000').trim(),
-  notification: (process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:5000').trim(),
-  documents:    (process.env.DOCUMENTS_SERVICE_URL    || 'http://documents-service:5000').trim(),
-  analytics:    (process.env.ANALYTICS_SERVICE_URL    || 'http://analytics-service:5000').trim(),
-  bodycheckout: (process.env.BODYCHECKOUT_SERVICE_URL || 'http://bodycheckout-service:5000').trim(),
-  edocuments:   (process.env.EDOCUMENTS_SERVICE_URL   || 'http://edocuments-service:5000').trim(),
-  calendar:     (process.env.CALENDAR_SERVICE_URL     || 'http://calendar-service:5000').trim(), // FIXED typo
-  chemicals:    (process.env.CHEMICAL_SERVICE_URL     || 'http://chemical-service:5000').trim(),
-  billing:      (process.env.BILLING_SERVICE_URL      || 'http://billing-service:5000').trim(),
-  socketio:     (process.env.SOCKETIO_SERVICE_URL     || 'http://socketio-service:5000').trim(),
-  extra:        (process.env.EXTRA_SERVICES_URL       || 'http://extra-services:5000').trim(),
-  call:         (process.env.CALL_SERVICE_URL         || 'http://call-service:5000').trim(),
-  qrcode:       (process.env.QRCODE_SERVICE_URL       || 'http://qrcode-service:5000').trim(),
+  auth:         (process.env.AUTH_SERVICE_URL         || 'http://restpoint_auth_service:5000').trim(),
+  users:        (process.env.USERS_SERVICE_URL        || 'http://restpoint_auth_service:5000').trim(),
+  tenant:       (process.env.TENANT_SERVICE_URL       || 'http://restpoint_tenant_service:5000').trim(),
+  deceased:     (process.env.DECEASED_SERVICE_URL     || 'http://restpoint_deceased_service:5000').trim(),
+  marketplace:  (process.env.MARKETPLACE_SERVICE_URL  || 'http://restpoint_marketplace_service:5000').trim(),
+  mpesa:        (process.env.MPESA_SERVICE_URL        || 'http://restpoint_mpesa_service:5000').trim(),
+  portal:       (process.env.PORTAL_SERVICE_URL       || 'http://restpoint_portal_service:5000').trim(),
+  invoices:     (process.env.INVOICES_SERVICE_URL     || 'http://restpoint_invoice_service:5000').trim(),
+  coffin:       (process.env.COFFIN_SERVICE_URL       || 'http://restpoint_coffin_service:5000').trim(),
+  visitors:     (process.env.VISITORS_SERVICE_URL     || 'http://restpoint_visitors_service:5000').trim(),
+  notification: (process.env.NOTIFICATION_SERVICE_URL || 'http://restpoint_notification_service:5000').trim(),
+  documents:    (process.env.DOCUMENTS_SERVICE_URL    || 'http://restpoint_documents_service:5000').trim(),
+  analytics:    (process.env.ANALYTICS_SERVICE_URL    || 'http://restpoint_analytics_service:5000').trim(),
+  bodycheckout: (process.env.BODYCHECKOUT_SERVICE_URL || 'http://restpoint_bodycheckout_service:5000').trim(),
+  edocuments:   (process.env.EDOCUMENTS_SERVICE_URL   || 'http://restpoint_edocuments_service:5000').trim(),
+  calendar:     (process.env.CALENDAR_SERVICE_URL     || 'http://restpoint_calender_service:5000').trim(),
+  chemicals:    (process.env.CHEMICAL_SERVICE_URL     || 'http://restpoint_chemical_service:5000').trim(),
+  billing:      (process.env.BILLING_SERVICE_URL      || 'http://restpoint_billing_service:5000').trim(),
+  socketio:     (process.env.SOCKETIO_SERVICE_URL     || 'http://restpoint_socketio_service:5000').trim(),
+  extra:        (process.env.EXTRA_SERVICES_URL       || 'http://restpoint_extra_services:5000').trim(),
+  call:         (process.env.CALL_SERVICE_URL         || 'http://restpoint_call_service:5000').trim(),
+  qrcode:       (process.env.QRCODE_SERVICE_URL       || 'http://restpoint_qrcode_service:5000').trim(),
 };
 
 Logger.info('Service URLs:');

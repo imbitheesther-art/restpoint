@@ -9,10 +9,10 @@ CREATE DATABASE IF NOT EXISTS tenant_tracking CHARACTER SET utf8mb4 COLLATE utf8
 
 -- Create user if not exists
 CREATE USER IF NOT EXISTS 'restpoint_user'@'%' IDENTIFIED BY 'RestPointUser2024';
-GRANT ALL PRIVILEGES ON restpoint_main.* TO 'restpoint_user'@'%';
-GRANT ALL PRIVILEGES ON tenant_tracking.* TO 'restpoint_user'@'%';
-GRANT ALL PRIVILEGES ON 	enant\_%.* TO 'restpoint_user'@'%';
-GRANT ALL PRIVILEGES ON %\_%.* TO 'restpoint_user'@'%';
+
+-- FIX: Grant ALL PRIVILEGES on ALL databases with GRANT OPTION
+-- This is critical for tenant onboarding which creates new databases dynamically
+GRANT ALL PRIVILEGES ON *.* TO 'restpoint_user'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 -- Create tenant_tracking tables
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 -- Insert default admin user (password: admin123)
 INSERT IGNORE INTO users (email, password_hash, full_name, phone, role, is_active, is_verified) 
-VALUES ('admin@example.com', '\\\', 'System Admin', '+254700000000', 'admin', 1, 1);
+VALUES ('admin@example.com', '$2b$10$8VzvLhU9W3vQOYZl7JLgzuOgVFp.TBv.80cCpjklKZ5pLkK.LNnXW', 'System Admin', '+254700000000', 'admin', 1, 1);
 
 -- Insert default mortuary settings
 INSERT IGNORE INTO mortuary_settings (setting_key, setting_value, description) VALUES

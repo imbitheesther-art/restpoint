@@ -14,7 +14,27 @@ import { Request, Response } from 'express';
 export class OnboardingController {
   async createOrganization(req: Request, res: Response): Promise<void> {
     try {
-      const { tenant_name, email, password, full_name, phone, location, country, branches } = req.body;
+      const { 
+        tenant_name, 
+        tenant_slug, 
+        email, 
+        password, 
+        full_name, 
+        phone, 
+        location, 
+        country,
+        termsAccepted,
+        branches 
+      } = req.body;
+
+      // CRITICAL FIX: Validate terms acceptance
+      if (!termsAccepted) {
+        res.status(400).json({ 
+          success: false, 
+          errors: ['You must accept terms and conditions'] 
+        });
+        return;
+      }
 
       if (!tenant_name || !email || !password || !full_name) {
         res.status(400).json({ success: false, message: 'Missing required fields: tenant_name, email, password, full_name' });
@@ -38,7 +58,7 @@ export class OnboardingController {
       });
 
       res.status(201).json({
-        success: true, message: 'Tenant registered successfully',
+        success: true, message: 'Organization created successfully',
         data: { token: result.token, tenant: result.tenant, user: { email, full_name, role: 'admin' } }
       });
     } catch (error: any) {

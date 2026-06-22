@@ -87,16 +87,38 @@ services:
       - NODE_ENV=production
       - PORT=5000
       - TRUST_PROXY=true
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_HOST=restpoint_rabbitmq
       - RABBITMQ_PORT=5672
       - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
       - REFRESH_TOKEN_SECRET=RestPointRefreshTokenSecret2024!ChangeMe
+      - AUTH_SERVICE_URL=http://restpoint_auth_service:5000
+      - USERS_SERVICE_URL=http://restpoint_auth_service:5000
+      - TENANT_SERVICE_URL=http://restpoint_tenant_service:5000
+      - DECEASED_SERVICE_URL=http://restpoint_deceased_service:5000
+      - MARKETPLACE_SERVICE_URL=http://restpoint_marketplace_service:5000
+      - MPESA_SERVICE_URL=http://restpoint_mpesa_service:5000
+      - PORTAL_SERVICE_URL=http://restpoint_portal_service:5000
+      - INVOICES_SERVICE_URL=http://restpoint_invoice_service:5000
+      - COFFIN_SERVICE_URL=http://restpoint_coffin_service:5000
+      - VISITORS_SERVICE_URL=http://restpoint_visitors_service:5000
+      - NOTIFICATION_SERVICE_URL=http://restpoint_notification_service:5000
+      - DOCUMENTS_SERVICE_URL=http://restpoint_documents_service:5000
+      - ANALYTICS_SERVICE_URL=http://restpoint_analytics_service:5000
+      - BODYCHECKOUT_SERVICE_URL=http://restpoint_bodycheckout_service:5000
+      - EDOCUMENTS_SERVICE_URL=http://restpoint_edocuments_service:5000
+      - CALENDAR_SERVICE_URL=http://restpoint_calender_service:5000
+      - CHEMICAL_SERVICE_URL=http://restpoint_chemical_service:5000
+      - BILLING_SERVICE_URL=http://restpoint_billing_service:5000
+      - SOCKETIO_SERVICE_URL=http://restpoint_socketio_service:5000
+      - EXTRA_SERVICES_URL=http://restpoint_extra_services:5000
+      - CALL_SERVICE_URL=http://restpoint_call_service:5000
+      - QRCODE_SERVICE_URL=http://restpoint_qrcode_service:5000
     env_file:
       - .env
     networks:
@@ -129,7 +151,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -169,13 +191,13 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_HOST=restpoint_rabbitmq
       - RABBITMQ_PORT=5672
       - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
     env_file:
@@ -211,7 +233,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -248,7 +270,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -284,13 +306,13 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_HOST=restpoint_rabbitmq
       - RABBITMQ_PORT=5672
     env_file:
       - .env
@@ -325,7 +347,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -422,7 +444,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -452,7 +474,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -482,7 +504,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -512,7 +534,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -542,7 +564,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -572,7 +594,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -602,7 +624,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -632,7 +654,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -662,7 +684,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -692,7 +714,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -722,7 +744,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -752,7 +774,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -782,7 +804,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024
@@ -812,7 +834,7 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - DB_HOST=mariadb
+      - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
       - DB_PASSWORD=RestPointUser2024

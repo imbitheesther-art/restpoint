@@ -941,23 +941,20 @@ const VISITORS_SERVICE_MIGRATIONS: Migration[] = [
 // ─── Helper Functions (for main tenant vs branch database migrations) ─────────
 
 /**
- * Returns migrations for the main tenant database (users, settings, branch tracking).
- * The main DB stores users, branch-to-database mapping, and global settings.
- * Uses TENANT_SERVICE_MIGRATIONS as the core tenant tables.
+ * Returns migrations for the main tenant database.
+ * CRITICAL FIX: Returns ALL migrations so that EVERYTHING goes into the tenant's main database.
+ * This ensures complete data isolation - each tenant has their own database with ALL tables.
+ * No data is shared between tenants.
+ * 
+ * Architecture:
+ * - Each tenant gets ONE database (tenant_{slug})
+ * - That database contains ALL tables: users, deceased, coffins, invoices, documents, etc.
+ * - Branches are just logical divisions (tracked in branches table), NOT separate databases
+ * - This ensures 100% data isolation between tenants
  */
 export function getMainTenantMigrations(): Migration[] {
   return [
     ...TENANT_SERVICE_MIGRATIONS,
-  ];
-}
-
-/**
- * Returns migrations for a branch-specific database (deceased, charges, marketplace, etc.).
- * Each branch gets its own isolated database so data never mixes.
- * Uses all non-tenant service migrations.
- */
-export function getBranchMigrations(): Migration[] {
-  return [
     ...DECEASED_SERVICE_MIGRATIONS,
     ...MARKETPLACE_SERVICE_MIGRATIONS,
     ...INVOICE_SERVICE_MIGRATIONS,
@@ -972,6 +969,20 @@ export function getBranchMigrations(): Migration[] {
     ...EDOCUMENTS_SERVICE_MIGRATIONS,
     ...VISITORS_SERVICE_MIGRATIONS,
   ];
+}
+
+/**
+ * Returns migrations for a branch-specific database.
+ * CRITICAL FIX: Branch databases are no longer used.
+ * All data goes into the main tenant database for complete isolation.
+ * This function is kept for backwards compatibility but returns empty array.
+ */
+export function getBranchMigrations(): Migration[] {
+  // CRITICAL FIX: Branch databases are deprecated
+  // All data now goes into the main tenant database
+  // This ensures complete data isolation per tenant
+  console.log(`[MigrationService] ⚠️  Branch databases are deprecated - all data goes to main tenant database`);
+  return [];
 }
 
 /**

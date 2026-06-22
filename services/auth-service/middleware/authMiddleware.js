@@ -1,14 +1,48 @@
 const jwt = require('jsonwebtoken');
+const mysql = require('mysql2/promise');
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET environment variable is required');
-}
+const GLOBAL_JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const GLOBAL_REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || 'supersecretrefreshkey';
 
-const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
-if (!REFRESH_SECRET) {
-  throw new Error('FATAL: REFRESH_TOKEN_SECRET environment variable is required');
-}
+// Get connection to MariaDB server (no database selected)
+const getServerConnection = async () => {
+  const connection = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+  });
+  return connection;
+};
+
+/**
+ * Get tenant-specific JWT secret from database
+ */
+const getTenantJwtSecret = async (tenantId) => {
+  try {
+    const serverConn = await getServerConnection();
+    const [tenants] = await serverConn.query(
+      'SELECT jwt_secret, refresh_secret FROM tenant_tracking.tenants WHERE tenant_id = ?',
+      [tenantId]
+    );
+    await serverConn.end();
+    
+    if (tenants.length > 0 && tenants[0].jwt_secret) {
+      return {
+        jwtSecret: tenants[0].jwt_secret,
+        refreshSecret: tenants[0].refresh_secret || tenants[0].jwt_secret
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching tenant JWT secret:', error.message);
+  }
+  
+  // Fallback to global secret if tenant-specific not found
+  return {
+    jwtSecret: GLOBAL_JWT_SECRET,
+    refreshSecret: GLOBAL_REFRESH_SECRET
+  };
+};
 
 const protect = async (req, res, next) => {
   let token;
@@ -27,10 +61,33 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    // Step 1: Decode token to get tenantId (using global secret for initial decode)
+    const decoded = jwt.decode(token);
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+    
+    // Step 2: Get tenant-specific JWT secret
+    const { jwtSecret } = await getTenantJwtSecret(decoded.tenantId);
+    
+    // Step 3: Verify token with tenant-specific secret
+    const verified = jwt.verify(token, jwtSecret);
+    
+    // Step 4: Attach user info to request (including tenant info)
+    req.user = {
+      ...verified,
+      // Ensure dbName is available for user creation
+      dbName: decoded.dbName,
+      tenantId: decoded.tenantId,
+      tenantSlug: decoded.tenantSlug
+    };
+    
     next();
   } catch (error) {
+    console.error('Auth middleware error:', error.message);
     return res.status(401).json({
       success: false,
       message: 'Not authorized, token failed'
