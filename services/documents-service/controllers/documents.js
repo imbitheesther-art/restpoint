@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { safeQuery } = require('../../configurations/sqlConfig/db');
+const { lookupTenantDatabase, safeTenantQuery } = require('../../shared/dbConfig');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 
 /**
@@ -47,13 +47,19 @@ function getTenantSlug(req) {
 
 /**
  * Upload a document for a deceased record
- * Multi-tenant aware: files are stored in tenant-specific folders
+ * Multi-tenant aware: files are stored in tenant-specific folders, DB records in tenant DB
  */
 const uploadDocument = async (req, res) => {
   try {
     // Get tenant slug for multi-tenancy isolation
     const tenantSlug = getTenantSlug(req);
     
+    // Resolve tenant database
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ message: 'Tenant database not found' });
+    }
+
     // FIX: Use deceased_idd instead of deceasedId to match your database
     const { deceased_idd } = req.params;
     const { type } = req.body;
@@ -67,8 +73,9 @@ const uploadDocument = async (req, res) => {
       return res.status(400).json({ message: 'Document type is required' });
     }
 
-    // Check if deceased exists
-    const deceasedCheck = await safeQuery(
+    // Check if deceased exists in tenant database
+    const deceasedCheck = await safeTenantQuery(
+      dbName,
       'SELECT id FROM deceased WHERE deceased_idd = ?',
       [deceased_idd],
     );
@@ -108,7 +115,8 @@ const uploadDocument = async (req, res) => {
 
     const relativePath = normalizePath(finalPath);
 
-    const result = await safeQuery(
+    const result = await safeTenantQuery(
+      dbName,
       `INSERT INTO documents 
         (deceased_id, document_type, file_name, file_path, mime_type, uploaded_at, created_at, tenant_slug) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -150,8 +158,15 @@ const getDocuments = async (req, res) => {
     const tenantSlug = getTenantSlug(req);
     const { deceased_idd } = req.params;
 
+    // Resolve tenant database
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ message: 'Tenant database not found' });
+    }
+
     // Filter by both deceased_id and tenant_slug for multi-tenant isolation
-    const documents = await safeQuery(
+    const documents = await safeTenantQuery(
+      dbName,
       `SELECT 
         id,
         document_type,
@@ -181,17 +196,25 @@ const getDocuments = async (req, res) => {
 };
 
 /**
- * Download a document
+ * Download a document (tenant-isolated)
  */
 const downloadDocument = async (req, res) => {
   try {
+    const tenantSlug = getTenantSlug(req);
     const { documentId } = req.params;
 
-    const document = await safeQuery(
-      `SELECT file_path, file_name, mime_type 
+    // Resolve tenant database
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ message: 'Tenant database not found' });
+    }
+
+    const document = await safeTenantQuery(
+      dbName,
+      `SELECT file_path, file_name, mime_type, tenant_slug 
        FROM documents 
-       WHERE id = ?`,
-      [documentId],
+       WHERE id = ? AND (tenant_slug = ? OR tenant_slug IS NULL)`,
+      [documentId, tenantSlug],
     );
 
     if (document.length === 0) {
@@ -223,15 +246,23 @@ const downloadDocument = async (req, res) => {
 };
 
 /**
- * Delete a document
+ * Delete a document (tenant-isolated)
  */
 const deleteDocument = async (req, res) => {
   try {
+    const tenantSlug = getTenantSlug(req);
     const { documentId } = req.params;
 
-    const document = await safeQuery(
-      `SELECT file_path FROM documents WHERE id = ?`,
-      [documentId],
+    // Resolve tenant database
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ message: 'Tenant database not found' });
+    }
+
+    const document = await safeTenantQuery(
+      dbName,
+      `SELECT file_path FROM documents WHERE id = ? AND (tenant_slug = ? OR tenant_slug IS NULL)`,
+      [documentId, tenantSlug],
     );
 
     if (document.length === 0) {
@@ -246,7 +277,7 @@ const deleteDocument = async (req, res) => {
     }
 
     // Delete record from database
-    await safeQuery(`DELETE FROM documents WHERE id = ?`, [documentId]);
+    await safeTenantQuery(dbName, `DELETE FROM documents WHERE id = ?`, [documentId]);
 
     return res.status(200).json({
       message: 'Document deleted successfully',

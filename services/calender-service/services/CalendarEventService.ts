@@ -15,7 +15,7 @@ export class CalendarEventService {
     tenantSlug: string,
     eventData: CreateEventDTO
   ): Promise<{ id: number; event: CalendarEvent }> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
     const pool = await getTenantPool(tenantDb);
 
     const {
@@ -96,7 +96,7 @@ export class CalendarEventService {
    * Get event by ID
    */
   static async getEventById(tenantSlug: string, eventId: number): Promise<CalendarEvent | null> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
     
     const result = await executeTenantQuery(
       tenantDb,
@@ -118,7 +118,7 @@ export class CalendarEventService {
     tenantSlug: string,
     options: EventQueryOptions = {}
   ): Promise<CalendarEvent[]> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
     const {
       startDate,
       endDate,
@@ -169,7 +169,7 @@ export class CalendarEventService {
     year: number,
     month: number
   ): Promise<CalendarEvent[]> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     const result = await executeTenantQuery(
       tenantDb,
@@ -193,7 +193,7 @@ export class CalendarEventService {
     startDate: string,
     endDate: string
   ): Promise<CalendarEvent[]> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     const result = await executeTenantQuery(
       tenantDb,
@@ -219,7 +219,7 @@ export class CalendarEventService {
     eventId: number,
     updateData: UpdateEventDTO
   ): Promise<boolean> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     const allowedFields = [
       'title',
@@ -267,7 +267,7 @@ export class CalendarEventService {
    * Delete an event (soft delete)
    */
   static async deleteEvent(tenantSlug: string, eventId: number, deletedBy?: number): Promise<boolean> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     const [result]: any = await executeTenantQuery(
       tenantDb,
@@ -289,7 +289,7 @@ export class CalendarEventService {
     tenantSlug: string,
     date: string
   ): Promise<{ time: string; available: boolean }[]> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     // Get events for the specific date
     const events = await executeTenantQuery(
@@ -335,7 +335,7 @@ export class CalendarEventService {
    * Get event statistics
    */
   static async getEventStatistics(tenantSlug: string): Promise<any> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     const result = await executeTenantQuery(
       tenantDb,
@@ -363,7 +363,7 @@ export class CalendarEventService {
     tenantSlug: string,
     limit: number = 10
   ): Promise<CalendarEvent[]> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
 
     const result = await executeTenantQuery(
       tenantDb,
@@ -387,7 +387,7 @@ export class CalendarEventService {
     query: string,
     limit: number = 50
   ): Promise<CalendarEvent[]> {
-    const tenantDb = getTenantDatabaseName(tenantSlug);
+    const tenantDb = await getTenantDatabaseName(tenantSlug);
     const searchTerm = `%${query}%`;
 
     const result = await executeTenantQuery(

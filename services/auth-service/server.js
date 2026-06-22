@@ -66,7 +66,7 @@ app.use(authRoutes);
 
 // 404 handler
 app.use((req, res) => {
-    console.log(`❌ 404 Not Found: ${req.method} ${req.url}`);
+ 
     res.status(404).json({
         success: false,
         message: `Route ${req.url} not found`
@@ -84,8 +84,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 Auth service running on port ${PORT}`);
-    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`✅ Auth routes are ready`);
-    console.log(`📍 Listening on: http://localhost:${PORT}\n`);
+  
 });

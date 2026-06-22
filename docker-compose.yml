@@ -1,6 +1,80 @@
 version: '3.8'
 
 services:
+  # ============================================================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================================================
+
+  # MariaDB Database
+  mariadb:
+    image: mariadb:10.11
+    container_name: restpoint_mariadb
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: RestPoint2024!
+      MARIADB_DATABASE: restpoint_main
+      MARIADB_USER: restpoint_user
+      MARIADB_PASSWORD: RestPointUser2024
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - restpoint_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: restpoint_redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      restpoint_network:
+        aliases:
+          - restpoint_redis
+          - redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: restpoint_rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: restpoint
+      RABBITMQ_DEFAULT_PASS: RestPointRabbit2024
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - restpoint_network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ============================================================================
+  # CORE SERVICES
+  # ============================================================================
+
   # API Gateway
   api-gateway:
     build:
@@ -12,12 +86,17 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - TRUST_PROXY=true
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
+      - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
+      - REFRESH_TOKEN_SECRET=RestPointRefreshTokenSecret2024!ChangeMe
     env_file:
       - .env
     networks:
@@ -37,35 +116,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # Scanner Service (Go-based document scanner)
-  scanner-service:
-    build: ./services/scanner-service
-    container_name: restpoint_scanner_service
-    ports:
-      - "2024:2024"
-    environment:
-      - SERVER_PORT=2024
-      - SERVER_HOST=0.0.0.0
-      - SERVER_ENV=production
-      - STORAGE_TYPE=local
-      - STORAGE_UPLOAD_PATH=./uploads/scanned
-      - SCANNER_AUTO_DETECT=true
-      - SCANNER_DEFAULT_DPI=300
-      - SCANNER_DEFAULT_FORMAT=pdf
-      - TZ=Africa/Nairobi
-    volumes:
-      - scanner_uploads:/app/uploads
-      - scanner_config:/app/config
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
-
   # Auth Service
   auth-service:
     build:
@@ -79,13 +129,14 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
-      - SERVICE_PORT=5001
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET}
-      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
+      - REFRESH_TOKEN_SECRET=RestPointRefreshTokenSecret2024!ChangeMe
       - JWT_EXPIRY=24h
       - REFRESH_TOKEN_EXPIRY=7d
     env_file:
@@ -120,10 +171,13 @@ services:
       - NODE_ENV=production
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
+      - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
     env_file:
       - .env
     networks:
@@ -159,6 +213,8 @@ services:
       - NODE_ENV=production
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -194,6 +250,8 @@ services:
       - NODE_ENV=production
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -228,6 +286,8 @@ services:
       - NODE_ENV=production
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
@@ -267,6 +327,8 @@ services:
       - NODE_ENV=production
       - DB_HOST=mariadb
       - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -301,7 +363,6 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
     env_file:
       - .env
     networks:
@@ -317,70 +378,434 @@ services:
       retries: 3
       start_period: 40s
 
-  # MariaDB Database
-  mariadb:
-    image: mariadb:10.11
-    container_name: restpoint_mariadb
-    restart: always
-    environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${DB_NAME}
-      MARIADB_USER: ${DB_USER}
-      MARIADB_PASSWORD: ${DB_PASSWORD}
+  # Scanner Service
+  scanner-service:
+    build: ./services/scanner-service
+    container_name: restpoint_scanner_service
     ports:
-      - "${MARIADB_EXTERNAL_PORT:-3306}:3306"
+      - "2024:2024"
+    environment:
+      - SERVER_PORT=2024
+      - SERVER_HOST=0.0.0.0
+      - SERVER_ENV=production
+      - STORAGE_TYPE=local
+      - STORAGE_UPLOAD_PATH=./uploads/scanned
+      - SCANNER_AUTO_DETECT=true
+      - SCANNER_DEFAULT_DPI=300
+      - SCANNER_DEFAULT_FORMAT=pdf
+      - TZ=Africa/Nairobi
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - scanner_uploads:/app/uploads
+      - scanner_config:/app/config
     networks:
       - restpoint_network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: restpoint_redis
-    restart: always
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 1gb --maxmemory-policy allkeys-lru
+  # ============================================================================
+  # MICROSERVICES
+  # ============================================================================
+
+  # MPESA Service
+  mpesa-service:
+    build: ./services/mpesa-service
+    container_name: restpoint_mpesa_service
     ports:
-      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      restpoint_network:
-        aliases:
-          - restpoint_redis
-          - redis
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-
-  # RabbitMQ Message Queue
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: restpoint_rabbitmq
-    restart: always
+      - "5011:5000"
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
     networks:
       - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
     healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 15s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
+      start_period: 40s
+
+  # Invoice Service
+  invoice-service:
+    build: ./services/invoice-service
+    container_name: restpoint_invoice_service
+    ports:
+      - "5005:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Marketplace Service
+  marketplace-service:
+    build: ./services/marketplace-service
+    container_name: restpoint_marketplace_service
+    ports:
+      - "5004:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Coffin Service
+  coffin-service:
+    build: ./services/coffin-service
+    container_name: restpoint_coffin_service
+    ports:
+      - "5006:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Analytics Service
+  analytics-service:
+    build: ./services/analytics-service
+    container_name: restpoint_analytics_service
+    ports:
+      - "5009:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Body Checkout Service
+  bodycheckout-service:
+    build: ./services/bodycheckout-service
+    container_name: restpoint_bodycheckout_service
+    ports:
+      - "5015:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # EDocuments Service
+  edocuments-service:
+    build: ./services/edocuments-service
+    container_name: restpoint_edocuments_service
+    ports:
+      - "8116:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Calendar Service
+  calender-service:
+    build: ./services/calender-service
+    container_name: restpoint_calender_service
+    ports:
+      - "5010:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Chemical Service
+  chemical-service:
+    build: ./services/chemical-service
+    container_name: restpoint_chemical_service
+    ports:
+      - "5105:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Extra Services
+  extra-services:
+    build: ./services/extra-services
+    container_name: restpoint_extra_services
+    ports:
+      - "5016:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Call Service
+  call-service:
+    build: ./services/call-service
+    container_name: restpoint_call_service
+    ports:
+      - "5018:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # QRCode Service
+  qrcode-service:
+    build: ./services/qrcode-service
+    container_name: restpoint_qrcode_service
+    ports:
+      - "5012:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Portal Service
+  portal-service:
+    build: ./services/portal-service
+    container_name: restpoint_portal_service
+    ports:
+      - "5019:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Visitors Service
+  visitors-service:
+    build: ./services/visitors-service
+    container_name: restpoint_visitors_service
+    ports:
+      - "5014:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================================
+  # FRONTEND
+  # ============================================================================
 
   # Frontend Client
   frontend:
@@ -402,11 +827,17 @@ services:
       retries: 3
       start_period: 30s
 
+# ============================================================================
+# NETWORKS
+# ============================================================================
 networks:
   restpoint_network:
     driver: bridge
     name: restpoint_network
 
+# ============================================================================
+# VOLUMES
+# ============================================================================
 volumes:
   mariadb_data:
     driver: local

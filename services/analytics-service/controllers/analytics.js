@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { safeQuery } = require('../../../configurations/sqlConfig/db');
+const { lookupTenantDatabase, safeTenantQuery } = require('../../shared/dbConfig');
 const { Logger } = require('../../../packages/shared-logger/dist/logger');
 
 // === Advanced Analytics Controller ===
@@ -8,6 +8,11 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
   Logger.info(`[${requestId}] Fetching comprehensive mortuary analytics...`);
 
   try {
+    const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-tenant-id'] || 'system_shared';
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
     // Initialize response structure with safe defaults
     const responseData = {
       success: true,
@@ -344,7 +349,7 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
       const batchPromises = batch.map(async (queryDef) => {
         try {
           Logger.debug(`[${requestId}] Executing query: ${queryDef.name}`);
-          const result = await safeQuery(queryDef.sql, queryDef.params);
+        const result = await safeTenantQuery(dbName, queryDef.sql, queryDef.params);
           queryResults.set(queryDef.name, result);
           successfulQueries++;
           return { name: queryDef.name, success: true, data: result };
@@ -1020,7 +1025,7 @@ const getComprehensiveVehicleAnalytics = asyncHandler(async (req, res) => {
       ORDER BY total_kilometers DESC
     `;
 
-    const results = await safeQuery(query, [currentMonth, currentYear, currentMonth, currentYear]);
+    const results = await safeTenantQuery(dbName, query, [currentMonth, currentYear, currentMonth, currentYear]);
 
     const vehiclesData = (results || []).map((vehicle) => ({
       vehiclePlate: vehicle.vehicle_plate || 'Unknown',

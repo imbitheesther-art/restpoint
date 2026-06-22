@@ -1,14 +1,15 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const { safeQuery } = require('../../shared/dbConfig');
-const { validateTenantActive } = require('../../shared/tenancy');
-const invoiceRoutes = require('./routes/invoiceRoutes');
-const invoice = require('./routes/invoice');
-const printInvoiceRoute = require('./routes/printInvoiceRoute');
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import { errorHandler } from './middlewares/errorHandler';
+import invoiceRoutes from './routes/invoiceRoutes';
+import invoice from './routes/invoice';
+
+// Type declarations for Node.js globals
+declare const process: any;
+declare const __dirname: string;
 
 const app = express();
-const PORT = process.env.PORT || 5005;
+const PORT = process.env.PORT || 5000;
 
 // CORS configuration - Allow credentials for proxied requests
 app.use(cors({
@@ -17,37 +18,22 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token', 'x-tenant-slug'],
 }));
-app.use(helmet());
 app.use(express.json());
 
-// Tenant Resolution Middleware
-app.use(async (req, res, next) => {
-  const tenantSlug = req.headers['x-tenant-slug'] || 'system_shared';
-  req.tenantSlug = tenantSlug;
-
-  if (tenantSlug !== 'system_shared') {
-    const tenantStatus = await validateTenantActive(tenantSlug);
-    if (!tenantStatus.active) {
-      return res.status(403).json({ success: false, message: tenantStatus.reason });
-    }
-    req.tenant = tenantStatus.tenant;
-  }
-  next();
-});
-
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'UP',
     service: 'invoice-service',
-    tenant: req.tenantSlug,
     timestamp: new Date().toISOString()
   });
 });
 
 app.use('/api/v2/restpoint', invoiceRoutes);
 app.use('/api/v2/restpoint', invoice);
-app.use('/api/v2/restpoint', printInvoiceRoute);
+
+// Error handling middleware
+app.use(errorHandler);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`invoice-service is running on port ${PORT}`);

@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Bell, X, CheckCheck, Clock, AlertTriangle, Info, Calendar, CheckCircle2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import env from '../../config/env';
+import { ENDPOINTS, getTenantHeaders, buildUrl } from '../../api/endpoints';
 
 // ============================================
-// CONFIGURATION
+// CONFIGURATION - Centralized
 // ============================================
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://weltcoverv1-insurancesystem.onrender.com';
-const NOTIFICATION_API = import.meta.env.VITE_API_BASE_URL 
-  ? `${import.meta.env.VITE_API_BASE_URL}/notification`
-  : 'http://localhost:8000/api/v1/restpoint/notification';
+const NOTIFICATION_API = buildUrl('notification', '');
+const SOCKET_URL = env.API_GATEWAY_URL; // Use same gateway for socket.io
 const POLL_INTERVAL = 30000; // 30 seconds fallback polling
 
 // ============================================
@@ -250,15 +250,16 @@ const NotificationBell = () => {
   // Get auth token
   const getToken = () => localStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-  // Fetch notifications from API
+  // Fetch notifications from API using centralized endpoint
   const fetchNotifications = useCallback(async () => {
     try {
       const token = getToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
-
-      const response = await fetch(`${NOTIFICATION_API}/notifications?tenant=${tenantSlug}`, { headers });
+      const headers = getTenantHeaders();
+      
+      const response = await fetch(`${NOTIFICATION_API}/notifications?tenant=${encodeURIComponent(tenantSlug)}`, { 
+        headers,
+        credentials: 'include'
+      });
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -273,12 +274,13 @@ const NotificationBell = () => {
   // Mark single notification as read
   const markAsRead = useCallback(async (id) => {
     try {
-      const token = getToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
-
-      await fetch(`${NOTIFICATION_API}/notifications/${id}/read`, { method: 'PUT', headers });
+      const headers = getTenantHeaders();
+      
+      await fetch(`${NOTIFICATION_API}/notifications/${id}/read`, { 
+        method: 'PUT', 
+        headers,
+        credentials: 'include'
+      });
       
       setNotifications(prev => prev.map(n => 
         n.id === id ? { ...n, is_read: 1, isRead: true } : n
@@ -292,12 +294,13 @@ const NotificationBell = () => {
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const token = getToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
-
-      await fetch(`${NOTIFICATION_API}/notifications/mark-all-read`, { method: 'PUT', headers });
+      const headers = getTenantHeaders();
+      
+      await fetch(`${NOTIFICATION_API}/notifications/mark-all-read`, { 
+        method: 'PUT', 
+        headers,
+        credentials: 'include'
+      });
       
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1, isRead: true })));
       setUnreadCount(0);
@@ -326,12 +329,13 @@ const NotificationBell = () => {
     setUnreadCount(prev => prev + 1);
   }, []);
 
-  // Setup socket connection
+  // Setup socket connection using centralized gateway
   useEffect(() => {
     if (!tenantSlug) return;
 
     const token = getToken();
     const socket = io(SOCKET_URL, {
+      path: '/socket.io', // Standard socket.io path
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -341,7 +345,16 @@ const NotificationBell = () => {
     });
 
     socket.on('connect', () => {
+      console.log('[NotificationBell] Socket connected');
       socket.emit('join_tenant', { tenant_slug: tenantSlug });
+    });
+
+    socket.on('disconnect', () => {
+      console.log('[NotificationBell] Socket disconnected');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('[NotificationBell] Socket connection error:', err.message);
     });
 
     // Listen for all notification types

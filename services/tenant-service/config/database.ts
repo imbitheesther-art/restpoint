@@ -142,7 +142,27 @@ export const createTenantDatabase = async (tenantDbName: string): Promise<void> 
       ('timezone', 'Africa/Nairobi'),
       ('date_format', 'YYYY-MM-DD')
     `);
-    
+
+    // Documents table for deceased records
+    await tenantPool.query(`
+      CREATE TABLE IF NOT EXISTS documents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        deceased_id INT NOT NULL,
+        document_type VARCHAR(100) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        mime_type VARCHAR(100),
+        file_size BIGINT DEFAULT 0,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        tenant_slug VARCHAR(100),
+        FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
+        INDEX idx_deceased (deceased_id),
+        INDEX idx_tenant (tenant_slug),
+        INDEX idx_type (document_type)
+      )
+    `);
+
     console.log(`✅ All tables created in: ${tenantDbName}`);
     await tenantPool.end();
     

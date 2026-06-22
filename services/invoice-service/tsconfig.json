@@ -7,8 +7,25 @@
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
-    "allowJs": true
+    "allowJs": true,
+    "types": ["node", "express"],
+    "baseUrl": ".",
+    "paths": {
+      "../../middlewares/errorHandler/errorHandler": ["../../middlewares/errorHandler/errorHandler"],
+      "../../configurations/sqlConfig/db": ["../../configurations/sqlConfig/db"],
+      "../../../packages/shared-utils/dist/timestamps": ["../../../packages/shared-utils/dist/timestamps"]
+    }
   },
-  "include": ["*.ts", "controllers/**/*.ts", "models/**/*.ts", "routes/**/*.ts"],
+  "include": [
+    "*",
+    "controllers/**/*",
+    "models/**/*",
+    "routes/**/*",
+    "middlewares/**/*",
+    "../../middlewares/**/*",
+    "../../configurations/**/*",
+    "../../shared/**/*",
+    "../../../packages/shared-utils/dist/**/*"
+  ],
   "exclude": ["node_modules", "dist"]
 }

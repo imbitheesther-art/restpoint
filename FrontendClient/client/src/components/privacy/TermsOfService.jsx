@@ -62,7 +62,7 @@ export default function TermsOfService() {
           Last updated: June 2026
         </p>
 
-        {/* Simple Summary Box */}
+        {/* Summary */}
         <div style={{ 
           background: 'rgba(166,124,82,0.06)', 
           border: `1px solid rgba(166,124,82,0.2)`, 
@@ -70,30 +70,29 @@ export default function TermsOfService() {
           padding: '1.25rem', 
           marginBottom: '2rem' 
         }}>
-          <p style={{ color: C.char700, fontSize: '0.9rem', margin: 0 }}>
-            <strong>Simple version:</strong> These are the basic rules for using Rest Point. 
-            By using our platform, you agree to follow them. We keep things fair and clear.
+          <p style={{ color: C.char700, fontSize: '0.95rem', margin: 0 }}>
+            <strong>In short:</strong> These are the rules for using Rest Point. By using our platform, 
+            you agree to follow them. We keep things fair and transparent.
           </p>
         </div>
 
-        {/* Section 1 */}
+        {/* Agreement */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          1. Agreement
+          Agreement
         </h2>
-        <p style={{ color: C.char700 }}>
-          By using Rest Point, you agree to these terms. If you don't agree, please don't use 
-          the platform. These terms are between you (the funeral home) and Rest Point, built 
-          and maintained by <strong>Welt Tallis Technologies</strong>.
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
+          By using Rest Point, you agree to these terms. If you don't agree, please don't use the platform. 
+          These terms are between you (the funeral home) and Rest Point, built and maintained by Welt Tallis Technologies.
         </p>
 
-        {/* Section 2 */}
+        {/* What we offer */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          2. What We Offer
+          What We Offer
         </h2>
-        <p style={{ color: C.char700 }}>
-          Rest Point helps funeral homes manage their work efficiently. Features include:
+        <p style={{ color: C.char700, marginBottom: '1rem' }}>
+          Rest Point helps funeral homes manage their work efficiently:
         </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
+        <ul style={{ color: C.char700, paddingLeft: '1.5rem', marginBottom: '1.5rem' }}>
           <li>Case management</li>
           <li>Family portal for families to stay informed</li>
           <li>Document generation</li>
@@ -101,69 +100,45 @@ export default function TermsOfService() {
           <li>Marketplace for funeral services</li>
           <li>Memorial services management</li>
         </ul>
-        <p style={{ color: C.char700, marginTop: '0.5rem' }}>
-          We're always improving. Updates will be announced in advance.
-        </p>
 
-        {/* Section 3 */}
+        {/* Your account */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          3. Your Account
+          Your Account
         </h2>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1rem' }}>
           When you sign up, you agree to:
         </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
+        <ul style={{ color: C.char700, paddingLeft: '1.5rem', marginBottom: '1.5rem' }}>
           <li>Provide accurate information</li>
           <li>Keep your login details safe</li>
           <li>Tell us immediately if someone accesses your account without permission</li>
         </ul>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
           You're responsible for everything that happens under your account.
         </p>
 
-        {/* Section 4 */}
+        {/* Data protection */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          4. Your Data is Safe
+          Data Protection
         </h2>
-        <p style={{ color: C.char700 }}>
-          We take data protection seriously:
+        <p style={{ color: C.char700, marginBottom: '1rem' }}>
+          We take data protection seriously. We never sell, share, or manipulate your data. 
+          All data is encrypted and secure. You can access, correct, or delete your data anytime.
         </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
-          <li>We <strong>never</strong> sell your data</li>
-          <li>We <strong>never</strong> share your data with others</li>
-          <li>We <strong>never</strong> change or manipulate your data</li>
-          <li>All data is encrypted and secure</li>
-          <li>You can access, correct, or delete your data anytime</li>
-        </ul>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
           For more details, see our <a href="/privacy" style={{ color: C.gold }}>Privacy Policy</a>.
         </p>
 
-        {/* Section 5 */}
+        {/* Pricing */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          5. Deleting Your Data
-        </h2>
-        <p style={{ color: C.char700 }}>
-          We only delete data when you ask us to in writing. The process takes up to 2 months 
-          because we want to be absolutely sure and keep your data safe.
-        </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
-          <li>You can request your data anytime</li>
-          <li>You can correct your data anytime</li>
-          <li>You can get your data in a portable format</li>
-          <li>We'll give you a final copy before deletion</li>
-        </ul>
-
-        {/* Section 6 */}
-        <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          6. Pricing
+          Pricing
         </h2>
         <div style={{ 
           background: '#fff', 
           borderRadius: '8px', 
           padding: '1.5rem', 
           border: `1px solid ${C.char200}`,
-          marginBottom: '1rem'
+          marginBottom: '1.5rem'
         }}>
           <p style={{ margin: 0, color: C.char700 }}>
             <strong>Setup Fee:</strong> KES 1,000 (one-time)
@@ -176,92 +151,60 @@ export default function TermsOfService() {
             <li>KES 18,500 for multi-tenant</li>
           </ul>
         </div>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
           Payments are due monthly with a 5-day grace period. Late payments may result in 
           suspension. Reactivation fee: KES 1,000.
         </p>
 
-        {/* Section 7 */}
+        {/* Rules */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          7. Rules of Use
+          Rules of Use
         </h2>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1rem' }}>
           Please don't use the platform for:
         </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
+        <ul style={{ color: C.char700, paddingLeft: '1.5rem', marginBottom: '1.5rem' }}>
           <li>Illegal activities</li>
           <li>Uploading harmful code or viruses</li>
           <li>Sharing your account with others</li>
           <li>Using data for anything other than funeral home management</li>
         </ul>
-        <p style={{ color: C.char700, background: '#FEF3E8', padding: '0.75rem', borderRadius: '6px' }}>
-          <strong>Important:</strong> Breaking these rules may lead to account termination 
-          without a refund.
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
+          <strong>Important:</strong> Breaking these rules may lead to account termination without a refund.
         </p>
 
-        {/* Section 8 */}
+        {/* Cancellation */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          8. Our Responsibility
+          Cancellation
         </h2>
-        <p style={{ color: C.char700 }}>
-          We do our best to keep the platform running smoothly. However:
-        </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
-          <li>We're not responsible for data loss caused by customer error</li>
-          <li>We're not responsible for issues with third-party services</li>
-          <li>Our total liability is limited to fees paid in the last 12 months</li>
-        </ul>
-
-        {/* Section 9 */}
-        <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          9. Your Responsibility
-        </h2>
-        <p style={{ color: C.char700 }}>
-          You agree to be responsible for:
-        </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
-          <li>How you use the platform</li>
-          <li>Following these terms</li>
-          <li>Complying with all applicable laws</li>
-          <li>Proper handling of family and deceased data</li>
-        </ul>
-
-        {/* Section 10 */}
-        <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          10. Cancellation
-        </h2>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
           You can cancel your account anytime with 30 days written notice. We may cancel 
-          immediately if you break these terms. After cancellation:
+          immediately if you break these terms. After cancellation, your access is removed 
+          and the data deletion process begins.
         </p>
-        <ul style={{ color: C.char700, paddingLeft: '1.5rem' }}>
-          <li>Your access is removed</li>
-          <li>Your data deletion process begins</li>
-          <li>You get a final copy of your data</li>
-        </ul>
 
-        {/* Section 11 */}
+        {/* Legal */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          11. Legal Matters
+          Legal Matters
         </h2>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
           These terms follow the laws of Kenya. Any disputes will be resolved through 
           arbitration in Nairobi, Kenya.
         </p>
 
-        {/* Section 12 */}
+        {/* Updates */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          12. Updates to Terms
+          Updates to Terms
         </h2>
-        <p style={{ color: C.char700 }}>
+        <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
           We may update these terms occasionally. If we make important changes, we'll 
           let you know by email or when you log in. Continued use means you accept the 
           updated terms.
         </p>
 
-        {/* Section 13 */}
+        {/* Contact */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>
-          13. Contact Us
+          Contact Us
         </h2>
         <div style={{ 
           background: C.navy900, 

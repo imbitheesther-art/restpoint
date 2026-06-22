@@ -7,6 +7,8 @@ const { validateTenantActive } = require('../../shared/tenancy');
 const notificationsController = require('./controllers/notifications');
 const supportTicketsRouter = require('./routes/supportTickets');
 
+
+
 const app = express();
 const PORT = process.env.PORT || 8111;
 const SOCKETIO_URL = process.env.SOCKETIO_SERVICE_URL || 'http://localhost:8010';

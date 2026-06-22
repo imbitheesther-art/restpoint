@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
-import { safeQuery, getConnection, releaseConnection } from '@montezuma/shared-config';
+import { lookupTenantDatabase, safeTenantQuery, getTenantDB } from '../../shared/dbConfig';
 import logger from '@montezuma/shared-logger';
 import { getKenyaTimeISO } from '@montezuma/shared-utils';
 import { ICoffin, ICoffinImage, IDeceasedCoffin, ICreateCoffinDTO, IAssignCoffinDTO, ICoffinAnalytics } from '../models/Coffin';
@@ -95,6 +95,8 @@ const processImages = async (files: Express.Multer.File[], coffinId: number, ten
   return processedImages;
 };
 
+                
+
 // ============================================
 // CONTROLLER FUNCTIONS
 // ============================================
@@ -126,8 +128,10 @@ export const createCoffin = async (req: TenantRequest, res: Response): Promise<R
     const priceUSD = currency === 'USD' ? price : price / EXCHANGE_RATES.USD;
     const priceKES = currency === 'KES' ? price : price * EXCHANGE_RATES.USD;
 
-    connection = await getConnection();
-    await connection.beginTransaction();
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
 
     const insertSql = `
       INSERT INTO coffins (custom_id, tenant_id, type, material, exact_price, currency, 
@@ -135,7 +139,7 @@ export const createCoffin = async (req: TenantRequest, res: Response): Promise<R
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
-    const [result] = await connection.query(insertSql, [
+    const [result] = await safeTenantQuery(dbName, insertSql, [
       finalCoffinId, tenantSlug, type.trim(), material.trim(), priceKES, currency,
       priceUSD, EXCHANGE_RATES.USD, parseInt(quantity) || 1, supplier?.trim() || null,
       origin?.trim() || null, color?.trim() || null, size?.trim() || null,
@@ -147,16 +151,17 @@ export const createCoffin = async (req: TenantRequest, res: Response): Promise<R
     // Process images
     let imageUrls: string[] = [];
     if (req.files && req.files.length > 0) {
-      imageUrls = await processImages(req.files, coffinDbId, tenantSlug);
+      imageUrls = await processImages(req.files, coffinDbId, tenantSlug) as string[];
       
       if (imageUrls.length > 0) {
         const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_id, image_url, created_at) VALUES ?`;
-        const imageValues = imageUrls.map(url => [coffinDbId, tenantSlug, url, getKenyaTimeISO()]);
-        await connection.query(imageSql, [imageValues]);
+        const imageValues: [number, string, string, string][] = [];
+        for (const url of imageUrls) {
+          imageValues.push([coffinDbId, tenantSlug, url, getKenyaTimeISO()]);
+        }
+        await safeTenantQuery(dbName, imageSql, [imageValues]);
       }
     }
-
-    await connection.commit();
 
     return res.status(201).json({
       success: true,
@@ -168,11 +173,8 @@ export const createCoffin = async (req: TenantRequest, res: Response): Promise<R
     });
 
   } catch (error: any) {
-    if (connection) await connection.rollback();
     logger.error('Create coffin error:', error);
     return res.status(500).json({ success: false, message: error.message });
-  } finally {
-    if (connection) connection.release();
   }
 };
 
@@ -183,6 +185,11 @@ export const getAllCoffins = async (req: TenantRequest, res: Response): Promise<
   }
 
   try {
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
+
     const sql = `
       SELECT c.*, u.name as created_by_name,
         GROUP_CONCAT(ci.image_url) as image_urls
@@ -194,7 +201,7 @@ export const getAllCoffins = async (req: TenantRequest, res: Response): Promise<
       ORDER BY c.created_at DESC
     `;
     
-    const coffins = await safeQuery(sql, [tenantSlug]);
+    const coffins = await safeTenantQuery(dbName, sql, [tenantSlug]);
     
     const processedCoffins = coffins.map((coffin: any) => ({
       ...coffin,
@@ -220,6 +227,11 @@ export const getCoffinById = async (req: TenantRequest, res: Response): Promise<
   }
 
   try {
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
+
     const sql = `
       SELECT c.*, u.name as created_by_name,
         GROUP_CONCAT(ci.image_url) as image_urls
@@ -230,7 +242,7 @@ export const getCoffinById = async (req: TenantRequest, res: Response): Promise<
       GROUP BY c.coffin_id
     `;
     
-    const coffins = await safeQuery(sql, [id, id, tenantSlug]);
+    const coffins = await safeTenantQuery(dbName, sql, [id, id, tenantSlug]);
     
     if (coffins.length === 0) {
       return res.status(404).json({ success: false, message: 'Coffin not found' });
@@ -254,12 +266,13 @@ export const updateCoffin = async (req: TenantRequest, res: Response): Promise<R
     return res.status(403).json({ success: false, message: 'Valid tenant required' });
   }
 
-  let connection: any = null;
   try {
-    const { type, material, exact_price, currency, quantity, supplier, origin, color, size, category } = req.body;
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
 
-    connection = await getConnection();
-    await connection.beginTransaction();
+    const { type, material, exact_price, currency, quantity, supplier, origin, color, size, category } = req.body;
 
     const updateFields: string[] = [];
     const updateValues: any[] = [];
@@ -289,28 +302,26 @@ export const updateCoffin = async (req: TenantRequest, res: Response): Promise<R
 
     if (updateFields.length > 1) {
       const updateSql = `UPDATE coffins SET ${updateFields.join(', ')} WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? AND is_deleted = FALSE`;
-      await connection.query(updateSql, [...updateValues, id, tenantSlug]);
+      await safeTenantQuery(dbName, updateSql, [...updateValues, id, tenantSlug]);
     }
 
     // Handle new images
     if (req.files && req.files.length > 0) {
-      const imageUrls = await processImages(req.files, parseInt(id), tenantSlug);
+      const imageUrls = await processImages(req.files, parseInt(id), tenantSlug) as string[];
       if (imageUrls.length > 0) {
         const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_id, image_url, created_at) VALUES ?`;
-        const imageValues = imageUrls.map(url => [id, tenantSlug, url, getKenyaTimeISO()]);
-        await connection.query(imageSql, [imageValues]);
+        const imageValues: [number, string, string, string][] = [];
+        for (const url of imageUrls) {
+          imageValues.push([parseInt(id), tenantSlug, url, getKenyaTimeISO()]);
+        }
+        await safeTenantQuery(dbName, imageSql, [imageValues]);
       }
     }
 
-    await connection.commit();
-
     return res.status(200).json({ success: true, message: 'Coffin updated successfully' });
   } catch (error: any) {
-    if (connection) await connection.rollback();
     logger.error('Update coffin error:', error);
     return res.status(500).json({ success: false, message: error.message });
-  } finally {
-    if (connection) connection.release();
   }
 };
 
@@ -322,34 +333,31 @@ export const deleteCoffin = async (req: TenantRequest, res: Response): Promise<R
     return res.status(403).json({ success: false, message: 'Valid tenant required' });
   }
 
-  let connection: any = null;
   try {
-    connection = await getConnection();
-    await connection.beginTransaction();
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
 
     // Check if coffin has assignments
-    const assignments = await connection.query(
+    const assignments = await safeTenantQuery(dbName,
       'SELECT id FROM deceased_coffin WHERE coffin_id = ? AND tenant_id = ?',
       [id, tenantSlug]
     );
     
-    if (assignments[0].length > 0) {
+    if (assignments.length > 0) {
       return res.status(400).json({ success: false, message: 'Cannot delete coffin with existing assignments' });
     }
 
-    await connection.query(
+    await safeTenantQuery(dbName,
       'UPDATE coffins SET is_deleted = TRUE WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?',
       [id, id, tenantSlug]
     );
 
-    await connection.commit();
     return res.status(200).json({ success: true, message: 'Coffin deleted successfully' });
   } catch (error: any) {
-    if (connection) await connection.rollback();
     logger.error('Delete coffin error:', error);
     return res.status(500).json({ success: false, message: error.message });
-  } finally {
-    if (connection) connection.release();
   }
 };
 
@@ -361,13 +369,14 @@ export const assignCoffin = async (req: TenantRequest, res: Response): Promise<R
     return res.status(403).json({ success: false, message: 'Valid tenant required' });
   }
 
-  let connection: any = null;
   try {
-    connection = await getConnection();
-    await connection.beginTransaction();
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
 
     // Check coffin availability with tenant isolation
-    const [coffins] = await connection.query(
+    const [coffins] = await safeTenantQuery(dbName,
       'SELECT quantity FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? FOR UPDATE',
       [coffin_id, coffin_id, tenantSlug]
     );
@@ -379,26 +388,21 @@ export const assignCoffin = async (req: TenantRequest, res: Response): Promise<R
     const rfid = generateRFID(deceased_name);
     const finalAssignedDate = assigned_date || new Date().toISOString().split('T')[0];
 
-    await connection.query(
+    await safeTenantQuery(dbName,
       `INSERT INTO deceased_coffin (deceased_id, coffin_id, tenant_id, assigned_by_username, assigned_date, rfid)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [deceased_id, coffin_id, tenantSlug, assigned_by || req.user?.name || 'system', finalAssignedDate, rfid]
     );
 
-    await connection.query(
+    await safeTenantQuery(dbName,
       'UPDATE coffins SET quantity = quantity - 1 WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?',
       [coffin_id, coffin_id, tenantSlug]
     );
 
-    await connection.commit();
-
     return res.status(201).json({ success: true, message: 'Coffin assigned successfully', rfid });
   } catch (error: any) {
-    if (connection) await connection.rollback();
     logger.error('Assign coffin error:', error);
     return res.status(500).json({ success: false, message: error.message });
-  } finally {
-    if (connection) connection.release();
   }
 };
 
@@ -409,7 +413,12 @@ export const getCoffinAnalytics = async (req: TenantRequest, res: Response): Pro
   }
 
   try {
-    const [overview] = await safeQuery(`
+    const dbName = await lookupTenantDatabase(tenantSlug);
+    if (!dbName) {
+      return res.status(404).json({ success: false, message: 'Tenant database not found' });
+    }
+
+    const [overview] = await safeTenantQuery(dbName, `
       SELECT 
         COUNT(*) AS total_coffins,
         SUM(quantity) AS total_in_stock,
@@ -420,7 +429,7 @@ export const getCoffinAnalytics = async (req: TenantRequest, res: Response): Pro
       WHERE tenant_id = ? AND is_deleted = FALSE
     `, [tenantSlug]);
 
-    const [typeBreakdown] = await safeQuery(`
+    const [typeBreakdown] = await safeTenantQuery(dbName, `
       SELECT type, COUNT(*) as models, SUM(quantity) as stock, SUM(exact_price * quantity) as value
       FROM coffins WHERE tenant_id = ? AND is_deleted = FALSE GROUP BY type ORDER BY value DESC LIMIT 10
     `, [tenantSlug]);

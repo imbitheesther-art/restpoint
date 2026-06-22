@@ -1,8 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const { getInvoice } = require('../controllers/invoice');
+import { Router } from 'express';
+import { getInvoice } from '../controllers/invoice';
+
+const router = Router();
 
 // GET invoice for a deceased person
 router.get('/invoice/:deceasedId', getInvoice);
 
-module.exports = router;
+export default router;

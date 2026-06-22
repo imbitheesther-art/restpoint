@@ -1,5 +1,5 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
-// import cors from 'cors'; // REMOVED
+﻿import express, { Application, Request, Response, NextFunction } from 'express';
+import cors from 'cors'; // REMOVED
 import path from 'path';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ============================================
-// CORS — REMOVED COMPLETELY
+// CORS â€” REMOVED COMPLETELY
 // ============================================
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
   const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:8082').split(',');
@@ -80,14 +80,14 @@ const authLimiter = rateLimit({
 // ============================================
 // ROUTES
 // ============================================
-// ═══════════════════════════════════════════════════════════════════
-// ROUTE MOUNTS — Tenant Onboarding + System Admin
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ROUTE MOUNTS â€” Tenant Onboarding + System Admin
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // IMPORTANT: The API gateway's pathRewrite strips /api prefix from forwarded paths.
-// Example: Client→Gateway: /api/v1/restpoint/tenant/onboarding/organization
-//          Gateway→Service: /v1/restpoint/tenant/onboarding/organization
+// Example: Clientâ†’Gateway: /api/v1/restpoint/tenant/onboarding/organization
+//          Gatewayâ†’Service: /v1/restpoint/tenant/onboarding/organization
 // So we MUST mount on BOTH /api/v1/* AND /v1/* paths.
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // --- Onboarding routes (api prefix) ---
 app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
@@ -95,12 +95,12 @@ app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
 app.use('/api/onboarding', authLimiter, onboardingRoutes);
 
-// --- Onboarding routes (v1 prefix — after gateway strips /api) ---
+// --- Onboarding routes (v1 prefix â€” after gateway strips /api) ---
 app.use('/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
 app.use('/v1/onboarding', authLimiter, onboardingRoutes);
-// Gateway strips /api → /onboarding, so mount without /v1 too
+// Gateway strips /api â†’ /onboarding, so mount without /v1 too
 app.use('/onboarding', authLimiter, onboardingRoutes);
 
 // --- System Admin Routes ---

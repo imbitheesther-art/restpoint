@@ -1,17 +1,15 @@
-import mysql, { Pool } from 'mysql2/promise';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-// Cache for tenant database connections
-const tenantPoolCache: Map<string, Pool> = new Map();
+import { lookupTenantDatabase, safeTenantQuery, getTenantDB } from '../../shared/dbConfig';
 
 /**
- * Derive tenant database name from slug or ID
+ * Get tenant database name from tracking database
+ * Uses the shared dbConfig to look up the actual database name
  */
-export const getTenantDatabaseName = (tenantSlug: string): string => {
-  // Sanitize tenant slug to create valid database name
-  return `tenant_${tenantSlug.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()}`;
+export const getTenantDatabaseName = async (tenantSlug: string): Promise<string> => {
+  const dbName = await lookupTenantDatabase(tenantSlug);
+  if (!dbName) {
+    throw new Error(`Tenant database not found for: ${tenantSlug}`);
+  }
+  return dbName;
 };
 
 /**
@@ -19,27 +17,8 @@ export const getTenantDatabaseName = (tenantSlug: string): string => {
  * @param tenantDbName - The tenant database name
  * @returns MySQL connection pool
  */
-export const getTenantPool = async (tenantDbName: string): Promise<Pool> => {
-  // Return cached pool if exists
-  if (tenantPoolCache.has(tenantDbName)) {
-    return tenantPoolCache.get(tenantDbName)!;
-  }
-
-  const pool = await mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'root',
-    database: tenantDbName,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
-  });
-
-  tenantPoolCache.set(tenantDbName, pool);
-  console.log(`✅ Connected to tenant database: ${tenantDbName}`);
-  return pool;
+export const getTenantPool = async (tenantDbName: string) => {
+  return await getTenantDB(tenantDbName);
 };
 
 /**
@@ -50,8 +29,7 @@ export const executeTenantQuery = async (
   query: string,
   params: any[] = []
 ): Promise<any> => {
-  const pool = await getTenantPool(tenantDbName);
-  const [result] = await pool.query(query, params);
+  const result = await safeTenantQuery(tenantDbName, query, params);
   return result;
 };
 
@@ -59,10 +37,7 @@ export const executeTenantQuery = async (
  * Close all tenant connections
  */
 export const closeAllTenantConnections = async (): Promise<void> => {
-  for (const pool of tenantPoolCache.values()) {
-    await pool.end();
-  }
-  tenantPoolCache.clear();
+  // Handled by shared dbConfig
 };
 
 export default {

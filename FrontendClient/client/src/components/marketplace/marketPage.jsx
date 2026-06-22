@@ -11,7 +11,9 @@ import Home from "./components/Home";
 import Cart from "./components/Cart/Cart";
 import DetailView from "./components/ItemDetails/DetailView";
 
-const API_URL = "https://prisoners-brook-bands-dare.trycloudflare.com";
+import { getTenantHeaders, buildUrl } from "../../api/endpoints";
+import { ENDPOINTS } from "../../api/endpoints";
+const API_URL = buildUrl('marketplace', '');
 
 const MarketplacePage = () => {
   const [products, setProducts] = useState([]);
@@ -23,7 +25,7 @@ const MarketplacePage = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/api/products`);
+        const response = await axios.get(API_URL, { headers: getTenantHeaders() });
 
         if (response.data.success) {
           setProducts(response.data.data);

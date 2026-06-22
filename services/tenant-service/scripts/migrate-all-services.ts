@@ -17,8 +17,8 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import mysql from 'mysql2/promise';
-import { MigrationService } from '../../shared/services/migration-service';
-import { ALL_SERVICE_MIGRATIONS } from '../../shared/services/all-service-migrations';
+import { MigrationService } from '../../../shared/services/migration-service';
+import { ALL_SERVICE_MIGRATIONS } from '../../../shared/services/all-service-migrations';
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });

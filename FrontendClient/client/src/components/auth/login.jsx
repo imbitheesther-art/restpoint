@@ -1,63 +1,292 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/authApi';
 
-/* ============================================================
-   REST POINT — Staff sign in
-   Same system as the marketing site: ink, bone, brass, verdigris.
-   Fraunces for display, Inter for UI, JetBrains Mono for labels.
-   This is internal tooling for directors and staff — confident,
-   quiet, no glow orbs, no emoji, no shouting caps.
-   ============================================================ */
+// ============================================================
+// PROFESSIONAL STAFF LOGIN
+// Clean, maintainable, accessible design
+// ============================================================
 
-const C = {
-  ink: '#15171A',
-  bone: '#FAF8F4',
-  bone2: '#F3EFE6',
-  brass: '#8B7355',
-  brassLight: '#A98F6E',
-  verdigris: '#3D4F47',
-  line: '#E3DDD0',
-  lineDark: 'rgba(250,248,244,0.14)',
-  gray: '#6B6862',
-  grayLight: 'rgba(250,248,244,0.62)',
-  red: '#9B4A3F',
-  redBg: '#F7ECE9',
-  redLine: '#E8D2CC',
+// Design System Constants
+const THEME = {
+  colors: {
+    ink: '#15171A',
+    bone: '#FAF8F4',
+    bone2: '#F3EFE6',
+    brass: '#8B7355',
+    brassHover: '#A98F6E',
+    verdigris: '#3D4F47',
+    line: '#E3DDD0',
+    lineDark: 'rgba(250,248,244,0.14)',
+    gray: '#6B6862',
+    grayLight: 'rgba(250,248,244,0.62)',
+    red: '#9B4A3F',
+    redBg: '#F7ECE9',
+    redLine: '#E8D2CC',
+    white: '#FFFFFF',
+    success: '#475A43',
+    successBg: '#EEF3EC',
+    successLine: '#DCE6D9',
+    shadow: 'rgba(21,23,26,0.18)',
+    overlay: 'rgba(21,23,26,0.88)',
+  },
+  typography: {
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    displayFamily: "'Fraunces', serif",
+    monoFamily: "'JetBrains Mono', monospace",
+    heroTitle: '2rem',
+    sectionTitle: '1.5rem',
+    body: '0.92rem',
+    small: '0.82rem',
+    tiny: '0.74rem',
+  },
+  spacing: {
+    xs: '0.3rem',
+    sm: '0.55rem',
+    md: '0.78rem',
+    lg: '1.1rem',
+    xl: '1.5rem',
+    xxl: '2rem',
+    xxxl: '2.6rem',
+  },
+  borderRadius: {
+    sm: '2px',
+    md: '4px',
+    lg: '8px',
+    xl: '12px',
+  },
+  breakpoints: {
+    mobile: '860px',
+    tablet: '1024px',
+    desktop: '1280px',
+  },
 };
 
-const Mark = ({ size = 24, color = C.ink }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+// Utility Functions
+const validateEmail = (email) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+};
+
+const isValidPassword = (password) => {
+  return password.length >= 6;
+};
+
+// Custom Hooks
+const useFormState = (initialState) => {
+  const [state, setState] = useState(initialState);
+  
+  const update = useCallback((updates) => {
+    setState(prev => ({ ...prev, ...updates }));
+  }, []);
+  
+  const reset = useCallback(() => {
+    setState(initialState);
+  }, [initialState]);
+  
+  return [state, update, reset];
+};
+
+// Sub-Components
+const Logo = ({ size = 20, color = THEME.colors.ink }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
     <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1" />
     <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1" />
     <circle cx="16" cy="16" r="2.5" fill={color} />
   </svg>
 );
 
-const I = {
-  eye:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-  eyeOff: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
-  check:  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>,
-  lock:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-  branches: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5V15.5M8.3 7.2 15.7 10.8M8.3 16.8 15.7 13.2"/></svg>,
-  cloud:    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M18 18H6a4 4 0 0 1-1-7.87A5.5 5.5 0 0 1 15.5 8a4.5 4.5 0 0 1 2.5 8.4"/></svg>,
-  log:      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>,
+const Spinner = () => (
+  <span className="spinner" aria-label="Loading" />
+);
+
+const AlertMessage = ({ type, text }) => {
+  if (!text) return null;
+  
+  const config = {
+    error: {
+      bg: THEME.colors.redBg,
+      border: THEME.colors.redLine,
+      color: THEME.colors.red,
+      icon: null,
+    },
+    success: {
+      bg: THEME.colors.successBg,
+      border: THEME.colors.successLine,
+      color: THEME.colors.success,
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      ),
+    },
+  };
+  
+  const style = config[type] || config.error;
+  
+  return (
+    <div 
+      className="alert-message"
+      style={{
+        background: style.bg,
+        border: `1px solid ${style.border}`,
+        color: style.color,
+      }}
+      role="alert"
+      aria-live="polite"
+    >
+      {style.icon && <span style={{ marginRight: '0.5rem' }}>{style.icon}</span>}
+      {text}
+    </div>
+  );
 };
 
-function LoginPage() {
+const PasswordInput = ({ value, onChange, showPassword, onToggle, hasError, disabled }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  
+  return (
+    <div className="input-group">
+      <label className="input-label">Password</label>
+      <div 
+        className="password-wrapper"
+        style={{
+          position: 'relative',
+          border: `1px solid ${hasError ? THEME.colors.red : isFocused ? THEME.colors.brass : THEME.colors.line}`,
+          borderRadius: THEME.borderRadius.md,
+          background: THEME.colors.white,
+          transition: 'all 0.2s',
+          boxShadow: isFocused ? `0 0 0 3px rgba(139,115,85,0.12)` : 'none',
+        }}
+      >
+        <input
+          type={showPassword ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder="Enter your password"
+          disabled={disabled}
+          className="input-field"
+          style={{
+            width: '100%',
+            padding: `${THEME.spacing.md} ${THEME.spacing.xxl} ${THEME.spacing.md} ${THEME.spacing.md}`,
+            background: 'transparent',
+            border: 'none',
+            borderRadius: THEME.borderRadius.md,
+            fontSize: THEME.typography.body,
+            color: THEME.colors.ink,
+            fontFamily: THEME.typography.fontFamily,
+            outline: 'none',
+          }}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          disabled={disabled}
+          style={{
+            position: 'absolute',
+            right: THEME.spacing.sm,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            color: THEME.colors.gray,
+            padding: THEME.spacing.xs,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={(e) => !disabled && (e.currentTarget.style.color = THEME.colors.ink)}
+          onMouseLeave={(e) => !disabled && (e.currentTarget.style.color = THEME.colors.gray)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
+        >
+          {showPassword ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
+        </button>
+      </div>
+      {hasError && !value && (
+        <span className="error-text">Password is required.</span>
+      )}
+    </div>
+  );
+};
+
+const FeatureItem = ({ icon, label }) => (
+  <div className="feature-item">
+    <span style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      flexShrink: 0,
+      color: THEME.colors.brassLight 
+    }}>
+      {icon}
+    </span>
+    <span style={{ 
+      fontSize: THEME.typography.small, 
+      color: THEME.colors.grayLight,
+      fontFamily: THEME.typography.fontFamily,
+    }}>
+      {label}
+    </span>
+  </div>
+);
+
+const FooterLink = ({ href, children, onClick }) => (
+  <a 
+    href={href} 
+    onClick={onClick}
+    style={{
+      fontSize: THEME.typography.small,
+      color: THEME.colors.grayLight,
+      textDecoration: 'none',
+      cursor: 'pointer',
+      transition: 'color 0.2s',
+      background: 'none',
+      border: 'none',
+      fontFamily: THEME.typography.fontFamily,
+    }}
+    onMouseEnter={(e) => e.target.style.color = THEME.colors.white}
+    onMouseLeave={(e) => e.target.style.color = THEME.colors.grayLight}
+  >
+    {children}
+  </a>
+);
+
+// Main Component
+export default function LoginPage() {
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [formState, setFormState, resetFormState] = useFormState({
+    loading: false,
+    message: { type: '', text: '' },
+  });
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [authPopupData, setAuthPopupData] = useState({ success: false, message: '' });
   const [loaded, setLoaded] = useState(false);
   const [nightBlocked, setNightBlocked] = useState(false);
+  const [isFocused, setIsFocused] = useState({ email: false, password: false });
 
-  useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
+  // Animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 60);
+    return () => clearTimeout(timer);
+  }, []);
 
+  // Clear invalid tokens
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token === 'undefined' || token === 'null') {
@@ -65,51 +294,60 @@ function LoginPage() {
     }
   }, []);
 
-  // Night-time access restriction: block logins between midnight and 4 AM (EAT)
+  // Night-time access restriction (midnight to 4 AM EAT)
   useEffect(() => {
     const checkNightRestriction = () => {
       const now = new Date();
-      // Convert to East Africa Time (UTC+3)
       const eatHour = (now.getUTCHours() + 3) % 24;
-      if (eatHour >= 0 && eatHour < 4) {
-        setNightBlocked(true);
-      } else {
-        setNightBlocked(false);
-      }
+      setNightBlocked(eatHour >= 0 && eatHour < 4);
     };
+    
     checkNightRestriction();
-    const interval = setInterval(checkNightRestriction, 60000); // check every minute
+    const interval = setInterval(checkNightRestriction, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  const setCookie = (name, value, days) => {
+  const setCookie = useCallback((name, value, days) => {
     const expires = new Date();
     expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
     document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
-  };
+  }, []);
 
-  const handleLogin = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
 
-    // Block login during night hours (midnight to 4 AM EAT)
+    // Night block check
     if (nightBlocked) {
-      setMessage({ type: 'error', text: 'Access is restricted between midnight and 4 AM (EAT). This is a security measure to protect your data. Please try again during business hours.' });
+      setFormState({
+        message: { 
+          type: 'error', 
+          text: 'Access is restricted between midnight and 4 AM (EAT). This is a security measure to protect your data. Please try again during business hours.' 
+        },
+      });
       return;
     }
 
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-
+    // Validation
     if (!identifier.trim() || !password.trim()) {
-      setMessage({ type: 'error', text: 'Enter both your email and password.' });
-      setIsLoading(false);
+      setFormState({
+        message: { type: 'error', text: 'Enter both your email and password.' },
+      });
       return;
     }
+
+    if (!validateEmail(identifier)) {
+      setFormState({
+        message: { type: 'error', text: 'Please enter a valid email address.' },
+      });
+      return;
+    }
+
+    setFormState({ loading: true, message: { type: '', text: '' } });
 
     try {
       const data = await authApi.login({
         email: identifier.trim(),
-        password: password.trim()
+        password: password.trim(),
       });
 
       if (data && data.success) {
@@ -119,6 +357,7 @@ function LoginPage() {
           throw new Error('No token received from server');
         }
 
+        // Store authentication data
         localStorage.setItem('authToken', token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('loginTime', new Date().toISOString());
@@ -132,225 +371,783 @@ function LoginPage() {
         if (data.tenantSlug) localStorage.setItem('tenantSlug', data.tenantSlug);
         if (data.user?.role) localStorage.setItem('userRole', data.user.role);
 
+        // Set cookies
         setCookie('authToken', token, 7);
         if (data.user?.role) setCookie('userRole', data.user.role, 7);
         if (data.tenant?.tenantSlug) setCookie('tenantSlug', data.tenant.tenantSlug, 7);
 
-        setMessage({ type: 'success', text: 'Signed in. Taking you to the dashboard.' });
-        setAuthPopupData({ success: true, message: `Welcome, ${data.user?.fullName || 'there'}.` });
+        // Show success popup
+        setAuthPopupData({ 
+          success: true, 
+          message: `Welcome, ${data.user?.fullName || 'there'}.` 
+        });
         setShowAuthPopup(true);
 
+        // Navigate after delay
         setTimeout(() => {
           setShowAuthPopup(false);
           navigate('/dashboard');
         }, 1400);
 
       } else {
-        setMessage({ type: 'error', text: data?.message || 'Those credentials did not match our records.' });
-        setIsLoading(false);
+        setFormState({
+          message: { 
+            type: 'error', 
+            text: data?.message || 'Those credentials did not match our records.' 
+          },
+        });
       }
     } catch (err) {
       console.error('Login error:', err);
-      setMessage({ type: 'error', text: err.response?.data?.message || 'We could not reach the server. Please try again.' });
-      setIsLoading(false);
+      setFormState({
+        message: { 
+          type: 'error', 
+          text: err.response?.data?.message || 'We could not reach the server. Please try again.' 
+        },
+      });
+    } finally {
+      setFormState({ loading: false });
     }
-  };
+  }, [identifier, password, nightBlocked, setFormState, setCookie, navigate]);
 
-  const hasError = message.type === 'error';
+  const isLoading = formState.loading;
+  const hasError = formState.message.type === 'error';
+  const isFormValid = validateEmail(identifier) && isValidPassword(password);
 
   return (
-    <>
+    <div className="login-page">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html{scroll-behavior:smooth;background:${C.bone};}
-        body{overflow-x:hidden;background:${C.bone};color:${C.gray};font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
-        ::selection{background:rgba(139,115,85,0.18);color:${C.ink};}
-
-        .lg-inp:focus{outline:none;border-color:${C.brass}!important;box-shadow:0 0 0 3px rgba(139,115,85,0.12);}
-
-        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-        .fade-in{animation:fadeUp .45s cubic-bezier(0.16,1,0.3,1) both;}
-
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .spinner{width:14px;height:14px;border:2px solid rgba(250,248,244,0.35);border-top-color:${C.bone};border-radius:50%;animation:spin .65s linear infinite;display:inline-block;}
-
-        .label-mono{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:${C.brass};}
-
-        @media (max-width: 860px) {
-          .login-grid { grid-template-columns: 1fr !important; }
-          .login-left { display: none !important; }
-          .login-right { padding: 2.4rem 1.8rem !important; }
+        
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+        
+        html {
+          scroll-behavior: smooth;
+          background: ${THEME.colors.bone};
+        }
+        
+        body {
+          overflow-x: hidden;
+          background: ${THEME.colors.bone};
+          color: ${THEME.colors.gray};
+          font-family: ${THEME.typography.fontFamily};
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+        
+        ::selection {
+          background: rgba(139,115,85,0.18);
+          color: ${THEME.colors.ink};
+        }
+        
+        .login-page {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        /* Animations */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+          animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        
+        .spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(250,248,244,0.35);
+          border-top-color: ${THEME.colors.bone};
+          border-radius: 50%;
+          animation: spin 0.65s linear infinite;
+          display: inline-block;
+        }
+        
+        /* Navigation */
+        .navbar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 300;
+          background: rgba(250,248,244,0.92);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid ${THEME.colors.line};
+          padding: 1.1rem 0;
+        }
+        
+        .navbar-content {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 1.75rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .navbar-brand {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          cursor: pointer;
+          background: none;
+          border: none;
+          font-family: inherit;
+        }
+        
+        .navbar-brand-text {
+          font-family: ${THEME.typography.displayFamily};
+          font-size: 1.05rem;
+          font-weight: 500;
+          color: ${THEME.colors.ink};
+        }
+        
+        .navbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .label-mono {
+          font-family: ${THEME.typography.monoFamily};
+          font-size: 0.72rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: ${THEME.colors.brass};
+        }
+        
+        .btn-primary {
+          background: ${THEME.colors.ink};
+          color: ${THEME.colors.bone};
+          border: none;
+          padding: 0.6rem 1.2rem;
+          border-radius: ${THEME.borderRadius.sm};
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+          font-family: ${THEME.typography.fontFamily};
+        }
+        
+        .btn-primary:hover {
+          background: #000;
+        }
+        
+        /* Main Content */
+        .main-content {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 76px 1.5rem 2rem;
+          background: ${THEME.colors.bone};
+        }
+        
+        .login-container {
+          max-width: 980px;
+          width: 100%;
+          opacity: loaded ? 1 : 0;
+          transform: loaded ? 'translateY(0)' : 'translateY(14px)',
+          transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1),
+        }
+        
+        .login-grid {
+          display: grid;
+          grid-template-columns: 0.95fr 1fr;
+          border: 1px solid ${THEME.colors.line};
+          box-shadow: 0 30px 70px -24px ${THEME.colors.shadow};
+          border-radius: ${THEME.borderRadius.lg};
+          overflow: hidden;
+        }
+        
+        /* Left Panel */
+        .login-left {
+          background: ${THEME.colors.ink};
+          padding: ${THEME.spacing.xxxl} ${THEME.spacing.xxxl};
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        
+        .left-header {
+          margin-bottom: ${THEME.spacing.xxl};
+        }
+        
+        .case-number {
+          font-family: ${THEME.typography.monoFamily};
+          fontSize: ${THEME.typography.tiny};
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: ${THEME.colors.brassLight},
+          marginBottom: ${THEME.spacing.xxl},
+        }
+        
+        .left-title {
+          font-family: ${THEME.typography.displayFamily};
+          fontSize: ${THEME.typography.heroTitle},
+          fontWeight: 500,
+          color: ${THEME.colors.bone},
+          marginBottom: ${THEME.spacing.md},
+          lineHeight: 1.15,
+        }
+        
+        .left-description {
+          fontSize: ${THEME.typography.body},
+          color: ${THEME.colors.grayLight},
+          lineHeight: 1.7,
+          maxWidth: '300px',
+        }
+        
+        .features-section {
+          borderTop: 1px solid ${THEME.colors.lineDark};
+          paddingTop: ${THEME.spacing.xl},
+        }
+        
+        .feature-item {
+          display: flex;
+          alignItems: center,
+          gap: ${THEME.spacing.sm},
+          marginBottom: ${THEME.spacing.md},
+          color: ${THEME.colors.brassLight},
+        }
+        
+        /* Right Panel */
+        .login-right {
+          background: ${THEME.colors.bone};
+          padding: ${THEME.spacing.xxxl} ${THEME.spacing.xxl};
+          display: flex;
+          flex-direction: column;
+          justifyContent: center',
+        }
+        
+        .right-header {
+          marginBottom: ${THEME.spacing.xxl},
+        }
+        
+        .right-label {
+          font-family: ${THEME.typography.monoFamily};
+          fontSize: ${THEME.typography.tiny},
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: ${THEME.colors.gray},
+          marginBottom: ${THEME.spacing.sm},
+        }
+        
+        .right-title {
+          font-family: ${THEME.typography.displayFamily};
+          fontSize: ${THEME.typography.sectionTitle},
+          fontWeight: 500,
+          color: ${THEME.colors.ink},
+          marginBottom: ${THEME.spacing.xs},
+        }
+        
+        .right-subtitle {
+          fontSize: ${THEME.typography.small},
+          color: ${THEME.colors.gray},
+        }
+        
+        /* Form Elements */
+        .form-section {
+          marginBottom: ${THEME.spacing.lg},
+        }
+        
+        .input-label {
+          display: block,
+          font-family: ${THEME.typography.monoFamily},
+          fontSize: ${THEME.typography.tiny},
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: ${THEME.colors.gray},
+          marginBottom: ${THEME.spacing.sm},
+        }
+        
+        .input-field {
+          width: 100%,
+          padding: ${THEME.spacing.md} ${THEME.spacing.md},
+          fontSize: ${THEME.typography.body},
+          fontFamily: ${THEME.typography.fontFamily},
+          border: 1px solid ${THEME.colors.line},
+          borderRadius: ${THEME.borderRadius.md},
+          background: ${THEME.colors.white},
+          color: ${THEME.colors.ink},
+          transition: all 0.2s',
+          outline: none',
+        }
+        
+        .input-field:focus {
+          border-color: ${THEME.colors.brass},
+          box-shadow: 0 0 0 3px rgba(139,115,85,0.12)',
+        }
+        
+        .input-field:disabled {
+          opacity: 0.6,
+          cursor: not-allowed',
+        }
+        
+        .input-field::placeholder {
+          color: ${THEME.colors.gray},
+          opacity: 0.7',
+        }
+        
+        .error-text {
+          display: block,
+          color: ${THEME.colors.red},
+          fontSize: ${THEME.typography.tiny},
+          marginTop: ${THEME.spacing.xs},
+        }
+        
+        .alert-message {
+          padding: ${THEME.spacing.md},
+          borderRadius: ${THEME.borderRadius.md},
+          fontSize: ${THEME.typography.small},
+          fontWeight: 500,
+          lineHeight: 1.4,
+          marginBottom: ${THEME.spacing.lg},
+          display: flex,
+          alignItems: center',
+          gap: ${THEME.spacing.sm},
+        }
+        
+        /* Buttons */
+        .btn-submit {
+          width: 100%,
+          padding: ${THEME.spacing.md} ${THEME.spacing.lg},
+          fontSize: ${THEME.typography.body},
+          fontWeight: 500,
+          fontFamily: ${THEME.typography.fontFamily},
+          border: none,
+          borderRadius: ${THEME.borderRadius.sm},
+          cursor: pointer',
+          background: ${THEME.colors.ink},
+          color: ${THEME.colors.bone},
+          transition: background 0.2s',
+          display: flex,
+          alignItems: center',
+          justifyContent: center',
+          gap: ${THEME.spacing.sm},
+          minHeight: '48px',
+        }
+        
+        .btn-submit:hover:not(:disabled) {
+          background: '#000',
+        }
+        
+        .btn-submit:disabled {
+          opacity: 0.6,
+          cursor: not-allowed',
+        }
+        
+        .btn-link {
+          background: none,
+          border: none,
+          color: ${THEME.colors.gray},
+          cursor: pointer',
+          fontSize: ${THEME.typography.small},
+          fontFamily: ${THEME.typography.fontFamily},
+          textDecoration: 'underline',
+          textDecorationColor: ${THEME.colors.line},
+          transition: color 0.2s',
+        }
+        
+        .btn-link:hover {
+          color: ${THEME.colors.ink},
+        }
+        
+        .btn-link-accent {
+          color: ${THEME.colors.brass},
+          fontWeight: 500',
+        }
+        
+        .btn-link-accent:hover {
+          color: ${THEME.colors.brassHover},
+        }
+        
+        .btn-link-verdigris {
+          color: ${THEME.colors.verdigris},
+          fontWeight: 500',
+        }
+        
+        /* Footer */
+        .site-footer {
+          background: ${THEME.colors.ink},
+          color: ${THEME.colors.grayLight},
+          padding: ${THEME.spacing.xxl} 0 ${THEME.spacing.xl},
+        }
+        
+        .footer-content {
+          maxWidth: '1100px',
+          margin: '0 auto',
+          padding: '0 1.75rem',
+        }
+        
+        .footer-grid {
+          display: grid,
+          gridTemplateColumns: '2fr 1fr 1fr',
+          gap: ${THEME.spacing.xxl},
+          paddingBottom: ${THEME.spacing.xxl},
+          borderBottom: 1px solid ${THEME.colors.lineDark},
+        }
+        
+        .footer-brand {
+          display: flex,
+          alignItems: center',
+          gap: '0.6rem',
+          marginBottom: ${THEME.spacing.md},
+        }
+        
+        .footer-brand-text {
+          font-family: ${THEME.typography.displayFamily},
+          fontSize: '1.1rem',
+          color: ${THEME.colors.bone},
+        }
+        
+        .footer-description {
+          maxWidth: '320px',
+          fontSize: ${THEME.typography.small},
+          color: ${THEME.colors.grayLight},
+          lineHeight: 1.6,
+        }
+        
+        .footer-heading {
+          font-family: ${THEME.typography.monoFamily},
+          fontSize: ${THEME.typography.tiny},
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: ${THEME.colors.brassLight},
+          marginBottom: ${THEME.spacing.lg},
+          fontWeight: 400',
+        }
+        
+        .footer-link-item {
+          display: block,
+          fontSize: ${THEME.typography.small},
+          color: ${THEME.colors.grayLight},
+          marginBottom: ${THEME.spacing.sm},
+          textDecoration: 'none',
+          cursor: pointer',
+          transition: color 0.2s',
+          background: none',
+          border: none',
+          fontFamily: ${THEME.typography.fontFamily},
+          textAlign: 'left',
+        }
+        
+        .footer-link-item:hover {
+          color: ${THEME.colors.white},
+        }
+        
+        .footer-bottom {
+          display: flex,
+          justifyContent: space-between',
+          fontSize: ${THEME.typography.tiny},
+          color: 'rgba(250,248,244,0.45)',
+          paddingTop: ${THEME.spacing.xl},
+          flexWrap: wrap',
+          gap: ${THEME.spacing.sm},
+        }
+        
+        /* Popup Modal */
+        .modal-overlay {
+          position: fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: ${THEME.colors.overlay},
+          zIndex: 1000,
+          display: flex',
+          alignItems: center',
+          justifyContent: center',
+          padding: ${THEME.spacing.xxl},
+        }
+        
+        .modal-content {
+          background: ${THEME.colors.bone},
+          border: 1px solid ${THEME.colors.line},
+          padding: ${THEME.spacing.xxl},
+          textAlign: 'center',
+          maxWidth: '360px',
+          width: '100%',
+          boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)',
+          borderRadius: ${THEME.borderRadius.lg},
+        }
+        
+        .modal-icon {
+          width: '52px',
+          height: '52px',
+          borderRadius: '50%',
+          background: ${THEME.colors.bone2},
+          display: flex',
+          alignItems: center',
+          justifyContent: center',
+          margin: '0 auto ${THEME.spacing.lg}',
+          color: ${THEME.colors.verdigris},
+        }
+        
+        .modal-title {
+          font-family: ${THEME.typography.displayFamily},
+          fontSize: '1.3rem',
+          color: ${THEME.colors.ink},
+          marginBottom: ${THEME.spacing.sm},
+          fontWeight: 500',
+        }
+        
+        .modal-text {
+          fontSize: ${THEME.typography.small},
+          color: ${THEME.colors.gray},
+          lineHeight: 1.6,
+        }
+        
+        /* Responsive Design */
+        @media (max-width: ${THEME.breakpoints.mobile}) {
+          .login-grid {
+            grid-template-columns: 1fr !important;
+          }
+          
+          .login-left {
+            display: none !important;
+          }
+          
+          .login-right {
+            padding: ${THEME.spacing.xxl} ${THEME.spacing.xl} !important;
+          }
+          
+          .footer-grid {
+            grid-template-columns: 1fr !important;
+            gap: ${THEME.spacing.xl},
+          }
+        }
+        
+        @media (min-width: ${THEME.breakpoints.tablet}) {
+          .login-grid {
+            max-width: 1000px',
+          }
+        }
+        
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          .fade-in {
+            animation: none',
+          }
+          
+          .spinner {
+            animation: none',
+          }
+          
+          .btn-submit {
+            transition: none',
+          }
+        }
+        
+        .input-field:focus-visible,
+        .btn-submit:focus-visible,
+        .btn-link:focus-visible,
+        .footer-link-item:focus-visible {
+          outline: 2px solid ${THEME.colors.brass},
+          outline-offset: 2px',
         }
       `}</style>
 
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 300,
-        background: 'rgba(250,248,244,0.92)', backdropFilter: 'blur(10px)',
-        borderBottom: `1px solid ${C.line}`, padding: '1.1rem 0',
-      }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
-            <Mark size={20} />
-            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.05rem', fontWeight: 500, color: C.ink }}>Rest Point</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      {/* Navigation */}
+      <nav className="navbar">
+        <div className="navbar-content">
+          <button 
+            className="navbar-brand"
+            onClick={() => navigate('/')}
+            aria-label="Go to homepage"
+          >
+            <Logo size={20} />
+            <span className="navbar-brand-text">Rest Point</span>
+          </button>
+          <div className="navbar-actions">
             <span className="label-mono">Staff sign in</span>
             <button
               onClick={() => navigate('/register')}
-              style={{ background: C.ink, color: C.bone, border: 'none', padding: '.6rem 1.2rem', borderRadius: '2px', fontSize: '.8rem', fontWeight: 500, cursor: 'pointer', transition: 'background .2s', fontFamily: "'Inter', sans-serif" }}
-              onMouseEnter={(e) => { e.target.style.background = '#000'; }}
-              onMouseLeave={(e) => { e.target.style.background = C.ink; }}
-            >Start trial</button>
+              className="btn-primary"
+            >
+              Start trial
+            </button>
           </div>
         </div>
       </nav>
 
-      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: '76px', paddingBottom: '2rem', background: C.bone }}>
-        <div style={{
-          maxWidth: '980px', width: '100%', margin: '0 auto', padding: '1.5rem',
-          opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(14px)',
-          transition: 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)'
-        }}>
-          <div className="login-grid" style={{ display: 'grid', gridTemplateColumns: '0.95fr 1fr', border: `1px solid ${C.line}`, boxShadow: '0 30px 70px -24px rgba(21,23,26,0.18)' }}>
-
-            {/* Left panel — case record visual, ink */}
-            <div className="login-left" style={{ background: C.ink, padding: '3rem 2.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div className="label-mono" style={{ marginBottom: '2.2rem' }}>Case No. 0142 · Status — arranged</div>
-                <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '2rem', fontWeight: 500, color: C.bone, marginBottom: '.9rem', lineHeight: 1.15 }}>
+      {/* Main Content */}
+      <main className="main-content">
+        <div 
+          className="login-container"
+          style={{
+            opacity: loaded ? 1 : 0,
+            transform: loaded ? 'translateY(0)' : 'translateY(14px)',
+            transition: 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)',
+          }}
+        >
+          <div className="login-grid">
+            {/* Left Panel */}
+            <div className="login-left">
+              <div className="left-header">
+                <div className="case-number">Case No. 0142 · Status — arranged</div>
+                <h1 className="left-title">
                   The register, kept by your team.
                 </h1>
-                <p style={{ fontSize: '.92rem', color: C.grayLight, lineHeight: 1.7, maxWidth: '300px' }}>
+                <p className="left-description">
                   Sign in to manage cases, dispatch, documents, and billing across every branch you run.
                 </p>
               </div>
 
-              <div style={{ borderTop: `1px solid ${C.lineDark}`, paddingTop: '1.6rem' }}>
+              <div className="features-section">
                 {[
-                  [I.lock, 'Encrypted at rest and in transit'],
-                  [I.branches, 'Unlimited branches, one account'],
-                  [I.cloud, 'Synced in real time, every device'],
-                  [I.log, 'Every change kept in the audit log'],
-                ].map(([icon, label]) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '.85rem', color: C.brassLight }}>
-                    {icon}
-                    <span style={{ fontSize: '.82rem', color: C.grayLight, fontFamily: "'Inter', sans-serif" }}>{label}</span>
-                  </div>
+                  {
+                    icon: (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                        <rect x="3" y="11" width="18" height="11" rx="1" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    ),
+                    label: 'Encrypted at rest and in transit',
+                  },
+                  {
+                    icon: (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                        <circle cx="6" cy="6" r="2.5" />
+                        <circle cx="6" cy="18" r="2.5" />
+                        <circle cx="18" cy="12" r="2.5" />
+                        <path d="M6 8.5V15.5M8.3 7.2l7.4 3.6M8.3 16.8l7.4-3.6" />
+                      </svg>
+                    ),
+                    label: 'Unlimited branches, one account',
+                  },
+                  {
+                    icon: (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                        <path d="M18 18H6a4 4 0 0 1-1-7.87A5.5 5.5 0 0 1 15.5 8a4.5 4.5 0 0 1 2.5 8.4" />
+                      </svg>
+                    ),
+                    label: 'Synced in real time, every device',
+                  },
+                  {
+                    icon: (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                        <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
+                      </svg>
+                    ),
+                    label: 'Every change kept in the audit log',
+                  },
+                ].map(({ icon, label }) => (
+                  <FeatureItem key={label} icon={icon} label={label} />
                 ))}
               </div>
             </div>
 
-            {/* Right panel — form, bone */}
-            <div className="login-right" style={{ background: C.bone, padding: '3rem 2.8rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ marginBottom: '2rem' }}>
-                <div className="label-mono" style={{ marginBottom: '.7rem' }}>Welcome back</div>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.5rem', fontWeight: 500, color: C.ink, marginBottom: '.3rem' }}>Sign in to your account</h2>
-                <p style={{ fontSize: '.86rem', color: C.gray }}>Enter your credentials to open the dashboard.</p>
+            {/* Right Panel */}
+            <div className="login-right">
+              <div className="right-header">
+                <div className="right-label">Welcome back</div>
+                <h2 className="right-title">Sign in to your account</h2>
+                <p className="right-subtitle">Enter your credentials to open the dashboard.</p>
               </div>
 
-              <form onSubmit={handleLogin}>
-                {message.text && (
-                  <div className="fade-in" style={{
-                    background: message.type === 'error' ? C.redBg : '#EEF3EC',
-                    border: `1px solid ${message.type === 'error' ? C.redLine : '#DCE6D9'}`,
-                    color: message.type === 'error' ? C.red : '#475A43',
-                    padding: '.75rem .9rem', borderRadius: '4px', marginBottom: '1.25rem', fontSize: '.82rem',
-                    display: 'flex', alignItems: 'center', gap: '.5rem',
-                  }}>
-                    {message.type === 'error' ? null : I.check} {message.text}
-                  </div>
-                )}
+              <form onSubmit={handleSubmit} noValidate>
+                <AlertMessage 
+                  type={formState.message.type} 
+                  text={formState.message.text} 
+                />
 
-                <div style={{ marginBottom: '1.1rem' }}>
-                  <label className="label-mono" style={{ display: 'block', marginBottom: '.55rem', color: C.gray }}>Email address</label>
+                <div className="form-section">
+                  <label htmlFor="email" className="input-label">
+                    Email address
+                  </label>
                   <input
-                    type="email" value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+                    id="email"
+                    type="email"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     placeholder="director@yourfuneralhome.co.ke"
-                    className="lg-inp"
-                    style={{
-                      width: '100%', padding: '.78rem .9rem', background: '#fff',
-                      border: `1px solid ${hasError && !identifier ? C.red : C.line}`,
-                      borderRadius: '4px', fontSize: '.92rem', color: C.ink,
-                      transition: 'all .2s', fontFamily: "'Inter', sans-serif",
-                    }}
+                    disabled={isLoading}
+                    className="input-field"
+                    autoComplete="email"
+                    autoFocus
+                    aria-invalid={hasError && !identifier}
+                    aria-describedby={hasError && !identifier ? 'email-error' : undefined}
                   />
-                  {hasError && !identifier && <div style={{ color: C.red, fontSize: '.74rem', marginTop: '.3rem' }}>Email is required.</div>}
+                  {hasError && !identifier && (
+                    <span id="email-error" className="error-text">Email is required.</span>
+                  )}
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="label-mono" style={{ display: 'block', marginBottom: '.55rem', color: C.gray }}>Password</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="lg-inp"
-                      style={{
-                        width: '100%', padding: '.78rem 2.6rem .78rem .9rem', background: '#fff',
-                        border: `1px solid ${hasError && !password ? C.red : C.line}`,
-                        borderRadius: '4px', fontSize: '.92rem', color: C.ink,
-                        transition: 'all .2s', fontFamily: "'Inter', sans-serif",
-                      }}
-                    />
-                    <button
-                      type="button" onClick={() => setShowPassword(!showPassword)}
-                      style={{ position: 'absolute', right: '.7rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.gray, padding: '.2rem', display: 'flex' }}
-                      onMouseEnter={(e) => e.target.style.color = C.ink}
-                      onMouseLeave={(e) => e.target.style.color = C.gray}
-                    >
-                      {showPassword ? I.eyeOff : I.eye}
-                    </button>
-                  </div>
-                  {hasError && !password && <div style={{ color: C.red, fontSize: '.74rem', marginTop: '.3rem' }}>Password is required.</div>}
-                </div>
+                <PasswordInput
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  showPassword={showPassword}
+                  onToggle={() => setShowPassword(!showPassword)}
+                  hasError={hasError}
+                  disabled={isLoading}
+                />
 
                 <button
-                  type="submit" disabled={isLoading}
-                  style={{
-                    width: '100%', background: isLoading ? C.line : C.ink, color: isLoading ? C.gray : C.bone,
-                    border: 'none', padding: '.85rem', borderRadius: '2px', fontSize: '.88rem', fontWeight: 500,
-                    cursor: isLoading ? 'default' : 'pointer', transition: 'background .2s',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.6rem',
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                  onMouseEnter={(e) => { if (!isLoading) e.target.style.background = '#000'; }}
-                  onMouseLeave={(e) => { if (!isLoading) e.target.style.background = C.ink; }}
+                  type="submit"
+                  disabled={isLoading || !isFormValid}
+                  className="btn-submit"
+                  aria-busy={isLoading}
                 >
-                  {isLoading ? (<><span className="spinner" />Signing in…</>) : 'Sign in'}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    {isLoading && <Spinner />}
+                    <span>{isLoading ? 'Signing in…' : 'Sign in'}</span>
+                  </span>
                 </button>
 
-                <div style={{ marginTop: '1.1rem', textAlign: 'center' }}>
+                <div style={{ marginTop: THEME.spacing.lg, textAlign: 'center' }}>
                   <button
-                    type="button" onClick={() => navigate('/forgot-password')}
-                    style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: '.82rem', fontFamily: "'Inter', sans-serif", textDecoration: 'underline', textDecorationColor: C.line }}
-                    onMouseEnter={(e) => e.target.style.color = C.ink}
-                    onMouseLeave={(e) => e.target.style.color = C.gray}
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="btn-link"
                   >
                     Forgot your password?
                   </button>
                 </div>
 
-                <div style={{ marginTop: '1.1rem', textAlign: 'center' }}>
-                  <p style={{ fontSize: '.82rem', color: C.gray }}>
+                <div style={{ marginTop: THEME.spacing.lg, textAlign: 'center' }}>
+                  <p style={{ fontSize: THEME.typography.small, color: THEME.colors.gray }}>
                     Don't have an account?{' '}
                     <button
-                      type="button" onClick={() => navigate('/register')}
-                      style={{ background: 'none', border: 'none', color: C.brass, cursor: 'pointer', fontSize: '.82rem', fontWeight: 500, fontFamily: "'Inter', sans-serif", textDecoration: 'underline', textDecorationColor: C.line }}
-                      onMouseEnter={(e) => e.target.style.color = C.brassLight}
-                      onMouseLeave={(e) => e.target.style.color = C.brass}
+                      type="button"
+                      onClick={() => navigate('/register')}
+                      className="btn-link btn-link-accent"
                     >
                       Start a free trial
                     </button>
                   </p>
                 </div>
 
-                <div style={{ marginTop: '.9rem', paddingTop: '.9rem', borderTop: `1px solid ${C.line}`, textAlign: 'center' }}>
-                  <p style={{ fontSize: '.8rem', color: C.gray }}>
+                <div 
+                  style={{ 
+                    marginTop: THEME.spacing.md, 
+                    paddingTop: THEME.spacing.md, 
+                    borderTop: `1px solid ${THEME.colors.line}`,
+                    textAlign: 'center',
+                  }}
+                >
+                  <p style={{ fontSize: THEME.typography.small, color: THEME.colors.gray }}>
                     Are you a family member?{' '}
                     <button
-                      type="button" onClick={() => navigate('/portal/login')}
-                      style={{ background: 'none', border: 'none', color: C.verdigris, cursor: 'pointer', fontSize: '.8rem', fontWeight: 500, fontFamily: "'Inter', sans-serif", textDecoration: 'underline', textDecorationColor: C.line }}
+                      type="button"
+                      onClick={() => navigate('/portal/login')}
+                      className="btn-link btn-link-verdigris"
                     >
                       Open the family portal
                     </button>
@@ -362,66 +1159,57 @@ function LoginPage() {
         </div>
       </main>
 
+      {/* Success Popup */}
       {showAuthPopup && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(21,23,26,0.88)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem',
-        }}>
-          <div className="fade-in" style={{
-            background: C.bone, border: `1px solid ${C.line}`, padding: '2.4rem',
-            textAlign: 'center', maxWidth: '360px', width: '100%',
-            boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)',
-          }}>
-            <div style={{
-              width: '52px', height: '52px', borderRadius: '50%', background: C.bone2,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 1.3rem', color: C.verdigris,
-            }}>
-              {I.check}
+        <div className="modal-overlay">
+          <div className="modal-content fade-in">
+            <div className="modal-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
             </div>
-            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.3rem', color: C.ink, marginBottom: '.5rem', fontWeight: 500 }}>
+            <h3 className="modal-title">
               {authPopupData.success ? 'Welcome' : 'Signing in…'}
             </h3>
-            <p style={{ fontSize: '.86rem', color: C.gray, lineHeight: 1.6 }}>{authPopupData.message}</p>
+            <p className="modal-text">{authPopupData.message}</p>
           </div>
         </div>
       )}
 
       {/* Footer */}
-      <footer style={{ background: C.ink, color: C.grayLight, padding: '3.5rem 0 2rem' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.75rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '3rem', paddingBottom: '2.6rem', borderBottom: `1px solid rgba(250,248,244,0.12)` }}>
+      <footer className="site-footer">
+        <div className="footer-content">
+          <div className="footer-grid">
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-                <Mark size={20} color={C.bone} />
-                <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.1rem', color: C.bone }}>Rest Point</span>
+              <div className="footer-brand">
+                <Logo size={20} color={THEME.colors.bone} />
+                <span className="footer-brand-text">Rest Point</span>
               </div>
-              <p style={{ maxWidth: '320px', fontSize: '0.88rem', color: C.grayLight }}>The operating system for funeral homes that take their reputation seriously. Built by Welt Tallis Technologies.</p>
+              <p className="footer-description">
+                The operating system for funeral homes that take their reputation seriously. Built by Welt Tallis Technologies.
+              </p>
             </div>
             <div>
-              <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.74rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: C.brassLight, marginBottom: '1.2rem', fontWeight: 400 }}>Platform</h4>
-              <a href="/#capabilities" style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Capabilities</a>
-              <a href="/#pricing" style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Pricing</a>
-              <a href="/#faq" style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Questions</a>
+              <h4 className="footer-heading">Platform</h4>
+              <FooterLink href="/#capabilities">Capabilities</FooterLink>
+              <FooterLink href="/#pricing">Pricing</FooterLink>
+              <FooterLink href="/#faq">Questions</FooterLink>
             </div>
             <div>
-              <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.74rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: C.brassLight, marginBottom: '1.2rem', fontWeight: 400 }}>Company</h4>
-              <a onClick={() => navigate('/about')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>About</a>
-              <a onClick={() => navigate('/contact')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Contact</a>
-              <a onClick={() => navigate('/privacy')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Privacy policy</a>
-              <a onClick={() => navigate('/terms')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Terms</a>
-              <a onClick={() => navigate('/account-deletion')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Account deletion</a>
+              <h4 className="footer-heading">Company</h4>
+              <FooterLink onClick={() => navigate('/about')}>About</FooterLink>
+              <FooterLink onClick={() => navigate('/contact')}>Contact</FooterLink>
+              <FooterLink onClick={() => navigate('/privacy')}>Privacy policy</FooterLink>
+              <FooterLink onClick={() => navigate('/terms')}>Terms</FooterLink>
+              <FooterLink onClick={() => navigate('/account-deletion')}>Account deletion</FooterLink>
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(250,248,244,0.45)', paddingTop: '1.6rem', flexWrap: 'wrap', gap: '0.8rem' }}>
+          <div className="footer-bottom">
             <div>© 2026 Rest Point. All rights reserved.</div>
             <div>Built for African funeral professionals</div>
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
-
-export default LoginPage;

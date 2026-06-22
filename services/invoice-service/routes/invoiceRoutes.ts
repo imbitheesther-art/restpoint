@@ -1,6 +1,5 @@
-const express = require('express');
-const router = express.Router();
-const {
+import { Router } from 'express';
+import {
   getAllDeceasedWithFinancials,
   getDeceasedFinancialDetails,
   createPayment,
@@ -13,7 +12,9 @@ const {
   updateInvoice,
   deleteInvoice,
   downloadInvoice,
-} = require('../controllers/invoice');
+} from '../controllers/invoice';
+
+const router = Router();
 
 // Financial Management Routes
 router.get('/invoices/all-deceased', getAllDeceasedWithFinancials);
@@ -34,4 +35,4 @@ router.put('/invoices/:id', updateInvoice);
 router.delete('/invoices/:id', deleteInvoice);
 router.get('/invoices/:id/download', downloadInvoice);
 
-module.exports = router;
+export default router;

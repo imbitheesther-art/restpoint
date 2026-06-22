@@ -164,6 +164,61 @@ const MockPortal = () => (
   </div>
 );
 
+/* ---------- Mock: Digital Memorial Board ---------- */
+const MockMemorialBoard = () => {
+  const [candles, setCandles] = useState(12);
+  const [message, setMessage] = useState('');
+  const [lighted, setLighted] = useState(false);
+
+  const handleLightCandle = () => {
+    if (!lighted && message.trim()) {
+      setCandles(candles + 1);
+      setLighted(true);
+    }
+  };
+
+  return (
+    <div className="mock-frame">
+      <div className="mock-topline">
+        <span className="label" style={{ color: C.brassLight }}>Digital memorial</span>
+        <span className="label" style={{ color: 'rgba(250,248,244,0.45)' }}>In memory</span>
+      </div>
+      <div className="mock-status" style={{ fontSize: '1rem', marginBottom: '0.8rem' }}>
+        {candles} candles lit
+      </div>
+      <div className="mock-candles">
+        {[...Array(Math.min(candles, 8))].map((_, i) => (
+          <span key={i} className="candle-icon" style={{ fontSize: '1.4rem', marginRight: '0.4rem' }}>🕯️</span>
+        ))}
+        {candles > 8 && <span style={{ color: C.brassLight, fontSize: '0.8rem' }}>+{candles - 8} more</span>}
+      </div>
+      <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(250,248,244,0.14)', paddingTop: '1rem' }}>
+        <textarea
+          placeholder="Write a message of condolence..."
+          value={message}
+          onChange={(e) => { setMessage(e.target.value); setLighted(false); }}
+          style={{
+            width: '100%', background: 'transparent', border: 'none', color: C.bone,
+            fontFamily: "'Inter', sans-serif", fontSize: '0.85rem', resize: 'none',
+            outline: 'none', minHeight: '3rem'
+          }}
+        />
+        <button
+          onClick={handleLightCandle}
+          disabled={!message.trim() || lighted}
+          style={{
+            marginTop: '0.6rem', padding: '0.5rem 1.2rem', background: lighted ? C.brass : 'transparent',
+            color: C.bone, border: `1px solid ${C.brass}`, cursor: lighted ? 'default' : 'pointer',
+            fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', letterSpacing: '0.06em'
+          }}
+        >
+          {lighted ? 'Candle lit' : 'Light a candle'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 /* ---------- Mock: Dispatch & fuel ---------- */
 const MockDispatch = () => {
   const [distance, setDistance] = useState(38);
@@ -361,6 +416,8 @@ export default function App() {
         .mock-product { display: flex; justify-content: space-between; padding: 0.85rem 0; border-bottom: 1px solid rgba(250,248,244,0.14); font-size: 0.86rem; color: ${C.grayLight}; }
         .mock-product span:last-child { color: ${C.bone}; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
 
+        .mock-candles { display: flex; flex-wrap: wrap; gap: '0.3rem'; margin: '0.8rem 0'; }
+
         @media (max-width: 760px) { .mock-frame { max-width: 100%; } }
 
         .proof { border-top: 1px solid ${C.line}; border-bottom: 1px solid ${C.line}; padding: 2.6rem 0; }
@@ -473,7 +530,7 @@ export default function App() {
               opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(14px)',
               transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)'
             }}>
-              <div className="label" style={{ marginBottom: '1.4rem' }}>Funeral home operating system — est. partners across East Africa</div>
+              <div className="label" style={{ marginBottom: '1.4rem' }}>Funeral home operating system — trusted by homes across East Africa</div>
               <div className="hero-rule" />
             </div>
             <div className="hero-grid">
@@ -538,7 +595,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* Seven entries — six + Google Drive backup */}
+        {/* Seven entries — six + Digital Memorial Board */}
         <section id="capabilities" className="section">
           <div className="wrap">
             <Reveal>
@@ -619,16 +676,39 @@ export default function App() {
           </div>
         </section>
 
+        {/* Digital Memorial Board — Coming Soon */}
+        <section className="section dark-section" style={{ paddingTop: 0 }}>
+          <div className="wrap" style={{ maxWidth: '720px' }}>
+            <Reveal>
+              <div className="label" style={{ color: C.brassLight, marginBottom: '1.4rem' }}>Coming soon</div>
+              <h2 style={{ fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem' }}>
+                Digital memorial board
+              </h2>
+              <p style={{ marginTop: '0', maxWidth: '560px', marginBottom: '2rem' }}>
+                Give families a place to gather, remember, and honour their loved ones. Light a digital candle, share a memory, and receive AI-generated obituaries — all from a single, dignified page.
+              </p>
+            </Reveal>
+            <Reveal delay={100}>
+              <MockMemorialBoard />
+            </Reveal>
+            <Reveal delay={200}>
+              <p style={{ marginTop: '1.6rem', fontSize: '0.88rem', color: C.brassLight }}>
+                AI-generated obituaries — launching soon on the landing page. Rest Point will help families craft beautiful, personalised tributes in seconds.
+              </p>
+            </Reveal>
+          </div>
+        </section>
+
         {/* About / Mission section */}
-        <section id="about" className="section dark-section">
+        <section id="about" className="section">
           <div className="wrap" style={{ maxWidth: '720px' }}>
             <Reveal>
               <div className="label" style={{ color: C.brassLight, marginBottom: '1.4rem' }}>About Rest Point</div>
               <h2 style={{ fontStyle: 'italic', fontWeight: 500 }}>
-                We immerse young people in a world of technology, engineering, and sustainability using real-world remote-controlled simulations.
+                Built for the families and funeral professionals who deserve better software.
               </h2>
               <p style={{ marginTop: '1.6rem', maxWidth: '560px' }}>
-                Rest Point is built by Welt Tallis Technologies — a team that believes the best software is built by people who understand the work. We built the register first, and the features around it.
+                Rest Point is developed by Welt Tallis Technologies — a team that believes the best software is built by people who understand the work. We built the register first, and the features around it.
               </p>
             </Reveal>
           </div>

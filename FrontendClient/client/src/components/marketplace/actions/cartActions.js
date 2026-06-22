@@ -1,9 +1,12 @@
 import * as actionTypes from "../flipkart/client/src/redux/constants/cartConstants";
 import axios from "axios";
+import { ENDPOINTS, getTenantHeaders, buildUrl } from "../../../api/endpoints";
 
 export const addToCart = (id, quantity) => async (dispatch, getState) => {
   try {
-    const { data } = await axios.get(`http://localhost:8000/product/${id}`);
+    const { data } = await axios.get(`${buildUrl('marketplace', ENDPOINTS.MARKETPLACE.PRODUCTS)}/${id}`, {
+      headers: getTenantHeaders()
+    });
 
     dispatch({ type: actionTypes.ADD_TO_CART, payload: { ...data, quantity } });
 

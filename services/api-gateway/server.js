@@ -1,5 +1,5 @@
-#!/usr/bin/env node
-// RestPoint API Gateway — Central routing
+﻿#!/usr/bin/env node
+// RestPoint API Gateway â€” Central routing
 // Based on working Siasa Hub gateway pattern using http-proxy-middleware
 // Run with memory limit: node --max-old-space-size=4096 server.js
 try { const v8 = require('v8'); v8.setFlagsFromString('--max-old-space-size=4096'); } catch(e){}
@@ -13,6 +13,9 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const rateLimit = require('express-rate-limit');
 
 dotenv.config();
+
+// Trust proxy for correct IP behind reverse proxy
+app.set("trust proxy", process.env.TRUST_PROXY === "true" ? 1 : 0);
 
 const APP_NAME = 'restpoint-gateway';
 const APP_VERSION = '1.0.1';
@@ -31,7 +34,7 @@ const Logger = {
 // PROCESS ERROR HANDLERS
 // =============================================================================
 process.on('uncaughtException', (error) => {
-  Logger.error('🔥 UNCAUGHT EXCEPTION', { message: error.message, stack: error.stack });
+  Logger.error('ðŸ”¥ UNCAUGHT EXCEPTION', { message: error.message, stack: error.stack });
   const isConnectionError = ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET'].includes(error.code);
   if (!isConnectionError) {
     process.exit(1);
@@ -39,7 +42,7 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (reason) => {
-  Logger.error('🌀 UNHANDLED PROMISE REJECTION', { message: reason?.message || reason });
+  Logger.error('ðŸŒ€ UNHANDLED PROMISE REJECTION', { message: reason?.message || reason });
 });
 
 // =============================================================================
@@ -50,10 +53,10 @@ const HOST = process.env.HOST || '0.0.0.0';
 const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
 // =============================================================================
-// SERVICE URLS — All services use port 5000 internally in Docker network
+// SERVICE URLS â€” All services use port 5000 internally in Docker network
 // FIX: 'calender-service' typo corrected to 'calendar-service'.
 // NOTE: if your actual docker-compose service name differs from any of these
-// defaults, set the matching *_SERVICE_URL env var to override it — do not
+// defaults, set the matching *_SERVICE_URL env var to override it â€” do not
 // rely on the fallback strings being correct for your deployment.
 // =============================================================================
 const SERVICES = {
@@ -83,21 +86,21 @@ const SERVICES = {
 
 Logger.info('Service URLs:');
 Object.entries(SERVICES).forEach(([name, url]) => {
-  Logger.info(`  ${name} → ${url}`);
+  Logger.info(`  ${name} â†’ ${url}`);
 });
 
 // =============================================================================
 // STARTUP CONNECTIVITY CHECK (NEW)
 // Pings each unique service target's /health endpoint on boot so a bad
 // hostname/port shows up immediately in logs instead of on first request.
-// Does NOT block startup — just logs warnings.
+// Does NOT block startup â€” just logs warnings.
 // =============================================================================
 function checkServiceHealth(name, baseUrl) {
   let target;
   try {
     target = new URL(baseUrl);
   } catch (e) {
-    Logger.error(`[STARTUP CHECK] ${name}: invalid URL "${baseUrl}" — ${e.message}`);
+    Logger.error(`[STARTUP CHECK] ${name}: invalid URL "${baseUrl}" â€” ${e.message}`);
     return;
   }
   const req = http.get(
@@ -113,10 +116,10 @@ function checkServiceHealth(name, baseUrl) {
   );
   req.on('timeout', () => {
     req.destroy();
-    Logger.warn(`[STARTUP CHECK] ${name}: TIMEOUT reaching ${baseUrl} (service may be slow to start — not necessarily fatal)`);
+    Logger.warn(`[STARTUP CHECK] ${name}: TIMEOUT reaching ${baseUrl} (service may be slow to start â€” not necessarily fatal)`);
   });
   req.on('error', (err) => {
-    Logger.warn(`[STARTUP CHECK] ${name}: UNREACHABLE at ${baseUrl} — ${err.code || err.message}`);
+    Logger.warn(`[STARTUP CHECK] ${name}: UNREACHABLE at ${baseUrl} â€” ${err.code || err.message}`);
   });
 }
 
@@ -194,7 +197,7 @@ app.use(cors({
 // =============================================================================
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
-// Body parsers — only for non-proxied routes (health, debug, etc.)
+// Body parsers â€” only for non-proxied routes (health, debug, etc.)
 app.use((req, res, next) => {
   const isProxied = req.path.startsWith('/api/v1/') || req.path.startsWith('/v1/');
   if (isProxied) return next();
@@ -221,7 +224,7 @@ app.use((req, res, next) => {
 // REQUEST LOGGING
 // =============================================================================
 app.use((req, res, next) => {
-  Logger.info(`→ ${req.method} ${req.originalUrl}`);
+  Logger.info(`â†’ ${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -242,10 +245,10 @@ const proxyOptions = {
       if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.headers['content-type']) {
         proxyReq.setHeader('Content-Type', req.headers['content-type']);
       }
-      Logger.debug(`[PROXY] ${req.method} ${req.originalUrl} → ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
+      Logger.debug(`[PROXY] ${req.method} ${req.originalUrl} â†’ ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
     },
     proxyRes: (proxyRes, req) => {
-      Logger.debug(`[PROXY] ${req.method} ${req.originalUrl} → ${proxyRes.statusCode}`);
+      Logger.debug(`[PROXY] ${req.method} ${req.originalUrl} â†’ ${proxyRes.statusCode}`);
     },
     error: (err, req, res) => {
       Logger.error(`[PROXY ERROR] ${req.method} ${req.originalUrl}: ${err.message}`, { code: err.code });
@@ -257,7 +260,7 @@ const proxyOptions = {
 };
 
 // =============================================================================
-// ROUTE MAPPING — ALL 23 SERVICES
+// ROUTE MAPPING â€” ALL 23 SERVICES
 // Both /api/v1/restpoint/* and /v1/restpoint/* for compatibility
 // Path rewrite strips /api prefix when present
 //
@@ -265,7 +268,7 @@ const proxyOptions = {
 // Routes are registered in array order below, and more specific/longer
 // paths for a given prefix are listed BEFORE shorter ones within each
 // service block (e.g. '.../tenant/onboarding' before '.../tenant') so the
-// specific match wins. This was already correct in the original file —
+// specific match wins. This was already correct in the original file â€”
 // kept as-is, just documenting it so it doesn't get silently broken by a
 // future edit that reorders the array.
 // =============================================================================
@@ -490,7 +493,7 @@ const routes = [
 Logger.info('Registered routes:');
 routes.forEach(route => {
   route.paths.forEach(path => {
-    Logger.info(`  ${path} → ${route.target}`);
+    Logger.info(`  ${path} â†’ ${route.target}`);
 
     // Create proxy middleware with path rewrite
     const proxy = createProxyMiddleware({
@@ -505,7 +508,7 @@ routes.forEach(route => {
           rewrittenPath = rewrittenPath.replace(/^\/api/, '');
         }
 
-        Logger.debug(`[PATH REWRITE] ${path} → ${rewrittenPath}`);
+        Logger.debug(`[PATH REWRITE] ${path} â†’ ${rewrittenPath}`);
         return rewrittenPath;
       },
     });
@@ -561,7 +564,7 @@ app.get('/api/v1/debug/health-check', async (req, res) => {
 // 404 HANDLER
 // =============================================================================
 app.use((req, res) => {
-  Logger.warn(`[404] ${req.method} ${req.originalUrl} — No matching route`);
+  Logger.warn(`[404] ${req.method} ${req.originalUrl} â€” No matching route`);
   const matchingRoutes = [];
   routes.forEach(route => {
     route.paths.forEach(path => {

@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import axios from "axios";
+import { getTenantHeaders, buildUrl } from "../../../api/endpoints";
+import { ENDPOINTS } from "../../../api/endpoints";
 
 const ProductContext = createContext();
 
@@ -21,8 +23,12 @@ export const ProductProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await axios.get("http://localhost:8000/products");
-      setProducts(data);
+      // Centralized API call with tenant isolation headers
+      const { data } = await axios.get(buildUrl('marketplace', ENDPOINTS.MARKETPLACE.PRODUCTS), {
+        headers: getTenantHeaders()
+      });
+      // Each tenant sees ONLY products belonging to their branch/tenant
+      setProducts(data?.data || data?.products || data || []);
       setLoading(false);
     } catch (err) {
       setError(err.response?.data || "Error fetching products");
@@ -34,8 +40,10 @@ export const ProductProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await axios.get(`http://localhost:8000/product/${id}`);
-      setProductDetails(data);
+      const { data } = await axios.get(`${buildUrl('marketplace', ENDPOINTS.MARKETPLACE.PRODUCTS)}/${id}`, {
+        headers: getTenantHeaders()
+      });
+      setProductDetails(data?.data || data);
       setLoading(false);
     } catch (err) {
       setError(err.response?.data || "Error fetching product details");

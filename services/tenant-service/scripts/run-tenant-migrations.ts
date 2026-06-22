@@ -11,7 +11,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import path from 'path';
-import { runTenantMigrations, runAllMigrations } from '../../shared/migrations';
+import { runTenantMigrations, runAllMigrations } from '../../../shared/migrations';
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 

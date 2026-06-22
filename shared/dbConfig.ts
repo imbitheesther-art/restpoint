@@ -41,13 +41,14 @@ export const getRootPool = async (): Promise<mysql.Pool> => {
   if (!rootPool) {
     rootPool = mysql.createPool({
       ...DB_CONFIG,
+      database: 'tenant_tracking',
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
     });
-    console.log('✅ Root database pool created');
+    console.log('✅ Root database pool created (default DB: tenant_tracking)');
   }
   return rootPool;
 };
@@ -58,7 +59,7 @@ export const lookupTenantDatabase = async (tenantSlug: string): Promise<string |
   try {
     const pool = await getRootPool();
     const [rows] = await pool.query(
-      'SELECT db_name FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
+      'SELECT db_name FROM tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
       [tenantSlug]
     );
     const result = rows as any[];
