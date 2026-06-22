@@ -4,7 +4,7 @@ const fs = require('fs');
 let db;
 
 // Try loading the JS version first (most reliable)
-const jsPath = path.resolve(__dirname, '../../global/config/db.js');
+const jsPath = path.resolve(__dirname, '../../../global/config/db.js');
 if (fs.existsSync(jsPath)) {
   try {
     db = require(jsPath);
@@ -15,7 +15,7 @@ if (fs.existsSync(jsPath)) {
 
 // Try loading shared/dbConfig.js as fallback
 if (!db) {
-  const sharedPath = path.resolve(__dirname, '../../shared/dbConfig.js');
+  const sharedPath = path.resolve(__dirname, '../../../shared/dbConfig.js');
   if (fs.existsSync(sharedPath)) {
     try {
       db = require(sharedPath);
@@ -61,7 +61,7 @@ if (!db) {
 if (!db) {
   try {
     require('ts-node').register({ transpileOnly: true });
-    const tsPath = path.resolve(__dirname, '../../global/config/db.ts');
+    const tsPath = path.resolve(__dirname, '../../../global/config/db.ts');
     if (fs.existsSync(tsPath)) {
       db = require(tsPath);
     } else {

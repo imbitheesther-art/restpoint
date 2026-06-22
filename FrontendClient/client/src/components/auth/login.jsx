@@ -563,8 +563,8 @@ export default function LoginPage() {
           max-width: 980px;
           width: 100%;
           opacity: loaded ? 1 : 0;
-          transform: loaded ? 'translateY(0)' : 'translateY(14px)',
-          transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1),
+          transform: loaded ? 'translateY(0)' : 'translateY(14px)';
+          transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
         }
         
         .login-grid {
@@ -591,40 +591,40 @@ export default function LoginPage() {
         
         .case-number {
           font-family: ${THEME.typography.monoFamily};
-          fontSize: ${THEME.typography.tiny};
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: ${THEME.colors.brassLight},
-          marginBottom: ${THEME.spacing.xxl},
+          font-size: ${THEME.typography.tiny};
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: ${THEME.colors.brassLight};
+          margin-bottom: ${THEME.spacing.xxl};
         }
         
         .left-title {
           font-family: ${THEME.typography.displayFamily};
-          fontSize: ${THEME.typography.heroTitle},
-          fontWeight: 500,
-          color: ${THEME.colors.bone},
-          marginBottom: ${THEME.spacing.md},
-          lineHeight: 1.15,
+          font-size: ${THEME.typography.heroTitle};
+          font-weight: 500;
+          color: ${THEME.colors.bone};
+          margin-bottom: ${THEME.spacing.md};
+          line-height: 1.15;
         }
         
         .left-description {
-          fontSize: ${THEME.typography.body},
-          color: ${THEME.colors.grayLight},
-          lineHeight: 1.7,
-          maxWidth: '300px',
+          font-size: ${THEME.typography.body};
+          color: ${THEME.colors.grayLight};
+          line-height: 1.7;
+          max-width: 300px;
         }
         
         .features-section {
-          borderTop: 1px solid ${THEME.colors.lineDark};
-          paddingTop: ${THEME.spacing.xl},
+          border-top: 1px solid ${THEME.colors.lineDark};
+          padding-top: ${THEME.spacing.xl};
         }
         
         .feature-item {
           display: flex;
-          alignItems: center,
-          gap: ${THEME.spacing.sm},
-          marginBottom: ${THEME.spacing.md},
-          color: ${THEME.colors.brassLight},
+          align-items: center;
+          gap: ${THEME.spacing.sm};
+          margin-bottom: ${THEME.spacing.md};
+          color: ${THEME.colors.brassLight};
         }
         
         /* Right Panel */
@@ -633,285 +633,285 @@ export default function LoginPage() {
           padding: ${THEME.spacing.xxxl} ${THEME.spacing.xxl};
           display: flex;
           flex-direction: column;
-          justifyContent: center',
+          justify-content: center;
         }
         
         .right-header {
-          marginBottom: ${THEME.spacing.xxl},
+          margin-bottom: ${THEME.spacing.xxl};
         }
         
         .right-label {
           font-family: ${THEME.typography.monoFamily};
-          fontSize: ${THEME.typography.tiny},
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: ${THEME.colors.gray},
-          marginBottom: ${THEME.spacing.sm},
+          font-size: ${THEME.typography.tiny};
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: ${THEME.colors.gray};
+          margin-bottom: ${THEME.spacing.sm};
         }
         
         .right-title {
           font-family: ${THEME.typography.displayFamily};
-          fontSize: ${THEME.typography.sectionTitle},
-          fontWeight: 500,
-          color: ${THEME.colors.ink},
-          marginBottom: ${THEME.spacing.xs},
+          font-size: ${THEME.typography.sectionTitle};
+          font-weight: 500;
+          color: ${THEME.colors.ink};
+          margin-bottom: ${THEME.spacing.xs};
         }
         
         .right-subtitle {
-          fontSize: ${THEME.typography.small},
-          color: ${THEME.colors.gray},
+          font-size: ${THEME.typography.small};
+          color: ${THEME.colors.gray};
         }
         
         /* Form Elements */
         .form-section {
-          marginBottom: ${THEME.spacing.lg},
+          margin-bottom: ${THEME.spacing.lg};
         }
         
         .input-label {
-          display: block,
-          font-family: ${THEME.typography.monoFamily},
-          fontSize: ${THEME.typography.tiny},
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: ${THEME.colors.gray},
-          marginBottom: ${THEME.spacing.sm},
+          display: block;
+          font-family: ${THEME.typography.monoFamily};
+          font-size: ${THEME.typography.tiny};
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: ${THEME.colors.gray};
+          margin-bottom: ${THEME.spacing.sm};
         }
         
         .input-field {
-          width: 100%,
-          padding: ${THEME.spacing.md} ${THEME.spacing.md},
-          fontSize: ${THEME.typography.body},
-          fontFamily: ${THEME.typography.fontFamily},
-          border: 1px solid ${THEME.colors.line},
-          borderRadius: ${THEME.borderRadius.md},
-          background: ${THEME.colors.white},
-          color: ${THEME.colors.ink},
-          transition: all 0.2s',
-          outline: none',
+          width: 100%;
+          padding: ${THEME.spacing.md} ${THEME.spacing.md};
+          font-size: ${THEME.typography.body};
+          font-family: ${THEME.typography.fontFamily};
+          border: 1px solid ${THEME.colors.line};
+          border-radius: ${THEME.borderRadius.md};
+          background: ${THEME.colors.white};
+          color: ${THEME.colors.ink};
+          transition: all 0.2s;
+          outline: none;
         }
         
         .input-field:focus {
-          border-color: ${THEME.colors.brass},
-          box-shadow: 0 0 0 3px rgba(139,115,85,0.12)',
+          border-color: ${THEME.colors.brass};
+          box-shadow: 0 0 0 3px rgba(139,115,85,0.12);
         }
         
         .input-field:disabled {
-          opacity: 0.6,
-          cursor: not-allowed',
+          opacity: 0.6;
+          cursor: not-allowed;
         }
         
         .input-field::placeholder {
-          color: ${THEME.colors.gray},
-          opacity: 0.7',
+          color: ${THEME.colors.gray};
+          opacity: 0.7;
         }
         
         .error-text {
-          display: block,
-          color: ${THEME.colors.red},
-          fontSize: ${THEME.typography.tiny},
-          marginTop: ${THEME.spacing.xs},
+          display: block;
+          color: ${THEME.colors.red};
+          font-size: ${THEME.typography.tiny};
+          margin-top: ${THEME.spacing.xs};
         }
         
         .alert-message {
-          padding: ${THEME.spacing.md},
-          borderRadius: ${THEME.borderRadius.md},
-          fontSize: ${THEME.typography.small},
-          fontWeight: 500,
-          lineHeight: 1.4,
-          marginBottom: ${THEME.spacing.lg},
-          display: flex,
-          alignItems: center',
-          gap: ${THEME.spacing.sm},
+          padding: ${THEME.spacing.md};
+          border-radius: ${THEME.borderRadius.md};
+          font-size: ${THEME.typography.small};
+          font-weight: 500;
+          line-height: 1.4;
+          margin-bottom: ${THEME.spacing.lg};
+          display: flex;
+          align-items: center;
+          gap: ${THEME.spacing.sm};
         }
         
         /* Buttons */
         .btn-submit {
-          width: 100%,
-          padding: ${THEME.spacing.md} ${THEME.spacing.lg},
-          fontSize: ${THEME.typography.body},
-          fontWeight: 500,
-          fontFamily: ${THEME.typography.fontFamily},
-          border: none,
-          borderRadius: ${THEME.borderRadius.sm},
-          cursor: pointer',
-          background: ${THEME.colors.ink},
-          color: ${THEME.colors.bone},
-          transition: background 0.2s',
-          display: flex,
-          alignItems: center',
-          justifyContent: center',
-          gap: ${THEME.spacing.sm},
-          minHeight: '48px',
+          width: 100%;
+          padding: ${THEME.spacing.md} ${THEME.spacing.lg};
+          font-size: ${THEME.typography.body};
+          font-weight: 500;
+          font-family: ${THEME.typography.fontFamily};
+          border: none;
+          border-radius: ${THEME.borderRadius.sm};
+          cursor: pointer;
+          background: ${THEME.colors.ink};
+          color: ${THEME.colors.bone};
+          transition: background 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: ${THEME.spacing.sm};
+          min-height: 48px;
         }
         
         .btn-submit:hover:not(:disabled) {
-          background: '#000',
+          background: '#000';
         }
         
         .btn-submit:disabled {
-          opacity: 0.6,
-          cursor: not-allowed',
+          opacity: 0.6;
+          cursor: not-allowed;
         }
         
         .btn-link {
-          background: none,
-          border: none,
-          color: ${THEME.colors.gray},
-          cursor: pointer',
-          fontSize: ${THEME.typography.small},
-          fontFamily: ${THEME.typography.fontFamily},
-          textDecoration: 'underline',
-          textDecorationColor: ${THEME.colors.line},
-          transition: color 0.2s',
+          background: none;
+          border: none;
+          color: ${THEME.colors.gray};
+          cursor: pointer;
+          font-size: ${THEME.typography.small};
+          font-family: ${THEME.typography.fontFamily};
+          text-decoration: underline;
+          text-decoration-color: ${THEME.colors.line};
+          transition: color 0.2s;
         }
         
         .btn-link:hover {
-          color: ${THEME.colors.ink},
+          color: ${THEME.colors.ink};
         }
         
         .btn-link-accent {
-          color: ${THEME.colors.brass},
-          fontWeight: 500',
+          color: ${THEME.colors.brass};
+          font-weight: 500;
         }
         
         .btn-link-accent:hover {
-          color: ${THEME.colors.brassHover},
+          color: ${THEME.colors.brassHover};
         }
         
         .btn-link-verdigris {
-          color: ${THEME.colors.verdigris},
-          fontWeight: 500',
+          color: ${THEME.colors.verdigris};
+          font-weight: 500;
         }
         
         /* Footer */
         .site-footer {
-          background: ${THEME.colors.ink},
-          color: ${THEME.colors.grayLight},
-          padding: ${THEME.spacing.xxl} 0 ${THEME.spacing.xl},
+          background: ${THEME.colors.ink};
+          color: ${THEME.colors.grayLight};
+          padding: ${THEME.spacing.xxl} 0 ${THEME.spacing.xl};
         }
         
         .footer-content {
-          maxWidth: '1100px',
-          margin: '0 auto',
-          padding: '0 1.75rem',
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 1.75rem;
         }
         
         .footer-grid {
-          display: grid,
-          gridTemplateColumns: '2fr 1fr 1fr',
-          gap: ${THEME.spacing.xxl},
-          paddingBottom: ${THEME.spacing.xxl},
-          borderBottom: 1px solid ${THEME.colors.lineDark},
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          gap: ${THEME.spacing.xxl};
+          padding-bottom: ${THEME.spacing.xxl};
+          border-bottom: 1px solid ${THEME.colors.lineDark};
         }
         
         .footer-brand {
-          display: flex,
-          alignItems: center',
-          gap: '0.6rem',
-          marginBottom: ${THEME.spacing.md},
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          margin-bottom: ${THEME.spacing.md};
         }
         
         .footer-brand-text {
-          font-family: ${THEME.typography.displayFamily},
-          fontSize: '1.1rem',
-          color: ${THEME.colors.bone},
+          font-family: ${THEME.typography.displayFamily};
+          font-size: 1.1rem;
+          color: ${THEME.colors.bone};
         }
         
         .footer-description {
-          maxWidth: '320px',
-          fontSize: ${THEME.typography.small},
-          color: ${THEME.colors.grayLight},
-          lineHeight: 1.6,
+          max-width: 320px;
+          font-size: ${THEME.typography.small};
+          color: ${THEME.colors.grayLight};
+          line-height: 1.6;
         }
         
         .footer-heading {
-          font-family: ${THEME.typography.monoFamily},
-          fontSize: ${THEME.typography.tiny},
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: ${THEME.colors.brassLight},
-          marginBottom: ${THEME.spacing.lg},
-          fontWeight: 400',
+          font-family: ${THEME.typography.monoFamily};
+          font-size: ${THEME.typography.tiny};
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: ${THEME.colors.brassLight};
+          margin-bottom: ${THEME.spacing.lg};
+          font-weight: 400;
         }
         
         .footer-link-item {
-          display: block,
-          fontSize: ${THEME.typography.small},
-          color: ${THEME.colors.grayLight},
-          marginBottom: ${THEME.spacing.sm},
-          textDecoration: 'none',
-          cursor: pointer',
-          transition: color 0.2s',
-          background: none',
-          border: none',
-          fontFamily: ${THEME.typography.fontFamily},
-          textAlign: 'left',
+          display: block;
+          font-size: ${THEME.typography.small};
+          color: ${THEME.colors.grayLight};
+          margin-bottom: ${THEME.spacing.sm};
+          text-decoration: none;
+          cursor: pointer;
+          transition: color 0.2s;
+          background: none;
+          border: none;
+          font-family: ${THEME.typography.fontFamily};
+          text-align: left;
         }
         
         .footer-link-item:hover {
-          color: ${THEME.colors.white},
+          color: ${THEME.colors.white};
         }
         
         .footer-bottom {
-          display: flex,
-          justifyContent: space-between',
-          fontSize: ${THEME.typography.tiny},
-          color: 'rgba(250,248,244,0.45)',
-          paddingTop: ${THEME.spacing.xl},
-          flexWrap: wrap',
-          gap: ${THEME.spacing.sm},
+          display: flex;
+          justify-content: space-between;
+          font-size: ${THEME.typography.tiny};
+          color: rgba(250,248,244,0.45);
+          padding-top: ${THEME.spacing.xl};
+          flex-wrap: wrap;
+          gap: ${THEME.spacing.sm};
         }
         
         /* Popup Modal */
         .modal-overlay {
-          position: fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: ${THEME.colors.overlay},
-          zIndex: 1000,
-          display: flex',
-          alignItems: center',
-          justifyContent: center',
-          padding: ${THEME.spacing.xxl},
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: ${THEME.colors.overlay};
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: ${THEME.spacing.xxl};
         }
         
         .modal-content {
-          background: ${THEME.colors.bone},
-          border: 1px solid ${THEME.colors.line},
-          padding: ${THEME.spacing.xxl},
-          textAlign: 'center',
-          maxWidth: '360px',
-          width: '100%',
-          boxShadow: '0 40px 80px -20px rgba(0,0,0,0.5)',
-          borderRadius: ${THEME.borderRadius.lg},
+          background: ${THEME.colors.bone};
+          border: 1px solid ${THEME.colors.line};
+          padding: ${THEME.spacing.xxl};
+          text-align: center;
+          max-width: 360px;
+          width: 100%;
+          box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+          border-radius: ${THEME.borderRadius.lg};
         }
         
         .modal-icon {
-          width: '52px',
-          height: '52px',
-          borderRadius: '50%',
-          background: ${THEME.colors.bone2},
-          display: flex',
-          alignItems: center',
-          justifyContent: center',
-          margin: '0 auto ${THEME.spacing.lg}',
-          color: ${THEME.colors.verdigris},
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          background: ${THEME.colors.bone2};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto ${THEME.spacing.lg};
+          color: ${THEME.colors.verdigris};
         }
         
         .modal-title {
-          font-family: ${THEME.typography.displayFamily},
-          fontSize: '1.3rem',
-          color: ${THEME.colors.ink},
-          marginBottom: ${THEME.spacing.sm},
-          fontWeight: 500',
+          font-family: ${THEME.typography.displayFamily};
+          font-size: 1.3rem;
+          color: ${THEME.colors.ink};
+          margin-bottom: ${THEME.spacing.sm};
+          font-weight: 500;
         }
         
         .modal-text {
-          fontSize: ${THEME.typography.small},
-          color: ${THEME.colors.gray},
-          lineHeight: 1.6,
+          font-size: ${THEME.typography.small};
+          color: ${THEME.colors.gray};
+          line-height: 1.6;
         }
         
         /* Responsive Design */
@@ -930,28 +930,28 @@ export default function LoginPage() {
           
           .footer-grid {
             grid-template-columns: 1fr !important;
-            gap: ${THEME.spacing.xl},
+            gap: ${THEME.spacing.xl};
           }
         }
         
         @media (min-width: ${THEME.breakpoints.tablet}) {
           .login-grid {
-            max-width: 1000px',
+            max-width: 1000px;
           }
         }
         
         /* Accessibility */
         @media (prefers-reduced-motion: reduce) {
-          .fade-in {
-            animation: none',
-          }
+        .fade-in {
+          animation: none;
+        }
           
           .spinner {
-            animation: none',
+            animation: none;
           }
           
           .btn-submit {
-            transition: none',
+            transition: none;
           }
         }
         
@@ -959,8 +959,8 @@ export default function LoginPage() {
         .btn-submit:focus-visible,
         .btn-link:focus-visible,
         .footer-link-item:focus-visible {
-          outline: 2px solid ${THEME.colors.brass},
-          outline-offset: 2px',
+          outline: 2px solid ${THEME.colors.brass};
+          outline-offset: 2px;
         }
       `}</style>
 

@@ -486,7 +486,7 @@ export default function PortalLoginPage() {
            ============================================ */
         .portal-footer {
           text-align: center;
-          padding: ${THEME.spacing.lg} ${THEME.spacing.md};
+          padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
           border-top: 1px solid ${THEME.colors.border};
           margin-top: ${THEME.spacing.lg};
         }
@@ -494,14 +494,14 @@ export default function PortalLoginPage() {
         .footer-text {
           font-size: ${THEME.typography.small};
           color: ${THEME.colors.textMuted};
-          margin: 0 0 ${THEME.spacing.md};
+          margin: 0 0 ${THEME.spacing.sm};
         }
         
         .footer-links {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: ${THEME.spacing.md};
+          gap: ${THEME.spacing.sm};
           flex-wrap: wrap;
         }
         
@@ -524,7 +524,7 @@ export default function PortalLoginPage() {
         }
         
         .security-badge {
-          margin-top: ${THEME.spacing.lg};
+          margin-top: ${THEME.spacing.md};
           font-size: ${THEME.typography.tiny};
           color: ${THEME.colors.textMuted};
           display: flex;
@@ -549,11 +549,19 @@ export default function PortalLoginPage() {
           .card-wrapper {
             padding: ${THEME.spacing.xl} ${THEME.spacing.lg} ${THEME.spacing.xxl};
           }
+          
+          .portal-footer {
+            padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
+          }
         }
         
         @media (min-width: ${THEME.breakpoints.tablet}) {
           .login-card {
             max-width: 440px;
+          }
+          
+          .portal-footer {
+            padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
           }
         }
         
@@ -561,6 +569,10 @@ export default function PortalLoginPage() {
           .portal-login-container {
             max-width: 1440px;
             margin: 0 auto;
+          }
+          
+          .portal-footer {
+            padding: ${THEME.spacing.md} ${THEME.spacing.md} ${THEME.spacing.sm};
           }
         }
         

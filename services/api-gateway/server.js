@@ -1,9 +1,4 @@
-﻿#!/usr/bin/env node
-// RestPoint API Gateway â€” Central routing
-// Based on working Siasa Hub gateway pattern using http-proxy-middleware
-// Run with memory limit: node --max-old-space-size=4096 server.js
-try { const v8 = require('v8'); v8.setFlagsFromString('--max-old-space-size=4096'); } catch(e){}
-
+﻿
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
@@ -13,9 +8,6 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const rateLimit = require('express-rate-limit');
 
 dotenv.config();
-
-// Trust proxy for correct IP behind reverse proxy
-app.set("trust proxy", process.env.TRUST_PROXY === "true" ? 1 : 0);
 
 const APP_NAME = 'restpoint-gateway';
 const APP_VERSION = '1.0.1';
@@ -157,6 +149,9 @@ const authLimiter = rateLimit({
 // EXPRESS APP
 // =============================================================================
 const app = express();
+
+// Trust proxy for correct IP behind reverse proxy
+app.set("trust proxy", process.env.TRUST_PROXY === "true" ? 1 : 0);
 
 // =============================================================================
 // CORS

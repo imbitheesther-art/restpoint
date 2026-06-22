@@ -32,7 +32,7 @@ dotenv.config();
 
 // Import local modules
 const corsMiddleware = require("../../global/middlewares/corsMiddleware");
-const { initDB, safeQuery } = require("./src/configurations/db");
+const { initDB, safeQuery } = require("./configurations/db");
 const knexConfig = require("./knexfile");
 
 // Initialize knex

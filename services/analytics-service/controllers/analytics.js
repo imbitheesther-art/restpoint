@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { lookupTenantDatabase, safeTenantQuery } = require('../../shared/dbConfig');
+const { lookupTenantDatabase, safeTenantQuery } = require('../../../shared/dbConfig');
 const { Logger } = require('../../../packages/shared-logger/dist/logger');
 
 // === Advanced Analytics Controller ===

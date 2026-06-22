@@ -1585,7 +1585,7 @@ export default function OnboardingFlow() {
               </div>
               <div>
                 <h4 className="footer-heading">Legal</h4>
-                <div onClick={goPrivacy} className="footer-link">Privacy policy</div>
+              <div onClick={goToPrivacy} className="footer-link">Privacy policy</div>
                 <div onClick={goTerms} className="footer-link">Terms of service</div>
                 <div className="footer-link">Security</div>
               </div>

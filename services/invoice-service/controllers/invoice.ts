@@ -4,13 +4,27 @@ import { createClient } from 'redis';
 import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
-import { AppError } from '../../middlewares/errorHandler/errorHandler';
+import { AppError } from '../middlewares/errorHandler';
 import { safeQuery } from '../../configurations/sqlConfig/db';
 import { getKenyaTimeISO } from '../../../packages/shared-utils/dist/timestamps';
 import { loadTenantBranding } from './tenantBranding';
 
 // Redis client for caching
 let redisClient: ReturnType<typeof createClient> | null = null;
+
+/**
+ * Get tenant slug from request headers
+ */
+const getTenantSlug = (req: Request): string => {
+  return (req.get('x-tenant-slug') || req.get('x-tenant-id') || 'system_shared') as string;
+};
+
+/**
+ * Tenant-aware query helper - automatically passes tenant context
+ */
+const tenantQuery = async (req: Request, sql: string, params: any[] = []): Promise<any> => {
+  return safeQuery(sql, params, getTenantSlug(req));
+};
 
 async function getRedisClient() {
   if (!redisClient) {
@@ -474,7 +488,7 @@ export const getAllDeceasedWithFinancials = async (req: Request, res: Response, 
     GROUP BY d.id
     ORDER BY d.date_registered DESC;
   `;
-  const deceased = await safeQuery(sql);
+  const deceased = await tenantQuery(req, sql);
   res.json({ status: 'success', data: deceased });
 };
 
@@ -487,20 +501,20 @@ export const getDeceasedFinancialDetails = async (req: Request, res: Response, n
     LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
     WHERE d.id = ?
   `;
-  const [deceased] = await safeQuery(deceasedSql, [deceased_id]);
+  const [deceased] = await tenantQuery(req, deceasedSql, [deceased_id]);
 
   if (!deceased) {
     throw new AppError('Deceased not found', 404);
   }
 
   const stringDeceasedId = deceased.deceased_id;
-  const payments = await safeQuery('SELECT * FROM payments WHERE deceased_id = ? ORDER BY payment_date DESC', [deceased_id]);
-  const invoices = await safeQuery('SELECT * FROM invoices WHERE deceased_id = ? ORDER BY created_at DESC', [deceased_id]);
-  const extraCharges = await safeQuery('SELECT * FROM extra_charges WHERE deceased_id = ? ORDER BY created_at DESC', [stringDeceasedId]);
-  const nextOfKin = await safeQuery('SELECT * FROM next_of_kin WHERE deceased_id = ?', [stringDeceasedId]);
+  const payments = await tenantQuery(req, 'SELECT * FROM payments WHERE deceased_id = ? ORDER BY payment_date DESC', [deceased_id]);
+  const invoices = await tenantQuery(req, 'SELECT * FROM invoices WHERE deceased_id = ? ORDER BY created_at DESC', [deceased_id]);
+  const extraCharges = await tenantQuery(req, 'SELECT * FROM extra_charges WHERE deceased_id = ? ORDER BY created_at DESC', [stringDeceasedId]);
+  const nextOfKin = await tenantQuery(req, 'SELECT * FROM next_of_kin WHERE deceased_id = ?', [stringDeceasedId]);
 
   let coffinInfo: any = null;
-  const coffinDetails = await safeQuery(`
+  const coffinDetails = await tenantQuery(req, `
     SELECT dc.*, c.custom_id, c.type, c.category, c.material, c.exact_price,
            c.currency, c.status AS coffin_status, c.color, c.size, c.supplier, c.origin
     FROM deceased_coffin dc
@@ -510,10 +524,10 @@ export const getDeceasedFinancialDetails = async (req: Request, res: Response, n
   if (coffinDetails && coffinDetails.length > 0) coffinInfo = coffinDetails[0];
 
   let vehicleDispatchInfo: any = null;
-  const vehicleDetails = await safeQuery('SELECT * FROM vehicle_dispatch WHERE deceased_id = ?', [stringDeceasedId]);
+  const vehicleDetails = await tenantQuery(req, 'SELECT * FROM vehicle_dispatch WHERE deceased_id = ?', [stringDeceasedId]);
   if (vehicleDetails && vehicleDetails.length > 0) vehicleDispatchInfo = vehicleDetails[0];
 
-  const availableCoffins = await safeQuery(`
+  const availableCoffins = await tenantQuery(req, `
     SELECT coffin_id, custom_id, type, category, material, exact_price, currency, status
     FROM coffins WHERE status = 'in-stock' ORDER BY created_at DESC
   `);
@@ -557,7 +571,7 @@ export const createPayment = async (req: Request, res: Response, next: NextFunct
     throw new AppError('Missing required payment fields', 400);
   }
 
-  const result = await safeQuery(`
+  const result = await tenantQuery(req, `
     INSERT INTO payments (deceased_id, amount, payment_method, reference_code, description, payment_date)
     VALUES (?, ?, ?, ?, ?, ?)
   `, [
@@ -583,12 +597,12 @@ export const createExtraCharge = async (req: Request, res: Response, next: NextF
     throw new AppError('Missing required charge fields', 400);
   }
 
-  const [deceased] = await safeQuery('SELECT deceased_id FROM deceased WHERE id = ?', [deceased_id]);
+  const [deceased] = await tenantQuery(req, 'SELECT deceased_id FROM deceased WHERE id = ?', [deceased_id]);
   if (!deceased) {
     throw new AppError('Deceased not found', 404);
   }
 
-  const result = await safeQuery(`
+  const result = await tenantQuery(req, `
     INSERT INTO extra_charges (deceased_id, charge_type, amount, description, notes, service_date, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `, [
@@ -615,7 +629,7 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
     throw new AppError('Deceased ID is required', 400);
   }
 
-  const [deceased] = await safeQuery(`
+  const [deceased] = await tenantQuery(req, `
     SELECT d.*, nk.full_name as nok_name, nk.relationship, nk.contact, nk.email
     FROM deceased d
     LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
@@ -626,10 +640,10 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
     throw new AppError('Deceased not found', 404);
   }
 
-  const [paymentResult] = await safeQuery('SELECT SUM(amount) as total_paid FROM payments WHERE deceased_id = ?', [deceased_id]);
+  const [paymentResult] = await tenantQuery(req, 'SELECT SUM(amount) as total_paid FROM payments WHERE deceased_id = ?', [deceased_id]);
   const amountPaid = parseFloat((paymentResult as any)?.total_paid || 0);
 
-  const extraCharges = await safeQuery(`
+  const extraCharges = await tenantQuery(req, `
     SELECT * FROM extra_charges 
     WHERE deceased_id = ? AND (status IS NULL OR status != "Paid")
   `, [(deceased as any).deceased_id]);
@@ -657,7 +671,7 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
     systemTotal += parseFloat(String(charge.amount));
   });
 
-  const coffinDetails = await safeQuery(`
+  const coffinDetails = await tenantQuery(req, `
     SELECT dc.*, c.type, c.category, c.exact_price
     FROM deceased_coffin dc
     LEFT JOIN coffins c ON dc.coffin_id = c.coffin_id
@@ -678,7 +692,7 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
     }
   }
 
-  const vehicleDispatch = await safeQuery('SELECT * FROM vehicle_dispatch WHERE deceased_id = ?', [(deceased as any).deceased_id]);
+  const vehicleDispatch = await tenantQuery(req, 'SELECT * FROM vehicle_dispatch WHERE deceased_id = ?', [(deceased as any).deceased_id]);
   if (vehicleDispatch.length > 0) {
     vehicleDispatch.forEach((vd: any) => {
       const dispatchCost = 5000;
@@ -700,7 +714,7 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
     systemTotal = 0;
   }
 
-  const tenantSlug = (req.get('x-tenant-slug') || req.get('x-tenant-id') || 'default') as string;
+  const tenantSlug = getTenantSlug(req);
   const branding = await loadTenantBranding(tenantSlug, null);
 
   const stampPrefix = branding.invoice_prefix?.split('-')[0] || 'SYS';
@@ -743,7 +757,7 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
   const pdfPath = path.join(deceasedInvoicesDir, `${invoice_number}.pdf`);
   await fs.promises.writeFile(pdfPath, pdfBuffer);
 
-  const result = await safeQuery(`
+  const result = await tenantQuery(req, `
     INSERT INTO invoices (deceased_id, invoice_number, items, total_amount, pdf_url, stamp_hash, signature_url, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `, [
@@ -757,7 +771,7 @@ export const createSystemInvoice = async (req: Request, res: Response, next: Nex
     invoiceData.created_at,
   ]);
 
-  await safeQuery(`
+  await tenantQuery(req, `
     UPDATE extra_charges SET status = 'Paid' 
     WHERE deceased_id = ? AND (status IS NULL OR status = "Pending")
   `, [(deceased as any).deceased_id]);
@@ -833,7 +847,7 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
   const pdfPath = path.join(deceasedInvoicesDir, `${invoice_number}.pdf`);
   await fs.promises.writeFile(pdfPath, pdfBuffer);
 
-  const result = await safeQuery(`
+  const result = await tenantQuery(req, `
     INSERT INTO invoices (deceased_id, invoice_number, items, total_amount, pdf_url, stamp_hash, signature_url, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `, [
@@ -860,7 +874,7 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
 };
 
 export const getAllInvoices = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const invoices = await safeQuery(`
+  const invoices = await tenantQuery(req, `
     SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death, nk.full_name as nok_name
     FROM invoices i
     LEFT JOIN deceased d ON i.deceased_id = d.id
@@ -881,7 +895,7 @@ export const getAllInvoices = async (req: Request, res: Response, next: NextFunc
 
 export const getInvoicesByDeceased = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { deceased_id } = req.params;
-  const invoices = await safeQuery(`
+  const invoices = await tenantQuery(req, `
     SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death, nk.full_name as nok_name
     FROM invoices i
     LEFT JOIN deceased d ON i.deceased_id = d.id
@@ -902,7 +916,7 @@ export const getInvoicesByDeceased = async (req: Request, res: Response, next: N
 
 export const getInvoiceById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
-  const invoices = await safeQuery(`
+  const invoices = await tenantQuery(req, `
     SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death,
            d.date_admitted, d.location, d.county, d.national_id, nk.full_name as nok_name,
            nk.contact as nok_contact, COALESCE(SUM(p.amount), 0) as amount_paid
@@ -936,12 +950,12 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
   const { id } = req.params;
   const { items, total_amount, signature_url } = req.body;
 
-  const [currentInvoice] = await safeQuery('SELECT * FROM invoices WHERE id = ?', [id]);
+  const [currentInvoice] = await tenantQuery(req, 'SELECT * FROM invoices WHERE id = ?', [id]);
   if (!currentInvoice) {
     throw new AppError('Invoice not found', 404);
   }
 
-  const [deceased] = await safeQuery(`
+  const [deceased] = await tenantQuery(req, `
     SELECT d.*, nk.full_name as nok_name, nk.contact as nok_contact
     FROM deceased d
     LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
@@ -976,7 +990,7 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
   const pdfBuffer = await generateInvoicePDFBuffer(pdfData);
   await fs.promises.writeFile((currentInvoice as any).pdf_url, pdfBuffer);
 
-  await safeQuery(`
+  await tenantQuery(req, `
     UPDATE invoices SET items = ?, total_amount = ?, signature_url = ?, stamp_hash = ?, updated_at = ?
     WHERE id = ?
   `, [
@@ -999,7 +1013,7 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
 
 export const deleteInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
-  const [invoice] = await safeQuery('SELECT * FROM invoices WHERE id = ?', [id]);
+  const [invoice] = await tenantQuery(req, 'SELECT * FROM invoices WHERE id = ?', [id]);
 
   if (!invoice) {
     throw new AppError('Invoice not found', 404);
@@ -1013,7 +1027,7 @@ export const deleteInvoice = async (req: Request, res: Response, next: NextFunct
     console.log('PDF file not found, continuing with database deletion');
   }
 
-  await safeQuery('DELETE FROM invoices WHERE id = ?', [id]);
+  await tenantQuery(req, 'DELETE FROM invoices WHERE id = ?', [id]);
   await deleteCachedInvoice((invoice as any).invoice_number);
 
   res.json({ status: 'success', message: 'Invoice deleted successfully' });
@@ -1021,7 +1035,7 @@ export const deleteInvoice = async (req: Request, res: Response, next: NextFunct
 
 export const downloadInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
-  const [invoice] = await safeQuery('SELECT pdf_url FROM invoices WHERE id = ?', [id]);
+  const [invoice] = await tenantQuery(req, 'SELECT pdf_url FROM invoices WHERE id = ?', [id]);
 
   if (!invoice || !(invoice as any).pdf_url) {
     throw new AppError('Invoice or PDF not found', 404);
