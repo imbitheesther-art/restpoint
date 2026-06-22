@@ -81,8 +81,8 @@ export default function TermsOfService() {
           Agreement
         </h2>
         <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
-          By using Rest Point, you agree to these terms. If you don't agree, please don't use the platform. 
-          These terms are between you (the funeral home) and Rest Point, built and maintained by Welt Tallis Technologies.
+          Payments are due monthly with a one-month grace period. Late payments may result in 
+          suspension. Reactivation fee: KES 1,000.
         </p>
 
         {/* What we offer */}
@@ -152,9 +152,30 @@ export default function TermsOfService() {
           </ul>
         </div>
         <p style={{ color: C.char700, marginBottom: '1.5rem' }}>
-          Payments are due monthly with a 5-day grace period. Late payments may result in 
+          Payments are due monthly with a 10-day grace period. Late payments may result in 
           suspension. Reactivation fee: KES 1,000.
         </p>
+        
+        {/* Payment Methods */}
+        <div style={{ 
+          background: C.navy900, 
+          color: '#fff', 
+          padding: '1.5rem', 
+          borderRadius: '10px',
+          marginTop: '1.5rem'
+        }}>
+          <h3 style={{ fontFamily: "'Lora', serif", color: '#fff', fontSize: '1.1rem', marginTop: 0, marginBottom: '1rem' }}>
+            How to Pay
+          </h3>
+          <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', lineHeight: 1.7 }}>
+            <strong style={{ color: C.gold }}>Payments (Kenya):</strong><br />
+            M-Pesa Till Number: <strong style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.1rem' }}>5570316</strong>
+          </p>
+          <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: 1.7 }}>
+            <strong style={{ color: C.gold }}>Payments (Outside Kenya):</strong><br />
+            Bank details will be provided via email upon registration.
+          </p>
+        </div>
 
         {/* Rules */}
         <h2 style={{ fontFamily: "'Lora', serif", color: C.navy900, fontSize: '1.2rem', marginTop: '2rem' }}>

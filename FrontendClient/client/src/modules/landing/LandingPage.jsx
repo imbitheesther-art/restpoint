@@ -714,6 +714,35 @@ export default function App() {
           </div>
         </section>
 
+        {/* Funeral Insurance Partnership */}
+        <section className="section dark-section">
+          <div className="wrap" style={{ maxWidth: '720px' }}>
+            <Reveal>
+              <div className="label" style={{ color: C.brassLight, marginBottom: '1.4rem' }}>Partnership opportunity</div>
+              <h2 style={{ fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem' }}>
+                Funeral insurance integration
+              </h2>
+              <div style={{ marginTop: '1.6rem', maxWidth: '560px' }}>
+                <p style={{ marginBottom: '1.2rem', fontSize: '1.05rem' }}>
+                  <strong>Funeral costs in Kenya range from KES 50,000 to KES 500,000+.</strong> Most families are financially unprepared.
+                </p>
+                <p style={{ marginBottom: '1.2rem' }}>
+                  By offering insurance, you provide complete death care — differentiating your home from competitors and building lasting trust.
+                </p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0' }}>
+                  <li style={{ padding: '0.6rem 0', borderBottom: `1px solid rgba(250,248,244,0.12)` }}>
+                    <span style={{ color: C.brassLight, marginRight: '0.8rem' }}>—</span>
+                    <strong>Quick integration:</strong> Ready within 30 working days
+                  </li>
+                </ul>
+                <p style={{ marginTop: '1.2rem', fontSize: '0.9rem', color: C.brassLight }}>
+                  Insurance integration is a separate partnership. Contact us to discuss terms.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
         {/* Pricing */}
         <section id="pricing" className="section">
           <div className="wrap">
@@ -739,7 +768,7 @@ export default function App() {
                   {billingYearly && <div className="price-savings">Save KES 17,100</div>}
                   <ul className="pricing-list">
                     <li>One location</li>
-                    <li>Family portal by SMS</li>
+                    <li>Family portal Acess</li>
                     <li>Standard billing & invoicing</li>
                     <li>Email support</li>
                     <li>All core capabilities</li>

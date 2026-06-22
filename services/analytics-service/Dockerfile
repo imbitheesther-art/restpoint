@@ -1,5 +1,5 @@
 # Production Dockerfile for Analytics Service
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install runtime dependencies
 RUN apk add --no-cache dumb-init
@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/analytics-service/package.json ./services/analytics-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/
