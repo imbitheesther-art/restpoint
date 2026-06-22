@@ -2,10 +2,7 @@
 FROM node:22-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache dumb-init wget dos2unix
-
-# Convert line endings to LF to prevent SyntaxError on shebang
-RUN dos2unix /usr/src/app/services/api-gateway/server.js
+RUN apk add --no-cache dumb-init wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
