@@ -17,7 +17,7 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/edocuments-service/package.json ./services/edocuments-service/
 
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN yarn install --frozen-lockfile && yarn cache clean
 
 # Copy shared source code
 COPY configurations/ ./configurations/

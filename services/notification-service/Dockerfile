@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/notification-service/package.json ./services/notification-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN yarn install --frozen-lockfile && yarn cache clean
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/

@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/auth-service/package.json ./services/auth-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN yarn install --frozen-lockfile && yarn cache clean
 
 # Copy source code
 COPY configurations/ ./configurations/

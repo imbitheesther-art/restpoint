@@ -23,11 +23,9 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Install dependencies
-RUN npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retries 10 && \
-    npm install --omit=dev --legacy-peer-deps && \
-    npm cache clean --force
+RUN yarn config set network-timeout 600000 && \
+    yarn install --frozen-lockfile --production && \
+    yarn cache clean
 
 # Copy source code
 COPY packages/ ./packages/

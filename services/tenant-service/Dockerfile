@@ -23,7 +23,7 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/tenant-service/package.json ./services/tenant-service/
 
 # Install ALL dependencies (including dev for building)
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN yarn install --frozen-lockfile && yarn cache clean
 
 # Copy source code
 COPY configurations/ ./configurations/
@@ -39,7 +39,7 @@ RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
 # Install tsx for running TypeScript directly
-RUN npm install -g tsx
+RUN yarn global add tsx
 
 # Create uploads directory
 RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
