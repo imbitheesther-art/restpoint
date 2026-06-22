@@ -413,7 +413,9 @@ services:
 
   # MPESA Service
   mpesa-service:
-    build: ./services/mpesa-service
+    build:
+      context: .
+      dockerfile: ./services/mpesa-service/Dockerfile
     container_name: restpoint_mpesa_service
     ports:
       - "5011:5000"
@@ -441,7 +443,9 @@ services:
 
   # Invoice Service
   invoice-service:
-    build: ./services/invoice-service
+    build:
+      context: .
+      dockerfile: ./services/invoice-service/Dockerfile
     container_name: restpoint_invoice_service
     ports:
       - "5005:5000"
@@ -469,7 +473,9 @@ services:
 
   # Marketplace Service
   marketplace-service:
-    build: ./services/marketplace-service
+    build:
+      context: .
+      dockerfile: ./services/marketplace-service/Dockerfile
     container_name: restpoint_marketplace_service
     ports:
       - "5004:5000"
@@ -497,7 +503,9 @@ services:
 
   # Coffin Service
   coffin-service:
-    build: ./services/coffin-service
+    build:
+      context: .
+      dockerfile: ./services/coffin-service/Dockerfile
     container_name: restpoint_coffin_service
     ports:
       - "5006:5000"
@@ -525,7 +533,9 @@ services:
 
   # Analytics Service
   analytics-service:
-    build: ./services/analytics-service
+    build:
+      context: .
+      dockerfile: ./services/analytics-service/Dockerfile
     container_name: restpoint_analytics_service
     ports:
       - "5009:5000"
@@ -553,7 +563,9 @@ services:
 
   # Body Checkout Service
   bodycheckout-service:
-    build: ./services/bodycheckout-service
+    build:
+      context: .
+      dockerfile: ./services/bodycheckout-service/Dockerfile
     container_name: restpoint_bodycheckout_service
     ports:
       - "5015:5000"
@@ -581,7 +593,9 @@ services:
 
   # EDocuments Service
   edocuments-service:
-    build: ./services/edocuments-service
+    build:
+      context: .
+      dockerfile: ./services/edocuments-service/Dockerfile
     container_name: restpoint_edocuments_service
     ports:
       - "8116:5000"
@@ -609,7 +623,9 @@ services:
 
   # Calendar Service
   calender-service:
-    build: ./services/calender-service
+    build:
+      context: .
+      dockerfile: ./services/calender-service/Dockerfile
     container_name: restpoint_calender_service
     ports:
       - "5010:5000"
@@ -637,7 +653,9 @@ services:
 
   # Chemical Service
   chemical-service:
-    build: ./services/chemical-service
+    build:
+      context: .
+      dockerfile: ./services/chemical-service/Dockerfile
     container_name: restpoint_chemical_service
     ports:
       - "5105:5000"
@@ -665,7 +683,9 @@ services:
 
   # Extra Services
   extra-services:
-    build: ./services/extra-services
+    build:
+      context: .
+      dockerfile: ./services/extra-services/Dockerfile
     container_name: restpoint_extra_services
     ports:
       - "5016:5000"
@@ -693,7 +713,9 @@ services:
 
   # Call Service
   call-service:
-    build: ./services/call-service
+    build:
+      context: .
+      dockerfile: ./services/call-service/Dockerfile
     container_name: restpoint_call_service
     ports:
       - "5018:5000"
@@ -721,7 +743,9 @@ services:
 
   # QRCode Service
   qrcode-service:
-    build: ./services/qrcode-service
+    build:
+      context: .
+      dockerfile: ./services/qrcode-service/Dockerfile
     container_name: restpoint_qrcode_service
     ports:
       - "5012:5000"
@@ -749,7 +773,9 @@ services:
 
   # Portal Service
   portal-service:
-    build: ./services/portal-service
+    build:
+      context: .
+      dockerfile: ./services/portal-service/Dockerfile
     container_name: restpoint_portal_service
     ports:
       - "5019:5000"
@@ -777,7 +803,9 @@ services:
 
   # Visitors Service
   visitors-service:
-    build: ./services/visitors-service
+    build:
+      context: .
+      dockerfile: ./services/visitors-service/Dockerfile
     container_name: restpoint_visitors_service
     ports:
       - "5014:5000"

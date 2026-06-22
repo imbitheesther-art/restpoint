@@ -15,7 +15,7 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/extra-services/package.json ./services/extra-services/
 
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
