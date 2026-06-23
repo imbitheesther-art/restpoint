@@ -29,7 +29,7 @@ RUN cd packages/shared-services && npm run build || true
 
 COPY services/socketio-service/ ./services/socketio-service/
 
-RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
+RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app/data
 
 USER nodejs
 
