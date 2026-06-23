@@ -826,7 +826,4 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
   );
 };
 
-// Import RefreshCw for the retry button
-import { RefreshCw } from 'lucide-react';
-
 export default DeceasedInfoSection;
