@@ -112,6 +112,25 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
+  {
+    name: '006_create_branches_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS branches (
+        branch_id INT PRIMARY KEY AUTO_INCREMENT,
+        branch_name VARCHAR(255) NOT NULL,
+        branch_slug VARCHAR(255) UNIQUE NOT NULL,
+        branch_db_name VARCHAR(255),
+        branch_location TEXT,
+        branch_phone VARCHAR(50),
+        branch_email VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_branch_slug (branch_slug),
+        INDEX idx_is_active (is_active)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `,
+  },
 ];
 
 // ─── Deceased Service Migrations ─────────────────────────────────────────────

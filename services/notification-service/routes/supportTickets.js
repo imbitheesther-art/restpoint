@@ -3,7 +3,10 @@ const router = express.Router();
 const { safeMasterQuery } = require('../../../shared/dbConfig');
 const { sendTicketNotification } = require('../services/resendEmailService');
 
-// Create a support ticket
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// Create a support ticket (public - anyone can submit)
 router.post('/api/v1/restpoint/support/tickets', async (req, res) => {
   try {
     const { type, subject, message, tenantName, userEmail, userName } = req.body;
@@ -47,8 +50,8 @@ router.post('/api/v1/restpoint/support/tickets', async (req, res) => {
   }
 });
 
-// Get support tickets (for admin dashboard)
-router.get('/api/v1/restpoint/support/tickets', async (req, res) => {
+// Get support tickets (authenticated users only)
+router.get('/api/v1/restpoint/support/tickets', protect, authorizeAny, async (req, res) => {
   try {
     const [tickets] = await safeMasterQuery(
       'SELECT * FROM support_tickets ORDER BY created_at DESC LIMIT 100'
@@ -61,8 +64,8 @@ router.get('/api/v1/restpoint/support/tickets', async (req, res) => {
   }
 });
 
-// Update ticket status
-router.patch('/api/v1/restpoint/support/tickets/:id', async (req, res) => {
+// Update ticket status (authenticated users only)
+router.patch('/api/v1/restpoint/support/tickets/:id', protect, authorizeAny, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;

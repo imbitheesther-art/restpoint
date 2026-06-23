@@ -16,6 +16,13 @@ import {
 
 const router = Router();
 
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// ALL routes require authentication - this is financial data
+router.use(protect);
+router.use(authorizeAny);
+
 // Financial Management Routes
 router.get('/invoices/all-deceased', getAllDeceasedWithFinancials);
 router.get(

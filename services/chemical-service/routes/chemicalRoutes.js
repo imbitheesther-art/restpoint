@@ -3,6 +3,13 @@ const router = express.Router();
 const chemicalController = require('../controllers/chemicalController');
 const usageController = require('../controllers/usageController');
 
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// ALL routes require authentication
+router.use(protect);
+router.use(authorizeAny);
+
 // ============================================
 // CHEMICAL INVENTORY ROUTES
 // ============================================

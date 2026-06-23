@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import {
@@ -23,9 +22,12 @@ import {
   Users,
   Globe,
   CalendarDays,
+  RefreshCw,
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 // Animations
 const fadeIn = keyframes`
@@ -50,57 +52,6 @@ const slideRight = keyframes`
   }
 `;
 
-// API Gateway URL
-const API_GATEWAY_URL =  'http://localhost:8000';
-const API_BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
-
-
-
-// Helper function to get tenant slug
-const getTenantSlug = () => {
-  return localStorage.getItem('tenantSlug') || 
-         localStorage.getItem('tenant_slug') ||
-         (() => {
-           try {
-             const user = JSON.parse(localStorage.getItem('user') || '{}');
-             return user.tenantSlug || user.tenant?.slug || 'default';
-           } catch {
-             return 'default';
-           }
-         })();
-};
-
-// Create axios instance with default headers
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add request interceptor to add tenant slug header
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    const tenantSlug = getTenantSlug();
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    if (tenantSlug && tenantSlug !== 'default') {
-      config.headers['x-tenant-slug'] = tenantSlug;
-    }
-    
-    console.log('📡 DeceasedInfoSection API Request:', {
-      url: config.url,
-      method: config.method,
-      tenantSlug,
-    });
-    
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // --- Sleek Styled Components with Larger Boxes ---
 const Container = styled.div`
@@ -540,11 +491,12 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
     }
 
     setIsLoading(true);
-    setError(null);mor
+    setError(null);
     
     try {
-      // Use the correct endpoint with the ID in the path
-      const response = await apiClient.get(`/deceased-id/${deceasedId}`);
+      // Use centralized API with ENDPOINTS
+      const endpoint = `${ENDPOINTS.DECEASED.BASE}/deceased-id/${deceasedId}`;
+      const response = await api.get(endpoint);
       console.log('📦 DeceasedInfoSection API Response:', response.data);
       
       const deceasedData = response.data?.data || response.data;
@@ -617,7 +569,8 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
 
     setIsLoading(true);
     try {
-      const response = await apiClient.put(`/update-deceased/${deceasedId}`, formData);
+      const updateEndpoint = `${ENDPOINTS.DECEASED.BASE}/update-deceased/${deceasedId}`;
+      const response = await api.put(updateEndpoint, formData);
 
       if (response.data.success) {
         toast.success('Details updated successfully');

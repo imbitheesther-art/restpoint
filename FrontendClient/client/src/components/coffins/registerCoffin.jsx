@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { Form, Row, Col, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { ENDPOINTS } from '../../api/endpoints';
+import env from '../../config/env';
 
 // --- Enhanced Color Palette ---
 const Colors = {
@@ -1060,7 +1062,8 @@ const RegisterCoffin = () => {
     try {
       console.log('Sending request to server...');
       
-      const response = await fetch('http://localhost:8009/api/v1/restpoint/register-coffin', {
+      const registerUrl = `${env.FULL_API_URL}${ENDPOINTS.COFFIN.BASE}/register`;
+      const response = await fetch(registerUrl, {
         method: 'POST',
         body: formData,
       });

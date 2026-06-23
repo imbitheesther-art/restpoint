@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const enhancedAnalyticsController = require('../controllers/enhancedAnalytics');
 
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// All enhanced analytics routes require authentication
+router.use(protect);
+router.use(authorizeAny);
+
 // Dashboard endpoints
 router.get('/dashboard', enhancedAnalyticsController.getDashboard);
 router.get('/monthly', enhancedAnalyticsController.getMonthlyAnalytics);

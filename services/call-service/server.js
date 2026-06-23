@@ -24,6 +24,9 @@ if (!JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET environment variable is required');
 }
 
+// Import shared auth middleware
+const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
+
 // Apply tenant validation to all API routes
 app.use('/api/v1/restpoint/call', tenantMiddleware);
 
@@ -92,7 +95,7 @@ app.get('/api/v1/restpoint/call/room/:tenantSlug', (req, res) => {
 });
 
 // API: List all active call rooms with online users directory
-app.get('/api/v1/restpoint/call/rooms', (req, res) => {
+app.get('/api/v1/restpoint/call/rooms', protect, authorizeAny, (req, res) => {
   const roomsList = [];
   for (const [tenantSlug, room] of rooms.entries()) {
     roomsList.push({
@@ -115,7 +118,7 @@ app.get('/api/v1/restpoint/call/rooms', (req, res) => {
 });
 
 // API: Get online user directory for all tenants (cross-branch directory)
-app.get('/api/v1/restpoint/call/directory', (req, res) => {
+app.get('/api/v1/restpoint/call/directory', protect, authorizeAny, (req, res) => {
   const directory = [];
   for (const [tenantSlug, users] of userDirectory.entries()) {
     directory.push({

@@ -6,7 +6,7 @@ import path from 'path';
 import PDFDocument from 'pdfkit';
 import { AppError } from '../middlewares/errorHandler';
 
-const { safeQuery } = require('../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../../configurations/sqlConfig/db');
 const { getKenyaTimeISO, getKenyaTimeFormatted } = require('../../../packages/shared-utils/dist/timestamps');
 const { loadTenantBranding } = require('./tenantBranding');
 

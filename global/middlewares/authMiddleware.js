@@ -105,8 +105,39 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
+/**
+ * List of all valid roles in the system
+ */
+const ALL_ROLES = [
+  'admin',
+  'superadmin',
+  'systemadmin',
+  'staff',
+  'user',
+  'manager',
+  'director',
+  'mortician',
+  'driver',
+  'tenant'
+];
+
+/**
+ * Authorize any authenticated user (any role) - fastest for broad access
+ */
+const authorizeAny = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Not authorized, no user context'
+    });
+  }
+  next();
+};
+
 module.exports = {
   protect,
   authorize,
-  optionalAuth
+  authorizeAny,
+  optionalAuth,
+  ALL_ROLES
 };

@@ -9,7 +9,10 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json({ limit: '10mb' }));
 
-// Health check
+// Import auth middleware
+const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
+
+// Health check (no auth)
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
@@ -18,8 +21,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Extra charges routes
-app.get('/api/v1/restpoint/extra-charges', (req, res) => {
+// Protected routes - require authentication
+app.get('/api/v1/restpoint/extra-charges', protect, authorizeAny, (req, res) => {
   res.json({
     success: true,
     message: 'Extra services endpoint',
@@ -28,7 +31,7 @@ app.get('/api/v1/restpoint/extra-charges', (req, res) => {
 });
 
 // Currency update endpoint
-app.get('/api/v1/restpoint/extra/currency', (req, res) => {
+app.get('/api/v1/restpoint/extra/currency', protect, authorizeAny, (req, res) => {
   res.json({
     success: true,
     message: 'Currency update endpoint',

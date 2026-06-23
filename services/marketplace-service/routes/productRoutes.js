@@ -23,25 +23,28 @@ const {
   createSubcategory,
 } = require("../controller/category-controller");
 
-// Public routes
+// Import authentication middleware
+const { protect, authorizeAny } = require("../../../global/middlewares/authMiddleware");
+
+// Public read-only routes
 router.get("/", getProducts);
 router.get("/featured", getFeaturedProducts);
 router.get("/categories", getCategories);
-router.post("/categories", createCategory);
-router.put("/categories/:id", updateCategory);
-router.delete("/categories/:id", deleteCategory);
-router.post("/subcategories", createSubcategory);
-
 router.get("/latest", getLatestProducts);
-router.get("/hot", getHotProducts);             // Trending store carousel
-router.get("/feed", getPersonalizedFeed);       // Personalized recommendations feed
+router.get("/hot", getHotProducts);
+router.get("/feed", getPersonalizedFeed);
 router.get("/category/:category", getProductsByCategory);
-router.get("/slug/:slug", getProductBySlug);    // SEO slug route — MUST be before /:id
-router.get("/:id", getProductById);             // Numeric ID or fallback slug lookup
+router.get("/slug/:slug", getProductBySlug);
+router.get("/:id", getProductById);
 
-// Admin routes (add auth middleware later)
-router.post("/", createProduct);
-router.put("/:id", updateProduct);
-router.delete("/:id", deleteProduct);
+// Protected write routes - any authenticated user
+router.post("/categories", protect, authorizeAny, createCategory);
+router.put("/categories/:id", protect, authorizeAny, updateCategory);
+router.delete("/categories/:id", protect, authorizeAny, deleteCategory);
+router.post("/subcategories", protect, authorizeAny, createSubcategory);
+
+router.post("/", protect, authorizeAny, createProduct);
+router.put("/:id", protect, authorizeAny, updateProduct);
+router.delete("/:id", protect, authorizeAny, deleteProduct);
 
 module.exports = router;

@@ -181,11 +181,13 @@ async function createCompleteTenantDatabase(
             const branchSlug = generateSlug(branch.branch_name) + '-' + Date.now().toString(36);
             
             // Insert branch record in tenant DB (no separate database!)
-            await tenantConn.query(
+            const [branchResult] = await tenantConn.query(
                 `INSERT INTO branches (branch_name, branch_slug, branch_location, branch_phone, branch_email, is_active) 
                  VALUES (?, ?, ?, ?, ?, 1)`,
                 [branch.branch_name, branchSlug, branch.branch_location || '', branch.branch_phone || '', branch.branch_email || '']
             );
+            
+            const branchId = (branchResult as any).insertId;
             
             branchData.push({
                 branch_name: branch.branch_name,
@@ -251,6 +253,22 @@ export class TenantModel {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
+        `);
+        
+        // Create branch_tracking table for tracking branches across tenants
+        await serverConn.query(`
+            CREATE TABLE IF NOT EXISTS tenant_tracking.branch_tracking (
+                branch_tracking_id INT PRIMARY KEY AUTO_INCREMENT,
+                tenant_id INT NOT NULL,
+                branch_id INT NOT NULL,
+                branch_name VARCHAR(255) NOT NULL,
+                branch_slug VARCHAR(255) NOT NULL,
+                branch_db_name VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tenant_id) REFERENCES tenant_tracking.tenants(tenant_id) ON DELETE CASCADE,
+                INDEX idx_tenant_id (tenant_id),
+                INDEX idx_branch_slug (branch_slug)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
         
         // Step 2: Check if tenant slug exists
@@ -321,6 +339,36 @@ export class TenantModel {
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
+        
+        // Step 8: Insert branch tracking records
+        try {
+            const tenantDbConn = await mysql.createConnection({
+                host: process.env.DB_HOST || 'localhost',
+                port: parseInt(process.env.DB_PORT || '3306'),
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: dbName
+            });
+            try {
+                const [branchRows] = await tenantDbConn.query(
+                    'SELECT branch_id, branch_name, branch_slug, branch_db_name FROM branches WHERE is_active = TRUE'
+                );
+                const branches = branchRows as any[];
+                
+                for (const branch of branches) {
+                    await serverConn.query(`
+                        INSERT INTO tenant_tracking.branch_tracking 
+                        (tenant_id, branch_id, branch_name, branch_slug, branch_db_name) 
+                        VALUES (?, ?, ?, ?, ?)
+                    `, [tenantId, branch.branch_id, branch.branch_name, branch.branch_slug, branch.branch_db_name || null]);
+                }
+                console.log(`✅ Branch tracking records created: ${branches.length} branches tracked`);
+            } finally {
+                await tenantDbConn.end();
+            }
+        } catch (trackingError: any) {
+            console.warn(`⚠️ Could not create branch tracking records: ${trackingError.message}`);
+        }
         
         console.log(`✅ Tenant registered: ${tenant.tenant_name} (${tenant.tenant_slug})`);
         console.log(`📁 Main DB: ${tenant.db_name}`);

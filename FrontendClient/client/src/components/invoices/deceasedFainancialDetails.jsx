@@ -1,10 +1,10 @@
 // components/DeceasedFinancialDetails.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
 import Swal from 'sweetalert2';
 import AdvancedPdfViewer from './pdfviewer';
-
-const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
+import env from '../../config/env';
 
 const DeceasedFinancialDetails = ({ 
   financialDetails, 
@@ -68,7 +68,7 @@ const DeceasedFinancialDetails = ({
         throw new Error('PDF URL not found for this invoice');
       }
 
-      const fullPdfUrl = `http://localhost:5000/${pdfUrl}`;
+      const fullPdfUrl = `${env.API_GATEWAY_URL}/${pdfUrl}`;
       console.log('Loading PDF from:', fullPdfUrl); // Debug log
       
       setCurrentInvoice(invoice);
@@ -104,7 +104,7 @@ const DeceasedFinancialDetails = ({
         throw new Error('PDF URL not found');
       }
 
-      const fullPdfUrl = `http://localhost:5000/${pdfUrl}`;
+      const fullPdfUrl = `${env.API_GATEWAY_URL}/${pdfUrl}`;
       
       // Use axios to download the file
       const response = await axios({
@@ -153,7 +153,7 @@ const DeceasedFinancialDetails = ({
         throw new Error('PDF URL not found');
       }
 
-      const fullPdfUrl = `http://localhost:5000/${pdfUrl}`;
+      const fullPdfUrl = `${env.API_GATEWAY_URL}/${pdfUrl}`;
       
       // Open PDF in new window and print
       const printWindow = window.open(fullPdfUrl, '_blank');
@@ -182,7 +182,7 @@ const DeceasedFinancialDetails = ({
       let nextOfKinName = 'Next of Kin';
 
       try {
-        const nextOfKinResponse = await axios.get(`${API_BASE_URL}/deceased/${deceased.id}/next-of-kin`);
+        const nextOfKinResponse = await api.get(`${ENDPOINTS.DECEASED.BASE}/${deceased.id}/next-of-kin`);
         if (nextOfKinResponse.data.status === 'success' && nextOfKinResponse.data.data && nextOfKinResponse.data.data.length > 0) {
           const nextOfKin = nextOfKinResponse.data.data[0];
           phoneNumber = nextOfKin.phone_number || nextOfKin.mobile_number || nextOfKin.phone;
@@ -239,7 +239,7 @@ const DeceasedFinancialDetails = ({
         throw new Error('PDF URL not found');
       }
 
-      const fullPdfUrl = `http://localhost:5000/${pdfUrl}`;
+      const fullPdfUrl = `${env.API_GATEWAY_URL}/${pdfUrl}`;
       
       // Download the PDF file using axios
       const response = await axios({
@@ -391,7 +391,7 @@ Thank you for choosing our services.`;
       let phoneNumber = null;
       
       try {
-        const nextOfKinResponse = await axios.get(`${API_BASE_URL}/deceased/${deceased.id}/next-of-kin`);
+        const nextOfKinResponse = await api.get(`${ENDPOINTS.DECEASED.BASE}/${deceased.id}/next-of-kin`);
         if (nextOfKinResponse.data.status === 'success' && nextOfKinResponse.data.data && nextOfKinResponse.data.data.length > 0) {
           const nextOfKin = nextOfKinResponse.data.data[0];
           phoneNumber = nextOfKin.phone_number || nextOfKin.mobile_number || nextOfKin.phone;
@@ -440,7 +440,7 @@ Thank you for choosing our services.`;
         throw new Error('PDF URL not found');
       }
 
-      const fullPdfUrl = `http://localhost:5000/${pdfUrl}`;
+      const fullPdfUrl = `${env.API_GATEWAY_URL}/${pdfUrl}`;
       
       // Download file using axios
       const response = await axios({
@@ -487,7 +487,8 @@ Thank you for choosing our services.`;
       });
 
       if (result.isConfirmed) {
-        const response = await axios.post(`${API_BASE_URL}/invoices/system-invoice`, {
+        const systemInvoiceEndpoint = `${ENDPOINTS.INVOICE.BASE}/system-invoice`;
+        const response = await api.post(systemInvoiceEndpoint, {
           deceased_id: deceased.id
         });
         

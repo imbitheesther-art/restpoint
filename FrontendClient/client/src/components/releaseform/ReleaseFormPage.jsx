@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
@@ -25,9 +24,8 @@ import {
 } from 'lucide-react';
 import styled from 'styled-components';
 import { useTenantStore } from '../../store/useTenantStore';
-
-const API_GATEWAY_URL = 'http://localhost:8000';
-const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 const Colors = {
   primary: '#1e293b',
@@ -374,7 +372,8 @@ const ReleaseFormPage = () => {
       }
 
       console.log('Fetching deceased data for ID:', id, 'Tenant:', tenantSlug);
-      const response = await axios.get(`${BASE_URL}/deceased-id/${id}`, {
+      const deceasedEndpoint = `${ENDPOINTS.DECEASED.BASE}/deceased-id/${id}`;
+      const response = await api.get(deceasedEndpoint, {
         headers: { 'x-tenant-slug': tenantSlug },
       });
       const data = response.data?.data || response.data || {};
@@ -437,8 +436,9 @@ const ReleaseFormPage = () => {
 
       console.log('Submitting release form:', releaseData);
 
-      const response = await axios.post(
-        `${API_GATEWAY_URL}/api/v1/restpoint/dispatch/${id}`,
+      const dispatchEndpoint = `${ENDPOINTS.DECEASED.BASE}/dispatch/${id}`;
+      const response = await api.post(
+        dispatchEndpoint,
         releaseData,
         {
           headers: { 

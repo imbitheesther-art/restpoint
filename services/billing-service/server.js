@@ -36,6 +36,9 @@ const logger = winston.createLogger({
 app.use(helmet());
 app.use(express.json());
 
+// Import auth middleware
+const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -347,7 +350,7 @@ app.get('/health', (req, res) => {
 });
 
 // Manual trigger for daily billing
-app.post('/api/billing/run', async (req, res) => {
+app.post('/api/billing/run', protect, authorizeAny, async (req, res) => {
   try {
     const { tenant_slug } = req.body;
     
@@ -375,7 +378,7 @@ app.post('/api/billing/run', async (req, res) => {
 });
 
 // Calculate charges for specific deceased
-app.post('/api/billing/calculate', async (req, res) => {
+app.post('/api/billing/calculate', protect, authorizeAny, async (req, res) => {
   try {
     const { deceased_id, tenant_slug } = req.body;
 
@@ -404,7 +407,7 @@ app.post('/api/billing/calculate', async (req, res) => {
 });
 
 // Get billing history
-app.get('/api/billing/history/:tenantSlug', async (req, res) => {
+app.get('/api/billing/history/:tenantSlug', protect, authorizeAny, async (req, res) => {
   try {
     const { tenantSlug } = req.params;
     const { startDate, endDate, limit = 100 } = req.query;
@@ -446,7 +449,7 @@ app.get('/api/billing/history/:tenantSlug', async (req, res) => {
 });
 
 // Get billing job logs
-app.get('/api/billing/logs', async (req, res) => {
+app.get('/api/billing/logs', protect, authorizeAny, async (req, res) => {
   try {
     const { limit = 50 } = req.query;
 

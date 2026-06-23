@@ -7,33 +7,34 @@ const {
   directOrder
 } = require("../controller/order-controller");
 
-const { authenticate } = require("../../../global/index");
+// Import proper auth middleware
+const { protect, authorizeAny } = require("../../../global/middlewares/authMiddleware");
 
 // ─── Place Order ─────────────────────────────────────────────────────────────
-router.post("/", authenticate, placeOrder);
-router.post("/place", authenticate, placeOrder);
+router.post("/", protect, placeOrder);
+router.post("/place", protect, placeOrder);
 
-// ─── Stats (must be before /:id) ─────────────────────────────────────────────
-router.get("/stats", getOrderStats);
-router.get("/admin/all", getAllOrders);
-router.get("/admin/stats", getOrderStats);
+// ─── Stats & Admin (any authenticated user) ─────────────────────────────────────
+router.get("/stats", protect, authorizeAny, getOrderStats);
+router.get("/admin/all", protect, authorizeAny, getAllOrders);
+router.get("/admin/stats", protect, authorizeAny, getOrderStats);
 
 // ─── Guest & Tracking ─────────────────────────────────────────────────────────
 router.get("/guest/lookup", getGuestOrders);
 router.get("/track/:orderNumber", getOrderByNumber);
 
 // ─── User Orders ──────────────────────────────────────────────────────────────
-router.get("/user/:userId", getOrdersByUser);
+router.get("/user/:userId", protect, getOrdersByUser);
 
-// ─── Admin Status Update ─────────────────────────────────────────────────────
-router.patch("/admin/:id/status", updateOrderStatus);
-router.patch("/:id/status", updateOrderStatus);
+// ─── Status Update ────────────────────────────────────────────────────────────
+router.patch("/admin/:id/status", protect, authorizeAny, updateOrderStatus);
+router.patch("/:id/status", protect, authorizeAny, updateOrderStatus);
 
-// ─── All Orders (admin list fallback) ─────────────────────────────────────────
-router.get("/", getAllOrders);
+// ─── All Orders ───────────────────────────────────────────────────────────────
+router.get("/", protect, authorizeAny, getAllOrders);
 
 // ─── Single Order ─────────────────────────────────────────────────────────────
-router.get("/:id", getOrderById);
-router.post("/:id/cancel", cancelOrder);
+router.get("/:id", protect, getOrderById);
+router.post("/:id/cancel", protect, cancelOrder);
 
 module.exports = router;

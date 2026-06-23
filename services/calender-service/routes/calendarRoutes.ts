@@ -3,9 +3,17 @@ import CalendarEventController from '../controllers/CalendarEventController';
 
 /**
  * Calendar Event Routes
+ * All routes require authentication
  */
 
 const router = Router();
+
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// All calendar routes require authentication
+router.use(protect);
+router.use(authorizeAny);
 
 // Create event
 router.post('/events', CalendarEventController.createEvent);
@@ -38,6 +46,6 @@ router.get('/statistics', CalendarEventController.getStatistics);
 router.get('/upcoming', CalendarEventController.getUpcomingEvents);
 
 // Search events
-router.get('/search', CalendarEventController.searchEvents);
+router.search('/events', CalendarEventController.searchEvents);
 
 export default router;

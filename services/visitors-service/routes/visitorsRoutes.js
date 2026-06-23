@@ -7,9 +7,15 @@ const {
   processBooking,
 } = require('../controllers/visitorsControl');
 
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// Public route - visitors can register themselves
 router.post('/register-visitor', registerVisitor);
-router.get('/recent-visitors', getRecentVisitors);
-router.get('/online-bookings', getOnlineBookings);
-router.post('/process-booking/:id', processBooking);
+
+// Protected routes - any authenticated user can access
+router.get('/recent-visitors', protect, authorizeAny, getRecentVisitors);
+router.get('/online-bookings', protect, authorizeAny, getOnlineBookings);
+router.post('/process-booking/:id', protect, authorizeAny, processBooking);
 
 module.exports = router;

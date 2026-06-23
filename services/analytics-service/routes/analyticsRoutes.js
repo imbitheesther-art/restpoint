@@ -5,8 +5,11 @@ const {
   getComprehensiveVehicleAnalytics,
 } = require('../controllers/analytics');
 
-// Basic analytics endpoint
-router.get('/analytics/mortuary-analytics', getMortuaryAnalytics);
-router.get('/vehicle-analytics', getComprehensiveVehicleAnalytics);
+// Import authentication middleware
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+
+// All analytics routes require authentication
+router.get('/analytics/mortuary-analytics', protect, authorizeAny, getMortuaryAnalytics);
+router.get('/vehicle-analytics', protect, authorizeAny, getComprehensiveVehicleAnalytics);
 
 module.exports = router;
