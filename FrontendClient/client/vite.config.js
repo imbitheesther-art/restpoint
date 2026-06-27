@@ -8,10 +8,9 @@ export default defineConfig({
     host: '0.0.0.0',
     strictPort: true,
     hmr: {
-      protocol: 'wss',
+      protocol: 'ws',
       host: 'localhost',
       port: 5173,
-      clientPort: 443,
       timeout: 120000
     },
     allowedHosts: [
@@ -43,7 +42,8 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    disabled: true,
+    noDiscovery: true,
+    include: [],
     exclude: [
       '@fullcalendar/react',
       '@fullcalendar/daygrid',
@@ -55,7 +55,17 @@ export default defineConfig({
   build: {
     sourcemap: false,
     rollupOptions: {
-      external: []
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          'vendor-fabric': ['fabric'],
+          'vendor-calendar': ['@fullcalendar/core', '@fullcalendar/react', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction'],
+          'vendor-pdf': ['pdfjs-dist', 'react-pdf'],
+          'vendor-charts': ['recharts'],
+          'vendor-utils': ['lodash', 'moment', 'date-fns'],
+        },
+      },
     },
     // Enable cache busting with content hashes
     manifest: true,

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { 
-  HardHat, 
-  Home, 
-  ArrowLeft, 
-  Hammer, 
-  AlertTriangle, 
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  HardHat,
+  Home,
+  ArrowLeft,
+  Hammer,
+  AlertTriangle,
   Wrench,
   Clock,
   Users,
@@ -12,8 +13,25 @@ import {
   TrafficCone
 } from "lucide-react";
 
-const Construction404  = () => {
+const Construction404 = () => {
+  const navigate = useNavigate();
+  const { slug } = useParams();
   const [progress, setProgress] = useState(0);
+
+  // Get tenant slug from URL params or localStorage
+  const getTenantSlug = () => {
+    return slug ||
+      localStorage.getItem('tenantSlug') ||
+      localStorage.getItem('tenant_slug') ||
+      (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.tenantSlug || user.tenant?.slug || 'default';
+        } catch {
+          return 'default';
+        }
+      })();
+  };
 
   useEffect(() => {
     // Simulate progress animation
@@ -30,8 +48,11 @@ const Construction404  = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleGoBack = () => window.history.back();
-  const handleGoHome = () => (window.location.href = "/");
+  const handleGoBack = () => navigate(-1);
+  const handleGoHome = () => {
+    const tenantSlug = getTenantSlug();
+    navigate(`/tenant/${tenantSlug}/all-deceased`);
+  };
 
   const styles = `
     @keyframes bounce {
@@ -78,8 +99,8 @@ const Construction404  = () => {
   return (
     <>
       <style>{styles}</style>
-      
-      <div 
+
+      <div
         className="min-vh-100 d-flex align-items-center justify-content-center"
         style={{
           background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
@@ -96,7 +117,7 @@ const Construction404  = () => {
         <div className="container">
           <div className="row justify-content-center">
             <div className="col-12 col-md-10 col-lg-8">
-              
+
               {/* Construction Header */}
               <div className="text-center mb-4">
                 <div className="d-flex justify-content-center align-items-center mb-3">
@@ -126,7 +147,7 @@ const Construction404  = () => {
                 </div>
 
                 <div className="card-body p-5 text-center position-relative">
-                  
+
                   {/* Main Content */}
                   <div className="mb-4">
                     <AlertTriangle size={60} className="text-warning float-animation mb-3" />
@@ -178,8 +199,8 @@ const Construction404  = () => {
                       <span className="text-warning fw-bold fs-5">{progress}%</span>
                     </div>
                     <div className="progress" style={{ height: '12px', borderRadius: '10px' }}>
-                      <div 
-                        className="progress-bar bg-warning progress-bar-striped progress-bar-animated" 
+                      <div
+                        className="progress-bar bg-warning progress-bar-striped progress-bar-animated"
                         style={{ width: `${progress}%`, borderRadius: '10px' }}
                       ></div>
                     </div>

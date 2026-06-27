@@ -2,30 +2,31 @@
   "name": "@montezuma/restpoint",
   "version": "1.0.0",
   "description": "Restpoint — Modern Kenyan Mortuary Management SaaS Platform",
-  "private": true,
   "engines": {
-    "node": ">=22.0.0 <23.0.0",
-    "yarn": ">=1.22.0"
+    "node": ">=22.0.0 <25.0.0"
   },
   "workspaces": [
     "packages/*",
     "services/*"
   ],
   "scripts": {
-    "dev": "concurrently -n gateway,services -c blue,green \"yarn workspace restpoint-gateway dev\" \"yarn workspaces run dev\"",
-    "build": "yarn workspaces run build",
-    "start": "yarn workspaces run start",
-    "lint": "yarn workspaces run lint",
-    "lint:fix": "yarn workspaces run lint:fix",
-    "test": "yarn workspaces run test",
-    "typecheck": "yarn workspaces run typecheck",
-    "clean": "yarn workspaces run clean",
-    "setup": "yarn install",
-    "bootstrap": "yarn install",
+    "dev": "concurrently -n gateway,services -c blue,green \"npm run dev --workspace=restpoint-gateway\" \"npm run dev --workspaces\"",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "setup": "npm install",
+    "bootstrap": "npm install",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f --tail=100",
-    "docker:rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d"
+    "docker:rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d",
+    "migrate:soft-delete": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts",
+    "migrate:soft-delete:dry-run": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --dry-run",
+    "migrate:soft-delete:tenant": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --tenant="
   },
   "dependencies": {},
   "devDependencies": {

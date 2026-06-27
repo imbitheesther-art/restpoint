@@ -22,10 +22,11 @@ const CONFIG = {
   MAX_CANVAS_SIZE: { width: 800, height: 1131 },
   MAX_FILE_SIZE: 50 * 1024 * 1024,
   HISTORY_MAX_STATES: 50,
-  SUPPORTED_FILE_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'],
+  SUPPORTED_FILE_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'],
   PRODUCTION: process.env.NODE_ENV === 'production',
   ENABLE_AUTO_SAVE: true,
-  ISOLATION_LEVEL: 'strict'
+  ISOLATION_LEVEL: 'strict',
+  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v2/restpoint'
 };
 
 // ============================================
@@ -50,15 +51,15 @@ const dataURItoBlob = (dataURI) => {
 
 const getTenantInfo = () => {
   const tenantSlug = localStorage.getItem('tenantSlug') ||
-                     localStorage.getItem('tenant_slug') ||
-                     (() => {
-                       try {
-                         const user = JSON.parse(localStorage.getItem('user') || '{}');
-                         return user.tenantSlug || user.tenant?.slug || null;
-                       } catch {
-                         return null;
-                       }
-                     })();
+    localStorage.getItem('tenant_slug') ||
+    (() => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return user.tenantSlug || user.tenant?.slug || null;
+      } catch {
+        return null;
+      }
+    })();
 
   if (!tenantSlug && CONFIG.PRODUCTION && CONFIG.ISOLATION_LEVEL === 'strict') {
     throw new Error('SECURITY: Tenant not identified. Operation aborted.');
@@ -300,12 +301,13 @@ const DocumentEditor = ({
       fabricCanvas.on('selection:updated', handleSelectionUpdated);
       fabricCanvas.on('selection:cleared', handleSelectionCleared);
 
-      loadBackground(fabricCanvas).then(() => {
-        setIsLoading(false);
-      }).catch((error) => {
+      // Initialize canvas immediately without waiting for background
+      setIsLoading(false);
+
+      // Load background asynchronously in the background
+      loadBackground(fabricCanvas).catch((error) => {
         console.error('Error loading background:', error);
-        setLoadError('Failed to load document background');
-        setIsLoading(false);
+        // Don't show error to user - canvas is already usable
       });
 
       return () => {
@@ -441,17 +443,32 @@ const DocumentEditor = ({
 
   const loadPDF = async (url) => {
     try {
+      console.log('Loading PDF from:', url);
       const response = await fetch(url, {
         headers: { 'x-tenant-slug': tenantInfo.slug }
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const buffer = await response.arrayBuffer();
+      console.log('PDF buffer loaded, size:', buffer.byteLength);
       await loadPDFBackground(new Uint8Array(buffer));
     } catch (error) {
       console.error('Error loading PDF:', error);
+      // Fallback: try to load as image
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = url;
-      img.onload = () => setFabricBackgroundImage(url);
+      img.onload = () => {
+        console.log('Fallback image loaded successfully');
+        setFabricBackgroundImage(url);
+      };
+      img.onerror = () => {
+        console.error('Failed to load fallback image');
+        setLoadError('Failed to load PDF document. Please try again.');
+      };
     }
   };
 
@@ -460,129 +477,141 @@ const DocumentEditor = ({
     const doc = documentRef.current;
     const template = templateRef.current;
 
-    return new Promise((resolve, reject) => {
-      const setFabricBackgroundImage = (url) => {
-        try {
-          fabricCanvas._loadingState = true;
-          fabric.Image.fromURL(url, (img) => {
-            try {
-              img.set({
-                scaleX: fabricCanvas.width / img.width,
-                scaleY: fabricCanvas.height / img.height,
-                originX: 'left',
-                originY: 'top',
-                selectable: false,
-                evented: false,
-                isBackground: true
-              });
-
-              fabricCanvas.setBackgroundImage(img, () => {
-                try {
-                  fabricCanvas.renderAll();
-                  fabricCanvas._loadingState = false;
-
-                  if (doc?.canvasState) {
-                    const state = typeof doc.canvasState === 'string' ? JSON.parse(doc.canvasState) : doc.canvasState;
-                    fabricCanvas._loadingState = true;
-                    fabricCanvas.loadFromJSON(state, () => {
-                      try {
-                        fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
-                        fabricCanvas.renderAll();
-                        fabricCanvas._loadingState = false;
-                        saveHistoryState(fabricCanvas);
-                        resolve();
-                      } catch (error) {
-                        reject(error);
-                      }
-                    });
-                  } else {
-                    saveHistoryState(fabricCanvas);
-                    resolve();
-                  }
-                } catch (error) {
-                  reject(error);
-                }
-              });
-            } catch (error) {
-              reject(error);
-            }
-          }, { crossOrigin: 'anonymous' });
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      const loadPDFBackground = async (pdfData) => {
-        try {
-          const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-          const pdf = await loadingTask.promise;
-          const page = await pdf.getPage(1);
-
-          const viewport = page.getViewport({ scale: 2.0 });
-          const tempCanvas = document.createElement('canvas');
-          const tempCtx = tempCanvas.getContext('2d');
-          tempCanvas.width = viewport.width;
-          tempCanvas.height = viewport.height;
-
-          await page.render({
-            canvasContext: tempCtx,
-            viewport: viewport
-          }).promise;
-
-          const dataUrl = tempCanvas.toDataURL('image/png');
-          setFabricBackgroundImage(dataUrl);
-        } catch (error) {
-          reject(new Error('Failed to render PDF: ' + error.message));
-        }
-      };
-
+    const setFabricBackgroundImage = (url) => {
       try {
-        if (file) {
-          if (file.type === 'application/pdf') {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-              const typedArray = new Uint8Array(e.target.result);
-              await loadPDFBackground(typedArray);
-            };
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsArrayBuffer(file);
-          } else if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              setFabricBackgroundImage(e.target.result);
-            };
-            reader.onerror = () => reject(new Error('Failed to read image file'));
-            reader.readAsDataURL(file);
+        fabric.Image.fromURL(url, (img) => {
+          try {
+            img.set({
+              scaleX: fabricCanvas.width / img.width,
+              scaleY: fabricCanvas.height / img.height,
+              originX: 'left',
+              originY: 'top',
+              selectable: false,
+              evented: false,
+              isBackground: true
+            });
+
+            fabricCanvas.setBackgroundImage(img, () => {
+              try {
+                fabricCanvas.renderAll();
+
+                if (doc?.canvasState) {
+                  const state = typeof doc.canvasState === 'string' ? JSON.parse(doc.canvasState) : doc.canvasState;
+                  fabricCanvas._loadingState = true;
+                  fabricCanvas.loadFromJSON(state, () => {
+                    try {
+                      fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
+                      fabricCanvas.renderAll();
+                      fabricCanvas._loadingState = false;
+                      saveHistoryState(fabricCanvas);
+                    } catch (error) {
+                      console.error('Error loading canvas state:', error);
+                    }
+                  });
+                } else {
+                  saveHistoryState(fabricCanvas);
+                }
+              } catch (error) {
+                console.error('Error setting background image:', error);
+              }
+            });
+          } catch (error) {
+            console.error('Error creating image from URL:', error);
           }
-        } else if (doc?.fileUrl) {
-          const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
-          if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
-            (async () => {
-              await loadPDF(url);
-            })();
-          } else {
-            setFabricBackgroundImage(url);
-          }
-        } else if (template?.fileName) {
-          const url = `${CONFIG.API_BASE_URL}/edocuments/templates/download/${template.fileName}`;
-          setFabricBackgroundImage(url);
-        } else {
-          resolve();
-        }
+        }, { crossOrigin: 'anonymous' });
       } catch (error) {
-        reject(error);
+        console.error('Error in setFabricBackgroundImage:', error);
       }
-    });
+    };
+
+    const loadPDFBackground = async (pdfData) => {
+      try {
+        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+
+        const viewport = page.getViewport({ scale: 2.0 });
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: tempCtx,
+          viewport: viewport
+        }).promise;
+
+        const dataUrl = tempCanvas.toDataURL('image/png');
+        setFabricBackgroundImage(dataUrl);
+      } catch (error) {
+        console.error('Failed to render PDF:', error);
+        // Don't throw - canvas is already usable
+      }
+    };
+
+    try {
+      if (file) {
+        if (file.type === 'application/pdf') {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const typedArray = new Uint8Array(e.target.result);
+            await loadPDFBackground(typedArray);
+          };
+          reader.onerror = () => console.error('Failed to read file');
+          reader.readAsArrayBuffer(file);
+        } else if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setFabricBackgroundImage(e.target.result);
+          };
+          reader.onerror = () => console.error('Failed to read image file');
+          reader.readAsDataURL(file);
+        }
+      } else if (doc?.fileUrl) {
+        const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
+        console.log('Loading document from URL:', url);
+        if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
+          (async () => {
+            try {
+              await loadPDF(url);
+            } catch (error) {
+              console.error('Failed to load PDF, trying as image:', error);
+              setFabricBackgroundImage(url);
+            }
+          })();
+        } else {
+          setFabricBackgroundImage(url);
+        }
+      } else if (template?.fileName) {
+        const url = `${CONFIG.API_BASE_URL}/edocuments/templates/download/${template.fileName}`;
+        console.log('Loading template from URL:', url);
+        if (template.fileName.toLowerCase().endsWith('.pdf')) {
+          (async () => {
+            try {
+              await loadPDF(url);
+            } catch (error) {
+              console.error('Failed to load template PDF, trying as image:', error);
+              setFabricBackgroundImage(url);
+            }
+          })();
+        } else {
+          setFabricBackgroundImage(url);
+        }
+      }
+    } catch (error) {
+      console.error('Error in loadBackground:', error);
+      // Don't throw - canvas is already usable
+    }
   };
 
   // ============================================
-  // CANVAS OPERATIONS
+  // CANVAS OPERATIONS - ENHANCED
   // ============================================
 
-  const addTextBox = useCallback(() => {
+  const addTextBox = useCallback((text = 'Double click to edit text') => {
     if (!canvas) return;
     try {
-      const text = new fabric.Textbox('Double click to edit text', {
+      const textbox = new fabric.Textbox(text, {
         left: 150,
         top: 150,
         width: 250,
@@ -592,10 +621,11 @@ const DocumentEditor = ({
         borderColor: '#c9a84c',
         cornerColor: '#c9a84c',
         cornerSize: 8,
-        transparentCorners: false
+        transparentCorners: false,
+        editable: true
       });
-      canvas.add(text);
-      canvas.setActiveObject(text);
+      canvas.add(textbox);
+      canvas.setActiveObject(textbox);
       canvas.renderAll();
       saveHistoryState(canvas);
     } catch (error) {
@@ -652,6 +682,73 @@ const DocumentEditor = ({
     }
   }, [canvas, brushColor, brushSize, saveHistoryState]);
 
+  const addLine = useCallback(() => {
+    if (!canvas) return;
+    try {
+      const line = new fabric.Line([50, 200, 300, 200], {
+        stroke: brushColor === '#ffffff' ? '#000000' : brushColor,
+        strokeWidth: brushSize,
+        borderColor: '#c9a84c',
+        cornerColor: '#c9a84c',
+        cornerSize: 8,
+        transparentCorners: false
+      });
+      canvas.add(line);
+      canvas.setActiveObject(line);
+      canvas.renderAll();
+      saveHistoryState(canvas);
+    } catch (error) {
+      console.error('Error adding line:', error);
+    }
+  }, [canvas, brushColor, brushSize, saveHistoryState]);
+
+  const addArrow = useCallback(() => {
+    if (!canvas) return;
+    try {
+      const arrow = new fabric.Path('M 0 50 L 200 50 L 180 30 M 200 50 L 180 70', {
+        stroke: brushColor === '#ffffff' ? '#000000' : brushColor,
+        strokeWidth: brushSize,
+        fill: 'transparent',
+        borderColor: '#c9a84c',
+        cornerColor: '#c9a84c',
+        cornerSize: 8,
+        transparentCorners: false
+      });
+      arrow.set({ left: 100, top: 150 });
+      canvas.add(arrow);
+      canvas.setActiveObject(arrow);
+      canvas.renderAll();
+      saveHistoryState(canvas);
+    } catch (error) {
+      console.error('Error adding arrow:', error);
+    }
+  }, [canvas, brushColor, brushSize, saveHistoryState]);
+
+  const addStamp = useCallback((stampType = 'APPROVED') => {
+    if (!canvas) return;
+    try {
+      const stamp = new fabric.Text(stampType, {
+        left: 200,
+        top: 200,
+        fontSize: 32,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        fill: '#dc2626',
+        borderColor: '#dc2626',
+        cornerColor: '#dc2626',
+        cornerSize: 8,
+        transparentCorners: false,
+        angle: -15
+      });
+      canvas.add(stamp);
+      canvas.setActiveObject(stamp);
+      canvas.renderAll();
+      saveHistoryState(canvas);
+    } catch (error) {
+      console.error('Error adding stamp:', error);
+    }
+  }, [canvas, saveHistoryState]);
+
   const deleteSelected = useCallback(() => {
     if (!canvas) return;
     try {
@@ -664,6 +761,20 @@ const DocumentEditor = ({
       }
     } catch (error) {
       console.error('Error deleting object:', error);
+    }
+  }, [canvas, saveHistoryState]);
+
+  const clearCanvas = useCallback(() => {
+    if (!canvas) return;
+    try {
+      if (window.confirm('Are you sure you want to clear the entire canvas? This cannot be undone.')) {
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        canvas.renderAll();
+        saveHistoryState(canvas);
+      }
+    } catch (error) {
+      console.error('Error clearing canvas:', error);
     }
   }, [canvas, saveHistoryState]);
 
@@ -681,7 +792,7 @@ const DocumentEditor = ({
       reader.onload = (event) => {
         fabric.Image.fromURL(event.target.result, (img) => {
           try {
-            const scale = Math.min(180 / img.width, 180 / img.height);
+            const scale = Math.min(300 / img.width, 300 / img.height);
             img.set({
               left: 200,
               top: 200,
@@ -1064,7 +1175,6 @@ const DocumentEditor = ({
 
       {/* Main Workspace Area */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-
         {/* Left Toolbar */}
         <div style={toolbarStyle}>
           <h4 style={toolbarHeadingStyle}>Tools</h4>
@@ -1112,6 +1222,38 @@ const DocumentEditor = ({
               title="Draw Circle"
               disabled={isLoading}
             />
+            <ToolButton
+              icon={<div style={{ width: '18px', height: '2px', background: 'currentColor' }} />}
+              active={activeTool === 'line'}
+              onClick={() => { setActiveTool('select'); addLine(); }}
+              title="Draw Line"
+              disabled={isLoading}
+            />
+            <ToolButton
+              icon={<div style={{ width: '0', height: '0', borderLeft: '9px solid currentColor', borderTop: '6px solid transparent', borderBottom: '6px solid transparent' }} />}
+              active={activeTool === 'arrow'}
+              onClick={() => { setActiveTool('select'); addArrow(); }}
+              title="Draw Arrow"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div style={dividerHorizontalStyle} />
+
+          <h4 style={toolbarHeadingStyle}>Shapes & Stamps</h4>
+          <div style={toolGroupStyle}>
+            <button onClick={() => { setActiveTool('select'); addStamp('APPROVED'); }} style={toolbarSquareButtonStyle} title="Add Approved Stamp" disabled={isLoading}>
+              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#dc2626' }}>✓</div>
+              <span style={{ fontSize: '10px', marginTop: '4px' }}>Approved</span>
+            </button>
+            <button onClick={() => { setActiveTool('select'); addStamp('REJECTED'); }} style={toolbarSquareButtonStyle} title="Add Rejected Stamp" disabled={isLoading}>
+              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#dc2626' }}>✗</div>
+              <span style={{ fontSize: '10px', marginTop: '4px' }}>Rejected</span>
+            </button>
+            <button onClick={() => { setActiveTool('select'); addStamp('PENDING'); }} style={toolbarSquareButtonStyle} title="Add Pending Stamp" disabled={isLoading}>
+              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#f59e0b' }}>⏳</div>
+              <span style={{ fontSize: '10px', marginTop: '4px' }}>Pending</span>
+            </button>
           </div>
 
           <div style={dividerHorizontalStyle} />
@@ -1122,9 +1264,9 @@ const DocumentEditor = ({
               <Pen size={18} />
               <span style={{ fontSize: '10px', marginTop: '4px' }}>Signature</span>
             </button>
-            <button onClick={() => fileInputRef.current?.click()} style={toolbarSquareButtonStyle} title="Upload Logo" disabled={isLoading}>
+            <button onClick={() => fileInputRef.current?.click()} style={toolbarSquareButtonStyle} title="Upload Image" disabled={isLoading}>
               <ImageIcon size={18} />
-              <span style={{ fontSize: '10px', marginTop: '4px' }}>Logo</span>
+              <span style={{ fontSize: '10px', marginTop: '4px' }}>Image</span>
             </button>
             <input
               type="file"
@@ -1174,9 +1316,13 @@ const DocumentEditor = ({
           {selectedObject && (
             <>
               <div style={dividerHorizontalStyle} />
-              <button onClick={deleteSelected} style={{ ...toolbarSquareButtonStyle, backgroundColor: '#7f1d1d', color: '#fca5a5', width: '100%', height: '40px' }} title="Delete Element" disabled={isLoading}>
+              <button onClick={deleteSelected} style={{ ...toolbarSquareButtonStyle, backgroundColor: '#7f1d1d', color: '#fca5a5', width: '100%', height: '40px' }} title="Delete Selected (Del)" disabled={isLoading}>
                 <Trash2 size={16} style={{ marginRight: '6px' }} />
-                Delete Selected
+                Delete
+              </button>
+              <button onClick={clearCanvas} style={{ ...toolbarSquareButtonStyle, backgroundColor: '#991b1b', color: '#fca5a5', width: '100%', height: '40px' }} title="Clear All" disabled={isLoading}>
+                <RefreshCw size={16} style={{ marginRight: '6px' }} />
+                Clear All
               </button>
             </>
           )}

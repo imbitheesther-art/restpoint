@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  FileUp, Download, Trash2, File, Search, Plus, AlertCircle, Loader, 
+import {
+  FileUp, Download, Trash2, File, Search, Plus, AlertCircle, Loader,
   Eye, Pencil, X, FileText, LayoutTemplate as Template, Edit3, Save, Upload, Copy,
   ChevronDown, ChevronUp, Filter, Grid, List
 } from 'lucide-react';
@@ -20,18 +20,18 @@ const EDocumentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
-  
+
   // Editor state
   const [showEditor, setShowEditor] = useState(false);
   const [editingDocument, setEditingDocument] = useState(null);
   const [editingFile, setEditingFile] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  
+
   // Template management state
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const [newTemplate, setNewTemplate] = useState({ name: '', description: '', type: 'form', fields: [] });
-  
+
   // Autofill data
   const [showAutofillModal, setShowAutofillModal] = useState(false);
   const [autofillTemplate, setAutofillTemplate] = useState(null);
@@ -186,7 +186,7 @@ const EDocumentsPage = () => {
       }, {
         headers: { 'x-tenant-slug': tenantSlug }
       });
-      
+
       fetchDocuments();
       setShowAutofillModal(false);
       Swal.fire('Success', 'Document generated successfully!', 'success');
@@ -220,6 +220,50 @@ const EDocumentsPage = () => {
     } catch (error) {
       Swal.fire('Error', 'Failed to create template', 'error');
     }
+  };
+
+  // Upload template file (PDF or document)
+  const handleTemplateFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword'];
+
+    if (!validTypes.includes(file.type)) {
+      Swal.fire('Error', 'Please upload a valid file (PDF, Image, or Word document)', 'error');
+      return;
+    }
+
+    const templateName = prompt('Enter template name:', file.name.replace(/\.[^/.]+$/, ''));
+    if (!templateName) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('name', templateName);
+      formData.append('description', `Uploaded template: ${file.name}`);
+      formData.append('type', 'general');
+      formData.append('templateFile', file);
+      formData.append('isUploaded', 'true');
+
+      await axios.post(`${API_BASE_URL}/edocuments/templates/upload`, formData, {
+        headers: {
+          'x-tenant-slug': tenantSlug,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      fetchTemplates();
+      Swal.fire('Success', 'Template uploaded successfully!', 'success');
+    } catch (error) {
+      console.error('Error uploading template:', error);
+      Swal.fire('Error', 'Failed to upload template', 'error');
+    }
+
+    // Reset file input
+    e.target.value = null;
   };
 
   // Delete template
@@ -275,7 +319,7 @@ const EDocumentsPage = () => {
   // Filter documents
   const filteredDocs = documents.filter(doc => {
     const matchesSearch = doc.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || doc.documentType === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -312,7 +356,7 @@ const EDocumentsPage = () => {
             Create, edit, and manage documents with Fabric.js canvas editor
           </p>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           {/* Templates Toggle */}
           <button
@@ -363,10 +407,10 @@ const EDocumentsPage = () => {
 
       {/* Templates Section */}
       {showTemplates && (
-        <div style={{ 
-          backgroundColor: '#fff', 
-          borderRadius: '12px', 
-          padding: '1.5rem', 
+        <div style={{
+          backgroundColor: '#fff',
+          borderRadius: '12px',
+          padding: '1.5rem',
           marginBottom: '2rem',
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
@@ -393,6 +437,32 @@ const EDocumentsPage = () => {
               <Plus size={16} />
               Create Template
             </button>
+
+            {/* Upload Template File Button */}
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#3B82F6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 500
+              }}
+            >
+              <Upload size={16} />
+              Upload Template File
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                onChange={handleTemplateFileUpload}
+                style={{ display: 'none' }}
+              />
+            </label>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
@@ -411,20 +481,20 @@ const EDocumentsPage = () => {
                     <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 600, color: '#111827' }}>
                       {template.name}
                     </h3>
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      padding: '2px 8px', 
-                      backgroundColor: '#E5E7EB', 
+                    <span style={{
+                      fontSize: '0.75rem',
+                      padding: '2px 8px',
+                      backgroundColor: '#E5E7EB',
                       borderRadius: '12px',
                       color: '#6B7280'
                     }}>
                       {template.type}
                     </span>
                     {template.isDefault && (
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        padding: '2px 8px', 
-                        backgroundColor: '#FEF3C7', 
+                      <span style={{
+                        fontSize: '0.75rem',
+                        padding: '2px 8px',
+                        backgroundColor: '#FEF3C7',
                         borderRadius: '12px',
                         color: '#D97706',
                         marginLeft: '4px'
@@ -436,10 +506,10 @@ const EDocumentsPage = () => {
                   {!template.isDefault && (
                     <button
                       onClick={() => handleDeleteTemplate(template)}
-                      style={{ 
-                        padding: '4px', 
-                        backgroundColor: 'transparent', 
-                        border: 'none', 
+                      style={{
+                        padding: '4px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
                         cursor: 'pointer',
                         color: '#DC2626'
                       }}
@@ -448,7 +518,7 @@ const EDocumentsPage = () => {
                     </button>
                   )}
                 </div>
-                
+
                 {template.description && (
                   <p style={{ margin: '0.5rem 0', fontSize: '0.85rem', color: '#6B7280' }}>
                     {template.description}
@@ -460,7 +530,7 @@ const EDocumentsPage = () => {
                     {template.fields.length} fields
                   </p>
                 )}
-                
+
                 <div style={{ display: 'flex', gap: '8px', marginTop: '0.75rem' }}>
                   <button
                     onClick={() => openTemplateInEditor(template)}
@@ -584,9 +654,9 @@ const EDocumentsPage = () => {
           <p>Loading documents...</p>
         </div>
       ) : filteredDocs.length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '4rem 2rem', 
+        <div style={{
+          textAlign: 'center',
+          padding: '4rem 2rem',
           backgroundColor: '#fff',
           borderRadius: '12px',
           border: '2px dashed #D1D5DB'
@@ -604,13 +674,13 @@ const EDocumentsPage = () => {
               onClick={() => openInEditor(doc)}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  backgroundColor: '#EEF2FF', 
-                  borderRadius: '10px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  backgroundColor: '#EEF2FF',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   color: '#6366F1',
                   flexShrink: 0
@@ -620,11 +690,11 @@ const EDocumentsPage = () => {
                 <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => openInEditor(doc)}
-                    style={{ 
-                      padding: '6px', 
-                      backgroundColor: '#F0F9FF', 
-                      border: 'none', 
-                      borderRadius: '6px', 
+                    style={{
+                      padding: '6px',
+                      backgroundColor: '#F0F9FF',
+                      border: 'none',
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       color: '#0284C7'
                     }}
@@ -634,11 +704,11 @@ const EDocumentsPage = () => {
                   </button>
                   <button
                     onClick={() => handleDownload(doc)}
-                    style={{ 
-                      padding: '6px', 
-                      backgroundColor: '#F0FDF4', 
-                      border: 'none', 
-                      borderRadius: '6px', 
+                    style={{
+                      padding: '6px',
+                      backgroundColor: '#F0FDF4',
+                      border: 'none',
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       color: '#16A34A'
                     }}
@@ -648,11 +718,11 @@ const EDocumentsPage = () => {
                   </button>
                   <button
                     onClick={() => handleExportPDF(doc)}
-                    style={{ 
-                      padding: '6px', 
-                      backgroundColor: '#FEF3C7', 
-                      border: 'none', 
-                      borderRadius: '6px', 
+                    style={{
+                      padding: '6px',
+                      backgroundColor: '#FEF3C7',
+                      border: 'none',
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       color: '#D97706'
                     }}
@@ -662,11 +732,11 @@ const EDocumentsPage = () => {
                   </button>
                   <button
                     onClick={() => handleDelete(doc)}
-                    style={{ 
-                      padding: '6px', 
-                      backgroundColor: '#FEF2F2', 
-                      border: 'none', 
-                      borderRadius: '6px', 
+                    style={{
+                      padding: '6px',
+                      backgroundColor: '#FEF2F2',
+                      border: 'none',
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       color: '#DC2626'
                     }}
@@ -676,17 +746,17 @@ const EDocumentsPage = () => {
                   </button>
                 </div>
               </div>
-              
+
               <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: 600, color: '#111827' }}>
                 {doc.title || 'Untitled'}
               </h3>
-              
+
               {doc.description && (
                 <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {doc.description}
                 </p>
               )}
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#9CA3AF' }}>
                 <span>{doc.documentType || 'Document'}</span>
                 <span>{new Date(doc.createdAt).toLocaleDateString()}</span>

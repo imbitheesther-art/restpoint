@@ -1,10 +1,11 @@
 ﻿import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors'; // REMOVED
+import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import onboardingRoutes from './routes/onboardingRoutes';
 import systemAdminRoutes from './routes/systemAdminRoutes';
+import { errorHandler, notFoundHandler, asyncHandler } from '../../global/middlewares/errorHandler';
 
 dotenv.config();
 
@@ -95,12 +96,12 @@ app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
 app.use('/api/onboarding', authLimiter, onboardingRoutes);
 
-// --- Onboarding routes (v1 prefix â€” after gateway strips /api) ---
+// --- Onboarding routes (v1 prefix — after gateway strips /api) ---
 app.use('/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
 app.use('/v1/onboarding', authLimiter, onboardingRoutes);
-// Gateway strips /api â†’ /onboarding, so mount without /v1 too
+// Gateway strips /api → /onboarding, so mount without /v1 too
 app.use('/onboarding', authLimiter, onboardingRoutes);
 
 // --- System Admin Routes ---
@@ -109,6 +110,10 @@ app.use('/api/v1/restpoint/system-admin', systemAdminRoutes);
 // System admin via gateway (after /api strip)
 app.use('/v1/restpoint/system-admin', systemAdminRoutes);
 app.use('/v1/system-admin', systemAdminRoutes);
+
+// --- Tenant Routes (direct access) ---
+app.use('/api/v1/restpoint/tenants', apiLimiter, onboardingRoutes);
+app.use('/v1/restpoint/tenants', apiLimiter, onboardingRoutes);
 
 // ============================================
 // HEALTH CHECK
@@ -143,24 +148,12 @@ app.get('/test', (req: Request, res: Response) => {
 // ============================================
 // 404 HANDLER
 // ============================================
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`
-  });
-});
+app.use(notFoundHandler);
 
 // ============================================
 // ERROR HANDLER
 // ============================================
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  // Removed console.error for production
-  res.status(500).json({
-    success: false,
-    message: err.message || 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
+app.use(errorHandler);
 
 // ============================================
 // START SERVER

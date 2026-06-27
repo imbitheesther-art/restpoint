@@ -45,9 +45,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Mount routes at BOTH prefixes for gateway compatibility
 app.use('/api/v1/restpoint', invoiceRoutes);
+app.use('/v1/restpoint', invoiceRoutes);
 app.use('/api/v1/restpoint', invoice);
+app.use('/v1/restpoint', invoice);
 app.use('/api/v1/restpoint', printInvoiceRoute);
+app.use('/v1/restpoint', printInvoiceRoute);
+
+// 404 and error handlers
+const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`invoice-service is running on port ${PORT}`);

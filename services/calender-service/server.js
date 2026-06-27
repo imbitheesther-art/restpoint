@@ -44,7 +44,7 @@ app.get('/health', (req, res) => {
 app.get('/api/v1/restpoint/calendar/events', (req, res) => {
   try {
     const { startDate, endDate, type } = req.query;
-    
+
     res.json({
       success: true,
       message: 'Calendar events retrieved successfully',
@@ -63,17 +63,17 @@ app.get('/api/v1/restpoint/calendar/events', (req, res) => {
 });
 
 // Create calendar event
-app.post('/api/v1/restpoint/calendar/events', (req, res) => {
+app.post('/v1/restpoint/calendar/events', (req, res) => {
   try {
     const { title, description, startDate, endDate, type, location } = req.body;
-    
+
     if (!title || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: title, startDate, endDate'
       });
     }
-    
+
     res.status(201).json({
       success: true,
       message: 'Calendar event created successfully',
@@ -98,10 +98,10 @@ app.post('/api/v1/restpoint/calendar/events', (req, res) => {
 });
 
 // Get specific event
-app.get('/api/v1/restpoint/calendar/events/:id', (req, res) => {
+app.get('/v1/restpoint/calendar/events/:id', (req, res) => {
   try {
     const { id } = req.params;
-    
+
     res.json({
       success: true,
       message: 'Calendar event retrieved successfully',
@@ -124,11 +124,11 @@ app.get('/api/v1/restpoint/calendar/events/:id', (req, res) => {
 });
 
 // Update calendar event
-app.put('/api/v1/restpoint/calendar/events/:id', (req, res) => {
+app.put('/v1/restpoint/calendar/events/:id', (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, startDate, endDate, type, location } = req.body;
-    
+
     res.json({
       success: true,
       message: 'Calendar event updated successfully',
@@ -153,10 +153,10 @@ app.put('/api/v1/restpoint/calendar/events/:id', (req, res) => {
 });
 
 // Delete calendar event
-app.delete('/api/v1/restpoint/calendar/events/:id', (req, res) => {
+app.delete('/v1/restpoint/calendar/events/:id', (req, res) => {
   try {
     const { id } = req.params;
-    
+
     res.json({
       success: true,
       message: 'Calendar event deleted successfully',
@@ -174,10 +174,10 @@ app.delete('/api/v1/restpoint/calendar/events/:id', (req, res) => {
 });
 
 // Get calendar availability/slots
-app.get('/api/v1/restpoint/calendar/availability', (req, res) => {
+app.get('/v1/restpoint/calendar/availability', (req, res) => {
   try {
     const { date, serviceType } = req.query;
-    
+
     res.json({
       success: true,
       message: 'Calendar availability retrieved',
@@ -202,10 +202,10 @@ app.get('/api/v1/restpoint/calendar/availability', (req, res) => {
 });
 
 // Get events by deceased
-app.get('/api/v1/restpoint/calendar/deceased/:deceasedId', (req, res) => {
+app.get('/v1/restpoint/calendar/deceased/:deceasedId', (req, res) => {
   try {
     const { deceasedId } = req.params;
-    
+
     res.json({
       success: true,
       message: 'Events for deceased retrieved successfully',
@@ -224,22 +224,9 @@ app.get('/api/v1/restpoint/calendar/deceased/:deceasedId', (req, res) => {
 });
 
 // 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Cannot ${req.method} ${req.originalUrl}`,
-    path: req.originalUrl
-  });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${err.message}`, err.stack);
-  res.status(500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
-  });
-});
+const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

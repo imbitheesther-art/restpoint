@@ -1,4 +1,4 @@
-﻿
+
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const http = require('http');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const rateLimit = require('express-rate-limit');
+const { getServiceDiscovery } = require('../../global/middlewares/serviceDiscovery');
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ const Logger = {
 // PROCESS ERROR HANDLERS
 // =============================================================================
 process.on('uncaughtException', (error) => {
-  Logger.error('ðŸ”¥ UNCAUGHT EXCEPTION', { message: error.message, stack: error.stack });
+  Logger.error('UNCAUGHT EXCEPTION', { message: error.message, stack: error.stack });
   const isConnectionError = ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET'].includes(error.code);
   if (!isConnectionError) {
     process.exit(1);
@@ -34,7 +35,7 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (reason) => {
-  Logger.error('ðŸŒ€ UNHANDLED PROMISE REJECTION', { message: reason?.message || reason });
+  Logger.error('UNHANDLED PROMISE REJECTION', { message: reason?.message || reason });
 });
 
 // =============================================================================
@@ -45,86 +46,158 @@ const HOST = process.env.HOST || '0.0.0.0';
 const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
 // =============================================================================
-// SERVICE URLS â€” All services use port 5000 internally in Docker network
-// FIX: All service URLs use restpoint_ prefix to match docker container names
-// NOTE: if your actual docker-compose service name differs from any of these
-// defaults, set the matching *_SERVICE_URL env var to override it â€” do not
-// rely on the fallback strings being correct for your deployment.
+// SERVICE DISCOVERY
 // =============================================================================
-const SERVICES = {
-  auth:         (process.env.AUTH_SERVICE_URL         || 'http://restpoint_auth_service:5000').trim(),
-  users:        (process.env.USERS_SERVICE_URL        || 'http://restpoint_auth_service:5000').trim(),
-  tenant:       (process.env.TENANT_SERVICE_URL       || 'http://restpoint_tenant_service:5000').trim(),
-  deceased:     (process.env.DECEASED_SERVICE_URL     || 'http://restpoint_deceased_service:5000').trim(),
-  marketplace:  (process.env.MARKETPLACE_SERVICE_URL  || 'http://restpoint_marketplace_service:5000').trim(),
-  mpesa:        (process.env.MPESA_SERVICE_URL        || 'http://restpoint_mpesa_service:5000').trim(),
-  portal:       (process.env.PORTAL_SERVICE_URL       || 'http://restpoint_portal_service:5000').trim(),
-  invoices:     (process.env.INVOICES_SERVICE_URL     || 'http://restpoint_invoice_service:5000').trim(),
-  coffin:       (process.env.COFFIN_SERVICE_URL       || 'http://restpoint_coffin_service:5000').trim(),
-  visitors:     (process.env.VISITORS_SERVICE_URL     || 'http://restpoint_visitors_service:5000').trim(),
+const serviceDiscovery = getServiceDiscovery();
+
+// Fallback URLs (used when Consul is not available)
+const FALLBACK_SERVICES = {
+  auth: (process.env.AUTH_SERVICE_URL || 'http://restpoint_auth_service:5000').trim(),
+  users: (process.env.USERS_SERVICE_URL || 'http://restpoint_auth_service:5000').trim(),
+  tenant: (process.env.TENANT_SERVICE_URL || 'http://restpoint_tenant_service:5000').trim(),
+  deceased: (process.env.DECEASED_SERVICE_URL || 'http://restpoint_deceased_service:5000').trim(),
+  marketplace: (process.env.MARKETPLACE_SERVICE_URL || 'http://restpoint_marketplace_service:5000').trim(),
+  mpesa: (process.env.MPESA_SERVICE_URL || 'http://restpoint_mpesa_service:5000').trim(),
+  portal: (process.env.PORTAL_SERVICE_URL || 'http://restpoint_portal_service:5000').trim(),
+  invoices: (process.env.INVOICES_SERVICE_URL || 'http://restpoint_invoice_service:5000').trim(),
+  coffin: (process.env.COFFIN_SERVICE_URL || 'http://restpoint_coffin_service:5000').trim(),
+  visitors: (process.env.VISITORS_SERVICE_URL || 'http://restpoint_visitors_service:5000').trim(),
   notification: (process.env.NOTIFICATION_SERVICE_URL || 'http://restpoint_notification_service:5000').trim(),
-  documents:    (process.env.DOCUMENTS_SERVICE_URL    || 'http://restpoint_documents_service:5000').trim(),
-  analytics:    (process.env.ANALYTICS_SERVICE_URL    || 'http://restpoint_analytics_service:5000').trim(),
+  documents: (process.env.DOCUMENTS_SERVICE_URL || 'http://restpoint_documents_service:5000').trim(),
+  analytics: (process.env.ANALYTICS_SERVICE_URL || 'http://restpoint_analytics_service:5000').trim(),
   bodycheckout: (process.env.BODYCHECKOUT_SERVICE_URL || 'http://restpoint_bodycheckout_service:5000').trim(),
-  edocuments:   (process.env.EDOCUMENTS_SERVICE_URL   || 'http://restpoint_edocuments_service:5000').trim(),
-  calendar:     (process.env.CALENDAR_SERVICE_URL     || 'http://restpoint_calender_service:5000').trim(),
-  chemicals:    (process.env.CHEMICAL_SERVICE_URL     || 'http://restpoint_chemical_service:5000').trim(),
-  billing:      (process.env.BILLING_SERVICE_URL      || 'http://restpoint_billing_service:5000').trim(),
-  socketio:     (process.env.SOCKETIO_SERVICE_URL     || 'http://restpoint_socketio_service:5000').trim(),
-  extra:        (process.env.EXTRA_SERVICES_URL       || 'http://restpoint_extra_services:5000').trim(),
-  call:         (process.env.CALL_SERVICE_URL         || 'http://restpoint_call_service:5000').trim(),
-  qrcode:       (process.env.QRCODE_SERVICE_URL       || 'http://restpoint_qrcode_service:5000').trim(),
+  edocuments: (process.env.EDOCUMENTS_SERVICE_URL || 'http://restpoint_edocuments_service:5000').trim(),
+  calendar: (process.env.CALENDAR_SERVICE_URL || 'http://restpoint_calender_service:5000').trim(),
+  chemicals: (process.env.CHEMICAL_SERVICE_URL || 'http://restpoint_chemical_service:5000').trim(),
+  billing: (process.env.BILLING_SERVICE_URL || 'http://restpoint_billing_service:5000').trim(),
+  socketio: (process.env.SOCKETIO_SERVICE_URL || 'http://restpoint_socketio_service:5000').trim(),
+  extra: (process.env.EXTRA_SERVICES_URL || 'http://restpoint_extra_services:5000').trim(),
+  call: (process.env.CALL_SERVICE_URL || 'http://restpoint_call_service:5000').trim(),
+  qrcode: (process.env.QRCODE_SERVICE_URL || 'http://restpoint_qrcode_service:5000').trim(),
 };
 
-Logger.info('Service URLs:');
-Object.entries(SERVICES).forEach(([name, url]) => {
-  Logger.info(`  ${name} â†’ ${url}`);
+// Initialize service discovery (non-blocking)
+serviceDiscovery.initialize(FALLBACK_SERVICES).then(initialized => {
+  if (initialized) {
+    Logger.info('[GATEWAY] Service discovery initialized with Consul');
+    serviceDiscovery.startCacheRefresh();
+  } else {
+    Logger.warn('[GATEWAY] Service discovery using fallback URLs (Consul not available)');
+  }
+});
+
+// Service name mapping (API gateway service key -> Consul service name)
+const SERVICE_NAME_MAP = {
+  auth: 'auth-service',
+  users: 'auth-service',
+  tenant: 'tenant-service',
+  deceased: 'deceased-service',
+  marketplace: 'marketplace-service',
+  mpesa: 'mpesa-service',
+  portal: 'portal-service',
+  invoices: 'invoice-service',
+  coffin: 'coffin-service',
+  visitors: 'visitors-service',
+  notification: 'notification-service',
+  documents: 'documents-service',
+  analytics: 'analytics-service',
+  bodycheckout: 'bodycheckout-service',
+  edocuments: 'edocuments-service',
+  calendar: 'calender-service',
+  chemicals: 'chemical-service',
+  billing: 'billing-service',
+  socketio: 'socketio-service',
+  extra: 'extra-services',
+  call: 'call-service',
+  qrcode: 'qrcode-service',
+};
+
+// Dynamic service URL resolver
+async function getServiceUrl(serviceKey) {
+  const consulServiceName = SERVICE_NAME_MAP[serviceKey];
+  if (!consulServiceName) {
+    Logger.warn(`[GATEWAY] Unknown service key: ${serviceKey}, using fallback`);
+    return FALLBACK_SERVICES[serviceKey] || null;
+  }
+
+  const url = await serviceDiscovery.getServiceUrl(consulServiceName);
+  if (url) {
+    return url;
+  }
+
+  // Fallback to hardcoded URL
+  return FALLBACK_SERVICES[serviceKey] || null;
+}
+
+Logger.info('Service discovery configured for services:');
+Object.entries(SERVICE_NAME_MAP).forEach(([key, name]) => {
+  Logger.info(` ${key} -> ${name}`);
 });
 
 // =============================================================================
-// STARTUP CONNECTIVITY CHECK (NEW)
-// Pings each unique service target's /health endpoint on boot so a bad
-// hostname/port shows up immediately in logs instead of on first request.
-// Does NOT block startup â€” just logs warnings.
+// STARTUP CONNECTIVITY CHECK
 // =============================================================================
-function checkServiceHealth(name, baseUrl) {
+async function checkServiceHealth(name, baseUrl) {
   let target;
   try {
     target = new URL(baseUrl);
   } catch (e) {
-    Logger.error(`[STARTUP CHECK] ${name}: invalid URL "${baseUrl}" â€” ${e.message}`);
+    Logger.error(`[STARTUP CHECK] ${name}: invalid URL "${baseUrl}" - ${e.message}`);
     return;
   }
-  const req = http.get(
-    { hostname: target.hostname, port: target.port || 5000, path: '/health', timeout: 3000 },
-    (res) => {
-      if (res.statusCode && res.statusCode < 500) {
-        Logger.info(`[STARTUP CHECK] ${name}: reachable (${res.statusCode}) at ${baseUrl}`);
-      } else {
-        Logger.warn(`[STARTUP CHECK] ${name}: responded with ${res.statusCode} at ${baseUrl}`);
+
+  return new Promise((resolve) => {
+    const req = http.get(
+      { hostname: target.hostname, port: target.port || 5000, path: '/health', timeout: 3000 },
+      (res) => {
+        if (res.statusCode && res.statusCode < 500) {
+          Logger.info(`[STARTUP CHECK] ${name}: reachable (${res.statusCode}) at ${baseUrl}`);
+        } else {
+          Logger.warn(`[STARTUP CHECK] ${name}: responded with ${res.statusCode} at ${baseUrl}`);
+        }
+        res.resume();
+        resolve();
       }
-      res.resume();
-    }
-  );
-  req.on('timeout', () => {
-    req.destroy();
-    Logger.warn(`[STARTUP CHECK] ${name}: TIMEOUT reaching ${baseUrl} (service may be slow to start â€” not necessarily fatal)`);
-  });
-  req.on('error', (err) => {
-    Logger.warn(`[STARTUP CHECK] ${name}: UNREACHABLE at ${baseUrl} â€” ${err.code || err.message}`);
+    );
+    req.on('timeout', () => {
+      req.destroy();
+      Logger.warn(`[STARTUP CHECK] ${name}: TIMEOUT reaching ${baseUrl}`);
+      resolve();
+    });
+    req.on('error', (err) => {
+      Logger.warn(`[STARTUP CHECK] ${name}: UNREACHABLE at ${baseUrl} - ${err.code || err.message}`);
+      resolve();
+    });
   });
 }
 
-// Dedupe targets so we don't double-ping services that share a URL (e.g. auth/users)
-const uniqueTargets = new Map();
-Object.entries(SERVICES).forEach(([name, url]) => {
-  if (!uniqueTargets.has(url)) uniqueTargets.set(url, []);
-  uniqueTargets.get(url).push(name);
-});
-Logger.info(`Running startup connectivity check against ${uniqueTargets.size} unique service targets...`);
-uniqueTargets.forEach((names, url) => {
-  checkServiceHealth(names.join('/'), url);
-});
+async function runStartupChecks() {
+  Logger.info('Running startup connectivity checks...');
+
+  // Check Consul first
+  const consulHealthy = await serviceDiscovery.consul.isConsulHealthy();
+  if (consulHealthy) {
+    Logger.info('[STARTUP CHECK] Consul: reachable');
+  } else {
+    Logger.warn('[STARTUP CHECK] Consul: not reachable, will use fallback URLs');
+  }
+
+  // Check fallback services
+  const uniqueTargets = new Map();
+  Object.entries(FALLBACK_SERVICES).forEach(([name, url]) => {
+    if (!uniqueTargets.has(url)) uniqueTargets.set(url, []);
+    uniqueTargets.get(url).push(name);
+  });
+
+  Logger.info(`Checking ${uniqueTargets.size} unique service targets...`);
+
+  for (const [url, names] of uniqueTargets) {
+    await checkServiceHealth(names.join('/'), url);
+  }
+}
+
+// Run checks (non-blocking)
+runStartupChecks();
 
 // =============================================================================
 // RATE LIMITING
@@ -255,7 +328,7 @@ const proxyOptions = {
 };
 
 // =============================================================================
-// ROUTE MAPPING â€” ALL 23 SERVICES
+// ROUTE MAPPING  ALL 23 SERVICES
 // Both /api/v1/restpoint/* and /v1/restpoint/* for compatibility
 // Path rewrite strips /api prefix when present
 //
@@ -277,7 +350,7 @@ const routes = [
       '/v1/restpoint/auth',
       '/v1/restpoint/users'
     ],
-    target: SERVICES.auth
+    serviceKey: 'auth'
   },
 
   // TENANT SERVICE - longer/more specific paths first
@@ -297,7 +370,7 @@ const routes = [
       '/v1/restpoint/tenant',
       '/v1/onboarding'
     ],
-    target: SERVICES.tenant
+    serviceKey: 'tenant'
   },
 
   // DECEASED SERVICE
@@ -308,7 +381,7 @@ const routes = [
       '/v1/restpoint/deceased',
       '/v1/restpoint/embalming'
     ],
-    target: SERVICES.deceased
+    serviceKey: 'deceased'
   },
 
   // MARKETPLACE SERVICE
@@ -318,7 +391,7 @@ const routes = [
       '/api/v1/marketplace',
       '/v1/restpoint/marketplace'
     ],
-    target: SERVICES.marketplace
+    serviceKey: 'marketplace'
   },
 
   // MPESA SERVICE
@@ -328,7 +401,7 @@ const routes = [
       '/api/v1/mpesa',
       '/v1/restpoint/mpesa'
     ],
-    target: SERVICES.mpesa
+    serviceKey: 'mpesa'
   },
 
   // PORTAL SERVICE
@@ -337,7 +410,7 @@ const routes = [
       '/api/v1/restpoint/portal',
       '/v1/restpoint/portal'
     ],
-    target: SERVICES.portal
+    serviceKey: 'portal'
   },
 
   // INVOICES SERVICE
@@ -346,7 +419,7 @@ const routes = [
       '/api/v1/restpoint/invoices',
       '/v1/restpoint/invoices'
     ],
-    target: SERVICES.invoices
+    serviceKey: 'invoices'
   },
 
   // COFFIN SERVICE
@@ -355,7 +428,7 @@ const routes = [
       '/api/v1/restpoint/coffin',
       '/v1/restpoint/coffin'
     ],
-    target: SERVICES.coffin
+    serviceKey: 'coffin'
   },
 
   // VISITORS SERVICE
@@ -364,7 +437,7 @@ const routes = [
       '/api/v1/restpoint/visitors',
       '/v1/restpoint/visitors'
     ],
-    target: SERVICES.visitors
+    serviceKey: 'visitors'
   },
 
   // NOTIFICATION SERVICE
@@ -373,7 +446,7 @@ const routes = [
       '/api/v1/restpoint/notification',
       '/v1/restpoint/notification'
     ],
-    target: SERVICES.notification
+    serviceKey: 'notification'
   },
 
   // DOCUMENTS SERVICE
@@ -382,7 +455,7 @@ const routes = [
       '/api/v1/restpoint/documents',
       '/v1/restpoint/documents'
     ],
-    target: SERVICES.documents
+    serviceKey: 'documents'
   },
 
   // ANALYTICS SERVICE
@@ -393,7 +466,7 @@ const routes = [
       '/v1/restpoint/analytics',
       '/v1/restpoint/performance'
     ],
-    target: SERVICES.analytics
+    serviceKey: 'analytics'
   },
 
   // BODYCHECKOUT SERVICE
@@ -402,7 +475,7 @@ const routes = [
       '/api/v1/restpoint/bodycheckout',
       '/v1/restpoint/bodycheckout'
     ],
-    target: SERVICES.bodycheckout
+    serviceKey: 'bodycheckout'
   },
 
   // EDOCUMENTS SERVICE
@@ -412,7 +485,7 @@ const routes = [
       '/api/v1/edocuments',
       '/v1/restpoint/edocuments'
     ],
-    target: SERVICES.edocuments
+    serviceKey: 'edocuments'
   },
 
   // CALENDAR SERVICE
@@ -422,7 +495,7 @@ const routes = [
       '/api/v1/calendar',
       '/v1/restpoint/calendar'
     ],
-    target: SERVICES.calendar
+    serviceKey: 'calendar'
   },
 
   // CHEMICALS SERVICE
@@ -431,7 +504,7 @@ const routes = [
       '/api/v1/restpoint/chemicals',
       '/v1/restpoint/chemicals'
     ],
-    target: SERVICES.chemicals
+    serviceKey: 'chemicals'
   },
 
   // BILLING SERVICE
@@ -440,7 +513,7 @@ const routes = [
       '/api/v1/restpoint/billing',
       '/v1/restpoint/billing'
     ],
-    target: SERVICES.billing
+    serviceKey: 'billing'
   },
 
   // SOCKETIO SERVICE
@@ -451,7 +524,7 @@ const routes = [
       '/v1/restpoint/socketio',
       '/socket.io'
     ],
-    target: SERVICES.socketio
+    serviceKey: 'socketio'
   },
 
   // EXTRA SERVICES
@@ -460,7 +533,7 @@ const routes = [
       '/api/v1/restpoint/extra',
       '/v1/restpoint/extra'
     ],
-    target: SERVICES.extra
+    serviceKey: 'extra'
   },
 
   // CALL SERVICE
@@ -469,7 +542,7 @@ const routes = [
       '/api/v1/restpoint/call',
       '/v1/restpoint/call'
     ],
-    target: SERVICES.call
+    serviceKey: 'call'
   },
 
   // QRCODE SERVICE
@@ -478,22 +551,29 @@ const routes = [
       '/api/v1/restpoint/qrcode',
       '/v1/restpoint/qrcode'
     ],
-    target: SERVICES.qrcode
+    serviceKey: 'qrcode'
   },
 ];
 
 // =============================================================================
-// REGISTER ROUTES WITH PROXY
+// REGISTER ROUTES WITH PROXY (Dynamic Service Discovery)
 // =============================================================================
 Logger.info('Registered routes:');
 routes.forEach(route => {
   route.paths.forEach(path => {
-    Logger.info(`  ${path} â†’ ${route.target}`);
+    Logger.info(` ${path} -> ${route.serviceKey}`);
 
-    // Create proxy middleware with path rewrite
+    // Create proxy middleware with dynamic target resolution
     const proxy = createProxyMiddleware({
       ...proxyOptions,
-      target: route.target,
+      target: FALLBACK_SERVICES[route.serviceKey] || 'http://localhost:5000',
+      router: async () => {
+        const url = await getServiceUrl(route.serviceKey);
+        if (!url) {
+          throw new Error(`Service ${route.serviceKey} not available`);
+        }
+        return url;
+      },
       pathRewrite: (path, req) => {
         // Special handling for tenant onboarding paths
         let rewrittenPath = path;
@@ -503,7 +583,7 @@ routes.forEach(route => {
           rewrittenPath = rewrittenPath.replace(/^\/api/, '');
         }
 
-        Logger.debug(`[PATH REWRITE] ${path} â†’ ${rewrittenPath}`);
+        Logger.debug(`[PATH REWRITE] ${path} -> ${rewrittenPath}`);
         return rewrittenPath;
       },
     });
@@ -519,37 +599,71 @@ app.get('/health', (req, res) => {
   res.json({ success: true, status: 'ok', service: APP_NAME, version: APP_VERSION, port: PORT, uptime: process.uptime() });
 });
 
-app.get('/api/v1/health', (req, res) => {
-  res.json({ success: true, status: 'ok', uptime: process.uptime(), timestamp: Date.now(), services: Object.keys(SERVICES), serviceCount: Object.keys(SERVICES).length, routeCount: routes.reduce((acc, r) => acc + r.paths.length, 0) });
+app.get('/api/v1/health', async (req, res) => {
+  const discoveryStatus = serviceDiscovery.getStatus();
+  res.json({
+    success: true,
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    services: Object.keys(SERVICE_NAME_MAP),
+    serviceCount: Object.keys(SERVICE_NAME_MAP).length,
+    routeCount: routes.reduce((acc, r) => acc + r.paths.length, 0),
+    serviceDiscovery: discoveryStatus,
+  });
 });
 
-app.get('/api/v1/debug/routes', (req, res) => {
+app.get('/api/v1/debug/routes', async (req, res) => {
   const routeList = [];
   routes.forEach(route => {
     route.paths.forEach(path => {
-      routeList.push({ path, target: route.target });
+      routeList.push({ path, serviceKey: route.serviceKey });
     });
   });
-  res.json({ success: true, message: 'Gateway routes', gatewayVersion: APP_VERSION, serviceCount: Object.keys(SERVICES).length, routeCount: routeList.length, routes: routeList, services: SERVICES, environment: { nodeEnv: process.env.NODE_ENV || 'development', port: PORT } });
+
+  // Resolve current service URLs
+  const resolvedServices = {};
+  for (const [key, name] of Object.entries(SERVICE_NAME_MAP)) {
+    resolvedServices[key] = await getServiceUrl(key);
+  }
+
+  res.json({
+    success: true,
+    message: 'Gateway routes',
+    gatewayVersion: APP_VERSION,
+    serviceCount: Object.keys(SERVICE_NAME_MAP).length,
+    routeCount: routeList.length,
+    routes: routeList,
+    services: resolvedServices,
+    serviceNameMap: SERVICE_NAME_MAP,
+    environment: { nodeEnv: process.env.NODE_ENV || 'development', port: PORT }
+  });
 });
 
 // NEW: live re-check of all service targets, callable any time without restarting the gateway
 app.get('/api/v1/debug/health-check', async (req, res) => {
   const results = await Promise.all(
-    Object.entries(SERVICES).map(([name, url]) => new Promise((resolve) => {
-      let target;
-      try {
-        target = new URL(url);
-      } catch (e) {
-        return resolve({ name, url, reachable: false, error: `invalid URL: ${e.message}` });
+    Object.entries(SERVICE_NAME_MAP).map(async ([key, consulName]) => {
+      const url = await getServiceUrl(key);
+      if (!url) {
+        return { name: key, consulName, url: null, reachable: false, error: 'Service not found' };
       }
-      const req2 = http.get(
-        { hostname: target.hostname, port: target.port || 5000, path: '/health', timeout: 3000 },
-        (r) => { r.resume(); resolve({ name, url, reachable: r.statusCode < 500, statusCode: r.statusCode }); }
-      );
-      req2.on('timeout', () => { req2.destroy(); resolve({ name, url, reachable: false, error: 'timeout' }); });
-      req2.on('error', (err) => resolve({ name, url, reachable: false, error: err.code || err.message }));
-    }))
+
+      return new Promise((resolve) => {
+        let target;
+        try {
+          target = new URL(url);
+        } catch (e) {
+          return resolve({ name: key, consulName, url, reachable: false, error: `invalid URL: ${e.message}` });
+        }
+        const req2 = http.get(
+          { hostname: target.hostname, port: target.port || 5000, path: '/health', timeout: 3000 },
+          (r) => { r.resume(); resolve({ name: key, consulName, url, reachable: r.statusCode < 500, statusCode: r.statusCode }); }
+        );
+        req2.on('timeout', () => { req2.destroy(); resolve({ name: key, consulName, url, reachable: false, error: 'timeout' }); });
+        req2.on('error', (err) => resolve({ name: key, consulName, url, reachable: false, error: err.code || err.message }));
+      });
+    })
   );
   const unreachable = results.filter(r => !r.reachable);
   res.json({ success: unreachable.length === 0, total: results.length, unreachableCount: unreachable.length, results });
@@ -559,7 +673,7 @@ app.get('/api/v1/debug/health-check', async (req, res) => {
 // 404 HANDLER
 // =============================================================================
 app.use((req, res) => {
-  Logger.warn(`[404] ${req.method} ${req.originalUrl} â€” No matching route`);
+  Logger.warn(`[404] ${req.method} ${req.originalUrl}” No matching route`);
   const matchingRoutes = [];
   routes.forEach(route => {
     route.paths.forEach(path => {
@@ -591,8 +705,9 @@ const server = app.listen(PORT, HOST, () => {
   Logger.info(`  ${APP_NAME} v${APP_VERSION}`);
   Logger.info(`  Running on http://${HOST}:${PORT}`);
   Logger.info(`  Environment: ${process.env.NODE_ENV || 'development'}`);
-  Logger.info(`  Proxying ${Object.keys(SERVICES).length} services`);
+  Logger.info(`  Proxying ${Object.keys(SERVICE_NAME_MAP).length} services`);
   Logger.info(`  Registered ${routes.reduce((acc, r) => acc + r.paths.length, 0)} routes`);
+  Logger.info(`  Service Discovery: ${serviceDiscovery.getStatus().initialized ? 'Consul' : 'Fallback URLs'}`);
   Logger.info('========================================');
 });
 

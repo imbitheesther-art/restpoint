@@ -89,7 +89,7 @@ const findTenantByEmail = async (email) => {
     );
     
     if (databases.length === 0) {
-      console.log('❌ tenant_tracking database not found');
+      console.log('tenant_tracking database not found');
       await serverConn.end();
       return null;
     }
@@ -104,15 +104,15 @@ const findTenantByEmail = async (email) => {
     await serverConn.end();
     
     if (tenants.length > 0) {
-      console.log('✅ Tenant found:', tenants[0].tenant_name);
+      console.log('Tenant found:', tenants[0].tenant_name);
       return tenants[0];
     }
     
-    console.log('❌ No tenant found for email:', email);
+    console.log(' No tenant found for email:', email);
     return null;
     
   } catch (error) {
-    console.error('❌ Error finding tenant:', error.message);
+    console.error(' Error finding tenant:', error.message);
     return null;
   }
 };
@@ -134,7 +134,7 @@ const findUserInTenantDB = async (dbName, email) => {
     }
     return null;
   } catch (error) {
-    console.error('❌ Error finding user in tenant DB:', error.message);
+    console.error('Error finding user in tenant DB:', error.message);
     return null;
   }
 };
@@ -176,13 +176,11 @@ exports.login = asyncHandler(async (req, res) => {
   const emailInput = req.body.email || req.body.identifier;
   const { password } = req.body;
   
-  console.log('\n========== LOGIN REQUEST ==========');
-  console.log('📧 Email/Identifier:', emailInput);
-  console.log('📝 Request body:', req.body);
-  
+
+
   // Validation
   if (!emailInput || !validator.isEmail(emailInput)) {
-    console.log('❌ Invalid email format:', emailInput);
+    console.log(' Invalid email format:', emailInput);
     return res.status(400).json({ 
       success: false, 
       message: 'Valid email is required' 
@@ -190,7 +188,7 @@ exports.login = asyncHandler(async (req, res) => {
   }
   
   if (!password || password.length < 6) {
-    console.log('❌ Invalid password length');
+    console.log('Invalid password length');
     return res.status(400).json({ 
       success: false, 
       message: 'Password is required and must be at least 6 characters' 
@@ -202,42 +200,40 @@ exports.login = asyncHandler(async (req, res) => {
     const tenant = await findTenantByEmail(emailInput);
     
     if (!tenant) {
-      console.log('❌ No tenant found');
+      console.log('No tenant found');
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
     
-    console.log(`✅ Tenant found: ${tenant.tenant_name}`);
-    console.log(`📁 Database: ${tenant.db_name}`);
-    
+ 
     // Step 2: Find user in tenant's database
     const user = await findUserInTenantDB(tenant.db_name, emailInput);
     
     if (!user) {
-      console.log('❌ No user found in tenant database');
+      console.log(' No user found in tenant database');
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
     
-    console.log(`👤 User found: ${user.full_name}`);
-    console.log(`🔐 Verifying password...`);
+    console.log(`User found: ${user.full_name}`);
+    console.log(` Verifying password...`);
     
     // Step 3: Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     
     if (!isValidPassword) {
-      console.log('❌ Invalid password');
+      console.log('Invalid password');
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
     
-    console.log('✅ Password verified');
+    console.log(' Password verified');
     
     // Step 4: Update last login
     try {
@@ -247,16 +243,16 @@ exports.login = asyncHandler(async (req, res) => {
         [user.user_id]
       );
       await tenantConn.end();
-      console.log('✅ Last login updated');
+      console.log(' Last login updated');
     } catch (error) {
-      console.warn('⚠️ Could not update last login:', error.message);
+      console.warn('Could not update last login:', error.message);
     }
     
     // Step 5: Generate tokens with per-tenant secrets
     const { accessToken, refreshToken } = await generateTokens(user, tenant);
     
     // Step 6: Return response
-    console.log('✅ Login successful!\n');
+    console.log(' Login successful!\n');
     
     res.status(200).json({
       success: true,
@@ -281,7 +277,7 @@ exports.login = asyncHandler(async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Login error:', error);
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'An error occurred during login',
@@ -380,7 +376,7 @@ exports.createUser = asyncHandler(async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error creating user:', error);
+    console.error(' Error creating user:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create user',
@@ -396,7 +392,7 @@ exports.createUser = asyncHandler(async (req, res) => {
 exports.refresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   
-  console.log('\n========== REFRESH TOKEN REQUEST ==========');
+ 
   
   if (!refreshToken) {
     return res.status(400).json({
@@ -450,7 +446,7 @@ exports.refresh = asyncHandler(async (req, res) => {
     // Generate new tokens with per-tenant secrets
     const { accessToken } = await generateTokens(user, tenant);
     
-    console.log('✅ Token refreshed');
+    console.log(' Token refreshed');
     
     res.status(200).json({
       success: true,
@@ -459,7 +455,7 @@ exports.refresh = asyncHandler(async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Token refresh error:', error);
+    console.error(' Token refresh error:', error);
     res.status(401).json({
       success: false,
       message: 'Invalid or expired refresh token'
@@ -472,7 +468,7 @@ exports.refresh = asyncHandler(async (req, res) => {
  * @desc Logout user
  */
 exports.logout = asyncHandler(async (req, res) => {
-  console.log('\n========== LOGOUT REQUEST ==========');
+
   
   res.status(200).json({
     success: true,

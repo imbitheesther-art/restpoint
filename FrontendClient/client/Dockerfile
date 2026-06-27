@@ -10,11 +10,11 @@ LABEL stage=deps
 WORKDIR /app
 
 # Copy only dependency files (cached layer)
-COPY package.json package-lock.json ./
+COPY package.json yarn.lock ./
 
-# Install with frozen lockfile for reproducibility
-RUN npm ci --legacy-peer-deps --prefer-offline 2>/dev/null || \
-    npm install --legacy-peer-deps --prefer-offline
+# Install with yarn for reproducibility
+RUN yarn install --frozen-lockfile --prefer-offline || \
+    yarn install --prefer-offline
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -24,14 +24,14 @@ WORKDIR /app
 # Copy node_modules from deps stage (cached)
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/package-lock.json ./package-lock.json
+COPY --from=deps /app/yarn.lock ./yarn.lock
 
 # Copy source code
 COPY . .
 
 # Build the application (uses cached node_modules)
 RUN npm run build
-   
+    
 # Stage 3: Production with nginx
 FROM nginx:alpine AS production
   

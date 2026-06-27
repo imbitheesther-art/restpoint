@@ -1,7 +1,6 @@
 /**
  * @file shared/dbConfig.js
- * 
- * CommonJS compatibility shim for shared/dbConfig.ts
+ * * CommonJS compatibility shim for shared/dbConfig.ts
  * Provides legacy `safeQuery`, `safeExecute`, `safeMasterQuery` exports
  * that services importing `../../shared/dbConfig` expect.
  */
@@ -14,8 +13,6 @@ const DB_CONFIG = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
 };
-
-const TRACKING_DB_NAME = process.env.TRACKING_DB_NAME || process.env.DB_NAME || 'tenant_tracking';
 
 // ─── Connection Pool Caches ──────────────────────────────────────────────────
 let rootPool = null;
@@ -42,8 +39,6 @@ const getRootPool = async () => {
 const lookupTenantDatabase = async (tenantSlug) => {
   try {
     const pool = await getRootPool();
-    // Since the root pool now has TRACKING_DB_NAME as default database,
-    // query directly on the tenants table
     const [rows] = await pool.query(
       `SELECT db_name FROM tenants WHERE tenant_slug = ? AND status = 'active' LIMIT 1`,
       [tenantSlug]
@@ -81,10 +76,7 @@ const getTenantDBBySlug = async (tenantSlug) => {
   return getTenantDB(dbName);
 };
 
-// ─── Legacy safeQuery / safeExecute ───────────────────────────────────────────
-// These are used by older services that pass a dbName + SQL directly.
-// The second argument might be a dbName (string) or params (array).
-// Detect based on type.
+// ─── Legacy Tenant Operations ─────────────────────────────────────────────────
 
 const safeTenantQuery = async (dbName, sql, params = []) => {
   try {
@@ -119,8 +111,7 @@ const safeTenantRaw = async (dbName, sql) => {
   }
 };
 
-// ─── Legacy: safeMasterQuery (query on root/tracking DB) ──────────────────────
-// Used by notification-service and others.
+// ─── Master/Root Database Operations ──────────────────────────────────────────
 
 const safeMasterQuery = async (sql, params = []) => {
   try {
@@ -144,26 +135,48 @@ const safeMasterExecute = async (sql, params = []) => {
   }
 };
 
-// ─── Legacy safeQuery (for single-arg services) ───────────────────────────────
-// Some older services call safeQuery(sql, params) without a dbName.
-// In that case, we fallback to the master/root pool.
-// But the issue is that different callers expect different signatures.
-// We provide a best-effort wrapper.
+// ─── FIXED: Dynamic Signature Normalization Wrappers ─────────────────────────
 
 const safeQuery = async (...args) => {
+  // Pattern 1: safeQuery(dbName, sql, params)
   if (args.length >= 3) {
-    // legacy: safeQuery(dbName, sql, params)
     return safeTenantQuery(args[0], args[1], args[2] || []);
   }
-  if (args.length === 2 && typeof args[0] === 'string' && typeof args[1] === 'string') {
-    // some services call safeQuery(sql, params_string) -> weird, fallback to master
-    return safeMasterQuery(args[0], [args[1]]);
+  
+  if (args.length === 2) {
+    // Pattern 2: safeQuery(dbName, sql) -> without explicit params array
+    if (typeof args[0] === 'string' && args[1].toUpperCase().includes('SELECT')) {
+      return safeTenantQuery(args[0], args[1], []);
+    }
+    // Pattern 3: safeQuery(sql, params) -> targeted at Master DB
+    return safeMasterQuery(args[0], Array.isArray(args[1]) ? args[1] : [args[1]]);
   }
-  // Default: safeQuery(sql, params) on master
-  return safeMasterQuery(args[0], args[1] || []);
+
+  // Pattern 4: safeQuery(sql) fallback to master
+  return safeMasterQuery(args[0], []);
+};
+
+const safeExecute = async (...args) => {
+  // Pattern 1: safeExecute(dbName, sql, params)
+  if (args.length >= 3) {
+    return safeTenantExecute(args[0], args[1], args[2] || []);
+  }
+
+  if (args.length === 2) {
+    // Pattern 2: safeExecute(dbName, sql)
+    if (typeof args[0] === 'string' && !Array.isArray(args[1])) {
+      return safeTenantExecute(args[0], args[1], []);
+    }
+    // Pattern 3: safeExecute(sql, params) -> targeted at Master DB
+    return safeMasterExecute(args[0], args[1]);
+  }
+
+  // Pattern 4: safeExecute(sql) fallback to master
+  return safeMasterExecute(args[0], []);
 };
 
 // ─── Connection Management ───────────────────────────────────────────────────
+
 const closeTenantDB = async (tenantDbName) => {
   const pool = tenantPoolCache.get(tenantDbName);
   if (pool) {
@@ -195,7 +208,7 @@ module.exports = {
   safeMasterQuery,
   safeMasterExecute,
   safeQuery,
-  safeExecute: safeTenantExecute,
+  safeExecute, 
   closeTenantDB,
   closeAllConnections,
 };

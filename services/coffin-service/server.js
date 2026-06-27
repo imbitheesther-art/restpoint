@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const { safeQuery } = require('../../shared/database');
 const { validateTenantActive } = require('../../shared/tenancy');
 const coffinRoutes = require('./routes/coffinRoutes.cjs');
+const { errorHandler, notFoundHandler } = require('../../global/middlewares/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 8108;
@@ -37,7 +38,13 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Mount routes at BOTH prefixes for gateway compatibility
 app.use('/api/v1/restpoint', coffinRoutes);
+app.use('/v1/restpoint', coffinRoutes);
+
+// 404 and error handlers
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`coffin-service is running on port ${PORT}`);

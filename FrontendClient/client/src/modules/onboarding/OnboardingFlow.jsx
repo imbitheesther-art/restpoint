@@ -2,11 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
-// ============================================================
-// COMPLETE PROFESSIONAL ONBOARDING FLOW
-// Self-contained, no external dependencies, fully functional
-// ============================================================
-
 const THEME = {
   colors: {
     ink: '#15171A',
@@ -59,7 +54,6 @@ const STEPS = [
   { key: 'review', label: 'Review', description: 'Verify your information' },
 ];
 
-// Utilities
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const validatePassword = (password) => {
   const errors = [];
@@ -90,7 +84,6 @@ const getPasswordStrengthText = (strength) => {
   return texts[strength] || 'Strong';
 };
 
-// Components
 const Logo = ({ size = 20, color = THEME.colors.ink }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
     <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1" />
@@ -113,14 +106,11 @@ const Spinner = () => (
 
 const AlertMessage = ({ type, text }) => {
   if (!text) return null;
-  
   const config = {
     error: { bg: THEME.colors.redBg, border: THEME.colors.redLine, color: THEME.colors.red },
     success: { bg: THEME.colors.successBg, border: THEME.colors.successLine, color: THEME.colors.success },
   };
-  
   const style = config[type] || config.error;
-  
   return (
     <div style={{
       background: style.bg,
@@ -139,6 +129,7 @@ const AlertMessage = ({ type, text }) => {
 
 const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasError, errorMessage, disabled, placeholder }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   
   return (
     <div style={{ marginBottom: THEME.spacing.lg }}>
@@ -185,6 +176,8 @@ const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasErro
           type="button"
           onClick={onToggle}
           disabled={disabled}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           style={{
             position: 'absolute',
             right: THEME.spacing.sm,
@@ -193,15 +186,13 @@ const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasErro
             background: 'none',
             border: 'none',
             cursor: disabled ? 'not-allowed' : 'pointer',
-            color: THEME.colors.gray,
+            color: isHovered && !disabled ? THEME.colors.ink : THEME.colors.gray,
             padding: THEME.spacing.xs,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'color 0.2s',
           }}
-          onMouseEnter={(e) => !disabled && (e.currentTarget.style.color = THEME.colors.ink)}
-          onMouseLeave={(e) => !disabled && (e.currentTarget.style.color = THEME.colors.gray)}
         >
           {showPassword ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -356,7 +347,6 @@ const ReviewItem = ({ label, value }) => (
   </div>
 );
 
-// Main Component
 export default function OnboardingFlow() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -369,6 +359,7 @@ export default function OnboardingFlow() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [apiError, setApiError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
+  const [isNavHovered, setIsNavHovered] = useState(false);
 
   const [formData, setFormData] = useState({
     organizationName: '',
@@ -435,7 +426,7 @@ export default function OnboardingFlow() {
     if (!formData.verifyPassword) {
       newErrors.verifyPassword = 'Please confirm password';
     } else if (formData.password !== formData.verifyPassword) {
-      newErrors.passwordMatch = 'Passwords do not match';
+      newErrors.verifyPassword = 'Passwords do not match';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -457,7 +448,10 @@ export default function OnboardingFlow() {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    
+    if (currentStep < 2) {
+      goNext();
+      return;
+    }
     if (!agreeTerms) {
       setErrors({ terms: 'You must agree to terms' });
       return;
@@ -508,11 +502,9 @@ export default function OnboardingFlow() {
       }
     } catch (error) {
       setIsSubmitting(false);
-      
       if (error.response) {
         const status = error.response.status;
         const message = error.response.data?.message || error.response.data?.error || 'Server error';
-        
         if (status === 409) setApiError('Organization with this email already exists.');
         else if (status === 400) setApiError(message || 'Invalid data provided.');
         else if (status === 500) setApiError('Server error. Please try again later.');
@@ -523,29 +515,19 @@ export default function OnboardingFlow() {
         setApiError(error.message || 'An unexpected error occurred.');
       }
     }
-  }, [formData, logoFile, agreeTerms, navigate, logoPreview]);
+  }, [formData, logoFile, agreeTerms, navigate, logoPreview, currentStep, goNext]);
 
   const passwordStrength = getPasswordStrength(formData.password);
-
-  const goToLogin = useCallback(() => {
-    navigate('/login');
-  }, [navigate]);
-
-  const goToTerms = useCallback(() => navigate('/terms'), [navigate]);
-  const goToPrivacy = useCallback(() => navigate('/privacy'), [navigate]);
+  const goToLogin = useCallback(() => navigate('/login'), [navigate]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: THEME.colors.bone }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-        
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
-        body { background: ${THEME.colors.bone}; color: ${THEME.colors.gray}; font-family: ${THEME.typography.fontFamily}; -webkit-font-smoothing: antialiased; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
         .fade-in { animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
       `}</style>
 
@@ -561,402 +543,156 @@ export default function OnboardingFlow() {
         borderBottom: `1px solid ${THEME.colors.line}`,
         padding: '1rem 0',
       }}>
-        <div style={{
-          maxWidth: '900px',
-          margin: '0 auto',
-          padding: '0 1.75rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', background: 'none', border: 'none' }} onClick={() => window.scrollTo({ top: 0 })}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', background: 'none', border: 'none' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <Logo size={20} />
             <span style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1rem', fontWeight: 500, color: THEME.colors.ink }}>Rest Point</span>
           </button>
-          <button onClick={goToLogin} style={{
-            background: 'transparent',
-            color: THEME.colors.ink,
-            border: `1px solid ${THEME.colors.ink}`,
-            padding: '0.4rem 1rem',
-            fontSize: '0.78rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            borderRadius: THEME.borderRadius.sm,
-          }} onMouseEnter={(e) => { e.target.style.background = THEME.colors.ink; e.target.style.color = THEME.colors.bone; }} onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = THEME.colors.ink; }}>
+          <button 
+            onClick={goToLogin} 
+            onMouseEnter={() => setIsNavHovered(true)}
+            onMouseLeave={() => setIsNavHovered(false)}
+            style={{
+              background: isNavHovered ? THEME.colors.ink : 'transparent',
+              color: isNavHovered ? THEME.colors.bone : THEME.colors.ink,
+              border: `1px solid ${THEME.colors.ink}`,
+              padding: '0.4rem 1rem',
+              fontSize: '0.78rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              borderRadius: THEME.borderRadius.sm,
+            }}
+          >
             Log in
           </button>
         </div>
       </nav>
 
-      {/* Main */}
-      <main style={{ paddingTop: '70px', flex: 1 }}>
-        <section style={{ padding: '2rem 0 1rem' }}>
-          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.75rem' }}>
+      {/* Main Container */}
+      <main style={{ paddingTop: '70px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <section style={{ padding: '2rem 0' }}>
+          <div style={{ maxWidth: '640px', margin: '0 auto', padding: '0 1.5rem' }}>
             
-            {/* Step Indicator */}
             <div style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.6s ease' }}>
-              <StepIndicator currentStep={currentStep} onStepClick={(index) => { if (index < currentStep) { setCurrentStep(index); window.scrollTo({ top: 0, behavior: 'smooth' }); } }} />
+              <StepIndicator currentStep={currentStep} onStepClick={(index) => setCurrentStep(index)} />
             </div>
 
-            {/* Card */}
+            {/* Card Content wrapper */}
             <div style={{
               background: THEME.colors.white,
               border: `1px solid ${THEME.colors.line}`,
               padding: THEME.spacing.xxxl,
-              boxShadow: '0 20px 60px -16px ' + THEME.colors.shadow,
+              boxShadow: `0 20px 60px -16px ${THEME.colors.shadow}`,
               borderRadius: THEME.borderRadius.lg,
-              marginBottom: '1.5rem',
               opacity: loaded ? 1 : 0,
               transform: loaded ? 'translateY(0)' : 'translateY(18px)',
-              transition: 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)',
+              transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)',
             }}>
               
-              {/* Header */}
               <div style={{ marginBottom: THEME.spacing.xxl }}>
-                <h1 style={{
-                  fontFamily: THEME.typography.displayFamily,
-                  fontSize: 'clamp(1.4rem, 2.5vw, 2rem)',
-                  fontWeight: 500,
-                  color: THEME.colors.ink,
-                  marginBottom: THEME.spacing.sm,
-                  lineHeight: 1.15,
-                }}>
+                <h1 style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1.6rem', fontWeight: 500, color: THEME.colors.ink, marginBottom: THEME.spacing.sm }}>
                   {currentStep === 0 && <>Tell us about your <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>organization</span></>}
                   {currentStep === 1 && <>Secure your <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>account</span></>}
                   {currentStep === 2 && <>Review and <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>confirm</span></>}
                 </h1>
                 <p style={{ fontSize: '0.88rem', color: THEME.colors.gray, lineHeight: 1.6 }}>
-                  {currentStep === 0 && 'Basic details so families and your team know who they\'re working with.'}
+                  {currentStep === 0 && "Basic details so families and your team know who they're working with."}
                   {currentStep === 1 && 'A password only your team will use to sign in to Rest Point.'}
                   {currentStep === 2 && 'Check everything looks right, then create your account.'}
                 </p>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleSubmit}>
                 <AlertMessage type="success" text={apiSuccess} />
                 <AlertMessage type="error" text={apiError} />
 
-                {/* Step 0 */}
+                {/* Step 0 Content */}
                 {currentStep === 0 && (
                   <div className="fade-in">
                     <FileUpload label="Organization logo" preview={logoPreview} onUpload={handleLogoUpload} error={errors.logo} />
-
                     <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{
-                        display: 'block',
-                        fontFamily: THEME.typography.monoFamily,
-                        fontSize: '0.7rem',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: THEME.colors.gray,
-                        marginBottom: THEME.spacing.sm,
-                      }}>
+                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
                         Organization name <span style={{ color: THEME.colors.red }}>*</span>
                       </label>
-                      <input
-                        type="text"
-                        name="organizationName"
-                        value={formData.organizationName}
-                        onChange={handleChange}
-                        placeholder="e.g., Nairobi Funeral Home"
-                        style={{
-                          width: '100%',
-                          padding: `${THEME.spacing.md} ${THEME.spacing.md}`,
-                          fontSize: '0.88rem',
-                          fontFamily: THEME.typography.fontFamily,
-                          border: `1px solid ${errors.organizationName ? THEME.colors.red : THEME.colors.line}`,
-                          borderRadius: THEME.borderRadius.md,
-                          background: THEME.colors.bone,
-                          color: THEME.colors.ink,
-                          outline: 'none',
-                          transition: 'all 0.2s',
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = THEME.colors.brass}
-                        onBlur={(e) => e.target.style.borderColor = errors.organizationName ? THEME.colors.red : THEME.colors.line}
-                        disabled={isSubmitting}
-                      />
+                      <input type="text" name="organizationName" value={formData.organizationName} onChange={handleChange} placeholder="e.g., Nairobi Funeral Home" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.organizationName ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
                       {errors.organizationName && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.organizationName}</span>}
                     </div>
-
                     <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{
-                        display: 'block',
-                        fontFamily: THEME.typography.monoFamily,
-                        fontSize: '0.7rem',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: THEME.colors.gray,
-                        marginBottom: THEME.spacing.sm,
-                      }}>
+                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
                         Email <span style={{ color: THEME.colors.red }}>*</span>
                       </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="info@funeralhome.co.ke"
-                        style={{
-                          width: '100%',
-                          padding: `${THEME.spacing.md} ${THEME.spacing.md}`,
-                          fontSize: '0.88rem',
-                          fontFamily: THEME.typography.fontFamily,
-                          border: `1px solid ${errors.email ? THEME.colors.red : THEME.colors.line}`,
-                          borderRadius: THEME.borderRadius.md,
-                          background: THEME.colors.bone,
-                          color: THEME.colors.ink,
-                          outline: 'none',
-                          transition: 'all 0.2s',
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = THEME.colors.brass}
-                        onBlur={(e) => e.target.style.borderColor = errors.email ? THEME.colors.red : THEME.colors.line}
-                        disabled={isSubmitting}
-                      />
+                      <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="info@funeralhome.co.ke" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.email ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
                       {errors.email && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.email}</span>}
                     </div>
-
                     <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{
-                        display: 'block',
-                        fontFamily: THEME.typography.monoFamily,
-                        fontSize: '0.7rem',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: THEME.colors.gray,
-                        marginBottom: THEME.spacing.sm,
-                      }}>
+                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
                         Location <span style={{ color: THEME.colors.red }}>*</span>
                       </label>
-                      <input
-                        type="text"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleChange}
-                        placeholder="e.g., Nairobi, Kenya"
-                        style={{
-                          width: '100%',
-                          padding: `${THEME.spacing.md} ${THEME.spacing.md}`,
-                          fontSize: '0.88rem',
-                          fontFamily: THEME.typography.fontFamily,
-                          border: `1px solid ${errors.location ? THEME.colors.red : THEME.colors.line}`,
-                          borderRadius: THEME.borderRadius.md,
-                          background: THEME.colors.bone,
-                          color: THEME.colors.ink,
-                          outline: 'none',
-                          transition: 'all 0.2s',
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = THEME.colors.brass}
-                        onBlur={(e) => e.target.style.borderColor = errors.location ? THEME.colors.red : THEME.colors.line}
-                        disabled={isSubmitting}
-                      />
+                      <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g., Nairobi, Kenya" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.location ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
                       {errors.location && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.location}</span>}
                     </div>
                   </div>
                 )}
 
-                {/* Step 1 */}
+                {/* Step 1 Content */}
                 {currentStep === 1 && (
                   <div className="fade-in">
-                    <PasswordInput
-                      label="Password"
-                      value={formData.password}
-                      onChange={(e) => handleChange({ target: { name: 'password', value: e.target.value } })}
-                      showPassword={showPassword}
-                      onToggle={() => setShowPassword(!showPassword)}
-                      hasError={!!errors.password}
-                      errorMessage={errors.password}
-                      disabled={isSubmitting}
-                      placeholder="Create a strong password"
-                    />
+                    <PasswordInput label="Password" value={formData.password} onChange={(e) => handleChange({ target: { name: 'password', value: e.target.value } })} showPassword={showPassword} onToggle={() => setShowPassword(!showPassword)} hasError={!!errors.password} errorMessage={errors.password} disabled={isSubmitting} placeholder="Create a strong password" />
                     
                     {formData.password && (
                       <div style={{ marginBottom: THEME.spacing.lg }}>
                         <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem' }}>
                           {[1, 2, 3].map((level) => (
-                            <div key={level} style={{
-                              flex: 1,
-                              height: '3px',
-                              background: passwordStrength >= level ? getPasswordStrengthColor(passwordStrength) : THEME.colors.line,
-                              borderRadius: '2px',
-                              transition: 'background 0.2s',
-                            }} />
+                            <div key={level} style={{ flex: 1, height: '4px', background: level <= passwordStrength ? getPasswordStrengthColor(passwordStrength) : THEME.colors.line, borderRadius: '2px', transition: 'background 0.3s' }} />
                           ))}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: getPasswordStrengthColor(passwordStrength) }}>
-                          {getPasswordStrengthText(passwordStrength)} password
-                        </div>
+                        <span style={{ fontSize: '0.72rem', color: getPasswordStrengthColor(passwordStrength), fontWeight: 500 }}>
+                          Strength: {getPasswordStrengthText(passwordStrength)}
+                        </span>
                       </div>
                     )}
 
-                    <PasswordInput
-                      label="Verify password"
-                      value={formData.verifyPassword}
-                      onChange={(e) => handleChange({ target: { name: 'verifyPassword', value: e.target.value } })}
-                      showPassword={showVerifyPassword}
-                      onToggle={() => setShowVerifyPassword(!showVerifyPassword)}
-                      hasError={!!errors.verifyPassword || !!errors.passwordMatch}
-                      errorMessage={errors.verifyPassword || errors.passwordMatch}
-                      disabled={isSubmitting}
-                      placeholder="Confirm your password"
-                    />
-                    
-                    {formData.verifyPassword && formData.password === formData.verifyPassword && formData.password && (
-                      <div style={{ fontSize: '0.7rem', color: THEME.colors.verdigris, marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                        Passwords match
-                      </div>
-                    )}
+                    <PasswordInput label="Verify Password" value={formData.verifyPassword} onChange={(e) => handleChange({ target: { name: 'verifyPassword', value: e.target.value } })} showPassword={showVerifyPassword} onToggle={() => setShowVerifyPassword(!showVerifyPassword)} hasError={!!errors.verifyPassword || !!errors.passwordMatch} errorMessage={errors.verifyPassword || errors.passwordMatch} disabled={isSubmitting} placeholder="Confirm your password" />
                   </div>
                 )}
 
-                {/* Step 2 */}
+                {/* Step 2 Content */}
                 {currentStep === 2 && (
                   <div className="fade-in">
-                    <div style={{ border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.md, overflow: 'hidden', marginBottom: THEME.spacing.lg }}>
-                      <div style={{ padding: `${THEME.spacing.md} ${THEME.spacing.lg}`, background: THEME.colors.bone, borderBottom: `1px solid ${THEME.colors.line}`, fontSize: '0.82rem', fontWeight: 600, color: THEME.colors.ink }}>
-                        Organization Details
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '1rem 1.1rem', borderBottom: `1px solid ${THEME.colors.line}` }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: THEME.colors.bone2, flexShrink: 0, border: `1px solid ${THEME.colors.line}` }}>
-                          {logoPreview && <img src={logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500, color: THEME.colors.ink }}>{formData.organizationName || '—'}</div>
-                          <div style={{ fontSize: '0.76rem', color: THEME.colors.gray }}>{formData.location || '—'}</div>
-                        </div>
-                      </div>
-                      <ReviewItem label="Email" value={formData.email} />
-                      <ReviewItem label="Password" value="••••••••••" />
+                    <div style={{ border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.md, overflow: 'hidden', marginBottom: THEME.spacing.xl }}>
+                      <ReviewItem label="Organization" value={formData.organizationName} />
+                      <ReviewItem label="Email Contact" value={formData.email} />
+                      <ReviewItem label="Location" value={formData.location} />
                     </div>
 
-                    <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{ display: 'flex', alignItems: 'flex-start', gap: THEME.spacing.sm, cursor: 'pointer', fontSize: '0.82rem', color: THEME.colors.gray, lineHeight: 1.5 }}>
-                        <input type="checkbox" checked={agreeTerms} onChange={(e) => { setAgreeTerms(e.target.checked); if (errors.terms) setErrors(prev => ({ ...prev, terms: '' })); }} style={{ width: '1rem', height: '1rem', cursor: 'pointer', marginTop: '0.15rem', accentColor: THEME.colors.brass }} disabled={isSubmitting} />
-                        <span>
-                          I agree to the{' '}
-                          <button type="button" onClick={goToTerms} style={{ background: 'none', border: 'none', color: THEME.colors.gray, cursor: 'pointer', textDecoration: 'underline' }}>Terms of Service</button>
-                          {' '}and{' '}
-                          <button type="button" onClick={goToPrivacy} style={{ background: 'none', border: 'none', color: THEME.colors.gray, cursor: 'pointer', textDecoration: 'underline' }}>Privacy Policy</button>.
-                        </span>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: THEME.spacing.xl }}>
+                      <input type="checkbox" id="terms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} style={{ marginTop: '0.25rem', accentColor: THEME.colors.brass }} />
+                      <label htmlFor="terms" style={{ fontSize: '0.8rem', color: THEME.colors.gray, lineHeight: 1.5 }}>
+                        I agree to the <span style={{ color: THEME.colors.brass, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/terms')}>Terms of Service</span> and <span style={{ color: THEME.colors.brass, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/privacy')}>Privacy Policy</span>.
                       </label>
-                      {errors.terms && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.terms}</span>}
                     </div>
+                    {errors.terms && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginBottom: THEME.spacing.md }}>{errors.terms}</span>}
                   </div>
                 )}
 
-                {/* Buttons */}
-                <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.5rem' }}>
-                  {currentStep > 0 && (
-                    <button type="button" onClick={goBack} style={{
-                      background: 'transparent',
-                      color: THEME.colors.ink,
-                      border: `1px solid ${THEME.colors.line}`,
-                      padding: '0.7rem 1.2rem',
-                      fontSize: '0.85rem',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontFamily: THEME.typography.fontFamily,
-                      borderRadius: THEME.borderRadius.sm,
-                      transition: 'all 0.2s',
-                    }} onMouseEnter={(e) => e.target.style.borderColor = THEME.colors.ink} onMouseLeave={(e) => e.target.style.borderColor = THEME.colors.line}>
+                {/* Footers Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: THEME.spacing.xxxl, paddingTop: THEME.spacing.xl, borderTop: `1px solid ${THEME.colors.line}` }}>
+                  {currentStep > 0 ? (
+                    <button type="button" onClick={goBack} disabled={isSubmitting} style={{ background: 'transparent', color: THEME.colors.gray, border: 'none', padding: '0.6rem 1.2rem', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}>
                       Back
                     </button>
-                  )}
-                  
-                  {currentStep < STEPS.length - 1 ? (
-                    <button type="button" onClick={goNext} style={{
-                      flex: 1,
-                      padding: `${THEME.spacing.md} ${THEME.spacing.lg}`,
-                      fontSize: '0.85rem',
-                      fontWeight: 500,
-                      fontFamily: THEME.typography.fontFamily,
-                      border: 'none',
-                      borderRadius: THEME.borderRadius.sm,
-                      cursor: 'pointer',
-                      background: THEME.colors.ink,
-                      color: THEME.colors.bone,
-                      transition: 'background 0.2s',
-                      minHeight: '48px',
-                    }} onMouseEnter={(e) => e.target.style.background = '#000'} onMouseLeave={(e) => e.target.style.background = THEME.colors.ink}>
-                      Continue
-                    </button>
-                  ) : (
-                    <button type="submit" disabled={isSubmitting || !agreeTerms} style={{
-                      flex: 1,
-                      padding: `${THEME.spacing.md} ${THEME.spacing.lg}`,
-                      fontSize: '0.85rem',
-                      fontWeight: 500,
-                      fontFamily: THEME.typography.fontFamily,
-                      border: 'none',
-                      borderRadius: THEME.borderRadius.sm,
-                      cursor: isSubmitting || !agreeTerms ? 'not-allowed' : 'pointer',
-                      background: THEME.colors.ink,
-                      color: THEME.colors.bone,
-                      transition: 'background 0.2s',
-                      minHeight: '48px',
-                      opacity: isSubmitting || !agreeTerms ? 0.6 : 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.6rem',
-                    }} onMouseEnter={(e) => !isSubmitting && !agreeTerms && (e.target.style.background = '#000')} onMouseLeave={(e) => !isSubmitting && !agreeTerms && (e.target.style.background = THEME.colors.ink)}>
-                      {isSubmitting && <Spinner />}
-                      <span>{isSubmitting ? 'Creating account...' : 'Create account'}</span>
-                    </button>
-                  )}
+                  ) : <div />}
+
+                  <button type="submit" disabled={isSubmitting} style={{ background: THEME.colors.brass, color: THEME.colors.white, border: 'none', padding: '0.6rem 1.6rem', fontSize: '0.82rem', fontWeight: 500, borderRadius: THEME.borderRadius.sm, cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {isSubmitting ? <Spinner /> : currentStep === 2 ? 'Complete Setup' : 'Continue'}
+                  </button>
                 </div>
               </form>
-            </div>
 
-            {/* Trust Badges */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', justifyContent: 'center', opacity: loaded ? 1 : 0, transition: 'opacity 0.6s ease 200ms', marginBottom: '1.5rem' }}>
-              {[['Encrypted', 'AES-256'], ['Security', 'Enterprise'], ['Cloud', 'Contabo']].map(([label, sub]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', border: `1px solid ${THEME.colors.line}`, padding: '0.25rem 0.65rem', fontSize: '0.68rem', color: THEME.colors.gray, background: THEME.colors.white, borderRadius: THEME.borderRadius.sm }}>
-                  <span style={{ color: THEME.colors.brass, fontSize: '0.7rem' }}>●</span>
-                  <span style={{ fontWeight: 500, color: THEME.colors.ink }}>{label}</span>
-                  <span>{sub}</span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
-
-        {/* Footer */}
-        <footer style={{ background: THEME.colors.ink, color: THEME.colors.grayLight, padding: `${THEME.spacing.xxl} 0 ${THEME.spacing.xl}`, marginTop: 'auto' }}>
-          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.75rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: THEME.spacing.xxl, paddingBottom: THEME.spacing.xxl, borderBottom: `1px solid ${THEME.colors.lineDark}` }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: THEME.spacing.md }}>
-                  <Logo size={18} color={THEME.colors.bone} />
-                  <span style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1rem', color: THEME.colors.bone }}>Rest Point</span>
-                </div>
-                <p style={{ maxWidth: '260px', fontSize: '0.82rem', color: THEME.colors.grayLight, lineHeight: 1.6 }}>
-                  The complete mortuary operating system, built for East Africa.
-                </p>
-              </div>
-              <div>
-                <h4 style={{ fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.brassHover, marginBottom: THEME.spacing.lg }}>Product</h4>
-                {['Features', 'Family portal', 'Marketplace', 'Pricing'].map(link => (
-                  <div key={link} style={{ display: 'block', fontSize: '0.82rem', color: THEME.colors.grayLight, marginBottom: THEME.spacing.sm, cursor: 'pointer' }}>{link}</div>
-                ))}
-              </div>
-              <div>
-                <h4 style={{ fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.brassHover, marginBottom: THEME.spacing.lg }}>Legal</h4>
-                <div onClick={goToPrivacy} style={{ display: 'block', fontSize: '0.82rem', color: THEME.colors.grayLight, marginBottom: THEME.spacing.sm, cursor: 'pointer' }}>Privacy policy</div>
-                <div onClick={goToTerms} style={{ display: 'block', fontSize: '0.82rem', color: THEME.colors.grayLight, marginBottom: THEME.spacing.sm, cursor: 'pointer' }}>Terms of service</div>
-              </div>
-            </div>
-            <div style={{ fontSize: '0.7rem', color: 'rgba(250,248,244,0.45)', paddingTop: THEME.spacing.xl }}>
-              © {new Date().getFullYear()} Rest Point. All rights reserved.
-            </div>
-          </div>
-        </footer>
       </main>
     </div>
   );

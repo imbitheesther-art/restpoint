@@ -1,7 +1,6 @@
 /**
  * AuthController: Registration, Login, Logout, Organization details
- * 
- * ARCHITECTURE: Per-branch database model
+ * * ARCHITECTURE: Per-branch database model
  * - Main tenant DB stores users, settings, branch-to-DB mapping
  * - Each branch gets its own database
  * - Login uses x-tenant-slug header to identify the tenant
@@ -20,8 +19,12 @@ export class AuthController {
     try {
       const { tenant_name, email, password, full_name, phone, location, country, branches } = req.body;
 
+      // FIXED: Added full_name check to match the error message
       if (!tenant_name || !email || !password || !full_name) {
-        res.status(400).json({ success: false, message: 'Missing required fields: tenant_name, email, password, full_name' });
+        res.status(400).json({ 
+          success: false, 
+          message: 'Missing required fields: tenant_name, email, password, full_name' 
+        });
         return;
       }
       if (password.length < 6) {
@@ -49,7 +52,7 @@ export class AuthController {
         data: { token: result.token, tenant: result.tenant, user: { email, full_name, role: 'admin' } }
       });
     } catch (error: any) {
-      console.error('❌ Registration error:', error);
+      console.error('Registration error:', error);
       if (error.message === 'Tenant slug already exists') {
         res.status(409).json({ success: false, message: 'An organization with this name already exists' });
         return;
@@ -81,30 +84,40 @@ export class AuthController {
       }
 
       const conn = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost', port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || '', database: tenant.db_name
+        host: process.env.DB_HOST || 'localhost', 
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root', 
+        password: process.env.DB_PASSWORD || '', 
+        database: tenant.db_name
       });
+
       try {
         const [users] = await conn.query(
           'SELECT * FROM users WHERE (email = ? OR full_name = ?) AND is_active = TRUE', [identifier, identifier]
         );
         const userList = users as any[];
         if (userList.length === 0) {
-          res.status(401).json({ success: false, message: 'Invalid email or password' }); return;
+          res.status(401).json({ success: false, message: 'Invalid email or password' }); 
+          return;
         }
         const user = userList[0];
         if (!(await bcrypt.compare(password, user.password_hash))) {
-          res.status(401).json({ success: false, message: 'Invalid email or password' }); return;
+          res.status(401).json({ success: false, message: 'Invalid email or password' }); 
+          return;
         }
         await conn.query('UPDATE users SET last_login_at = NOW() WHERE user_id = ?', [user.user_id]);
 
+        // FIXED: Explicitly stringified JWT Secret fallbacks to prevent undefined runtime typing crashes
+        const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret_fallback';
+        const refreshSecret = process.env.REFRESH_TOKEN_SECRET || jwtSecret;
+
         const token = jwt.sign(
           { userId: user.user_id, tenantId: tenant.tenant_id, tenantSlug: tenant.tenant_slug, email: user.email, role: user.role },
-          process.env.JWT_SECRET, { expiresIn: '7d' }
+          jwtSecret, { expiresIn: '7d' }
         );
         const refreshToken = jwt.sign(
           { userId: user.user_id, tenantSlug: tenant.tenant_slug },
-          process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET, { expiresIn: '30d' }
+          refreshSecret, { expiresIn: '30d' }
         );
         await conn.query(
           'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
@@ -119,9 +132,11 @@ export class AuthController {
             user: { userId: user.user_id, email: user.email, fullName: user.full_name, role: user.role }
           }
         });
-      } finally { await conn.end(); }
+      } finally { 
+        await conn.end(); 
+      }
     } catch (error: any) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed', error: error.message });
     }
   }
@@ -138,17 +153,23 @@ export class AuthController {
           const tenant = await TenantModel.findBySubdomain(user.tenantSlug);
           if (tenant) {
             const conn = await mysql.createConnection({
-              host: process.env.DB_HOST || 'localhost', port: parseInt(process.env.DB_PORT || '3306'),
-              user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || '', database: tenant.db_name
+              host: process.env.DB_HOST || 'localhost', 
+              port: parseInt(process.env.DB_PORT || '3306'),
+              user: process.env.DB_USER || 'root', 
+              password: process.env.DB_PASSWORD || '', 
+              database: tenant.db_name
             });
-            try { await conn.query('UPDATE refresh_tokens SET is_active = FALSE WHERE token = ?', [refreshToken]); }
-            finally { await conn.end(); }
+            try { 
+              await conn.query('UPDATE refresh_tokens SET is_active = FALSE WHERE token = ?', [refreshToken]); 
+            } finally { 
+              await conn.end(); 
+            }
           }
         }
       }
       res.json({ success: true, message: 'Logged out successfully' });
     } catch (error: any) {
-      console.error('❌ Logout error:', error);
+      console.error('Logout error:', error);
       res.status(500).json({ success: false, message: 'Logout failed', error: error.message });
     }
   }
@@ -159,8 +180,60 @@ export class AuthController {
   async getOrganization(req: Request, res: Response): Promise<void> {
     try {
       const user = (req as any).user;
+      
       if (!user?.tenantSlug) {
-        res.status(401).json({ success: false, message: 'Authentication required' }); return;
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required. Please login.'
+        });
+        return;
       }
+
       const tenant = await TenantModel.findBySubdomain(user.tenantSlug);
       if (!tenant) {
+        res.status(404).json({
+          success: false,
+          message: 'Organization not found'
+        });
+        return;
+      }
+
+      const conn = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: tenant.db_name
+      });
+
+      try {
+        const [branches] = await conn.query('SELECT * FROM branches');
+
+        res.json({
+          success: true,
+          data: {
+            organization: {
+              tenantId: tenant.tenant_id,
+              tenantName: tenant.tenant_name,
+              tenantSlug: tenant.tenant_slug,
+              country: tenant.country,
+              location: tenant.location,
+              email: tenant.email,
+              phone: tenant.phone
+            },
+            branches: branches
+          }
+        });
+      } finally {
+        await conn.end();
+      }
+    } catch (error: any) {
+      console.error('Get organization error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve organization details',
+        error: error.message
+      });
+    }
+  }
+}

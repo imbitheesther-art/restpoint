@@ -1,19 +1,6 @@
 /**
  * @file shared/dbConfig.ts
  * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
- * 
- * All database resolution, query execution, and connection management lives here.
- * No service should have its own dbConfig or migration files.
- * 
- * ARCHITECTURE:
- * - Unified x-slug header: "pamoja-funeral-home" (single) or "pamoja-funeral-home-nairobi" (branch)
- * - resolveDatabase(slug) → returns correct database name
- * - query(req, sql, params) → SELECT queries
- * - execute(req, sql, params) → INSERT/UPDATE/DELETE
- * 
- * MIGRATIONS:
- * - All migrations are in tenant-service ONLY
- * - Other services must NOT have their own migration files
  */
 
 import mysql from 'mysql2/promise';
@@ -27,13 +14,13 @@ const DB_CONFIG = {
   password: process.env.DB_PASSWORD || '',
 };
 
-const TRACKING_DB_NAME = process.env.TRACKING_DB_NAME || 'tenant_tracking';
-
 // ─── Connection Pool Caches ──────────────────────────────────────────────────
 
 let rootPool: mysql.Pool | null = null;
 const tenantPoolCache = new Map<string, mysql.Pool>();
-const branchDbCache = new Map<string, string>();
+
+// FIXED: Now actively used to prevent recurring multi-hop queries
+const branchDbCache = new Map<string, string>(); 
 
 // ─── Root Pool ───────────────────────────────────────────────────────────────
 
@@ -76,25 +63,15 @@ export const lookupTenantDatabase = async (tenantSlug: string): Promise<string |
 
 // ─── Unified Slug Resolution (Single + Multi-branch) ─────────────────────────
 
-/**
- * Resolve the correct database from a unified x-slug header.
- * 
- * x-slug can be:
- *   - "pamoja-funeral-home" → single-branch mode (main tenant DB)
- *   - "pamoja-funeral-home-nairobi" → multi-branch mode (branch DB)
- * 
- * Resolution flow:
- * 1. Try slug as main tenant → return main DB
- * 2. If not found, strip last "-segment" as branch name → look up in branches table
- * 3. Return branch-specific DB or fallback to main tenant DB
- * 
- * @param slug - The slug from x-slug header
- * @returns The database name to use
- */
 export const resolveDatabase = async (slug: string): Promise<string | null> => {
   if (!slug || slug === 'system_shared') {
     console.error('❌ Invalid slug provided');
     return null;
+  }
+
+  // FIXED: Return instantly if slug translation has already been cached
+  if (branchDbCache.has(slug)) {
+    return branchDbCache.get(slug)!;
   }
 
   console.log(`🔍 Resolving database for slug: ${slug}`);
@@ -103,6 +80,7 @@ export const resolveDatabase = async (slug: string): Promise<string | null> => {
   const mainDbName = await lookupTenantDatabase(slug);
   if (mainDbName) {
     console.log(`📁 Single-branch mode: using main tenant DB: ${mainDbName}`);
+    branchDbCache.set(slug, mainDbName);
     return mainDbName;
   }
 
@@ -116,41 +94,34 @@ export const resolveDatabase = async (slug: string): Promise<string | null> => {
 
     const tenantDbName = await lookupTenantDatabase(possibleTenantSlug);
     if (tenantDbName) {
-      // Look up branch in tenant's branches table by name
       try {
-        const conn = await mysql.createConnection({
-          ...DB_CONFIG,
-          database: tenantDbName,
-        });
+        // FIXED: Swapped out slow createConnection() for reusable tenantPoolCache borrowing
+        const pool = await getTenantDB(tenantDbName);
 
-        try {
-          const [rows] = await conn.query(
-            `SELECT branch_db_name FROM branches 
-             WHERE (branch_slug LIKE ? OR branch_name LIKE ?) AND is_active = TRUE 
-             LIMIT 1`,
-            [`%${branchName}%`, `%${branchName}%`]
-          );
-          const list = rows as any[];
-          if (list.length > 0) {
-            const branchDbName = list[0].branch_db_name;
-            console.log(`📁 Multi-branch mode: using branch DB: ${branchDbName}`);
-            return branchDbName;
-          }
-        } finally {
-          await conn.end();
+        const [rows] = await pool.query(
+          `SELECT branch_db_name FROM branches 
+           WHERE (branch_slug LIKE ? OR branch_name LIKE ?) AND is_active = TRUE 
+           LIMIT 1`,
+          [`%${branchName}%`, `%${branchName}%`]
+        );
+        
+        const list = rows as any[];
+        if (list.length > 0) {
+          const branchDbName = list[0].branch_db_name;
+          console.log(`📁 Multi-branch mode: using branch DB: ${branchDbName}`);
+          branchDbCache.set(slug, branchDbName);
+          return branchDbName;
         }
-      } catch (err) {
-        console.warn(`⚠️ Error looking up branch, falling back to main DB: ${tenantDbName}`);
+      } catch (err: any) {
+        console.warn(`⚠️ Error looking up branch, falling back to main DB: ${tenantDbName}. Error: ${err.message}`);
         return tenantDbName;
       }
 
-      // Branch not found but tenant exists → use main DB as fallback
-      console.warn(`⚠️ Branch "${branchName}" not found, using main DB: ${tenantDbName}`);
+      console.warn(`⚠️ Branch "${branchName}" not found, using main DB fallback: ${tenantDbName}`);
       return tenantDbName;
     }
   }
 
-  // Step 3: Nothing worked
   console.error(`❌ Could not resolve database for slug: ${slug}`);
   return null;
 };
@@ -187,17 +158,11 @@ export const getTenantDBBySlug = async (tenantSlug: string): Promise<mysql.Pool 
 
 // ─── Global Query Executors ──────────────────────────────────────────────────
 
-/**
- * Execute a SELECT query on the tenant's database.
- * Automatically resolves the correct database from x-slug header.
- * 
- * @param req - Express request object (reads x-slug or x-tenant-slug header)
- * @param sql - SQL query with ? placeholders
- * @param params - Parameter values for placeholders
- * @returns Array of result rows
- */
 export const query = async (req: any, sql: string, params: any[] = []): Promise<any[]> => {
-  const slug = req.headers['x-slug'] || req.headers['x-tenant-slug'];
+  // FIXED: Ensured safe parsing of Express lowercase normalized string arrays
+  const rawSlug = req.headers['x-slug'] || req.headers['x-tenant-slug'];
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
+
   if (!slug) {
     throw new Error('Missing x-slug or x-tenant-slug header');
   }
@@ -220,17 +185,11 @@ export const query = async (req: any, sql: string, params: any[] = []): Promise<
   }
 };
 
-/**
- * Execute an INSERT, UPDATE, DELETE, or DDL statement.
- * Automatically resolves the correct database from x-slug header.
- * 
- * @param req - Express request object (reads x-slug or x-tenant-slug header)
- * @param sql - SQL statement with ? placeholders
- * @param params - Parameter values for placeholders
- * @returns ResultSetHeader with insertId, affectedRows, etc.
- */
 export const execute = async (req: any, sql: string, params: any[] = []): Promise<mysql.ResultSetHeader> => {
-  const slug = req.headers['x-slug'] || req.headers['x-tenant-slug'];
+  // FIXED: Safe string extraction for custom router headers
+  const rawSlug = req.headers['x-slug'] || req.headers['x-tenant-slug'];
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
+
   if (!slug) {
     throw new Error('Missing x-slug or x-tenant-slug header');
   }
@@ -253,40 +212,26 @@ export const execute = async (req: any, sql: string, params: any[] = []): Promis
   }
 };
 
-// ─── Legacy Safe Query Functions (for backwards compatibility) ───────────────
+// ─── Legacy Safe Query Functions ───────────────────────────────────────────────
 
-export const safeTenantQuery = async (
-  dbName: string,
-  sql: string,
-  params: any[] = []
-): Promise<any[]> => {
+export const safeTenantQuery = async (dbName: string, sql: string, params: any[] = []): Promise<any[]> => {
   try {
     const pool = await getTenantDB(dbName);
     const [rows] = await pool.query(sql, params);
     return rows as any[];
   } catch (error: any) {
-    console.error(`❌ safeTenantQuery error on "${dbName}":`, {
-      message: error.message,
-      sql: sql.substring(0, 200),
-    });
+    console.error(`❌ safeTenantQuery error on "${dbName}":`, { message: error.message, sql: sql.substring(0, 200) });
     throw error;
   }
 };
 
-export const safeTenantExecute = async (
-  dbName: string,
-  sql: string,
-  params: any[] = []
-): Promise<mysql.ResultSetHeader> => {
+export const safeTenantExecute = async (dbName: string, sql: string, params: any[] = []): Promise<mysql.ResultSetHeader> => {
   try {
     const pool = await getTenantDB(dbName);
     const [result] = await pool.query(sql, params);
     return result as mysql.ResultSetHeader;
   } catch (error: any) {
-    console.error(`❌ safeTenantExecute error on "${dbName}":`, {
-      message: error.message,
-      sql: sql.substring(0, 200),
-    });
+    console.error(`❌ safeTenantExecute error on "${dbName}":`, { message: error.message, sql: sql.substring(0, 200) });
     throw error;
   }
 };
@@ -308,6 +253,7 @@ export const closeAllConnections = async (): Promise<void> => {
     console.log(`🔌 Closed pool for: ${dbName}`);
   }
   tenantPoolCache.clear();
+  branchDbCache.clear(); // Clear mapping definitions cache too
 
   if (rootPool) {
     await rootPool.end().catch(() => {});

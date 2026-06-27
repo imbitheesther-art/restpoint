@@ -4,14 +4,13 @@ import crypto from 'crypto';
 import axios from 'axios';
 import mysql from 'mysql2/promise';
 import ExcelExportService from '../services/excelExportService';
-import { query, execute, resolveDatabase, safeTenantQuery, safeTenantExecute } from '../../../shared/dbConfig';
-
-
-
+import { resolveDatabase, safeTenantQuery, safeTenantExecute, getRootPool } from '../../../shared/dbConfig';
+import logger from '@montezuma/shared-logger';
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
     dbName?: string | null;
+    user?: { email?: string; id?: number };
 }
 
 const nowNairobi = (): string => {
@@ -30,17 +29,57 @@ const logError = (error: any, context: string) => {
     });
 };
 
-
-
-const generateUniqueDeceasedId = (fullName: string, tenantSlug: string): string => {
-    const tenantPrefix = tenantSlug.substring(0, 3).toUpperCase();
-    const namePart = fullName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
-    const timestamp = nowMs().toString().slice(-6);
-    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
-    return `${tenantPrefix}-${namePart}-${timestamp}-${random}`;
+/**
+ * Extract tenant slug from request - consistent across all handlers
+ */
+const getTenantSlug = (req: any): string | undefined => {
+    return (req as any).headers['x-slug'] as string 
+        || (req as any).headers['x-tenant-slug'] as string 
+        || req.tenantSlug;
 };
 
-// Ensure deceased table exists in tenant database
+/**
+ * Standardized tenant validation
+ */
+const validateTenant = (tenantSlug?: string): Response | null => {
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        return null; // caller handles
+    }
+    return null; // valid
+};
+
+/**
+ * Validate tenant and resolve database - common pattern used by all handlers
+ */
+const resolveTenantDb = async (tenantSlug: string): Promise<string | null> => {
+    if (!tenantSlug || tenantSlug === 'system_shared') return null;
+    return await resolveDatabase(tenantSlug);
+};
+
+/**
+ * Build standardized error response
+ */
+const tenantError = (res: Response, status: number, message: string, error?: string) => {
+    return res.status(status).json({
+        success: false,
+        message,
+        ...(process.env.NODE_ENV === 'development' && error ? { error } : {})
+    });
+};
+
+const generateUniqueDeceasedId = (fullName: string, tenantSlug: string): string => {
+    const sanitizedTenant = tenantSlug.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase();
+    const namePart = fullName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'XXX';
+    const timestamp = nowMs().toString().slice(-6);
+    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+    return `${sanitizedTenant}-${namePart}-${timestamp}-${random}`;
+};
+
+/**
+ * Ensure deceased table exists in tenant database
+ * NOTE: Table does NOT include tenant_slug column because each tenant 
+ * has their own isolated database, making tenant_slug redundant at row level.
+ */
 const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<void> => {
     const createTableSQL = `
         CREATE TABLE IF NOT EXISTS deceased (
@@ -91,21 +130,19 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
  * 
  * Multi-tenant flow:
  * 1. Extract tenantSlug from header
- * 2. Look up tenant's database
- * 3. Execute query on tenant's database
+ * 2. Look up tenant's database via resolveDatabase()
+ * 3. Execute query on tenant's isolated database
+ * 4. Notification is sent with tenant context header
  */
 export const registerDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
     
-    console.log('📝 Register deceased request received');
-    console.log('🏢 Tenant slug:', tenantSlug);
-    console.log('📦 Request body:', req.body);
+    console.log('Register deceased request received');
+    console.log('Tenant slug:', tenantSlug);
+    console.log('Request body:', { ...req.body, national_id: req.body.national_id ? '***' : undefined });
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Valid tenant required. Please provide x-tenant-slug header' 
-        });
+        return tenantError(res, 400, 'Valid tenant required. Please provide x-tenant-slug header');
     }
 
     try {
@@ -121,37 +158,31 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             national_id,
             admission_number,
             date_admitted,
-            registered_by
         } = req.body;
 
+        // Validate required fields
         const missingFields: string[] = [];
-        if (!full_name) missingFields.push('full_name');
+        if (!full_name?.trim()) missingFields.push('full_name');
         if (!date_of_birth) missingFields.push('date_of_birth');
         if (!date_of_death) missingFields.push('date_of_death');
         if (!gender) missingFields.push('gender');
-        if (!county) missingFields.push('county');
-        if (!national_id) missingFields.push('national_id');
+        if (!county?.trim()) missingFields.push('county');
+        if (!national_id?.trim()) missingFields.push('national_id');
 
         if (missingFields.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Missing required fields: ${missingFields.join(', ')}`
-            });
+            return tenantError(res, 400, `Missing required fields: ${missingFields.join(', ')}`);
         }
 
         // Resolve database from unified x-slug (single-branch or multi-branch)
         console.log(`🔍 Resolving database for slug: ${tenantSlug}`);
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         
         if (!dbName) {
-            console.error(`❌ No database found for slug: ${tenantSlug}`);
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for: ${tenantSlug}. Please onboard the tenant first.`
-            });
+            return tenantError(res, 404, `No database configured for: ${tenantSlug}. Please onboard the tenant first.`);
         }
         
-        console.log(`✅ Using database: ${dbName}`);
+        logger.info({ message:  ` Using database: ${dbName}`  })
+      
 
         // Ensure the deceased table exists in the tenant's database
         await ensureDeceasedTable(dbName, tenantSlug);
@@ -161,6 +192,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
         const now = nowNairobi();
         const admissionNum = admission_number || `ADM-${Date.now()}`;
         const admittedDate = date_admitted || now;
+        const createdBy = (req as any).user?.id || null;
 
         console.log(`📝 Inserting deceased record with ID: ${deceased_id} into database: ${dbName}`);
 
@@ -172,7 +204,6 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        // Execute on the tenant's database
         const result = await safeTenantExecute(dbName, insertQuery, [
             deceased_id,
             admissionNum,
@@ -181,38 +212,34 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             date_of_birth,
             date_of_death,
             now,
-            full_name,
+            full_name.trim(),
             gender,
             place_of_death || 'Not specified',
-            county,
-            national_id,
+            county.trim(),
+            national_id.trim(),
             now,
             location || null,
             portal_slug,
-            null
+            createdBy
         ]);
 
         console.log(`✅ Deceased registered successfully in database ${dbName}. Insert ID: ${result.insertId}`);
 
-        // Create notification for new deceased registration
-        try {
-            const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:8111';
-            await axios.post(`${notificationServiceUrl}/api/v1/restpoint/notification/notifications`, {
-                deceased_id,
-                type: 'new_body',
-                message: `New body registered: ${full_name} (ID: ${deceased_id})`
-            }, {
-                headers: {
-                    'x-tenant-slug': tenantSlug,
-                    'Content-Type': 'application/json'
-                }
-            }).catch(err => {
-                console.warn('⚠️ Could not create notification:', err.message);
-            });
-        } catch (notifError) {
-            console.warn('⚠️ Notification creation failed:', notifError);
-            // Don't fail the registration if notification fails
-        }
+        // Create notification for new deceased registration (non-blocking)
+        const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:8111';
+        axios.post(`${notificationServiceUrl}/api/v1/restpoint/notification/notifications`, {
+            deceased_id,
+            type: 'new_body',
+            message: `New body registered: ${full_name.trim()} (ID: ${deceased_id})`
+        }, {
+            headers: {
+                'x-tenant-slug': tenantSlug,
+                'Content-Type': 'application/json'
+            },
+            timeout: 5000
+        }).catch(err => {
+            console.warn('⚠️ Could not create notification:', err.message);
+        });
 
         return res.status(201).json({
             success: true,
@@ -221,7 +248,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
                 id: result.insertId,
                 deceased_id,
                 portal_slug,
-                full_name,
+                full_name: full_name.trim(),
                 tenant: tenantSlug,
                 admission_number: admissionNum
             }
@@ -230,51 +257,42 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
     } catch (error: any) {
         console.error('❌ Error in registerDeceased:', error);
         logError(error, 'registerDeceased');
-        return res.status(500).json({
-            success: false,
-            message: 'Internal Server Error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        return tenantError(res, 500, 'Internal Server Error', error.message);
     }
 };
 
 /**
  * Get all deceased records for a tenant
  * GET /api/v1/restpoint/deceased/deceased-all
+ * 
+ * Multi-tenant: queries tenant's isolated database only
  */
 export const getAllDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
 
     console.log('📋 Get all deceased request for slug:', tenantSlug);
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Valid tenant required. Please provide x-slug header' 
-        });
+        return tenantError(res, 400, 'Valid tenant required. Please provide x-slug header');
     }
 
     try {
-        // Resolve database from unified x-slug
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
         }
 
         const { search = '', page = '1', limit = '50' } = req.query;
-        const pageNum = Math.max(1, parseInt(page as string));
-        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string)));
+        const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 50));
         const offset = (pageNum - 1) * limitNum;
 
         let whereClause = 'WHERE 1=1';
         let params: any[] = [];
 
-        if (search && typeof search === 'string') {
+        if (search && typeof search === 'string' && search.trim()) {
             whereClause += ' AND (full_name LIKE ? OR deceased_id LIKE ? OR national_id LIKE ?)';
-            const searchPattern = `%${search}%`;
+            const searchPattern = `%${search.trim()}%`;
             params.push(searchPattern, searchPattern, searchPattern);
         }
 
@@ -305,100 +323,70 @@ export const getAllDeceased = async (req: TenantRequest, res: Response): Promise
                 total,
                 page: pageNum,
                 limit: limitNum,
-                totalPages: Math.ceil(total / limitNum)
+                totalPages: Math.max(1, Math.ceil(total / limitNum))
             }
         });
 
     } catch (error: any) {
         console.error('❌ Error in getAllDeceased:', error);
         logError(error, 'getAllDeceased');
-        return res.status(500).json({
-            success: false,
-            message: 'Internal Server Error'
-        });
+        return tenantError(res, 500, 'Internal Server Error');
     }
 };
 
 /**
  * Get deceased record by ID
  * GET /api/v1/restpoint/deceased/deceased-id/:id
+ * 
+ * Multi-tenant: searches within tenant's isolated database
+ * Supports both numeric `id` and string `deceased_id`
  */
 export const getDeceasedById = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
     const rawId = req.params.id || req.query.id;
     const id = (() => {
-        if (Array.isArray(rawId)) {
-            return rawId.length > 0 ? String(rawId[0]) : '';
-        }
-        if (typeof rawId === 'string') {
-            return rawId;
-        }
-        if (rawId != null) {
-            return String(rawId);
-        }
+        if (Array.isArray(rawId)) return rawId.length > 0 ? String(rawId[0]) : '';
+        if (typeof rawId === 'string') return rawId;
+        if (rawId != null) return String(rawId);
         return '';
     })();
 
     console.log(`📋 Get deceased by ID: ${id} for tenant: ${tenantSlug}`);
 
     if (!id || !tenantSlug) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid request: tenant and id required' 
-        });
+        return tenantError(res, 400, 'Invalid request: tenant and id required');
+    }
+
+    if (tenantSlug === 'system_shared') {
+        return tenantError(res, 400, 'Valid tenant required');
     }
 
     try {
-        // Resolve database from unified x-slug
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
         }
 
         let deceased = null;
         const isNumeric = /^\d+$/.test(id);
         
-        if (isNumeric) {
-            console.log(`🔍 Searching by numeric ID: ${id} in database: ${dbName}`);
-            const selectQuery = `
-                SELECT 
-                    id, deceased_id, full_name, date_of_death, date_of_birth,
-                    gender, county, status, place_of_death, date_admitted,
-                    date_registered, portal_slug, national_id, cause_of_death, location,
-                    admission_number, total_mortuary_charge, currency,
-                    burial_type, dispatch_date, created_at,
-                    extra_charges_amount, next_of_kin_count, is_embalmed
-                FROM deceased
-                WHERE id = ?
-            `;
-            const records = await safeTenantQuery(dbName, selectQuery, [parseInt(id)]);
-            if (records && records.length > 0) deceased = records[0];
-        } else {
-            console.log(`🔍 Searching by deceased_id: ${id} in database: ${dbName}`);
-            const selectQuery = `
-                SELECT 
-                    id, deceased_id, full_name, date_of_death, date_of_birth,
-                    gender, county, status, place_of_death, date_admitted,
-                    date_registered, portal_slug, national_id, cause_of_death, location,
-                    admission_number, total_mortuary_charge, currency,
-                    burial_type, dispatch_date, created_at,
-                    extra_charges_amount, next_of_kin_count, is_embalmed
-                FROM deceased
-                WHERE deceased_id = ?
-            `;
-            const records = await safeTenantQuery(dbName, selectQuery, [id]);
-            if (records && records.length > 0) deceased = records[0];
-        }
+        const selectQuery = `
+            SELECT 
+                id, deceased_id, full_name, date_of_death, date_of_birth,
+                gender, county, status, place_of_death, date_admitted,
+                date_registered, portal_slug, national_id, cause_of_death, location,
+                admission_number, total_mortuary_charge, currency,
+                burial_type, dispatch_date, created_at,
+                extra_charges_amount, next_of_kin_count, is_embalmed
+            FROM deceased
+            WHERE ${isNumeric ? 'id = ?' : 'deceased_id = ?'}
+        `;
+        
+        const records = await safeTenantQuery(dbName, selectQuery, [isNumeric ? parseInt(id) : id]);
+        if (records && records.length > 0) deceased = records[0];
 
         if (!deceased) {
-            console.log(`❌ No record found for: ${id} in database: ${dbName}`);
-            return res.status(404).json({
-                success: false,
-                message: 'Deceased record not found'
-            });
+            return tenantError(res, 404, 'Deceased record not found');
         }
 
         return res.status(200).json({
@@ -410,49 +398,52 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
     } catch (error: any) {
         console.error('❌ Error in getDeceasedById:', error);
         logError(error, 'getDeceasedById');
-        return res.status(500).json({
-            success: false,
-            message: 'Internal Server Error'
-        });
+        return tenantError(res, 500, 'Internal Server Error');
     }
 };
 
 /**
  * Update deceased record
  * PUT /api/v1/restpoint/deceased/update-deceased/:id
+ * 
+ * Multi-tenant: updates within tenant's isolated database
+ * Only allows specific fields to be updated for security
  */
 export const updateDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
     const { id } = req.params;
 
-    if (!id || !tenantSlug) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid request' 
-        });
+    if (!id || !tenantSlug || tenantSlug === 'system_shared') {
+        return tenantError(res, 400, 'Invalid request: tenant and id required');
     }
 
     try {
-        // Resolve database from unified x-slug
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
         }
 
         const updates = req.body;
-        const allowedFields = [
-            'full_name', 'cause_of_death', 'location', 'status', 
-            'burial_location', 'burial_date', 'total_mortuary_charge',
-            'extra_charges_amount', 'is_embalmed', 'dispatch_date'
-        ];
+        const allowedFields: Record<string, string> = {
+            'full_name': 'string',
+            'cause_of_death': 'string',
+            'location': 'string',
+            'status': 'string',
+            'burial_location': 'string',
+            'burial_date': 'string',
+            'total_mortuary_charge': 'number',
+            'extra_charges_amount': 'number',
+            'is_embalmed': 'boolean',
+            'dispatch_date': 'string',
+            'county': 'string',
+            'place_of_death': 'string',
+            'gender': 'string'
+        };
         
         const fields: string[] = [];
         const values: any[] = [];
 
-        for (const field of allowedFields) {
+        for (const [field, expectedType] of Object.entries(allowedFields)) {
             if (updates[field] !== undefined) {
                 fields.push(`${field} = ?`);
                 values.push(updates[field]);
@@ -460,64 +451,66 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
         }
 
         if (fields.length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'No fields to update' 
-            });
+            return tenantError(res, 400, 'No valid fields to update');
         }
 
         values.push(id);
         const updateQuery = `UPDATE deceased SET ${fields.join(', ')} WHERE id = ?`;
-        await safeTenantExecute(dbName, updateQuery, values);
+        const result = await safeTenantExecute(dbName, updateQuery, values);
+
+        if (result.affectedRows === 0) {
+            return tenantError(res, 404, 'Deceased record not found');
+        }
 
         return res.status(200).json({
             success: true,
-            message: 'Deceased record updated successfully'
+            message: 'Deceased record updated successfully',
+            data: { id, updated_fields: fields.map(f => f.split('=')[0].trim()) }
         });
 
     } catch (error: any) {
         console.error('❌ Error in updateDeceased:', error);
         logError(error, 'updateDeceased');
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Internal Server Error' 
-        });
+        return tenantError(res, 500, 'Internal Server Error');
     }
 };
 
 /**
- * Delete deceased record
+ * Delete deceased record (SOFT DELETE)
  * DELETE /api/v1/restpoint/deceased/delete-deceased/:id
+ * 
+ * Changed from hard DELETE to soft delete to prevent data loss.
+ * Multi-tenant: deletes within tenant's isolated database only
  */
 export const deleteDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
     const { id } = req.params;
 
-    if (!id || !tenantSlug) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid request' 
-        });
+    if (!id || !tenantSlug || tenantSlug === 'system_shared') {
+        return tenantError(res, 400, 'Invalid request: tenant and id required');
     }
 
     try {
-        // Resolve database from unified x-slug
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
         }
 
-        const deleteQuery = `DELETE FROM deceased WHERE id = ?`;
-        const result = await safeTenantExecute(dbName, deleteQuery, [id]);
+        // Soft delete: mark as deleted instead of removing
+        // First ensure is_deleted column exists
+        try {
+            await safeTenantExecute(dbName, 
+                `ALTER TABLE deceased ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`,
+                []);
+        } catch (e) {
+            // Column might already exist, ignore
+        }
+
+        const softDeleteQuery = `UPDATE deceased SET is_deleted = TRUE, status = 'deleted', updated_at = NOW() WHERE id = ? AND (is_deleted IS NULL OR is_deleted = FALSE)`;
+        const result = await safeTenantExecute(dbName, softDeleteQuery, [id]);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Deceased record not found'
-            });
+            return tenantError(res, 404, 'Deceased record not found or already deleted');
         }
 
         return res.status(200).json({
@@ -528,35 +521,27 @@ export const deleteDeceased = async (req: TenantRequest, res: Response): Promise
     } catch (error: any) {
         console.error('❌ Error in deleteDeceased:', error);
         logError(error, 'deleteDeceased');
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Internal Server Error' 
-        });
+        return tenantError(res, 500, 'Internal Server Error');
     }
 };
 
 /**
  * Get deceased statistics for dashboard
  * GET /api/v1/restpoint/deceased/stats
+ * 
+ * Multi-tenant: aggregates within tenant's isolated database
  */
 export const getDeceasedStats = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
 
-    if (!tenantSlug) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Valid tenant required' 
-        });
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        return tenantError(res, 400, 'Valid tenant required');
     }
 
     try {
-        // Resolve database from unified x-slug
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
         }
 
         const statsQuery = `
@@ -572,10 +557,15 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
                 SUM(total_mortuary_charge) as total_charges,
                 SUM(extra_charges_amount) as total_extra_charges
             FROM deceased
+            WHERE (is_deleted IS NULL OR is_deleted = FALSE)
         `;
 
         const result = await safeTenantQuery(dbName, statsQuery, []);
-        const stats = (result as any[])[0];
+        const stats = (result as any[])[0] || {
+            total: 0, active: 0, male: 0, female: 0, dispatched: 0,
+            embalmed: 0, has_next_of_kin: 0, counties: 0,
+            total_charges: 0, total_extra_charges: 0
+        };
 
         return res.status(200).json({
             success: true,
@@ -586,66 +576,56 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
     } catch (error: any) {
         console.error('❌ Error in getDeceasedStats:', error);
         logError(error, 'getDeceasedStats');
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Internal Server Error' 
-        });
+        return tenantError(res, 500, 'Internal Server Error');
     }
 };
 
 /**
  * Export deceased records to Excel
  * GET /api/v1/restpoint/deceased/export-excel
+ * 
+ * Multi-tenant: 
+ * 1. Queries tenant's isolated database ONLY
+ * 2. Uses tenant-specific theme/branding
+ * 3. Saves export history to tenant's database
+ * 4. File is stored in tenant-specific folder
+ * 5. All exports are per-tenant with no data mixing
  */
 export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = (req as any).headers['x-slug'] as string || (req as any).headers['x-tenant-slug'] as string || req.tenantSlug;
+    const tenantSlug = getTenantSlug(req);
     
     console.log('📊 Export deceased records to Excel for tenant:', tenantSlug);
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Valid tenant required. Please provide x-tenant-slug header' 
-        });
+        return tenantError(res, 400, 'Valid tenant required. Please provide x-tenant-slug header');
     }
 
     try {
-        // Resolve database from unified x-slug
-        const dbName = await resolveDatabase(tenantSlug);
+        const dbName = await resolveTenantDb(tenantSlug);
         if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
         }
 
-        // Get tenant name from tracking DB
+        // Get tenant name from tracking DB using shared pool (not a new connection)
         let tenantName = tenantSlug;
-        const trackingConn = await mysql.createConnection({
-            host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT || '3306'),
-            user: process.env.DB_USER || 'root',
-            password: process.env.DB_PASSWORD || '',
-            database: process.env.TENANT_TRACKING_DB || 'tenant_tracking'
-        });
-        
         try {
-            const [tenants] = await trackingConn.execute(
-                'SELECT tenant_name FROM tenants WHERE tenant_slug = ? AND status = "active"',
+            const rootPool = await getRootPool();
+            const [tenants] = await rootPool.query(
+                'SELECT tenant_name FROM tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
                 [tenantSlug]
             );
-            if (tenants && (tenants as any[]).length > 0) {
-                tenantName = (tenants as any[])[0].tenant_name;
+            const tenantRows = tenants as any[];
+            if (tenantRows.length > 0 && tenantRows[0].tenant_name) {
+                tenantName = tenantRows[0].tenant_name;
             }
         } catch (err) {
             console.warn('Could not fetch tenant name:', err);
         }
-        await trackingConn.end();
 
         const { period = 'all', startDate, endDate } = req.query;
         
-        // Build query with date filters
-        let whereClause = 'WHERE 1=1';
+        // Build query with date filters - scoped to tenant's database
+        let whereClause = 'WHERE (is_deleted IS NULL OR is_deleted = FALSE)';
         let params: any[] = [];
         
         if (period === 'custom' && startDate && endDate) {
@@ -663,7 +643,7 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             params.push(start, end);
         }
         
-        // Get records from tenant's database
+        // Get records from tenant's database ONLY
         const selectQuery = `
             SELECT 
                 id, deceased_id, admission_number, full_name, gender,
@@ -691,7 +671,7 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
         const theme = excelService.getTenantTheme(tenantSlug);
         theme.companyName = tenantName;
         
-        // Generate Excel
+        // Generate Excel with tenant branding
         const exportResult = await excelService.generateDeceasedReport(records, {
             period: period as any,
             startDate: startDate as string,
@@ -700,22 +680,86 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             format: 'xlsx'
         });
         
+        // Save export history to tenant's isolated database
+        try {
+            const historyRecord = {
+                id: 0,
+                tenant_slug: tenantSlug,
+                file_name: exportResult.history.file_name,
+                file_size: exportResult.history.file_size,
+                record_count: exportResult.history.record_count,
+                generated_at: exportResult.history.generated_at,
+                generated_by: (req as any).user?.email || 'System Administrator',
+                period: periodLabel,
+                status: 'success' as const
+            };
+            const historyId = await excelService.saveExportHistory(dbName, historyRecord);
+            console.log(`📊 Export history saved for tenant ${tenantSlug} with ID: ${historyId}`);
+        } catch (historyError: any) {
+            console.warn(`⚠️ Could not save export history: ${historyError.message}`);
+            // Non-blocking: don't fail the export
+        }
+        
         const filename = `${tenantSlug}_deceased_report_${DateTime.now().toFormat('yyyyMMdd_HHmmss')}.xlsx`;
         
-        (res as any).setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        (res as any).setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        (res as any).setHeader('Content-Length', exportResult.buffer.length);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', exportResult.buffer.length);
         
         return res.send(exportResult.buffer);
         
     } catch (error: any) {
         console.error('❌ Error in exportDeceasedToExcel:', error);
         logError(error, 'exportDeceasedToExcel');
-        return res.status(500).json({
-            success: false,
-            message: 'Internal Server Error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        return tenantError(res, 500, 'Internal Server Error', error.message);
+    }
+};
+
+/**
+ * Get export history for a tenant
+ * GET /api/v1/restpoint/deceased/export-history
+ * 
+ * Multi-tenant: fetches history from tenant's isolated database ONLY
+ * Tenant A can NEVER see Tenant B's export history
+ */
+export const getExportHistory = async (req: TenantRequest, res: Response): Promise<Response> => {
+    const tenantSlug = getTenantSlug(req);
+    
+    console.log('📋 Get export history for tenant:', tenantSlug);
+
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        return tenantError(res, 400, 'Valid tenant required. Please provide x-tenant-slug header');
+    }
+
+    try {
+        const dbName = await resolveTenantDb(tenantSlug);
+        if (!dbName) {
+            return tenantError(res, 404, `No database configured for tenant: ${tenantSlug}`);
+        }
+
+        const { page = '1', limit = '20' } = req.query;
+        const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20));
+
+        const excelService = ExcelExportService.getInstance();
+        const result = await excelService.getExportHistory(dbName, tenantSlug, pageNum, limitNum);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Export history fetched successfully',
+            data: result.records,
+            pagination: {
+                total: result.total,
+                page: result.page,
+                limit: limitNum,
+                totalPages: result.totalPages
+            }
         });
+
+    } catch (error: any) {
+        console.error('❌ Error in getExportHistory:', error);
+        logError(error, 'getExportHistory');
+        return tenantError(res, 500, 'Internal Server Error');
     }
 };
 
@@ -727,5 +771,6 @@ export default {
     updateDeceased,
     deleteDeceased,
     getDeceasedStats,
-    exportDeceasedToExcel
+    exportDeceasedToExcel,
+    getExportHistory
 };

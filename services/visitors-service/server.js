@@ -37,8 +37,15 @@ app.get('/health', (req, res) => {
 });
 
 const visitorsRoutes = require('./routes/visitorsRoutes');
+const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
 
+// Mount routes at BOTH prefixes for gateway compatibility
 app.use('/api/v1/restpoint/visitors', visitorsRoutes);
+app.use('/v1/restpoint/visitors', visitorsRoutes);
+
+// 404 and error handlers
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`visitors-service is running on port ${PORT}`);

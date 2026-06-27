@@ -14,11 +14,8 @@ import {
   ChevronUp,
   History,
 } from 'lucide-react';
-import axios from 'axios';
-
-// API Gateway URL
-const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 
 // Colors
 const Colors = {
@@ -367,16 +364,16 @@ const AlertBox = styled.div`
 
 // Get tenant slug
 const getTenantSlug = () => {
-  return localStorage.getItem('tenantSlug') || 
-         localStorage.getItem('tenant_slug') ||
-         (() => {
-           try {
-             const user = JSON.parse(localStorage.getItem('user') || '{}');
-             return user.tenantSlug || user.tenant?.slug || 'default';
-           } catch {
-             return 'default';
-           }
-         })();
+  return localStorage.getItem('tenantSlug') ||
+    localStorage.getItem('tenant_slug') ||
+    (() => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return user.tenantSlug || user.tenant?.slug || 'default';
+      } catch {
+        return 'default';
+      }
+    })();
 };
 
 // Main Component
@@ -388,41 +385,26 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
   const [dailyRate, setDailyRate] = useState(3000);
   const [hourlyRate, setHourlyRate] = useState(125);
   const [usdRate, setUsdRate] = useState(130);
-  
+
   // Loading States
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
-  
+
   // History State
   const [showHistory, setShowHistory] = useState(false);
   const [chargeHistory, setChargeHistory] = useState([]);
   const [billingSummary, setBillingSummary] = useState(null);
-  
-  // API Client
-  const apiClient = axios.create({
-    baseURL: BASE_URL,
-    headers: { 'Content-Type': 'application/json' },
-  });
-  
-  apiClient.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('authToken');
-      const tenantSlug = getTenantSlug();
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-      if (tenantSlug && tenantSlug !== 'default') config.headers['x-tenant-slug'] = tenantSlug;
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
-  
+
   // Load charge settings
   const loadChargeSettings = async () => {
     if (!deceasedId) return;
-    
+
     setIsLoading(true);
     try {
-      const response = await apiClient.get(`/charge-settings?id=${deceasedId}`);
+      const response = await api.get(ENDPOINTS.DECEASED.CHARGE_SETTINGS(deceasedId), {
+        headers: { 'x-tenant-slug': getTenantSlug() }
+      });
       if (response.data.success) {
         const data = response.data.data;
         setRateProfile(data.rateProfile || 'standard');
@@ -438,23 +420,25 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     if (isOpen && deceasedId) {
       loadChargeSettings();
     }
   }, [isOpen, deceasedId]);
-  
+
   // Handle save
   const handleSave = async () => {
     if (!deceasedId) return;
-    
+
     setIsSaving(true);
     try {
-      const response = await apiClient.put(`/charge-settings/${deceasedId}`, {
+      const response = await api.put(ENDPOINTS.DECEASED.UPDATE_CHARGE_SETTINGS(deceasedId), {
         rateProfile, currency, chargeType, dailyRate, hourlyRate, usdRate,
+      }, {
+        headers: { 'x-tenant-slug': getTenantSlug() }
       });
-      
+
       if (response.data.success) {
         if (onUpdate) onUpdate();
         onClose();
@@ -465,16 +449,16 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
       setIsSaving(false);
     }
   };
-  
+
   const getDaysInMorgue = () => {
     if (!deceasedData?.date_admitted) return 0;
     const admissionDate = new Date(deceasedData.date_admitted);
     const today = new Date();
     return Math.ceil((today - admissionDate) / (1000 * 60 * 60 * 24));
   };
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <ModalOverlay onClick={onClose}>
       <ModalContainer onClick={(e) => e.stopPropagation()}>
@@ -487,7 +471,7 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
             <X size={18} />
           </CloseButton>
         </ModalHeader>
-        
+
         <ModalBody>
           {/* Summary Stats */}
           <Grid cols="1fr 1fr">
@@ -500,14 +484,14 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
               <StatLabel>Days in Morgue</StatLabel>
             </StatCard>
           </Grid>
-          
+
           {/* Rate Settings */}
           <Section>
             <SectionTitle>
               <DollarSign size={16} />
               Rate Configuration
             </SectionTitle>
-            
+
             <Grid cols="1fr 1fr">
               <FormGroup>
                 <Label>Rate Profile</Label>
@@ -517,7 +501,7 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
                   <option value="custom">Custom</option>
                 </Select>
               </FormGroup>
-              
+
               <FormGroup>
                 <Label>Currency</Label>
                 <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
@@ -526,7 +510,7 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
                 </Select>
               </FormGroup>
             </Grid>
-            
+
             <Grid cols="1fr 1fr">
               <FormGroup>
                 <Label>Billing Type</Label>
@@ -535,7 +519,7 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
                   <option value="hourly">Hourly Rate</option>
                 </Select>
               </FormGroup>
-              
+
               {chargeType === 'daily' ? (
                 <FormGroup>
                   <Label>Daily Rate ({currency})</Label>
@@ -548,7 +532,7 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
                 </FormGroup>
               )}
             </Grid>
-            
+
             {currency === 'USD' && (
               <FormGroup>
                 <Label>USD to KES Exchange Rate</Label>
@@ -556,16 +540,16 @@ const ChargeSettingsModal = ({ isOpen, onClose, deceasedId, deceasedData, onUpda
               </FormGroup>
             )}
           </Section>
-          
+
           <AlertBox type="warning">
             <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <div>
-              <strong>Note:</strong> Changing these settings will apply the new rate to future charges. 
+              <strong>Note:</strong> Changing these settings will apply the new rate to future charges.
               Existing charges will remain unchanged.
             </div>
           </AlertBox>
         </ModalBody>
-        
+
         <ModalFooter>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
           <PrimaryButton onClick={handleSave} disabled={isSaving || isLoading}>

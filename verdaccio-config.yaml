@@ -1,0 +1,54 @@
+# Verdaccio Configuration for Restpoint
+# Place this at ~/.config/verdaccio/config.yaml or /etc/verdaccio/config.yaml
+
+storage: ./storage
+auth:
+  htpasswd:
+    file: ./htpasswd
+    max_users: 1000
+
+# Increase package size limits
+max_body_size: 500mb
+
+# Allow all users to access all packages
+packages:
+  '@montezuma/*':
+    access: $all
+    publish: $all
+    proxy: $all
+  '**':
+    access: $all
+    publish: $all
+    proxy: $all
+
+# Increase upload limits
+middlewares:
+  upload:
+    max_file_size: 100mb
+    max_body_size: 500mb
+
+# Performance settings
+listen:
+  - 0.0.0.0:4873
+
+# Logging
+logs:
+  - { type: stdout, format: pretty, level: http }
+  - { type: file, path: ./logs/verdaccio.log, level: info }
+
+# Cache settings
+cache: true
+max_age: 3600
+max_items: 1000
+
+# Security
+security:
+  api:
+    jwt:
+      sign: { expiresIn: 24h, notBefore: 0 }
+    allow_access_by_token: true
+
+# Web UI
+web:
+  title: "Restpoint Private Registry"
+  sort_packages: asc

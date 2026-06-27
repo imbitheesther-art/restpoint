@@ -18,9 +18,9 @@
     "migrate:tenant": "npx ts-node scripts/run-tenant-migrations.ts --tenant"
   },
   "dependencies": {
-    "@montezuma/shared-config": "file:../../packages/shared-config",
-    "@montezuma/shared-logger": "file:../../packages/shared-logger",
-    "@montezuma/shared-services": "file:../../packages/shared-services",
+    "@montezuma/shared-config": "^1.0.0",
+    "@montezuma/shared-logger": "^1.0.0",
+    "@montezuma/shared-services": "^1.0.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.61.2",
@@ -52,6 +52,6 @@
   "author": "Peter Mumo",
   "license": "ISC",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   }
 }

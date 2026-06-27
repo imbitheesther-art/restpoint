@@ -1,0 +1,112 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend dependencies (huge)
+FrontendClient/client/node_modules/
+FrontendClient/client/package-lock.json
+FrontendClient/client/.vite/
+FrontendClient/client/dist/
+FrontendClient/client/build/
+
+# Backend dependencies in services
+services/*/node_modules/
+services/*/package-lock.json
+packages/*/node_modules/
+packages/*/package-lock.json
+
+# Build outputs
+dist/
+build/
+*.tgz
+out/
+.next/
+.nuxt/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+**/logs/
+**/*.log
+
+# Uploads (large files)
+services/*/uploads/
+!services/*/uploads/.gitkeep
+**/uploads/
+**/logo-*.jpg
+**/logo-*.jpeg
+**/logo-*.png
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+backups/
+*.backup
+
+# TypeScript
+*.tsbuildinfo
+*.d.ts
+!*.d.ts
+
+# Package lock (optional - remove if you want to publish with lock file)
+# package-lock.json
+
+# Documentation build
+docs/_build/
+
+# Local npm registry files
+.npmrc
+.verdaccio/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Scanner service (Go binary)
+services/scanner-service/bin/
+services/scanner-service/cmd/
+
+# Misc
+*.pem
+*.key
+*.cert

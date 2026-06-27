@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import { 
-  User, Calendar, Clock,Info  ,  Phone, BookText, PlusCircle, Trash2, X, Loader2,
+import {
+  User, Calendar, Clock, Info, Phone, BookText, PlusCircle, Trash2, X, Loader2,
   Users, Eye, Search, Filter, Mail, MapPin, UserPlus, UserCheck, UserMinus
 } from 'lucide-react';
-
-// API Base URL
-const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
+import api from '../../api/axios';
 
 // Modern, softer color palette
 const Colors = {
@@ -15,25 +13,25 @@ const Colors = {
   primary: '#4F46E5',
   primaryLight: '#6366F1',
   primaryDark: '#4338CA',
-  
+
   // Background colors
   background: '#F9FAFB',
   cardBg: '#FFFFFF',
   cardHover: '#F8FAFC',
   border: '#E2E8F0',
   borderLight: '#F1F5F9',
-  
+
   // Text colors
   textPrimary: '#1E293B',
   textSecondary: '#64748B',
   textLight: '#94A3B8',
-  
+
   // Status colors - Softer variants
   success: '#0EA5E9', // Sky blue
   warning: '#F97316', // Orange
   danger: '#EF4444',
   info: '#06B6D4',
-  
+
   // Accent colors
   accentPurple: '#8B5CF6',
   accentTeal: '#14B8A6',
@@ -312,14 +310,14 @@ const VisitorAvatar = styled.div`
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, ${props => 
+  background: linear-gradient(135deg, ${props =>
     props.relationshipType === 'family' ? Colors.accentPurple :
-    props.relationshipType === 'friend' ? Colors.success :
-    Colors.primary
-  } 0%, ${props => 
+      props.relationshipType === 'friend' ? Colors.success :
+        Colors.primary
+  } 0%, ${props =>
     props.relationshipType === 'family' ? '#A78BFA' :
-    props.relationshipType === 'friend' ? '#38BDF8' :
-    Colors.primaryLight
+      props.relationshipType === 'friend' ? '#38BDF8' :
+        Colors.primaryLight
   } 100%);
   display: flex;
   align-items: center;
@@ -802,9 +800,9 @@ const AddVisitorModal = ({ show, onClose, onAddVisitor, isSubmitting }) => {
             />
           </FormGroup>
 
-          <div style={{ 
-            padding: '0.75rem', 
-            background: Colors.background, 
+          <div style={{
+            padding: '0.75rem',
+            background: Colors.background,
             borderRadius: '0.75rem',
             fontSize: '0.75rem',
             color: Colors.textSecondary,
@@ -817,13 +815,13 @@ const AddVisitorModal = ({ show, onClose, onAddVisitor, isSubmitting }) => {
             <SecondaryButton type="button" onClick={onClose}>
               Cancel
             </SecondaryButton>
-            <PrimaryButton 
-              type="submit" 
+            <PrimaryButton
+              type="submit"
               disabled={isSubmitting || !formData.full_name.trim()}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> 
+                  <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                   Adding...
                 </>
               ) : (
@@ -839,9 +837,9 @@ const AddVisitorModal = ({ show, onClose, onAddVisitor, isSubmitting }) => {
 
 // Main VisitorsSection Component
 const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, apiResponse }) => {
-  const { id, deceasedId } = useParams();
+  const { id, deceasedId, slug } = useParams();
   const currentDeceasedId = deceasedId || id;
-  
+
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
@@ -849,34 +847,34 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
   const [filter, setFilter] = useState('all');
 
   const hasVisitors = visitors && visitors.length > 0;
-  
+
   // Calculate stats
   const totalVisitors = visitors.length;
-  const familyVisitors = visitors.filter(v => 
+  const familyVisitors = visitors.filter(v =>
     v.relationship && v.relationship.toLowerCase().includes('family')
   ).length;
-  const friendVisitors = visitors.filter(v => 
+  const friendVisitors = visitors.filter(v =>
     v.relationship && v.relationship.toLowerCase().includes('friend')
   ).length;
 
   // Filter visitors based on search and filter
   const filteredVisitors = visitors.filter(visitor => {
     const matchesSearch = visitor.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (visitor.relationship && visitor.relationship.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         visitor.reason_for_visit.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      (visitor.relationship && visitor.relationship.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      visitor.reason_for_visit.toLowerCase().includes(searchTerm.toLowerCase());
+
     if (filter === 'all') return matchesSearch;
     if (filter === 'family') return matchesSearch && visitor.relationship && visitor.relationship.toLowerCase().includes('family');
     if (filter === 'friend') return matchesSearch && visitor.relationship && visitor.relationship.toLowerCase().includes('friend');
-    
+
     return matchesSearch;
   });
 
   const handleAddVisitor = async (newVisitorData) => {
     if (!currentDeceasedId) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Cannot add visitor: Missing deceased information.' 
+      setMessage({
+        type: 'error',
+        text: 'Cannot add visitor: Missing deceased information.'
       });
       return;
     }
@@ -884,33 +882,27 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/visitors/register-visitor`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...newVisitorData,
-          deceased_id: currentDeceasedId,
-          check_in_time: new Date().toISOString(),
-          visitor_type: 'walk-in'
-        }),
+      const response = await api.post(`/api/v2/restpoint/visitors/register-visitor`, {
+        ...newVisitorData,
+        deceased_id: currentDeceasedId,
+        check_in_time: new Date().toISOString(),
+        visitor_type: 'walk-in'
+      }, {
+        headers: { 'x-tenant-slug': slug || 'system_shared' }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add visitor');
+      if (response.data?.success) {
+        setMessage({ type: 'success', text: '✅ Visitor added successfully' });
+        setShowModal(false);
+        if (onAdd) onAdd();
+      } else {
+        throw new Error(response.data?.message || 'Failed to add visitor');
       }
-
-      const result = await response.json();
-      setMessage({ type: 'success', text: '✅ Visitor added successfully' });
-      setShowModal(false);
-      if (onAdd) onAdd();
     } catch (error) {
       console.error('Error adding visitor:', error);
-      setMessage({ 
-        type: 'error', 
-        text: `❌ ${error.message || 'Failed to add visitor'}` 
+      setMessage({
+        type: 'error',
+        text: `❌ ${error.response?.data?.message || error.message || 'Failed to add visitor'}`
       });
     } finally {
       setIsSubmitting(false);
@@ -924,19 +916,19 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
 
     setMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/visitors/${visitorId}`, {
-        method: 'DELETE',
+      const response = await api.delete(`/api/v2/restpoint/visitors/${visitorId}`, {
+        headers: { 'x-tenant-slug': slug || 'system_shared' }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete visitor');
+      if (response.data?.success) {
+        if (onDelete) onDelete();
+        setMessage({ type: 'success', text: '✅ Visitor removed successfully' });
+      } else {
+        throw new Error(response.data?.message || 'Failed to delete visitor');
       }
-
-      if (onDelete) onDelete();
-      setMessage({ type: 'success', text: '✅ Visitor removed successfully' });
     } catch (error) {
       console.error('Error deleting visitor:', error);
-      setMessage({ type: 'error', text: '❌ Failed to delete visitor' });
+      setMessage({ type: 'error', text: `❌ ${error.response?.data?.message || 'Failed to delete visitor'}` });
     }
   };
 
@@ -972,8 +964,8 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
             <p>Manage visitor records for this deceased</p>
           </TitleContent>
         </TitleSection>
-        
-        <ActionButton 
+
+        <ActionButton
           onClick={() => setShowModal(true)}
           disabled={!currentDeceasedId || isLoading}
         >
@@ -999,7 +991,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
               <p className="stat-label">Total Visitors</p>
             </div>
           </StatCard>
-          
+
           <StatCard>
             <div className="stat-icon" style={{ background: Colors.accentPurple }}>
               <Users size={16} />
@@ -1009,7 +1001,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
               <p className="stat-label">Family</p>
             </div>
           </StatCard>
-          
+
           <StatCard>
             <div className="stat-icon" style={{ background: Colors.success }}>
               <User size={16} />
@@ -1041,7 +1033,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </SearchInput>
-          
+
           <FilterSelect value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">All Visitors</option>
             <option value="family">Family Only</option>
@@ -1053,10 +1045,10 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
       {/* Loading State */}
       {isLoading && (
         <EmptyState>
-          <Loader2 size={24} style={{ 
+          <Loader2 size={24} style={{
             animation: 'spin 1s linear infinite',
             color: Colors.primary,
-            margin: '0 auto 1rem' 
+            margin: '0 auto 1rem'
           }} />
           <p>Loading visitors...</p>
         </EmptyState>
@@ -1068,7 +1060,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
           {filteredVisitors.map((visitor) => {
             const { date, time } = formatTime(visitor.check_in_time);
             const relationshipType = getRelationshipType(visitor.relationship);
-            
+
             return (
               <VisitorCard key={visitor.visitor_id || visitor.id}>
                 <CardHeader>
@@ -1095,7 +1087,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
                       <span><strong>Contact:</strong> {visitor.contact}</span>
                     </InfoRow>
                   )}
-                  
+
                   {visitor.reason_for_visit && (
                     <InfoRow>
                       <BookText size={14} />
@@ -1107,7 +1099,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
                     <User size={14} />
                     <span><strong>Type:</strong> {visitor.visitor_type || 'Walk-in'}</span>
                   </InfoRow>
-                  
+
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                     <DateBadge>
                       <Calendar size={12} /> {date}
@@ -1128,7 +1120,7 @@ const VisitorsSection = ({ visitors = [], onAdd, onDelete, isLoading, error, api
           </div>
           <h3>No Visitors Yet</h3>
           <p>Visitors are optional. Add them if available, or you can proceed without.</p>
-          <ActionButton 
+          <ActionButton
             onClick={() => setShowModal(true)}
             disabled={!currentDeceasedId}
             style={{ margin: '0 auto' }}

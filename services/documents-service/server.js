@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
     const tenantSlug = req.headers['x-tenant-slug'] || 'system_shared';
     const deceasedId = req.params.deceasedId || req.body.deceasedId || 'unknown';
     const uploadPath = path.join(__dirname, 'uploads', tenantSlug, deceasedId);
-    
+
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -37,8 +37,8 @@ const upload = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 
-                          'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -87,7 +87,7 @@ app.get('/api/v1/restpoint/documents/:deceasedId', async (req, res) => {
   try {
     const { deceasedId } = req.params;
     const tenantSlug = req.tenantSlug;
-    
+
     if (!deceasedId) {
       return res.status(400).json({ success: false, message: 'Deceased ID is required' });
     }
@@ -109,9 +109,9 @@ app.get('/api/v1/restpoint/documents/:deceasedId', async (req, res) => {
       WHERE deceased_id = ? 
       ORDER BY uploaded_at DESC
     `;
-    
+
     const documents = await safeQuery(query, [deceasedId]);
-    
+
     // Format documents for frontend
     const formattedDocs = documents.map(doc => ({
       documentId: doc.document_id,
@@ -141,7 +141,7 @@ app.get('/api/v1/restpoint/documents/:deceasedId', async (req, res) => {
 });
 
 // Upload a new document for a deceased
-app.post('/api/v1/restpoint/documents/:deceasedId/upload', upload.single('document'), async (req, res) => {
+app.post('/v1/restpoint/documents/:deceasedId/upload', upload.single('document'), async (req, res) => {
   try {
     const { deceasedId } = req.params;
     const { category, uploadedBy } = req.body;
@@ -213,18 +213,18 @@ app.post('/api/v1/restpoint/documents/:deceasedId/upload', upload.single('docume
 });
 
 // Download/View a document
-app.get('/api/v1/restpoint/documents/download/:documentId', async (req, res) => {
+app.get('/v1/restpoint/documents/download/:documentId', async (req, res) => {
   try {
     const { documentId } = req.params;
-    
+
     const query = `
       SELECT stored_name, original_name, mime_type, file_path, deceased_id
       FROM documents 
       WHERE document_id = ?
     `;
-    
+
     const docs = await safeQuery(query, [documentId]);
-    
+
     if (!docs || docs.length === 0) {
       return res.status(404).json({ success: false, message: 'Document not found' });
     }
@@ -239,7 +239,7 @@ app.get('/api/v1/restpoint/documents/download/:documentId', async (req, res) => 
 
     res.setHeader('Content-Type', doc.mime_type);
     res.setHeader('Content-Disposition', `inline; filename="${doc.original_name}"`);
-    
+
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } catch (error) {
@@ -252,7 +252,7 @@ app.get('/api/v1/restpoint/documents/download/:documentId', async (req, res) => 
 });
 
 // Delete a document
-app.delete('/api/v1/restpoint/documents/:deceasedId/:documentId', async (req, res) => {
+app.delete('/v1/restpoint/documents/:deceasedId/:documentId', async (req, res) => {
   try {
     const { documentId, deceasedId } = req.params;
     const { deletedBy } = req.body;
@@ -293,10 +293,10 @@ app.delete('/api/v1/restpoint/documents/:deceasedId/:documentId', async (req, re
 });
 
 // Share document via email
-app.post('/api/v1/restpoint/documents/share', async (req, res) => {
+app.post('/v1/restpoint/documents/share', async (req, res) => {
   try {
     const { documentId, recipientEmail, message, documentName } = req.body;
-    
+
     // In production, integrate with email service (SendGrid, AWS SES, etc.)
     // For now, log the share request
     console.log(`Document share request: ${documentName} to ${recipientEmail}`);
@@ -316,20 +316,9 @@ app.post('/api/v1/restpoint/documents/share', async (req, res) => {
 });
 
 // ============ ERROR HANDLERS ============
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.method} ${req.url} not found`
-  });
-});
-
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal server error'
-  });
-});
+const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // ============ SERVER STARTUP ============
 const startServer = async () => {

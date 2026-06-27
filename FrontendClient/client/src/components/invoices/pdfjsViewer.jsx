@@ -44,7 +44,7 @@ const PdfJsViewer = ({ pdfUrl, invoice, onClose }) => {
       const page = await pdf.getPage(pageNum);
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      
+
       const viewport = page.getViewport({ scale });
       canvas.width = viewport.width;
       canvas.height = viewport.height;
@@ -77,7 +77,7 @@ const PdfJsViewer = ({ pdfUrl, invoice, onClose }) => {
 
   if (loading) {
     return (
-      <div className="modal fade show d-block" style={{backgroundColor: 'rgba(0,0,0,0.8)'}}>
+      <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
         <div className="modal-dialog modal-xl">
           <div className="modal-content bg-dark text-white">
             <div className="modal-body text-center py-5">
@@ -91,7 +91,7 @@ const PdfJsViewer = ({ pdfUrl, invoice, onClose }) => {
   }
 
   return (
-    <div className="modal fade show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)'}}>
+    <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}>
       <div className="modal-dialog modal-fullscreen">
         <div className="modal-content bg-dark border-0">
           {/* Header */}
@@ -101,7 +101,7 @@ const PdfJsViewer = ({ pdfUrl, invoice, onClose }) => {
                 <i className="fas fa-file-pdf text-danger me-2"></i>
                 {invoice?.invoice_number}
               </h5>
-              
+
               {/* Page Controls */}
               <div className="btn-group me-3">
                 <button className="btn btn-outline-light btn-sm" onClick={prevPage} disabled={currentPage <= 1}>
@@ -143,13 +143,17 @@ const PdfJsViewer = ({ pdfUrl, invoice, onClose }) => {
             </div>
           </div>
 
+
           {/* Footer */}
+
           <div className="modal-footer bg-dark border-secondary">
             <small className="text-muted">
-              {invoice?.deceased_name} • Total: KES {invoice?.total_amount} • 
+              {invoice?.deceased_name} • Total: KES {invoice?.total_amount} •
               Use mouse wheel to zoom • Drag to navigate
             </small>
           </div>
+
+
         </div>
       </div>
     </div>

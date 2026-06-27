@@ -71,6 +71,14 @@ make logs              # View logs
 3. Data protection for high-profile records
 4. Deletion policies with retention
 
+### Data Privacy & Retention Policy
+- **Soft Delete Only**: No hard DELETE operations — all deletions set `is_deleted=TRUE, status='deleted'`
+- **Absolute Data Loss Prevention**: Records are never permanently removed without explicit admin action
+- **Audit Trail**: `created_at`, `updated_at` timestamps on all records
+- **Per-Tenant Isolation**: Each tenant's data lives in their own database — no cross-tenant leakage
+- **Export History**: Every Excel export is logged with tenant, user, timestamp, and record count
+- **Recoverable Deletions**: Soft-deleted records can be restored by setting `is_deleted=FALSE`
+
 ## Files Created
 
 ### Frontend Components

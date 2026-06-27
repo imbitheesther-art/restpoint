@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import styled, { keyframes, css } from 'styled-components';
 import {
@@ -879,7 +880,7 @@ const CurrencyDisplay = styled.div`
 const RegisterCoffin = () => {
   const fileInputRef = useRef(null);
   const webcamRef = useRef(null);
-  
+
   const [coffinData, setCoffinData] = useState({
     type: '',
     material: '',
@@ -892,7 +893,7 @@ const RegisterCoffin = () => {
     origin: '',
     category: 'locally_made'
   });
-  
+
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -902,6 +903,22 @@ const RegisterCoffin = () => {
   const [uploadMethod, setUploadMethod] = useState('gallery');
   const [facingMode, setFacingMode] = useState('environment');
   const [exchangeRate] = useState(150); // 1 USD = 150 KES
+  const { slug } = useParams();
+
+  // Get tenant slug from URL params or localStorage
+  const getTenantSlug = () => {
+    return slug ||
+      localStorage.getItem('tenantSlug') ||
+      localStorage.getItem('tenant_slug') ||
+      (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.tenantSlug || user.tenant?.slug || 'default';
+        } catch {
+          return 'default';
+        }
+      })();
+  };
 
   // Get username from localStorage with fallback
   const getUsername = () => {
@@ -937,7 +954,7 @@ const RegisterCoffin = () => {
       }
 
       newImageFiles.push(file);
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         newImagePreviews.push(reader.result);
@@ -977,14 +994,14 @@ const RegisterCoffin = () => {
             const file = new File([blob], `coffin-photo-${Date.now()}.jpg`, {
               type: 'image/jpeg'
             });
-            
+
             const newImageFiles = [...imageFiles, file];
             const newImagePreviews = [...imagePreviews, imageSrc];
-            
+
             setImageFiles(newImageFiles);
             setImagePreviews(newImagePreviews);
             setShowCamera(false);
-            
+
             setSuccessMessage('Photo captured successfully!');
             setTimeout(() => setSuccessMessage(null), 3000);
           })
@@ -1061,7 +1078,7 @@ const RegisterCoffin = () => {
 
     try {
       console.log('Sending request to server...');
-      
+
       const registerUrl = `${env.FULL_API_URL}${ENDPOINTS.COFFIN.BASE}/register`;
       const response = await fetch(registerUrl, {
         method: 'POST',
@@ -1081,7 +1098,7 @@ const RegisterCoffin = () => {
 
       // Success!
       setSuccessMessage(result.message || 'Coffin registered successfully! ⚰️✅');
-      
+
       // Reset form
       setCoffinData({
         type: '',
@@ -1097,7 +1114,7 @@ const RegisterCoffin = () => {
       });
       setImageFiles([]);
       setImagePreviews([]);
-      
+
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -1110,7 +1127,7 @@ const RegisterCoffin = () => {
     } catch (err) {
       console.error('Error registering coffin:', err);
       setError(err.message || 'An unexpected error occurred. Please try again.');
-      
+
       // Auto-hide error after 5 seconds
       setTimeout(() => {
         setError(null);
@@ -1361,7 +1378,7 @@ const RegisterCoffin = () => {
                   <Form.Text>
                     Enter price in {coffinData.currency}
                   </Form.Text>
-                  
+
                   {/* Price Conversion Display */}
                   {coffinData.exact_price && (
                     <CurrencyDisplay>
@@ -1416,7 +1433,7 @@ const RegisterCoffin = () => {
                   <Form.Label>
                     <Image /> Coffin Images
                   </Form.Label>
-                  
+
                   {/* Upload Method Selection - Sleek Mobile Design */}
                   <UploadOptions>
                     <UploadOptionButton
@@ -1447,7 +1464,7 @@ const RegisterCoffin = () => {
                     style={{ display: 'none' }}
                     multiple
                   />
-                  
+
                   {/* Image Preview Area */}
                   <ImagePreviewContainer onClick={handleImageClick}>
                     {imagePreviews.length > 0 ? (
@@ -1495,9 +1512,9 @@ const RegisterCoffin = () => {
                       </div>
                     )}
                   </ImagePreviewContainer>
-                  
+
                   <Form.Text>
-                    {uploadMethod === 'camera' 
+                    {uploadMethod === 'camera'
                       ? 'Capture multiple photos from different angles for better documentation'
                       : 'Upload multiple images (JPG, PNG up to 5MB each)'
                     }
@@ -1520,6 +1537,45 @@ const RegisterCoffin = () => {
               </>
             )}
           </PrimaryButton>
+
+          {/* Back to Inventory Button */}
+          <Button
+            onClick={() => {
+              const tenantSlug = getTenantSlug();
+              navigate(`/tenant/${tenantSlug}/coffins`);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '1rem 2rem',
+              borderRadius: '0.75rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              background: 'transparent',
+              border: `2px solid ${Colors.mediumGray}`,
+              color: Colors.darkGray,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              width: '100%',
+              maxWidth: '300px',
+              margin: '1rem auto 0'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = Colors.accentTeal;
+              e.currentTarget.style.color = Colors.accentTeal;
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = Colors.mediumGray;
+              e.currentTarget.style.color = Colors.darkGray;
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <ArrowLeft size={18} />
+            Back to Inventory
+          </Button>
         </Form>
       </Card>
     </PageContainer>

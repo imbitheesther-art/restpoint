@@ -58,7 +58,7 @@ io.on("connection", (socket) => {
    */
   socket.on("join-tenant", (data) => {
     const { tenantSlug, userId, userRole } = data;
-    
+
     if (!tenantSlug) {
       socket.emit("error", { message: "Tenant slug required" });
       return;
@@ -73,7 +73,7 @@ io.on("connection", (socket) => {
     userRooms.set(socket.id, { tenantSlug, userId, userRole });
 
     console.log(`📡 Socket ${socket.id} joined tenant_${tenantSlug} as ${userRole}`);
-    
+
     socket.emit("joined", {
       room: tenantRoom,
       userId,
@@ -89,10 +89,10 @@ io.on("connection", (socket) => {
   socket.on("join-deceased", (data) => {
     const { tenantSlug, deceasedId } = data;
     const deceasedRoom = `deceased_${tenantSlug}_${deceasedId}`;
-    
+
     socket.join(deceasedRoom);
     console.log(`📡 Socket ${socket.id} joined ${deceasedRoom}`);
-    
+
     socket.emit("joined-deceased", { room: deceasedRoom, deceasedId });
   });
 
@@ -106,7 +106,7 @@ io.on("connection", (socket) => {
    */
   socket.on("deceased-admitted", (data) => {
     const { tenantSlug, deceasedId, fullName, admissionNumber, dateOfAdmission } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("notification:deceased-admitted", {
       deceasedId,
       fullName,
@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
       dateOfAdmission,
       timestamp: new Date()
     });
-    
+
     console.log(`✅ New admission: ${fullName} (${deceasedId})`);
   });
 
@@ -123,7 +123,7 @@ io.on("connection", (socket) => {
    */
   socket.on("deceased-embalmed", (data) => {
     const { tenantSlug, deceasedId, deceasedName, embalmerName } = data;
-    
+
     io.to(`deceased_${tenantSlug}_${deceasedId}`).emit("status:embalmed", {
       deceasedId,
       deceasedName,
@@ -144,7 +144,7 @@ io.on("connection", (socket) => {
    */
   socket.on("release-requested", (data) => {
     const { tenantSlug, deceasedId, deceasedName, requestedBy } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("notification:release-requested", {
       deceasedId,
       deceasedName,
@@ -160,7 +160,7 @@ io.on("connection", (socket) => {
    */
   socket.on("release-approved", (data) => {
     const { tenantSlug, deceasedId, deceasedName, approvedBy } = data;
-    
+
     io.to(`deceased_${tenantSlug}_${deceasedId}`).emit("status:release-approved", {
       deceasedId,
       deceasedName,
@@ -181,7 +181,7 @@ io.on("connection", (socket) => {
    */
   socket.on("deceased-released", (data) => {
     const { tenantSlug, deceasedId, deceasedName, releasedBy, releaseDate } = data;
-    
+
     io.to(`deceased_${tenantSlug}_${deceasedId}`).emit("status:released", {
       deceasedId,
       deceasedName,
@@ -203,7 +203,7 @@ io.on("connection", (socket) => {
    */
   socket.on("invoice-created", (data) => {
     const { tenantSlug, deceasedId, invoiceNumber, total, createdBy } = data;
-    
+
     io.to(`deceased_${tenantSlug}_${deceasedId}`).emit("notification:invoice-created", {
       invoiceNumber,
       total,
@@ -224,7 +224,7 @@ io.on("connection", (socket) => {
    */
   socket.on("payment-received", (data) => {
     const { tenantSlug, invoiceId, invoiceNumber, amount, paymentMethod, receivedBy } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("notification:payment-received", {
       invoiceId,
       invoiceNumber,
@@ -242,7 +242,7 @@ io.on("connection", (socket) => {
    */
   socket.on("invoice-overdue", (data) => {
     const { tenantSlug, invoiceNumber, daysOverdue, outstandingAmount } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("alert:invoice-overdue", {
       invoiceNumber,
       daysOverdue,
@@ -260,7 +260,7 @@ io.on("connection", (socket) => {
    */
   socket.on("stock-alert", (data) => {
     const { tenantSlug, itemType, itemName, currentStock, minimumStock } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("alert:low-stock", {
       itemType,
       itemName,
@@ -277,7 +277,7 @@ io.on("connection", (socket) => {
    */
   socket.on("coffin-used", (data) => {
     const { tenantSlug, coffinType, deceasedName, usedBy } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("notification:coffin-used", {
       coffinType,
       deceasedName,
@@ -295,7 +295,7 @@ io.on("connection", (socket) => {
    */
   socket.on("document-generated", (data) => {
     const { tenantSlug, deceasedId, documentType, documentName, generatedBy } = data;
-    
+
     io.to(`deceased_${tenantSlug}_${deceasedId}`).emit("notification:document-generated", {
       documentType,
       documentName,
@@ -316,7 +316,7 @@ io.on("connection", (socket) => {
    */
   socket.on("task-completed", (data) => {
     const { tenantSlug, taskType, deceasedId, deceasedName, completedBy } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("notification:task-completed", {
       taskType,
       deceasedId,
@@ -351,7 +351,7 @@ io.on("connection", (socket) => {
    */
   socket.on("broadcast-stats", (data) => {
     const { tenantSlug, stats } = data;
-    
+
     io.to(`tenant_${tenantSlug}`).emit("stats-update", {
       stats,
       timestamp: new Date()
@@ -388,11 +388,22 @@ app.post("/emit/:event", express.json(), (req, res) => {
     return res.status(400).json({ error: "Missing tenantSlug or data" });
   }
 
-  // Emit to tenant room
-  io.to(`tenant_${tenantSlug}`).emit(`notification:${event}`, {
-    ...data,
-    timestamp: new Date()
-  });
+  // Special events that don't get 'notification:' prefix (e.g., ticket events)
+  const noPrefixEvents = ['ticket_response', 'ticket_updated'];
+
+  if (noPrefixEvents.includes(event)) {
+    // Emit without prefix so frontend can listen directly
+    io.to(`tenant_${tenantSlug}`).emit(event, {
+      ...data,
+      timestamp: new Date()
+    });
+  } else {
+    // Regular events get 'notification:' prefix
+    io.to(`tenant_${tenantSlug}`).emit(`notification:${event}`, {
+      ...data,
+      timestamp: new Date()
+    });
+  }
 
   console.log(`📤 Emitted ${event} to tenant_${tenantSlug}`);
   res.json({ success: true, event, tenantSlug });

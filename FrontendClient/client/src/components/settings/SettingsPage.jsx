@@ -18,6 +18,8 @@ const Colors = {
   mpesa: '#4CAF50', surface: '#ffffff',
 };
 
+
+
 const tabs = [
   { id: 'organization', label: 'Organization', icon: Building2 },
   { id: 'mpesa', label: 'M-Pesa Config', icon: Smartphone },
@@ -250,7 +252,8 @@ const SettingsPage = () => {
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: Colors.light, borderRadius: '10px', padding: '4px', border: `1px solid ${Colors.border}`, overflowX: 'auto' }}>
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ flex: 1, minWidth: '100px', padding: '0.6rem 0.75rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s',
+            style={{
+              flex: 1, minWidth: '100px', padding: '0.6rem 0.75rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s',
               background: activeTab === tab.id ? 'white' : 'transparent',
               color: activeTab === tab.id ? Colors.primary : Colors.textMuted,
               boxShadow: activeTab === tab.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
@@ -575,7 +578,8 @@ const SettingsPage = () => {
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: '0.9rem', fontWeight: '700', color: Colors.text }}>{formatCurrency(payment.amount)}</div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px', textTransform: 'uppercase',
+                      <span style={{
+                        fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px', textTransform: 'uppercase',
                         background: payment.status === 'completed' ? 'rgba(34,197,94,0.1)' : payment.status === 'pending' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
                         color: payment.status === 'completed' ? Colors.success : payment.status === 'pending' ? Colors.warning : Colors.danger,
                       }}>
@@ -602,16 +606,16 @@ const SettingsPage = () => {
             </p>
 
             {/* Integration Card */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', 
-              border: '1px solid #bbf7d0', 
-              borderRadius: '12px', 
+            <div style={{
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+              border: '1px solid #bbf7d0',
+              borderRadius: '12px',
               padding: '1.5rem',
               marginBottom: '1.5rem',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ 
-                  width: '48px', height: '48px', borderRadius: '12px', 
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
                   background: '#2CA01C', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 4px 12px rgba(44,160,28,0.3)',
                 }}>
@@ -622,7 +626,7 @@ const SettingsPage = () => {
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#15803d' }}>Accounting & Financial Management</p>
                 </div>
               </div>
-              
+
               <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {[
                   'Auto-sync invoices and payments',
@@ -639,10 +643,10 @@ const SettingsPage = () => {
               </div>
 
               {/* Pricing */}
-              <div style={{ 
-                background: 'white', 
-                border: '2px solid #2CA01C', 
-                borderRadius: '10px', 
+              <div style={{
+                background: 'white',
+                border: '2px solid #2CA01C',
+                borderRadius: '10px',
                 padding: '1.25rem',
                 textAlign: 'center',
               }}>
@@ -651,7 +655,7 @@ const SettingsPage = () => {
                   KES 50,000
                 </div>
                 <p style={{ fontSize: '0.8rem', color: Colors.textMuted, margin: '0 0 1rem' }}>One-time setup fee + monthly maintenance</p>
-                
+
                 <button style={{
                   width: '100%', padding: '0.75rem 2rem',
                   background: 'linear-gradient(135deg, #2CA01C 0%, #16a34a 100%)',
@@ -660,8 +664,8 @@ const SettingsPage = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                   boxShadow: '0 4px 12px rgba(44,160,28,0.3)',
                 }}
-                onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 20px rgba(44,160,28,0.4)'; }}
-                onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(44,160,28,0.3)'; }}
+                  onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 20px rgba(44,160,28,0.4)'; }}
+                  onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(44,160,28,0.3)'; }}
                 >
                   Contact Us to Integrate
                 </button>
@@ -672,11 +676,11 @@ const SettingsPage = () => {
             </div>
 
             {/* Status */}
-            <div style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.5rem', 
-              padding: '0.75rem 1rem', 
-              background: 'rgba(245,158,11,0.08)', 
-              border: '1px solid rgba(245,158,11,0.2)', 
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              background: 'rgba(245,158,11,0.08)',
+              border: '1px solid rgba(245,158,11,0.2)',
               borderRadius: '8px',
             }}>
               <AlertCircle size={16} color={Colors.warning} />

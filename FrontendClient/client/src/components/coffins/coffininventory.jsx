@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Card, Spinner, Row, Col, Badge, Button, Modal, Form,
   ListGroup, ListGroupItem, Alert, Carousel, InputGroup,
@@ -499,7 +499,7 @@ function Toast({ message, type, onClose }) {
   if (!visible) return null;
 
   const bgColor = type === 'success' ? '#10B981' : '#EF4444';
-  
+
   return (
     <div style={{
       position: 'fixed',
@@ -539,6 +539,7 @@ function Toast({ message, type, onClose }) {
 
 function CoffinInventory() {
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [coffins, setCoffins] = useState([]);
   const [recentAssignments, setRecentAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -561,6 +562,21 @@ function CoffinInventory() {
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
   const audioRef = useRef(null);
+
+  // Get tenant slug from URL params or localStorage
+  const getTenantSlug = () => {
+    return slug ||
+      localStorage.getItem('tenantSlug') ||
+      localStorage.getItem('tenant_slug') ||
+      (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.tenantSlug || user.tenant?.slug || 'default';
+        } catch {
+          return 'default';
+        }
+      })();
+  };
 
   const showToast = useCallback((message, type) => {
     setToast({ message, type });
@@ -660,7 +676,7 @@ function CoffinInventory() {
     });
 
     setLowStockCoffins(alerts);
-    
+
     if (alerts.length > 0 && !hasPlayedSound) {
       playAlertSound();
       setHasPlayedSound(true);
@@ -674,30 +690,30 @@ function CoffinInventory() {
     setLoading(true);
     try {
       const response = await api.get(ENDPOINTS.COFFINS.LIST, { timeout: 10000 });
-      
+
       if (response.data.success) {
         const processedCoffins = (response.data.data || []).map(coffin => {
           let images = [];
-          
+
           if (Array.isArray(coffin.image_urls)) {
             images = coffin.image_urls;
           } else if (typeof coffin.image_urls === 'string') {
             images = coffin.image_urls.split(',').map(url => url.trim());
           }
-          
+
           if (coffin.images && Array.isArray(coffin.images)) {
             images = [...images, ...coffin.images];
           }
-          
+
           images = [...new Set(images)].filter(url => url && url.trim() !== '');
-          
+
           return {
             ...coffin,
             images: images,
             primary_image: coffin.primary_image || images[0] || null
           };
         });
-        
+
         setCoffins(processedCoffins);
         setLastUpdated(new Date());
         showToast('Data loaded successfully!', 'success');
@@ -779,7 +795,10 @@ function CoffinInventory() {
   }, [coffins, checkLowStock]);
 
   // Handlers
-  const handleAddCoffin = () => navigate('/register-coffin');
+  const handleAddCoffin = () => {
+    const tenantSlug = getTenantSlug();
+    navigate(`/tenant/${tenantSlug}/coffins/register`);
+  };
   const handleDelete = async (coffin) => {
     setSelectedCoffin(coffin);
     setShowDeleteModal(true);
@@ -821,8 +840,8 @@ function CoffinInventory() {
     try {
       const response = await api.put(ENDPOINTS.COFFINS.UPDATE(selectedCoffin.coffin_id), editFormData);
       if (response.data.success) {
-        setCoffins(coffins.map(c => 
-          c.coffin_id === selectedCoffin.coffin_id 
+        setCoffins(coffins.map(c =>
+          c.coffin_id === selectedCoffin.coffin_id
             ? { ...c, ...editFormData }
             : c
         ));
@@ -853,13 +872,13 @@ function CoffinInventory() {
   // Render coffin images
   const renderCoffinImages = (coffin) => {
     let images = [];
-    
+
     if (Array.isArray(coffin.image_urls)) {
       images = coffin.image_urls;
     } else if (typeof coffin.image_urls === 'string') {
       images = coffin.image_urls.split(',').map(url => url.trim());
     }
-    
+
     if (coffin.images && Array.isArray(coffin.images)) {
       images = [...images, ...coffin.images];
     }
@@ -876,7 +895,7 @@ function CoffinInventory() {
 
     if (images.length === 1) {
       return (
-        <img 
+        <img
           src={`http://localhost:5000${images[0]}`}
           alt={coffin.type}
           className="coffin-image"
@@ -909,7 +928,7 @@ function CoffinInventory() {
   const renderGridItem = (coffin) => {
     const stock = coffin.quantity || 0;
     const stockVariant = getStockVariant(stock);
-    
+
     return (
       <Col xs={12} sm={6} md={4} lg={3} key={coffin.coffin_id}>
         <div className="coffin-card">
@@ -930,23 +949,23 @@ function CoffinInventory() {
               <DollarSign size={12} className="me-1" />
               Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}
             </p>
-            
+
             <div className="d-flex justify-content-between align-items-center mt-3">
               <Badge bg={stockVariant} className="rounded-pill">
                 {stock} units
               </Badge>
               <div className="d-flex gap-1">
-                <Button 
-                  variant="light" 
-                  size="sm" 
+                <Button
+                  variant="light"
+                  size="sm"
                   className="p-1"
                   onClick={() => handleViewDetails(coffin)}
                 >
                   <Eye size={14} />
                 </Button>
-                <Button 
-                  variant="light" 
-                  size="sm" 
+                <Button
+                  variant="light"
+                  size="sm"
                   className="p-1"
                   onClick={() => handleEdit(coffin)}
                 >
@@ -963,7 +982,7 @@ function CoffinInventory() {
   return (
     <div className="inventory-container">
       <style>{styles}</style>
-      
+
       <Card className="stylish-card mb-4">
         <Card.Header className="card-header-styled">
           <div className="d-flex align-items-center">
@@ -972,38 +991,38 @@ function CoffinInventory() {
           </div>
           <div className="card-header-actions d-flex align-items-center flex-wrap gap-2">
             <div className="view-toggle d-none d-md-flex">
-              <button 
+              <button
                 className={`view-toggle-button ${viewMode === 'table' ? 'active' : ''}`}
                 onClick={() => setViewMode('table')}
               >
                 <List size={16} />
               </button>
-              <button 
+              <button
                 className={`view-toggle-button ${viewMode === 'grid' ? 'active' : ''}`}
                 onClick={() => setViewMode('grid')}
               >
                 <Grid3x3 size={16} />
               </button>
             </div>
-            <Button 
-              variant="light" 
-              size="sm" 
+            <Button
+              variant="light"
+              size="sm"
               className="modern-button"
               onClick={forceRefresh}
             >
               <RotateCw size={14} /> Refresh
             </Button>
-            <Button 
-              variant="light" 
-              size="sm" 
+            <Button
+              variant="light"
+              size="sm"
               className="modern-button"
               onClick={() => setShowAssignmentsModal(true)}
             >
               <UsersIcon size={14} /> Assigned
             </Button>
-            <Button 
-              variant="primary" 
-              size="sm" 
+            <Button
+              variant="primary"
+              size="sm"
               className="modern-button"
               onClick={handleAddCoffin}
             >
@@ -1056,8 +1075,8 @@ function CoffinInventory() {
               </div>
             </Col>
             <Col md={3}>
-              <Form.Select 
-                value={statusFilter} 
+              <Form.Select
+                value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="search-input-modern"
                 style={{ paddingLeft: '1rem' }}
@@ -1069,7 +1088,7 @@ function CoffinInventory() {
               </Form.Select>
             </Col>
             <Col md={3}>
-              <Button 
+              <Button
                 variant="light"
                 className="modern-button w-100"
                 onClick={handleExportToExcel}
@@ -1091,13 +1110,13 @@ function CoffinInventory() {
               Showing {filteredCoffins.length} coffins
             </small>
             <div className="view-toggle">
-              <button 
+              <button
                 className={`view-toggle-button ${viewMode === 'table' ? 'active' : ''}`}
                 onClick={() => setViewMode('table')}
               >
                 <List size={16} />
               </button>
-              <button 
+              <button
                 className={`view-toggle-button ${viewMode === 'grid' ? 'active' : ''}`}
                 onClick={() => setViewMode('grid')}
               >
@@ -1117,8 +1136,8 @@ function CoffinInventory() {
               <Package size={48} className="mb-3 text-muted" />
               <h5 className="mb-2">No coffins found</h5>
               <p className="text-muted mb-3">Try adjusting your search or filters</p>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 className="modern-button"
                 onClick={handleAddCoffin}
               >
@@ -1151,13 +1170,13 @@ function CoffinInventory() {
                       const stock = coffin.quantity || 0;
                       const stockPercentage = getStockPercentage(stock);
                       const stockVariant = getStockVariant(stock);
-                      
+
                       return (
                         <tr key={coffin.coffin_id}>
                           <td>
                             <div className="d-flex align-items-center">
-                              <div className="bg-light rounded me-2 d-flex align-items-center justify-content-center" 
-                                   style={{width: '40px', height: '40px'}}>
+                              <div className="bg-light rounded me-2 d-flex align-items-center justify-content-center"
+                                style={{ width: '40px', height: '40px' }}>
                                 <Package size={16} color="#64748B" />
                               </div>
                               <div>
@@ -1180,12 +1199,11 @@ function CoffinInventory() {
                                 <small>{Math.round(stockPercentage)}%</small>
                               </div>
                               <div className="stock-bar">
-                                <div 
-                                  className={`stock-fill ${
-                                    stockPercentage > 50 ? 'stock-high' : 
-                                    stockPercentage > 20 ? 'stock-medium' : 'stock-low'
-                                  }`}
-                                  style={{width: `${stockPercentage}%`}}
+                                <div
+                                  className={`stock-fill ${stockPercentage > 50 ? 'stock-high' :
+                                      stockPercentage > 20 ? 'stock-medium' : 'stock-low'
+                                    }`}
+                                  style={{ width: `${stockPercentage}%` }}
                                 />
                               </div>
                             </div>
@@ -1193,30 +1211,30 @@ function CoffinInventory() {
                           <td>
                             <Badge bg={stockVariant} className="rounded-pill">
                               {stockVariant === 'danger' ? 'Out' :
-                               stockVariant === 'warning' ? 'Low' : 'In Stock'}
+                                stockVariant === 'warning' ? 'Low' : 'In Stock'}
                             </Badge>
                           </td>
                           <td>
                             <div className="d-flex gap-1">
-                              <Button 
-                                variant="light" 
-                                size="sm" 
+                              <Button
+                                variant="light"
+                                size="sm"
                                 className="p-1"
                                 onClick={() => handleViewDetails(coffin)}
                               >
                                 <Eye size={14} />
                               </Button>
-                              <Button 
-                                variant="light" 
-                                size="sm" 
+                              <Button
+                                variant="light"
+                                size="sm"
                                 className="p-1"
                                 onClick={() => handleEdit(coffin)}
                               >
                                 <Edit size={14} />
                               </Button>
-                              <Button 
-                                variant="light" 
-                                size="sm" 
+                              <Button
+                                variant="light"
+                                size="sm"
                                 className="p-1"
                                 onClick={() => handleDelete(coffin)}
                                 disabled={stock > 0}
@@ -1326,8 +1344,8 @@ function CoffinInventory() {
           <Button variant="light" onClick={() => setShowDeleteModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
+          <Button
+            variant="danger"
             onClick={confirmDelete}
             disabled={selectedCoffin?.quantity > 0}
           >
@@ -1349,7 +1367,7 @@ function CoffinInventory() {
                   <Form.Label>Model Type</Form.Label>
                   <Form.Control
                     value={editFormData.type}
-                    onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -1359,7 +1377,7 @@ function CoffinInventory() {
                   <Form.Label>Material</Form.Label>
                   <Form.Control
                     value={editFormData.material}
-                    onChange={(e) => setEditFormData({...editFormData, material: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, material: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -1372,7 +1390,7 @@ function CoffinInventory() {
                   <Form.Control
                     type="number"
                     value={editFormData.exact_price}
-                    onChange={(e) => setEditFormData({...editFormData, exact_price: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, exact_price: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -1383,7 +1401,7 @@ function CoffinInventory() {
                   <Form.Control
                     type="number"
                     value={editFormData.quantity}
-                    onChange={(e) => setEditFormData({...editFormData, quantity: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
                     required
                   />
                 </Form.Group>

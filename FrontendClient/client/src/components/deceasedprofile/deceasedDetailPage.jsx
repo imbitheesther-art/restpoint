@@ -540,16 +540,16 @@ const LoadingSpinner = styled.div`
 
 // Helper function to get tenant slug
 const getTenantSlug = () => {
-  return localStorage.getItem('tenantSlug') || 
-         localStorage.getItem('tenant_slug') ||
-         (() => {
-           try {
-             const user = JSON.parse(localStorage.getItem('user') || '{}');
-             return user.tenantSlug || user.tenant?.slug || 'default';
-           } catch {
-             return 'default';
-           }
-         })();
+  return localStorage.getItem('tenantSlug') ||
+    localStorage.getItem('tenant_slug') ||
+    (() => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return user.tenantSlug || user.tenant?.slug || 'default';
+      } catch {
+        return 'default';
+      }
+    })();
 };
 
 // Create axios instance with default headers
@@ -565,14 +565,14 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     const tenantSlug = getTenantSlug();
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     if (tenantSlug && tenantSlug !== 'default') {
       config.headers['x-tenant-slug'] = tenantSlug;
     }
-    
+
     console.log('📡 API Request:', config.method, config.url);
     return config;
   },
@@ -790,7 +790,7 @@ const DeceasedReport = ({ deceased, onClose }) => {
           <div style={{ textAlign: 'center', marginBottom: '2rem', paddingBottom: '1rem', borderBottom: `2px solid ${Colors.accentBlue}` }}>
             <h2 style={{ margin: '0 0 0.5rem 0', color: Colors.primaryDark }}>{deceased.full_name || 'Unknown'}</h2>
             <p style={{ margin: 0, color: Colors.textMuted, fontSize: '0.9rem' }}>
-              Deceased ID: {deceased.deceased_id || deceased.id || '-'} | 
+              Deceased ID: {deceased.deceased_id || deceased.id || '-'} |
               Generated: {new Date().toLocaleString()}
             </p>
           </div>
@@ -946,7 +946,7 @@ const DeceasedDetails = () => {
     try {
       const response = await apiClient.get(`/deceased-id/${id}`);
       console.log('📦 API Response:', response.data);
-      
+
       const apiData = response.data?.data || response.data || {};
 
       const normalizedData = {
@@ -1291,9 +1291,9 @@ const DeceasedDetails = () => {
 
           <Card>
             <CardTitle><Users size={14} /> Next of Kin</CardTitle>
-            <div style={{ 
-              marginBottom: '1rem', 
-              padding: '0.75rem', 
+            <div style={{
+              marginBottom: '1rem',
+              padding: '0.75rem',
               background: Colors.chargeSettingGradient,
               borderRadius: '0.5rem',
               cursor: 'pointer',
@@ -1304,15 +1304,15 @@ const DeceasedDetails = () => {
               color: 'white',
               boxShadow: '0 2px 8px rgba(107, 33, 165, 0.3)'
             }}
-            onClick={openChargeSettingsModal}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 33, 165, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(107, 33, 165, 0.3)';
-            }}
+              onClick={openChargeSettingsModal}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 33, 165, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(107, 33, 165, 0.3)';
+              }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Settings size={16} />

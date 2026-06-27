@@ -289,8 +289,8 @@ const FilterContainer = styled.div`
     gap: 0.8rem;
     padding: 0.8rem;
     ${({ showFilters }) =>
-      !showFilters &&
-      css`
+    !showFilters &&
+    css`
         display: none;
       `}
   }
@@ -518,18 +518,18 @@ const StatusIcon = styled.div`
   }};
   svg {
     color: ${(props) => {
-      return props.status === 'success'
-        ? props.type === 'kin'
-          ? Colors.kinSuccess
-          : props.type === 'autopsy'
-            ? Colors.autopsySuccess
-            : Colors.successGreen
-        : props.type === 'kin'
-          ? Colors.kinDanger
-          : props.type === 'autopsy'
-            ? Colors.autopsyDanger
-            : Colors.dangerRed;
-    }};
+    return props.status === 'success'
+      ? props.type === 'kin'
+        ? Colors.kinSuccess
+        : props.type === 'autopsy'
+          ? Colors.autopsySuccess
+          : Colors.successGreen
+      : props.type === 'kin'
+        ? Colors.kinDanger
+        : props.type === 'autopsy'
+          ? Colors.autopsyDanger
+          : Colors.dangerRed;
+  }};
     font-size: 1.2rem;
     font-weight: 900;
   }
@@ -776,16 +776,16 @@ const extractYear = (dateString) => {
 
 // Helper to get tenant slug
 const getTenantSlug = () => {
-  return localStorage.getItem('tenantSlug') || 
-         localStorage.getItem('tenant_slug') ||
-         (() => {
-           try {
-             const user = JSON.parse(localStorage.getItem('user') || '{}');
-             return user.tenantSlug || user.tenant?.slug || 'default';
-           } catch {
-             return 'default';
-           }
-         })();
+  return localStorage.getItem('tenantSlug') ||
+    localStorage.getItem('tenant_slug') ||
+    (() => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return user.tenantSlug || user.tenant?.slug || 'default';
+      } catch {
+        return 'default';
+      }
+    })();
 };
 
 // Main Component
@@ -833,7 +833,7 @@ const AllDeceasedPage = () => {
       const response = await api.get(ENDPOINTS.DECEASED.LIST);
       const result = response.data;
       const records = result.data;
-      
+
       if (Array.isArray(records)) {
         const normalizedRecords = records
           .map((record) => ({
@@ -870,7 +870,7 @@ const AllDeceasedPage = () => {
     try {
       const token = localStorage.getItem('authToken');
       const tenantSlug = getTenantSlug();
-      
+
       const queryParams = new URLSearchParams();
       queryParams.append('period', exportOptions.period);
       if (exportOptions.startDate) queryParams.append('startDate', exportOptions.startDate);
@@ -884,15 +884,15 @@ const AllDeceasedPage = () => {
       queryParams.append('format', exportOptions.format);
 
       const url = `${ENDPOINTS.DECEASED.EXPORT_EXCEL}?${queryParams.toString()}`;
-      
+
       const response = await api.get(url, {
         responseType: 'blob',
       });
 
-      const blob = new Blob([response.data], { 
-        type: exportOptions.format === 'csv' 
-          ? 'text/csv' 
-          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      const blob = new Blob([response.data], {
+        type: exportOptions.format === 'csv'
+          ? 'text/csv'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -902,7 +902,7 @@ const AllDeceasedPage = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(downloadUrl);
-      
+
       toast.success('Report exported successfully!');
       setShowExportModal(false);
     } catch (error) {
@@ -975,13 +975,13 @@ const AllDeceasedPage = () => {
 
   const handleNewRegistrationClick = () => {
     const tenantSlug = getTenantSlug();
-    navigate(`/rptenant/${tenantSlug}/deceased/register`);
+    navigate(`/tenant/${tenantSlug}/deceased/register`);
   };
 
   const handleViewDetailsClick = (record) => {
     const tenantSlug = getTenantSlug();
     const deceasedId = record.deceased_id || record.id;
-    navigate(`/rptenant/${tenantSlug}/deceased/${deceasedId}`);
+    navigate(`/tenant/${tenantSlug}/deceased/${deceasedId}`);
   };
 
   const handleYearChange = (value) => {
@@ -1128,21 +1128,21 @@ const AllDeceasedPage = () => {
   return (
     <AppContainer>
       <ToastContainer position="top-right" autoClose={3000} />
-      
+
       <ContentWrapper>
         {/* Header Section - Now with Title + Search Bar + Buttons */}
         <HeaderSection>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1, flexWrap: 'wrap' }}>
-           
-            
+
+
             {/* Search Bar - Now placed here */}
             <SearchBarContainer>
               <SearchInputWrapper>
                 <Search size={16} />
-                <input 
-                  type="text" 
-                  placeholder="Search by name or admission number..." 
-                  value={searchTerm} 
+                <input
+                  type="text"
+                  placeholder="Search by name or admission number..."
+                  value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {searchTerm && (
@@ -1153,7 +1153,7 @@ const AllDeceasedPage = () => {
               </SearchInputWrapper>
             </SearchBarContainer>
           </div>
-          
+
           <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
             <PrimaryButton refresh onClick={fetchDeceased} disabled={loading}>
               {loading ? <AnimatedLoader2 size={18} /> : <RefreshCw size={18} />}Refresh

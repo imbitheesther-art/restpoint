@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/authApi';
 
 // ============================================================
-// PREMIUM STAFF LOGIN — Bank-Grade Professional Design
-// Elegant, secure, dignified
+// PREMIUM LOGIN PAGE — Fintech-Grade Design
+// Split-screen layout with branding image
 // ============================================================
 
 const THEME = {
@@ -37,9 +37,8 @@ const THEME = {
   },
 };
 
-// Logo
 const Logo = ({ size = 24, color = THEME.colors.ink }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ shrink: 0 }}>
     <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1.2" />
     <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1.2" />
     <circle cx="16" cy="16" r="2.5" fill={color} />
@@ -60,12 +59,10 @@ const Spinner = () => (
 
 const AlertMessage = ({ type, text }) => {
   if (!text) return null;
-  
   const config = {
     error: { bg: THEME.colors.redBg, color: THEME.colors.red, border: THEME.colors.redLine },
     success: { bg: THEME.colors.successBg, color: THEME.colors.success, border: '#DCE6D9' },
   };
-  
   const style = config[type] || config.error;
   
   return (
@@ -88,6 +85,7 @@ const AlertMessage = ({ type, text }) => {
 
 const PasswordInput = ({ value, onChange, showPassword, onToggle, hasError, disabled }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   
   return (
     <div style={{ marginBottom: '1.5rem' }}>
@@ -135,6 +133,8 @@ const PasswordInput = ({ value, onChange, showPassword, onToggle, hasError, disa
           type="button"
           onClick={onToggle}
           disabled={disabled}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           style={{
             position: 'absolute',
             right: '0.6rem',
@@ -143,15 +143,13 @@ const PasswordInput = ({ value, onChange, showPassword, onToggle, hasError, disa
             background: 'none',
             border: 'none',
             cursor: disabled ? 'not-allowed' : 'pointer',
-            color: THEME.colors.gray,
+            color: isHovered && !disabled ? THEME.colors.brass : THEME.colors.gray,
             padding: '0.4rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'color 0.2s ease',
           }}
-          onMouseEnter={(e) => !disabled && (e.target.style.color = THEME.colors.brass)}
-          onMouseLeave={(e) => !disabled && (e.target.style.color = THEME.colors.gray)}
         >
           {showPassword ? (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -175,8 +173,7 @@ const PasswordInput = ({ value, onChange, showPassword, onToggle, hasError, disa
   );
 };
 
-// Main Component
-export default function StaffLoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -263,355 +260,479 @@ export default function StaffLoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: THEME.colors.bone,
       fontFamily: THEME.typography.body,
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'row',
+      background: THEME.colors.bone,
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: ${THEME.colors.bone}; }
+        body { background: ${THEME.colors.bone}; overflow-x: hidden; }
         
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-        
         @keyframes popIn {
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
         }
         
+        .login-left-panel {
+          background: linear-gradient(135deg, #15171A 0%, #2E3F37 100%);
+          position: relative;
+          overflow: hidden;
+        }
+        .login-left-panel::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: url('https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=1200&q=80');
+          background-size: cover;
+          background-position: center;
+          opacity: 0.15;
+          mix-blend-mode: overlay;
+        }
+        .login-left-content {
+          position: relative;
+          z-index: 1;
+        }
         input:focus-visible, button:focus-visible {
           outline: 2px solid ${THEME.colors.brass};
           outline-offset: 2px;
         }
+
+        /* Essential Media Queries for Production Safety */
+        @media (max-width: 960px) {
+          .login-left-panel { display: none !important; }
+          .login-right-panel { flex: 1 1 100% !important; }
+        }
       `}</style>
-
-      {/* Navigation */}
-      <nav style={{
+      
+      {/* Left Panel - Image/Branding */}
+      <div className="login-left-panel" style={{
+        flex: '1 1 50%',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '1.2rem 2rem',
-        background: THEME.colors.white,
-        borderBottom: `1px solid ${THEME.colors.line}`,
-        animation: mounted ? 'fadeIn 0.5s ease 0ms both' : 'none',
+        justifyContent: 'center',
+        padding: '3rem',
+        position: 'relative',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <Logo size={22} color={THEME.colors.brass} />
-          <span style={{
-            fontFamily: THEME.typography.display,
-            fontSize: '1.1rem',
-            fontWeight: 500,
-            color: THEME.colors.ink,
-            letterSpacing: '-0.5px',
-          }}>Rest Point</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-          <span style={{ fontSize: '0.75rem', fontFamily: THEME.typography.mono, letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.brass }}>
-            Staff Portal
-          </span>
-          <button onClick={() => navigate('/register')} style={{
-            padding: '0.6rem 1.2rem',
-            fontSize: '0.85rem',
-            fontWeight: 500,
-            border: `1px solid ${THEME.colors.brass}`,
-            background: 'transparent',
-            color: THEME.colors.brass,
-            cursor: 'pointer',
-            borderRadius: '6px',
-            transition: 'all 0.2s ease',
-            fontFamily: THEME.typography.body,
-          }} onMouseEnter={(e) => { e.target.style.background = THEME.colors.brass; e.target.style.color = THEME.colors.white; }} onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = THEME.colors.brass; }}>
-            Start trial
-          </button>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
-        <div style={{
-          width: '100%',
-          maxWidth: '440px',
-          animation: mounted ? 'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) 100ms both' : 'none',
+        <div className="login-left-content" style={{
+          maxWidth: '480px',
+          color: THEME.colors.bone,
         }}>
-          
-          {/* Card */}
           <div style={{
-            background: THEME.colors.white,
-            borderRadius: '12px',
-            border: `1px solid ${THEME.colors.line}`,
-            padding: '2.8rem 2.2rem',
-            boxShadow: `0 20px 60px -16px ${THEME.colors.shadow}, 0 4px 12px ${THEME.colors.shadowMed}`,
+            fontFamily: THEME.typography.display,
+            fontSize: '3rem',
+            fontWeight: 500,
+            lineHeight: 1.1,
+            marginBottom: '1.5rem',
           }}>
-            
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '2.4rem' }}>
-              <div style={{
-                fontFamily: THEME.typography.display,
-                fontSize: '2.1rem',
-                fontWeight: 500,
-                color: THEME.colors.ink,
-                marginBottom: '0.6rem',
-                lineHeight: 1.1,
-              }}>
-                Welcome back
-              </div>
-              <p style={{
-                fontSize: '0.95rem',
-                color: THEME.colors.gray,
-                lineHeight: 1.6,
-              }}>
-                Sign in to manage your funeral home's operations with Rest Point.
-              </p>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit}>
-              <AlertMessage type={message.type} text={message.text} />
-
-              {/* Email Input */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.8rem',
-                  fontFamily: THEME.typography.mono,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: THEME.colors.brass,
-                  marginBottom: '0.6rem',
-                  fontWeight: 600,
-                }}>
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (message.text) setMessage({ type: '', text: '' }); }}
-                  placeholder="director@yourfuneralhome.co.ke"
-                  disabled={loading}
-                  autoFocus
-                  autoComplete="email"
-                  style={{
-                    width: '100%',
-                    padding: '1rem 1.1rem',
-                    fontSize: '0.95rem',
-                    fontFamily: THEME.typography.body,
-                    border: `2px solid ${hasError && !email ? THEME.colors.red : THEME.colors.line}`,
-                    borderRadius: '8px',
-                    background: THEME.colors.bone2,
-                    color: THEME.colors.ink,
-                    transition: 'all 0.2s ease',
-                    outline: 'none',
-                  }}
-                  onFocus={(e) => { e.target.style.borderColor = THEME.colors.brass; e.target.style.background = THEME.colors.white; e.target.style.boxShadow = `0 0 0 4px rgba(139,115,85,0.12)`; }}
-                  onBlur={(e) => { e.target.style.borderColor = hasError && !email ? THEME.colors.red : THEME.colors.line; e.target.style.background = THEME.colors.bone2; e.target.style.boxShadow = 'none'; }}
-                />
-                {hasError && !email && (
-                  <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.75rem', marginTop: '0.4rem' }}>
-                    Email is required.
-                  </span>
-                )}
-              </div>
-
-              {/* Password Input */}
-              <PasswordInput
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); if (message.text) setMessage({ type: '', text: '' }); }}
-                showPassword={showPassword}
-                onToggle={() => setShowPassword(!showPassword)}
-                hasError={hasError}
-                disabled={loading}
-              />
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || !isFormValid}
-                style={{
-                  width: '100%',
-                  padding: '1rem 1.2rem',
-                  fontSize: '0.95rem',
-                  fontWeight: 600,
-                  fontFamily: THEME.typography.body,
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: loading || !isFormValid ? THEME.colors.grayLight : THEME.colors.verdigris,
-                  color: THEME.colors.bone,
-                  cursor: loading || !isFormValid ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.7rem',
-                  minHeight: '52px',
-                  opacity: loading || !isFormValid ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!loading && isFormValid) {
-                    e.target.style.background = THEME.colors.verdigrisDark;
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = `0 8px 20px rgba(46,63,55,0.25)`;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading && isFormValid) {
-                    e.target.style.background = THEME.colors.verdigris;
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }
-                }}
-              >
-                {loading && <Spinner />}
-                <span>{loading ? 'Signing in...' : 'Sign in'}</span>
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              margin: '2rem 0',
-            }}>
-              <div style={{ flex: 1, height: '1px', background: THEME.colors.line }} />
-              <span style={{ fontSize: '0.8rem', color: THEME.colors.gray }}>or</span>
-              <div style={{ flex: 1, height: '1px', background: THEME.colors.line }} />
-            </div>
-
-            {/* Links */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              <button onClick={() => navigate('/forgot-password')} style={{
-                background: 'none',
-                border: 'none',
-                color: THEME.colors.brass,
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontFamily: THEME.typography.body,
-                fontWeight: 500,
-                textDecoration: 'underline',
-                transition: 'color 0.2s ease',
-              }} onMouseEnter={(e) => e.target.style.color = THEME.colors.brassLight} onMouseLeave={(e) => e.target.style.color = THEME.colors.brass}>
-                Forgot your password?
-              </button>
-              <button onClick={() => navigate('/register')} style={{
-                background: 'none',
-                border: 'none',
-                color: THEME.colors.brass,
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontFamily: THEME.typography.body,
-                fontWeight: 500,
-                textDecoration: 'underline',
-                transition: 'color 0.2s ease',
-              }} onMouseEnter={(e) => e.target.style.color = THEME.colors.brassLight} onMouseLeave={(e) => e.target.style.color = THEME.colors.brass}>
-                Start a free trial
-              </button>
-            </div>
-
-            {/* Family Portal Link */}
-            <div style={{
-              marginTop: '1.8rem',
-              paddingTop: '1.8rem',
-              borderTop: `1px solid ${THEME.colors.line}`,
-              textAlign: 'center',
-              fontSize: '0.9rem',
-              color: THEME.colors.gray,
-            }}>
-              Family member? <button onClick={() => navigate('/portal/login')} style={{
-                background: 'none',
-                border: 'none',
-                color: THEME.colors.verdigris,
-                cursor: 'pointer',
-                fontWeight: 600,
-                textDecoration: 'underline',
-                fontFamily: THEME.typography.body,
-                transition: 'color 0.2s ease',
-              }} onMouseEnter={(e) => e.target.style.color = THEME.colors.verdigrisDark} onMouseLeave={(e) => e.target.style.color = THEME.colors.verdigris}>
-                Access the family portal
-              </button>
-            </div>
-
-            {/* Security Badge */}
-            <div style={{
-              marginTop: '1.8rem',
-              paddingTop: '1.8rem',
-              borderTop: `1px solid ${THEME.colors.line}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              fontSize: '0.75rem',
-              color: THEME.colors.gray,
-              fontFamily: THEME.typography.mono,
-              letterSpacing: '0.05em',
-            }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <span>Enterprise-grade security</span>
-            </div>
+            Built for those who serve with dignity.
           </div>
-
-          {/* Trust Badges */}
+          <p style={{
+            fontSize: '1.1rem',
+            lineHeight: 1.7,
+            opacity: 0.85,
+            marginBottom: '2rem',
+          }}>
+            Rest Point is the operating system for funeral homes that take their reputation seriously. 
+            Case management, family communication, dispatch, and billing — all in one place.
+          </p>
           <div style={{
             display: 'flex',
-            gap: '0.8rem',
-            justifyContent: 'center',
-            marginTop: '2rem',
+            gap: '1.5rem',
             flexWrap: 'wrap',
-            animation: mounted ? 'fadeIn 0.6s ease 300ms both' : 'none',
           }}>
             {[
-              { icon: '🔐', label: 'Encrypted' },
-              { icon: '✓', label: 'Verified' },
-              { icon: '⚡', label: 'Fast' },
-            ].map((badge) => (
-              <div key={badge.label} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.5rem 0.9rem',
-                background: THEME.colors.white,
-                border: `1px solid ${THEME.colors.line}`,
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                color: THEME.colors.gray,
-                fontWeight: 500,
-              }}>
-                <span>{badge.icon}</span>
-                <span>{badge.label}</span>
+              { num: '100+', label: 'Funeral homes' },
+              { num: '50K+', label: 'Families served' },
+              { num: '99.9%', label: 'Uptime' },
+            ].map((stat) => (
+              <div key={stat.label} style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontFamily: THEME.typography.mono,
+                  fontSize: '1.8rem',
+                  fontWeight: 600,
+                  color: THEME.colors.brassLight,
+                  marginBottom: '0.3rem',
+                }}>
+                  {stat.num}
+                </div>
+                <div style={{
+                  fontSize: '0.8rem',
+                  opacity: 0.75,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
-      </main>
+      </div>
+
+      {/* Right Panel - Login Form */}
+      <div className="login-right-panel" style={{
+        flex: '1 1 50%',
+        background: THEME.colors.bone,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: '100vh'
+      }}>
+        {/* Navigation */}
+        <nav style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.2rem 2rem',
+          background: THEME.colors.white,
+          borderBottom: `1px solid ${THEME.colors.line}`,
+          animation: mounted ? 'fadeIn 0.5s ease 0ms both' : 'none',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <Logo size={22} color={THEME.colors.brass} />
+            <span style={{
+              fontFamily: THEME.typography.display,
+              fontSize: '1.1rem',
+              fontWeight: 500,
+              color: THEME.colors.ink,
+              letterSpacing: '-0.5px',
+            }}>Rest Point</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+            <span style={{ fontSize: '0.75rem', fontFamily: THEME.typography.mono, letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.brass }}>
+              Portal
+            </span>
+            <button onClick={() => navigate('/register')} style={{
+              padding: '0.6rem 1.2rem',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              border: `1px solid ${THEME.colors.brass}`,
+              background: 'transparent',
+              color: THEME.colors.brass,
+              cursor: 'pointer',
+              borderRadius: '6px',
+              transition: 'all 0.2s ease',
+              fontFamily: THEME.typography.body,
+            }} onMouseEnter={(e) => { e.target.style.background = THEME.colors.brass; e.target.style.color = THEME.colors.white; }} onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = THEME.colors.brass; }}>
+              Start trial
+            </button>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 1.5rem' }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '440px',
+            animation: mounted ? 'slideUp 0.6s cubic-bezier(0.16,1,0.3,1) 100ms both' : 'none',
+          }}>
+            
+            {/* Card */}
+            <div style={{
+              background: THEME.colors.white,
+              borderRadius: '12px',
+              border: `1px solid ${THEME.colors.line}`,
+              padding: '2.8rem 2.2rem',
+              boxShadow: `0 20px 60px -16px ${THEME.colors.shadow}, 0 4px 12px ${THEME.colors.shadowMed}`,
+            }}>
+              
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '2.4rem' }}>
+                <div style={{
+                  fontFamily: THEME.typography.display,
+                  fontSize: '2.1rem',
+                  fontWeight: 500,
+                  color: THEME.colors.ink,
+                  marginBottom: '0.6rem',
+                  lineHeight: 1.1,
+                }}>
+                  Welcome back
+                </div>
+                <p style={{
+                  fontSize: '0.95rem',
+                  color: THEME.colors.gray,
+                  lineHeight: 1.6,
+                }}>
+                  Sign in to manage your funeral home's operations with Rest Point.
+                </p>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmit}>
+                <AlertMessage type={message.type} text={message.text} />
+
+                {/* Email Input */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.8rem',
+                    fontFamily: THEME.typography.mono,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: THEME.colors.brass,
+                    marginBottom: '0.6rem',
+                    fontWeight: 600,
+                  }}>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); if (message.text) setMessage({ type: '', text: '' }); }}
+                    placeholder="director@yourfuneralhome.co.ke"
+                    disabled={loading}
+                    autoFocus
+                    autoComplete="email"
+                    style={{
+                      width: '100%',
+                      padding: '1rem 1.1rem',
+                      fontSize: '0.95rem',
+                      fontFamily: THEME.typography.body,
+                      border: `2px solid ${hasError && !email ? THEME.colors.red : THEME.colors.line}`,
+                      borderRadius: '8px',
+                      background: THEME.colors.bone2,
+                      color: THEME.colors.ink,
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => { e.target.style.borderColor = THEME.colors.brass; e.target.style.background = THEME.colors.white; e.target.style.boxShadow = `0 0 0 4px rgba(139,115,85,0.12)`; }}
+                    onBlur={(e) => { e.target.style.borderColor = hasError && !email ? THEME.colors.red : THEME.colors.line; e.target.style.background = THEME.colors.bone2; e.target.style.boxShadow = 'none'; }}
+                  />
+                  {hasError && !email && (
+                    <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.75rem', marginTop: '0.4rem' }}>
+                      Email is required.
+                    </span>
+                  )}
+                </div>
+
+                {/* Password Input */}
+                <PasswordInput
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); if (message.text) setMessage({ type: '', text: '' }); }}
+                  showPassword={showPassword}
+                  onToggle={() => setShowPassword(!showPassword)}
+                  hasError={hasError}
+                  disabled={loading}
+                />
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !isFormValid}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.2rem',
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    fontFamily: THEME.typography.body,
+                    border: 'none',
+                    borderRadius: '8px',
+                    background: loading || !isFormValid ? THEME.colors.grayLight : THEME.colors.verdigris,
+                    color: THEME.colors.bone,
+                    cursor: loading || !isFormValid ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.7rem',
+                    minHeight: '52px',
+                    opacity: loading || !isFormValid ? 0.6 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading && isFormValid) {
+                      e.target.style.background = THEME.colors.verdigrisDark;
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = `0 8px 20px rgba(46,63,55,0.25)`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading && isFormValid) {
+                      e.target.style.background = THEME.colors.verdigris;
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }
+                  }}
+                >
+                  {loading && <Spinner />}
+                  <span>{loading ? 'Signing in...' : 'Sign in'}</span>
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                margin: '2rem 0',
+              }}>
+                <div style={{ flex: 1, height: '1px', background: THEME.colors.line }} />
+                <span style={{ fontSize: '0.8rem', color: THEME.colors.gray }}>or</span>
+                <div style={{ flex: 1, height: '1px', background: THEME.colors.line }} />
+              </div>
+
+              {/* Links */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                <button onClick={() => navigate('/forgot-password')} style={{
+                  background: 'none', border: 'none', color: THEME.colors.brass, cursor: 'pointer',
+                  fontSize: '0.9rem', fontFamily: THEME.typography.body, fontWeight: 500, textDecoration: 'underline', transition: 'color 0.2s ease',
+                }} onMouseEnter={(e) => e.target.style.color = THEME.colors.brassLight} onMouseLeave={(e) => e.target.style.color = THEME.colors.brass}>
+                  Forgot your password?
+                </button>
+                <button onClick={() => navigate('/register')} style={{
+                  background: 'none', border: 'none', color: THEME.colors.brass, cursor: 'pointer',
+                  fontSize: '0.9rem', fontFamily: THEME.typography.body, fontWeight: 500, textDecoration: 'underline', transition: 'color 0.2s ease',
+                }} onMouseEnter={(e) => e.target.style.color = THEME.colors.brassLight} onMouseLeave={(e) => e.target.style.color = THEME.colors.brass}>
+                  Start a free trial
+                </button>
+              </div>
+
+              {/* Family Portal Link */}
+              <div style={{
+                marginTop: '1.8rem',
+                paddingTop: '1.8rem',
+                borderTop: `1px solid ${THEME.colors.line}`,
+                textAlign: 'center',
+                fontSize: '0.9rem',
+                color: THEME.colors.gray,
+              }}>
+                Family member? <button onClick={() => navigate('/portal/login')} style={{
+                  background: 'none', border: 'none', color: THEME.colors.verdigris, cursor: 'pointer',
+                  fontWeight: 600, textDecoration: 'underline', fontFamily: THEME.typography.body, transition: 'color 0.2s ease',
+                }} onMouseEnter={(e) => e.target.style.color = THEME.colors.verdigrisDark} onMouseLeave={(e) => e.target.style.color = THEME.colors.verdigris}>
+                  Access the family portal
+                </button>
+              </div>
+
+              {/* Security Badge */}
+              <div style={{
+                marginTop: '1.8rem',
+                paddingTop: '1.8rem',
+                borderTop: `1px solid ${THEME.colors.line}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                fontSize: '0.75rem',
+                color: THEME.colors.gray,
+                fontFamily: THEME.typography.mono,
+                letterSpacing: '0.05em',
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Enterprise-grade security</span>
+              </div>
+            </div>
+
+            {/* Trust Badges — Emojis safely replaced with matching line SVGs */}
+            <div style={{
+              display: 'flex',
+              gap: '0.8rem',
+              justifyContent: 'center',
+              marginTop: '2rem',
+              flexWrap: 'wrap',
+              animation: mounted ? 'fadeIn 0.6s ease 300ms both' : 'none',
+            }}>
+              {[
+                { 
+                  label: 'Encrypted',
+                  icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Verified',
+                  icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11" />
+                    </svg>
+                  )
+                },
+                { 
+                  label: 'Fast',
+                  icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                  )
+                },
+              ].map((badge) => (
+                <div key={badge.label} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.5rem 0.9rem',
+                  background: THEME.colors.white,
+                  border: `1px solid ${THEME.colors.line}`,
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  color: THEME.colors.gray,
+                  fontWeight: 500,
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', color: THEME.colors.brass }}>{badge.icon}</span>
+                  <span>{badge.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+
+        {/* Right Panel Footer */}
+        <div style={{
+          padding: '1.5rem 2rem',
+          borderTop: `1px solid ${THEME.colors.line}`,
+          background: THEME.colors.white,
+          textAlign: 'center',
+        }}>
+          <nav style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            {[
+              { label: 'Privacy', href: '/privacy' },
+              { label: 'Terms', href: '/terms' },
+              { label: 'Support', href: '/support' },
+            ].map((link) => (
+              <a key={link.label} href={link.href} style={{
+                fontSize: '0.8rem',
+                color: THEME.colors.gray,
+                textDecoration: 'none',
+                transition: 'color 0.2s ease',
+              }} onMouseEnter={(e) => e.target.style.color = THEME.colors.brass} onMouseLeave={(e) => e.target.style.color = THEME.colors.gray}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+          <p style={{ fontSize: '0.75rem', color: THEME.colors.gray, margin: 0 }}>
+            © 2026 Rest Point. All rights reserved. Built for East African funeral professionals.
+          </p>
+        </div>
+      </div>
 
       {/* Success Modal */}
       {showSuccess && (
         <div style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(21,23,26,0.88)',
           display: 'flex',
           alignItems: 'center',
@@ -656,35 +777,6 @@ export default function StaffLoginPage() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer style={{
-        borderTop: `1px solid ${THEME.colors.line}`,
-        padding: '1.5rem 2rem',
-        textAlign: 'center',
-        background: THEME.colors.white,
-        animation: mounted ? 'fadeIn 0.5s ease 400ms both' : 'none',
-      }}>
-        <nav style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-          {[
-            { label: 'Privacy', href: '/privacy' },
-            { label: 'Terms', href: '/terms' },
-            { label: 'Support', href: '/support' },
-          ].map((link) => (
-            <a key={link.label} href={link.href} style={{
-              fontSize: '0.8rem',
-              color: THEME.colors.gray,
-              textDecoration: 'none',
-              transition: 'color 0.2s ease',
-            }} onMouseEnter={(e) => e.target.style.color = THEME.colors.brass} onMouseLeave={(e) => e.target.style.color = THEME.colors.gray}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <p style={{ fontSize: '0.75rem', color: THEME.colors.gray, margin: 0 }}>
-          © 2026 Rest Point. All rights reserved. Built for East African funeral professionals.
-        </p>
-      </footer>
     </div>
   );
 }

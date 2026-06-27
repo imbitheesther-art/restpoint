@@ -25,7 +25,7 @@ app.use(async (req, res, next) => {
   // Public endpoints that don't require auth
   const publicPaths = ['/health'];
   const isPublic = publicPaths.some(path => req.path === path || req.path.startsWith(path));
-  
+
   if (!isPublic && req.method !== 'OPTIONS') {
     // Validate tenant exists and is active
     if (tenantSlug !== 'system_shared') {
@@ -51,7 +51,7 @@ app.use(async (req, res, next) => {
         }
       }
     }
-    
+
     // Check for auth token (optional for system_shared endpoints)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -126,12 +126,18 @@ app.post('/api/v1/restpoint/notification/subscribe', async (req, res) => {
 });
 
 
-// Support Ticket Routes
-app.use(supportTicketsRouter);
+// Support Ticket Routes - mount at BOTH prefixes
+app.use('/api/v1/restpoint', supportTicketsRouter);
+app.use('/v1/restpoint', supportTicketsRouter);
+
+// 404 and error handlers
+const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`notification-service is running on port ${PORT}`);
-  
+
   // Start background notification job for all tenants (runs every 60s)
   setInterval(async () => {
     try {
@@ -144,7 +150,7 @@ app.listen(PORT, '0.0.0.0', () => {
     } catch (err) {
       console.error('Notification background job error:', err);
     }
-    
+
   }, 60 * 1000);
-  
+
 });

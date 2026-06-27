@@ -2,12 +2,15 @@
   "name": "@montezuma/shared-services",
   "version": "1.0.0",
   "description": "Shared services (file storage, etc.)",
-  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
     "amqplib": "^0.10.7",

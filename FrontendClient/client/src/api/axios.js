@@ -2,6 +2,29 @@ import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
 import env from '../config/env';
 
+// Cached session values to avoid repeated localStorage reads
+let cachedToken = null;
+let cachedSlug = null;
+let cachedTenantId = null;
+
+const refreshCache = () => {
+  cachedToken = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
+  cachedSlug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
+  cachedTenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
+};
+
+// Initialize on module load
+refreshCache();
+
+// Re-cache on storage changes (cross-tab sync)
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (['authToken', 'token', 'accessToken', 'tenantSlug', 'tenant_slug', 'tenantId', 'tenant_id'].includes(e.key)) {
+      refreshCache();
+    }
+  });
+}
+
 // Create axios instance with centralized API URL
 const api = axios.create({
   baseURL: env.API_URL,
@@ -14,18 +37,11 @@ const api = axios.create({
 
 // Request interceptor - adds auth token and tenant headers
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+  if (cachedToken) {
+    config.headers['Authorization'] = `Bearer ${cachedToken}`;
   }
-  
-  // Attach tenant slug for multi-tenant isolation
-  const tenantSlug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
-  const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
-  
-  if (tenantSlug) config.headers['x-tenant-slug'] = tenantSlug;
-  if (tenantId) config.headers['x-tenant-id'] = tenantId;
-  
+  if (cachedSlug) config.headers['x-tenant-slug'] = cachedSlug;
+  if (cachedTenantId) config.headers['x-tenant-id'] = cachedTenantId;
   return config;
 }, (error) => Promise.reject(error));
 

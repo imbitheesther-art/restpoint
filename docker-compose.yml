@@ -86,6 +86,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - SERVICE_NAME=api-gateway
+      - SERVICE_VERSION=1.0.1
+      - CONSUL_HOST=http://restpoint_consul:8500
       - TRUST_PROXY=true
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
@@ -151,6 +154,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=auth-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -191,6 +197,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=tenant-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -233,6 +242,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=deceased-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -270,6 +282,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=billing-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -306,6 +321,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=notification-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -347,6 +365,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=documents-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -383,6 +404,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=socketio-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -444,6 +468,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=mpesa-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -474,6 +501,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=invoice-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -504,6 +534,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=marketplace-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -534,6 +567,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=coffin-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -564,6 +600,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=analytics-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -594,6 +633,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=bodycheckout-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -624,6 +666,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=edocuments-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -654,6 +699,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=calender-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -684,6 +732,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=chemical-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -714,6 +765,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=extra-services
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -744,6 +798,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=call-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -774,6 +831,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=qrcode-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -804,6 +864,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=portal-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -834,6 +897,9 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - SERVICE_NAME=visitors-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
@@ -856,6 +922,41 @@ services:
   # ============================================================================
   # FRONTEND
   # ============================================================================
+
+  # Loki - Centralized Logging
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: restpoint_loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Promtail - Log Collector
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: restpoint_promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      loki:
+        condition: service_healthy
 
   # Frontend Client
   frontend:

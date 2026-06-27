@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ENDPOINTS } from '../../api/endpoints';
-import { 
+import {
   UserPlus,
   Check,
   Loader2,
@@ -36,7 +36,7 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   // Ensure maxDate is a Date object with time normalized
   const maxDateObj = useMemo(() => {
     const date = maxDate instanceof Date ? maxDate : new Date(maxDate);
@@ -44,11 +44,16 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
     return date;
   }, [maxDate]);
 
+
+
   const currentYear = currentMonth.getFullYear();
   const currentMonthIndex = currentMonth.getMonth();
 
+
+
   const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
-  
+
+
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -68,25 +73,26 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
     const days = [];
     const daysInMonth = getDaysInMonth(currentYear, currentMonthIndex);
     const firstDay = getFirstDayOfMonth(currentYear, currentMonthIndex);
-    
+
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
-    
+
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(currentYear, currentMonthIndex, i);
       date.setHours(0, 0, 0, 0);
       days.push(date);
     }
-    
+
     return days;
+
   };
 
   const handleDateSelect = (date) => {
     if (date) {
       const selectedDateObj = new Date(date);
       selectedDateObj.setHours(0, 0, 0, 0);
-      
+
       if (selectedDateObj <= maxDateObj) {
         onChange(selectedDateObj);
         setIsOpen(false);
@@ -139,8 +145,8 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target) && 
-          buttonRef.current && !buttonRef.current.contains(event.target)) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target) &&
+        buttonRef.current && !buttonRef.current.contains(event.target)) {
         setIsOpen(false);
         setView('days');
       }
@@ -178,21 +184,21 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
             boxSizing: 'border-box'
           }}
         />
-        <CalendarIcon 
-          size={18} 
-          style={{ 
-            position: 'absolute', 
-            right: '12px', 
-            top: '50%', 
+        <CalendarIcon
+          size={18}
+          style={{
+            position: 'absolute',
+            right: '12px',
+            top: '50%',
             transform: 'translateY(-50%)',
             color: '#9ca3af',
             pointerEvents: 'none'
-          }} 
+          }}
         />
       </div>
 
       {isOpen && (
-        <div 
+        <div
           ref={calendarRef}
           style={{
             position: 'absolute',
@@ -238,7 +244,7 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
               <X size={16} />
             </button>
           </div>
-          
+
           <div style={{ padding: '12px' }}>
             {/* Navigation */}
             <div style={{
@@ -263,7 +269,7 @@ const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placehold
               >
                 <ChevronLeft size={16} />
               </button>
-              
+
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => setView(view === 'months' ? 'days' : 'months')}
@@ -507,7 +513,7 @@ const NotificationToast = ({ notification, setNotification }) => {
   if (!notification.isVisible) return null;
 
   const bgColor = notification.type === 'success' ? '#10b981' : '#ef4444';
-  
+
   return (
     <div style={{
       position: 'fixed',
@@ -541,6 +547,7 @@ const NotificationToast = ({ notification, setNotification }) => {
     </div>
   );
 };
+
 
 // Simple Stepper
 const Stepper = ({ currentStep, steps }) => {
@@ -618,6 +625,7 @@ const FormInput = ({ label, name, value, onChange, error, required, type = "text
   );
 };
 
+
 // Simple Select Input
 const FormSelect = ({ label, name, value, onChange, error, required, options }) => {
   return (
@@ -654,15 +662,16 @@ const FormSelect = ({ label, name, value, onChange, error, required, options }) 
   );
 };
 
+
 // Smart Date Input (uses SmartCalendar)
 const SmartDateInput = ({ label, name, value, onChange, error, required }) => {
   const dateObject = value ? new Date(value) : null;
-  
+
   const handleDateChange = (date) => {
     const isoString = date ? date.toISOString().split('T')[0] : '';
     onChange({ target: { name, value: isoString } });
   };
-  
+
   return (
     <div style={{ marginBottom: '16px', overflow: 'visible' }}>
       <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px', color: '#333' }}>
@@ -682,6 +691,9 @@ const SmartDateInput = ({ label, name, value, onChange, error, required }) => {
     </div>
   );
 };
+
+
+
 
 // Main Component
 const DeceasedRegistrationForm = () => {
@@ -717,7 +729,7 @@ const DeceasedRegistrationForm = () => {
 
   const validateStep = () => {
     const newErrors = {};
-    
+
     if (currentStep === 0) {
       if (!formData.full_name) newErrors.full_name = 'Full name is required';
       if (!formData.national_id) newErrors.national_id = 'National ID is required';
@@ -748,13 +760,13 @@ const DeceasedRegistrationForm = () => {
 
   const handleSubmit = async () => {
     if (!validateStep()) return;
-    
+
     setLoading(true);
     try {
       const tenantSlug = localStorage.getItem('tenantSlug') || 'default';
       const payload = { ...formData, registered_by: 'System User' };
       console.log('Submitting:', payload);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${ENDPOINTS.DECEASED.CREATE}`, {
         method: 'POST',
         headers: {
@@ -763,24 +775,24 @@ const DeceasedRegistrationForm = () => {
         },
         body: JSON.stringify(payload),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Registration failed');
       }
-      
+
       setNotification({
         isVisible: true,
         type: 'success',
         title: 'Success!',
         message: 'Deceased record registered successfully!',
       });
-      
+
       setTimeout(() => {
-        navigate(`/rptenant/${tenantSlug}/all-deceased`);
+        navigate(`/tenant/${tenantSlug}/all-deceased`);
       }, 2000);
-      
+
     } catch (error) {
       setNotification({
         isVisible: true,
@@ -794,14 +806,14 @@ const DeceasedRegistrationForm = () => {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
+    <div style={{
+      minHeight: '100vh',
       backgroundColor: '#f8f9fa',
       padding: '20px',
       overflow: 'visible'
     }}>
       <NotificationToast notification={notification} setNotification={setNotification} />
-      
+
       {/* Header */}
       <div style={{
         backgroundColor: 'white',
@@ -1042,7 +1054,7 @@ const DeceasedRegistrationForm = () => {
                 Back
               </button>
             )}
-            
+
             {currentStep < steps.length - 1 ? (
               <button
                 onClick={nextStep}

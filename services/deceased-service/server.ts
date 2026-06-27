@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { errorHandler, notFoundHandler, asyncHandler } from '../../global/middlewares/errorHandler';
 
 dotenv.config();
 
@@ -22,7 +23,6 @@ app.use(express.json());
 app.use((req: Request, res: Response, next: NextFunction) => {
     const tenantSlug = req.headers['x-tenant-slug'] as string || 'system_shared';
     (req as any).tenantSlug = tenantSlug;
-    console.log(`[Deceased Service] Tenant: ${tenantSlug}`);
     next();
 });
 
@@ -32,11 +32,15 @@ import autopsyRoutes from './routes/autopsyRoutes';
 import chargesRoutes from './routes/chargesRoutes';
 import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
 
-// Mount routes
-app.use('/', deceasedRoutes);
-app.use('/', autopsyRoutes);
-app.use('/', chargesRoutes);
-app.use('/', chargeSettingsRoutes);
+// Mount routes at BOTH /api/v1/restpoint/* and /v1/restpoint/* for gateway compatibility
+app.use('/api/v1/restpoint', deceasedRoutes);
+app.use('/v1/restpoint', deceasedRoutes);
+app.use('/api/v1/restpoint', autopsyRoutes);
+app.use('/v1/restpoint', autopsyRoutes);
+app.use('/api/v1/restpoint', chargesRoutes);
+app.use('/v1/restpoint', chargesRoutes);
+app.use('/api/v1/restpoint', chargeSettingsRoutes);
+app.use('/v1/restpoint', chargeSettingsRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -49,21 +53,10 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // 404 handler
-app.use((req: Request, res: Response) => {
-    res.status(404).json({
-        success: false,
-        message: `Route ${req.originalUrl} not found`
-    });
-});
+app.use(notFoundHandler);
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error('❌ Error:', err.stack);
-    res.status(500).json({
-        success: false,
-        message: err.message || 'Something went wrong!'
-    });
-});
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

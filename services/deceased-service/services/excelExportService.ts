@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import fs from 'fs';
 import path from 'path';
 import { fileStorageService, FolderCategory } from '@montezuma/shared-services';
+import { safeTenantQuery, safeTenantExecute } from '../../../shared/dbConfig';
 
 // Enhanced Professional Color Palette
 const COLORS = {
@@ -62,18 +63,17 @@ export interface IExportOptions {
 }
 
 export interface IExportHistory {
-  id: string;
-  tenantSlug: string;
-  fileName: string;
-  fileSize: number;
-  recordCount: number;
-  generatedAt: string;
-  generatedBy: string;
+  id: number;
+  tenant_slug: string;
+  file_name: string;
+  file_size: number;
+  record_count: number;
+  generated_at: string;
+  generated_by: string;
   period: string;
   status: 'success' | 'failed';
+  error_message?: string;
 }
-
-const exportHistory: IExportHistory[] = [];
 
 export class ExcelExportService {
   private static instance: ExcelExportService;
@@ -83,6 +83,98 @@ export class ExcelExportService {
       ExcelExportService.instance = new ExcelExportService();
     }
     return ExcelExportService.instance;
+  }
+
+  /**
+   * Ensure the export_history table exists in the tenant's database
+   */
+  async ensureExportHistoryTable(dbName: string): Promise<void> {
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS export_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_slug VARCHAR(255) NOT NULL,
+        file_name VARCHAR(500) NOT NULL,
+        file_size INT NOT NULL DEFAULT 0,
+        record_count INT NOT NULL DEFAULT 0,
+        generated_at DATETIME NOT NULL,
+        generated_by VARCHAR(255) NOT NULL DEFAULT 'System Administrator',
+        period VARCHAR(100) NOT NULL DEFAULT 'All Records',
+        status ENUM('success', 'failed') NOT NULL DEFAULT 'success',
+        error_message TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tenant_slug (tenant_slug),
+        INDEX idx_generated_at (generated_at),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `;
+    try {
+      await safeTenantExecute(dbName, createTableSQL, []);
+    } catch (error: any) {
+      console.error(`❌ Failed to create export_history table for DB ${dbName}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Save export history to the tenant's database
+   */
+  async saveExportHistory(
+    dbName: string,
+    history: IExportHistory
+  ): Promise<number> {
+    await this.ensureExportHistoryTable(dbName);
+
+    const insertSQL = `
+      INSERT INTO export_history 
+        (tenant_slug, file_name, file_size, record_count, generated_at, generated_by, period, status, error_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const result = await safeTenantExecute(dbName, insertSQL, [
+      history.tenant_slug,
+      history.file_name,
+      history.file_size,
+      history.record_count,
+      history.generated_at,
+      history.generated_by,
+      history.period,
+      history.status,
+      history.error_message || null
+    ]);
+
+    return result.insertId;
+  }
+
+  /**
+   * Get export history for a tenant with pagination
+   */
+  async getExportHistory(
+    dbName: string,
+    tenantSlug: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ records: IExportHistory[]; total: number; page: number; totalPages: number }> {
+    await this.ensureExportHistoryTable(dbName);
+
+    const offset = (page - 1) * limit;
+    const countSQL = `SELECT COUNT(*) as total FROM export_history WHERE tenant_slug = ?`;
+    const countResult = await safeTenantQuery(dbName, countSQL, [tenantSlug]);
+    const total = (countResult as any)[0]?.total || 0;
+
+    const selectSQL = `
+      SELECT * FROM export_history 
+      WHERE tenant_slug = ?
+      ORDER BY generated_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    const records = await safeTenantQuery(dbName, selectSQL, [tenantSlug, limit, offset]);
+
+    return {
+      records: records as IExportHistory[],
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   getTenantTheme(tenantSlug: string): ITenantTheme {
@@ -374,24 +466,11 @@ export class ExcelExportService {
     const buffer = await workbook.xlsx.writeBuffer();
     const fileBuffer = Buffer.from(buffer);
     
-    const historyId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const fileName = `${theme.companyName.replace(/\s/g, '_')}_Deceased_Report_${DateTime.now().toFormat('yyyyMMdd_HHmmss')}.xlsx`;
-    
-    const historyRecord: IExportHistory = {
-      id: historyId,
-      tenantSlug: theme.companyName,
-      fileName,
-      fileSize: fileBuffer.length,
-      recordCount: records.length,
-      generatedAt: DateTime.now().toISO(),
-      generatedBy,
-      period: periodLabel,
-      status: 'success'
-    };
+    const tenantSlug = theme.companyName.replace(/\s+/g, '-').toLowerCase();
+    const fileName = `${tenantSlug}_Deceased_Report_${DateTime.now().toFormat('yyyyMMdd_HHmmss')}.xlsx`;
     
     // Save the file using the fileStorageService
     try {
-      const tenantSlug = options.tenantTheme?.companyName?.replace(/\s+/g, '-').toLowerCase() || 'default';
       const uploadPath = fileStorageService.getUploadPath({
         tenantSlug,
         category: FolderCategory.EXPORTS
@@ -403,9 +482,17 @@ export class ExcelExportService {
       console.warn(`⚠️ Could not save file: ${error.message}`);
     }
     
-    exportHistory.unshift(historyRecord);
-    
-    return { buffer: fileBuffer, history: historyRecord };
+    return { buffer: fileBuffer, history: {
+      id: 0,
+      tenant_slug: tenantSlug,
+      file_name: fileName,
+      file_size: fileBuffer.length,
+      record_count: records.length,
+      generated_at: DateTime.now().toISO(),
+      generated_by: generatedBy,
+      period: periodLabel,
+      status: 'success'
+    } };
   }
 
   private getColumnLetter(col: number): string {

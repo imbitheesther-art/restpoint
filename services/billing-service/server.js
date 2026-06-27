@@ -80,7 +80,7 @@ const calculateDailyCharges = async (deceasedId, tenantSlug) => {
       WHERE tenant_slug = ?
     `;
     const [settings] = await safeQuery(settingsSql, [tenantSlug]);
-    
+
     const dailyRate = settings?.daily_rate || 1500; // Default KES 1500/day
     const embalmingRate = settings?.embalming_rate || 3000;
     const storageRate = settings?.storage_rate || 500;
@@ -88,7 +88,7 @@ const calculateDailyCharges = async (deceasedId, tenantSlug) => {
     // Calculate charges
     const daysAdmitted = deceased.days_admitted || 1;
     const baseCharges = daysAdmitted * dailyRate;
-    
+
     // Additional charges
     let additionalCharges = 0;
     if (deceased.embalming) additionalCharges += embalmingRate;
@@ -145,9 +145,9 @@ const processDailyBilling = async (tenantSlug) => {
     for (const deceased of deceasedList) {
       try {
         billingResults.processed++;
-        
+
         const charges = await calculateDailyCharges(deceased.id, tenantSlug);
-        
+
         // Save billing record
         const insertSql = `
           INSERT INTO daily_billing 
@@ -161,7 +161,7 @@ const processDailyBilling = async (tenantSlug) => {
           total_charge = VALUES(total_charge),
           updated_at = VALUES(created_at)
         `;
-        
+
         await safeQuery(insertSql, [
           deceased.id,
           tenantSlug,
@@ -213,10 +213,10 @@ const processDailyBilling = async (tenantSlug) => {
  */
 const fallbackToPython = async (tenantSlug) => {
   const pythonServiceUrl = process.env.FALLBACK_SERVICE_URL || 'http://localhost:5021';
-  
+
   try {
     logger.warn(`Falling back to Python billing service for tenant: ${tenantSlug}`);
-    
+
     const response = await axios.post(`${pythonServiceUrl}/api/billing/process`, {
       tenant_slug: tenantSlug,
       timestamp: getKenyaTimeISO()
@@ -268,7 +268,7 @@ const runDailyBilling = async () => {
       try {
         // Try primary Node.js billing
         let result = await processDailyBilling(tenant.tenant_slug);
-        
+
         // If failed, try Python fallback
         if (!result.success) {
           logger.warn(`Primary billing failed for ${tenant.tenant_slug}, trying fallback...`);
@@ -350,10 +350,10 @@ app.get('/health', (req, res) => {
 });
 
 // Manual trigger for daily billing
-app.post('/api/billing/run', protect, authorizeAny, async (req, res) => {
+app.post('/api/v1/restpoint/billing/run', protect, authorizeAny, async (req, res) => {
   try {
     const { tenant_slug } = req.body;
-    
+
     let result;
     if (tenant_slug) {
       result = await processDailyBilling(tenant_slug);
@@ -378,7 +378,7 @@ app.post('/api/billing/run', protect, authorizeAny, async (req, res) => {
 });
 
 // Calculate charges for specific deceased
-app.post('/api/billing/calculate', protect, authorizeAny, async (req, res) => {
+app.post('/api/v1/restpoint/billing/calculate', protect, authorizeAny, async (req, res) => {
   try {
     const { deceased_id, tenant_slug } = req.body;
 
@@ -407,7 +407,7 @@ app.post('/api/billing/calculate', protect, authorizeAny, async (req, res) => {
 });
 
 // Get billing history
-app.get('/api/billing/history/:tenantSlug', protect, authorizeAny, async (req, res) => {
+app.get('/api/v1/restpoint/billing/history/:tenantSlug', protect, authorizeAny, async (req, res) => {
   try {
     const { tenantSlug } = req.params;
     const { startDate, endDate, limit = 100 } = req.query;
@@ -449,7 +449,7 @@ app.get('/api/billing/history/:tenantSlug', protect, authorizeAny, async (req, r
 });
 
 // Get billing job logs
-app.get('/api/billing/logs', protect, authorizeAny, async (req, res) => {
+app.get('/api/v1/restpoint/billing/logs', protect, authorizeAny, async (req, res) => {
   try {
     const { limit = 50 } = req.query;
 
@@ -475,13 +475,20 @@ app.get('/api/billing/logs', protect, authorizeAny, async (req, res) => {
 });
 
 // Fallback endpoint for Python service
-app.post('/api/billing/fallback-status', (req, res) => {
+app.post('/api/v1/restpoint/billing/fallback-status', (req, res) => {
   res.json({
     success: true,
     fallback_available: !!process.env.FALLBACK_SERVICE_URL,
     python_url: process.env.FALLBACK_SERVICE_URL || 'Not configured'
   });
 });
+
+// ============================================
+// ERROR HANDLERS
+// ============================================
+const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // ============================================
 // START SERVER

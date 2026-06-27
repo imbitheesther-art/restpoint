@@ -1,5 +1,5 @@
 // Service Worker for MONTEZUMA FH PWA
-const CACHE_NAME = 'montezuma-fh-cache-v2';
+const CACHE_NAME = 'restpoint-fh-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -64,7 +64,7 @@ self.addEventListener('activate', (event) => {
         console.log('Old caches cleaned up');
         return self.clients.claim();
       })
-  );npm  
+  );
 });
 
 // Fetch event - serve from cache, fallback to network, cache on success

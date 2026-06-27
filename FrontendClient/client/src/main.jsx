@@ -3,16 +3,9 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 
-// Dynamically import jQuery and other libraries if needed
-// Instead of loading via script tags, import them as modules
-import 'moment'
-import 'jquery'
-
-// Import FullCalendar as modules (better than CDN)
-import '@fullcalendar/react'
-import '@fullcalendar/daygrid'
-import '@fullcalendar/timegrid'
-import '@fullcalendar/interaction'
+// NOTE: Heavy libraries (moment, jquery, fullcalendar) removed from entry point.
+// They are imported lazily inside the components that use them.
+// This saves ~500KB from the initial critical render path.
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

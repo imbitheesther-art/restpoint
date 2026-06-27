@@ -1,0 +1,36 @@
+version: '3.8'
+
+# ============================================================================
+# SERVICE REGISTRY - Consul
+# ============================================================================
+# This file adds Consul service registry to your existing stack.
+# Run: docker-compose -f docker-compose.yml -f docker-compose.registry.yml up -d
+
+services:
+  # Consul Server - Service Registry
+  consul:
+    image: consul:1.15.4
+    container_name: restpoint_consul
+    ports:
+      - "8500:8500"  # HTTP API and Web UI
+      - "8600:8600"  # DNS interface
+    command: agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0
+    volumes:
+      - consul_data:/consul/data
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/v1/health/node/consul"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  restpoint_network:
+    external: true
+
+volumes:
+  consul_data:
+    driver: local

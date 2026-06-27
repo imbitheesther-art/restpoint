@@ -24,7 +24,7 @@ const knex = require("knex");
 
 // Metrics Disabled
 const register = { contentType: 'text/plain', metrics: () => Promise.resolve('') };
-const httpRequestDurationMicroseconds = { startTimer: () => () => {} };
+const httpRequestDurationMicroseconds = { startTimer: () => () => { } };
 
 
 // Load environment variables
@@ -166,11 +166,15 @@ app.post("/api/v1/upload", upload.single("image"), (req, res) => {
   }
 });
 
-// API Routes
-app.use("/api/v1/products", productRoutes);
-app.use("/api/v1/cart", cartRoutes);
-app.use("/api/v1/orders", orderRoutes);
-app.use("/api/v1/marketplace/payments", paymentRoutes);
+// API Routes - mount at BOTH prefixes for gateway compatibility
+app.use("/api/v1/restpoint/marketplace/products", productRoutes);
+app.use("/v1/restpoint/marketplace/products", productRoutes);
+app.use("/api/v1/restpoint/marketplace/cart", cartRoutes);
+app.use("/v1/restpoint/marketplace/cart", cartRoutes);
+app.use("/api/v1/restpoint/marketplace/orders", orderRoutes);
+app.use("/v1/restpoint/marketplace/orders", orderRoutes);
+app.use("/api/v1/restpoint/marketplace/payments", paymentRoutes);
+app.use("/v1/restpoint/marketplace/payments", paymentRoutes);
 
 
 
@@ -222,15 +226,15 @@ app.get("/debug/tables", async (req, res) => {
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Route ${req.method} ${req.url} not found`,
+    message: `Route ${req.method} ${req.originalUrl} not found`,
   });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
   Logger.error("Server error:", err);
-  Logger.error("Error:", { error: err.message });
-  res.status(err.status || 500).json({
+  const statusCode = err.status || 500;
+  res.status(statusCode).json({
     success: false,
     message: err.message || "Internal server error",
   });

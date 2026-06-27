@@ -12,10 +12,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@montezuma/shared-config": "file:../../packages/shared-config",
-    "@montezuma/shared-logger": "file:../../packages/shared-logger",
-    "@montezuma/shared-utils": "file:../../packages/shared-utils",
-    "@montezuma/shared-services": "file:../../packages/shared-services",
+    "@montezuma/shared-config": "^1.0.0",
+    "@montezuma/shared-logger": "^1.0.0",
+    "@montezuma/shared-utils": "^1.0.0",
+    "@montezuma/shared-services": "^1.0.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.61.2",
     "cors": "^2.8.5",
