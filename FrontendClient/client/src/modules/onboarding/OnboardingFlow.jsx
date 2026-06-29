@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import Footer from '../../components/layout/Footer';
 
 const THEME = {
   colors: {
@@ -130,7 +131,7 @@ const AlertMessage = ({ type, text }) => {
 const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasError, errorMessage, disabled, placeholder }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   return (
     <div style={{ marginBottom: THEME.spacing.lg }}>
       <label style={{
@@ -218,7 +219,7 @@ const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasErro
 
 const StepIndicator = ({ currentStep, onStepClick }) => {
   const progressPercentage = (currentStep / (STEPS.length - 1)) * 100;
-  
+
   return (
     <div style={{ position: 'relative', padding: '2rem 0 2.5rem', marginBottom: '1.5rem' }}>
       <div style={{
@@ -230,7 +231,7 @@ const StepIndicator = ({ currentStep, onStepClick }) => {
         background: THEME.colors.line,
         transform: 'translateY(-50%)',
       }} />
-      
+
       <div style={{
         position: 'absolute',
         top: '50%',
@@ -241,12 +242,12 @@ const StepIndicator = ({ currentStep, onStepClick }) => {
         transform: 'translateY(-50%)',
         transition: 'width 0.4s ease',
       }} />
-      
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
         {STEPS.map((step, index) => {
           const isCompleted = index < currentStep;
           const isCurrent = index === currentStep;
-          
+
           return (
             <div key={step.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: isCompleted ? 'pointer' : 'default' }} onClick={() => isCompleted && onStepClick(index)}>
               <div style={{
@@ -283,7 +284,7 @@ const StepIndicator = ({ currentStep, onStepClick }) => {
 
 const FileUpload = ({ label, preview, onUpload, error }) => {
   const handleClick = () => document.getElementById('file-upload').click();
-  
+
   return (
     <div style={{ marginBottom: THEME.spacing.lg }}>
       <label style={{
@@ -386,17 +387,17 @@ export default function OnboardingFlow() {
   const handleLogoUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     if (file.size > 10 * 1024 * 1024) {
       setErrors(prev => ({ ...prev, logo: 'File size must be less than 10MB' }));
       return;
     }
-    
+
     if (!['image/jpeg', 'image/png', 'image/jpg', 'image/svg+xml'].includes(file.type)) {
       setErrors(prev => ({ ...prev, logo: 'Only JPG, PNG, or SVG allowed' }));
       return;
     }
-    
+
     setLogoFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setLogoPreview(reader.result);
@@ -456,11 +457,11 @@ export default function OnboardingFlow() {
       setErrors({ terms: 'You must agree to terms' });
       return;
     }
-    
+
     setIsSubmitting(true);
     setApiError('');
     setApiSuccess('');
-    
+
     try {
       const submitData = new FormData();
       submitData.append('organizationName', formData.organizationName);
@@ -469,15 +470,15 @@ export default function OnboardingFlow() {
       submitData.append('password', formData.password);
       submitData.append('termsAccepted', agreeTerms);
       if (logoFile) submitData.append('logo', logoFile);
-      
+
       const response = await api.post('/api/tenant/onboarding/organization', submitData, {
         headers: { 'Content-Type': 'multipart/form-data', 'x-tenant-slug': '' },
         timeout: 30000,
       });
-      
+
       if (response.data.success || response.status === 200 || response.status === 201) {
         setApiSuccess(response.data.message || 'Organization setup completed! Redirecting...');
-        
+
         const onboardingData = {
           organizationName: formData.organizationName,
           email: formData.email,
@@ -487,12 +488,12 @@ export default function OnboardingFlow() {
           userId: response.data.userId,
           completedAt: new Date().toISOString(),
         };
-        
+
         localStorage.setItem('onboardingData', JSON.stringify(onboardingData));
         localStorage.setItem('onboardingComplete', 'true');
         if (response.data.token) localStorage.setItem('authToken', response.data.token);
         if (response.data.user) localStorage.setItem('user', JSON.stringify(response.data.user));
-        
+
         setTimeout(() => {
           setIsSubmitting(false);
           navigate('/login');
@@ -548,8 +549,8 @@ export default function OnboardingFlow() {
             <Logo size={20} />
             <span style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1rem', fontWeight: 500, color: THEME.colors.ink }}>Rest Point</span>
           </button>
-          <button 
-            onClick={goToLogin} 
+          <button
+            onClick={goToLogin}
             onMouseEnter={() => setIsNavHovered(true)}
             onMouseLeave={() => setIsNavHovered(false)}
             style={{
@@ -573,7 +574,7 @@ export default function OnboardingFlow() {
       <main style={{ paddingTop: '70px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <section style={{ padding: '2rem 0' }}>
           <div style={{ maxWidth: '640px', margin: '0 auto', padding: '0 1.5rem' }}>
-            
+
             <div style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.6s ease' }}>
               <StepIndicator currentStep={currentStep} onStepClick={(index) => setCurrentStep(index)} />
             </div>
@@ -589,7 +590,7 @@ export default function OnboardingFlow() {
               transform: loaded ? 'translateY(0)' : 'translateY(18px)',
               transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)',
             }}>
-              
+
               <div style={{ marginBottom: THEME.spacing.xxl }}>
                 <h1 style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1.6rem', fontWeight: 500, color: THEME.colors.ink, marginBottom: THEME.spacing.sm }}>
                   {currentStep === 0 && <>Tell us about your <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>organization</span></>}
@@ -639,7 +640,7 @@ export default function OnboardingFlow() {
                 {currentStep === 1 && (
                   <div className="fade-in">
                     <PasswordInput label="Password" value={formData.password} onChange={(e) => handleChange({ target: { name: 'password', value: e.target.value } })} showPassword={showPassword} onToggle={() => setShowPassword(!showPassword)} hasError={!!errors.password} errorMessage={errors.password} disabled={isSubmitting} placeholder="Create a strong password" />
-                    
+
                     {formData.password && (
                       <div style={{ marginBottom: THEME.spacing.lg }}>
                         <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem' }}>
@@ -694,6 +695,7 @@ export default function OnboardingFlow() {
           </div>
         </section>
       </main>
+      <Footer navigate={navigate} goTerms={() => { }} />
     </div>
   );
 }

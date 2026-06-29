@@ -420,7 +420,7 @@ const DocumentsPage = ({ onLogout, onBack }) => {
       }
 
       const infoResponse = await fetch(
-        `http://localhost:5000/api/v1/restpoint/portal/info/${deceasedId}`,
+        `/api/v1/restpoint/portal/info/${deceasedId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionToken}`,
@@ -437,7 +437,7 @@ const DocumentsPage = ({ onLogout, onBack }) => {
       setDeceasedData(infoData.data);
 
       const docsResponse = await fetch(
-        `http://localhost:5000/api/v1/restpoint/portal/documents/${deceasedId}`,
+        `/api/v1/restpoint/portal/documents/${deceasedId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionToken}`,
@@ -507,7 +507,7 @@ const DocumentsPage = ({ onLogout, onBack }) => {
       const sessionToken = localStorage.getItem('session_token');
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/restpoint/portal/documents/${deceasedId}/upload`,
+        `/api/v1/restpoint/portal/documents/${deceasedId}/upload`,
         {
           method: 'POST',
           headers: {

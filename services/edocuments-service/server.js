@@ -10,8 +10,8 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
 // Excel/CSV support for QuickBooks-style invoice imports
 let xlsx, csvParser;
-try { xlsx = require('xlsx'); } catch(e) { xlsx = null; console.warn('xlsx not available'); }
-try { csvParser = require('csv-parse/sync'); } catch(e) { csvParser = null; console.warn('csv-parse not available'); }
+try { xlsx = require('xlsx'); } catch (e) { xlsx = null; console.warn('xlsx not available'); }
+try { csvParser = require('csv-parse/sync'); } catch (e) { csvParser = null; console.warn('csv-parse not available'); }
 
 dotenv.config();
 
@@ -43,7 +43,7 @@ function loadStore(name) {
       const data = fs.readFileSync(filePath, 'utf8');
       return JSON.parse(data);
     }
-  } catch(e) { console.error(`Failed to load ${name}:`, e.message); }
+  } catch (e) { console.error(`Failed to load ${name}:`, e.message); }
   return {};
 }
 
@@ -51,7 +51,7 @@ function saveStore(name, data) {
   const filePath = path.join(EDOCS_ROOT, `${name}.json`);
   try {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  } catch(e) { console.error(`Failed to save ${name}:`, e.message); }
+  } catch (e) { console.error(`Failed to save ${name}:`, e.message); }
 }
 
 // Persistent stores
@@ -384,7 +384,7 @@ app.get('/health', (req, res) => {
     status: 'UP',
     service: 'edocuments-service',
     version: '3.0.0',
-    features: ['documents', 'templates', 'autofill', 'pdf-export', 'excel-import', 'canvas-editor', 'history', 'multi-tenant'],
+    features: ['documents', 'templates', 'autofill', 'pdf-export', 'excel-import', 'canvas-editor', 'history', 'multi-tenant', 'e-signatures', 'barcodes', 'audit-trail'],
     storage: 'persistent',
     stats: {
       documents: Object.keys(documentsStore).length,
@@ -472,9 +472,9 @@ app.post('/templates', templateUpload.single('templateFile'), (req, res) => {
     if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name required' });
     if (!type || !type.trim()) return res.status(400).json({ success: false, message: 'Type required' });
     let parsedFields = [];
-    if (fields) { try { parsedFields = typeof fields === 'string' ? JSON.parse(fields) : fields; } catch(e) {} }
+    if (fields) { try { parsedFields = typeof fields === 'string' ? JSON.parse(fields) : fields; } catch (e) { } }
     let parsedCanvas = null;
-    if (canvasState) { try { parsedCanvas = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState; } catch(e) {} }
+    if (canvasState) { try { parsedCanvas = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState; } catch (e) { } }
     const templateId = `custom-${Date.now()}`;
     const template = {
       id: templateId, name: name.trim(), description: description ? description.trim() : '',
@@ -488,7 +488,7 @@ app.post('/templates', templateUpload.single('templateFile'), (req, res) => {
     saveStore('templates', templatesStore);
     res.status(201).json({ success: true, message: 'Template created', data: template });
   } catch (e) {
-    if (req.file) { try { fs.unlinkSync(req.file.path); } catch(ex) {} }
+    if (req.file) { try { fs.unlinkSync(req.file.path); } catch (ex) { } }
     res.status(500).json({ success: false, message: e.message });
   }
 });
@@ -521,7 +521,7 @@ app.delete('/templates/:templateId', (req, res) => {
     if (!t) return res.status(404).json({ success: false, message: 'Template not found' });
     if (t.isDefault) return res.status(403).json({ success: false, message: 'Cannot delete default templates' });
     if (t.fileName) {
-      try { const fp = path.join(templatesDir, req.tenantSlug, t.fileName); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(ex) {}
+      try { const fp = path.join(templatesDir, req.tenantSlug, t.fileName); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch (ex) { }
     }
     delete templatesStore[key];
     saveStore('templates', templatesStore);
@@ -684,6 +684,92 @@ app.post('/:id/export-excel', (req, res) => {
 });
 
 // =============================================================================
+// E-SIGNATURE SUPPORT
+// =============================================================================
+app.post('/:id/sign', (req, res) => {
+  try {
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+
+    const { signerName, signerId, signatureData, signatureType } = req.body;
+    if (!signerName || !signatureData) {
+      return res.status(400).json({ success: false, message: 'signerName and signatureData are required' });
+    }
+
+    const signature = {
+      id: `sig-${Date.now()}`,
+      signerName,
+      signerId: signerId || 'unknown',
+      signatureData, // Base64 encoded signature image or digital signature token
+      signatureType: signatureType || 'drawn', // 'drawn', 'uploaded', 'digital'
+      timestamp: new Date().toISOString(),
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent')
+    };
+
+    if (!doc.signatures) doc.signatures = [];
+    doc.signatures.push(signature);
+    doc.status = 'signed';
+    doc.updatedAt = new Date().toISOString();
+
+    documentsStore[`${req.tenantSlug}-${req.params.id}`] = doc;
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'sign', req.params.id, `Signed by ${signerName}`);
+
+    res.json({ success: true, message: 'Document signed successfully', data: { signature, document: doc } });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.get('/:id/signatures', (req, res) => {
+  try {
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    res.json({ success: true, data: { signatures: doc.signatures || [], count: (doc.signatures || []).length } });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// =============================================================================
+// BARCODE GENERATION
+// =============================================================================
+app.post('/:id/barcode', (req, res) => {
+  try {
+    const doc = documentsStore[`${req.tenantSlug}-${req.params.id}`];
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+
+    const { type, value, format } = req.body;
+    if (!type || !value) {
+      return res.status(400).json({ success: false, message: 'type and value are required for barcode' });
+    }
+
+    // Generate barcode metadata (actual barcode image generation would use a library like bwip-js)
+    const barcode = {
+      id: `bc-${Date.now()}`,
+      type: type, // 'qrcode', 'code128', 'ean13', 'upca', 'pdf417'
+      value,
+      format: format || 'image/png',
+      url: `/api/v1/restpoint/edocuments/barcode/${doc.id}/${type}/${encodeURIComponent(value)}`,
+      createdAt: new Date().toISOString()
+    };
+
+    if (!doc.barcodes) doc.barcodes = [];
+    doc.barcodes.push(barcode);
+    doc.updatedAt = new Date().toISOString();
+
+    documentsStore[`${req.tenantSlug}-${req.params.id}`] = doc;
+    saveStore('documents', documentsStore);
+    trackHistory(req.tenantSlug, 'barcode', req.params.id, `Barcode ${type} added`);
+
+    res.status(201).json({ success: true, message: 'Barcode generated', data: barcode });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// =============================================================================
 // DOCUMENTS CRUD
 // =============================================================================
 app.get('/', (req, res) => {
@@ -724,8 +810,8 @@ app.post('/', upload.single('document'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
     const docId = Date.now().toString();
     let ps = null, pf = {};
-    if (canvasState) { try { ps = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState; } catch(e) {} }
-    if (fieldValues) { try { pf = typeof fieldValues === 'string' ? JSON.parse(fieldValues) : fieldValues; } catch(e) {} }
+    if (canvasState) { try { ps = typeof canvasState === 'string' ? JSON.parse(canvasState) : canvasState; } catch (e) { } }
+    if (fieldValues) { try { pf = typeof fieldValues === 'string' ? JSON.parse(fieldValues) : fieldValues; } catch (e) { } }
     const doc = {
       id: docId, title: title.trim(), description: description ? description.trim() : '',
       documentType: documentType || 'general', category: category || 'general',
@@ -735,14 +821,20 @@ app.post('/', upload.single('document'), (req, res) => {
       url: `/api/v1/restpoint/edocuments/download/${req.file.filename}`,
       status: 'active', tenant: req.tenantSlug,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-      canvasState: ps, fieldValues: pf
+      canvasState: ps, fieldValues: pf,
+      auditTrail: [{
+        action: 'create',
+        timestamp: new Date().toISOString(),
+        userId: req.headers['x-user-id'] || 'system',
+        details: 'Document created'
+      }]
     };
     documentsStore[`${req.tenantSlug}-${docId}`] = doc;
     saveStore('documents', documentsStore);
     trackHistory(req.tenantSlug, 'create', docId, `Created: ${title}`);
     res.status(201).json({ success: true, message: 'Document created', data: doc });
   } catch (e) {
-    if (req.file) { try { fs.unlinkSync(req.file.path); } catch(ex) {} }
+    if (req.file) { try { fs.unlinkSync(req.file.path); } catch (ex) { } }
     if (e.message && e.message.includes('Invalid file type')) return res.status(400).json({ success: false, message: e.message });
     res.status(500).json({ success: false, message: e.message });
   }
@@ -770,14 +862,25 @@ app.put('/:id', (req, res) => {
         let fn = doc.fileName;
         if (!fn) { fn = `${req.tenantSlug}-doc-${req.params.id}-${Date.now()}.png`; doc.fileName = fn; }
         if (fn.toLowerCase().endsWith('.pdf')) {
-          try { const op = path.join(documentsDir, req.tenantSlug, fn); if (fs.existsSync(op)) fs.unlinkSync(op); } catch(ex) {}
+          try { const op = path.join(documentsDir, req.tenantSlug, fn); if (fs.existsSync(op)) fs.unlinkSync(op); } catch (ex) { }
           fn = fn.replace(/\.pdf$/i, '.png'); doc.fileName = fn; doc.mimeType = 'image/png';
           doc.url = `/api/v1/restpoint/edocuments/download/${fn}`;
         }
         fs.writeFileSync(path.join(documentsDir, req.tenantSlug, fn), buf);
         doc.fileSize = buf.length;
-      } catch(err) { console.error('Image write error:', err.message); }
+      } catch (err) { console.error('Image write error:', err.message); }
     }
+
+    // Add audit trail entry
+    if (!doc.auditTrail) doc.auditTrail = [];
+    doc.auditTrail.push({
+      action: 'update',
+      timestamp: new Date().toISOString(),
+      userId: req.headers['x-user-id'] || 'system',
+      details: 'Document updated',
+      changes: { title, description, documentType, category, status }
+    });
+
     doc.updatedAt = new Date().toISOString();
     documentsStore[key] = doc;
     saveStore('documents', documentsStore);
@@ -794,7 +897,7 @@ app.delete('/:id', (req, res) => {
     const doc = documentsStore[key];
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     if (doc.fileName) {
-      try { const fp = path.join(documentsDir, req.tenantSlug, doc.fileName); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(ex) {}
+      try { const fp = path.join(documentsDir, req.tenantSlug, doc.fileName); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch (ex) { }
     }
     delete documentsStore[key];
     saveStore('documents', documentsStore);
@@ -998,81 +1101,70 @@ app.get('/dashboard/stats', (req, res) => {
 });
 
 // =============================================================================
-// 404 HANDLER
-// =============================================================================
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Cannot ${req.method} ${req.originalUrl}` });
-});
-
-// =============================================================================
-// ERROR HANDLER
+// ERROR HANDLING MIDDLEWARE (catches all errors and returns JSON)
 // =============================================================================
 app.use((err, req, res, next) => {
-  console.error(`\n[ERROR] ${new Date().toISOString()} | ${err.message}`);
-  if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'File size exceeds 50MB limit' });
-  if (err.message && err.message.includes('Invalid file type')) return res.status(400).json({ success: false, message: err.message });
-  res.status(err.status || 500).json({ success: false, message: 'Internal Server Error' });
+  console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
+
+  // Handle multer file upload errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      success: false,
+      message: 'File too large. Maximum size is 50MB.',
+      code: 'FILE_TOO_LARGE'
+    });
+  }
+
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({
+      success: false,
+      message: 'Unexpected file field. Use "document" or "templateFile".',
+      code: 'UNEXPECTED_FILE'
+    });
+  }
+
+  // Handle JSON parse errors
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format in request body',
+      code: 'INVALID_JSON'
+    });
+  }
+
+  // Generic error response
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || 'Internal server error',
+    code: err.code || 'INTERNAL_ERROR',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // =============================================================================
-// GRACEFUL SHUTDOWN
+// START SERVER
 // =============================================================================
-process.on('SIGTERM', () => { console.log('\n[SHUTDOWN] SIGTERM'); saveAll(); process.exit(0); });
-process.on('SIGINT', () => { console.log('\n[SHUTDOWN] SIGINT'); saveAll(); process.exit(0); });
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`eDocuments Service running on port ${PORT}`);
+  console.log(`Features: PDF export, Excel import, templates, e-signatures, barcodes, audit trail`);
+});
 
-function saveAll() {
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('eDocuments Service shutting down...');
   saveStore('documents', documentsStore);
   saveStore('templates', templatesStore);
   saveStore('history', documentHistory);
   saveStore('settings', tenantSettings);
-}
-
-// =============================================================================
-// START
-// =============================================================================
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('\n' + '='.repeat(70));
-  console.log('📄  EDOCUMENTS SERVICE v3.0.0 — Full QuickBooks Replacement');
-  console.log('='.repeat(70));
-  console.log(`  📌  Port: ${PORT}`);
-  console.log(`  📁  Storage: ${EDOCS_ROOT}`);
-  console.log(`  👥  Multi-tenant: Enabled (x-tenant-slug header)`);
-  console.log(`  📊  Documents: ${Object.keys(documentsStore).length}`);
-  console.log(`  📋  Templates: ${Object.keys(templatesStore).length}`);
-  console.log(`  📈  History: ${Object.keys(documentHistory).length} entries`);
-  console.log(`  🔤  Excel (.xlsx): ${xlsx ? '✓' : '✗ (npm install xlsx)'}`);
-  console.log(`  📝  CSV: ${csvParser ? '✓' : '✗ (npm install csv-parse)'}`);
-  console.log('');
-  console.log('  📖  ENDPOINTS (via API Gateway):');
-  console.log('  ────────────────────────────────────────────');
-  console.log('  📄  Documents:');
-  console.log('       GET    /api/v1/restpoint/edocuments');
-  console.log('       POST   /api/v1/restpoint/edocuments');
-  console.log('       GET    /api/v1/restpoint/edocuments/:id');
-  console.log('       PUT    /api/v1/restpoint/edocuments/:id');
-  console.log('       DELETE /api/v1/restpoint/edocuments/:id');
-  console.log('       GET    /api/v1/restpoint/edocuments/download/:file');
-  console.log('  📋  Templates:');
-  console.log('       GET    /api/v1/restpoint/edocuments/templates');
-  console.log('       POST   /api/v1/restpoint/edocuments/templates');
-  console.log('       GET    /api/v1/restpoint/edocuments/templates/:id');
-  console.log('       PUT    /api/v1/restpoint/edocuments/templates/:id');
-  console.log('       DELETE /api/v1/restpoint/edocuments/templates/:id');
-  console.log('  🔄  Generation & Import:');
-  console.log('       POST   /api/v1/restpoint/edocuments/generate');
-  console.log('       POST   /api/v1/restpoint/edocuments/import-spreadsheet');
-  console.log('       POST   /api/v1/restpoint/edocuments/:id/export-pdf');
-  console.log('       POST   /api/v1/restpoint/edocuments/:id/export-excel');
-  console.log('  🔍  Search & History:');
-  console.log('       POST   /api/v1/restpoint/edocuments/search');
-  console.log('       GET    /api/v1/restpoint/edocuments/history');
-  console.log('       GET    /api/v1/restpoint/edocuments/dashboard/stats');
-  console.log('  ⚙️  Settings:');
-  console.log('       GET    /api/v1/restpoint/edocuments/settings');
-  console.log('       PUT    /api/v1/restpoint/edocuments/settings');
-  console.log('  💰  QuickBooks Replacement (Excel/CSV):');
-  console.log('       POST   /api/v1/restpoint/edocuments/import-spreadsheet');
-  console.log('       POST   /api/v1/restpoint/edocuments/:id/export-excel');
-  console.log('       Template: invoice-spreadsheet, payment-ledger');
-  console.log('='.repeat(70) + '\n');
+  process.exit(0);
 });
+
+process.on('SIGINT', () => {
+  console.log('eDocuments Service shutting down...');
+  saveStore('documents', documentsStore);
+  saveStore('templates', templatesStore);
+  saveStore('history', documentHistory);
+  saveStore('settings', tenantSettings);
+  process.exit(0);
+});
+

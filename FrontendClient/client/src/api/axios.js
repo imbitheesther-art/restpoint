@@ -25,9 +25,11 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Create axios instance with centralized API URL
+// Create axios instance with FULL API URL (includes /api/v1/restpoint base path)
+// This ensures requests go through the API Gateway's registered routes
+// e.g. http://localhost:5000/api/v1/restpoint/auth/login instead of http://localhost:5000/auth/login
 const api = axios.create({
-  baseURL: env.API_URL,
+  baseURL: env.FULL_API_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -55,12 +57,12 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) return Promise.reject(error);
-        
-        const response = await axios.post(env.API_URL + ENDPOINTS.AUTH.REFRESH, 
-          { token: refreshToken }, 
+
+        const response = await axios.post(env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
+          { token: refreshToken },
           { withCredentials: true }
         );
-        
+
         const newToken = response.data?.token || response.data?.accessToken;
         if (newToken) {
           localStorage.setItem('authToken', newToken);

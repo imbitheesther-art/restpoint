@@ -10,6 +10,18 @@ auth:
 # Increase package size limits
 max_body_size: 500mb
 
+# ============================================================================
+# UPLINKS — CRITICAL: Without this, Verdaccio cannot proxy to npmjs.org
+# ============================================================================
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+    timeout: 60s
+    max_fails: 10
+    fail_timeout: 10s
+    maxage: 30m
+    cache: true
+
 # Allow all users to access all packages
 packages:
   '@montezuma/*':
@@ -19,7 +31,7 @@ packages:
   '**':
     access: $all
     publish: $all
-    proxy: $all
+    proxy: npmjs       # <-- FIXED: proxies to the npmjs uplink defined above
 
 # Increase upload limits
 middlewares:

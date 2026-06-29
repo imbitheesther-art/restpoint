@@ -8,14 +8,16 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /usr/src/app
 
-COPY package.json tsconfig.base.json ./
+# FIX 1: Copy the package-lock.json so 'npm ci' actually works!
+COPY package.json package-lock.json* tsconfig.base.json ./
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/qrcode-service/package.json ./services/qrcode-service/
 
-RUN yarn install --frozen-lockfile && yarn cache clean
+# FIX 2: If using npm workspaces, explicitly target the service to speed things up
+RUN npm ci --no-audit --no-fund --workspace=services/qrcode-service || npm install --no-audit --no-fund
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/

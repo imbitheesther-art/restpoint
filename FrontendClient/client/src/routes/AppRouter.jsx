@@ -3,12 +3,17 @@ import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 're
 import { useTenantStore } from '../store/useTenantStore';
 import { tenantApi } from '../api/tenant.api';
 import ModernSidebar from '../components/layout/ModernSidebar';
+import PortalRouter from '../portal/PortalRouter';
 
 const LandingPage = lazy(() => import('../modules/landing/LandingPage'));
 const OnboardingFlow = lazy(() => import('../modules/onboarding/OnboardingFlow'));
 const PrivacyPolicy = lazy(() => import('../components/privacy/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('../components/privacy/TermsOfService'));
 const AccountDeletion = lazy(() => import('../components/privacy/AccountDeletion'));
+const DataMigrationPolicy = lazy(() => import('../components/privacy/DataMigrationPolicy'));
+const SecurityPolicy = lazy(() => import('../components/privacy/securityPolicy'));
+const SLAPolicy = lazy(() => import('../components/privacy/slaPolicy'));
+const ReleasePolicy = lazy(() => import('../components/privacy/releasePolicy'));
 const TicketPage = lazy(() => import('../components/support/TicketPage'));
 const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
 const AboutPage = lazy(() => import('../components/pages/AboutPage'));
@@ -226,9 +231,14 @@ const AppRouter = () => (
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
       <Route path="/portal/login" element={<PortalLoginPage />} />
+      <Route path="/portal/*" element={<PortalRouter />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/account-deletion" element={<AccountDeletion />} />
+      <Route path="/data-migration" element={<DataMigrationPolicy />} />
+      <Route path="/security" element={<SecurityPolicy />} />
+      <Route path="/sla" element={<SLAPolicy />} />
+      <Route path="/releases" element={<ReleasePolicy />} />
       <Route path="/why-us" element={<WhyUsPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
@@ -242,3 +252,4 @@ const AppRouter = () => (
 );
 
 export default AppRouter;
+

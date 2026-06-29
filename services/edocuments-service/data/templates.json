@@ -1,0 +1,632 @@
+{
+  "system-invoice-template": {
+    "id": "invoice-template",
+    "name": "Invoice",
+    "type": "invoice",
+    "description": "Funeral service invoice template",
+    "fields": [
+      {
+        "key": "invoiceNumber",
+        "label": "Invoice Number",
+        "placeholder": "{{invoiceNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "clientName",
+        "label": "Client Name",
+        "placeholder": "{{clientName}}",
+        "type": "text"
+      },
+      {
+        "key": "clientPhone",
+        "label": "Client Phone",
+        "placeholder": "{{clientPhone}}",
+        "type": "text"
+      },
+      {
+        "key": "serviceDate",
+        "label": "Service Date",
+        "placeholder": "{{serviceDate}}",
+        "type": "date"
+      },
+      {
+        "key": "totalAmount",
+        "label": "Total Amount",
+        "placeholder": "{{totalAmount}}",
+        "type": "number"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Deceased Name",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "items",
+        "label": "Items/Services",
+        "placeholder": "{{items}}",
+        "type": "textarea"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-receipt-template": {
+    "id": "receipt-template",
+    "name": "Receipt",
+    "type": "receipt",
+    "description": "Payment receipt document template",
+    "fields": [
+      {
+        "key": "receiptNumber",
+        "label": "Receipt Number",
+        "placeholder": "{{receiptNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "payerName",
+        "label": "Payer Name",
+        "placeholder": "{{payerName}}",
+        "type": "text"
+      },
+      {
+        "key": "amount",
+        "label": "Amount",
+        "placeholder": "{{amount}}",
+        "type": "number"
+      },
+      {
+        "key": "paymentDate",
+        "label": "Payment Date",
+        "placeholder": "{{paymentDate}}",
+        "type": "date"
+      },
+      {
+        "key": "paymentMethod",
+        "label": "Payment Method",
+        "placeholder": "{{paymentMethod}}",
+        "type": "select",
+        "options": [
+          "Cash",
+          "M-Pesa",
+          "Bank Transfer",
+          "Card"
+        ]
+      },
+      {
+        "key": "transactionRef",
+        "label": "Transaction Reference",
+        "placeholder": "{{transactionRef}}",
+        "type": "text"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-agreement-template": {
+    "id": "agreement-template",
+    "name": "Funeral Service Agreement",
+    "type": "agreement",
+    "description": "Service agreement form template",
+    "fields": [
+      {
+        "key": "agreementDate",
+        "label": "Agreement Date",
+        "placeholder": "{{agreementDate}}",
+        "type": "date"
+      },
+      {
+        "key": "clientName",
+        "label": "Client Name",
+        "placeholder": "{{clientName}}",
+        "type": "text"
+      },
+      {
+        "key": "clientIDNumber",
+        "label": "Client ID Number",
+        "placeholder": "{{clientIDNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "clientAddress",
+        "label": "Client Address",
+        "placeholder": "{{clientAddress}}",
+        "type": "textarea"
+      },
+      {
+        "key": "clientPhone",
+        "label": "Client Phone",
+        "placeholder": "{{clientPhone}}",
+        "type": "text"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Deceased Name",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "serviceType",
+        "label": "Service Type",
+        "placeholder": "{{serviceType}}",
+        "type": "select",
+        "options": [
+          "Burial",
+          "Cremation",
+          "Memorial Service",
+          "Full Package"
+        ]
+      },
+      {
+        "key": "serviceDate",
+        "label": "Service Date",
+        "placeholder": "{{serviceDate}}",
+        "type": "date"
+      },
+      {
+        "key": "totalCost",
+        "label": "Total Cost",
+        "placeholder": "{{totalCost}}",
+        "type": "number"
+      },
+      {
+        "key": "specialRequests",
+        "label": "Special Requests",
+        "placeholder": "{{specialRequests}}",
+        "type": "textarea"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-authorization-template": {
+    "id": "authorization-template",
+    "name": "Authorization Form",
+    "type": "form",
+    "description": "Family authorization form template",
+    "fields": [
+      {
+        "key": "authorizationDate",
+        "label": "Date",
+        "placeholder": "{{authorizationDate}}",
+        "type": "date"
+      },
+      {
+        "key": "authorizedName",
+        "label": "Authorized Person Name",
+        "placeholder": "{{authorizedName}}",
+        "type": "text"
+      },
+      {
+        "key": "authorizedIDNumber",
+        "label": "ID Number",
+        "placeholder": "{{authorizedIDNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "authorizedAction",
+        "label": "Authorized Action",
+        "placeholder": "{{authorizedAction}}",
+        "type": "textarea"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Deceased Name",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "relationship",
+        "label": "Relationship to Deceased",
+        "placeholder": "{{relationship}}",
+        "type": "select",
+        "options": [
+          "Spouse",
+          "Child",
+          "Parent",
+          "Sibling",
+          "Other Relative",
+          "Legal Representative"
+        ]
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-deceased-info-template": {
+    "id": "deceased-info-template",
+    "name": "Deceased Information Form",
+    "type": "form",
+    "description": "Deceased details form template",
+    "fields": [
+      {
+        "key": "fullName",
+        "label": "Full Name",
+        "placeholder": "{{fullName}}",
+        "type": "text"
+      },
+      {
+        "key": "dateOfBirth",
+        "label": "Date of Birth",
+        "placeholder": "{{dateOfBirth}}",
+        "type": "date"
+      },
+      {
+        "key": "dateOfDeath",
+        "label": "Date of Death",
+        "placeholder": "{{dateOfDeath}}",
+        "type": "date"
+      },
+      {
+        "key": "placeOfBirth",
+        "label": "Place of Birth",
+        "placeholder": "{{placeOfBirth}}",
+        "type": "text"
+      },
+      {
+        "key": "placeOfDeath",
+        "label": "Place of Death",
+        "placeholder": "{{placeOfDeath}}",
+        "type": "text"
+      },
+      {
+        "key": "occupation",
+        "label": "Occupation",
+        "placeholder": "{{occupation}}",
+        "type": "text"
+      },
+      {
+        "key": "nextOfKin",
+        "label": "Next of Kin",
+        "placeholder": "{{nextOfKin}}",
+        "type": "text"
+      },
+      {
+        "key": "nextOfKinPhone",
+        "label": "Next of Kin Phone",
+        "placeholder": "{{nextOfKinPhone}}",
+        "type": "text"
+      },
+      {
+        "key": "causeOfDeath",
+        "label": "Cause of Death",
+        "placeholder": "{{causeOfDeath}}",
+        "type": "textarea"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-cremation-cert-template": {
+    "id": "cremation-cert-template",
+    "name": "Cremation Certificate",
+    "type": "certificate",
+    "description": "Cremation authorization template",
+    "fields": [
+      {
+        "key": "certificateNumber",
+        "label": "Certificate Number",
+        "placeholder": "{{certificateNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Deceased Name",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "dateOfDeath",
+        "label": "Date of Death",
+        "placeholder": "{{dateOfDeath}}",
+        "type": "date"
+      },
+      {
+        "key": "cremationDate",
+        "label": "Cremation Date",
+        "placeholder": "{{cremationDate}}",
+        "type": "date"
+      },
+      {
+        "key": "crematorium",
+        "label": "Crematorium",
+        "placeholder": "{{crematorium}}",
+        "type": "text"
+      },
+      {
+        "key": "authorizedBy",
+        "label": "Authorized By",
+        "placeholder": "{{authorizedBy}}",
+        "type": "text"
+      },
+      {
+        "key": "witnessName",
+        "label": "Witness Name",
+        "placeholder": "{{witnessName}}",
+        "type": "text"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-burial-permit-template": {
+    "id": "burial-permit-template",
+    "name": "Burial Permit",
+    "type": "permit",
+    "description": "Burial permit form template",
+    "fields": [
+      {
+        "key": "permitNumber",
+        "label": "Permit Number",
+        "placeholder": "{{permitNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Deceased Name",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "dateOfDeath",
+        "label": "Date of Death",
+        "placeholder": "{{dateOfDeath}}",
+        "type": "date"
+      },
+      {
+        "key": "burialDate",
+        "label": "Burial Date",
+        "placeholder": "{{burialDate}}",
+        "type": "date"
+      },
+      {
+        "key": "cemeteryName",
+        "label": "Cemetery Name",
+        "placeholder": "{{cemeteryName}}",
+        "type": "text"
+      },
+      {
+        "key": "plotNumber",
+        "label": "Plot Number",
+        "placeholder": "{{plotNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "graveDepth",
+        "label": "Grave Depth (ft)",
+        "placeholder": "{{graveDepth}}",
+        "type": "number"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-embalming-consent-template": {
+    "id": "embalming-consent-template",
+    "name": "Embalming Consent",
+    "type": "consent",
+    "description": "Embalming consent form template",
+    "fields": [
+      {
+        "key": "consentDate",
+        "label": "Consent Date",
+        "placeholder": "{{consentDate}}",
+        "type": "date"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Deceased Name",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "nextOfKinName",
+        "label": "Next of Kin Name",
+        "placeholder": "{{nextOfKinName}}",
+        "type": "text"
+      },
+      {
+        "key": "relationship",
+        "label": "Relationship",
+        "placeholder": "{{relationship}}",
+        "type": "select",
+        "options": [
+          "Spouse",
+          "Child",
+          "Parent",
+          "Sibling",
+          "Other Relative"
+        ]
+      },
+      {
+        "key": "embalmerName",
+        "label": "Embalmer Name",
+        "placeholder": "{{embalmerName}}",
+        "type": "text"
+      },
+      {
+        "key": "consentGiven",
+        "label": "Consent Given",
+        "placeholder": "{{consentGiven}}",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No"
+        ]
+      },
+      {
+        "key": "specialInstructions",
+        "label": "Special Instructions",
+        "placeholder": "{{specialInstructions}}",
+        "type": "textarea"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-death-certificate-template": {
+    "id": "death-certificate-template",
+    "name": "Death Certificate Template",
+    "type": "certificate",
+    "description": "Official death certificate template",
+    "fields": [
+      {
+        "key": "certificateNumber",
+        "label": "Certificate Number",
+        "placeholder": "{{certificateNumber}}",
+        "type": "text"
+      },
+      {
+        "key": "deceasedName",
+        "label": "Full Name of Deceased",
+        "placeholder": "{{deceasedName}}",
+        "type": "text"
+      },
+      {
+        "key": "dateOfBirth",
+        "label": "Date of Birth",
+        "placeholder": "{{dateOfBirth}}",
+        "type": "date"
+      },
+      {
+        "key": "dateOfDeath",
+        "label": "Date of Death",
+        "placeholder": "{{dateOfDeath}}",
+        "type": "date"
+      },
+      {
+        "key": "placeOfDeath",
+        "label": "Place of Death",
+        "placeholder": "{{placeOfDeath}}",
+        "type": "text"
+      },
+      {
+        "key": "causeOfDeath",
+        "label": "Cause of Death",
+        "placeholder": "{{causeOfDeath}}",
+        "type": "textarea"
+      },
+      {
+        "key": "registeredBy",
+        "label": "Registered By",
+        "placeholder": "{{registeredBy}}",
+        "type": "text"
+      },
+      {
+        "key": "registrationDate",
+        "label": "Registration Date",
+        "placeholder": "{{registrationDate}}",
+        "type": "date"
+      }
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-invoice-spreadsheet": {
+    "id": "invoice-spreadsheet",
+    "name": "Invoice Spreadsheet (Excel)",
+    "type": "spreadsheet",
+    "description": "Excel-style invoice with line items, taxes, and totals",
+    "fields": [
+      {
+        "key": "invoiceNumber",
+        "label": "Invoice #",
+        "placeholder": "INV-001",
+        "type": "text"
+      },
+      {
+        "key": "issueDate",
+        "label": "Issue Date",
+        "placeholder": "{{issueDate}}",
+        "type": "date"
+      },
+      {
+        "key": "dueDate",
+        "label": "Due Date",
+        "placeholder": "{{dueDate}}",
+        "type": "date"
+      },
+      {
+        "key": "billTo",
+        "label": "Bill To",
+        "placeholder": "{{billTo}}",
+        "type": "textarea"
+      },
+      {
+        "key": "lineItems",
+        "label": "Line Items (JSON array)",
+        "placeholder": "[{\"description\":\"Service\",\"qty\":1,\"rate\":1000}]",
+        "type": "textarea"
+      },
+      {
+        "key": "subtotal",
+        "label": "Subtotal",
+        "placeholder": "{{subtotal}}",
+        "type": "number"
+      },
+      {
+        "key": "taxRate",
+        "label": "Tax Rate %",
+        "placeholder": "16",
+        "type": "number"
+      },
+      {
+        "key": "taxAmount",
+        "label": "Tax Amount",
+        "placeholder": "{{taxAmount}}",
+        "type": "number"
+      },
+      {
+        "key": "totalAmount",
+        "label": "Total Amount",
+        "placeholder": "{{totalAmount}}",
+        "type": "number"
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "placeholder": "{{notes}}",
+        "type": "textarea"
+      }
+    ],
+    "columnHeaders": [
+      "#",
+      "Description",
+      "Quantity",
+      "Unit Price (KES)",
+      "Total (KES)"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  },
+  "system-payment-ledger": {
+    "id": "payment-ledger",
+    "name": "Payment Ledger (Excel)",
+    "type": "spreadsheet",
+    "description": "Payment tracking spreadsheet with running balance",
+    "fields": [
+      {
+        "key": "ledgerName",
+        "label": "Ledger Name",
+        "placeholder": "{{ledgerName}}",
+        "type": "text"
+      },
+      {
+        "key": "entries",
+        "label": "Entries (JSON array)",
+        "placeholder": "[{\"date\":\"2024-01-01\",\"description\":\"Payment\",\"amount\":5000}]",
+        "type": "textarea"
+      }
+    ],
+    "columnHeaders": [
+      "Date",
+      "Description",
+      "Reference",
+      "Debit (KES)",
+      "Credit (KES)",
+      "Balance (KES)"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-06-29T04:17:16.687Z"
+  }
+}

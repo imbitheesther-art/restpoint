@@ -9,7 +9,8 @@
     "composite": true,
     "strict": false,
     "noImplicitAny": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+    "allowJs": true
   },
   "include": [
     "server.ts",
@@ -22,7 +23,8 @@
     "scripts/**/*.ts",
     "types/**/*.ts",
     "migrations/**/*.ts",
-    "../../shared/**/*.ts"
+    "../../shared/**/*.ts",
+    "../../global/**/*.js"
   ],
   "exclude": [
     "node_modules",

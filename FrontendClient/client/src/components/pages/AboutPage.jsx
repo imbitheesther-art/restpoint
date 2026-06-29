@@ -57,6 +57,7 @@ export default function AboutPage() {
       </nav>
 
       <main style={{ paddingTop: '100px', paddingBottom: '4rem' }}>
+        {/* Hero Section */}
         <section style={{ padding: '3rem 0 2rem', borderBottom: `1px solid ${C.line}` }}>
           <div className="wrap">
             <span className="label-mono">About</span>
@@ -67,6 +68,7 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* The Story */}
         <section style={{ padding: '3rem 0' }}>
           <div className="wrap">
             <h2>The Story</h2>
@@ -100,21 +102,25 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* About Welt Tallis Technologies */}
         <section style={{ padding: '3rem 0', background: C.ink, color: C.bone }}>
           <div className="wrap">
-            <span className="label-mono" style={{ color: C.brassLight }}>Our Software Architecture</span>
-            <h2 style={{ color: C.bone }}>Enterprise‑grade infrastructure.</h2>
+            <span className="label-mono" style={{ color: C.brassLight }}>About Welt Tallis Technologies</span>
+            <h2 style={{ color: C.bone }}>The company behind Rest Point.</h2>
             <p style={{ color: C.grayLight, maxWidth: '640px' }}>
-              Rest Point is built on a microservices architecture with dedicated services for authentication, deceased management, billing, documents, notifications, analytics, and more. Each service is containerised, independently scalable, and connected through an API gateway with shared middleware for tenancy, logging, and security.
+              Welt Tallis Technologies is a software company dedicated to building robust, scalable platforms for African businesses. Rest Point is our flagship product — a complete operating system for funeral homes.
+            </p>
+            <p style={{ color: C.grayLight, maxWidth: '640px', marginTop: '1.2rem' }}>
+              We understand that technology infrastructure is extremely expensive — costs run into millions of shillings. We are dedicated to making it affordable for our clients without compromising on quality, security, or reliability.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '2rem' }}>
               {[
-                ['Microservices', 'Decoupled, independently deployed services for every domain'],
-                ['Multi‑tenancy', 'Isolated tenant databases with shared infrastructure'],
-                ['Encryption', 'AES‑256 at rest, TLS 1.3 in transit, end‑to‑end'],
-                ['Zero downtime', 'Rolling deployments, health checks, and circuit breakers'],
-                ['Audit logging', 'Every change tracked, every access recorded'],
-                ['Google Drive sync', 'Automated backups to your own Google Drive'],
+                ['Affordable Infrastructure', 'We understand technology costs millions. We are dedicated to making it affordable for African businesses.'],
+                ['Microservices', 'Decoupled, independently deployed services for every domain.'],
+                ['Multi‑tenancy', 'Isolated tenant databases with shared infrastructure.'],
+                ['Encryption', 'AES‑256 at rest, TLS 1.3 in transit, end‑to‑end.'],
+                ['Zero downtime', 'Rolling deployments, health checks, and circuit breakers.'],
+                ['Google Drive Backup', 'Automated backups to your own Google Drive. Your data stays yours.'],
               ].map(([title, desc]) => (
                 <div key={title} style={{ borderTop: `1px solid ${C.lineDark}`, paddingTop: '1rem' }}>
                   <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1rem', color: C.bone, fontWeight: 500, marginBottom: '.3rem' }}>{title}</div>
@@ -125,32 +131,61 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Mission & Values */}
         <section style={{ padding: '3rem 0' }}>
           <div className="wrap">
-            <h2>Built by Welt Tallis Technologies</h2>
+            <h2>Our Mission</h2>
             <p>
-              Rest Point is built and maintained by <strong>Welt Tallis Technologies</strong>, a software company dedicated to building robust, scalable platforms for African businesses. We combine deep technical expertise with a commitment to data protection, reliability, and user experience.
+              Our biggest responsibility is to <strong>protect your data at all costs</strong>. We do not share your data with anyone. We do not manipulate your data. Your data is backed up to your own Google Drive, a NAS device attached to your network, and our secure infrastructure. You never need to worry about anything.
             </p>
             <p style={{ marginTop: '1.2rem' }}>
-              Our biggest responsibility is to <strong>protect your data at all costs</strong>. We do not share your data with anyone. We do not manipulate your data. Your data is backed up to your own Google Drive, a NAS device attached to your network, and our secure infrastructure. You never need to worry about anything.
+              We combine deep technical expertise with a commitment to data protection, reliability, and user experience. Rest Point is built and maintained with the highest standards of security and professionalism.
             </p>
           </div>
         </section>
 
+        {/* Related Products - Welt Tallis Technologies ecosystem */}
         <section style={{ padding: '3rem 0', borderTop: `1px solid ${C.line}` }}>
           <div className="wrap">
-            <span className="label-mono">Related Products</span>
-            <h2>More from the Welt Tallis ecosystem.</h2>
+            <span className="label-mono">Our Ecosystem</span>
+            <h2>More from Welt Tallis Technologies.</h2>
+
+            {/* Rest Point */}
             <div style={{ marginTop: '2rem', background: C.bone2, border: `1px solid ${C.line}`, borderRadius: '4px', padding: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '.8rem' }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '4px', background: C.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.bone, fontFamily: "'Fraunces', serif", fontSize: '1.2rem', fontWeight: 600 }}>BN</div>
+                <div style={{ width: '44px', height: '44px', borderRadius: '4px', background: C.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.bone, fontFamily: "'Fraunces', serif", fontSize: '1.2rem', fontWeight: 600 }}>RP</div>
                 <div>
-                <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', color: C.ink, fontWeight: 500 }}>Rest Point</div>
-                <div style={{ fontSize: '.8rem', color: C.gray }}>Funeral home operating system</div>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', color: C.ink, fontWeight: 500 }}>Rest Point</div>
+                  <div style={{ fontSize: '.8rem', color: C.gray }}>Funeral home operating system</div>
                 </div>
               </div>
               <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>
                 Rest Point is the complete operating system for funeral homes — case management, family communication, dispatch, and billing in one dignified platform.
+              </p>
+              <a href="/" style={{
+                display: 'inline-flex', alignItems: 'center', gap: '.4rem',
+                fontFamily: "'JetBrains Mono', monospace", fontSize: '.78rem', letterSpacing: '0.03em',
+                color: C.brass, textDecoration: 'none', borderBottom: `1px solid ${C.line}`,
+                paddingBottom: '.15rem', transition: 'all .2s',
+              }}
+                onMouseEnter={(e) => e.target.style.color = C.brassLight}
+                onMouseLeave={(e) => e.target.style.color = C.brass}
+              >
+                Visit Rest Point →
+              </a>
+            </div>
+
+            {/* Builders Nation - Separate platform */}
+            <div style={{ marginTop: '1.5rem', background: C.bone2, border: `1px solid ${C.line}`, borderRadius: '4px', padding: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '.8rem' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '4px', background: C.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.bone, fontFamily: "'Fraunces', serif", fontSize: '1.2rem', fontWeight: 600 }}>BN</div>
+                <div>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', color: C.ink, fontWeight: 500 }}>Builders Nation</div>
+                  <div style={{ fontSize: '.8rem', color: C.gray }}>Youth technology & engineering platform</div>
+                </div>
+              </div>
+              <p style={{ fontSize: '.9rem', marginBottom: '1rem' }}>
+                Builders Nation is a separate platform that immerses young minds into the world of technology, engineering, and sustainability using real remote-controlled simulations.
               </p>
               <a href="https://buildersnation.netlify.app/" target="_blank" rel="noopener noreferrer" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '.4rem',
@@ -158,15 +193,16 @@ export default function AboutPage() {
                 color: C.brass, textDecoration: 'none', borderBottom: `1px solid ${C.line}`,
                 paddingBottom: '.15rem', transition: 'all .2s',
               }}
-              onMouseEnter={(e) => e.target.style.color = C.brassLight}
-              onMouseLeave={(e) => e.target.style.color = C.brass}
+                onMouseEnter={(e) => e.target.style.color = C.brassLight}
+                onMouseLeave={(e) => e.target.style.color = C.brass}
               >
-                Visit Rest Point →
+                Visit Builders Nation →
               </a>
             </div>
           </div>
         </section>
 
+        {/* Contact */}
         <section style={{ padding: '3rem 0', borderTop: `1px solid ${C.line}` }}>
           <div className="wrap" style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '.88rem', color: C.gray }}>

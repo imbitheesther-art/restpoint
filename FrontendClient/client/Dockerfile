@@ -10,11 +10,11 @@ LABEL stage=deps
 WORKDIR /app
 
 # Copy only dependency files (cached layer)
-COPY package.json yarn.lock ./
+COPY package.json package-lock.json ./
 
-# Install with yarn for reproducibility
-RUN yarn install --frozen-lockfile --prefer-offline || \
-    yarn install --prefer-offline
+# Install with npm for reproducibility
+RUN npm ci --no-audit --no-fund || \
+    npm install --no-audit --no-fund
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -24,7 +24,7 @@ WORKDIR /app
 # Copy node_modules from deps stage (cached)
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/yarn.lock ./yarn.lock
+COPY --from=deps /app/package-lock.json ./package-lock.json
 
 # Copy source code
 COPY . .

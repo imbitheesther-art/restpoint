@@ -11,7 +11,8 @@
     "build": "tsc",
     "clean": "rimraf dist",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build",
+    "dev": "echo 'Shared utils package ready'"
   },
   "dependencies": {
     "luxon": "^3.4.1"

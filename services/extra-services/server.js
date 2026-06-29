@@ -1,6 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const dotenv = require('dotenv');
+
+// Load environment variables from .env / .env.local before any middleware runs
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const app = express();
 const PORT = process.env.PORT || 8016;
@@ -9,7 +14,7 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json({ limit: '10mb' }));
 
-// Import auth middleware
+// Import auth middleware after env is loaded
 const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
 
 // Health check (no auth)

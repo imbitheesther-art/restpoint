@@ -547,7 +547,7 @@ const LoginPage = ({ onLogin }) => {
         throw new Error('Please enter admission number or phone number');
       }
 
-      const response = await fetch('http://localhost:5000/api/v1/restpoint/portal/login', {
+      const response = await fetch('/api/v1/restpoint/portal/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

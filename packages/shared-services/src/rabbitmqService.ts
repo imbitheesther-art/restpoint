@@ -9,6 +9,7 @@
  * - Data export operations
  * - Report generation
  * - Batch deceased processing
+ * - Centralized API logging
  * 
  * Graceful fallback: If RabbitMQ is unavailable, tasks are logged/queued in-memory
  */
@@ -22,6 +23,7 @@ const DOCUMENT_QUEUE = 'restpoint.documents';
 const BILLING_QUEUE = 'restpoint.billing';
 const EXPORT_QUEUE = 'restpoint.exports';
 const EMAIL_QUEUE = 'restpoint.emails';
+const API_LOGS_QUEUE = 'restpoint.api.logs';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -106,6 +108,10 @@ export async function getChannel(): Promise<Channel | null> {
     await channel.assertQueue(EMAIL_QUEUE, { durable: true });
     await channel.bindQueue(EMAIL_QUEUE, TASK_EXCHANGE, 'email.*');
 
+    // Centralized API logs queue
+    await channel.assertQueue(API_LOGS_QUEUE, { durable: true });
+    await channel.bindQueue(API_LOGS_QUEUE, TASK_EXCHANGE, 'api.*');
+
     // Set prefetch to 1 for fair dispatch
     await channel.prefetch(1);
 
@@ -127,7 +133,7 @@ function scheduleReconnect(): void {
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     connectionFailed = false;
-    getChannel().catch(() => {});
+    getChannel().catch(() => { });
   }, 10000); // Retry every 10 seconds
 }
 
@@ -223,6 +229,53 @@ export async function queueEmail(
   return publishTask(tenantSlug, 'email.send', emailData, 'normal');
 }
 
+/**
+ * Publish an API activity/error log entry for centralized logging
+ */
+export async function publishApiLog(
+  tenantSlug: string,
+  level: 'info' | 'warn' | 'error',
+  message: string,
+  context?: { service?: string; route?: string; method?: string; userId?: string;[key: string]: any }
+): Promise<{ queued: boolean; taskId: string }> {
+  const taskId = `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  const payload: TaskPayload & { level: string; message: string; context?: any } = {
+    taskId,
+    tenantSlug,
+    type: 'api.log',
+    data: {},
+    createdAt: new Date().toISOString(),
+    priority: level === 'error' ? 'high' : 'normal',
+    level,
+    message,
+    context,
+  };
+
+  try {
+    const ch = await getChannel();
+    if (!ch) {
+      console.warn(`[RabbitMQ] ⚠️ Not available - logging API event inline: ${message}`);
+      return { queued: false, taskId };
+    }
+
+    ch.publish(TASK_EXCHANGE, 'api.log', Buffer.from(JSON.stringify(payload)), {
+      persistent: true,
+      priority: level === 'error' ? 10 : level === 'warn' ? 5 : 1,
+      headers: {
+        'x-tenant-slug': tenantSlug,
+        'x-log-level': level,
+        'x-service': context?.service || 'unknown',
+      },
+    });
+
+    return { queued: true, taskId };
+  } catch (error: any) {
+    console.error(`[RabbitMQ] ❌ Failed to publish API log: ${error.message}`);
+    return { queued: false, taskId };
+  }
+}
+
 // ─── Task Consumption ────────────────────────────────────────────────────
 
 /**
@@ -291,6 +344,7 @@ export async function startAllConsumers(): Promise<void> {
     startConsuming(BILLING_QUEUE),
     startConsuming(EXPORT_QUEUE),
     startConsuming(EMAIL_QUEUE),
+    startConsuming(API_LOGS_QUEUE),
   ]);
 }
 
@@ -357,6 +411,7 @@ export default {
   queueBillingComputation,
   queueExport,
   queueEmail,
+  publishApiLog,
   registerTaskHandler,
   startConsuming,
   startAllConsumers,

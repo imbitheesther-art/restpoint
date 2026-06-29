@@ -6,6 +6,14 @@ import mysql from 'mysql2/promise';
 import ExcelExportService from '../services/excelExportService';
 import { resolveDatabase, safeTenantQuery, safeTenantExecute, getRootPool } from '../../../shared/dbConfig';
 import logger from '@montezuma/shared-logger';
+import { CircuitBreaker, getCircuitBreaker } from '../../../shared/utils/circuitBreaker';
+
+// Module-level Circuit Breaker for Notification Service
+// Threshold=2 failures -> OPEN, recovery=15s before HALF_OPEN probe.
+const notificationBreaker = getCircuitBreaker('notification-service', {
+    failureThreshold: 2,
+    recoveryTimeout: 15_000,
+});
 
 interface TenantRequest extends Request {
     tenantSlug?: string;
@@ -22,7 +30,7 @@ const nowMs = (): number => {
 };
 
 const logError = (error: any, context: string) => {
-    console.error(`❌ Error in ${context}:`, {
+    console.error(`�?O Error in ${context}:`, {
         message: error?.message || 'Unknown error',
         stack: error?.stack,
         timestamp: nowNairobi()
@@ -33,8 +41,8 @@ const logError = (error: any, context: string) => {
  * Extract tenant slug from request - consistent across all handlers
  */
 const getTenantSlug = (req: any): string | undefined => {
-    return (req as any).headers['x-slug'] as string 
-        || (req as any).headers['x-tenant-slug'] as string 
+    return (req as any).headers['x-slug'] as string
+        || (req as any).headers['x-tenant-slug'] as string
         || req.tenantSlug;
 };
 
@@ -114,12 +122,12 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
             INDEX idx_status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
-    
+
     try {
         await safeTenantExecute(dbName, createTableSQL, []);
-        console.log(`✅ Deceased table ensured for tenant: ${tenantSlug} in database: ${dbName}`);
+        console.log(`�o. Deceased table ensured for tenant: ${tenantSlug} in database: ${dbName}`);
     } catch (error) {
-        console.error(`❌ Failed to create deceased table for tenant ${tenantSlug}:`, error);
+        console.error(`�?O Failed to create deceased table for tenant ${tenantSlug}:`, error);
         throw error;
     }
 };
@@ -136,7 +144,7 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
  */
 export const registerDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
     const tenantSlug = getTenantSlug(req);
-    
+
     console.log('Register deceased request received');
     console.log('Tenant slug:', tenantSlug);
     console.log('Request body:', { ...req.body, national_id: req.body.national_id ? '***' : undefined });
@@ -174,15 +182,15 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
         }
 
         // Resolve database from unified x-slug (single-branch or multi-branch)
-        console.log(`🔍 Resolving database for slug: ${tenantSlug}`);
+        console.log(`Resolving database for slug: ${tenantSlug}`);
         const dbName = await resolveTenantDb(tenantSlug);
-        
+
         if (!dbName) {
             return tenantError(res, 404, `No database configured for: ${tenantSlug}. Please onboard the tenant first.`);
         }
-        
-        logger.info({ message:  ` Using database: ${dbName}`  })
-      
+
+        logger.info({ message: ` Using database: ${dbName}` })
+
 
         // Ensure the deceased table exists in the tenant's database
         await ensureDeceasedTable(dbName, tenantSlug);
@@ -194,7 +202,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
         const admittedDate = date_admitted || now;
         const createdBy = (req as any).user?.id || null;
 
-        console.log(`📝 Inserting deceased record with ID: ${deceased_id} into database: ${dbName}`);
+        console.log(`dY"? Inserting deceased record with ID: ${deceased_id} into database: ${dbName}`);
 
         const insertQuery = `
             INSERT INTO deceased (
@@ -223,7 +231,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             createdBy
         ]);
 
-        console.log(`✅ Deceased registered successfully in database ${dbName}. Insert ID: ${result.insertId}`);
+        console.log(` Deceased registered successfully in database ${dbName}. Insert ID: ${result.insertId}`);
 
         // Create notification for new deceased registration (non-blocking)
         const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:8111';
@@ -238,7 +246,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
             },
             timeout: 5000
         }).catch(err => {
-            console.warn('⚠️ Could not create notification:', err.message);
+            console.warn('? Could not create notification:', err.message);
         });
 
         return res.status(201).json({
@@ -255,7 +263,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
         });
 
     } catch (error: any) {
-        console.error('❌ Error in registerDeceased:', error);
+        console.error('�?O Error in registerDeceased:', error);
         logError(error, 'registerDeceased');
         return tenantError(res, 500, 'Internal Server Error', error.message);
     }
@@ -270,7 +278,7 @@ export const registerDeceased = async (req: TenantRequest, res: Response): Promi
 export const getAllDeceased = async (req: TenantRequest, res: Response): Promise<Response> => {
     const tenantSlug = getTenantSlug(req);
 
-    console.log('📋 Get all deceased request for slug:', tenantSlug);
+    console.log('dY"< Get all deceased request for slug:', tenantSlug);
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return tenantError(res, 400, 'Valid tenant required. Please provide x-slug header');
@@ -328,7 +336,7 @@ export const getAllDeceased = async (req: TenantRequest, res: Response): Promise
         });
 
     } catch (error: any) {
-        console.error('❌ Error in getAllDeceased:', error);
+        console.error('�?O Error in getAllDeceased:', error);
         logError(error, 'getAllDeceased');
         return tenantError(res, 500, 'Internal Server Error');
     }
@@ -351,7 +359,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
         return '';
     })();
 
-    console.log(`📋 Get deceased by ID: ${id} for tenant: ${tenantSlug}`);
+    console.log(`dY"< Get deceased by ID: ${id} for tenant: ${tenantSlug}`);
 
     if (!id || !tenantSlug) {
         return tenantError(res, 400, 'Invalid request: tenant and id required');
@@ -369,7 +377,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
 
         let deceased = null;
         const isNumeric = /^\d+$/.test(id);
-        
+
         const selectQuery = `
             SELECT 
                 id, deceased_id, full_name, date_of_death, date_of_birth,
@@ -381,7 +389,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
             FROM deceased
             WHERE ${isNumeric ? 'id = ?' : 'deceased_id = ?'}
         `;
-        
+
         const records = await safeTenantQuery(dbName, selectQuery, [isNumeric ? parseInt(id) : id]);
         if (records && records.length > 0) deceased = records[0];
 
@@ -396,7 +404,7 @@ export const getDeceasedById = async (req: TenantRequest, res: Response): Promis
         });
 
     } catch (error: any) {
-        console.error('❌ Error in getDeceasedById:', error);
+        console.error('�?O Error in getDeceasedById:', error);
         logError(error, 'getDeceasedById');
         return tenantError(res, 500, 'Internal Server Error');
     }
@@ -439,7 +447,7 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
             'place_of_death': 'string',
             'gender': 'string'
         };
-        
+
         const fields: string[] = [];
         const values: any[] = [];
 
@@ -469,7 +477,7 @@ export const updateDeceased = async (req: TenantRequest, res: Response): Promise
         });
 
     } catch (error: any) {
-        console.error('❌ Error in updateDeceased:', error);
+        console.error('�?O Error in updateDeceased:', error);
         logError(error, 'updateDeceased');
         return tenantError(res, 500, 'Internal Server Error');
     }
@@ -499,7 +507,7 @@ export const deleteDeceased = async (req: TenantRequest, res: Response): Promise
         // Soft delete: mark as deleted instead of removing
         // First ensure is_deleted column exists
         try {
-            await safeTenantExecute(dbName, 
+            await safeTenantExecute(dbName,
                 `ALTER TABLE deceased ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`,
                 []);
         } catch (e) {
@@ -519,7 +527,7 @@ export const deleteDeceased = async (req: TenantRequest, res: Response): Promise
         });
 
     } catch (error: any) {
-        console.error('❌ Error in deleteDeceased:', error);
+        console.error('�?O Error in deleteDeceased:', error);
         logError(error, 'deleteDeceased');
         return tenantError(res, 500, 'Internal Server Error');
     }
@@ -574,7 +582,7 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
         });
 
     } catch (error: any) {
-        console.error('❌ Error in getDeceasedStats:', error);
+        console.error(' Error in getDeceasedStats:', error);
         logError(error, 'getDeceasedStats');
         return tenantError(res, 500, 'Internal Server Error');
     }
@@ -593,8 +601,8 @@ export const getDeceasedStats = async (req: TenantRequest, res: Response): Promi
  */
 export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): Promise<Response> => {
     const tenantSlug = getTenantSlug(req);
-    
-    console.log('📊 Export deceased records to Excel for tenant:', tenantSlug);
+
+    console.log('dY"S Export deceased records to Excel for tenant:', tenantSlug);
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return tenantError(res, 400, 'Valid tenant required. Please provide x-tenant-slug header');
@@ -623,11 +631,11 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
         }
 
         const { period = 'all', startDate, endDate } = req.query;
-        
+
         // Build query with date filters - scoped to tenant's database
         let whereClause = 'WHERE (is_deleted IS NULL OR is_deleted = FALSE)';
         let params: any[] = [];
-        
+
         if (period === 'custom' && startDate && endDate) {
             whereClause += ' AND date_registered BETWEEN ? AND ?';
             params.push(startDate, endDate);
@@ -642,7 +650,7 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             whereClause += ' AND date_registered BETWEEN ? AND ?';
             params.push(start, end);
         }
-        
+
         // Get records from tenant's database ONLY
         const selectQuery = `
             SELECT 
@@ -655,9 +663,9 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             ${whereClause}
             ORDER BY date_registered DESC
         `;
-        
+
         const records = await safeTenantQuery(dbName, selectQuery, params);
-        
+
         // Calculate period label
         let periodLabel = 'All Records';
         if (period === 'thisMonth') periodLabel = `${DateTime.now().toFormat('MMMM yyyy')}`;
@@ -665,12 +673,12 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
         else if (period === 'custom' && startDate && endDate) {
             periodLabel = `${DateTime.fromISO(startDate as string).toFormat('dd/MM/yyyy')} - ${DateTime.fromISO(endDate as string).toFormat('dd/MM/yyyy')}`;
         }
-        
+
         // Get Excel export service
         const excelService = ExcelExportService.getInstance();
         const theme = excelService.getTenantTheme(tenantSlug);
         theme.companyName = tenantName;
-        
+
         // Generate Excel with tenant branding
         const exportResult = await excelService.generateDeceasedReport(records, {
             period: period as any,
@@ -679,7 +687,7 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
             tenantTheme: theme,
             format: 'xlsx'
         });
-        
+
         // Save export history to tenant's isolated database
         try {
             const historyRecord = {
@@ -694,22 +702,22 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
                 status: 'success' as const
             };
             const historyId = await excelService.saveExportHistory(dbName, historyRecord);
-            console.log(`📊 Export history saved for tenant ${tenantSlug} with ID: ${historyId}`);
+            console.log(`dY"S Export history saved for tenant ${tenantSlug} with ID: ${historyId}`);
         } catch (historyError: any) {
-            console.warn(`⚠️ Could not save export history: ${historyError.message}`);
+            console.warn(`�s��,? Could not save export history: ${historyError.message}`);
             // Non-blocking: don't fail the export
         }
-        
+
         const filename = `${tenantSlug}_deceased_report_${DateTime.now().toFormat('yyyyMMdd_HHmmss')}.xlsx`;
-        
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', exportResult.buffer.length);
-        
+
         return res.send(exportResult.buffer);
-        
+
     } catch (error: any) {
-        console.error('❌ Error in exportDeceasedToExcel:', error);
+        console.error('Error in exportDeceasedToExcel:', error);
         logError(error, 'exportDeceasedToExcel');
         return tenantError(res, 500, 'Internal Server Error', error.message);
     }
@@ -724,8 +732,8 @@ export const exportDeceasedToExcel = async (req: TenantRequest, res: Response): 
  */
 export const getExportHistory = async (req: TenantRequest, res: Response): Promise<Response> => {
     const tenantSlug = getTenantSlug(req);
-    
-    console.log('📋 Get export history for tenant:', tenantSlug);
+
+    console.log('dY"< Get export history for tenant:', tenantSlug);
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return tenantError(res, 400, 'Valid tenant required. Please provide x-tenant-slug header');
@@ -757,7 +765,7 @@ export const getExportHistory = async (req: TenantRequest, res: Response): Promi
         });
 
     } catch (error: any) {
-        console.error('❌ Error in getExportHistory:', error);
+        console.error('Error in getExportHistory:', error);
         logError(error, 'getExportHistory');
         return tenantError(res, 500, 'Internal Server Error');
     }

@@ -1,7 +1,7 @@
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const AnalyticsModel = require('../models/analyticsModel');
-const { Logger } = require('../../utilities/logger/logger');
+const { logger } = require('@montezuma/shared-logger');
 
 class AnalyticsService {
   // Generate PDF report
@@ -28,7 +28,7 @@ class AnalyticsService {
         if (analyticsData.kpis) {
           doc.fontSize(14).font('Helvetica-Bold').text('Key Performance Indicators');
           doc.moveDown(0.5);
-          
+
           const kpiTable = [
             ['Metric', 'Value'],
             ['Total Cases', analyticsData.kpis.total_cases || 0],
@@ -174,7 +174,7 @@ class AnalyticsService {
       const [monthlyData] = await AnalyticsModel.getMonthlyAnalytics(tenantId, month, year);
       return monthlyData || {};
     } catch (error) {
-      Logger.error('Error calculating monthly stats:', error);
+      logger.error('Error calculating monthly stats:', error);
       return {};
     }
   }
@@ -184,7 +184,7 @@ class AnalyticsService {
     try {
       return await AnalyticsModel.getYearlyAnalytics(tenantId, year);
     } catch (error) {
-      Logger.error('Error calculating yearly stats:', error);
+      logger.error('Error calculating yearly stats:', error);
       return [];
     }
   }
@@ -206,7 +206,7 @@ class AnalyticsService {
         topServices: topServices || [],
       };
     } catch (error) {
-      Logger.error('Error getting dashboard data:', error);
+      logger.error('Error getting dashboard data:', error);
       return {};
     }
   }
@@ -216,7 +216,7 @@ class AnalyticsService {
     try {
       return await AnalyticsModel.getYearlyAnalytics(tenantId, year);
     } catch (error) {
-      Logger.error('Error getting monthly trends:', error);
+      logger.error('Error getting monthly trends:', error);
       return [];
     }
   }

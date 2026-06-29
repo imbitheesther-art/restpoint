@@ -1,14 +1,15 @@
 const asyncHandler = require('express-async-handler');
 const { lookupTenantDatabase, safeTenantQuery } = require('../../../shared/dbConfig');
-const { Logger } = require('../../../packages/shared-logger/dist/logger');
+const { logger } = require('@montezuma/shared-logger');
 
 // === Advanced Analytics Controller ===
 const getMortuaryAnalytics = asyncHandler(async (req, res) => {
   const requestId = Math.random().toString(36).substring(7);
-  Logger.info(`[${requestId}] Fetching comprehensive mortuary analytics...`);
+  logger.info(`[${requestId}] Fetching comprehensive mortuary analytics...`);
 
   try {
     const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-tenant-id'] || 'system_shared';
+    const branchId = req.headers['x-branch-id'] || req.query.branchId || null;
     const dbName = await lookupTenantDatabase(tenantSlug);
     if (!dbName) {
       return res.status(404).json({ success: false, message: 'Tenant database not found' });
@@ -40,6 +41,7 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
         dispatchSchedule: [],
         insuranceData: {},
       },
+      charts: null,
       metadata: {
         requestId,
         timestamp: new Date().toISOString(),
@@ -345,16 +347,18 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
 
     for (let i = 0; i < queryDefinitions.length; i += maxConcurrentQueries) {
       const batch = queryDefinitions.slice(i, i + maxConcurrentQueries);
-      
+
       const batchPromises = batch.map(async (queryDef) => {
         try {
-          Logger.debug(`[${requestId}] Executing query: ${queryDef.name}`);
-        const result = await safeTenantQuery(dbName, queryDef.sql, queryDef.params);
+          logger.debug(`[${requestId}] Executing query: ${queryDef.name}`);
+          const sql = branchId ? `${queryDef.sql} WHERE branch_id = ?` : queryDef.sql;
+          const params = branchId ? [...queryDef.params, branchId] : queryDef.params;
+          const result = await safeTenantQuery(dbName, sql, params);
           queryResults.set(queryDef.name, result);
           successfulQueries++;
           return { name: queryDef.name, success: true, data: result };
         } catch (error) {
-          Logger.error(`[${requestId}] Query ${queryDef.name} failed:`, {
+          logger.error(`[${requestId}] Query ${queryDef.name} failed:`, {
             error: error.message,
             query: queryDef.name,
             sql: queryDef.sql.substring(0, 100) + '...',
@@ -380,7 +384,7 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
           applyFallbackData(queryDef.name, responseData.data);
         }
       } catch (error) {
-        Logger.error(`[${requestId}] Error processing query ${queryDef.name}:`, error);
+        logger.error(`[${requestId}] Error processing query ${queryDef.name}:`, error);
         applyFallbackData(queryDef.name, responseData.data);
       }
     }
@@ -393,20 +397,24 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
 
     // Clean up memory
     queryResults.clear();
-    
+
     const executionTime = Date.now() - startTime;
     responseData.metadata.executionTime = executionTime;
 
-    Logger.info(`[${requestId}] Analytics completed in ${executionTime}ms`, {
+    logger.info(`[${requestId}] Analytics completed in ${executionTime}ms`, {
       successful: successfulQueries,
       failed: failedQueries,
       executionTime,
     });
 
     // Send response
-    res.status(200).json(responseData);
+    res.status(200).json({
+      ...responseData,
+      charts: responseData.data || null,
+      data: responseData.data || {},
+    });
   } catch (error) {
-    Logger.error(`[${requestId}] Critical error in analytics controller:`, {
+    logger.error(`[${requestId}] Critical error in analytics controller:`, {
       error: error.message,
       stack: error.stack,
     });
@@ -416,6 +424,7 @@ const getMortuaryAnalytics = asyncHandler(async (req, res) => {
       message: 'Failed to fetch analytics data',
       error: 'Internal server error',
       data: getFallbackDataStructure(),
+      charts: null,
       metadata: {
         requestId,
         timestamp: new Date().toISOString(),
@@ -729,7 +738,7 @@ async function processQueryResult(queryName, data, responseData) {
         break;
 
       default:
-        Logger.warn(`Unknown query name: ${queryName}`);
+        logger.warn(`Unknown query name: ${queryName}`);
     }
   } catch (error) {
     throw error;
@@ -829,7 +838,7 @@ function calculateDerivedMetrics(data) {
       };
     }
   } catch (error) {
-    Logger.error('Error calculating derived metrics:', error);
+    logger.error('Error calculating derived metrics:', error);
   }
 }
 
@@ -902,7 +911,7 @@ function generateMockDataIfMissing(data) {
       };
     }
   } catch (error) {
-    Logger.error('Error generating mock data:', error);
+    logger.error('Error generating mock data:', error);
   }
 }
 
@@ -992,7 +1001,7 @@ function getFallbackDataStructure() {
 // Vehicle Analytics Controller
 const getComprehensiveVehicleAnalytics = asyncHandler(async (req, res) => {
   const requestId = Math.random().toString(36).substring(7);
-  Logger.info(`[${requestId}] Fetching vehicle analytics...`);
+  logger.info(`[${requestId}] Fetching vehicle analytics...`);
 
   try {
     const { month, year } = req.query;
@@ -1092,10 +1101,10 @@ const getComprehensiveVehicleAnalytics = asyncHandler(async (req, res) => {
       },
     };
 
-    Logger.info(`[${requestId}] Vehicle analytics completed for ${vehiclesData.length} vehicles`);
+    logger.info(`[${requestId}] Vehicle analytics completed for ${vehiclesData.length} vehicles`);
     res.status(200).json(responseData);
   } catch (error) {
-    Logger.error(`[${requestId}] Error in vehicle analytics:`, {
+    logger.error(`[${requestId}] Error in vehicle analytics:`, {
       error: error.message,
       stack: error.stack,
     });

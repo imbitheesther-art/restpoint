@@ -344,7 +344,6 @@ import MarketplacePage from './pages/marketplacePage';
 import ProfilePage from './pages/profilePage';
 import DocumentsPage from './pages/documentsPage';
 import PaymentsPage from './pages/paymentsPage';
-import AIAssistant from './components/AIAssistant';
 import NotificationSystem from './components/NotificationSystem';
 
 function App() {
@@ -582,15 +581,6 @@ function App() {
           >
             <ArrowUp />
           </ScrollToTopButton>
-        )}
-
-        {/* AI Assistant - Available on all authenticated pages */}
-        {isAuthenticated && (
-          <AIAssistant 
-            userData={userData}
-            tenantSlug={localStorage.getItem('tenantSlug') || 'restpoint'}
-            deceasedId={localStorage.getItem('deceased_id')}
-          />
         )}
 
         {/* Real-time Notification System */}

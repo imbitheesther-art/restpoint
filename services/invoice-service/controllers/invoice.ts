@@ -6,12 +6,13 @@ import path from 'path';
 import PDFDocument from 'pdfkit';
 import { AppError } from '../middlewares/errorHandler';
 
-const { safeQuery } = require('../../../configurations/sqlConfig/db');
-const { getKenyaTimeISO, getKenyaTimeFormatted } = require('../../../packages/shared-utils/dist/timestamps');
-const { loadTenantBranding } = require('./tenantBranding');
+// Standardized to ES Imports
+import { safeQuery } from '../../../configurations/sqlConfig/db';
+import { getKenyaTimeISO, getKenyaTimeFormatted } from '../../../packages/shared-utils/dist/timestamps';
+import { loadTenantBranding } from './tenantBranding';
 
 // Redis client for caching
-let redisClient: Redis.Redis | null = null;
+let redisClient: Redis | null = null;
 
 /**
  * Get tenant slug from request headers
@@ -105,7 +106,6 @@ export interface InvoiceData {
   invoice_number: string;
   deceased_id?: number;
   tenant_slug?: string;
-  // Payment options
   payment_options?: {
     mpesa?: { business_number: string; account_number: string };
     bank_transfer?: { bank_name: string; account_name: string; account_number: string; branch: string };
@@ -144,10 +144,10 @@ const generateStampHash = (prefix: string = 'LFH'): string => {
 const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = null): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     try {
-      const tenantName = branding?.tenant_name || 'Montezuma Monalisa Funeral Home';
-      const tenantAddress = branding?.company_address || branding?.location || 'Mbagathi Way, Opp. Forces Memorial Hospital';
-      const tenantPhone = branding?.company_phone || branding?.phone || '+254 722 268 566';
-      const tenantEmail = branding?.company_email || branding?.email || 'monte2lisa@yahoo.com';
+      const tenantName = branding?.tenant_name || '';
+      const tenantAddress = branding?.company_address || branding?.location || '';
+      const tenantPhone = branding?.company_phone || branding?.phone || '';
+      const tenantEmail = branding?.company_email || branding?.email || '';
       const tenantLogo = branding?.logo_path || null;
       const tenantSignature = branding?.signature_path || null;
 
@@ -159,7 +159,7 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
           Author: tenantName,
         },
       });
-      
+
       const buffers: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => buffers.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
@@ -168,31 +168,16 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
       const logoPath = tenantLogo || path.join(__dirname, '../../public/logo/montezuma.png');
 
       if (logoPath && fs.existsSync(logoPath)) {
-        doc.rect(45, headerTop - 5, 90, 45)
-          .fill('#ffffff')
-          .stroke('#e0e0e0');
+        doc.rect(45, headerTop - 5, 90, 45).fill('#ffffff').stroke('#e0e0e0');
         doc.image(logoPath, 50, headerTop, { width: 80 });
       } else {
         const initials = tenantName.split(' ').map((w: string) => w[0]).filter(Boolean).slice(0, 4).join('').toUpperCase() || 'FH';
-        doc.rect(45, headerTop - 5, 90, 45)
-          .fill('#1a5276')
-          .stroke('#0f172a');
-        doc.fontSize(14)
-          .font('Helvetica-Bold')
-          .fillColor('#ffffff')
-          .text(initials, 60, headerTop + 10);
+        doc.rect(45, headerTop - 5, 90, 45).fill('#1a5276').stroke('#0f172a');
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#ffffff').text(initials, 60, headerTop + 10);
       }
 
-      doc
-        .fontSize(16)
-        .font('Helvetica-Bold')
-        .fillColor('#0f172a')
-        .text(tenantName.toUpperCase(), 50, headerTop + 50);
-
-      doc
-        .fontSize(8)
-        .font('Helvetica')
-        .fillColor('#0f172a')
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#0f172a').text(tenantName.toUpperCase(), 50, headerTop + 50);
+      doc.fontSize(8).font('Helvetica').fillColor('#0f172a')
         .text(tenantAddress, 300, headerTop + 10)
         .text(tenantEmail, 300, headerTop + 25)
         .text(tenantPhone, 300, headerTop + 40);
@@ -201,15 +186,8 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
       const leftColumn = 50;
       const rightColumn = 300;
 
-      doc
-        .fontSize(10)
-        .font('Helvetica-Bold')
-        .fillColor('#1a5276')
-        .text('INVOICE DETAILS', leftColumn, detailsTop);
-
-      doc
-        .font('Helvetica')
-        .fillColor('#2c3e50')
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#1a5276').text('INVOICE DETAILS', leftColumn, detailsTop);
+      doc.font('Helvetica').fillColor('#2c3e50')
         .text(`Invoice #: ${invoice.invoice_number}`, leftColumn, detailsTop + 20)
         .text(
           `Date: ${new Date(invoice.created_at || Date.now()).toLocaleDateString('en-GB', {
@@ -221,14 +199,8 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
           detailsTop + 35,
         );
 
-      doc
-        .font('Helvetica-Bold')
-        .fillColor('#1a5276')
-        .text('CLIENT INFORMATION', rightColumn, detailsTop);
-
-      doc
-        .font('Helvetica')
-        .fillColor('#2c3e50')
+      doc.font('Helvetica-Bold').fillColor('#1a5276').text('CLIENT INFORMATION', rightColumn, detailsTop);
+      doc.font('Helvetica').fillColor('#2c3e50')
         .text(`Deceased: ${invoice.deceased_name || 'N/A'}`, rightColumn, detailsTop + 20)
         .text(`Admission #: ${invoice.admission_number || invoice.id_number || 'N/A'}`, rightColumn, detailsTop + 35)
         .text(`Next of Kin: ${invoice.nok || 'N/A'}`, rightColumn, detailsTop + 50)
@@ -246,15 +218,16 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
       const colAmountX = colUnitX + colUnitWidth + 5;
       const tableTop = detailsTop + 90;
 
-      doc.rect(tableX, tableTop, tableWidth, 20).fill('#1a5276');
-      doc
-        .fontSize(9)
-        .font('Helvetica-Bold')
-        .fillColor('#ffffff')
-        .text('SERVICE / DESCRIPTION', colServiceX, tableTop + 6)
-        .text('QTY', colQtyX, tableTop + 6, { width: colQtyWidth, align: 'right' })
-        .text('UNIT PRICE', colUnitX, tableTop + 6, { width: colUnitWidth, align: 'right' })
-        .text('AMOUNT', colAmountX, tableTop + 6, { width: colAmountWidth, align: 'right' });
+      const drawTableHeader = (yPos: number) => {
+        doc.rect(tableX, yPos, tableWidth, 20).fill('#1a5276');
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#ffffff')
+          .text('SERVICE / DESCRIPTION', colServiceX, yPos + 6)
+          .text('QTY', colQtyX, yPos + 6, { width: colQtyWidth, align: 'right' })
+          .text('UNIT PRICE', colUnitX, yPos + 6, { width: colUnitWidth, align: 'right' })
+          .text('AMOUNT', colAmountX, yPos + 6, { width: colAmountWidth, align: 'right' });
+      };
+
+      drawTableHeader(tableTop);
 
       let currentY = tableTop + 20;
       const items = Array.isArray(invoice.items) ? invoice.items : [];
@@ -270,10 +243,7 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
         const quantity = parseFloat(String(item.qty || item.quantity || 1));
         const amount = quantity * unitPrice;
 
-        doc
-          .fontSize(8)
-          .font('Helvetica')
-          .fillColor('#000000')
+        doc.fontSize(8).font('Helvetica').fillColor('#000000')
           .text(item.service || item.description || 'Service', colServiceX, yPos + 6, { width: colServiceWidth, ellipsis: true })
           .text(quantity.toString(), colQtyX, yPos + 6, { width: colQtyWidth, align: 'right' })
           .text(`KES ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, colUnitX, yPos + 6, { width: colUnitWidth, align: 'right' })
@@ -287,15 +257,7 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
           doc.addPage();
           currentY = 50;
           rowCount = 0;
-          doc.rect(tableX, currentY, tableWidth, 20).fill('#1a5276');
-          doc
-            .fontSize(9)
-            .font('Helvetica-Bold')
-            .fillColor('#ffffff')
-            .text('SERVICE / DESCRIPTION', colServiceX, currentY + 6)
-            .text('QTY', colQtyX, currentY + 6, { width: colQtyWidth, align: 'right' })
-            .text('UNIT PRICE', colUnitX, currentY + 6, { width: colUnitWidth, align: 'right' })
-            .text('AMOUNT', colAmountX, currentY + 6, { width: colAmountWidth, align: 'right' });
+          drawTableHeader(currentY);
           currentY += 20;
         }
         currentY = drawTableRow(item, index, currentY);
@@ -358,7 +320,6 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#2c3e50')
         .text(`KES ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, rightBoxX + 80, totalsTop + 30, { width: 80, align: 'right' });
 
-      // Tax line
       const taxAmount = parseFloat(String(invoice.tax_amount || 0));
       if (taxAmount > 0) {
         doc.fontSize(8).font('Helvetica').fillColor('#2c3e50')
@@ -404,46 +365,39 @@ const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = nu
         .fontSize(6).text(tenantName, 400, footerTop + 65);
 
       const termsY = footerTop + 80;
-      
-      // Payment Options Section
+
       const paymentOptionsY = termsY + 30;
       if (paymentOptionsY < pageHeight - 80) {
-        doc.fontSize(8).font('Helvetica-Bold').fillColor('#1a5276')
-          .text('PAYMENT OPTIONS', 50, paymentOptionsY);
-        
+        doc.fontSize(8).font('Helvetica-Bold').fillColor('#1a5276').text('PAYMENT OPTIONS', 50, paymentOptionsY);
+
         let optionY = paymentOptionsY + 15;
         const optionLineHeight = 12;
-        
-        // MPESA
+
         if (invoice.payment_options?.mpesa) {
           doc.fontSize(7).font('Helvetica').fillColor('#2c3e50')
             .text(`MPESA Paybill: ${invoice.payment_options.mpesa.business_number} | Account: ${invoice.payment_options.mpesa.account_number}`, 50, optionY);
           optionY += optionLineHeight;
         }
-        
-        // Bank Transfer
+
         if (invoice.payment_options?.bank_transfer) {
           const bank = invoice.payment_options.bank_transfer;
           doc.fontSize(7).font('Helvetica').fillColor('#2c3e50')
             .text(`Bank: ${bank.bank_name} | A/C: ${bank.account_number} (${bank.account_name}) | Branch: ${bank.branch}`, 50, optionY);
           optionY += optionLineHeight;
         }
-        
-        // Cash/Cheque
+
         if (invoice.payment_options?.cash_cheque) {
           doc.fontSize(7).font('Helvetica').fillColor('#2c3e50')
             .text(`Cash/Cheque: ${invoice.payment_options.cash_cheque}`, 50, optionY);
           optionY += optionLineHeight;
         }
-        
-        // Installment Plan
+
         if (invoice.payment_options?.installment_plan) {
           doc.fontSize(7).font('Helvetica').fillColor('#2c3e50')
             .text('Installment Plan: Available - Please contact us for flexible payment arrangements', 50, optionY);
           optionY += optionLineHeight;
         }
-        
-        // Default payment info if no options specified
+
         if (!invoice.payment_options || Object.keys(invoice.payment_options).length === 0) {
           doc.fontSize(7).font('Helvetica').fillColor('#2c3e50')
             .text(`MPESA Paybill: ${tenantPhone} | Bank: Contact us for details | Cash: Accepted at our office`, 50, optionY);
@@ -505,6 +459,7 @@ export const getDeceasedFinancialDetails = async (req: Request, res: Response, n
     throw new AppError('Deceased not found', 404);
   }
 
+  // NOTE: Double-check your table schemas if FK queries fail below due to ID differences.
   const stringDeceasedId = deceased.deceased_id;
   const payments = await tenantQuery(req, 'SELECT * FROM payments WHERE deceased_id = ? ORDER BY payment_date DESC', [deceased_id]);
   const invoices = await tenantQuery(req, 'SELECT * FROM invoices WHERE deceased_id = ? ORDER BY created_at DESC', [deceased_id]);
@@ -810,6 +765,8 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
   }
 
   const stamp_hash = generateStampHash();
+  const parsedItems = Array.isArray(items) ? items : JSON.parse(items);
+  const parsedTotal = parseFloat(String(total_amount));
 
   const invoiceData: InvoiceData = {
     deceased_name,
@@ -820,266 +777,40 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
     date_of_admission: 'N/A',
     address: address || 'N/A',
     phone: phone || 'N/A',
-    items: Array.isArray(items) ? items : JSON.parse(items),
-    total_amount: parseFloat(String(total_amount)),
+    items: parsedItems,
+    total_amount: parsedTotal,
     subtotal: parseFloat(String(subtotal || total_amount)),
     amount_paid: 0,
     tax_amount: parseFloat(String(tax_amount || 0)),
     tax_rate: parseFloat(String(tax_rate || 0)),
-    mortuary_name: 'Lee Funeral Home',
-    mortuary_phone: '+254 740 045 355',
+    mortuary_name: 'System Shared',
+    mortuary_phone: '',
     stamp_hash,
     signature_url: signature_url || '/uploads/signature/signature.png',
     created_at: getKenyaTimeISO(),
     invoice_number,
+    deceased_id,
   };
 
-  const pdfBuffer = await generateInvoicePDFBuffer(invoiceData);
-  const baseInvoicesDir = path.join(__dirname, '../../uploads/invoices');
-  if (!fs.existsSync(baseInvoicesDir)) fs.mkdirSync(baseInvoicesDir, { recursive: true });
-
-  const deceasedFolderName = `${deceased_name.replace(/[^a-zA-Z0-9]/g, '_')}_${admission_number || Date.now()}`;
-  const deceasedInvoicesDir = path.join(baseInvoicesDir, deceasedFolderName);
-  if (!fs.existsSync(deceasedInvoicesDir)) fs.mkdirSync(deceasedInvoicesDir, { recursive: true });
-
-  const pdfPath = path.join(deceasedInvoicesDir, `${invoice_number}.pdf`);
-  await fs.promises.writeFile(pdfPath, pdfBuffer);
-
   const result = await tenantQuery(req, `
-    INSERT INTO invoices (deceased_id, invoice_number, items, total_amount, pdf_url, stamp_hash, signature_url, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO invoices (deceased_id, invoice_number, items, total_amount, stamp_hash, signature_url, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `, [
-    deceased_id || null,
+    deceased_id,
     invoice_number,
-    JSON.stringify(invoiceData.items),
-    invoiceData.total_amount,
-    pdfPath,
+    JSON.stringify(parsedItems),
+    parsedTotal,
     stamp_hash,
     invoiceData.signature_url,
-    invoiceData.created_at,
+    invoiceData.created_at
   ]);
 
   await setCachedInvoice(invoice_number, invoiceData);
 
   res.status(201).json({
     status: 'success',
-    message: 'Invoice created successfully',
-    invoice_number,
-    pdf_url: pdfPath,
+    message: 'Manual invoice created successfully',
     invoice_id: (result as any).insertId,
-    deceased_folder: deceasedFolderName,
+    invoice_number,
   });
-};
-
-export const getAllInvoices = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const invoices = await tenantQuery(req, `
-    SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death, nk.full_name as nok_name
-    FROM invoices i
-    LEFT JOIN deceased d ON i.deceased_id = d.id
-    LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
-    ORDER BY i.created_at DESC
-  `);
-
-  const parsedInvoices = invoices.map((invoice: any) => ({
-    ...invoice,
-    items: typeof invoice.items === 'string' ? JSON.parse(invoice.items) : invoice.items,
-    deceased_name: invoice.deceased_name || 'Unknown',
-    admission_number: invoice.admission_number || invoice.deceased_id || 'N/A',
-    nok: invoice.nok_name || 'N/A',
-  }));
-
-  res.json({ status: 'success', data: parsedInvoices });
-};
-
-export const getInvoicesByDeceased = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { deceased_id } = req.params;
-  const invoices = await tenantQuery(req, `
-    SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death, nk.full_name as nok_name
-    FROM invoices i
-    LEFT JOIN deceased d ON i.deceased_id = d.id
-    LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
-    WHERE i.deceased_id = ? ORDER BY i.created_at DESC
-  `, [deceased_id]);
-
-  const parsedInvoices = invoices.map((invoice: any) => ({
-    ...invoice,
-    items: typeof invoice.items === 'string' ? JSON.parse(invoice.items) : invoice.items,
-    deceased_name: invoice.deceased_name || 'Unknown',
-    admission_number: invoice.admission_number || invoice.deceased_id || 'N/A',
-    nok: invoice.nok_name || 'N/A',
-  }));
-
-  res.json({ status: 'success', data: parsedInvoices });
-};
-
-export const getInvoiceById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { id } = req.params;
-  const invoices = await tenantQuery(req, `
-    SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death,
-           d.date_admitted, d.location, d.county, d.national_id, nk.full_name as nok_name,
-           nk.contact as nok_contact, COALESCE(SUM(p.amount), 0) as amount_paid
-    FROM invoices i
-    LEFT JOIN deceased d ON i.deceased_id = d.id
-    LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
-    LEFT JOIN payments p ON d.id = p.deceased_id
-    WHERE i.id = ? GROUP BY i.id
-  `, [id]);
-
-  if (invoices.length === 0) {
-    throw new AppError('Invoice not found', 404);
-  }
-
-  const invoice = invoices[0];
-  invoice.items = typeof invoice.items === 'string' ? JSON.parse(invoice.items) : invoice.items;
-  invoice.amount_paid = parseFloat(String(invoice.amount_paid || 0));
-  invoice.deceased_name = invoice.deceased_name || 'Unknown';
-  invoice.admission_number = invoice.admission_number || invoice.deceased_id || 'N/A';
-  invoice.nok = invoice.nok_name || 'N/A';
-  invoice.id_number = invoice.national_id || 'N/A';
-  invoice.dod = invoice.date_of_death ? new Date(invoice.date_of_death).toLocaleDateString('en-GB') : 'N/A';
-  invoice.date_of_admission = invoice.date_admitted ? new Date(invoice.date_admitted).toLocaleDateString('en-GB') : 'N/A';
-  invoice.address = `${invoice.location || 'N/A'}, ${invoice.county || 'N/A'}`;
-  invoice.phone = invoice.nok_contact || 'N/A';
-
-  res.json({ status: 'success', data: invoice });
-};
-
-export const updateInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { id } = req.params;
-  const { items, total_amount, signature_url } = req.body;
-
-  const [currentInvoice] = await tenantQuery(req, 'SELECT * FROM invoices WHERE id = ?', [id]);
-  if (!currentInvoice) {
-    throw new AppError('Invoice not found', 404);
-  }
-
-  const [deceased] = await tenantQuery(req, `
-    SELECT d.*, nk.full_name as nok_name, nk.contact as nok_contact
-    FROM deceased d
-    LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
-    WHERE d.id = ?
-  `, [(currentInvoice as any).deceased_id]);
-
-  const stamp_hash = generateStampHash();
-
-  const updatedInvoice = {
-    ...(currentInvoice as any),
-    items: items || JSON.parse((currentInvoice as any).items),
-    total_amount: total_amount || (currentInvoice as any).total_amount,
-    signature_url: signature_url || (currentInvoice as any).signature_url,
-    stamp_hash,
-    updated_at: getKenyaTimeISO(),
-  };
-
-  const pdfData = {
-    ...updatedInvoice,
-    deceased_name: (deceased as any)?.full_name || 'Unknown',
-    admission_number: (deceased as any)?.admission_number || (deceased as any)?.deceased_id || 'N/A',
-    nok: (deceased as any)?.nok_name || 'N/A',
-    id_number: (deceased as any)?.national_id || 'N/A',
-    dod: (deceased as any)?.date_of_death ? new Date((deceased as any).date_of_death).toLocaleDateString('en-GB') : 'N/A',
-    date_of_admission: (deceased as any)?.date_admitted ? new Date((deceased as any).date_admitted).toLocaleDateString('en-GB') : 'N/A',
-    address: `${(deceased as any)?.location || 'N/A'}, ${(deceased as any)?.county || 'N/A'}`,
-    phone: (deceased as any)?.nok_contact || 'N/A',
-    mortuary_name: 'Lee Funeral Home',
-    mortuary_phone: '+254 740 045 355',
-  };
-
-  const pdfBuffer = await generateInvoicePDFBuffer(pdfData);
-  await fs.promises.writeFile((currentInvoice as any).pdf_url, pdfBuffer);
-
-  await tenantQuery(req, `
-    UPDATE invoices SET items = ?, total_amount = ?, signature_url = ?, stamp_hash = ?, updated_at = ?
-    WHERE id = ?
-  `, [
-    JSON.stringify(updatedInvoice.items),
-    updatedInvoice.total_amount,
-    updatedInvoice.signature_url,
-    updatedInvoice.stamp_hash,
-    updatedInvoice.updated_at,
-    id,
-  ]);
-
-  await deleteCachedInvoice((currentInvoice as any).invoice_number);
-
-  res.json({
-    status: 'success',
-    message: 'Invoice updated successfully',
-    invoice: updatedInvoice,
-  });
-};
-
-export const deleteInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { id } = req.params;
-
-  const [invoice] = await tenantQuery(req, 'SELECT * FROM invoices WHERE id = ?', [id]);
-  if (!invoice) {
-    throw new AppError('Invoice not found', 404);
-  }
-
-  // Delete PDF file if it exists
-  if ((invoice as any).pdf_url && fs.existsSync((invoice as any).pdf_url)) {
-    fs.unlinkSync((invoice as any).pdf_url);
-  }
-
-  await tenantQuery(req, 'DELETE FROM invoices WHERE id = ?', [id]);
-  await deleteCachedInvoice((invoice as any).invoice_number);
-
-  res.json({
-    status: 'success',
-    message: 'Invoice deleted successfully',
-  });
-};
-
-export const getInvoicePDF = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { id } = req.params;
-
-  const invoices = await tenantQuery(req, `
-    SELECT i.*, d.full_name as deceased_name, d.deceased_id, d.admission_number, d.date_of_death,
-           d.date_admitted, d.location, d.county, d.national_id, nk.full_name as nok_name,
-           nk.contact as nok_contact, COALESCE(SUM(p.amount), 0) as amount_paid
-    FROM invoices i
-    LEFT JOIN deceased d ON i.deceased_id = d.id
-    LEFT JOIN next_of_kin nk ON d.deceased_id = nk.deceased_id
-    LEFT JOIN payments p ON d.id = p.deceased_id
-    WHERE i.id = ? GROUP BY i.id
-  `, [id]);
-
-  if (invoices.length === 0) {
-    throw new AppError('Invoice not found', 404);
-  }
-
-  const invoice = invoices[0];
-  invoice.items = typeof invoice.items === 'string' ? JSON.parse(invoice.items) : invoice.items;
-
-  const branding = await loadTenantBranding(getTenantSlug(req), null);
-
-  const pdfData: InvoiceData = {
-    deceased_name: invoice.deceased_name || 'Unknown',
-    nok: invoice.nok_name || 'N/A',
-    admission_number: invoice.admission_number || invoice.deceased_id || 'N/A',
-    id_number: invoice.national_id || 'N/A',
-    dod: invoice.date_of_death ? new Date(invoice.date_of_death).toLocaleDateString('en-GB') : 'N/A',
-    date_of_admission: invoice.date_admitted ? new Date(invoice.date_admitted).toLocaleDateString('en-GB') : 'N/A',
-    address: `${invoice.location || 'N/A'}, ${invoice.county || 'N/A'}`,
-    phone: invoice.nok_contact || 'N/A',
-    items: invoice.items,
-    total_amount: parseFloat(String(invoice.total_amount || 0)),
-    subtotal: parseFloat(String(invoice.total_amount || 0)),
-    amount_paid: parseFloat(String(invoice.amount_paid || 0)),
-    tax_amount: 0,
-    tax_rate: 0,
-    mortuary_name: branding.tenant_name,
-    mortuary_phone: branding.phone,
-    stamp_hash: invoice.stamp_hash,
-    signature_url: invoice.signature_url,
-    created_at: invoice.created_at,
-    invoice_number: invoice.invoice_number,
-  };
-
-  const pdfBuffer = await generateInvoicePDFBuffer(pdfData, branding);
-
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `inline; filename="${invoice.invoice_number}.pdf"`);
-  res.send(pdfBuffer);
 };

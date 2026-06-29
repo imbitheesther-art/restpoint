@@ -365,7 +365,7 @@ const ProfilePage = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:5000/api/v1/restpoint/portal/info/${deceasedId}`,
+        `/api/v1/restpoint/portal/info/${deceasedId}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -15,7 +15,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -30,7 +30,7 @@ RUN cd packages/shared-utils && npm run build
 RUN cd packages/shared-services && npm run build
 
 # Install tsx for running TypeScript directly (server.ts entry point)
-RUN yarn global add tsx
+RUN npm install -g tsx
 
 RUN mkdir -p /usr/src/app/services/deceased-service/uploads && chown -R nodejs:nodejs /usr/src/app
 

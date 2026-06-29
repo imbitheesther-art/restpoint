@@ -734,7 +734,7 @@ const DashboardPage = ({ userData, onLogout, onNavigate }) => {
 
       // Fetch deceased info
       const infoResponse = await fetch(
-        `http://localhost:5000/api/v1/restpoint/portal/info/${deceasedId}`,
+        `/api/v1/restpoint/portal/info/${deceasedId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionToken}`,
@@ -759,7 +759,7 @@ const DashboardPage = ({ userData, onLogout, onNavigate }) => {
 
       // Fetch documents count
       const docsResponse = await fetch(
-        `http://localhost:5000/api/v1/restpoint/portal/documents/${deceasedId}`,
+        `/api/v1/restpoint/portal/documents/${deceasedId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionToken}`,

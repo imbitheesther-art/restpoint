@@ -66,8 +66,8 @@ export default function DataMigrationPolicy() {
 
         h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; color: ${C.ink}; }
         h1 { font-size: clamp(2rem, 4vw, 2.6rem); line-height: 1.12; }
-        h2 { font-size: 1.15rem; line-height: 1.3; margin-top: 2.2rem; }
-        p { line-height: 1.7; font-size: 0.95rem; }
+        h2 { font-size: 1.15rem; line-height: 1.3; margin-top: 2.2rem; margin-bottom: 0.75rem; }
+        p { line-height: 1.7; font-size: 0.95rem; margin-bottom: 1rem; }
         a { color: inherit; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -110,23 +110,44 @@ export default function DataMigrationPolicy() {
           border: 1px solid ${C.line};
           padding: 1.5rem 1.7rem;
           margin-bottom: 2rem;
+          background: ${C.bone2};
+          border-left: 3px solid ${C.verdigris};
         }
 
         .highlight-box {
           border: 1px solid ${C.verdigris};
           padding: 1.25rem 1.5rem;
           margin-bottom: 1.5rem;
+          background: ${C.bone2};
+          border-left: 3px solid ${C.verdigris};
         }
 
         .contact-box {
-          background: ${C.ink};
-          color: ${C.grayLight};
+          background: linear-gradient(135deg, ${C.verdigrisDark}, ${C.verdigris});
+          color: ${C.bone};
           padding: 1.5rem 1.7rem;
           margin-top: 1rem;
         }
 
-        ul { padding-left: 1.5rem; line-height: 1.8; font-size: 0.95rem; }
+        ul { padding-left: 1.5rem; line-height: 1.8; font-size: 0.95rem; margin-bottom: 1rem; }
         li { margin-bottom: 0.4rem; }
+
+        .migration-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.5rem 0;
+          font-size: 0.95rem;
+        }
+        .migration-table th, .migration-table td {
+          border: 1px solid ${C.line};
+          padding: 0.75rem 1rem;
+          text-align: left;
+        }
+        .migration-table th {
+          background: ${C.bone2};
+          color: ${C.ink};
+          font-weight: 600;
+        }
 
         footer { 
           margin-top: 4rem; 
@@ -165,154 +186,169 @@ export default function DataMigrationPolicy() {
         <div className="wrap" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
           {/* Header */}
           <Reveal>
-            <div className="label" style={{ marginBottom: '0.8rem', color: C.brass }}>Privacy</div>
-            <h1>Privacy Policy</h1>
+            <div className="label" style={{ marginBottom: '0.8rem', color: C.brass }}>Operations</div>
+            <h1>Data Migration Policy</h1>
             <p style={{ color: C.gray, fontSize: '0.85rem', marginTop: '0.5rem', marginBottom: '2rem' }}>
               Last updated: June 2026
             </p>
           </Reveal>
 
-          {/* Summary */}
+          {/* Intro Summary */}
           <Reveal delay={100}>
             <div className="summary-box">
+              <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Your History Matters</h2>
               <p style={{ color: C.ink, fontSize: '0.95rem', margin: 0 }}>
-                <strong>Your Data Belongs to You:</strong> We keep your data safe, we never sell it, we don't profile users,
-                and you're always in control. Questions? Email{' '}
-                <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.brass, fontWeight: 500 }}>
-                  privacy@restpoint.co.ke
-                </a>
+                For many funeral homes, decades of operational history exist in paper records, spreadsheets, accounting software, or legacy mortuary management systems. Those records represent thousands of families served and years of institutional knowledge. When you migrate to RestPoint, you are trusting us with that history.
               </p>
             </div>
           </Reveal>
 
-          {/* What we collect */}
+          {/* Our Migration Approach */}
           <Reveal delay={150}>
-            <h2>What We Collect</h2>
+            <h2>Our Migration Approach</h2>
             <p>
-              We collect only what's needed to run the platform:
+              Data migration is a specialized service that combines automation with careful manual verification. While many parts of the migration process are automated, every migration also requires human review to ensure information is transferred accurately.
             </p>
-            <ul>
-              <li><strong>Funeral home staff:</strong> Name, email, phone, and login credentials (encrypted)</li>
-              <li><strong>Families we serve:</strong> Names, dates of birth/death, family contacts, and ID documents — provided by your funeral home</li>
-              <li><strong>Technical data:</strong> Basic usage and device information to improve the platform</li>
-            </ul>
+            <p>
+              This process is intentionally thorough because every funeral home stores information differently, and no two datasets are exactly alike. Our objective is accuracy—not speed at the expense of your records.
+            </p>
           </Reveal>
 
-          {/* No profiling */}
+          {/* Commitment Box */}
           <Reveal delay={200}>
             <div className="highlight-box">
               <p style={{ color: C.ink, margin: 0 }}>
-                <strong>We do not do data profiling.</strong> We don't analyze, segment, or build profiles
-                of our users or the families we serve. Data is used only to operate the platform.
+                <strong>Our Commitment:</strong> We take this responsibility seriously. Every migration is handled with strict confidentiality, careful verification, and professional attention to detail. All migration personnel operate under a Non-Disclosure Agreement (NDA), and your data is processed solely for the purpose of completing your migration.
               </p>
             </div>
           </Reveal>
 
-          {/* How we use data */}
+          {/* Data Preparation */}
           <Reveal delay={250}>
-            <h2>How We Use Your Data</h2>
+            <h2>Data Preparation</h2>
             <p>
-              We use your information only to:
+              Many funeral homes are moving from manual records or older software that stores information differently from RestPoint. Before importing your data, we:
             </p>
             <ul>
-              <li>Provide and improve the platform</li>
-              <li>Support funeral homes and families</li>
-              <li>Keep data secure</li>
-              <li>Meet legal requirements</li>
+              <li>Review and organize your existing records.</li>
+              <li>Map your data to the appropriate RestPoint fields.</li>
+              <li>Remove duplicate or invalid records where possible.</li>
+              <li>Validate relationships between records.</li>
+              <li>Populate required system fields that may not exist in your current records.</li>
             </ul>
-            <p>
-              We <strong>never</strong> use your data for advertising, marketing, or any purpose outside
-              of running the platform.
+            <p style={{ fontStyle: 'italic', marginTop: '0.5rem' }}>
+              Where information is genuinely unavailable, required fields may be populated with <strong>NULL</strong> values or appropriate system defaults to maintain database integrity and prevent migration failures.
             </p>
           </Reveal>
 
-          {/* Data sharing */}
+          {/* Secure Data Transfer */}
           <Reveal delay={300}>
-            <h2>Who We Share Data With</h2>
-            <p>
-              We keep your data private. We only share it with:
-            </p>
-            <ul>
-              <li><strong>Your funeral home</strong> — they control their data</li>
-              <li><strong>Secure hosting providers</strong> — who protect your data</li>
-              <li><strong>Legal authorities</strong> — only if required by Kenyan law</li>
-            </ul>
-            <p>
-              We <strong>never</strong> sell your data to anyone.
-            </p>
+            <h2>Secure Data Transfer</h2>
+            <p>We offer several secure methods for submitting migration data:</p>
+
+            <h3 style={{ fontSize: '1rem', marginTop: '1rem', color: C.ink }}>Option 1 — Personal Collection</h3>
+            <p>For organizations within a reasonable travel distance, a RestPoint representative can collect your data in person using an encrypted, password-protected flash drive.</p>
+
+            <h3 style={{ fontSize: '1rem', marginTop: '1rem', color: C.ink }}>Option 2 — Encrypted ZIP File</h3>
+            <p>You may send your migration files as a password-protected ZIP archive via email. For security reasons, <strong>the ZIP password must never be included in the same email.</strong> Instead, the password should be shared through a separate communication channel, such as WhatsApp or a phone call.</p>
+
+            <h3 style={{ fontSize: '1rem', marginTop: '1rem', color: C.ink }}>Option 3 — Secure Upload Portal</h3>
+            <p>For larger datasets that cannot be conveniently transferred by email, we can provide access to a secure upload portal where your files can be uploaded directly.</p>
           </Reveal>
 
-          {/* Data backup */}
+          {/* Confidentiality */}
           <Reveal delay={350}>
-            <h2>Your Data Backup</h2>
-            <p>
-              Every document, permit, invoice, and report is automatically backed up to your organization's
-              Google Drive. You own this backup — it remains accessible even if you leave Rest Point.
-            </p>
+            <h2>Confidentiality & Data Protection</h2>
+            <p>Your migration data remains your property at all times. We strictly adhere to the following guardrails:</p>
+            <ul>
+              <li>Treat all migration data as confidential.</li>
+              <li>Process information only for migration purposes.</li>
+              <li>Restrict access to authorized migration personnel.</li>
+              <li>Never share or sell your information.</li>
+              <li>Protect all transferred files using secure handling procedures.</li>
+              <li>Require confidentiality from everyone involved in the migration process.</li>
+            </ul>
           </Reveal>
 
-          {/* Data retention */}
+          {/* Migration Timeline & Table */}
           <Reveal delay={400}>
-            <h2>How Long We Keep Data</h2>
-            <p>
-              We keep your data as long as your funeral home uses Rest Point. If you request deletion:
-            </p>
-            <ul>
-              <li>We provide a final copy of all data before deletion</li>
-              <li>We delete your data from our systems within 30–60 days</li>
-              <li>Your Google Drive backup remains intact — you keep that copy</li>
-              <li>Once deleted from our systems, data cannot be recovered</li>
-            </ul>
+            <h2>Migration Timeline</h2>
+            <p>Migration timelines depend on the size, quality, and complexity of your data. Typical timeframes include:</p>
+
+            <table className="migration-table">
+              <thead>
+                <tr>
+                  <th>Migration Type</th>
+                  <th>Estimated Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Single Branch</strong></td>
+                  <td>Approximately <strong>3 weeks</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>Multi-Branch Organization</strong></td>
+                  <td>Approximately <strong>1–2 months</strong></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p>If additional data cleaning or verification is required, the timeline may be adjusted in consultation with your organization.</p>
           </Reveal>
 
-          {/* Your rights */}
+          {/* Business Continuity */}
           <Reveal delay={450}>
-            <h2>Your Rights</h2>
+            <h2>Business Continuity</h2>
             <p>
-              You can access, correct, export, or request deletion of your data anytime.
-              Email us at{' '}
-              <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.brass }}>
-                privacy@restpoint.co.ke
-              </a>
+              Migration activities are planned to minimize disruption to your daily operations. In most cases, your organization continues using its existing processes while migration work takes place in the background. Final cutover to RestPoint is scheduled at a mutually agreed time to reduce operational impact.
             </p>
           </Reveal>
 
-          {/* Security */}
+          {/* Migration Fees */}
           <Reveal delay={500}>
-            <h2>How We Keep Data Safe</h2>
-            <ul>
-              <li>End-to-end encryption for all data</li>
-              <li>Role-based access control</li>
-              <li>Audit trails for all data access</li>
-              <li>Automatic session timeouts</li>
-              <li>Regular security monitoring</li>
-            </ul>
+            <h2>Migration Fees</h2>
+            <p>
+              Data migration is a professional service involving data analysis, cleansing, mapping, validation, testing, and verification. Migration services <strong>start from KES 50,000 (approximately USD 390)</strong>.
+            </p>
+            <p>Final pricing depends on your structural footprint, historical volume, record hygiene metrics, and source platform architecture. A comprehensive customized quotation is provided before work begins.</p>
           </Reveal>
 
-          {/* Questions */}
+          {/* Post-Migration Verification */}
           <Reveal delay={550}>
-            <h2>Questions?</h2>
+            <h2>Post-Migration & Retention</h2>
+            <p>
+              After migration is complete, your submitted migration files are retained securely for <strong>30 days</strong> to allow post-migration verification and the resolution of any migration-related queries.
+            </p>
+            <p>
+              After the 30-day verification window closes, raw configuration materials, portal pipelines, secure archives, and working data structures are permanently scrubbed from our systems to reduce long-term compliance overhead.
+            </p>
+          </Reveal>
+
+          {/* Questions Contact Box */}
+          <Reveal delay={600}>
+            <h2>Questions or Coordination?</h2>
             <div className="contact-box">
               <p style={{ margin: 0, fontSize: '0.95rem' }}>
-                Contact our privacy team:
+                Contact our specialized operations deployment desk:
               </p>
               <p style={{ margin: '0.5rem 0 0 0' }}>
-                <a href="mailto:privacy@restpoint.co.ke" style={{ color: C.brassLight, textDecoration: 'none' }}>
-                  privacy@restpoint.co.ke
+                <a href="mailto:support@restpoint.co.ke" style={{ color: C.brassLight, textDecoration: 'none', fontWeight: 500 }}>
+                  support@restpoint.co.ke
                 </a>
               </p>
               <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', opacity: 0.8 }}>
-                We typically respond within 2 business days
+                Migration scoping requests are typically evaluated within 2 business days.
               </p>
             </div>
           </Reveal>
 
           {/* Footer */}
           <footer>
-            <span>© 2026 Rest Point. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} Rest Point. All rights reserved.</span>
             <div style={{ display: 'flex', gap: '1.5rem' }}>
               <a href="/terms">Terms of Service</a>
-              <a href="/contact">Contact</a>
+              <a href="/privacy">Privacy Policy</a>
             </div>
           </footer>
         </div>

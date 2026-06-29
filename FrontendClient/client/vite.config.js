@@ -7,18 +7,17 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     strictPort: true,
-    hmr: {
-      protocol: 'ws',
-      host: 'localhost',
-      port: 5173,
-      timeout: 120000
-    },
+  
     allowedHosts: [
       'restpoint.co.ke',
       'app.restpoint.co.ke',
       'localhost'
     ],
     cors: true,
+    watch: {
+      usePolling: true,
+      interval: 250,
+    },
     fs: {
       strict: false,
       allow: ['..']
@@ -42,8 +41,6 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    noDiscovery: true,
-    include: [],
     exclude: [
       '@fullcalendar/react',
       '@fullcalendar/daygrid',
@@ -67,13 +64,9 @@ export default defineConfig({
         },
       },
     },
-    // Enable cache busting with content hashes
     manifest: true,
-    // Set shorter cache TTL for assets
     assetsInlineLimit: 4096,
-    // Generate unique filenames with hashes
     cssCodeSplit: true,
-    // Minification with cache busting
     minify: 'terser',
     terserOptions: {
       compress: {

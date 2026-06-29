@@ -363,7 +363,7 @@ const BillingPage = () => {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/restpoint/portal/services/${deceasedId}`,
+        `/api/v1/restpoint/portal/services/${deceasedId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionToken}`,

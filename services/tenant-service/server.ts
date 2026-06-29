@@ -53,11 +53,10 @@ app.use(cors({
 const uploadsDir = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
-// Request logging - REMOVED for production
-// app.use((req: Request, res: Response, next: NextFunction) => {
-//   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-//   next();
-// });
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // ============================================
 // RATE LIMITING
@@ -81,14 +80,6 @@ const authLimiter = rateLimit({
 // ============================================
 // ROUTES
 // ============================================
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// ROUTE MOUNTS â€” Tenant Onboarding + System Admin
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// IMPORTANT: The API gateway's pathRewrite strips /api prefix from forwarded paths.
-// Example: Clientâ†’Gateway: /api/v1/restpoint/tenant/onboarding/organization
-//          Gatewayâ†’Service: /v1/restpoint/tenant/onboarding/organization
-// So we MUST mount on BOTH /api/v1/* AND /v1/* paths.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // --- Onboarding routes (api prefix) ---
 app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
@@ -159,4 +150,7 @@ app.use(errorHandler);
 // START SERVER
 // ============================================
 app.listen(PORT, () => {
+  console.log(`Tenant service running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`${new Date().toISOString()}`);
 });

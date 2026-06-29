@@ -1,0 +1,7 @@
+{"level":"info","message":"Billing service scheduled: 0 0 8 * * *","timestamp":"2026-06-29T04:15:12.522Z"}
+{"level":"info","message":"========================================","timestamp":"2026-06-29T04:15:12.580Z"}
+{"level":"info","message":"Billing Service started on port 5000","timestamp":"2026-06-29T04:15:12.581Z"}
+{"level":"info","message":"Daily billing schedule: 0 0 8 * * *","timestamp":"2026-06-29T04:15:12.582Z"}
+{"level":"info","message":"Fallback service: Not configured","timestamp":"2026-06-29T04:15:12.582Z"}
+{"level":"info","message":"========================================","timestamp":"2026-06-29T04:15:12.583Z"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","timestamp":"2026-06-29T04:15:21.668Z"}
