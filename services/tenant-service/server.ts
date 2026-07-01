@@ -83,6 +83,7 @@ const authLimiter = rateLimit({
 
 // --- Onboarding routes (api prefix) ---
 app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
+app.use('/onboarding', apiLimiter, onboardingRoutes);
 app.use('/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);

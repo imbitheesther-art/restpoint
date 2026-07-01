@@ -29,7 +29,9 @@
     "migrate:soft-delete:dry-run": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --dry-run",
     "migrate:soft-delete:tenant": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --tenant="
   },
-  "dependencies": {},
+  "dependencies": {
+    "axios": "^1.18.1"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "typescript": "^5.8.2"

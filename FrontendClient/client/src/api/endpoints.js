@@ -66,6 +66,8 @@ export const ENDPOINTS = {
     NEXT_OF_KIN: (id) => `/deceased/${id}/next-of-kin`,
     DOCUMENTS: (id) => `/deceased/${id}/documents`,
     DISPATCH: (id) => `/deceased/${id}/dispatch`,
+    CHARGE_SETTINGS: (id) => `/deceased/charge-settings/${id}`,
+    UPDATE_CHARGE_SETTINGS: (id) => `/deceased/charge-settings/${id}`,
   },
   MPESA: {
     STKPUSH: '/mpesa/stkpush',

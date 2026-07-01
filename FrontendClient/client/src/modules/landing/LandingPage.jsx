@@ -896,7 +896,7 @@ export default function App() {
               transform: loaded ? 'translateY(0)' : 'translateY(20px)',
               transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)',
             }}>
-              <div style={{ display: 'inline-block', marginBottom: '1.6rem', padding: '0.6rem 1rem', background: 'rgba(61, 79, 71, 0.1)', border: `1px solid ${C.verdigrisLight}`, borderRadius: '20px' }}>
+              <div style={{ display: 'inline-block', marginBottom: '1.6rem', padding: '0.6rem 1rem', background: 'rgba(61, 79, 71, 0.1)', border: `0px solid ${C.verdigrisLight}`, borderRadius: '0px' }}>
                 <span className="label" style={{ color: C.verdigris }}>Operating system for funeral homes</span>
               </div>
               <h1>A record worthy of the families you serve.</h1>
@@ -909,7 +909,7 @@ export default function App() {
                 transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1) 100ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) 100ms',
               }}>
                 <p className="hero-desc">
-                  Rest Point is the system of record for funeral homes that take their reputation seriously — case management, family communication, dispatch, and billing, run with the same care you bring to every service.
+                  Rest Point is the system of record for funeral homes that take their reputation seriously  case management, family communication, dispatch, and billing, run with the same care you bring to every service.
                 </p>
                 <div className="hero-buttons">
                   <button className="btn btn-dark" onClick={goStart}>Request access</button>
@@ -921,8 +921,23 @@ export default function App() {
                 opacity: loaded ? 1 : 0,
                 transform: loaded ? 'translateY(0)' : 'translateY(20px)',
                 transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1) 200ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) 200ms',
+                position: 'relative', /* Allows absolute positioning if needed, or structured overflow */
+                overflow: 'hidden',    /* Keeps the image rounded/contained if the card has border-radius */
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                height: '100%',        /* Forces the container to fill its grid space */
+                minHeight: '400px'
               }}>
-                Dashboard preview
+
+
+
+                {/* Added the image right below it */}
+                <img
+                  src="landing.png"
+                  alt="Rest Point Dashboard Preview"
+                  style={{ width: '100%', height: '100%', display: 'block', }}
+                />
               </div>
             </div>
           </div>

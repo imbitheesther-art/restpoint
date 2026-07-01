@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-const PORT = process.env.SOCKET_PORT || 8010;
+const PORT = process.env.PORT || process.env.SOCKET_PORT || 8010;
 const REDIS_URL = process.env.REDIS_URL
   ? process.env.REDIS_URL
   : process.env.REDIS_HOST
@@ -36,9 +36,9 @@ const subClient = pubClient.duplicate();
 
 Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
   io.adapter(createAdapter(pubClient, subClient));
-  console.log("🚀 Socket.IO Redis Adapter connected");
+  console.log(" Socket.IO Redis Adapter connected");
 }).catch(err => {
-  console.error("❌ Redis connection error:", err);
+  console.error(" Redis connection error:", err);
   process.exit(1);
 });
 

@@ -39,11 +39,17 @@ const api = axios.create({
 
 // Request interceptor - adds auth token and tenant headers
 api.interceptors.request.use((config) => {
-  if (cachedToken) {
-    config.headers['Authorization'] = `Bearer ${cachedToken}`;
+  // Always refresh from localStorage to get latest values
+  const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
+  const slug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
+  const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
+
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
-  if (cachedSlug) config.headers['x-tenant-slug'] = cachedSlug;
-  if (cachedTenantId) config.headers['x-tenant-id'] = cachedTenantId;
+  if (slug) config.headers['x-tenant-slug'] = slug;
+  if (tenantId) config.headers['x-tenant-id'] = tenantId;
+
   return config;
 }, (error) => Promise.reject(error));
 

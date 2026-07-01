@@ -5,6 +5,7 @@ import { getMainTenantMigrations, getBranchMigrations } from '../../../shared/se
 import { MigrationService } from '../../../shared/services/migration-service';
 import { getSoftDeleteMigrations } from '../../../shared/services/soft-delete-migrations';
 import * as dotenv from 'dotenv';
+import axios from 'axios';
 
 // Load environment variables
 dotenv.config();
@@ -67,18 +68,10 @@ function getDbConfig() {
     };
 }
 
-// ✅ FIXED: Auth plugins for all connections
+// FIXED: Auth plugins for all connections
 // Handles both mysql_native_password and unknown plugins (like auth_gssapi_client)
 // that MariaDB may request during the handshake
 const AUTH_PLUGINS: any = {
-    mysql_native_password: () => {
-        return (pluginData: Buffer) => {
-            // Proper mysql_native_password authentication response
-            // The pluginData contains the auth challenge from the server
-            // We need to return the password hash response
-            return Buffer.from('mysql_native_password_auth_data');
-        };
-    },
     // Catch-all for unknown auth plugins (e.g., auth_gssapi_client)
     // Falls back to mysql_native_password authentication
     auth_gssapi_client: () => {
@@ -166,6 +159,28 @@ async function getBranchConnection(dbName: string) {
 }
 
 // ============================================
+// WEBSOCKET PROGRESS TRACKING
+// ============================================
+
+const SOCKET_SERVICE_URL = process.env.SOCKET_SERVICE_URL || 'http://localhost:8010';
+
+async function emitOnboardingProgress(tenantSlug: string, step: string, progress: number, details?: string) {
+    try {
+        await axios.post(`${SOCKET_SERVICE_URL}/emit/onboarding-progress`, {
+            tenantSlug,
+            data: {
+                step,
+                progress,
+                details,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.warn(`⚠️ Failed to emit progress: ${error}`);
+    }
+}
+
+// ============================================
 // CREATE TENANT DATABASE
 // ============================================
 
@@ -197,30 +212,50 @@ async function createCompleteTenantDatabase(
 
     console.log(`📦 Creating tenant database: ${dbName}`);
     await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await emitOnboardingProgress(subdomain, 'Database created', 15, `Tenant database ${dbName} created`);
 
     // Grant permissions - use string concatenation
     const dbUser = process.env.DB_USER || 'restpoint_user';
     await serverConn.query(`GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${dbUser}'@'%'`);
     await serverConn.query('FLUSH PRIVILEGES');
     console.log(`✅ Database permissions granted for ${dbName}`);
+    await emitOnboardingProgress(subdomain, 'Database configured', 20, 'Permissions granted');
 
     // Run migrations
     const allMigrations = getMainTenantMigrations();
-    const migrationResult = await migrationService.runTenantMigrations(dbName, allMigrations, dbConfig);
+    const totalMigrations = allMigrations.length;
+    let completedMigrations = 0;
+
+    // Create a wrapper to track migration progress
+    const migrationResult = await migrationService.runTenantMigrations(dbName, allMigrations, dbConfig, (migrationName) => {
+        completedMigrations++;
+        const progress = 20 + Math.floor((completedMigrations / totalMigrations) * 40);
+        emitOnboardingProgress(subdomain, `Running migrations (${completedMigrations}/${totalMigrations})`, progress, migrationName);
+    });
     if (!migrationResult.success) {
         console.error(`❌ Migration errors for ${dbName}:`, migrationResult.errors);
         throw new Error(`Failed to create tenant database: ${migrationResult.errors.join(', ')}`);
     }
     console.log(`✅ Tenant database ready: ${migrationResult.migrationsRun.length} migrations executed`);
+    await emitOnboardingProgress(subdomain, 'Core migrations complete', 65, `${migrationResult.migrationsRun.length} tables created`);
 
     // Apply soft delete migrations
     const softDeleteMigrations = getSoftDeleteMigrations();
-    const softDeleteResult = await migrationService.runTenantMigrations(dbName, softDeleteMigrations, dbConfig);
+    const totalSoftDelete = softDeleteMigrations.length;
+    let completedSoftDelete = 0;
+
+    const softDeleteResult = await migrationService.runTenantMigrations(dbName, softDeleteMigrations, dbConfig, (migrationName) => {
+        completedSoftDelete++;
+        const progress = 65 + Math.floor((completedSoftDelete / totalSoftDelete) * 15);
+        emitOnboardingProgress(subdomain, `Enabling features (${completedSoftDelete}/${totalSoftDelete})`, progress, migrationName);
+    });
     if (!softDeleteResult.success) {
         console.warn(`⚠️ Continuing without soft delete support for some tables`);
     } else {
         console.log(`✅ Soft delete enabled: ${softDeleteResult.migrationsRun.length} tables protected`);
     }
+
+    await emitOnboardingProgress(subdomain, 'Setting up tenant', 85, 'Creating admin user and branches');
 
     // Connect to tenant DB for seeding
     const tenantConn = await getTenantConnection(dbName);
@@ -238,6 +273,7 @@ async function createCompleteTenantDatabase(
             ('time_format', '24h')
         `, [tenantName, subdomain, country || 'Kenya']);
         console.log(`✅ Default settings inserted`);
+        await emitOnboardingProgress(subdomain, 'Configuring settings', 88, 'Default settings applied');
 
         // Create admin user
         await tenantConn.query(`
@@ -245,6 +281,7 @@ async function createCompleteTenantDatabase(
             VALUES (?, ?, ?, ?, 'admin', 1, 1)
         `, [email, password_hash, full_name, phone]);
         console.log(`✅ Admin user created`);
+        await emitOnboardingProgress(subdomain, 'Creating admin user', 90, `Admin user ${email} created`);
 
         // Create branches
         const branchList = (branches && branches.length > 0) ? branches : [
@@ -277,10 +314,13 @@ async function createCompleteTenantDatabase(
         console.log(`✅ Tenant setup complete: ${dbName}`);
         console.log(`   📋 Branches: ${branchData.length}`);
         branchData.forEach(b => console.log(`      - ${b.branch_name} (slug: ${b.branch_slug})`));
+
+        await emitOnboardingProgress(subdomain, 'Finalizing setup', 95, 'Branch tracking created');
     } finally {
         await tenantConn.end();
     }
 
+    await emitOnboardingProgress(subdomain, 'Complete', 100, 'Tenant setup successful');
     return { dbName, branches: branchData };
 }
 
@@ -361,6 +401,8 @@ export class TenantModel {
             tenant_name, subdomain, email, password_hash, full_name,
             phone || null, country || null, location || null, branches
         );
+
+        await emitOnboardingProgress(subdomain, 'Registering tenant', 98, 'Saving tenant record');
 
         // Step 4: Register tenant in tracking table
         const [result] = await serverConn.query(
@@ -444,6 +486,8 @@ export class TenantModel {
         console.log(`🏢 Branches: ${branchData.length}`);
         branchData.forEach(b => console.log(`   📋 ${b.branch_name} (slug: ${b.branch_slug})`));
 
+        await emitOnboardingProgress(subdomain, 'Setup complete', 100, 'Redirecting to dashboard');
+
         return { tenant, token };
     }
 
@@ -495,7 +539,12 @@ export class TenantModel {
             password: process.env.DB_PASSWORD || 'RestPointUser2024',
             authPlugins: AUTH_PLUGINS
         };
-        const branchResult = await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig);
+
+        let completedBranchMigrations = 0;
+        const branchResult = await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig, (migrationName) => {
+            completedBranchMigrations++;
+            console.log(`   📦 Branch migration ${completedBranchMigrations}/${branchMigrations.length}: ${migrationName}`);
+        });
         if (!branchResult.success) {
             console.error(`❌ Branch migration errors for ${branchDbName}:`, branchResult.errors);
         }

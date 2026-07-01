@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import axios from 'axios';
-import { 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
-  User, 
-  FlaskConical, 
-  TrendingUp, 
-  Users, 
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  User,
+  FlaskConical,
+  TrendingUp,
+  Users,
   Truck,
   Calendar,
   Plus,
@@ -354,7 +354,7 @@ const TimelineTitle = styled.h3`
   font-size: 15px;
   font-weight: 600;
   color: ${props => {
-    switch(props.status) {
+    switch (props.status) {
       case 'completed': return colors.success;
       case 'active': return colors.primary;
       default: return colors.gray600;
@@ -994,7 +994,7 @@ const StatusTimeline = ({ deceasedData }) => {
                 {step.icon}
                 {step.hasWarning && <AlertTriangle size={10} style={{ position: 'absolute', top: 3, right: 3, color: 'white' }} />}
               </TimelineIcon>
-              
+
               <TimelineContent status={step.status}>
                 <TimelineTitle status={step.status}>
                   {step.title}
@@ -1002,11 +1002,11 @@ const StatusTimeline = ({ deceasedData }) => {
                     {step.status.toUpperCase()}
                   </StatusBadge>
                 </TimelineTitle>
-                
+
                 <TimelineDescription>
                   {step.description}
                 </TimelineDescription>
-                
+
                 <TimelineTime>
                   {step.time}
                 </TimelineTime>
@@ -1060,15 +1060,15 @@ const StatusTimeline = ({ deceasedData }) => {
                     {formatCurrency(charge.amount)}
                   </ChargeAmount>
                   <ActionButtons>
-                    <ActionButton 
-                      variant="edit" 
+                    <ActionButton
+                      variant="edit"
                       onClick={() => handleEditCharge(charge)}
                     >
                       <Edit3 size={14} />
                       Edit
                     </ActionButton>
-                    <ActionButton 
-                      variant="delete" 
+                    <ActionButton
+                      variant="delete"
                       onClick={() => handleDeleteCharge(charge.id)}
                     >
                       <Trash2 size={14} />
@@ -1101,7 +1101,7 @@ const StatusTimeline = ({ deceasedData }) => {
                 type="text"
                 placeholder="Enter service type (e.g., Transportation, Documentation, etc.)"
                 value={formData.charge_type}
-                onChange={(e) => setFormData({...formData, charge_type: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, charge_type: e.target.value })}
               />
             </FormGroup>
 
@@ -1111,7 +1111,7 @@ const StatusTimeline = ({ deceasedData }) => {
                 type="number"
                 placeholder="Enter amount"
                 value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 min="0"
                 step="0.01"
               />
@@ -1123,7 +1123,7 @@ const StatusTimeline = ({ deceasedData }) => {
                 type="text"
                 placeholder="Who requested this service?"
                 value={formData.requested_by}
-                onChange={(e) => setFormData({...formData, requested_by: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, requested_by: e.target.value })}
               />
             </FormGroup>
 
@@ -1132,11 +1132,11 @@ const StatusTimeline = ({ deceasedData }) => {
               <TextArea
                 placeholder="Additional notes or description..."
                 value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
             </FormGroup>
 
-            <SubmitButton 
+            <SubmitButton
               onClick={handleSubmitCharge}
               disabled={!formData.charge_type || !formData.amount || isSubmitting}
             >
@@ -1177,10 +1177,10 @@ const ProcessTimeline = () => {
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/deceased-id?id=${deceasedId}`);
-      
+      const response = await axios.get(`${API_BASE_URL}/deceased/deceased-id/${deceasedId}`);
+
       if (response.data && response.data.data) {
         setDeceasedData(response.data.data);
       } else {

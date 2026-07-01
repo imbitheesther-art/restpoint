@@ -1,0 +1,27 @@
+@echo off
+chcp 65001 >nul
+echo Stopping MariaDB service...
+net stop MariaDB
+if %ERRORLEVEL% NEQ 0 (
+    echo Trying sc command...
+    sc stop MariaDB
+)
+timeout /t 5 /nobreak >nul
+
+echo Starting MariaDB with skip-grant-tables...
+sc start MariaDB --skip-grant-tables
+timeout /t 3 /nobreak >nul
+
+echo Creating restpoint_user...
+"C:\Program Files\MariaDB 12.3\bin\mysql.exe" -u root -e "FLUSH PRIVILEGES;"
+"C:\Program Files\MariaDB 12.3\bin\mysql.exe" -u root -e "DROP USER IF EXISTS 'restpoint_user'@'%'; DROP USER IF EXISTS 'restpoint_user'@'localhost'; CREATE USER 'restpoint_user'@'%' IDENTIFIED BY 'RestPointUser2024'; CREATE USER 'restpoint_user'@'localhost' IDENTIFIED BY 'RestPointUser2024'; GRANT ALL PRIVILEGES ON *.* TO 'restpoint_user'@'%' WITH GRANT OPTION; GRANT ALL PRIVILEGES ON *.* TO 'restpoint_user'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+
+echo User created. Restarting MariaDB normally...
+sc stop MariaDB
+timeout /t 3 /nobreak >nul
+sc start MariaDB
+timeout /t 5 /nobreak >nul
+
+echo Done. Testing connection...
+"C:\Program Files\MariaDB 12.3\bin\mysql.exe" -u restpoint_user -pRestPointUser2024 -e "SELECT 1 AS test;"
+pause

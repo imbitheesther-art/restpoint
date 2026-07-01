@@ -28,6 +28,9 @@ const env = {
   // Timeout for API requests in milliseconds
   API_TIMEOUT: 30000,
 
+  // WebSocket URL for real-time features
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:8010'),
+
   // Feature flags
   FEATURES: {
     ENABLE_ANALYTICS: true,

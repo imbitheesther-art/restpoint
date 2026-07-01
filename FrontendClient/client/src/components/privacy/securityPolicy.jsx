@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Check, Shield, Lock, Eye, FileText, AlertTriangle } from 'lucide-react';
+
+/* ============================================================
+   REST POINT — Security Policy
+   Styled to match LandingPage: ink / bone / brass / verdigris
+   ============================================================ */
 
 const C = {
     ink: '#15171A',
@@ -10,237 +14,391 @@ const C = {
     brassLight: '#A98F6E',
     verdigris: '#3D4F47',
     verdigrisDark: '#2E3F37',
-    verdigrisLight: '#4D6359',
     line: '#E3DDD0',
+    lineDark: 'rgba(250,248,244,0.14)',
     gray: '#6B6862',
     grayLight: 'rgba(250,248,244,0.62)',
 };
 
+/* ---------- Reveal-on-scroll ---------- */
+function useReveal() {
+    const ref = useRef(null);
+    const [shown, setShown] = useState(false);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setShown(true); obs.disconnect(); } },
+            { threshold: 0.15 }
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+    }, []);
+    return [ref, shown];
+}
+
+const Reveal = ({ children, delay = 0, style = {}, className = '' }) => {
+    const [ref, shown] = useReveal();
+    return (
+        <div ref={ref} className={className} style={{
+            opacity: shown ? 1 : 0,
+            transform: shown ? 'translateY(0)' : 'translateY(18px)',
+            transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+            ...style
+        }}>
+            {children}
+        </div>
+    );
+};
+
 export default function SecurityPolicy() {
     const navigate = useNavigate();
-    const [openSection, setOpenSection] = useState(null);
-
     const goHome = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/'); };
-    const goPrivacy = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/privacy'); };
-    const goTerms = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); };
-
-    const sections = [
-        {
-            id: 'encryption',
-            title: 'Data Encryption',
-            icon: <Lock size={20} />,
-            content: 'All data is encrypted using AES-256 encryption at rest and TLS 1.3 for data in transit. This ensures that your sensitive funeral home data remains protected from unauthorized access.'
-        },
-        {
-            id: 'access',
-            title: 'Access Controls',
-            icon: <Shield size={20} />,
-            content: 'We implement role-based access controls (RBAC) to ensure that only authorized personnel can access specific data. Multi-factor authentication is available for all user accounts.'
-        },
-        {
-            id: 'monitoring',
-            title: 'Security Monitoring',
-            icon: <Eye size={20} />,
-            content: 'Our systems are monitored 24/7 for suspicious activities. We employ advanced threat detection systems and conduct regular security audits to identify and address vulnerabilities.'
-        },
-        {
-            id: 'compliance',
-            title: 'Compliance Standards',
-            icon: <FileText size={20} />,
-            content: 'Rest Point is ISO 27001 compliant and follows GDPR guidelines. We undergo regular third-party security assessments to maintain the highest standards of data protection.'
-        },
-        {
-            id: 'incident',
-            title: 'Incident Response',
-            icon: <AlertTriangle size={20} />,
-            content: 'We have a comprehensive incident response plan in place. In the unlikely event of a security incident, we will notify affected parties within 72 hours and take immediate corrective action.'
-        }
-    ];
 
     return (
-        <div style={{ minHeight: '100vh', background: C.bone }}>
+        <>
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; color: ${C.gray}; background: ${C.bone}; }
-        h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; color: ${C.ink}; }
+        body { font-family: 'Inter', sans-serif; color: ${C.gray}; background: ${C.bone}; -webkit-font-smoothing: antialiased; }
+
+        h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; color: ${C.ink}; }
+        h1 { font-size: clamp(2rem, 4vw, 2.6rem); line-height: 1.12; }
+        h2 { font-size: 1.15rem; line-height: 1.3; margin-top: 2.2rem; }
+        h3 { font-size: 1.1rem; line-height: 1.3; margin-top: 1.2rem; margin-bottom: 0.5rem; }
+        p { line-height: 1.7; font-size: 0.95rem; margin-bottom: 1rem; }
+        a { color: inherit; }
+
+        .label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.74rem;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: ${C.brass};
+        }
+
+        .wrap { max-width: 1080px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2rem); }
+
+        nav {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+          background: rgba(250,248,244,0.92); backdrop-filter: blur(10px);
+          border-bottom: 1px solid ${C.line};
+          padding: 1.15rem 0;
+        }
+        .nav-wrap { display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 0.65rem; font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 500; color: ${C.ink}; text-decoration: none; }
+        .logo-mark {
+          width: 32px; height: 32px; background: ${C.verdigris}; border-radius: 4px;
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'JetBrains Mono', monospace; font-weight: 500; color: ${C.bone};
+          font-size: 0.85rem;
+        }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: ${C.gray}; text-decoration: none; transition: color 0.2s; }
+        .nav-links a:hover { color: ${C.brass}; }
+
+        main {
+          padding-top: 100px;
+          min-height: 100vh;
+        }
+
+        h1 { margin-top: 3rem; margin-bottom: 1rem; }
+        .subtitle { color: ${C.gray}; font-size: 1.1rem; max-width: 720px; margin-bottom: 3rem; opacity: 0.85; }
+        .meta { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: ${C.brass}; margin-bottom: 2rem; letter-spacing: 0.05em; }
+
+        .section { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid ${C.line}; }
+        .section:first-of-type { border-top: none; padding-top: 0; margin-top: 2rem; }
+
+        ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+        li { margin-bottom: 0.5rem; line-height: 1.7; font-size: 0.95rem; }
+
+        strong { color: ${C.ink}; font-weight: 600; }
+
+        .commitment-box {
+          background: ${C.verdigris};
+          color: ${C.bone};
+          padding: 2rem;
+          border-radius: 4px;
+          margin: 2rem 0;
+          line-height: 1.7;
+          font-size: 0.95rem;
+        }
+        .commitment-box p { color: ${C.bone}; line-height: 1.7; font-size: 0.95rem; margin-bottom: 0; }
+        .commitment-box p + p { margin-top: 1rem; }
+        .commitment-box strong { color: ${C.bone}; }
+
+        .feature-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 1rem;
+          margin: 1.5rem 0;
+        }
+        .feature-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.85rem;
+          padding: 1rem;
+          background: ${C.bone2};
+          border-radius: 4px;
+          border-left: 3px solid ${C.brass};
+        }
+        .feature-icon-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          margin-top: 0.15rem;
+        }
+
+        .highlight-box {
+          background: #fff;
+          border: 1px solid ${C.line};
+          border-left: 4px solid ${C.verdigris};
+          padding: 1.5rem;
+          border-radius: 4px;
+          margin: 1.5rem 0;
+          font-size: 0.95rem;
+          line-height: 1.7;
+        }
+
+        .contact-box {
+          background: ${C.bone2};
+          padding: 1.5rem;
+          border-radius: 4px;
+          margin: 2rem 0;
+          border: 1px solid ${C.line};
+        }
+
+        footer {
+          margin-top: 4rem;
+          padding: 2rem 0;
+          border-top: 1px solid ${C.line};
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+        footer span { font-size: 0.85rem; opacity: 0.7; }
+        footer a {
+          font-size: 0.85rem;
+          color: #fff;
+          text-decoration: none;
+          padding: 0.5rem 1rem;
+          background: ${C.ink};
+          border-radius: 2px;
+          transition: background 0.2s;
+        }
+        footer a:hover { background: ${C.verdigris}; }
+
+        .hero-header {
+          border-bottom: 1px solid ${C.line};
+          padding-bottom: 2rem;
+          margin-bottom: 2rem;
+        }
+
+        .back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: ${C.brass};
+          cursor: pointer;
+          background: none;
+          border: none;
+          padding: 0;
+          margin-bottom: 1.5rem;
+          font-family: 'Inter', sans-serif;
+          transition: color 0.2s;
+        }
+        .back-btn:hover { color: ${C.ink}; }
+
+        @media (max-width: 768px) {
+          .nav-links { display: none; }
+        }
       `}</style>
 
-            {/* Navigation */}
-            <nav style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-                background: 'rgba(250,248,244,0.96)', backdropFilter: 'blur(12px)',
-                borderBottom: `1px solid ${C.line}`, padding: '1.2rem 0',
-            }}>
-                <div style={{ maxWidth: '1140px', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', fontFamily: "'Fraunces', serif", fontSize: '1.25rem', fontWeight: 500, color: C.ink, cursor: 'pointer' }} onClick={goHome}>
-                        <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                            <circle cx="16" cy="16" r="14.5" stroke={C.verdigris} strokeWidth="1" />
-                            <path d="M16 8.5V23.5M9.5 16H22.5" stroke={C.verdigris} strokeWidth="1" />
-                            <circle cx="16" cy="16" r="2.5" fill={C.verdigris} />
-                        </svg>
-                        <span>Rest Point</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                        <button onClick={goPrivacy} style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>Privacy</button>
-                        <button onClick={goTerms} style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>Terms</button>
-                    </div>
+            <nav>
+                <div className="wrap nav-wrap">
+                    <a href="/" className="logo" onClick={(e) => { e.preventDefault(); goHome(); }}>
+                        <div className="logo-mark">R</div>
+                        Rest Point
+                    </a>
+                    <ul className="nav-links">
+                        <li><a href="/" onClick={(e) => { e.preventDefault(); goHome(); }}>Home</a></li>
+                        <li><a href="/privacy" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }}>Privacy</a></li>
+                        <li><a href="/terms" onClick={(e) => { e.preventDefault(); navigate('/terms'); }}>Terms</a></li>
+                        <li><a href="/sla" onClick={(e) => { e.preventDefault(); navigate('/sla'); }}>SLA</a></li>
+                        <li><a href="/security" onClick={(e) => { e.preventDefault(); navigate('/security'); }}>Security</a></li>
+                        <li><a href="/contact" onClick={(e) => { e.preventDefault(); navigate('/contact'); }}>Contact</a></li>
+                    </ul>
                 </div>
             </nav>
 
-            <main style={{ paddingTop: '100px' }}>
-                <div style={{ maxWidth: '900px', margin: '0 auto', padding: '4rem 2rem' }}>
-                    {/* Header */}
-                    <div style={{ marginBottom: '4rem', textAlign: 'center' }}>
-                        <div style={{
-                            display: 'inline-block', padding: '0.6rem 1rem',
-                            background: 'rgba(61, 79, 71, 0.1)', border: `1px solid ${C.verdigrisLight}`,
-                            borderRadius: '20px', marginBottom: '1.5rem'
-                        }}>
-                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.74rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: C.verdigris }}>
-                                Security & Compliance
-                            </span>
+            <main>
+                <div className="wrap">
+                    <button className="back-btn" onClick={goHome}>← Back to Home</button>
+
+                    <Reveal>
+                        <div className="hero-header">
+                            <span className="meta">POLICY · INFRASTRUCTURE SECURITY</span>
+                            <h1>Security Policy</h1>
+                            <p className="subtitle">
+                                How we protect sensitive operations, safeguard deceased records, and maintain rigorous baseline architectures.
+                            </p>
                         </div>
-                        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', marginBottom: '1rem', lineHeight: 1.2 }}>
-                            Security & Compliance Policy
-                        </h1>
-                        <p style={{ fontSize: '1.1rem', color: C.gray, maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>
-                            Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </p>
-                    </div>
+                    </Reveal>
 
-                    {/* Introduction */}
-                    <div style={{
-                        background: C.bone2, border: `1px solid ${C.line}`, padding: '2rem',
-                        borderRadius: '4px', marginBottom: '3rem'
-                    }}>
-                        <p style={{ fontSize: '1rem', lineHeight: 1.8, color: C.gray }}>
-                            At Rest Point, we take the security of your funeral home data seriously. This policy outlines our comprehensive security measures and compliance standards designed to protect your information and ensure business continuity.
-                        </p>
-                    </div>
+                    {/* Core Philosophy */}
+                    <Reveal delay={100}>
+                        <div className="section">
+                            <h2>Data Sovereignty & Dignity</h2>
+                            <p>
+                                Managing mortuary operations, digital identity tags, chain-of-custody ledgers, and billing information requires strict data defense paradigms. RestPoint treats system security not merely as compliance, but as an operational necessity.
+                            </p>
+                            <p>
+                                Our structural protocols ensure data remains heavily isolated, audit trails are strictly immutable, and access tiers are aggressively structured.
+                            </p>
+                        </div>
+                    </Reveal>
 
-                    {/* Security Sections */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-                        {sections.map((section) => (
-                            <div
-                                key={section.id}
-                                style={{
-                                    background: 'white', border: `1px solid ${C.line}`, borderRadius: '4px',
-                                    overflow: 'hidden', transition: 'all 0.3s ease'
-                                }}
-                            >
-                                <button
-                                    onClick={() => setOpenSection(openSection === section.id ? null : section.id)}
-                                    style={{
-                                        width: '100%', padding: '1.5rem', background: 'none', border: 'none',
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem',
-                                        textAlign: 'left', transition: 'background 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = C.bone2}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                >
-                                    <div style={{
-                                        width: '40px', height: '40px', borderRadius: '50%',
-                                        background: 'rgba(61, 79, 71, 0.1)', display: 'flex',
-                                        alignItems: 'center', justifyContent: 'center', color: C.verdigris, flexShrink: 0
-                                    }}>
-                                        {section.icon}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{section.title}</h3>
-                                    </div>
-                                    <ChevronDown
-                                        size={20}
-                                        style={{
-                                            color: C.brass,
-                                            transform: openSection === section.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                                            transition: 'transform 0.3s ease'
-                                        }}
-                                    />
-                                </button>
-                                {openSection === section.id && (
-                                    <div style={{
-                                        padding: '0 1.5rem 1.5rem', borderTop: `1px solid ${C.line}`,
-                                        background: C.bone2
-                                    }}>
-                                        <p style={{ fontSize: '0.95rem', lineHeight: 1.8, color: C.gray, marginTop: '1rem' }}>
-                                            {section.content}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Key Security Features */}
-                    <div style={{ marginBottom: '3rem' }}>
-                        <h2 style={{ fontSize: '1.8rem', marginBottom: '2rem', textAlign: 'center' }}>Key Security Features</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-                            {[
-                                { title: 'End-to-End Encryption', desc: 'All data encrypted in transit and at rest' },
-                                { title: 'Regular Backups', desc: 'Daily automated backups with geo-redundancy' },
-                                { title: 'Access Logs', desc: 'Complete audit trail of all system access' },
-                                { title: 'Secure Infrastructure', desc: 'Enterprise-grade cloud with 99.9% uptime' },
-                            ].map((feature, idx) => (
-                                <div key={idx} style={{
-                                    background: 'white', border: `1px solid ${C.line}`, padding: '1.5rem',
-                                    borderRadius: '4px'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                        <Check size={18} color={C.verdigris} />
-                                        <h3 style={{ fontSize: '1rem' }}>{feature.title}</h3>
-                                    </div>
-                                    <p style={{ fontSize: '0.88rem', color: C.gray, lineHeight: 1.6 }}>{feature.desc}</p>
+                    {/* Core Pillars Grid */}
+                    <Reveal delay={150}>
+                        <div className="feature-list">
+                            <div className="feature-item">
+                                <span className="feature-icon-container">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.brass} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <strong>Data Encryption at Rest</strong>
+                                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
+                                        Full storage volumes leverage industry-standard cryptographic encryption at rest, keeping records unreadable to unauthorized hardware targets.
+                                    </p>
                                 </div>
-                            ))}
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon-container">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.brass} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <strong>Multi-Tenant Isolation</strong>
+                                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
+                                        Database level boundaries ensure each tenant operates their own isolated database instance. Cross-tenant parameters cannot intersect.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon-container">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.brass} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <strong>Family Data Masking</strong>
+                                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
+                                        Sensitive family records and kinship details undergo strict field-level data masking to protect privacy across generalized dashboards.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon-container">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.brass} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <strong>Rate Limiting</strong>
+                                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
+                                        Aggressive application and network layer rate limiting prevents API brute forcing and localized traffic amplification vectors.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </Reveal>
 
-                    {/* Contact */}
-                    <div style={{
-                        background: C.verdigrisDark, color: C.bone, padding: '2.5rem',
-                        borderRadius: '4px', textAlign: 'center'
-                    }}>
-                        <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: C.bone }}>Questions about security?</h2>
-                        <p style={{ fontSize: '1rem', color: 'rgba(250,248,244,0.75)', marginBottom: '1.5rem', lineHeight: 1.7 }}>
-                            Our security team is available to address any concerns you may have.
-                        </p>
-                        <a href="mailto:security@restpoint.co.ke" style={{
-                            display: 'inline-block', padding: '0.75rem 1.5rem',
-                            background: C.brass, color: C.bone, textDecoration: 'none',
-                            borderRadius: '4px', fontSize: '0.85rem', fontWeight: 500,
-                            transition: 'background 0.2s'
-                        }}
-                            onMouseEnter={(e) => e.target.style.background = C.brassLight}
-                            onMouseLeave={(e) => e.target.style.background = C.brass}
-                        >
-                            Contact Security Team
-                        </a>
-                    </div>
+                    {/* Infrastructure Protection */}
+                    <Reveal delay={200}>
+                        <div className="section">
+                            <h2>Network & Perimeter Defense</h2>
+                            <h3>Cloudflare Tunnel & Firewalls</h3>
+                            <p>
+                                All public routes route through enterprise network filters and native firewalls. Using <strong>cloudflared</strong> tunnels, internal application ports remain completely invisible to the open internet, restricting inbound traffic strictly to verified edge requests.
+                            </p>
+                            <h3>Brute-Force Prevention via Fail2ban</h3>
+                            <p>
+                                Automated connection logs are monitored seamlessly by <strong>fail2ban</strong> protection systems. Infrastructure endpoints instantly block hosts displaying anomalous automated patterns or systemic login failures.
+                            </p>
+                            <h3>Application Vulnerability Mitigation (XSS & Injection)</h3>
+                            <p>
+                                The application core enforces strict data validation schemas to safeguard input routes. Contextual encoding patterns protect operational portals against Cross-Site Scripting (XSS) and database level manipulation vulnerabilities.
+                            </p>
+                        </div>
+                    </Reveal>
+
+                    {/* Environment and Passwords */}
+                    <Reveal delay={250}>
+                        <div className="section">
+                            <h2>Secrets & Authentication Management</h2>
+                            <p>
+                                We approach access paths and internal configurations through an explicit minimal footprint strategy:
+                            </p>
+                            <ul>
+                                <li><strong>Cryptographically Salted Passwords:</strong> Access credentials are processed via rigorous one-way hashing models alongside unique, randomized salts. Passwords are never stored or logged in plain text.</li>
+                                <li><strong>Isolated .env Secret Keys:</strong> Environment level configurations, encryption strings, and webhook secrets live inside strictly locked <code>.env</code> key arrays, decoupled completely from the application build source.</li>
+                            </ul>
+                        </div>
+                    </Reveal>
+
+                    {/* Banner Statement */}
+                    <Reveal delay={300}>
+                        <div className="commitment-box">
+                            <h3>Incident Response Commitment</h3>
+                            <p>
+                                If a potential vulnerability layer or unsanctioned system data shift is flagged, our infrastructure response protocol mobilizes instantly. Operational engineering teams isolate anomalous traffic signatures immediately, establishing containment controls and detailing mitigation parameters.
+                            </p>
+                        </div>
+                    </Reveal>
+
+                    {/* Report Path */}
+                    <Reveal delay={350}>
+                        <h2>Disclosures & Inquiries</h2>
+                        <div className="contact-box">
+                            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                                Have you identified a potential risk profile or require clarification regarding enterprise infrastructure configurations?
+                            </p>
+                            <p style={{ margin: '0.5rem 0 0 0' }}>
+                                Reach our response desk directly at:{' '}
+                                <a href="mailto:security@restpoint.co.ke" style={{ color: C.brassLight, textDecoration: 'none', fontWeight: 500 }}>
+                                    security@restpoint.co.ke
+                                </a>
+                            </p>
+                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', opacity: 0.8 }}>
+                                Vulnerability reports receive high-priority engineer reviews within 24 hours.
+                            </p>
+                        </div>
+                    </Reveal>
+
+                    {/* Footer */}
+                    <footer>
+                        <span>© 2026 Rest Point. All rights reserved.</span>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <a href="/privacy" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }}>Privacy Policy</a>
+                            <a href="/terms" onClick={(e) => { e.preventDefault(); navigate('/terms'); }}>Terms of Service</a>
+                            <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('/contact'); }}>Contact</a>
+                        </div>
+                    </footer>
                 </div>
             </main>
-
-            {/* Footer */}
-            <footer style={{
-                background: C.ink, color: C.grayLight, padding: '3rem 0 2rem',
-                borderTop: `2px solid ${C.verdigrisLight}`
-            }}>
-                <div style={{ maxWidth: '1140px', margin: '0 auto', padding: '0 2rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                        <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.25rem', color: C.bone }}>
-                            Rest Point
-                        </div>
-                        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem' }}>
-                            <button onClick={goPrivacy} style={{ background: 'none', border: 'none', color: C.grayLight, cursor: 'pointer', fontSize: '0.85rem' }}>Privacy Policy</button>
-                            <button onClick={goTerms} style={{ background: 'none', border: 'none', color: C.grayLight, cursor: 'pointer', fontSize: '0.85rem' }}>Terms of Service</button>
-                        </div>
-                        <div style={{ fontSize: '0.78rem', opacity: 0.7 }}>
-                            © {new Date().getFullYear()} Rest Point. All rights reserved.
-                        </div>
-                    </div>
-                </div>
-            </footer>
-        </div>
+        </>
     );
 }

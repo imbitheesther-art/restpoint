@@ -43,6 +43,21 @@ const getTenantSlug = (req: any): string | undefined => {
         || req.tenantSlug;
 };
 
+// Extract tenant slug from URL path (fallback)
+const extractTenantSlugFromUrl = (req: any): string | undefined => {
+    try {
+        const path = req.path || req.url || '';
+        // Match patterns like /tenant/{slug}/... or /api/v1/restpoint/tenant/{slug}/...
+        const match = path.match(/\/(?:api\/v1\/restpoint\/)?tenant\/([^\/]+)/);
+        if (match && match[1]) {
+            return match[1];
+        }
+    } catch (e) {
+        // Ignore errors
+    }
+    return undefined;
+};
+
 const resolveTenantDb = async (tenantSlug: string): Promise<string | null> => {
     if (!tenantSlug || tenantSlug === 'system_shared') return null;
     return await resolveDatabase(tenantSlug);
@@ -68,12 +83,17 @@ const logError = (error: any, context: string) => {
 // REGISTER DECEASED
 // ============================================
 export const registerDeceased = async (req: Request, res: Response): Promise<Response> => {
-    const tenantSlug = getTenantSlug(req);
+    let tenantSlug = getTenantSlug(req);
+
+    // Fallback: try to extract from URL
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        tenantSlug = extractTenantSlugFromUrl(req);
+    }
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return res.status(400).json({
             success: false,
-            message: 'Valid tenant required. Please provide x-tenant-slug header'
+            message: 'Valid tenant required. Please provide x-tenant-slug header or include tenant slug in URL path (e.g., /tenant/{slug}/deceased)'
         });
     }
 
@@ -181,12 +201,30 @@ export const registerDeceased = async (req: Request, res: Response): Promise<Res
 // ============================================
 
 export const getAllDeceased = async (req: Request, res: Response): Promise<Response> => {
-    const tenantSlug = getTenantSlug(req);
+    let tenantSlug = getTenantSlug(req);
+
+    // Fallback: try to extract from URL
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        tenantSlug = extractTenantSlugFromUrl(req);
+    }
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
+        console.error('[getAllDeceased] Missing or invalid tenant slug:', {
+            tenantSlug,
+            path: req.path,
+            headers: req.headers,
+            hasXTenantSlug: !!req.headers['x-tenant-slug'],
+            hasXSlug: !!req.headers['x-slug']
+        });
         return res.status(400).json({
             success: false,
-            message: 'Valid tenant required. Please provide x-tenant-slug header'
+            message: 'Valid tenant required. Please provide x-tenant-slug header or include tenant slug in URL path (e.g., /tenant/{slug}/deceased)',
+            debug: process.env.NODE_ENV === 'development' ? {
+                receivedTenantSlug: tenantSlug,
+                path: req.path,
+                hasXTenantSlugHeader: !!req.headers['x-tenant-slug'],
+                hasXSlugHeader: !!req.headers['x-slug']
+            } : undefined
         });
     }
 
@@ -278,7 +316,12 @@ export const getAllDeceased = async (req: Request, res: Response): Promise<Respo
 // GET DECEASED BY ID
 // ============================================
 export const getDeceasedById = async (req: Request, res: Response): Promise<Response> => {
-    const tenantSlug = getTenantSlug(req);
+    let tenantSlug = getTenantSlug(req);
+
+    // Fallback: try to extract from URL
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        tenantSlug = extractTenantSlugFromUrl(req);
+    }
 
     // Handle id as string | string[]
     const rawId = req.params.id;
@@ -352,7 +395,12 @@ export const getDeceasedById = async (req: Request, res: Response): Promise<Resp
 // UPDATE DECEASED
 // ============================================
 export const updateDeceased = async (req: Request, res: Response): Promise<Response> => {
-    const tenantSlug = getTenantSlug(req);
+    let tenantSlug = getTenantSlug(req);
+
+    // Fallback: try to extract from URL
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        tenantSlug = extractTenantSlugFromUrl(req);
+    }
 
     // Handle id as string | string[]
     const rawId = req.params.id;
@@ -453,7 +501,12 @@ export const updateDeceased = async (req: Request, res: Response): Promise<Respo
 // DELETE DECEASED (SOFT DELETE)
 // ============================================
 export const deleteDeceased = async (req: Request, res: Response): Promise<Response> => {
-    const tenantSlug = getTenantSlug(req);
+    let tenantSlug = getTenantSlug(req);
+
+    // Fallback: try to extract from URL
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        tenantSlug = extractTenantSlugFromUrl(req);
+    }
 
     // Handle id as string | string[]
     const rawId = req.params.id;
@@ -523,7 +576,12 @@ export const deleteDeceased = async (req: Request, res: Response): Promise<Respo
 // GET DECEASED STATS
 // ============================================
 export const getDeceasedStats = async (req: Request, res: Response): Promise<Response> => {
-    const tenantSlug = getTenantSlug(req);
+    let tenantSlug = getTenantSlug(req);
+
+    // Fallback: try to extract from URL
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        tenantSlug = extractTenantSlugFromUrl(req);
+    }
 
     if (!tenantSlug || tenantSlug === 'system_shared') {
         return res.status(400).json({
@@ -655,6 +713,7 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
         const tableExists = (result as any[])[0]?.count > 0;
 
         if (!tableExists) {
+            // Create table with full schema
             const createTableSQL = `
                 CREATE TABLE deceased (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -693,6 +752,58 @@ const ensureDeceasedTable = async (dbName: string, tenantSlug: string): Promise<
             `;
             await safeTenantExecute(dbName, createTableSQL, []);
             logger.info(`✅ Created deceased table in ${dbName}`);
+        } else {
+            // Table exists - check and add missing columns
+            logger.info(`🔍 Checking deceased table schema in ${dbName}...`);
+
+            const alterCommands: string[] = [];
+
+            // Check each required column and add if missing
+            const columnChecks = [
+                { column: 'date_of_birth', definition: 'DATE NULL AFTER date_admitted' },
+                { column: 'date_of_death', definition: 'DATE NULL AFTER date_of_birth' },
+                { column: 'date_registered', definition: 'DATETIME NULL AFTER date_of_death' },
+                { column: 'gender', definition: 'VARCHAR(20) NULL AFTER full_name' },
+                { column: 'place_of_death', definition: 'VARCHAR(255) NULL AFTER gender' },
+                { column: 'county', definition: 'VARCHAR(100) NULL AFTER place_of_death' },
+                { column: 'national_id', definition: 'VARCHAR(50) NULL AFTER county' },
+                { column: 'location', definition: 'TEXT NULL AFTER national_id' },
+                { column: 'portal_slug', definition: 'VARCHAR(255) UNIQUE NULL AFTER location' },
+                { column: 'status', definition: 'VARCHAR(50) DEFAULT \'active\' AFTER created_by' },
+                { column: 'total_mortuary_charge', definition: 'DECIMAL(10,2) NULL AFTER status' },
+                { column: 'currency', definition: 'VARCHAR(3) DEFAULT \'KES\' AFTER total_mortuary_charge' },
+                { column: 'burial_type', definition: 'VARCHAR(50) NULL AFTER currency' },
+                { column: 'dispatch_date', definition: 'DATE NULL AFTER burial_type' },
+                { column: 'extra_charges_amount', definition: 'DECIMAL(10,2) DEFAULT 0 AFTER dispatch_date' },
+                { column: 'next_of_kin_count', definition: 'INT DEFAULT 0 AFTER extra_charges_amount' },
+                { column: 'is_embalmed', definition: 'BOOLEAN DEFAULT FALSE AFTER next_of_kin_count' },
+                { column: 'is_deleted', definition: 'BOOLEAN DEFAULT FALSE AFTER is_embalmed' }
+            ];
+
+            for (const colCheck of columnChecks) {
+                const columnQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_SCHEMA = ? 
+                    AND TABLE_NAME = 'deceased' 
+                    AND COLUMN_NAME = ?
+                `;
+                const colResult = await safeTenantQuery(dbName, columnQuery, [dbName, colCheck.column]);
+                const columnExists = (colResult as any[])[0]?.count > 0;
+
+                if (!columnExists) {
+                    alterCommands.push(`ADD COLUMN ${colCheck.column} ${colCheck.definition}`);
+                }
+            }
+
+            // Execute ALTER TABLE if there are missing columns
+            if (alterCommands.length > 0) {
+                const alterSQL = `ALTER TABLE deceased ${alterCommands.join(', ')}`;
+                await safeTenantExecute(dbName, alterSQL, []);
+                logger.info(`✅ Added ${alterCommands.length} missing columns to deceased table in ${dbName}`);
+            } else {
+                logger.info(`✅ Deceased table schema is up to date in ${dbName}`);
+            }
         }
     } catch (error) {
         logger.error(`Failed to ensure deceased table in ${dbName}:`, error);

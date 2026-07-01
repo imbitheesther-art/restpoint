@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-  DollarSign, AlertCircle, CheckCircle, Loader2, Calendar, Clock, Clipboard, 
-  Truck, UserCheck, CreditCard, TrendingUp, AlertTriangle, Info, Home, 
+import {
+  DollarSign, AlertCircle, CheckCircle, Loader2, Calendar, Clock, Clipboard,
+  Truck, UserCheck, CreditCard, TrendingUp, AlertTriangle, Info, Home,
   FileText, Users, Plus, Edit, Trash2, X, Save, Tag
 } from 'lucide-react';
 import axios from 'axios';
@@ -181,7 +181,7 @@ const NotificationItem = styled.div`
 
 const StatBadge = styled(Badge)`
   background: ${props => {
-    switch(props.variant) {
+    switch (props.variant) {
       case 'success': return Colors.successGradient;
       case 'warning': return Colors.warningGradient;
       case 'danger': return Colors.dangerGradient;
@@ -339,8 +339,8 @@ function MortuaryCharges() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/deceased-id?id=${idToFetch}`);
-      
+      const response = await axios.get(`${API_BASE_URL}/deceased/deceased-id/${idToFetch}`);
+
       if (response.data && response.data.data) {
         setDeceasedData(response.data.data);
       } else {
@@ -417,8 +417,8 @@ function MortuaryCharges() {
   const handleSaveExtraCharge = async () => {
     try {
       // Determine the final charge type
-      const finalChargeType = formData.charge_type === 'custom' 
-        ? formData.custom_charge_type 
+      const finalChargeType = formData.charge_type === 'custom'
+        ? formData.custom_charge_type
         : formData.charge_type;
 
       const chargeData = {
@@ -506,7 +506,7 @@ function MortuaryCharges() {
   const coldRoomCharges = parseFloat(financialDetails.cold_room_charges) || 0;
 
   // Calculate payment percentage
-  const paymentPercentage = totalMortuaryCharge > 0 ? 
+  const paymentPercentage = totalMortuaryCharge > 0 ?
     Math.min(Math.round((totalPaid / totalMortuaryCharge) * 100), 100) : 0;
 
   // Calculate daily rate based on actual charges
@@ -528,15 +528,15 @@ function MortuaryCharges() {
   // Generate notifications based on API data
   const apiNotifications = deceasedData.notifications || [];
   const customNotifications = [
-    { 
+    {
       message: `💰 Outstanding balance of KSh ${Math.abs(balance).toLocaleString()}`,
       type: balance > 0 ? 'warning' : 'success'
     },
-    { 
+    {
       message: `✅ ${payments.length} payment(s) received totaling KSh ${totalPaid.toLocaleString()}`,
       type: 'success'
     },
-    { 
+    {
       message: `📅 ${daysInMortuary} days in mortuary`,
       type: 'info'
     },
@@ -670,7 +670,7 @@ function MortuaryCharges() {
                     </IconWrapper>
                     <Title>Charge Breakdown</Title>
                   </div>
-                
+
                 </div>
               </CardHeader>
               <CardBody>
@@ -689,7 +689,7 @@ function MortuaryCharges() {
                       <strong><Info size={16} className="icon" />Extra Charges</strong>
                       <span>KSh {totalExtraCharges.toLocaleString()}</span>
                       <small className="text-muted d-block mt-1">
-                       holding
+                        holding
                       </small>
                     </InnerCard>
                   </Col>
@@ -721,14 +721,14 @@ function MortuaryCharges() {
                         </div>
                         <div className="d-flex align-items-center gap-2">
                           <span className="fw-bold text-dark">KSh {parseFloat(charge.amount).toLocaleString()}</span>
-                          <EditButton 
-                            size="sm" 
+                          <EditButton
+                            size="sm"
                             onClick={() => handleEditExtraCharge(charge)}
                           >
                             <Edit size={14} />
                           </EditButton>
-                          <DeleteButton 
-                            size="sm" 
+                          <DeleteButton
+                            size="sm"
                             onClick={() => handleDeleteExtraCharge(charge.id)}
                           >
                             <Trash2 size={14} />
@@ -741,7 +741,7 @@ function MortuaryCharges() {
               </CardBody>
             </StyledCard>
 
-        
+
 
             {/* Additional Information Section */}
             <StyledCard>
@@ -759,7 +759,7 @@ function MortuaryCharges() {
                     <InnerCard>
                       <strong><UserCheck size={16} className="icon" />Next of Kin</strong>
                       <span>
-                        {deceasedData.next_of_kin && deceasedData.next_of_kin.length > 0 
+                        {deceasedData.next_of_kin && deceasedData.next_of_kin.length > 0
                           ? `${deceasedData.next_of_kin[0].full_name} (${deceasedData.next_of_kin[0].relationship})`
                           : 'Not specified'
                         }
@@ -776,7 +776,7 @@ function MortuaryCharges() {
               </CardBody>
             </StyledCard>
 
-           
+
 
           </Col>
         </Row>

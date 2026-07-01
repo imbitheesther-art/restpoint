@@ -40,7 +40,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Tenant middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string || 'system_shared';
+    const tenantSlug = req.headers['x-tenant-slug'] as string | undefined;
     (req as any).tenantSlug = tenantSlug;
     next();
 });
@@ -55,7 +55,7 @@ import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
 // ✅ MOUNT ROUTES - ALL POSSIBLE PATHS
 // ============================================
 
-// Mount at root level for direct access
+// Mount at root level for direct access (IMPORTANT: must be first)
 app.use('/', deceasedRoutes);  // This handles /register-deceased, /deceased-id/:id, etc.
 
 // Mount with /deceased prefix
@@ -70,10 +70,30 @@ app.use('/v1/restpoint/deceased', deceasedRoutes);
 // Other services
 app.use('/api/v1/restpoint/autopsy', autopsyRoutes);
 app.use('/v1/restpoint/autopsy', autopsyRoutes);
+app.use('/autopsy', autopsyRoutes);
+
 app.use('/api/v1/restpoint/charges', chargesRoutes);
 app.use('/v1/restpoint/charges', chargesRoutes);
+app.use('/charges', chargesRoutes);
+
 app.use('/api/v1/restpoint/charge-settings', chargeSettingsRoutes);
 app.use('/v1/restpoint/charge-settings', chargeSettingsRoutes);
+app.use('/charge-settings', chargeSettingsRoutes);
+
+// Next of Kin routes - mount at root for /:deceased_id/next-of-kin pattern
+// Gateway strips /api/v1/restpoint/deceased, so service receives /:deceased_id/next-of-kin
+import nextOfKinRoutes from './routes/nextOfKinRoutes';
+app.use('/', nextOfKinRoutes);
+
+// Hearse routes - mount at root for /hearse/* pattern
+// Gateway strips /api/v1/restpoint/hearse, so service receives /hearse/*
+import hearseRoutes from './routes/hearseRoutes';
+app.use('/', hearseRoutes);
+
+// Documents routes - mount at root for /:deceased_id/documents pattern
+// Gateway strips /api/v1/restpoint/deceased, so service receives /:deceased_id/documents
+import documentsRoutes from './routes/documentsRoutes';
+app.use('/', documentsRoutes);
 
 // ============================================
 // HEALTH CHECK

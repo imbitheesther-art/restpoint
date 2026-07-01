@@ -656,9 +656,9 @@ const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -807,20 +807,20 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [transportCost, setTransportCost] = useState(null);
   const [totalCost, setTotalCost] = useState(null);
 
-// Using centralized API client (api) and ENDPOINTS
+  // Using centralized API client (api) and ENDPOINTS
 
   // Helper to get tenant slug
   const getTenantSlug = () => {
-    return localStorage.getItem('tenantSlug') || 
-           localStorage.getItem('tenant_slug') ||
-           (() => {
-             try {
-               const user = JSON.parse(localStorage.getItem('user') || '{}');
-               return user.tenantSlug || user.tenant?.slug || 'default';
-             } catch {
-               return 'default';
-             }
-           })();
+    return localStorage.getItem('tenantSlug') ||
+      localStorage.getItem('tenant_slug') ||
+      (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.tenantSlug || user.tenant?.slug || 'default';
+        } catch {
+          return 'default';
+        }
+      })();
   };
 
   useEffect(() => {
@@ -875,7 +875,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
     if (!vehicleCC || !distance || vehicleCC <= 0 || distance <= 0) return null;
     const cc = parseFloat(vehicleCC);
     if (isNaN(cc) || cc <= 0) return null;
-    
+
     let kmPerLiter = cc < 1500 ? 15 : cc < 2000 ? 12 : cc < 3000 ? 9 : cc < 4000 ? 6 : 4;
     const roundTrip = distance * 2;
     const fuelNeeded = roundTrip / kmPerLiter;
@@ -1214,13 +1214,13 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
             background: message.includes('Error') || message.includes('❌')
               ? '#FEE2E2'
               : message.includes('✅')
-              ? '#D1FAE5'
-              : '#DBEAFE',
+                ? '#D1FAE5'
+                : '#DBEAFE',
             color: message.includes('Error') || message.includes('❌')
               ? '#DC2626'
               : message.includes('✅')
-              ? '#059669'
-              : '#1E40AF',
+                ? '#059669'
+                : '#1E40AF',
             borderRadius: '0.5rem',
             fontSize: '0.85rem',
             textAlign: 'center',
@@ -1657,7 +1657,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                 <>
                   <CheckCircle size={16} /> {editingId ? 'Update' : 'Create'} Dispatch
                 </>
-               )}
+              )}
             </StyledButton>
 
             <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#fef3c720', borderRadius: '0.5rem', fontSize: '0.75rem', color: Colors.textSecondary, border: `1px solid ${Colors.warningOrange}30` }}>

@@ -213,7 +213,7 @@ const MortuaryProgress = ({
 
     try {
       const tenantSlug = getTenantSlug();
-      const response = await axios.get(`${API_BASE_URL}/deceased/deceased-id?id=${deceasedId}`, {
+      const response = await axios.get(`${API_BASE_URL}/deceased/deceased-id/${deceasedId}`, {
         headers: {
           'x-tenant-slug': tenantSlug,
         },

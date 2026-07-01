@@ -8,6 +8,7 @@ import {
   CheckCircle, XCircle, Camera, X, RotateCcw, Globe, MapPin,
   ArrowLeft
 } from 'lucide-react';
+import { Square as Button } from 'lucide-react';
 import { Form, Row, Col, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ENDPOINTS } from '../../api/endpoints';

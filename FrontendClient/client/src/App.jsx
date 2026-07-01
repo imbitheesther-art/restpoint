@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import AppRouter from './routes/AppRouter';
 import { initManifest } from './services/manifestService';
 
@@ -31,7 +33,12 @@ const App = () => {
       </BrowserRouter>
     );
   }
-  return <BrowserRouter>{routeElement}</BrowserRouter>;
+  return (
+    <BrowserRouter>
+      {routeElement}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+    </BrowserRouter>
+  );
 };
 
 export default App;

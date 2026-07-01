@@ -6,7 +6,8 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 8001;
+// FIX 1: Harmonized default port to match the Gateway's internal mapping
+const PORT = process.env.PORT || 5001;
 
 // CORS configuration
 const corsOptions = {
@@ -25,15 +26,12 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Handle preflight OPTIONS requests explicitly
 app.options('*', cors(corsOptions));
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware for parsing incoming requests
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
-
 
 // Request logging
 app.use((req, res, next) => {
@@ -50,37 +48,44 @@ app.get('/health', (req, res) => {
     });
 });
 
-// ============================================
-// ROUTES — mount at ALL possible paths
-// ============================================
-// When proxied through API gateway: /api/v1/restpoint/auth/*
-// When accessed directly: /v1/restpoint/auth/* (gateway strips /api)
-// When accessed at root: /login (direct dev access)
-app.use('/api/v1/restpoint/auth', authRoutes);
-app.use('/v1/restpoint/auth', authRoutes);
-app.use('/restpoint/auth', authRoutes);
-app.use('/auth', authRoutes);
-app.use(authRoutes);
+// =============================================================================
+// FIX 2: CLEAN ROOT MOUNTING FOR THE GATEWAY
+// =============================================================================
+// Your Gateway sends clean rewritten paths (e.g., '/auth/login').
+// To avoid path doubling errors (like '/auth/auth/login'), we mount the router 
+// at the root domain '/' path level as a catch-all fallback handler.
+app.use('/', authRoutes);
 
 // 404 handler
 app.use((req, res) => {
-
     res.status(404).json({
         success: false,
-        message: `Route ${req.url} not found`
+        message: `Route ${req.method} ${req.url} not found inside auth-service`
     });
 });
 
-// Error handler
+// Global Error handler
 app.use((err, req, res, next) => {
+    if (err.type === 'request.aborted' || (err.message && err.message.includes('aborted'))) {
+        console.warn(`[Warning] ${new Date().toISOString()} Request to ${req.url} was aborted.`);
+        if (!res.headersSent) {
+            return res.status(400).json({
+                success: false,
+                message: 'Request aborted or connection closed unexpectedly.'
+            });
+        }
+        return;
+    }
+
     console.error('Error:', err.stack);
     res.status(500).json({
         success: false,
-        message: 'Something went wrong!',
+        message: 'Something went wrong inside auth-service!',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
 });
 
+// Start Server
 app.listen(PORT, () => {
-
+    console.log(`🚀 [auth-service] running cleanly on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });

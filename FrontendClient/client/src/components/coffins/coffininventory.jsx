@@ -1201,7 +1201,7 @@ function CoffinInventory() {
                               <div className="stock-bar">
                                 <div
                                   className={`stock-fill ${stockPercentage > 50 ? 'stock-high' :
-                                      stockPercentage > 20 ? 'stock-medium' : 'stock-low'
+                                    stockPercentage > 20 ? 'stock-medium' : 'stock-low'
                                     }`}
                                   style={{ width: `${stockPercentage}%` }}
                                 />

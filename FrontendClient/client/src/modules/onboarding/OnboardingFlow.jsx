@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { io, Socket } from 'socket.io-client';
 import Footer from '../../components/layout/Footer';
+import env from '../../config/env';
 
 const THEME = {
   colors: {
@@ -361,6 +363,8 @@ export default function OnboardingFlow() {
   const [apiError, setApiError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
   const [isNavHovered, setIsNavHovered] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [progress, setProgress] = useState({ step: '', percent: 0, details: '' });
 
   const [formData, setFormData] = useState({
     organizationName: '',
@@ -375,6 +379,40 @@ export default function OnboardingFlow() {
   useEffect(() => {
     const timer = setTimeout(() => setLoaded(true), 60);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Setup WebSocket connection for progress updates
+  useEffect(() => {
+    const socketUrl = env.SOCKET_URL;
+    const newSocket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+    });
+
+    newSocket.on('connect', () => {
+      console.log('📡 Connected to progress socket');
+    });
+
+    newSocket.on('onboarding-progress', (data) => {
+      console.log('📊 Progress update:', data);
+      setProgress({
+        step: data.step || '',
+        percent: data.progress || 0,
+        details: data.details || ''
+      });
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('📡 Disconnected from progress socket');
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
   }, []);
 
   const handleChange = useCallback((e) => {
@@ -461,6 +499,7 @@ export default function OnboardingFlow() {
     setIsSubmitting(true);
     setApiError('');
     setApiSuccess('');
+    setProgress({ step: 'Initializing...', percent: 0, details: '' });
 
     try {
       const submitData = new FormData();
@@ -471,13 +510,20 @@ export default function OnboardingFlow() {
       submitData.append('termsAccepted', agreeTerms);
       if (logoFile) submitData.append('logo', logoFile);
 
+      // Join tenant room for progress updates (use slug from organization name)
+      const tenantSlug = formData.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (socket && socket.connected) {
+        socket.emit('join-tenant', { tenantSlug, userId: 'temp', userRole: 'admin' });
+      }
+
       const response = await api.post('/tenant/onboarding/organization', submitData, {
         headers: { 'Content-Type': 'multipart/form-data', 'x-tenant-slug': '' },
-        timeout: 30000,
+        timeout: 300000, // 5 minute timeout for onboarding
       });
 
       if (response.data.success || response.status === 200 || response.status === 201) {
         setApiSuccess(response.data.message || 'Organization setup completed! Redirecting...');
+        setProgress({ step: 'Complete!', percent: 100, details: 'Redirecting to dashboard...' });
 
         const onboardingData = {
           organizationName: formData.organizationName,
@@ -497,12 +543,13 @@ export default function OnboardingFlow() {
         setTimeout(() => {
           setIsSubmitting(false);
           navigate('/login');
-        }, 1800);
+        }, 2000);
       } else {
         throw new Error(response.data.message || 'Setup failed.');
       }
     } catch (error) {
       setIsSubmitting(false);
+      setProgress({ step: '', percent: 0, details: '' });
       if (error.response) {
         const status = error.response.status;
         const message = error.response.data?.message || error.response.data?.error || 'Server error';
@@ -516,7 +563,7 @@ export default function OnboardingFlow() {
         setApiError(error.message || 'An unexpected error occurred.');
       }
     }
-  }, [formData, logoFile, agreeTerms, navigate, logoPreview, currentStep, goNext]);
+  }, [formData, logoFile, agreeTerms, navigate, logoPreview, currentStep, goNext, socket]);
 
   const passwordStrength = getPasswordStrength(formData.password);
   const goToLogin = useCallback(() => navigate('/login'), [navigate]);
@@ -590,6 +637,65 @@ export default function OnboardingFlow() {
               transform: loaded ? 'translateY(0)' : 'translateY(18px)',
               transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)',
             }}>
+              {/* Progress Bar */}
+              {isSubmitting && progress.percent > 0 && (
+                <div style={{
+                  marginBottom: THEME.spacing.xl,
+                  padding: THEME.spacing.md,
+                  background: THEME.colors.bone2,
+                  borderRadius: THEME.borderRadius.md,
+                  border: `1px solid ${THEME.colors.line}`,
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: THEME.spacing.sm,
+                  }}>
+                    <span style={{
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      color: THEME.colors.ink,
+                      fontFamily: THEME.typography.fontFamily,
+                    }}>
+                      {progress.step}
+                    </span>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 500,
+                      color: THEME.colors.brass,
+                      fontFamily: THEME.typography.monoFamily,
+                    }}>
+                      {progress.percent}%
+                    </span>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '6px',
+                    background: THEME.colors.line,
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      width: `${progress.percent}%`,
+                      height: '100%',
+                      background: `linear-gradient(90deg, ${THEME.colors.brass}, ${THEME.colors.verdigris})`,
+                      borderRadius: '3px',
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                  {progress.details && (
+                    <div style={{
+                      marginTop: THEME.spacing.xs,
+                      fontSize: '0.68rem',
+                      color: THEME.colors.gray,
+                      fontStyle: 'italic',
+                    }}>
+                      {progress.details}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ marginBottom: THEME.spacing.xxl }}>
                 <h1 style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1.6rem', fontWeight: 500, color: THEME.colors.ink, marginBottom: THEME.spacing.sm }}>
@@ -686,7 +792,12 @@ export default function OnboardingFlow() {
                   ) : <div />}
 
                   <button type="submit" disabled={isSubmitting} style={{ background: THEME.colors.brass, color: THEME.colors.white, border: 'none', padding: '0.6rem 1.6rem', fontSize: '0.82rem', fontWeight: 500, borderRadius: THEME.borderRadius.sm, cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {isSubmitting ? <Spinner /> : currentStep === 2 ? 'Complete Setup' : 'Continue'}
+                    {isSubmitting ? (
+                      <>
+                        <Spinner />
+                        <span>Setting up... {progress.percent}%</span>
+                      </>
+                    ) : currentStep === 2 ? 'Complete Setup' : 'Continue'}
                   </button>
                 </div>
               </form>

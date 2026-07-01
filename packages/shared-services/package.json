@@ -15,11 +15,12 @@
   },
   "dependencies": {
     "amqplib": "^0.10.7",
-    "redis": "^4.6.12"
+    "redis": "^4.6.12",
+    "yallist": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
-    "typescript": "^5.8.2",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.2"
   }
 }

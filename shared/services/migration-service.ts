@@ -83,12 +83,14 @@ export class MigrationService {
    * @param dbName  The tenant database name.
    * @param migrations  Ordered array of migration objects ({ name, sql }).
    * @param connectionConfig  Database connection config (without database name).
+   * @param onProgress  Optional callback function called after each migration completes.
    * @returns MigrationResult with details of what ran and any errors.
    */
   async runTenantMigrations(
     dbName: string,
     migrations: Migration[],
-    connectionConfig: Omit<DatabaseConfig, 'database'>
+    connectionConfig: Omit<DatabaseConfig, 'database'>,
+    onProgress?: (migrationName: string) => void
   ): Promise<MigrationResult> {
     const result: MigrationResult = {
       success: true,
@@ -140,6 +142,11 @@ export class MigrationService {
 
           result.migrationsRun.push(migration.name);
           console.log(`[MigrationService] ✅ Completed migration: ${migration.name}`);
+
+          // Call progress callback if provided
+          if (onProgress) {
+            onProgress(migration.name);
+          }
         } catch (error: any) {
           const errorMsg = `Migration "${migration.name}" failed: ${error.message}`;
           console.error(`[MigrationService] ❌ ${errorMsg}`);
@@ -156,7 +163,7 @@ export class MigrationService {
     } finally {
       // Always close the tenant connection pool
       if (connection) {
-        await connection.end().catch(() => {});
+        await connection.end().catch(() => { });
       }
     }
 
@@ -207,7 +214,7 @@ export class MigrationService {
       return { executed: [], totalInTable: 0 };
     } finally {
       if (connection) {
-        await connection.end().catch(() => {});
+        await connection.end().catch(() => { });
       }
     }
   }
@@ -279,7 +286,7 @@ export class MigrationService {
       result.success = false;
     } finally {
       if (connection) {
-        await connection.end().catch(() => {});
+        await connection.end().catch(() => { });
       }
     }
 
@@ -318,7 +325,7 @@ export class MigrationService {
    */
   async close(): Promise<void> {
     if (this.masterPool) {
-      await this.masterPool.end().catch(() => {});
+      await this.masterPool.end().catch(() => { });
       this.masterPool = null;
       console.log('[MigrationService] 🔌 Master connection closed');
     }
