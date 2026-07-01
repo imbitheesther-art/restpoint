@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components'; // ✅ Import css
 import {
     Box, CheckSquare, PlusSquare, Loader2,
     Eye, X, ChevronLeft, ChevronRight,
@@ -15,7 +15,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CoffinSelectionModal from './coffinselectModal';
 
-// --- Enhanced Color Palette (matching registerCoffin) ---
+// --- Enhanced Color Palette ---
 const Colors = {
     primaryDark: '#1a1a2e',
     accentTeal: '#0ea5e9',
@@ -78,7 +78,7 @@ const spin = keyframes`
     100% { transform: rotate(360deg); }
 `;
 
-// --- Enhanced Styled Components ---
+// --- Styled Components with css helper ---
 const Card = styled.div`
     background: ${Colors.white};
     border-radius: 1.25rem;
@@ -157,7 +157,6 @@ const StatusBadge = styled.div`
     }
 `;
 
-// Success Notification
 const SuccessNotification = styled.div`
     position: fixed;
     top: 1rem;
@@ -536,6 +535,7 @@ const Button = styled.button`
     }
 `;
 
+// ✅ FIXED: Show blank when no coffin
 const NoAssignment = styled.div`
     text-align: center;
     padding: 2.5rem 2rem;
@@ -595,9 +595,13 @@ const Loader = styled.div`
         font-weight: 500;
         color: ${Colors.textMuted};
     }
+
+    svg {
+        animation: ${spin} 1s linear infinite;
+    }
 `;
 
-// --- Image Modal ---
+// Image Modal
 const ImageModal = styled.div`
     position: fixed;
     top: 0;
@@ -699,6 +703,9 @@ const ImageCounter = styled.span`
     text-align: center;
 `;
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 const CoffinAssignment = () => {
     const { id } = useParams();
     const [deceasedData, setDeceasedData] = useState(null);
@@ -728,12 +735,10 @@ const CoffinAssignment = () => {
                 const data = response.data.data;
                 setDeceasedData(data);
 
-                // Debug: Check what coffin data we have
                 console.log('🔍 Coffin data check:', {
                     rawData: data,
                     coffinData: data.coffin_assignment,
                     hasCoffinData: !!data.coffin_assignment,
-                    coffinDataStructure: data.coffin_assignment ? Object.keys(data.coffin_assignment) : 'No data'
                 });
             }
         } catch (error) {
@@ -746,7 +751,6 @@ const CoffinAssignment = () => {
     };
 
     const handleRemoveAssignment = async () => {
-        // Check for coffin assignment in deceased data
         const coffinAssignment = deceasedData?.coffin_assignment;
 
         if (!coffinAssignment || !coffinAssignment.coffin_id) {
@@ -789,28 +793,22 @@ const CoffinAssignment = () => {
 
     const getImageUrl = (imagePath) => {
         if (!imagePath || typeof imagePath !== 'string') {
-            console.warn('Invalid image path:', imagePath);
             return null;
         }
 
         try {
-            // Clean up the path
             let cleanPath = imagePath.trim();
 
-            // If it's already a full URL, return it
             if (cleanPath.startsWith('http')) {
                 return cleanPath;
             }
 
-            // Remove any double slashes
             cleanPath = cleanPath.replace(/\/\//g, '/');
 
-            // Ensure it starts with a slash if it's a relative path
             if (!cleanPath.startsWith('/')) {
                 cleanPath = '/' + cleanPath;
             }
 
-            // Return the full URL using centralized API gateway
             return `${env.API_GATEWAY_URL}${cleanPath}`;
         } catch (error) {
             console.error('Error processing image URL:', error);
@@ -818,7 +816,6 @@ const CoffinAssignment = () => {
         }
     };
 
-    // Image modal functions
     const openImageModal = (index = 0) => {
         setCurrentImageIndex(index);
         setImageModalOpen(true);
@@ -849,13 +846,11 @@ const CoffinAssignment = () => {
 
         const images = [];
 
-        // Check for primary image
         if (coffinAssignment.primary_image) {
             const url = getImageUrl(coffinAssignment.primary_image);
             if (url) images.push(url);
         }
 
-        // Check for additional images
         if (coffinAssignment.images && Array.isArray(coffinAssignment.images)) {
             coffinAssignment.images.forEach(img => {
                 const url = getImageUrl(img);
@@ -863,7 +858,6 @@ const CoffinAssignment = () => {
             });
         }
 
-        // If no images found but we have a coffin, add a placeholder
         if (images.length === 0 && coffinAssignment.coffin_id) {
             images.push('/api/placeholder/80/80');
         }
@@ -871,7 +865,6 @@ const CoffinAssignment = () => {
         return images;
     };
 
-    // Safe getter for coffin data
     const getCoffinData = () => {
         if (!deceasedData?.coffin_assignment) {
             return null;
@@ -879,7 +872,6 @@ const CoffinAssignment = () => {
 
         const coffin = deceasedData.coffin_assignment;
 
-        // Return safe defaults for all fields
         return {
             type: coffin.type || 'Standard Coffin',
             material: coffin.material || 'Wood',
@@ -895,7 +887,7 @@ const CoffinAssignment = () => {
     };
 
     const coffinData = getCoffinData();
-    const hasCoffinAssignment = !!coffinData?.coffin_id;
+    const hasCoffinAssignment = !!coffinData?.coffin_id && coffinData.coffin_id !== null && coffinData.coffin_id !== '';
     const coffinImages = getCoffinImages();
 
     console.log('🎯 Current coffin assignment state:', {
@@ -912,7 +904,7 @@ const CoffinAssignment = () => {
                     <CardTitle><Box size={18} /> Coffin Assignment</CardTitle>
                 </CardHeader>
                 <Loader>
-                    <Loader2 size={24} style={{ animation: `${spin} 1s linear infinite` }} />
+                    <Loader2 size={24} />
                     <span className="loader-text">Loading coffin assignment...</span>
                 </Loader>
             </Card>
@@ -921,7 +913,6 @@ const CoffinAssignment = () => {
 
     return (
         <>
-            {/* Success Notification */}
             {successMessage && (
                 <SuccessNotification>
                     <CheckCircle size={24} />
@@ -932,7 +923,6 @@ const CoffinAssignment = () => {
                 </SuccessNotification>
             )}
 
-            {/* Error Notification */}
             {errorMessage && (
                 <ErrorNotification>
                     <XCircle size={24} />
@@ -943,7 +933,6 @@ const CoffinAssignment = () => {
                 </ErrorNotification>
             )}
 
-            {/* Loading Overlay */}
             {isRemoving && (
                 <LoadingOverlay>
                     <LoadingSpinner />
@@ -965,7 +954,7 @@ const CoffinAssignment = () => {
                     )}
                 </CardHeader>
 
-                {hasCoffinAssignment ? (
+                {hasCoffinAssignment && coffinData ? (
                     <>
                         <CoffinCard>
                             <div>
@@ -1054,13 +1043,14 @@ const CoffinAssignment = () => {
                         </ButtonGroup>
                     </>
                 ) : (
+                    // ✅ SHOW BLANK/NULL WHEN NOTHING
                     <NoAssignment>
                         <div className="no-assignment-icon">
                             <Box size={48} />
                         </div>
                         <p className="main-text">No coffin assigned</p>
                         <p className="sub-text">
-                            Deceased: {deceasedData?.full_name || 'Unknown'}
+                            {deceasedData?.full_name ? `Deceased: ${deceasedData.full_name}` : 'No deceased data available'}
                         </p>
                         <Button
                             className="primary"
@@ -1074,7 +1064,6 @@ const CoffinAssignment = () => {
                 )}
             </Card>
 
-            {/* Coffin Selection Modal */}
             {isModalOpen && (
                 <CoffinSelectionModal
                     onClose={() => setIsModalOpen(false)}
@@ -1084,7 +1073,6 @@ const CoffinAssignment = () => {
                 />
             )}
 
-            {/* Image Modal */}
             {imageModalOpen && coffinImages.length > 0 && (
                 <ImageModal onClick={closeImageModal}>
                     <ModalContent onClick={(e) => e.stopPropagation()}>

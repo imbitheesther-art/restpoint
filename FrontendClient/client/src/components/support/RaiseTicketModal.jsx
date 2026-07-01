@@ -64,7 +64,7 @@ export default function RaiseTicketModal({ isOpen, onClose, tenantName, tenantSl
         userName = user.full_name || user.fullName || user.name || '';
       } catch (e) { }
 
-      await api.post('/api/v2/restpoint/support/tickets', {
+      await api.post('/support/tickets', {
         type: ticketType,
         subject: subject.trim(),
         message: message.trim(),

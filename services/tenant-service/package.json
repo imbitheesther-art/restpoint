@@ -4,10 +4,11 @@
   "description": "RestPoint tenant-service",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "npx ts-node server.ts",
-    "dev:watch": "nodemon --watch . --ext ts --exec npx ts-node server.ts",
+    "dev": "nodemon --watch . --ext ts --exec \"npx ts-node server.ts\"",
+    "dev:watch": "nodemon --watch . --ext ts --exec \"npx ts-node server.ts\"",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:dev": "npx ts-node server.ts",
     "lint": "echo 'Tenant lint OK'",
     "lint:fix": "echo 'Tenant lint fix OK'",
     "test": "echo 'No tests yet'",
@@ -16,6 +17,27 @@
     "migrate": "npx ts-node scripts/run-tenant-migrations.ts",
     "migrate:all": "npx ts-node scripts/run-tenant-migrations.ts",
     "migrate:tenant": "npx ts-node scripts/run-tenant-migrations.ts --tenant"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "."
+    ],
+    "ext": "ts",
+    "ignore": [
+      "dist/*",
+      "node_modules/*",
+      "*.test.ts",
+      "*.spec.ts"
+    ],
+    "execMap": {
+      "ts": "npx ts-node"
+    },
+    "env": {
+      "NODE_ENV": "development",
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    },
+    "delay": 1000,
+    "verbose": true
   },
   "dependencies": {
     "@montezuma/shared-config": "^1.0.0",

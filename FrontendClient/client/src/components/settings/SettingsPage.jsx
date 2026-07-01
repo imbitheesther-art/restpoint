@@ -213,9 +213,9 @@ const SettingsPage = () => {
     }
   };
 
-  const inputStyle = `width: 100%; padding: 0.75rem 1rem; border: 1px solid ${Colors.border}; border-radius: 8px; font-size: 0.875rem; outline: none; transition: all 0.2s ease; background: white; color: ${Colors.text};`;
-  const labelStyle = `display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; color: ${Colors.text}; margin-bottom: 0.5rem;`;
-  const errorStyle = `font-size: 0.75rem; color: ${Colors.danger}; margin-top: 0.25rem;`;
+  const inputStyle = { width: '100%', padding: '0.75rem 1rem', border: `1px solid ${Colors.border}`, borderRadius: '8px', fontSize: '0.875rem', outline: 'none', transition: 'all 0.2s ease', background: 'white', color: Colors.text };
+  const labelStyle = { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: Colors.text, marginBottom: '0.5rem' };
+  const errorStyle = { fontSize: '0.75rem', color: Colors.danger, marginTop: '0.25rem' };
 
   const filteredPayments = payments.filter(p => {
     if (paymentFilter === 'all') return true;

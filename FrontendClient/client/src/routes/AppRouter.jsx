@@ -30,6 +30,7 @@ const CoffinInventory = lazy(() => import('../components/coffins/coffininventory
 const AllDeceasedPage = lazy(() => import('../components/deceasedinfo/listDeceased'));
 const NotFound = lazy(() => import('../components/common/NotFound'));
 const DeceasedDetails = lazy(() => import('../components/deceasedprofile/deceasedDetailPage'));
+const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
 const MarketplacePage = lazy(() => import('../components/marketplace/MarketplacePage'));
 const UploadProduct = lazy(() => import('../components/marketplace/UploadProduct'));
@@ -171,7 +172,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="all-deceased" replace />} />
-      <Route path="/dashboard" element={<Navigate to="../all-deceased" replace />} />
+      <Route path="/dashboard" element={<DashboardLayout tenantData={tenantData}><DashboardPage /></DashboardLayout>} />
       <Route path="all-deceased" element={<DashboardLayout tenantData={tenantData}><AllDeceasedPage /></DashboardLayout>} />
       <Route path="deceased" element={<DashboardLayout tenantData={tenantData}><AllDeceasedPage /></DashboardLayout>} />
       <Route path="deceased/register" element={<DashboardLayout tenantData={tenantData}><DeceasedRegistrationForm /></DashboardLayout>} />

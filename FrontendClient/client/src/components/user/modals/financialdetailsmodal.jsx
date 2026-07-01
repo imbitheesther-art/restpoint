@@ -44,21 +44,21 @@ const Colors = {
 
 // Get tenant slug
 const getTenantSlug = () => {
-  return localStorage.getItem("tenantSlug") || 
-         localStorage.getItem("tenant_slug") ||
-         (() => {
-           try {
-             const user = JSON.parse(localStorage.getItem("user") || "{}");
-             return user.tenantSlug || user.tenant?.slug || "default";
-           } catch {
-             return "default";
-           }
-         })();
+  return localStorage.getItem("tenantSlug") ||
+    localStorage.getItem("tenant_slug") ||
+    (() => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        return user.tenantSlug || user.tenant?.slug || "default";
+      } catch {
+        return "default";
+      }
+    })();
 };
 
 // API Client
 const apiClient = axios.create({
-  baseURL: "http://localhost:8000/api/v1/restpoint/deceased",
+  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/restpoint/deceased`,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -587,8 +587,8 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
   };
 
   const isBalanceOverdue = financialData.balance > 0;
-  const paymentPercentage = financialData.totalCharges > 0 
-    ? (financialData.payments / financialData.totalCharges) * 100 
+  const paymentPercentage = financialData.totalCharges > 0
+    ? (financialData.payments / financialData.totalCharges) * 100
     : 0;
 
   const getChargeIcon = (type) => {
@@ -650,7 +650,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
   return (
     <ModalOverlay onClick={onClose}>
       <ToastContainer position="top-right" autoClose={3000} />
-      
+
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <ModalTitle>
@@ -726,7 +726,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
                 <Receipt size={16} />
                 Charge Breakdown
               </SectionTitle>
-              
+
               <DetailItem>
                 <DetailLabel>
                   <CalendarDays size={16} />
@@ -812,7 +812,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
               <Receipt size={16} />
               All Charges
             </SectionTitle>
-            
+
             {charges.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem", color: Colors.textMuted }}>
                 No charges recorded yet
@@ -849,7 +849,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
               <CreditCard size={16} />
               Payment History
             </SectionTitle>
-            
+
             {payments.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem", color: Colors.textMuted }}>
                 No payments recorded yet
@@ -880,7 +880,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
                 ))}
               </div>
             )}
-            
+
             <SuccessButton onClick={() => setShowPaymentModal(true)} style={{ marginTop: "1rem" }}>
               <Plus size={16} /> Record New Payment
             </SuccessButton>
@@ -888,10 +888,10 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
         )}
 
         {/* Additional Info */}
-        <div style={{ 
-          marginTop: "1rem", 
-          padding: "1rem", 
-          backgroundColor: Colors.lightGray, 
+        <div style={{
+          marginTop: "1rem",
+          padding: "1rem",
+          backgroundColor: Colors.lightGray,
           borderRadius: "0.5rem",
           fontSize: "0.8rem",
           color: Colors.textMuted,
@@ -908,7 +908,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
             <h3 style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Wallet size={20} /> Record Payment
             </h3>
-            
+
             <FormGroup>
               <Label>Amount ({financialData.currency}) *</Label>
               <Input
@@ -921,7 +921,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
                 autoFocus
               />
             </FormGroup>
-            
+
             <FormGroup>
               <Label>Payment Method *</Label>
               <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
@@ -932,7 +932,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
                 <option value="cheque">Cheque</option>
               </Select>
             </FormGroup>
-            
+
             <FormGroup>
               <Label>Reference Number</Label>
               <Input
@@ -941,7 +941,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
                 placeholder="e.g., M-Pesa transaction code"
               />
             </FormGroup>
-            
+
             <FormGroup>
               <Label>Notes</Label>
               <Input
@@ -950,7 +950,7 @@ const FinancialDetailsModal = ({ isOpen, onClose, deceasedData, deceasedId, onUp
                 placeholder="Optional notes"
               />
             </FormGroup>
-            
+
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
               <SecondaryButton onClick={() => setShowPaymentModal(false)} style={{ flex: 1 }}>
                 Cancel

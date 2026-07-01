@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { FlaskConical, Save, X, FileText, User, AlertCircle, Plus, Trash2, Edit, Eye, Loader, ChevronDown, ChevronUp, Download } from 'lucide-react';
 
-const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const POSTMORTEM_BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased/postmortem`;
 
 const getTenantSlug = () => {
@@ -457,7 +457,7 @@ const DownloadStatusAlert = styled.div`
 const PostmortemInfoSection = ({ onSave, onCancel }) => {
   const { id: deceasedId } = useParams();
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     deceased_id: deceasedId,
     summary: '',
@@ -474,7 +474,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
     external_mobile: '',
     external_id_number: ''
   });
-  
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -546,30 +546,30 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const populateFormWithExistingData = (postmortem) => {
     const findingsArray = [];
-    
+
     if (postmortem.findings) {
       if (typeof postmortem.findings === 'string') {
         try {
           const parsedFindings = JSON.parse(postmortem.findings);
           if (typeof parsedFindings === 'object' && parsedFindings !== null) {
             Object.entries(parsedFindings).forEach(([title, description]) => {
-              findingsArray.push({ 
-                title: title || 'Untitled Finding', 
-                description: description || '' 
+              findingsArray.push({
+                title: title || 'Untitled Finding',
+                description: description || ''
               });
             });
           }
         } catch (e) {
-          findingsArray.push({ 
-            title: 'Examination Findings', 
-            description: postmortem.findings 
+          findingsArray.push({
+            title: 'Examination Findings',
+            description: postmortem.findings
           });
         }
       } else if (typeof postmortem.findings === 'object') {
         Object.entries(postmortem.findings).forEach(([title, description]) => {
-          findingsArray.push({ 
-            title: title || 'Untitled Finding', 
-            description: description || '' 
+          findingsArray.push({
+            title: title || 'Untitled Finding',
+            description: description || ''
           });
         });
       }
@@ -607,13 +607,13 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const handleInputChange = (e) => {
     if (existingPostmortem && !isEditMode) return;
-    
+
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -624,7 +624,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const setPathologistType = (type) => {
     if (existingPostmortem && !isEditMode) return;
-    
+
     setFormData(prev => ({
       ...prev,
       pathologist_type: type,
@@ -637,7 +637,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const handleFindingTitleChange = (index, value) => {
     if (existingPostmortem && !isEditMode) return;
-    
+
     const updatedFindings = [...formData.findings];
     updatedFindings[index] = {
       ...updatedFindings[index],
@@ -651,7 +651,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const handleFindingDescriptionChange = (index, value) => {
     if (existingPostmortem && !isEditMode) return;
-    
+
     const updatedFindings = [...formData.findings];
     updatedFindings[index] = {
       ...updatedFindings[index],
@@ -665,7 +665,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const addFinding = () => {
     if (existingPostmortem && !isEditMode) return;
-    
+
     setFormData(prev => ({
       ...prev,
       findings: [...prev.findings, { title: '', description: '' }]
@@ -675,7 +675,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
   const removeFinding = (index) => {
     if (existingPostmortem && !isEditMode) return;
     if (formData.findings.length <= 0) return;
-    
+
     const updatedFindings = [...formData.findings];
     updatedFindings.splice(index, 1);
     setFormData(prev => ({
@@ -686,7 +686,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const addCommonFinding = (type) => {
     if (existingPostmortem && !isEditMode) return;
-    
+
     const commonFindings = {
       head: { title: 'Head & Brain Findings', description: '' },
       chest: { title: 'Chest & Thoracic Organs', description: '' },
@@ -694,7 +694,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
       extremities: { title: 'Extremities & Musculoskeletal', description: '' },
       toxicology: { title: 'Toxicology & Lab Results', description: '' }
     };
-    
+
     setFormData(prev => ({
       ...prev,
       findings: [...prev.findings, commonFindings[type]]
@@ -703,10 +703,10 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.summary.trim()) newErrors.summary = 'Summary is required';
     if (!formData.cause_of_death.trim()) newErrors.cause_of_death = 'Cause of death is required';
-    
+
     if (formData.pathologist_type === 'staff') {
       if (!formData.staff_username.trim()) {
         newErrors.staff_username = 'Staff username is required';
@@ -715,7 +715,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
       if (!formData.external_name.trim()) newErrors.external_name = 'External pathologist name is required';
       if (!formData.external_id_number.trim()) newErrors.external_id_number = 'External pathologist ID number is required';
     }
-    
+
     formData.findings.forEach((finding, index) => {
       if (!finding.title.trim()) {
         newErrors[`finding_title_${index}`] = `Finding title #${index + 1} is required`;
@@ -724,28 +724,28 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
         newErrors[`finding_description_${index}`] = `Finding description #${index + 1} is required`;
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
     setSubmitStatus(null);
     setCurrentOperation(existingPostmortem && isEditMode ? 'Updating...' : 'Saving...');
-    
+
     try {
       const findingsObject = {};
       formData.findings.forEach(finding => {
         findingsObject[finding.title] = finding.description;
       });
-      
+
       const tenantSlug = getTenantSlug();
       const submissionData = {
         deceased_id: formData.deceased_id,
@@ -757,15 +757,15 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
         contributing_conditions: formData.contributing_conditions,
         manner_of_death: formData.manner_of_death,
         requesting_authority: formData.requesting_authority,
-        ...(formData.pathologist_type === 'staff' 
+        ...(formData.pathologist_type === 'staff'
           ? { pathologist_name: formData.staff_username }
           : {
-              external_pathologist_name: formData.external_name,
-              external_pathologist_id: formData.external_id_number
-            }
+            external_pathologist_name: formData.external_name,
+            external_pathologist_id: formData.external_id_number
+          }
         )
       };
-      
+
       const response = await fetch(`${POSTMORTEM_BASE_URL}/save`, {
         method: 'POST',
         headers: {
@@ -774,12 +774,12 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
         },
         body: JSON.stringify(submissionData)
       });
-      
+
       const responseData = await response.json();
-      
+
       if (response.ok) {
         setSubmitStatus('success');
-        
+
         if (!existingPostmortem) {
           setFormData({
             deceased_id: deceasedId,
@@ -793,12 +793,12 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
             external_id_number: ''
           });
         }
-        
+
         setTimeout(async () => {
           await fetchExistingPostmortem();
           setIsEditMode(false);
         }, 1500);
-        
+
         if (onSave) onSave();
       } else {
         throw new Error(responseData.message || 'Failed to save postmortem data');
@@ -904,29 +904,29 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
           <FormContainer>
             {submitStatus === 'success' && (
               <Alert className="success">
-                <AlertCircle size={18} /> 
+                <AlertCircle size={18} />
                 {existingPostmortem && isEditMode ? 'Postmortem updated successfully!' : 'Postmortem saved successfully!'}
               </Alert>
             )}
-            
+
             {submitStatus === 'error' && (
               <Alert className="error">
                 <AlertCircle size={18} /> Error saving postmortem data. Please try again.
               </Alert>
             )}
-            
+
             {downloadStatus === 'success' && (
               <DownloadStatusAlert className="success">
                 <AlertCircle size={18} /> PDF downloaded successfully!
               </DownloadStatusAlert>
             )}
-            
+
             {downloadStatus === 'error' && (
               <DownloadStatusAlert className="error">
                 <AlertCircle size={18} /> Error downloading PDF. Please try again.
               </DownloadStatusAlert>
             )}
-            
+
             {existingPostmortem && !isEditMode && (
               <Alert className="info">
                 <Eye size={18} /> Viewing existing postmortem. Click "Edit Record" to make changes.
@@ -952,9 +952,9 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                 <FormGroup>
                   <Label>Examination Summary</Label>
                   {isFormDisabled ? (
-                    <div style={{ 
-                      background: '#f9fafb', 
-                      padding: '1rem', 
+                    <div style={{
+                      background: '#f9fafb',
+                      padding: '1rem',
                       borderRadius: '8px',
                       border: '2px solid #e5e7eb'
                     }}>
@@ -977,9 +977,9 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                 <FormGroup>
                   <Label>Cause of Death</Label>
                   {isFormDisabled ? (
-                    <div style={{ 
-                      background: '#f9fafb', 
-                      padding: '1rem', 
+                    <div style={{
+                      background: '#f9fafb',
+                      padding: '1rem',
                       borderRadius: '8px',
                       border: '2px solid #e5e7eb'
                     }}>
@@ -1091,8 +1091,8 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                 </SectionHeader>
 
                 <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                  {formData.findings.length > 0 
-                    ? `${formData.findings.length} finding(s) recorded` 
+                  {formData.findings.length > 0
+                    ? `${formData.findings.length} finding(s) recorded`
                     : 'Add examination findings by organ/system'}
                 </p>
 
@@ -1140,10 +1140,10 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                               />
                             )}
                           </div>
-                          
+
                           {!isFormDisabled && (
-                            <RemoveButton 
-                              type="button" 
+                            <RemoveButton
+                              type="button"
                               onClick={() => removeFinding(index)}
                               title="Remove this finding"
                             >
@@ -1151,11 +1151,11 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                             </RemoveButton>
                           )}
                         </FindingHeader>
-                        
+
                         {isFormDisabled ? (
-                          <div style={{ 
-                            background: '#f9fafb', 
-                            padding: '1rem', 
+                          <div style={{
+                            background: '#f9fafb',
+                            padding: '1rem',
                             borderRadius: '8px',
                             fontSize: '0.875rem',
                             color: '#4b5563'
@@ -1173,11 +1173,11 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                       </FindingItem>
                     ))
                   )}
-                  
+
                   {!isFormDisabled && (
-                    <Button 
-                      type="button" 
-                      className="secondary" 
+                    <Button
+                      type="button"
+                      className="secondary"
                       onClick={addFinding}
                       style={{ marginTop: '1rem', width: '100%' }}
                     >
@@ -1194,7 +1194,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                 </SectionHeader>
 
                 <PathologistSelector>
-                  <SelectorButton 
+                  <SelectorButton
                     type="button"
                     selected={formData.pathologist_type === 'staff'}
                     onClick={() => setPathologistType('staff')}
@@ -1202,7 +1202,7 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                   >
                     Staff Pathologist
                   </SelectorButton>
-                  <SelectorButton 
+                  <SelectorButton
                     type="button"
                     selected={formData.pathologist_type === 'external'}
                     onClick={() => setPathologistType('external')}
@@ -1215,9 +1215,9 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                 {formData.pathologist_type === 'staff' ? (
                   <div>
                     {isFormDisabled ? (
-                      <div style={{ 
-                        background: '#f9fafb', 
-                        padding: '1rem', 
+                      <div style={{
+                        background: '#f9fafb',
+                        padding: '1rem',
                         borderRadius: '8px',
                         border: '2px solid #e5e7eb'
                       }}>
@@ -1245,9 +1245,9 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                     <FormGroup>
                       <Label>External Pathologist Name</Label>
                       {isFormDisabled ? (
-                        <div style={{ 
-                          background: '#f9fafb', 
-                          padding: '1rem', 
+                        <div style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
                           borderRadius: '8px',
                           border: '2px solid #e5e7eb'
                         }}>
@@ -1266,13 +1266,13 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                         </>
                       )}
                     </FormGroup>
-                    
+
                     <FormGroup>
                       <Label>Mobile Number (Optional)</Label>
                       {isFormDisabled ? (
-                        <div style={{ 
-                          background: '#f9fafb', 
-                          padding: '1rem', 
+                        <div style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
                           borderRadius: '8px',
                           border: '2px solid #e5e7eb'
                         }}>
@@ -1287,13 +1287,13 @@ const PostmortemInfoSection = ({ onSave, onCancel }) => {
                         />
                       )}
                     </FormGroup>
-                    
+
                     <FormGroup>
                       <Label>ID Number</Label>
                       {isFormDisabled ? (
-                        <div style={{ 
-                          background: '#f9fafb', 
-                          padding: '1rem', 
+                        <div style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
                           borderRadius: '8px',
                           border: '2px solid #e5e7eb'
                         }}>

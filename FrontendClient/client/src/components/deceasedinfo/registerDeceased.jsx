@@ -1,505 +1,449 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ENDPOINTS } from '../../api/endpoints';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format, parseISO, isValid } from 'date-fns';
 import {
   UserPlus,
   Check,
   Loader2,
-  ClipboardList,
   AlertTriangle,
   XCircle,
   CheckCircle,
-  Info,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-  X,
   Calendar as CalendarIcon,
-  User,
-  MapPin,
-  Crosshair,
-  Fingerprint,
-  Building2 as Hospital,
-  HeartPulse,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from 'lucide-react';
 
-// --- FIXED Smart Calendar Component (No Hidden Dropdown, Proper Z-Index, No Clipping) ---
-const SmartCalendar = ({ selectedDate, onChange, maxDate = new Date(), placeholder = "Select Date", fieldErrors = null }) => {
+// ============================================================
+// CUSTOM DATE PICKER WITH IMPROVED UX
+// ============================================================
+
+const CustomDatePicker = ({
+  selectedDate,
+  onChange,
+  maxDate = new Date(),
+  placeholder = "Select Date",
+  error = null,
+  label,
+  required,
+  name
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(selectedDate || new Date());
-  const [view, setView] = useState('days');
-  const calendarRef = useRef(null);
-  const buttonRef = useRef(null);
+  const [dateValue, setDateValue] = useState(null);
+  const datePickerRef = useRef(null);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Ensure maxDate is a Date object with time normalized
-  const maxDateObj = useMemo(() => {
-    const date = maxDate instanceof Date ? maxDate : new Date(maxDate);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }, [maxDate]);
-
-
-
-  const currentYear = currentMonth.getFullYear();
-  const currentMonthIndex = currentMonth.getMonth();
-
-
-
-  const years = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i);
-
-
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-  const getDaysInMonth = (year, month) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (year, month) => {
-    return new Date(year, month, 1).getDay();
-  };
-
-  const generateDays = () => {
-    const days = [];
-    const daysInMonth = getDaysInMonth(currentYear, currentMonthIndex);
-    const firstDay = getFirstDayOfMonth(currentYear, currentMonthIndex);
-
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(currentYear, currentMonthIndex, i);
-      date.setHours(0, 0, 0, 0);
-      days.push(date);
-    }
-
-    return days;
-
-  };
-
-  const handleDateSelect = (date) => {
-    if (date) {
-      const selectedDateObj = new Date(date);
-      selectedDateObj.setHours(0, 0, 0, 0);
-
-      if (selectedDateObj <= maxDateObj) {
-        onChange(selectedDateObj);
-        setIsOpen(false);
-        setView('days');
+  useEffect(() => {
+    if (selectedDate) {
+      let dateObj = selectedDate;
+      if (typeof selectedDate === 'string') {
+        dateObj = parseISO(selectedDate);
       }
+      if (isValid(dateObj)) {
+        setDateValue(dateObj);
+      } else {
+        setDateValue(null);
+      }
+    } else {
+      setDateValue(null);
+    }
+  }, [selectedDate]);
+
+  const handleChange = (date) => {
+    if (date) {
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+      setDateValue(normalizedDate);
+      onChange(normalizedDate);
+      setIsOpen(false);
+    } else {
+      setDateValue(null);
+      onChange(null);
     }
   };
 
-  const handleMonthSelect = (monthIndex) => {
-    const newDate = new Date(currentYear, monthIndex, 1);
-    setCurrentMonth(newDate);
-    setView('days');
-  };
-
-  const handleYearSelect = (year) => {
-    const newDate = new Date(year, currentMonthIndex, 1);
-    setCurrentMonth(newDate);
-    setView('months');
-  };
-
-  const navigateMonth = (direction) => {
-    const newDate = new Date(currentYear, currentMonthIndex + direction, 1);
-    setCurrentMonth(newDate);
-  };
-
-  const isSameDay = (date1, date2) => {
-    if (!date1 || !date2) return false;
-    return date1.toDateString() === date2.toDateString();
-  };
-
-  const isDateDisabled = (date) => {
-    if (!date) return true;
-    return date > maxDateObj;
-  };
-
-  const isToday = (date) => {
-    if (!date) return false;
-    return date.toDateString() === today.toDateString();
+  const handleClear = (e) => {
+    e.stopPropagation();
+    setDateValue(null);
+    onChange(null);
   };
 
   const formatDateDisplay = (date) => {
     if (!date) return placeholder;
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (typeof date === 'string') {
+      const parsed = parseISO(date);
+      if (isValid(parsed)) {
+        return format(parsed, 'MMM d, yyyy');
+      }
+      return placeholder;
+    }
+    if (isValid(date)) {
+      return format(date, 'MMM d, yyyy');
+    }
+    return placeholder;
   };
 
-  // Click outside handler
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target) &&
-        buttonRef.current && !buttonRef.current.contains(event.target)) {
-        setIsOpen(false);
-        setView('days');
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const days = generateDays();
-
-  return (
-    <div style={{ position: 'relative', width: '100%', zIndex: 20 }}>
-      <div ref={buttonRef} style={{ position: 'relative', width: '100%' }}>
-        <input
-          type="text"
-          value={formatDateDisplay(selectedDate)}
-          readOnly
-          placeholder={placeholder}
-          onClick={() => setIsOpen(!isOpen)}
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            border: `1px solid ${fieldErrors ? '#dc2626' : '#d1d5db'}`,
-            borderRadius: '8px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            backgroundColor: 'white',
-            outline: 'none',
-            boxSizing: 'border-box'
-          }}
-        />
-        <CalendarIcon
-          size={18}
+  const CustomInput = React.forwardRef(({ value, onClick, onChange }, ref) => (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        ref={ref}
+        type="text"
+        value={dateValue ? formatDateDisplay(dateValue) : ''}
+        onClick={onClick}
+        onChange={onChange}
+        placeholder={placeholder}
+        readOnly
+        style={{
+          width: '100%',
+          padding: '12px 40px 12px 16px',
+          border: `2px solid ${error ? '#EF4444' : '#E8ECF0'}`,
+          borderRadius: '10px',
+          fontSize: '14px',
+          cursor: 'pointer',
+          backgroundColor: '#FFFFFF',
+          outline: 'none',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+          color: '#1A1D24',
+          fontFamily: "'Inter', sans-serif",
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#3D4F47';
+          e.target.style.boxShadow = '0 0 0 3px rgba(61, 79, 71, 0.08)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = error ? '#EF4444' : '#E8ECF0';
+          e.target.style.boxShadow = 'none';
+        }}
+      />
+      <CalendarIcon
+        size={18}
+        style={{
+          position: 'absolute',
+          right: '14px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: '#9CA3AF',
+          pointerEvents: 'none'
+        }}
+      />
+      {dateValue && (
+        <button
+          onClick={handleClear}
           style={{
             position: 'absolute',
-            right: '12px',
+            right: '38px',
             top: '50%',
             transform: 'translateY(-50%)',
-            color: '#9ca3af',
-            pointerEvents: 'none'
-          }}
-        />
-      </div>
-
-      {isOpen && (
-        <div
-          ref={calendarRef}
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: '0',
-            width: '320px',
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1)',
-            border: '1px solid #e5e7eb',
-            zIndex: 9999,
-            overflow: 'visible'
-          }}>
-          {/* Calendar Header */}
-          <div style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#9CA3AF',
+            padding: '4px',
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '12px',
-            borderBottom: '1px solid #e9ecef',
-            backgroundColor: '#f8f9fa',
-            borderTopLeftRadius: '12px',
-            borderTopRightRadius: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarIcon size={16} color="#0d6efd" />
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Select Date</span>
-            </div>
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                setView('days');
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <X size={16} />
-            </button>
-          </div>
+            justifyContent: 'center',
+            borderRadius: '4px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#EF4444'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
+        >
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  ));
 
-          <div style={{ padding: '12px' }}>
-            {/* Navigation */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px'
-            }}>
-              <button
-                onClick={() => navigateMonth(-1)}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '6px',
-                  border: '1px solid #dee2e6',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
+  CustomInput.displayName = 'CustomInput';
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => setView(view === 'months' ? 'days' : 'months')}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: view === 'months' ? '#0d6efd' : '#f8f9fa',
-                    color: view === 'months' ? 'white' : '#333',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
-                  {months[currentMonthIndex]}
-                </button>
-                <button
-                  onClick={() => setView(view === 'years' ? 'days' : 'years')}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: view === 'years' ? '#0d6efd' : '#f8f9fa',
-                    color: view === 'years' ? 'white' : '#333',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
-                  {currentYear}
-                </button>
-              </div>
-
-              <button
-                onClick={() => navigateMonth(1)}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '6px',
-                  border: '1px solid #dee2e6',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {/* Days View */}
-            {view === 'days' && (
-              <>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: '4px',
-                  marginBottom: '8px'
-                }}>
-                  {weekDays.map(day => (
-                    <div key={day} style={{
-                      textAlign: 'center',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      color: '#6c757d',
-                      padding: '4px'
-                    }}>
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: '4px'
-                }}>
-                  {days.map((date, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleDateSelect(date)}
-                      disabled={isDateDisabled(date)}
-                      style={{
-                        padding: '8px 4px',
-                        textAlign: 'center',
-                        backgroundColor: date && isSameDay(date, selectedDate)
-                          ? '#0d6efd'
-                          : isToday(date)
-                            ? '#e7f1ff'
-                            : 'white',
-                        color: date && isSameDay(date, selectedDate)
-                          ? 'white'
-                          : isToday(date)
-                            ? '#0d6efd'
-                            : date
-                              ? '#333'
-                              : 'transparent',
-                        border: '1px solid',
-                        borderColor: date && isSameDay(date, selectedDate)
-                          ? '#0d6efd'
-                          : isToday(date)
-                            ? '#0d6efd'
-                            : '#e9ecef',
-                        borderRadius: '6px',
-                        cursor: date && !isDateDisabled(date) ? 'pointer' : 'default',
-                        fontSize: '13px',
-                        opacity: isDateDisabled(date) ? 0.5 : 1
-                      }}
-                    >
-                      {date ? date.getDate() : ''}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Months View */}
-            {view === 'months' && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '8px'
-              }}>
-                {months.map((month, index) => (
-                  <button
-                    key={month}
-                    onClick={() => handleMonthSelect(index)}
-                    style={{
-                      padding: '10px',
-                      backgroundColor: index === currentMonthIndex ? '#0d6efd' : '#f8f9fa',
-                      color: index === currentMonthIndex ? 'white' : '#333',
-                      border: '1px solid #dee2e6',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    {month}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Years View */}
-            {view === 'years' && (
-              <div style={{
-                maxHeight: '250px',
-                overflowY: 'auto'
-              }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '8px'
-                }}>
-                  {years.map(year => (
-                    <button
-                      key={year}
-                      onClick={() => handleYearSelect(year)}
-                      style={{
-                        padding: '10px',
-                        backgroundColor: year === currentYear ? '#0d6efd' : '#f8f9fa',
-                        color: year === currentYear ? 'white' : '#333',
-                        border: '1px solid #dee2e6',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '14px'
-                      }}
-                    >
-                      {year}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div style={{
-            padding: '12px',
-            borderTop: '1px solid #e9ecef',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div>
-              <div style={{ fontSize: '11px', color: '#6c757d' }}>Selected</div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold' }}>
-                {selectedDate ? formatDateDisplay(selectedDate) : 'None'}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => handleDateSelect(today)}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#f8f9fa',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-              >
-                Today
-              </button>
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setView('days');
-                }}
-                style={{
-                  padding: '6px 16px',
-                  backgroundColor: '#0d6efd',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-              >
-                OK
-              </button>
-            </div>
-          </div>
+  return (
+    <div style={{ marginBottom: '16px', overflow: 'visible', width: '100%' }}>
+      {label && (
+        <label style={{
+          display: 'block',
+          marginBottom: '6px',
+          fontWeight: '500',
+          fontSize: '13px',
+          color: '#1A1D24'
+        }}>
+          {label}
+          {required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
+        </label>
+      )}
+      <DatePicker
+        ref={datePickerRef}
+        selected={dateValue}
+        onChange={handleChange}
+        onCalendarOpen={() => setIsOpen(true)}
+        onCalendarClose={() => setIsOpen(false)}
+        maxDate={maxDate}
+        dateFormat="MMM d, yyyy"
+        placeholderText={placeholder}
+        customInput={<CustomInput />}
+        popperPlacement="bottom-start"
+        popperModifiers={[
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 8],
+            },
+          },
+          {
+            name: 'preventOverflow',
+            options: {
+              boundary: 'viewport',
+            },
+          },
+        ]}
+        calendarClassName="restpoint-calendar"
+        showYearDropdown
+        showMonthDropdown
+        dropdownMode="select"
+        yearDropdownItemNumber={150}
+        scrollableYearDropdown
+        minDate={new Date(1400, 0, 1)}
+        wrapperClassName="date-picker-wrapper"
+        shouldCloseOnSelect
+        open={isOpen}
+      />
+      {error && (
+        <div style={{ color: '#EF4444', fontSize: '12px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <AlertTriangle size={12} />
+          {error}
         </div>
       )}
+      <style>{`
+        /* ============================================================
+           RESTPOINT CALENDAR STYLES - IMPROVED UX
+           ============================================================ */
+        
+        .restpoint-calendar {
+          border: 1px solid #E8ECF0 !important;
+          border-radius: 12px !important;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+          font-family: 'Inter', sans-serif !important;
+          background: #FFFFFF !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+        
+        /* Header */
+        .restpoint-calendar .react-datepicker__header {
+          background: #FAFBFC !important;
+          border-bottom: 1px solid #E8ECF0 !important;
+          padding: 16px 16px 12px !important;
+          border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__current-month {
+          font-weight: 600 !important;
+          font-size: 15px !important;
+          color: #1A1D24 !important;
+          font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Day names */
+        .restpoint-calendar .react-datepicker__day-name {
+          color: #6B7280 !important;
+          font-weight: 600 !important;
+          font-size: 11px !important;
+          letter-spacing: 0.5px !important;
+          text-transform: uppercase !important;
+          margin: 4px 2px !important;
+          width: 36px !important;
+        }
+        
+        /* Days */
+        .restpoint-calendar .react-datepicker__day {
+          border-radius: 8px !important;
+          transition: all 0.15s ease !important;
+          font-size: 13px !important;
+          padding: 6px 0 !important;
+          margin: 2px !important;
+          width: 36px !important;
+          line-height: 28px !important;
+          color: #1A1D24 !important;
+          font-weight: 400 !important;
+          cursor: pointer !important;
+          border: 1px solid transparent !important;
+        }
+        
+        /* Hover state - improved */
+        .restpoint-calendar .react-datepicker__day:hover {
+          background: #E8F0FE !important;
+          color: #1A1D24 !important;
+          border-radius: 8px !important;
+          border-color: #3D4F47 !important;
+          transform: scale(1.02) !important;
+        }
+        
+        /* Selected state */
+        .restpoint-calendar .react-datepicker__day--selected {
+          background: #3D4F47 !important;
+          color: #FFFFFF !important;
+          border-radius: 8px !important;
+          font-weight: 600 !important;
+          border-color: #3D4F47 !important;
+          box-shadow: 0 2px 8px rgba(61, 79, 71, 0.3) !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__day--selected:hover {
+          background: #2E3F37 !important;
+          border-color: #2E3F37 !important;
+        }
+        
+        /* Today state */
+        .restpoint-calendar .react-datepicker__day--today {
+          background: rgba(61, 79, 71, 0.08) !important;
+          font-weight: 500 !important;
+          color: #3D4F47 !important;
+          border-radius: 8px !important;
+          border-color: #3D4F47 !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__day--today:after {
+          content: '';
+          display: block;
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #3D4F47;
+          margin: 2px auto 0;
+        }
+        
+        .restpoint-calendar .react-datepicker__day--today:hover {
+          background: rgba(61, 79, 71, 0.15) !important;
+        }
+        
+        /* Keyboard selected */
+        .restpoint-calendar .react-datepicker__day--keyboard-selected {
+          background: rgba(61, 79, 71, 0.12) !important;
+          border-radius: 8px !important;
+          border-color: #3D4F47 !important;
+        }
+        
+        /* Outside month */
+        .restpoint-calendar .react-datepicker__day--outside-month {
+          color: #D1D5DB !important;
+        }
+        
+        /* Disabled */
+        .restpoint-calendar .react-datepicker__day--disabled {
+          color: #E5E7EB !important;
+          cursor: not-allowed !important;
+          opacity: 0.5 !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__day--disabled:hover {
+          background: transparent !important;
+          transform: none !important;
+        }
+        
+        /* Navigation arrows */
+        .restpoint-calendar .react-datepicker__navigation {
+          top: 16px !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__navigation-icon::before {
+          border-color: #6B7280 !important;
+          border-width: 2px !important;
+          height: 8px !important;
+          width: 8px !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+          border-color: #3D4F47 !important;
+        }
+        
+        /* Year/Month dropdowns */
+        .restpoint-calendar .react-datepicker__year-dropdown,
+        .restpoint-calendar .react-datepicker__month-dropdown {
+          background: white !important;
+          border: 1px solid #E8ECF0 !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+          max-height: 200px !important;
+          overflow-y: auto !important;
+          padding: 4px !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__year-option,
+        .restpoint-calendar .react-datepicker__month-option {
+          padding: 8px 12px !important;
+          transition: all 0.15s ease !important;
+          border-radius: 6px !important;
+          cursor: pointer !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__year-option:hover,
+        .restpoint-calendar .react-datepicker__month-option:hover {
+          background: rgba(61, 79, 71, 0.08) !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__year-option--selected,
+        .restpoint-calendar .react-datepicker__month-option--selected {
+          background: rgba(61, 79, 71, 0.12) !important;
+          font-weight: 600 !important;
+        }
+        
+        /* Year/Month header buttons */
+        .restpoint-calendar .react-datepicker__year-read-view,
+        .restpoint-calendar .react-datepicker__month-read-view {
+          padding: 4px 8px !important;
+          border-radius: 6px !important;
+          transition: background 0.15s ease !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__year-read-view:hover,
+        .restpoint-calendar .react-datepicker__month-read-view:hover {
+          background: rgba(61, 79, 71, 0.08) !important;
+        }
+        
+        .restpoint-calendar .react-datepicker__year-read-view--down-arrow,
+        .restpoint-calendar .react-datepicker__month-read-view--down-arrow {
+          border-color: #6B7280 !important;
+        }
+        
+        /* Wrapper */
+        .date-picker-wrapper {
+          width: 100% !important;
+        }
+        
+        .date-picker-wrapper .react-datepicker-wrapper {
+          width: 100% !important;
+        }
+        
+        .date-picker-wrapper .react-datepicker__input-container {
+          width: 100% !important;
+        }
+        
+        /* Popper z-index */
+        .react-datepicker-popper {
+          z-index: 9999 !important;
+        }
+        
+        /* Week row spacing */
+        .react-datepicker__week {
+          display: flex !important;
+          justify-content: center !important;
+        }
+        
+        /* Remove day gap */
+        .react-datepicker__day {
+          margin: 2px !important;
+        }
+      `}</style>
     </div>
   );
 };
 
-// Simple Toast Notification
+// ============================================================
+// TOAST NOTIFICATION
+// ============================================================
+
 const NotificationToast = ({ notification, setNotification }) => {
   useEffect(() => {
     if (notification.isVisible) {
@@ -512,7 +456,7 @@ const NotificationToast = ({ notification, setNotification }) => {
 
   if (!notification.isVisible) return null;
 
-  const bgColor = notification.type === 'success' ? '#10b981' : '#ef4444';
+  const bgColor = notification.type === 'success' ? '#10B981' : '#EF4444';
 
   return (
     <div style={{
@@ -522,34 +466,51 @@ const NotificationToast = ({ notification, setNotification }) => {
       zIndex: 10000,
       backgroundColor: bgColor,
       color: 'white',
-      padding: '12px 20px',
-      borderRadius: '8px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      padding: '14px 20px',
+      borderRadius: '12px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
       display: 'flex',
       alignItems: 'center',
-      gap: '10px',
-      minWidth: '250px'
+      gap: '12px',
+      minWidth: '280px',
+      maxWidth: '90%',
+      animation: 'slideInRight 0.3s ease'
     }}>
-      {notification.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-      <div>
-        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{notification.title}</div>
+      <style>{`
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+      {notification.type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: '600', fontSize: '14px' }}>{notification.title}</div>
         <div style={{ fontSize: '12px', opacity: 0.9 }}>{notification.message}</div>
       </div>
-      <button onClick={() => setNotification(prev => ({ ...prev, isVisible: false }))} style={{
-        background: 'none',
-        border: 'none',
-        color: 'white',
-        cursor: 'pointer',
-        marginLeft: 'auto'
-      }}>
-        <X size={14} />
+      <button
+        onClick={() => setNotification(prev => ({ ...prev, isVisible: false }))}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'white',
+          cursor: 'pointer',
+          padding: '4px',
+          opacity: 0.7,
+          transition: 'opacity 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+        onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+      >
+        <X size={16} />
       </button>
     </div>
   );
 };
 
+// ============================================================
+// STEPPER
+// ============================================================
 
-// Simple Stepper
 const Stepper = ({ currentStep, steps }) => {
   return (
     <div style={{ marginBottom: '30px' }}>
@@ -561,7 +522,7 @@ const Stepper = ({ currentStep, steps }) => {
                 width: '40px',
                 height: '40px',
                 borderRadius: '50%',
-                backgroundColor: index <= currentStep ? '#0d6efd' : '#e9ecef',
+                backgroundColor: index <= currentStep ? '#3D4F47' : '#e9ecef',
                 color: index <= currentStep ? 'white' : '#6c757d',
                 display: 'flex',
                 alignItems: 'center',
@@ -572,13 +533,23 @@ const Stepper = ({ currentStep, steps }) => {
               }}>
                 {index < currentStep ? <Check size={20} /> : index + 1}
               </div>
-              <div style={{ fontSize: '12px', marginTop: '8px', color: index === currentStep ? '#0d6efd' : '#6c757d', fontWeight: index === currentStep ? 'bold' : 'normal' }}>
+              <div style={{
+                fontSize: '12px',
+                marginTop: '8px',
+                color: index === currentStep ? '#3D4F47' : '#6c757d',
+                fontWeight: index === currentStep ? 'bold' : 'normal'
+              }}>
                 {step.title}
               </div>
             </div>
             {index < steps.length - 1 && (
               <div style={{ flex: 1, height: '2px', backgroundColor: '#e9ecef' }}>
-                <div style={{ width: index < currentStep ? '100%' : '0%', height: '100%', backgroundColor: '#0d6efd', transition: 'width 0.3s' }} />
+                <div style={{
+                  width: index < currentStep ? '100%' : '0%',
+                  height: '100%',
+                  backgroundColor: '#3D4F47',
+                  transition: 'width 0.3s'
+                }} />
               </div>
             )}
           </React.Fragment>
@@ -588,13 +559,22 @@ const Stepper = ({ currentStep, steps }) => {
   );
 };
 
-// Simple Form Input
+// ============================================================
+// FORM INPUT
+// ============================================================
+
 const FormInput = ({ label, name, value, onChange, error, required, type = "text", placeholder }) => {
   return (
     <div style={{ marginBottom: '16px' }}>
-      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px', color: '#333' }}>
+      <label style={{
+        display: 'block',
+        marginBottom: '6px',
+        fontWeight: '500',
+        fontSize: '13px',
+        color: '#1A1D24'
+      }}>
         {label}
-        {required && <span style={{ color: '#dc2626', marginLeft: '4px' }}>*</span>}
+        {required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
       </label>
       <input
         type={type}
@@ -605,18 +585,26 @@ const FormInput = ({ label, name, value, onChange, error, required, type = "text
         style={{
           width: '100%',
           padding: '10px 12px',
-          border: `1px solid ${error ? '#dc2626' : '#d1d5db'}`,
+          border: `2px solid ${error ? '#EF4444' : '#E8ECF0'}`,
           borderRadius: '8px',
           fontSize: '14px',
           outline: 'none',
-          transition: 'border-color 0.2s',
-          boxSizing: 'border-box'
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          boxSizing: 'border-box',
+          fontFamily: "'Inter', sans-serif",
+          backgroundColor: '#FFFFFF'
         }}
-        onFocus={(e) => e.target.style.borderColor = '#0d6efd'}
-        onBlur={(e) => e.target.style.borderColor = error ? '#dc2626' : '#d1d5db'}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#3D4F47';
+          e.target.style.boxShadow = '0 0 0 3px rgba(61, 79, 71, 0.08)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = error ? '#EF4444' : '#E8ECF0';
+          e.target.style.boxShadow = 'none';
+        }}
       />
       {error && (
-        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ color: '#EF4444', fontSize: '12px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
           <AlertTriangle size={12} />
           {error}
         </div>
@@ -625,14 +613,22 @@ const FormInput = ({ label, name, value, onChange, error, required, type = "text
   );
 };
 
+// ============================================================
+// FORM SELECT
+// ============================================================
 
-// Simple Select Input
 const FormSelect = ({ label, name, value, onChange, error, required, options }) => {
   return (
     <div style={{ marginBottom: '16px' }}>
-      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px', color: '#333' }}>
+      <label style={{
+        display: 'block',
+        marginBottom: '6px',
+        fontWeight: '500',
+        fontSize: '13px',
+        color: '#1A1D24'
+      }}>
         {label}
-        {required && <span style={{ color: '#dc2626', marginLeft: '4px' }}>*</span>}
+        {required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
       </label>
       <select
         name={name}
@@ -641,12 +637,23 @@ const FormSelect = ({ label, name, value, onChange, error, required, options }) 
         style={{
           width: '100%',
           padding: '10px 12px',
-          border: `1px solid ${error ? '#dc2626' : '#d1d5db'}`,
+          border: `2px solid ${error ? '#EF4444' : '#E8ECF0'}`,
           borderRadius: '8px',
           fontSize: '14px',
-          backgroundColor: 'white',
+          backgroundColor: '#FFFFFF',
           outline: 'none',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          fontFamily: "'Inter', sans-serif",
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          color: '#1A1D24'
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#3D4F47';
+          e.target.style.boxShadow = '0 0 0 3px rgba(61, 79, 71, 0.08)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = error ? '#EF4444' : '#E8ECF0';
+          e.target.style.boxShadow = 'none';
         }}
       >
         {options.map(option => (
@@ -656,46 +663,55 @@ const FormSelect = ({ label, name, value, onChange, error, required, options }) 
         ))}
       </select>
       {error && (
-        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{error}</div>
+        <div style={{ color: '#EF4444', fontSize: '12px', marginTop: '4px' }}>{error}</div>
       )}
     </div>
   );
 };
 
+// ============================================================
+// SMART DATE INPUT WRAPPER
+// ============================================================
 
-// Smart Date Input (uses SmartCalendar)
 const SmartDateInput = ({ label, name, value, onChange, error, required }) => {
-  const dateObject = value ? new Date(value) : null;
-
   const handleDateChange = (date) => {
-    const isoString = date ? date.toISOString().split('T')[0] : '';
+    let isoString = '';
+    if (date) {
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+      isoString = normalizedDate.toISOString().split('T')[0];
+    }
     onChange({ target: { name, value: isoString } });
   };
 
+  const getDateValue = () => {
+    if (value && typeof value === 'string') {
+      const parsed = parseISO(value);
+      if (isValid(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
+  };
+
   return (
-    <div style={{ marginBottom: '16px', overflow: 'visible' }}>
-      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '14px', color: '#333' }}>
-        {label}
-        {required && <span style={{ color: '#dc2626', marginLeft: '4px' }}>*</span>}
-      </label>
-      <SmartCalendar
-        selectedDate={dateObject}
-        onChange={handleDateChange}
-        maxDate={new Date()}
-        placeholder={`Select ${label}`}
-        fieldErrors={error}
-      />
-      {error && (
-        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{error}</div>
-      )}
-    </div>
+    <CustomDatePicker
+      selectedDate={getDateValue()}
+      onChange={handleDateChange}
+      maxDate={new Date()}
+      placeholder={`Select ${label}`}
+      error={error}
+      label={label}
+      required={required}
+      name={name}
+    />
   );
 };
 
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
-
-
-// Main Component
 const DeceasedRegistrationForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -765,13 +781,13 @@ const DeceasedRegistrationForm = () => {
     try {
       const tenantSlug = localStorage.getItem('tenantSlug') || 'default';
       const payload = { ...formData, registered_by: 'System User' };
-      console.log('Submitting:', payload);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${ENDPOINTS.DECEASED.CREATE}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${ENDPOINTS.DECEASED.CREATE}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-slug': tenantSlug,
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
         },
         body: JSON.stringify(payload),
       });
@@ -829,7 +845,7 @@ const DeceasedRegistrationForm = () => {
             <div style={{
               width: '48px',
               height: '48px',
-              backgroundColor: '#0d6efd',
+              backgroundColor: '#3D4F47',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
@@ -838,8 +854,8 @@ const DeceasedRegistrationForm = () => {
               <UserPlus size={24} color="white" />
             </div>
             <div>
-              <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#333' }}>Register Deceased</h1>
-              <p style={{ margin: '4px 0 0', color: '#666', fontSize: '14px' }}>Fill in the details below</p>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#1A1D24' }}>Register Deceased</h1>
+              <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '14px' }}>Fill in the details below</p>
             </div>
           </div>
           <button
@@ -850,10 +866,18 @@ const DeceasedRegistrationForm = () => {
             style={{
               padding: '8px 16px',
               backgroundColor: '#f8f9fa',
-              border: '1px solid #dee2e6',
+              border: `1px solid #E8ECF0`,
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: '14px',
+              transition: 'all 0.2s ease',
+              color: '#1A1D24'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(61, 79, 71, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#f8f9fa';
             }}
           >
             Clear Form
@@ -871,13 +895,12 @@ const DeceasedRegistrationForm = () => {
         overflow: 'visible'
       }}>
         <div style={{ padding: '30px', overflow: 'visible' }}>
-          {/* Stepper */}
           <Stepper currentStep={currentStep} steps={steps} />
 
           {/* Step 0: Personal Info */}
           {currentStep === 0 && (
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#1A1D24' }}>
                 Personal Information
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -935,7 +958,7 @@ const DeceasedRegistrationForm = () => {
           {/* Step 1: Death Details */}
           {currentStep === 1 && (
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#1A1D24' }}>
                 Death Details
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -995,7 +1018,7 @@ const DeceasedRegistrationForm = () => {
           {/* Step 2: Location */}
           {currentStep === 2 && (
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#1A1D24' }}>
                 Location Details
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -1038,7 +1061,7 @@ const DeceasedRegistrationForm = () => {
                 onClick={prevStep}
                 style={{
                   padding: '10px 24px',
-                  backgroundColor: '#dc2626',
+                  backgroundColor: '#EF4444',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -1047,7 +1070,14 @@ const DeceasedRegistrationForm = () => {
                   fontWeight: '500',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#DC2626';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#EF4444';
                 }}
               >
                 <ArrowLeft size={16} />
@@ -1060,7 +1090,7 @@ const DeceasedRegistrationForm = () => {
                 onClick={nextStep}
                 style={{
                   padding: '10px 24px',
-                  backgroundColor: '#111827',
+                  backgroundColor: '#1A1D24',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -1070,7 +1100,14 @@ const DeceasedRegistrationForm = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  marginLeft: currentStep === 0 ? 'auto' : 0
+                  marginLeft: currentStep === 0 ? 'auto' : 0,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2D3748';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#1A1D24';
                 }}
               >
                 Continue
@@ -1082,7 +1119,7 @@ const DeceasedRegistrationForm = () => {
                 disabled={loading}
                 style={{
                   padding: '10px 24px',
-                  backgroundColor: '#10b981',
+                  backgroundColor: '#10B981',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -1093,7 +1130,18 @@ const DeceasedRegistrationForm = () => {
                   alignItems: 'center',
                   gap: '8px',
                   marginLeft: 'auto',
-                  opacity: loading ? 0.6 : 1
+                  opacity: loading ? 0.6 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.backgroundColor = '#059669';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.backgroundColor = '#10B981';
+                  }
                 }}
               >
                 {loading ? (
@@ -1120,7 +1168,7 @@ const DeceasedRegistrationForm = () => {
         fontSize: '12px',
         color: '#6c757d'
       }}>
-        All fields marked with <span style={{ color: '#dc2626' }}>*</span> are required
+        All fields marked with <span style={{ color: '#EF4444' }}>*</span> are required
       </div>
 
       <style>{`

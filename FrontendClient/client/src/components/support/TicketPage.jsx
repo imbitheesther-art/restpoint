@@ -63,7 +63,7 @@ export default function TicketPage() {
     const fetchTickets = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await api.get('/api/v2/restpoint/support/tickets?tenant=' + tenantSlug, {
+            const res = await api.get('/support/tickets?tenant=' + tenantSlug, {
                 headers: { 'x-tenant-slug': tenantSlug }
             });
             if (res.data?.success && Array.isArray(res.data.tickets)) {
@@ -148,7 +148,7 @@ export default function TicketPage() {
         if (!replyText.trim() || !selectedTicket) return;
         setReplying(true);
         try {
-            await api.post('/api/v2/restpoint/support/tickets/' + selectedTicket.ticket_id + '/reply', {
+            await api.post('/support/tickets/' + selectedTicket.ticket_id + '/reply', {
                 message: replyText.trim(),
                 userType: 'tenant',
             }, {

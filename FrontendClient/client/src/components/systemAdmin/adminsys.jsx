@@ -34,7 +34,7 @@ const Colors = {
   warning: '#F59E0B',
   danger: '#EF4444',
   info: '#06B6D4',
-  
+
   dark: {
     bg: '#0F172A',
     card: '#1E293B',
@@ -252,7 +252,7 @@ const CardHeader = styled.div`
 
 const StatusBadge = styled.span`
   background: ${props => {
-    switch(props.status) {
+    switch (props.status) {
       case 'active': return Colors.success;
       case 'trial': return Colors.info;
       case 'suspended': return Colors.warning;
@@ -603,7 +603,7 @@ const PerformanceDashboard = () => {
   // ─── Fetch dashboard stats ────────────────────────────────────────
   const fetchDashboard = useCallback(async () => {
     try {
-      const response = await api.get('/api/v1/restpoint/system-admin/dashboard');
+      const response = await api.get('/system-admin/dashboard');
       if (response.data.success) {
         setDashboardData(response.data.data);
       }
@@ -615,7 +615,7 @@ const PerformanceDashboard = () => {
   // ─── Fetch all tenants ────────────────────────────────────────────
   const fetchTenants = useCallback(async () => {
     try {
-      const response = await api.get('/api/v1/restpoint/system-admin/tenants');
+      const response = await api.get('/system-admin/tenants');
       if (response.data.success) {
         setTenants(response.data.data);
       }
@@ -648,10 +648,10 @@ const PerformanceDashboard = () => {
   // ─── Suspend tenant ───────────────────────────────────────────────
   const handleSuspend = async (tenantId, tenantName) => {
     if (!window.confirm(`Are you sure you want to SUSPEND "${tenantName}"? All users will be deactivated.`)) return;
-    
+
     setActionLoading(tenantId);
     try {
-      const response = await api.post(`/api/v1/restpoint/system-admin/tenants/${tenantId}/suspend`);
+      const response = await api.post(`/system-admin/tenants/${tenantId}/suspend`);
       if (response.data.success) {
         showToast(`"${tenantName}" has been suspended`, 'warning');
         await Promise.all([fetchDashboard(), fetchTenants()]);
@@ -666,10 +666,10 @@ const PerformanceDashboard = () => {
   // ─── Activate tenant ──────────────────────────────────────────────
   const handleActivate = async (tenantId, tenantName) => {
     if (!window.confirm(`Activate "${tenantName}"? All users will be re-enabled.`)) return;
-    
+
     setActionLoading(tenantId);
     try {
-      const response = await api.post(`/api/v1/restpoint/system-admin/tenants/${tenantId}/activate`);
+      const response = await api.post(`/system-admin/tenants/${tenantId}/activate`);
       if (response.data.success) {
         showToast(`"${tenantName}" has been activated`, 'success');
         await Promise.all([fetchDashboard(), fetchTenants()]);
@@ -684,10 +684,10 @@ const PerformanceDashboard = () => {
   // ─── Stop (soft-delete) tenant ────────────────────────────────────
   const handleStop = async (tenantId, tenantName) => {
     if (!window.confirm(`⚠️ WARNING: This will STOP "${tenantName}" entirely. This is a soft-delete. Continue?`)) return;
-    
+
     setActionLoading(tenantId);
     try {
-      const response = await api.post(`/api/v1/restpoint/system-admin/tenants/${tenantId}/stop`);
+      const response = await api.post(`/system-admin/tenants/${tenantId}/stop`);
       if (response.data.success) {
         showToast(`"${tenantName}" has been stopped`, 'error');
         await Promise.all([fetchDashboard(), fetchTenants()]);
@@ -702,7 +702,7 @@ const PerformanceDashboard = () => {
   // ─── View tenant details ──────────────────────────────────────────
   const handleViewDetails = async (tenantId) => {
     try {
-      const response = await api.get(`/api/v1/restpoint/system-admin/tenants/${tenantId}`);
+      const response = await api.get(`/system-admin/tenants/${tenantId}`);
       if (response.data.success) {
         setDetailModal(response.data.data);
       }
@@ -766,9 +766,9 @@ const PerformanceDashboard = () => {
             {overview && ` • ${overview.totalTenants} tenants total`}
           </p>
         </HeaderLeft>
-        
+
         <HeaderControls>
-          <RefreshToggle 
+          <RefreshToggle
             active={isAutoRefresh}
             onClick={() => setIsAutoRefresh(!isAutoRefresh)}
           >
@@ -858,9 +858,9 @@ const PerformanceDashboard = () => {
 
           {/* Subscription breakdown */}
           {subscriptions && (
-            <div style={{ 
-              background: Colors.dark.card, 
-              borderRadius: '20px', 
+            <div style={{
+              background: Colors.dark.card,
+              borderRadius: '20px',
               padding: '2rem',
               border: `1px solid ${Colors.dark.border}`,
               marginBottom: '2rem'
@@ -889,9 +889,9 @@ const PerformanceDashboard = () => {
 
           {/* Recent tenants */}
           {dashboardData?.recentTenants && (
-            <div style={{ 
-              background: Colors.dark.card, 
-              borderRadius: '20px', 
+            <div style={{
+              background: Colors.dark.card,
+              borderRadius: '20px',
               padding: '2rem',
               border: `1px solid ${Colors.dark.border}`
             }}>
@@ -934,9 +934,9 @@ const PerformanceDashboard = () => {
                 />
               </div>
             </TableHeader>
-            
+
             {/* Column headers */}
-            <TenantRow style={{ 
+            <TenantRow style={{
               borderBottom: `2px solid ${Colors.dark.border}`,
               fontWeight: 700,
               fontSize: '0.85rem',
@@ -964,50 +964,50 @@ const PerformanceDashboard = () => {
                     <div className="email">{tenant.email}</div>
                     <div className="location">📍 {tenant.country || 'Unknown'} • Created {formatDate(tenant.created_at)}</div>
                   </TenantName>
-                  
+
                   <TenantStat>
                     <div className="stat-value">{tenant.stats?.totalUsers || 0}</div>
                     <div className="stat-label">Users</div>
                   </TenantStat>
-                  
+
                   <TenantStat>
                     <div className="stat-value">{tenant.stats?.totalDeceased || 0}</div>
                     <div className="stat-label">Records</div>
                   </TenantStat>
-                  
+
                   <div style={{ textAlign: 'center' }}>
                     <StatusBadge status={tenant.status}>{tenant.status}</StatusBadge>
                   </div>
-                  
+
                   <div style={{ textAlign: 'center' }}>
                     <StatusBadge status={tenant.subscription_status}>{tenant.subscription_status}</StatusBadge>
                   </div>
-                  
+
                   <ActionButtons>
                     <ActionBtn variant="view" onClick={() => handleViewDetails(tenant.tenant_id)}>
                       👁️ View
                     </ActionBtn>
-                    
+
                     {(tenant.status === 'active' || tenant.subscription_status === 'active' || tenant.subscription_status === 'trial') ? (
-                      <ActionBtn 
-                        variant="suspend" 
+                      <ActionBtn
+                        variant="suspend"
                         onClick={() => handleSuspend(tenant.tenant_id, tenant.tenant_name)}
                         disabled={actionLoading === tenant.tenant_id}
                       >
                         ⏸️ Suspend
                       </ActionBtn>
                     ) : (
-                      <ActionBtn 
-                        variant="activate" 
+                      <ActionBtn
+                        variant="activate"
                         onClick={() => handleActivate(tenant.tenant_id, tenant.tenant_name)}
                         disabled={actionLoading === tenant.tenant_id}
                       >
                         ▶️ Activate
                       </ActionBtn>
                     )}
-                    
-                    <ActionBtn 
-                      variant="stop" 
+
+                    <ActionBtn
+                      variant="stop"
                       onClick={() => handleStop(tenant.tenant_id, tenant.tenant_name)}
                       disabled={actionLoading === tenant.tenant_id || tenant.status === 'deleted'}
                     >
@@ -1024,14 +1024,14 @@ const PerformanceDashboard = () => {
       {/* ═══════════════ SUBSCRIPTIONS TAB ═══════════════ */}
       {activeTab === 'subscriptions' && (
         <TabContent>
-          <div style={{ 
-            background: Colors.dark.card, 
-            borderRadius: '20px', 
+          <div style={{
+            background: Colors.dark.card,
+            borderRadius: '20px',
             padding: '2rem',
             border: `1px solid ${Colors.dark.border}`
           }}>
             <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.2rem' }}>💳 Subscription Management</h3>
-            
+
             {tenants.length === 0 ? (
               <EmptyState><h3>No tenants found</h3></EmptyState>
             ) : (
@@ -1055,16 +1055,16 @@ const PerformanceDashboard = () => {
                       <div style={{ fontWeight: 700, fontSize: '1rem' }}>{tenant.tenant_name}</div>
                       <div style={{ color: Colors.dark.text.muted, fontSize: '0.85rem' }}>{tenant.email}</div>
                     </div>
-                    
+
                     <div style={{ textAlign: 'center' }}>
                       <StatusBadge status={tenant.subscription_status}>{tenant.subscription_status}</StatusBadge>
                     </div>
-                    
+
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ color: Colors.dark.text.secondary, fontSize: '0.8rem' }}>Expires</div>
                       <div style={{ fontWeight: 600 }}>{formatDate(tenant.subscription_expires_at)}</div>
                     </div>
-                    
+
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ color: Colors.dark.text.secondary, fontSize: '0.8rem' }}>Revenue</div>
                       <div style={{ fontWeight: 600, color: Colors.success }}>
@@ -1090,7 +1090,7 @@ const PerformanceDashboard = () => {
               <MetricValue style={{ fontSize: '2rem' }}>{formatCurrency(overview?.totalRevenue || 0)}</MetricValue>
               <MetricLabel>Across all tenants</MetricLabel>
             </MetricCard>
-            
+
             <MetricCard color={Colors.primary} colorEnd={Colors.primaryDark}>
               <CardHeader>
                 <h3>📊 Average per Tenant</h3>
@@ -1102,14 +1102,14 @@ const PerformanceDashboard = () => {
             </MetricCard>
           </OverviewGrid>
 
-          <div style={{ 
-            background: Colors.dark.card, 
-            borderRadius: '20px', 
+          <div style={{
+            background: Colors.dark.card,
+            borderRadius: '20px',
             padding: '2rem',
             border: `1px solid ${Colors.dark.border}`
           }}>
             <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.2rem' }}>💰 Revenue by Tenant</h3>
-            
+
             {tenants.filter(t => t.status !== 'deleted').length === 0 ? (
               <EmptyState><h3>No active tenants</h3></EmptyState>
             ) : (
@@ -1121,7 +1121,7 @@ const PerformanceDashboard = () => {
                     const revenue = tenant.stats?.totalRevenue || 0;
                     const maxRevenue = Math.max(...tenants.map(t => t.stats?.totalRevenue || 0), 1);
                     const barWidth = (revenue / maxRevenue) * 100;
-                    
+
                     return (
                       <div key={tenant.tenant_id} style={{
                         padding: '1rem',
@@ -1173,7 +1173,7 @@ const PerformanceDashboard = () => {
               <h2>🏢 {detailModal.tenant_name}</h2>
               <button className="close-btn" onClick={() => setDetailModal(null)}>✕</button>
             </ModalHeader>
-            
+
             <DetailGrid>
               <DetailItem>
                 <div className="label">Email</div>
@@ -1253,9 +1253,9 @@ const PerformanceDashboard = () => {
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ 
-                        padding: '0.2rem 0.5rem', 
-                        borderRadius: '6px', 
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '6px',
                         fontSize: '0.75rem',
                         background: user.role === 'admin' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)',
                         color: user.role === 'admin' ? Colors.secondary : Colors.primary,

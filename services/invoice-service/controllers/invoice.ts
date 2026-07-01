@@ -814,3 +814,124 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
     invoice_number,
   });
 };
+
+export const getAllInvoices = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const sql = `
+    SELECT i.*, d.full_name as deceased_name, d.admission_number
+    FROM invoices i
+    LEFT JOIN deceased d ON i.deceased_id = d.id
+    ORDER BY i.created_at DESC
+  `;
+  const invoices = await tenantQuery(req, sql);
+  res.json({ status: 'success', data: invoices });
+};
+
+export const getInvoicesByDeceased = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { deceased_id } = req.params;
+  const sql = `
+    SELECT i.*, d.full_name as deceased_name, d.admission_number
+    FROM invoices i
+    LEFT JOIN deceased d ON i.deceased_id = d.id
+    WHERE i.deceased_id = ?
+    ORDER BY i.created_at DESC
+  `;
+  const invoices = await tenantQuery(req, sql, [deceased_id]);
+  res.json({ status: 'success', data: invoices });
+};
+
+export const getInvoiceById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { id } = req.params;
+  const sql = `
+    SELECT i.*, d.full_name as deceased_name, d.admission_number
+    FROM invoices i
+    LEFT JOIN deceased d ON i.deceased_id = d.id
+    WHERE i.invoice_id = ?
+  `;
+  const [invoice] = await tenantQuery(req, sql, [id]);
+
+  if (!invoice) {
+    throw new AppError('Invoice not found', 404);
+  }
+
+  res.json({ status: 'success', data: invoice });
+};
+
+export const updateInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { id } = req.params;
+  const { items, total_amount, status, notes } = req.body;
+
+  const [existing] = await tenantQuery(req, 'SELECT * FROM invoices WHERE invoice_id = ?', [id]);
+  if (!existing) {
+    throw new AppError('Invoice not found', 404);
+  }
+
+  const updates: string[] = [];
+  const params: any[] = [];
+
+  if (items !== undefined) {
+    updates.push('items = ?');
+    params.push(typeof items === 'string' ? items : JSON.stringify(items));
+  }
+  if (total_amount !== undefined) {
+    updates.push('total_amount = ?');
+    params.push(total_amount);
+  }
+  if (status !== undefined) {
+    updates.push('status = ?');
+    params.push(status);
+  }
+  if (notes !== undefined) {
+    updates.push('notes = ?');
+    params.push(notes);
+  }
+
+  if (updates.length > 0) {
+    updates.push('updated_at = ?');
+    params.push(getKenyaTimeISO());
+    params.push(id);
+
+    await tenantQuery(req, `UPDATE invoices SET ${updates.join(', ')} WHERE invoice_id = ?`, params);
+  }
+
+  const [updated] = await tenantQuery(req, 'SELECT * FROM invoices WHERE invoice_id = ?', [id]);
+  res.json({ status: 'success', data: updated });
+};
+
+export const deleteInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { id } = req.params;
+
+  const [existing] = await tenantQuery(req, 'SELECT * FROM invoices WHERE invoice_id = ?', [id]);
+  if (!existing) {
+    throw new AppError('Invoice not found', 404);
+  }
+
+  await tenantQuery(req, 'DELETE FROM invoices WHERE invoice_id = ?', [id]);
+  res.json({ status: 'success', message: 'Invoice deleted successfully' });
+};
+
+export const downloadInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT i.*, d.full_name as deceased_name, d.admission_number
+    FROM invoices i
+    LEFT JOIN deceased d ON i.deceased_id = d.id
+    WHERE i.invoice_id = ?
+  `;
+  const [invoice] = await tenantQuery(req, sql, [id]);
+
+  if (!invoice) {
+    throw new AppError('Invoice not found', 404);
+  }
+
+  const pdfPath = invoice.pdf_url;
+
+  if (!pdfPath || !fs.existsSync(pdfPath)) {
+    throw new AppError('Invoice PDF not found', 404);
+  }
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoice_number}.pdf"`);
+  const fileStream = fs.createReadStream(pdfPath);
+  fileStream.pipe(res);
+};

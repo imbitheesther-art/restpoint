@@ -11,7 +11,7 @@ const Colors = {
   textSecondary: '#6B7280',
   borderColor: '#E5E7EB',
   shadow: '0 2px 8px rgba(0,0,0,0.1)',
-  
+
   accentBlue: '#2563EB',
   successGreen: '#059669',
   warningYellow: '#D97706',
@@ -164,12 +164,12 @@ const ErrorContainer = styled.div`
   text-align: center;
 `;
 
-const MortuaryProgress = ({ 
-  daysInMortuary: propDaysInMortuary, 
-  dispatchDate: propDispatchDate, 
+const MortuaryProgress = ({
+  daysInMortuary: propDaysInMortuary,
+  dispatchDate: propDispatchDate,
   isOverdue: propIsOverdue,
   deceasedData: propDeceasedData,
-  apiBaseUrl 
+  apiBaseUrl
 }) => {
   const { id: deceasedIdFromParams } = useParams();
   const [deceasedData, setDeceasedData] = useState(null);
@@ -177,20 +177,20 @@ const MortuaryProgress = ({
   const [error, setError] = useState(null);
 
   // Centralized API base URL
-  const API_BASE_URL = apiBaseUrl || 'http://localhost:8000/api/v1/restpoint';
-  
+  const API_BASE_URL = apiBaseUrl || (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/restpoint';
+
   // Helper to get tenant slug
   const getTenantSlug = () => {
-    return localStorage.getItem('tenantSlug') || 
-           localStorage.getItem('tenant_slug') ||
-           (() => {
-             try {
-               const user = JSON.parse(localStorage.getItem('user') || '{}');
-               return user.tenantSlug || user.tenant?.slug || 'default';
-             } catch {
-               return 'default';
-             }
-           })();
+    return localStorage.getItem('tenantSlug') ||
+      localStorage.getItem('tenant_slug') ||
+      (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.tenantSlug || user.tenant?.slug || 'default';
+        } catch {
+          return 'default';
+        }
+      })();
   };
 
   const fetchDeceasedData = async () => {
@@ -210,7 +210,7 @@ const MortuaryProgress = ({
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const tenantSlug = getTenantSlug();
       const response = await axios.get(`${API_BASE_URL}/deceased/deceased-id?id=${deceasedId}`, {
@@ -218,7 +218,7 @@ const MortuaryProgress = ({
           'x-tenant-slug': tenantSlug,
         },
       });
-      
+
       if (response.data && response.data.data) {
         setDeceasedData(response.data.data);
       } else {
@@ -274,7 +274,7 @@ const MortuaryProgress = ({
 
   // Use props if available, otherwise use fetched data
   const data = propDeceasedData || deceasedData;
-  
+
   if (!data && !propDaysInMortuary) {
     return (
       <ProgressContainer>
@@ -286,8 +286,8 @@ const MortuaryProgress = ({
   }
 
   // Extract data - use props first, then fallback to calculated/fetched data
-  const daysInMortuary = propDaysInMortuary !== undefined 
-    ? propDaysInMortuary 
+  const daysInMortuary = propDaysInMortuary !== undefined
+    ? propDaysInMortuary
     : (data?.financial_details?.days_spent || getDaysInMortuary(data?.date_admitted) || 0);
   const dispatchDate = propDispatchDate !== undefined ? propDispatchDate : data?.dispatch_date;
   const status = data?.status || 'Active';
@@ -359,7 +359,7 @@ const MortuaryProgress = ({
           <span>Max Stay: {maxDays} days</span>
         </ProgressStats>
       </div>
-      
+
       {dispatchDate && (
         <DispatchInfo className={isOverdue ? 'overdue' : ''}>
           {isOverdue ? <AlertTriangle size={16} /> : <Calendar size={16} />}

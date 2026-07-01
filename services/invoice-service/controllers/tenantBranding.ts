@@ -3,7 +3,7 @@
  * Fetches tenant-specific branding data (name, logo, signature, contact info)
  * from the tracking database for multi-tenant invoice generation.
  */
-import { safeQuery } from '../../configurations/sqlConfig/db';
+import { safeQuery } from '../../../configurations/sqlConfig/db';
 import path from 'path';
 import fs from 'fs';
 
@@ -81,7 +81,7 @@ async function loadTenantBranding(tenantSlug: string, tenantDbName: string | nul
     // 3. Resolve logo path (check tenant uploads dir first, then default)
     const baseUploads = path.join(__dirname, '../../uploads');
     const tenantDir = path.join(baseUploads, 'tenants', tenantSlug);
-    
+
     const possibleLogoPaths = [
       path.join(tenantDir, 'logo.png'),
       path.join(tenantDir, 'logo.jpg'),

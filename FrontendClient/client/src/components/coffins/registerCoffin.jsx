@@ -5,7 +5,8 @@ import styled, { keyframes, css } from 'styled-components';
 import {
   Tag, Box, Diamond, Maximize2, Paintbrush, Package,
   DollarSign, Image, Save, Loader2, UploadCloud, Truck,
-  CheckCircle, XCircle, Camera, X, RotateCcw, Globe, MapPin
+  CheckCircle, XCircle, Camera, X, RotateCcw, Globe, MapPin,
+  ArrowLeft
 } from 'lucide-react';
 import { Form, Row, Col, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -1079,7 +1080,7 @@ const RegisterCoffin = () => {
     try {
       console.log('Sending request to server...');
 
-      const registerUrl = `${env.FULL_API_URL}${ENDPOINTS.COFFIN.BASE}/register`;
+      const registerUrl = `${env.FULL_API_URL}${ENDPOINTS.COFFINS.BASE}/register`;
       const response = await fetch(registerUrl, {
         method: 'POST',
         body: formData,

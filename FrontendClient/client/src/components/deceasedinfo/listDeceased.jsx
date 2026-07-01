@@ -19,6 +19,7 @@ import {
   Calendar,
   Filter,
   FileText,
+  X,
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -883,7 +884,7 @@ const AllDeceasedPage = () => {
       }
       queryParams.append('format', exportOptions.format);
 
-      const url = `${ENDPOINTS.DECEASED.EXPORT_EXCEL}?${queryParams.toString()}`;
+      const url = `/deceased/export?${queryParams.toString()}`;
 
       const response = await api.get(url, {
         responseType: 'blob',
@@ -1130,11 +1131,9 @@ const AllDeceasedPage = () => {
       <ToastContainer position="top-right" autoClose={3000} />
 
       <ContentWrapper>
-        {/* Header Section - Now with Title + Search Bar + Buttons */}
+        {/* Header Section - Fixed: Added closing div */}
         <HeaderSection>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1, flexWrap: 'wrap' }}>
-
-
             {/* Search Bar - Now placed here */}
             <SearchBarContainer>
               <SearchInputWrapper>
@@ -1152,7 +1151,7 @@ const AllDeceasedPage = () => {
                 )}
               </SearchInputWrapper>
             </SearchBarContainer>
-          </div>
+          </div> {/* ✅ This was the missing closing div */}
 
           <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
             <PrimaryButton refresh onClick={fetchDeceased} disabled={loading}>

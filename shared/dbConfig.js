@@ -32,6 +32,7 @@ const getRootPool = async () => {
             queueLimit: 0,
             enableKeepAlive: true,
             keepAliveInitialDelay: 0,
+            permitAuthPlugins: true
         });
         console.log('✅ Root database pool created (default DB: tenant_tracking)');
     }

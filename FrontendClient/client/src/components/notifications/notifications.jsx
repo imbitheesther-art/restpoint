@@ -6,8 +6,8 @@ import { faTrash, faUser } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1/restpoint/notification';
-const API_NOTIFICATION_URL = 'http://localhost:8000/api/v1/restpoint/notification';
+const API_BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/restpoint/notification` : 'http://localhost:5000/api/v1/restpoint/notification';
+const API_NOTIFICATION_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/restpoint/notification` : 'http://localhost:5000/api/v1/restpoint/notification';
 
 const notificationStyles = {
   EXPIRED: { bg: "#ffeef0", color: "#cf222e" },
@@ -44,64 +44,64 @@ const Notifications = () => {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-// In your Notifications component
-useEffect(() => {
-  const setupPushNotifications = async () => {
-    try {
-      // Add timeout for slow connections
-      const registration = await navigator.serviceWorker.ready;
-      
-      // Check for existing subscription first
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+  // In your Notifications component
+  useEffect(() => {
+    const setupPushNotifications = async () => {
+      try {
+        // Add timeout for slow connections
+        const registration = await navigator.serviceWorker.ready;
+
+        // Check for existing subscription first
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          });
+        }
+
+        // Add error handling for subscription POST
+        const headers = {};
+        const tenantSlug = localStorage.getItem('tenantSlug');
+        if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
+        await axios.post(`${API_BASE_URL}/subscribe`, subscription, {
+          timeout: 5000,
+          headers
         });
-      }
 
-      // Add error handling for subscription POST
-      const headers = {};
-      const tenantSlug = localStorage.getItem('tenantSlug');
-      if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
-      await axios.post(`${API_BASE_URL}/subscribe`, subscription, {
-        timeout: 5000,
-        headers
+      } catch (error) {
+        console.error('Push subscription failed:', error);
+        // Add user feedback
+        Swal.fire('Notifications Disabled', 'Please enable browser notifications', 'info');
+      }
+    };
+
+    // Add feature detection
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          setupPushNotifications();
+        } else {
+          console.log('Permission not granted');
+        }
       });
-      
-    } catch (error) {
-      console.error('Push subscription failed:', error);
-      // Add user feedback
-      Swal.fire('Notifications Disabled', 'Please enable browser notifications', 'info');
     }
-  };
-
-  // Add feature detection
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        setupPushNotifications();
-      } else {
-        console.log('Permission not granted');
-      }
-    });
-  }
-}, []);
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     try {
       const headers = {};
-      const tenantSlug = localStorage.getItem('tenantSlug') || 
-                        localStorage.getItem('tenant_slug') ||
-                        (() => {
-                          try {
-                            const user = JSON.parse(localStorage.getItem('user') || '{}');
-                            return user.tenantSlug || user.tenant?.slug || 'default';
-                          } catch {
-                            return 'default';
-                          }
-                        })();
-      
+      const tenantSlug = localStorage.getItem('tenantSlug') ||
+        localStorage.getItem('tenant_slug') ||
+        (() => {
+          try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            return user.tenantSlug || user.tenant?.slug || 'default';
+          } catch {
+            return 'default';
+          }
+        })();
+
       if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -126,20 +126,20 @@ useEffect(() => {
 
   useEffect(() => {
     const abortController = new AbortController();
-    
+
     const fetchData = async () => {
       try {
         const headers = {};
-        const tenantSlug = localStorage.getItem('tenantSlug') || 
-                          localStorage.getItem('tenant_slug') ||
-                          (() => {
-                            try {
-                              const user = JSON.parse(localStorage.getItem('user') || '{}');
-                              return user.tenantSlug || user.tenant?.slug || 'default';
-                            } catch {
-                              return 'default';
-                            }
-                          })();
+        const tenantSlug = localStorage.getItem('tenantSlug') ||
+          localStorage.getItem('tenant_slug') ||
+          (() => {
+            try {
+              const user = JSON.parse(localStorage.getItem('user') || '{}');
+              return user.tenantSlug || user.tenant?.slug || 'default';
+            } catch {
+              return 'default';
+            }
+          })();
 
         if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -171,7 +171,7 @@ useEffect(() => {
 
     fetchData();
     const interval = setInterval(fetchData, 30000); // 30 seconds
-    
+
     return () => {
       abortController.abort();
       clearInterval(interval);
@@ -188,22 +188,22 @@ useEffect(() => {
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",
     });
-    
+
     if (!result.isConfirmed) return;
-    
+
     try {
       setState(prev => ({ ...prev, deletingIds: [...prev.deletingIds, notificationId] }));
       const headers = {};
-      const tenantSlug = localStorage.getItem('tenantSlug') || 
-                        localStorage.getItem('tenant_slug') ||
-                        (() => {
-                          try {
-                            const user = JSON.parse(localStorage.getItem('user') || '{}');
-                            return user.tenantSlug || user.tenant?.slug || 'default';
-                          } catch {
-                            return 'default';
-                          }
-                        })();
+      const tenantSlug = localStorage.getItem('tenantSlug') ||
+        localStorage.getItem('tenant_slug') ||
+        (() => {
+          try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            return user.tenantSlug || user.tenant?.slug || 'default';
+          } catch {
+            return 'default';
+          }
+        })();
 
       if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -224,16 +224,16 @@ useEffect(() => {
   const markAllAsRead = async () => {
     try {
       const headers = {};
-      const tenantSlug = localStorage.getItem('tenantSlug') || 
-                        localStorage.getItem('tenant_slug') ||
-                        (() => {
-                          try {
-                            const user = JSON.parse(localStorage.getItem('user') || '{}');
-                            return user.tenantSlug || user.tenant?.slug || 'default';
-                          } catch {
-                            return 'default';
-                          }
-                        })();
+      const tenantSlug = localStorage.getItem('tenantSlug') ||
+        localStorage.getItem('tenant_slug') ||
+        (() => {
+          try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            return user.tenantSlug || user.tenant?.slug || 'default';
+          } catch {
+            return 'default';
+          }
+        })();
 
       if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -270,10 +270,10 @@ useEffect(() => {
           }}
         >
           <div className="d-flex justify-content-between align-items-center mb-2">
-            <Badge pill style={{ 
-              backgroundColor: styleConfig.color, 
-              color: "white", 
-              fontSize: "0.75rem" 
+            <Badge pill style={{
+              backgroundColor: styleConfig.color,
+              color: "white",
+              fontSize: "0.75rem"
             }}>
               {notification.type}
             </Badge>
@@ -281,7 +281,7 @@ useEffect(() => {
               {new Date(notification.createdAt).toLocaleTimeString()}
             </small>
           </div>
-          
+
           <div style={{ color: styleConfig.color, fontSize: "0.9rem" }}>
             {notification.message}
           </div>
@@ -291,7 +291,7 @@ useEffect(() => {
               <FontAwesomeIcon icon={faUser} className="me-1" />
               {notification.creator?.name || "System"}
             </div>
-            
+
             <Button
               variant="link"
               size="sm"
@@ -365,8 +365,8 @@ useEffect(() => {
               <Spinner animation="border" variant="primary" size="sm" />
             </div>
           ) : (
-            <div className="bg-white rounded-3 shadow-sm p-2" 
-                 style={{ maxHeight: "75vh", overflowY: "auto" }}>
+            <div className="bg-white rounded-3 shadow-sm p-2"
+              style={{ maxHeight: "75vh", overflowY: "auto" }}>
               {state.notifications.map(notification => (
                 <NotificationItem key={notification.id} notification={notification} />
               ))}

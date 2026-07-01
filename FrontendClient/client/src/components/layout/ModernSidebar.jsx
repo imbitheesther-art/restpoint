@@ -1,136 +1,214 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { 
-  Home, 
-  FileText, 
-  ShoppingCart, 
-  Settings, 
-  Bell, 
-  LogOut, 
-  Calendar, 
-  FileCode,
-  UsersRound,
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Calendar,
+  FolderOpen,
+  ShoppingCart,
+  Package,
   Truck,
+  Phone,
+  Bell,
+  Activity,
   BarChart3,
   FileBarChart,
-  FolderOpen,
+  Settings,
+  LogOut,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  Hexagon,
+  ClipboardList,
   User,
-  UserCircle,
-  Phone,
-  Shield
+  Home,
+  ChevronDown,
+  Star,
+  Grid,
+  Layers,
+  Folder,
+  Plus,
+  Search,
+  Sparkles
 } from 'lucide-react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Colors } from '../../theme/colors';
 
-// Theme colors - Clean plain dark theme
-const theme = {
-  primary: '#ffffff',
-  secondary: '#111111',
-  accent: '#1e293b',
-  accentLight: 'rgba(4, 200, 0, 0.1)',
-  accentLighter: 'rgba(4, 200, 0, 0.05)',
-  background: '#0f0f0f',
-  surface: '#1a1a1a',
-  textPrimary: '#f5f5f5',
-  textSecondary: '#a0a0a0',
-  textMuted: '#666666',
-  border: '#222222',
-  borderLight: '#2a2a2a',
-  hover: 'rgba(4, 200, 0, 0.08)',
-  activeBg: 'rgba(4, 200, 0, 0.15)',
-  activeText: '#ffffff'
+// ============================================================
+// DESIGN SYSTEM
+// ============================================================
+
+const COLORS = {
+  // Primary
+  primary: '#0A2463',
+  primaryLight: '#1A3A7A',
+  primaryDark: '#061A4A',
+
+  // Secondary
+  secondary: '#3B8EA5',
+  secondaryLight: '#5BAEC5',
+
+  // Accent
+  accent: '#FF6B35',
+  accentHover: '#E55A2A',
+
+  // Status
+  success: '#2ECC71',
+  warning: '#F39C12',
+  danger: '#E74C3C',
+
+  // Neutral
+  white: '#FFFFFF',
+  bg: '#F5F7FA',
+  border: '#E8ECF0',
+  text: '#1A1D24',
+  textSecondary: '#6B7280',
+  textLight: '#9CA3AF',
+
+  // Active States
+  active: '#3D4F47',
+  activeBg: 'rgba(61, 79, 71, 0.06)',
+  hoverBg: 'rgba(0, 0, 0, 0.03)',
+
+  // Shadows
+  shadow: 'rgba(0, 0, 0, 0.06)',
+  shadowHover: 'rgba(0, 0, 0, 0.12)',
 };
 
-const SidebarContainer = styled.aside`
+const FONTS = {
+  heading: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+  body: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+};
+
+const TRANSITIONS = {
+  default: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  slow: '0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+// ============================================================
+// STYLED COMPONENTS
+// ============================================================
+
+const SidebarWrapper = styled.div`
   position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
-  width: ${(props) => (props.$isOpen ? '260px' : '70px')};
-  background: linear-gradient(180deg, ${theme.secondary} 0%, ${theme.primary} 100%);
-  display: flex;
-  flex-direction: column;
   z-index: 50;
-  overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: stretch;
+  height: 100vh;
   
   @media (max-width: 767px) {
     display: none;
   }
 `;
 
+const SidebarContainer = styled.aside`
+  width: ${(props) => (props.$isOpen ? '260px' : '68px')};
+  background: ${COLORS.white};
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width ${TRANSITIONS.default};
+  border-right: 1px solid ${COLORS.border};
+  box-shadow: 2px 0 12px ${COLORS.shadow};
+  height: 100vh;
+  position: relative;
+`;
+
+// ============================================================
+// HEADER / BRAND
+// ============================================================
+
 const SidebarHeader = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: ${(props) => (props.$isOpen ? '16px' : '12px')};
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  min-height: 64px;
-`;
-
-const SidebarBrand = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  overflow: hidden;
+  padding: ${(props) => (props.$isOpen ? '16px 20px 12px' : '12px 10px')};
+  border-bottom: 1px solid ${COLORS.border};
+  min-height: 60px;
+  flex-shrink: 0;
+  gap: ${(props) => (props.$isOpen ? '12px' : '0')};
+  justify-content: ${(props) => (props.$isOpen ? 'flex-start' : 'center')};
+  background: ${COLORS.white};
 `;
 
 const BrandLogo = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  font-family: ${FONTS.heading};
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   flex-shrink: 0;
-  background: linear-gradient(135deg, ${theme.accent} 0%, #2980B9 100%);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  background: linear-gradient(135deg, ${COLORS.primary}, ${COLORS.secondary});
+  color: ${COLORS.white};
+  letter-spacing: -0.02em;
+  box-shadow: 0 2px 8px rgba(10, 36, 99, 0.2);
 `;
 
-const BrandInfo = styled.div`
-  overflow: hidden;
-  opacity: ${(props) => (props.$visible ? 1 : 0)};
-  transition: opacity 0.2s ease;
-  white-space: nowrap;
-`;
-
-const BrandName = styled.div`
-  font-weight: 700;
-  color: #ffffff;
+const BrandName = styled.span`
+  font-family: ${FONTS.heading};
+  font-weight: 600;
+  color: ${COLORS.text};
   font-size: 1rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: -0.02em;
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  flex: 1;
+`;
+
+const BrandSub = styled.span`
+  font-family: ${FONTS.body};
+  font-weight: 400;
+  color: ${COLORS.textLight};
+  font-size: 0.6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  display: block;
+  margin-top: -1px;
+`;
+
+// ============================================================
+// TOGGLE BUTTON
+// ============================================================
+
+const ToggleWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: ${(props) => (props.$isOpen ? 'flex-end' : 'center')};
+  padding: ${(props) => (props.$isOpen ? '0 16px 12px 16px' : '0 0 12px 0')};
+  flex-shrink: 0;
+  border-bottom: 1px solid ${COLORS.border};
+  min-height: 44px;
 `;
 
 const ToggleButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: ${COLORS.white};
+  border: 1px solid ${COLORS.border};
   border-radius: 8px;
-  padding: 8px;
+  padding: ${(props) => (props.$isOpen ? '6px 14px' : '6px 8px')};
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  color: rgba(255, 255, 255, 0.8);
-  flex-shrink: 0;
+  transition: all ${TRANSITIONS.default};
+  color: ${COLORS.textSecondary};
+  gap: ${(props) => (props.$isOpen ? '8px' : '0')};
   
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
-    transform: scale(1.05);
+    background: ${COLORS.hoverBg};
+    color: ${COLORS.text};
+    border-color: ${COLORS.primary};
+    box-shadow: 0 2px 8px ${COLORS.shadow};
   }
   
   &:active {
@@ -138,14 +216,74 @@ const ToggleButton = styled.button`
   }
 `;
 
+const ToggleLabel = styled.span`
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: ${COLORS.textSecondary};
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  white-space: nowrap;
+`;
+
+// ============================================================
+// SEARCH
+// ============================================================
+
+const SearchWrapper = styled.div`
+  padding: ${(props) => (props.$isOpen ? '8px 16px 12px' : '8px 8px 12px')};
+  border-bottom: 1px solid ${COLORS.border};
+  flex-shrink: 0;
+`;
+
+const SearchInput = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: ${COLORS.bg};
+  border-radius: 8px;
+  padding: ${(props) => (props.$isOpen ? '6px 12px' : '6px 8px')};
+  border: 1px solid transparent;
+  transition: all ${TRANSITIONS.default};
+  
+  &:focus-within {
+    border-color: ${COLORS.primary};
+    background: ${COLORS.white};
+    box-shadow: 0 0 0 3px rgba(10, 36, 99, 0.1);
+  }
+  
+  svg {
+    color: ${COLORS.textLight};
+    flex-shrink: 0;
+  }
+  
+  input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.8rem;
+    color: ${COLORS.text};
+    width: 100%;
+    opacity: ${(props) => (props.$isOpen ? 1 : 0)};
+    transition: opacity ${TRANSITIONS.default};
+    
+    &::placeholder {
+      color: ${COLORS.textLight};
+    }
+  }
+`;
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+
 const SidebarNav = styled.nav`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 0;
+  padding: 8px 8px;
   
   &::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
   
   &::-webkit-scrollbar-track {
@@ -153,70 +291,57 @@ const SidebarNav = styled.nav`
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: ${COLORS.border};
     border-radius: 4px;
   }
   
   &::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: ${COLORS.textLight};
   }
 `;
 
 const NavSection = styled.div`
-  padding: 0 ${(props) => (props.$isOpen ? '8px' : '4px')};
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 `;
 
-const SectionLabel = styled.div`
-  font-size: 0.65rem;
+const NavSectionTitle = styled.div`
+  font-size: 0.6rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 8px 12px 4px;
-  opacity: ${(props) => (props.$visible ? 1 : 0)};
-  transition: opacity 0.2s ease;
+  letter-spacing: 0.06em;
+  color: ${COLORS.textLight};
+  padding: ${(props) => (props.$isOpen ? '8px 12px 4px' : '8px 0 4px')};
+  text-align: ${(props) => (props.$isOpen ? 'left' : 'center')};
+  opacity: ${(props) => (props.$isOpen ? 1 : 0.5)};
+  transition: opacity ${TRANSITIONS.default};
   white-space: nowrap;
+  overflow: hidden;
 `;
 
 const MenuItem = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: ${(props) => (props.$collapsed ? '10px' : '10px 12px')};
-  margin: 2px ${(props) => (props.$collapsed ? '4px' : '4px')};
+  padding: ${(props) => (props.$collapsed ? '8px' : '8px 12px')};
+  margin: 1px 0;
   cursor: pointer;
   border-radius: 8px;
-  background: ${(props) => props.$active 
-    ? 'rgba(255, 255, 255, 0.15)' 
-    : 'transparent'};
-  color: ${(props) => props.$active 
-    ? '#ffffff' 
-    : 'rgba(255, 255, 255, 0.75)'};
-  transition: all 0.2s ease;
+  background: ${(props) => (props.$active ? COLORS.activeBg : 'transparent')};
+  color: ${(props) => (props.$active ? COLORS.active : COLORS.textSecondary)};
+  transition: all ${TRANSITIONS.default};
   justify-content: ${(props) => (props.$collapsed ? 'center' : 'flex-start')};
   position: relative;
+  min-height: 36px;
   
   ${(props) => props.$active && `
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 3px;
-      height: 60%;
-      background: ${theme.accent};
-      border-radius: 0 2px 2px 0;
-    }
+    font-weight: 500;
+    color: ${COLORS.primary};
+    background: rgba(10, 36, 99, 0.06);
   `}
   
   &:hover {
-    background: ${(props) => props.$active 
-      ? 'rgba(255, 255, 255, 0.2)' 
-      : 'rgba(255, 255, 255, 0.08)'};
-    color: #ffffff;
-    transform: ${(props) => !props.$collapsed ? 'translateX(2px)' : 'none'};
+    background: ${(props) => (props.$active ? 'rgba(10, 36, 99, 0.08)' : COLORS.hoverBg)};
+    color: ${(props) => (props.$active ? COLORS.primary : COLORS.text)};
   }
   
   &:active {
@@ -229,163 +354,249 @@ const MenuItemIcon = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 20px;
+  color: ${(props) => (props.$active ? COLORS.primary : COLORS.textLight)};
+  transition: color ${TRANSITIONS.default};
+  
+  ${MenuItem}:hover & {
+    color: ${(props) => (props.$active ? COLORS.primary : COLORS.text)};
+  }
 `;
 
 const MenuItemLabel = styled.span`
-  font-size: 0.875rem;
-  font-weight: ${(props) => (props.$active ? '600' : '500')};
+  font-size: 0.8rem;
+  font-weight: ${(props) => (props.$active ? '500' : '400')};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   opacity: ${(props) => (props.$visible ? 1 : 0)};
-  transition: opacity 0.2s ease;
-  white-space: nowrap;
+  transition: opacity ${TRANSITIONS.default};
+  flex: 1;
 `;
 
-const SidebarFooter = styled.div`
-  padding: ${(props) => (props.$isOpen ? '16px 8px' : '12px 4px')};
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: auto;
-`;
-
-const UserInfo = styled.div`
-  margin-bottom: 12px;
-  opacity: ${(props) => (props.$visible ? 1 : 0)};
-  transition: opacity 0.2s ease;
-`;
-
-const UserName = styled.div`
-  font-size: 0.85rem;
+const MenuBadge = styled.span`
+  background: ${COLORS.danger};
+  color: ${COLORS.white};
+  font-size: 0.6rem;
   font-weight: 600;
-  color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 1px 7px;
+  border-radius: 10px;
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  flex-shrink: 0;
 `;
 
-const UserRole = styled.div`
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 2px;
+const MenuIndicator = styled.span`
+  width: 4px;
+  height: 24px;
+  border-radius: 2px;
+  background: ${COLORS.primary};
+  opacity: ${(props) => (props.$active && props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  flex-shrink: 0;
+  margin-left: auto;
 `;
 
-const LogoutButton = styled.button`
-  background: rgba(231, 76, 60, 0.2);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  cursor: pointer;
-  padding: ${(props) => (props.$collapsed ? '10px' : '10px 16px')};
-  border-radius: 8px;
-  color: #e74c3c;
+// ============================================================
+// COLLAPSED ITEM WITH TOOLTIP
+// ============================================================
+
+const CollapsedItem = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: ${(props) => (props.$collapsed ? 'auto' : '100%')};
-  font-weight: 500;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
+  padding: 8px;
+  margin: 1px 0;
+  cursor: pointer;
+  border-radius: 8px;
+  background: ${(props) => (props.$active ? COLORS.activeBg : 'transparent')};
+  color: ${(props) => (props.$active ? COLORS.active : COLORS.textSecondary)};
+  transition: all ${TRANSITIONS.default};
+  min-height: 36px;
   
   &:hover {
-    background: rgba(231, 76, 60, 0.3);
-    color: #c0392b;
-    transform: scale(1.02);
+    background: ${(props) => (props.$active ? 'rgba(10, 36, 99, 0.08)' : COLORS.hoverBg)};
+    color: ${(props) => (props.$active ? COLORS.primary : COLORS.text)};
   }
   
   &:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
   }
 `;
 
-const LogoutText = styled.span`
-  opacity: ${(props) => (props.$visible ? 1 : 0)};
-  transition: opacity 0.2s ease;
-  white-space: nowrap;
-`;
-
-const CollapsedHint = styled.div`
+const Tooltip = styled.div`
   position: absolute;
-  left: 100%;
+  left: calc(100% + 12px);
   top: 50%;
   transform: translateY(-50%);
-  background: ${theme.surface};
-  color: ${theme.textPrimary};
-  padding: 8px 12px;
+  background: ${COLORS.text};
+  color: ${COLORS.white};
+  padding: 4px 12px;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px ${COLORS.shadowHover};
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
-  margin-left: 8px;
+  transition: all ${TRANSITIONS.default};
   z-index: 100;
+  pointer-events: none;
   
-  &::after {
+  &::before {
     content: '';
     position: absolute;
     right: 100%;
     top: 50%;
     transform: translateY(-50%);
-    border: 6px solid transparent;
-    border-right-color: ${theme.surface};
+    border: 5px solid transparent;
+    border-right-color: ${COLORS.text};
+  }
+  
+  ${CollapsedItem}:hover & {
+    opacity: 1;
+    visibility: visible;
   }
 `;
 
-const CollapsedMenuItem = styled.div`
-  position: relative;
+// ============================================================
+// FOOTER
+// ============================================================
+
+const SidebarFooter = styled.div`
+  padding: ${(props) => (props.$isOpen ? '12px 16px 16px' : '8px 8px 12px')};
+  border-top: 1px solid ${COLORS.border};
+  margin-top: auto;
+  flex-shrink: 0;
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: ${(props) => (props.$isOpen ? '8px 8px 8px 4px' : '4px')};
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all ${TRANSITIONS.default};
+  
+  &:hover {
+    background: ${COLORS.hoverBg};
+  }
+`;
+
+const UserAvatar = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px;
-  margin: 2px 4px;
-  cursor: pointer;
+  font-family: ${FONTS.heading};
+  font-weight: 600;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, ${COLORS.secondary}, ${COLORS.primary});
+  color: ${COLORS.white};
+`;
+
+const UserName = styled.span`
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: ${COLORS.text};
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const UserRole = styled.span`
+  font-size: 0.6rem;
+  color: ${COLORS.textLight};
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+`;
+
+const LogoutButton = styled.button`
+  background: ${(props) => (props.$collapsed ? 'transparent' : 'rgba(231, 76, 60, 0.06)')};
+  border: 1px solid ${(props) => (props.$collapsed ? 'transparent' : 'transparent')};
   border-radius: 8px;
-  background: ${(props) => props.$active 
-    ? 'rgba(255, 255, 255, 0.15)' 
-    : 'transparent'};
-  color: ${(props) => props.$active 
-    ? '#ffffff' 
-    : 'rgba(255, 255, 255, 0.75)'};
-  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: ${(props) => (props.$collapsed ? '8px' : '8px 12px')};
+  color: ${(props) => (props.$collapsed ? COLORS.textSecondary : COLORS.danger)};
+  display: flex;
+  align-items: center;
+  justify-content: ${(props) => (props.$collapsed ? 'center' : 'center')};
+  gap: 8px;
+  width: ${(props) => (props.$collapsed ? 'auto' : '100%')};
+  font-weight: 500;
+  font-size: 0.8rem;
+  transition: all ${TRANSITIONS.default};
   
   &:hover {
-    background: ${(props) => props.$active 
-      ? 'rgba(255, 255, 255, 0.2)' 
-      : 'rgba(255, 255, 255, 0.08)'};
-    color: #ffffff;
-    
-    ${CollapsedHint} {
-      opacity: 1;
-      visibility: visible;
-    }
+    background: ${(props) => (props.$collapsed ? 'rgba(231, 76, 60, 0.08)' : 'rgba(231, 76, 60, 0.12)')};
+    color: ${COLORS.danger};
+    border-color: ${(props) => (props.$collapsed ? 'rgba(231, 76, 60, 0.2)' : 'transparent')};
+  }
+  
+  &:active {
+    transform: scale(0.95);
   }
 `;
+
+const LogoutText = styled.span`
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  white-space: nowrap;
+`;
+
+// ============================================================
+// VERSION BADGE
+// ============================================================
+
+const VersionBadge = styled.div`
+  font-size: 0.55rem;
+  color: ${COLORS.textLight};
+  text-align: center;
+  padding: 4px 0;
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  transition: opacity ${TRANSITIONS.default};
+  pointer-events: none;
+`;
+
+// ============================================================
+// MOBILE COMPONENTS
+// ============================================================
 
 const MobileMenuButton = styled.button`
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: 12px;
+  left: 12px;
   z-index: 60;
-  background: ${theme.surface};
-  border: 1px solid ${theme.border};
+  background: ${COLORS.white};
+  border: 1px solid ${COLORS.border};
   border-radius: 10px;
   padding: 10px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
+  box-shadow: 0 2px 12px ${COLORS.shadow};
+  display: none;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  color: ${theme.textPrimary};
+  transition: all ${TRANSITIONS.default};
+  color: ${COLORS.text};
   
   &:hover {
-    background: ${theme.background};
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px ${COLORS.shadowHover};
+    border-color: ${COLORS.primary};
   }
   
-  @media (min-width: 768px) {
-    display: none;
+  @media (max-width: 767px) {
+    display: flex;
   }
 `;
 
@@ -395,14 +606,17 @@ const SidebarOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   z-index: 65;
-  transition: opacity 0.25s ease-in-out;
   animation: fadeIn 0.25s ease-in-out;
   
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+  
+  @media (min-width: 768px) {
+    display: none;
   }
 `;
 
@@ -413,15 +627,16 @@ const MobileSidebar = styled.aside`
   bottom: 0;
   width: 280px;
   max-width: 85vw;
-  background: linear-gradient(180deg, ${theme.secondary} 0%, ${theme.primary} 100%);
+  background: ${COLORS.white};
   padding: 16px;
   display: flex;
   flex-direction: column;
   z-index: 70;
   overflow: hidden;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
-  transition: transform 0.25s ease-in-out;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform: ${(props) => (props.$isOpen ? 'translateX(0)' : 'translateX(-100%)')};
+  border-right: 1px solid ${COLORS.border};
   
   @media (min-width: 768px) {
     display: none;
@@ -429,34 +644,42 @@ const MobileSidebar = styled.aside`
 `;
 
 const CloseButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 8px;
+  background: ${COLORS.white};
+  border: none;
+  padding: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  color: rgba(255, 255, 255, 0.8);
+  transition: all ${TRANSITIONS.default};
+  color: ${COLORS.textSecondary};
   flex-shrink: 0;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    color: ${COLORS.text};
   }
 `;
 
-const ModernSidebar = ({ tenantData, userData = {}, onLogout = () => {}, onToggle }) => {
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
+
+const ModernSidebar = ({
+  tenantData = {},
+  userData = {},
+  onLogout = () => { },
+  onToggle,
+  menuItems: customMenuItems,
+  activePath: customActivePath
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams();
-  const safeTenantData = tenantData || {};
-  const tenantSlug = slug || safeTenantData.slug || localStorage.getItem('tenantSlug') || '';
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Check mobile
   const checkMobile = useCallback(() => {
     const mobile = window.innerWidth < 768;
     setIsMobile(mobile);
@@ -494,55 +717,77 @@ const ModernSidebar = ({ tenantData, userData = {}, onLogout = () => {}, onToggl
     }
   }, [isOpen, isMobile]);
 
-  const basePath = `/rptenant/${tenantSlug}`;
+  const tenantSlug = slug || localStorage.getItem('tenantSlug') || '';
 
-  // Group menu items by category
-  const mainMenuItems = [
-    { icon: Home, label: 'Dashboard', path: `${basePath}/dashboard` },
-    { icon: FileText, label: 'Deceased', path: `${basePath}/all-deceased` },
-    { icon: FileText, label: 'Invoices', path: `${basePath}/invoices` },
-    { icon: Calendar, label: 'Calendar', path: `${basePath}/calendar` },
+  // Default menu items if not provided
+  const defaultMenuItems = [
+    {
+      section: 'Main',
+      items: [
+        { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/dashboard`, badge: null },
+        { icon: Users, label: 'Deceased', path: `/tenant/${tenantSlug}/deceased`, badge: null },
+        { icon: FileText, label: 'Invoices', path: `/tenant/${tenantSlug}/invoices`, badge: '3' },
+        { icon: Calendar, label: 'Calendar', path: `/tenant/${tenantSlug}/calendar`, badge: null },
+      ]
+    },
+    {
+      section: 'Inventory',
+      items: [
+        { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins`, badge: '12' },
+        { icon: ShoppingCart, label: 'Marketplace', path: `/tenant/${tenantSlug}/marketplace`, badge: null },
+        { icon: Truck, label: 'Hearse', path: `/tenant/${tenantSlug}/hearse`, badge: null },
+      ]
+    },
+    {
+      section: 'Documents',
+      items: [
+        { icon: FolderOpen, label: 'Documents', path: `/tenant/${tenantSlug}/documents`, badge: null },
+        { icon: FileBarChart, label: 'E-Documents', path: `/tenant/${tenantSlug}/edocuments`, badge: null },
+      ]
+    },
+    {
+      section: 'Analytics',
+      items: [
+        { icon: Activity, label: 'Analytics', path: `/tenant/${tenantSlug}/analytics`, badge: null },
+        { icon: BarChart3, label: 'Reports', path: `/tenant/${tenantSlug}/reports`, badge: null },
+      ]
+    },
+    {
+      section: 'System',
+      items: [
+        { icon: Users, label: 'Users', path: `/tenant/${tenantSlug}/users`, badge: null },
+        { icon: Bell, label: 'Notifications', path: `/tenant/${tenantSlug}/notifications`, badge: '8' },
+        { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings`, badge: null },
+      ]
+    }
   ];
 
-  const documentsMenuItems = [
-    { icon: FileCode, label: 'E-Documents', path: `${basePath}/edocuments` },
-    { icon: FolderOpen, label: 'Documents', path: `${basePath}/documents` },
-  ];
+  const menuItems = customMenuItems || defaultMenuItems;
 
-  const businessMenuItems = [
-    { icon: ShoppingCart, label: 'Marketplace', path: `${basePath}/marketplace` },
-    { icon: UsersRound, label: 'Coffins', path: `${basePath}/coffins` },
-    { icon: Truck, label: 'Hearse', path: `${basePath}/hearse` },
-    { icon: Phone, label: 'Voice Call', path: `${basePath}/call` },
-  ];
-
-  const systemMenuItems = [
-    { icon: Shield, label: 'Users', path: `${basePath}/users` },
-    { icon: Bell, label: 'Notifications', path: `${basePath}/notifications` },
-    { icon: BarChart3, label: 'Analytics', path: `${basePath}/analytics` },
-    { icon: FileBarChart, label: 'Reports', path: `${basePath}/reports` },
-    { icon: Settings, label: 'Settings', path: `${basePath}/settings` },
-  ];
+  // Filter items based on search
+  const filteredMenuItems = menuItems.map(section => ({
+    ...section,
+    items: section.items.filter(item =>
+      item.label.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })).filter(section => section.items.length > 0);
 
   const isActive = (path) => {
-    return location.pathname === path || 
-           location.pathname.startsWith(path + '/') ||
-           location.pathname === path.replace('/dashboard', '');
+    if (customActivePath) {
+      return location.pathname === customActivePath || location.pathname.startsWith(customActivePath + '/');
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   const handleNavClick = (path) => {
     navigate(path);
-    if (isMobile) {
-      setIsOpen(false);
-    }
+    if (isMobile) setIsOpen(false);
   };
 
   const toggleSidebar = useCallback(() => {
-    setIsTransitioning(true);
     const newState = !isOpen;
     setIsOpen(newState);
     if (onToggle) onToggle(newState);
-    setTimeout(() => setIsTransitioning(false), 300);
   }, [isOpen, onToggle]);
 
   const handleLogout = useCallback(() => {
@@ -551,275 +796,313 @@ const ModernSidebar = ({ tenantData, userData = {}, onLogout = () => {}, onToggl
     navigate('/login');
   }, [onLogout, navigate]);
 
-  // Get tenant initials for logo (only show if name exists)
-  const getTenantInitials = () => {
-    if (!safeTenantData.name) return 'RP';
-    return safeTenantData.name.slice(0, 2).toUpperCase();
+  const getInitials = () => {
+    if (tenantData?.name) {
+      return tenantData.name.slice(0, 2).toUpperCase();
+    }
+    if (userData?.name) {
+      return userData.name.slice(0, 2).toUpperCase();
+    }
+    return 'RJ';
   };
 
-  // Render menu items helper
+  const getDisplayName = () => {
+    if (tenantData?.name) return tenantData.name;
+    if (userData?.name) return userData.name;
+    return 'RestPoint';
+  };
+
+  const getUserRole = () => {
+    if (userData?.role) return userData.role;
+    return 'Admin';
+  };
+
+  // ─── RENDER MENU ITEMS ─────────────────────────────────────
+
   const renderMenuItems = (items, collapsed = false) => {
-    return items.map((item) => (
+    return items.map((item, index) => (
       <MenuItem
-        key={item.path}
+        key={index}
         $active={isActive(item.path)}
         $collapsed={collapsed}
-        $visible={isOpen}
         onClick={() => handleNavClick(item.path)}
         role="button"
         tabIndex={0}
-        aria-current={isActive(item.path) ? 'page' : undefined}
-        title={collapsed ? item.label : undefined}
       >
-        <MenuItemIcon><item.icon size={18} /></MenuItemIcon>
+        <MenuItemIcon $active={isActive(item.path)}>
+          <item.icon size={18} />
+        </MenuItemIcon>
         <MenuItemLabel $active={isActive(item.path)} $visible={isOpen}>
           {item.label}
         </MenuItemLabel>
+        {item.badge && (
+          <MenuBadge $visible={isOpen}>{item.badge}</MenuBadge>
+        )}
+        <MenuIndicator $active={isActive(item.path)} $visible={isOpen} />
       </MenuItem>
     ));
   };
 
-  // Render collapsed menu items with tooltips
-  const renderCollapsedMenuItems = (items) => {
-    return items.map((item) => (
-      <CollapsedMenuItem
-        key={item.path}
+  const renderCollapsedItems = (items) => {
+    return items.map((item, index) => (
+      <CollapsedItem
+        key={index}
         $active={isActive(item.path)}
         onClick={() => handleNavClick(item.path)}
         role="button"
         tabIndex={0}
-        aria-current={isActive(item.path) ? 'page' : undefined}
-        title={item.label}
       >
-        <CollapsedHint>{item.label}</CollapsedHint>
-        <MenuItemIcon><item.icon size={18} /></MenuItemIcon>
-      </CollapsedMenuItem>
+        <Tooltip>{item.label}</Tooltip>
+        <MenuItemIcon $active={isActive(item.path)}>
+          <item.icon size={18} />
+        </MenuItemIcon>
+        {item.badge && (
+          <span style={{
+            position: 'absolute',
+            top: '2px',
+            right: '2px',
+            background: COLORS.danger,
+            color: COLORS.white,
+            fontSize: '0.5rem',
+            fontWeight: 600,
+            padding: '1px 4px',
+            borderRadius: '8px',
+            minWidth: '12px',
+            textAlign: 'center'
+          }}>
+            {item.badge}
+          </span>
+        )}
+      </CollapsedItem>
     ));
   };
 
+  // ─── MOBILE ─────────────────────────────────────────────────
+
   if (isMobile) {
     return (
-      <React.Fragment>
-        <MobileMenuButton
-          onClick={() => setIsOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={isOpen}
-        >
-          <Menu size={20} />
+      <>
+        <MobileMenuButton onClick={() => setIsOpen(true)} aria-label="Open menu">
+          <Menu size={22} />
         </MobileMenuButton>
 
-        {isOpen && (
-          <SidebarOverlay
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
-        )}
+        {isOpen && <SidebarOverlay onClick={() => setIsOpen(false)} aria-hidden="true" />}
 
         <MobileSidebar $isOpen={isOpen}>
-          <SidebarHeader>
-            <SidebarBrand>
-              <BrandLogo>
-                {getTenantInitials()}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <BrandLogo style={{ width: '32px', height: '32px', fontSize: '0.7rem' }}>
+                {getInitials()}
               </BrandLogo>
-              {safeTenantData.name && (
-                <BrandInfo $visible={true}>
-                  <BrandName>{safeTenantData.name}</BrandName>
-                </BrandInfo>
-              )}
-            </SidebarBrand>
-            <CloseButton onClick={() => setIsOpen(false)} aria-label="Close sidebar">
-              <X size={18} />
-            </CloseButton>
-          </SidebarHeader>
-
-          <SidebarNav>
-            <NavSection $isOpen={true}>
-              <SectionLabel $visible={true}>Main</SectionLabel>
-              {renderMenuItems(mainMenuItems, false)}
-            </NavSection>
-            
-            <NavSection $isOpen={true}>
-              <SectionLabel $visible={true}>Documents</SectionLabel>
-              {renderMenuItems(documentsMenuItems, false)}
-            </NavSection>
-            
-            <NavSection $isOpen={true}>
-              <SectionLabel $visible={true}>Business</SectionLabel>
-              {renderMenuItems(businessMenuItems, false)}
-            </NavSection>
-            
-            <NavSection $isOpen={true}>
-              <SectionLabel $visible={true}>System</SectionLabel>
-              {renderMenuItems(systemMenuItems, false)}
-            </NavSection>
-          </SidebarNav>
-
-          <SidebarFooter>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0' }}>
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '50%', 
-                background: 'rgba(4, 200, 0, 0.2)', display: 'flex', 
-                alignItems: 'center', justifyContent: 'center', flexShrink: 0 
-              }}>
-                <User size={16} color="#04c800" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.7rem', color: theme.textMuted, marginBottom: '1px' }}>Logged in as</div>
-                <UserName>{userData.name || 'Admin User'}</UserName>
-                <UserRole>{userData.role || 'Administrator'}</UserRole>
+              <div>
+                <BrandName $visible={true} style={{ fontSize: '0.9rem' }}>
+                  {getDisplayName()}
+                </BrandName>
+                <BrandSub $visible={true} style={{ fontSize: '0.55rem' }}>
+                  {getUserRole()}
+                </BrandSub>
               </div>
             </div>
-            <LogoutButton onClick={handleLogout} aria-label="Sign out">
+            <CloseButton onClick={() => setIsOpen(false)} aria-label="Close sidebar">
+              <X size={22} />
+            </CloseButton>
+          </div>
+
+          {/* Mobile Search */}
+          <SearchWrapper $isOpen={true}>
+            <SearchInput $isOpen={true}>
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Search menu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </SearchInput>
+          </SearchWrapper>
+
+          <SidebarNav>
+            {filteredMenuItems.map((section, idx) => (
+              <NavSection key={idx}>
+                {section.section && (
+                  <NavSectionTitle $isOpen={true}>
+                    {section.section}
+                  </NavSectionTitle>
+                )}
+                {renderMenuItems(section.items, false)}
+              </NavSection>
+            ))}
+          </SidebarNav>
+
+          <SidebarFooter $isOpen={true}>
+            <LogoutButton $collapsed={false} onClick={handleLogout}>
               <LogOut size={16} />
               <LogoutText $visible={true}>Sign Out</LogoutText>
             </LogoutButton>
           </SidebarFooter>
         </MobileSidebar>
-      </React.Fragment>
+      </>
     );
   }
 
-  // Collapsed state - show icons only with tooltips
+  // ─── COLLAPSED ─────────────────────────────────────────────
+
   if (!isOpen) {
     return (
-      <SidebarContainer $isOpen={false} aria-label="Collapsed sidebar">
-        <SidebarHeader $isOpen={false}>
-          <SidebarBrand>
-            <BrandLogo style={{ width: '40px', height: '40px' }}>
-              {getTenantInitials()}
+      <SidebarWrapper>
+        <SidebarContainer $isOpen={false}>
+          <SidebarHeader $isOpen={false}>
+            <BrandLogo style={{ width: '28px', height: '28px', fontSize: '0.65rem' }}>
+              {getInitials()}
             </BrandLogo>
-          </SidebarBrand>
-        </SidebarHeader>
+          </SidebarHeader>
 
-        <SidebarNav>
-          <NavSection $isOpen={false}>
-            {renderCollapsedMenuItems(mainMenuItems)}
-          </NavSection>
-          
-          <NavSection $isOpen={false}>
-            {renderCollapsedMenuItems(documentsMenuItems)}
-          </NavSection>
-          
-          <NavSection $isOpen={false}>
-            {renderCollapsedMenuItems(businessMenuItems)}
-          </NavSection>
-          
-          <NavSection $isOpen={false}>
-            {renderCollapsedMenuItems(systemMenuItems)}
-          </NavSection>
-        </SidebarNav>
+          <SidebarNav>
+            {menuItems.map((section, idx) => (
+              <NavSection key={idx}>
+                {section.section && (
+                  <NavSectionTitle $isOpen={false}>
+                    {section.section.slice(0, 1)}
+                  </NavSectionTitle>
+                )}
+                {renderCollapsedItems(section.items)}
+              </NavSection>
+            ))}
+          </SidebarNav>
 
-        <SidebarFooter $isOpen={false}>
-          <LogoutButton $collapsed={true} onClick={handleLogout} aria-label="Sign out">
-            <LogOut size={18} />
-          </LogoutButton>
-        </SidebarFooter>
+          <SidebarFooter $isOpen={false}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <UserAvatar style={{ width: '28px', height: '28px', fontSize: '0.6rem' }}>
+                {getInitials()}
+              </UserAvatar>
+              <LogoutButton $collapsed={true} onClick={handleLogout}>
+                <LogOut size={16} />
+              </LogoutButton>
+            </div>
+          </SidebarFooter>
+        </SidebarContainer>
 
-        <ToggleButton
-          onClick={toggleSidebar}
-          aria-label="Expand sidebar"
+        {/* Toggle handle */}
+        <div
           style={{
-            position: 'absolute',
-            right: '-16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: theme.surface,
-            border: `1px solid ${theme.border}`,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '20px',
+            height: '48px',
+            background: COLORS.white,
+            border: `1px solid ${COLORS.border}`,
+            borderLeft: 'none',
+            borderRadius: '0 8px 8px 0',
+            cursor: 'pointer',
+            alignSelf: 'center',
+            marginLeft: '-1px',
+            boxShadow: '2px 0 8px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+          }}
+          onClick={toggleSidebar}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = COLORS.hoverBg;
+            e.currentTarget.style.boxShadow = '2px 0 12px rgba(0,0,0,0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = COLORS.white;
+            e.currentTarget.style.boxShadow = '2px 0 8px rgba(0,0,0,0.05)';
           }}
         >
-          <ChevronRight size={16} />
-        </ToggleButton>
-      </SidebarContainer>
+          <ChevronRight size={14} color={COLORS.textSecondary} />
+        </div>
+      </SidebarWrapper>
     );
   }
 
-  // Expanded state
+  // ─── EXPANDED ──────────────────────────────────────────────
+
   return (
-    <SidebarContainer $isOpen={isOpen} className={isTransitioning ? 'transitioning' : ''} aria-label="Main sidebar">
-      <SidebarHeader $isOpen={isOpen}>
-        <SidebarBrand>
-          <BrandLogo>
-            {getTenantInitials()}
-          </BrandLogo>
-          {safeTenantData.name && (
-            <BrandInfo $visible={isOpen}>
-              <BrandName>{safeTenantData.name}</BrandName>
-            </BrandInfo>
+    <SidebarWrapper>
+      <SidebarContainer $isOpen={true}>
+        {/* Header */}
+        <SidebarHeader $isOpen={true}>
+          <BrandLogo>{getInitials()}</BrandLogo>
+          <div>
+            <BrandName $visible={true}>{getDisplayName()}</BrandName>
+            <BrandSub $visible={true}>{getUserRole()}</BrandSub>
+          </div>
+        </SidebarHeader>
+
+        {/* Search */}
+        <SearchWrapper $isOpen={true}>
+          <SearchInput $isOpen={true}>
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </SearchInput>
+        </SearchWrapper>
+
+        {/* Navigation */}
+        <SidebarNav>
+          {filteredMenuItems.map((section, idx) => (
+            <NavSection key={idx}>
+              {section.section && (
+                <NavSectionTitle $isOpen={true}>
+                  {section.section}
+                </NavSectionTitle>
+              )}
+              {renderMenuItems(section.items, false)}
+            </NavSection>
+          ))}
+
+          {filteredMenuItems.length === 0 && searchQuery && (
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              color: COLORS.textLight,
+              fontSize: '0.8rem'
+            }}>
+              <Search size={24} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
+              No results found for "{searchQuery}"
+            </div>
           )}
-        </SidebarBrand>
-        <ToggleButton
-          onClick={toggleSidebar}
-          aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        >
-          <ChevronLeft size={16} />
-        </ToggleButton>
-      </SidebarHeader>
+        </SidebarNav>
 
-      <SidebarNav>
-        <NavSection $isOpen={isOpen}>
-          <SectionLabel $visible={isOpen}>Main</SectionLabel>
-          {renderMenuItems(mainMenuItems, !isOpen)}
-        </NavSection>
-        
-        <NavSection $isOpen={isOpen}>
-          <SectionLabel $visible={isOpen}>Documents</SectionLabel>
-          {renderMenuItems(documentsMenuItems, !isOpen)}
-        </NavSection>
-        
-        <NavSection $isOpen={isOpen}>
-          <SectionLabel $visible={isOpen}>Business</SectionLabel>
-          {renderMenuItems(businessMenuItems, !isOpen)}
-        </NavSection>
-        
-        <NavSection $isOpen={isOpen}>
-          <SectionLabel $visible={isOpen}>System</SectionLabel>
-          {renderMenuItems(systemMenuItems, !isOpen)}
-        </NavSection>
-      </SidebarNav>
+        {/* Footer */}
+        <SidebarFooter $isOpen={true}>
+          <UserInfo $isOpen={true}>
+            <UserAvatar>{getInitials()}</UserAvatar>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <UserName $visible={true}>{getDisplayName()}</UserName>
+              <UserRole $visible={true}>{getUserRole()}</UserRole>
+            </div>
+          </UserInfo>
 
-      <SidebarFooter $isOpen={isOpen}>
-        {isOpen ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}>
-              <div style={{ 
-                width: '36px', height: '36px', borderRadius: '50%', 
-                background: 'rgba(4, 200, 0, 0.2)', display: 'flex', 
-                alignItems: 'center', justifyContent: 'center', flexShrink: 0 
-              }}>
-                <User size={18} color="#04c800" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.7rem', color: theme.textMuted, marginBottom: '2px' }}>Logged in as</div>
-                <UserName>{userData.name || 'Admin User'}</UserName>
-                <UserRole>{userData.role || 'Administrator'}</UserRole>
-              </div>
-            </div>
-            <LogoutButton $collapsed={false} onClick={handleLogout} aria-label="Sign out">
-              <LogOut size={16} />
-              <LogoutText $visible={true}>Sign Out</LogoutText>
-            </LogoutButton>
-          </>
-        ) : (
-          <>
-            <div style={{ 
-              width: '32px', height: '32px', borderRadius: '50%', 
-              background: 'rgba(4, 200, 0, 0.2)', display: 'flex', 
-              alignItems: 'center', justifyContent: 'center', marginBottom: '8px',
-              cursor: 'default'
-            }} title={`Logged in as ${userData.name || 'Admin User'} (${userData.role || 'Administrator'})`}>
-              <User size={16} color="#04c800" />
-            </div>
-            <LogoutButton $collapsed={true} onClick={handleLogout} aria-label="Sign out">
-              <LogOut size={18} />
-            </LogoutButton>
-          </>
-        )}
-      </SidebarFooter>
-    </SidebarContainer>
+          <LogoutButton $collapsed={false} onClick={handleLogout}>
+            <LogOut size={16} />
+            <LogoutText $visible={true}>Sign Out</LogoutText>
+          </LogoutButton>
+
+          <VersionBadge $visible={true}>
+            v2.0.0 • RestPoint
+          </VersionBadge>
+        </SidebarFooter>
+
+        {/* Toggle button inside sidebar */}
+        <ToggleWrapper $isOpen={true}>
+          <ToggleButton $isOpen={true} onClick={toggleSidebar}>
+            <ChevronLeft size={16} />
+            <ToggleLabel $visible={true}>Collapse</ToggleLabel>
+          </ToggleButton>
+        </ToggleWrapper>
+      </SidebarContainer>
+    </SidebarWrapper>
   );
 };
 

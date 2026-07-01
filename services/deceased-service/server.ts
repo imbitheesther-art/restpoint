@@ -2,24 +2,43 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { errorHandler, notFoundHandler, asyncHandler } from '../../global/middlewares/errorHandler';
+import { errorHandler, notFoundHandler } from '../../global/middlewares/errorHandler';
 
 dotenv.config();
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '8103', 10);
+const PORT = parseInt(process.env.PORT || '5003', 10);
+
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'x-slug',
+        'x-tenant-slug',
+        'x-tenant-id',
+        'Origin',
+        'X-Requested-With',
+        'Accept'
+    ],
+}));
 
 // Middleware
-app.use(cors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-csrf-token', 'x-tenant-slug'],
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
 }));
-app.use(helmet());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Tenant middleware - IMPORTANT: This should run before routes
+// Tenant middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
     const tenantSlug = req.headers['x-tenant-slug'] as string || 'system_shared';
     (req as any).tenantSlug = tenantSlug;
@@ -32,36 +51,99 @@ import autopsyRoutes from './routes/autopsyRoutes';
 import chargesRoutes from './routes/chargesRoutes';
 import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
 
-// Mount routes at BOTH /api/v1/restpoint/* and /v1/restpoint/* for gateway compatibility
-app.use('/api/v1/restpoint', deceasedRoutes);
-app.use('/v1/restpoint', deceasedRoutes);
-app.use('/api/v1/restpoint', autopsyRoutes);
-app.use('/v1/restpoint', autopsyRoutes);
-app.use('/api/v1/restpoint', chargesRoutes);
-app.use('/v1/restpoint', chargesRoutes);
-app.use('/api/v1/restpoint', chargeSettingsRoutes);
-app.use('/v1/restpoint', chargeSettingsRoutes);
+// ============================================
+// ✅ MOUNT ROUTES - ALL POSSIBLE PATHS
+// ============================================
 
-// Health check
+// Mount at root level for direct access
+app.use('/', deceasedRoutes);  // This handles /register-deceased, /deceased-id/:id, etc.
+
+// Mount with /deceased prefix
+app.use('/deceased', deceasedRoutes);
+
+// Mount with /api/v1/restpoint/deceased prefix
+app.use('/api/v1/restpoint/deceased', deceasedRoutes);
+
+// Mount with /v1/restpoint/deceased prefix
+app.use('/v1/restpoint/deceased', deceasedRoutes);
+
+// Other services
+app.use('/api/v1/restpoint/autopsy', autopsyRoutes);
+app.use('/v1/restpoint/autopsy', autopsyRoutes);
+app.use('/api/v1/restpoint/charges', chargesRoutes);
+app.use('/v1/restpoint/charges', chargesRoutes);
+app.use('/api/v1/restpoint/charge-settings', chargeSettingsRoutes);
+app.use('/v1/restpoint/charge-settings', chargeSettingsRoutes);
+
+// ============================================
+// HEALTH CHECK
+// ============================================
 app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({
         status: 'UP',
         service: 'deceased-service',
         tenant: (req as any).tenantSlug,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        port: PORT
     });
 });
 
-// 404 handler
-app.use(notFoundHandler);
+// ============================================
+// REQUEST LOGGING
+// ============================================
+app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`[${req.method}] ${req.path}`);
+    next();
+});
 
-// Error handler
-app.use(errorHandler);
+// ============================================
+// 404 HANDLER
+// ============================================
+app.use((req: Request, res: Response) => {
+    console.log(`[404] ${req.method} ${req.path}`);
+    res.status(404).json({
+        success: false,
+        message: `Route ${req.method} ${req.path} not found`,
+        path: req.path,
+        method: req.method,
+        availableRoutes: [
+            'GET /health',
+            'POST /register-deceased',
+            'GET /deceased-id/:id',
+            'GET /deceased/:id',
+            'GET /:id',
+            'GET /deceased',
+            'PUT /:id',
+            'DELETE /:id',
+            'GET /stats'
+        ]
+    });
+});
 
-// Start server
+// ============================================
+// ERROR HANDLER
+// ============================================
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('[ERROR]', err.message);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// ============================================
+// START SERVER
+// ============================================
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Deceased service is running on port ${PORT}`);
-    console.log(`   Health: http://localhost:${PORT}/health`);
+    console.log('========================================');
+    console.log(`  🚀 Deceased Service`);
+    console.log(`  📡 Running on http://localhost:${PORT}`);
+    console.log(`  🔗 Health: http://localhost:${PORT}/health`);
+    console.log(`  📝 POST: http://localhost:${PORT}/register-deceased`);
+    console.log(`  📋 GET: http://localhost:${PORT}/deceased`);
+    console.log(`  📋 GET: http://localhost:${PORT}/deceased-id/:id`);
+    console.log('========================================');
 });
 
 export default app;

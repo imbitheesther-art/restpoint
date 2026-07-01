@@ -79,6 +79,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+
+  // Skip Vite dev server module requests (JSX, TSX, TS files and cache-busting query params)
+  // These are dynamically served by Vite and should not be intercepted by the service worker
+  if (
+    url.hostname === 'localhost' &&
+    (url.port === '5173' || url.port === '5174' || url.port === '5175')
+  ) {
+    return;
+  }
+
+  // Skip module script requests (Vite uses ?t= cache busting for HMR)
+  if (
+    url.pathname.endsWith('.jsx') ||
+    url.pathname.endsWith('.tsx') ||
+    url.pathname.endsWith('.ts') ||
+    url.searchParams.has('t')
+  ) {
+    return;
+  }
+
+  // Skip API requests
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
@@ -111,7 +137,8 @@ self.addEventListener('fetch', (event) => {
             if (event.request.mode === 'navigate') {
               return caches.match('/index.html');
             }
-            return null;
+            // Return a minimal error response instead of null to prevent "Failed to convert value to 'Response'"
+            return new Response('Network error', { status: 503, statusText: 'Service Unavailable' });
           });
       })
   );

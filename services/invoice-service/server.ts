@@ -1,3 +1,4 @@
+require('dotenv').config();
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { errorHandler } from './middlewares/errorHandler';
@@ -29,8 +30,8 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-app.use('/api/v2/restpoint', invoiceRoutes);
-app.use('/api/v2/restpoint', invoice);
+app.use('/api/v1/restpoint', invoiceRoutes);
+app.use('/api/v1/restpoint', invoice);
 
 // Error handling middleware
 app.use(errorHandler);

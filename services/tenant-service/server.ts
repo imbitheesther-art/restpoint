@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 // CORS â€” REMOVED COMPLETELY
 // ============================================
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-  const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:8082').split(',');
+  const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8082').split(',');
   if (!origin || allowedOrigins.some(o => origin.includes(o.replace(/https?:\/\//, '')))) {
     return callback(null, true);
   }
@@ -83,17 +83,16 @@ const authLimiter = rateLimit({
 
 // --- Onboarding routes (api prefix) ---
 app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
+app.use('/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
-app.use('/api/onboarding', authLimiter, onboardingRoutes);
+
 
 // --- Onboarding routes (v1 prefix — after gateway strips /api) ---
 app.use('/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
 app.use('/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
-app.use('/v1/onboarding', authLimiter, onboardingRoutes);
-// Gateway strips /api → /onboarding, so mount without /v1 too
-app.use('/onboarding', authLimiter, onboardingRoutes);
+
 
 // --- System Admin Routes ---
 app.use('/api/system-admin', systemAdminRoutes);

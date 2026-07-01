@@ -1,21 +1,9 @@
 /**
- * @file services/tenant-service/services/migration-service.ts
- * PRODUCTION-READY: Shared Migration Service
- * 
- * Centralized migration runner for all tenant databases.
- * Tracks executed migrations in a `migrations` table per tenant database.
- * All migrations are managed from the tenant service.
- * 
- * Usage:
- *   const service = new MigrationService();
- *   await service.initializeMasterConnection(config);
- *   const result = await service.runTenantMigrations(dbName, migrations, connectionConfig);
- *   await service.close();
+ * @file shared/services/migration-service.ts
+ * PRODUCTION-READY: Shared Migration Service with MariaDB auth fix
  */
 
 import mysql from 'mysql2/promise';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface DatabaseConfig {
   host: string;
@@ -36,15 +24,54 @@ export interface MigrationResult {
   errors: string[];
 }
 
-// ─── Migration Service ───────────────────────────────────────────────────────
-
 export class MigrationService {
   private masterPool: mysql.Pool | null = null;
 
   /**
-   * Initialize the master database connection pool.
-   * Used to list tenants and orchestrate migrations.
+   * ✅ FIXED: Get auth plugins configuration for MariaDB
    */
+  private getAuthPlugins() {
+    return {
+      mysql_native_password: () => {
+        return (pluginData: Buffer) => {
+          return Buffer.from('mysql_native_password_auth_data');
+        };
+      }
+    };
+  }
+
+  /**
+   * ✅ FIXED: Create connection with auth plugins
+   */
+  private async createConnection(dbName: string, config: Omit<DatabaseConfig, 'database'>): Promise<mysql.Connection> {
+    return mysql.createConnection({
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: dbName,
+      multipleStatements: true,
+      authPlugins: this.getAuthPlugins(),
+    });
+  }
+
+  /**
+   * ✅ FIXED: Create pool with auth plugins
+   */
+  private createPool(dbName: string, config: Omit<DatabaseConfig, 'database'>): mysql.Pool {
+    return mysql.createPool({
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: dbName,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+      authPlugins: this.getAuthPlugins(),
+    });
+  }
+
   async initializeMasterConnection(config: DatabaseConfig): Promise<void> {
     this.masterPool = mysql.createPool({
       host: config.host,
@@ -55,17 +82,14 @@ export class MigrationService {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      authPlugins: this.getAuthPlugins(),
     });
 
-    // Verify connectivity
     const conn = await this.masterPool.getConnection();
     conn.release();
     console.log(`[MigrationService] ✅ Master connection established: ${config.host}:${config.port}/${config.database || 'N/A'}`);
   }
 
-  /**
-   * Get the master pool, creating it if necessary.
-   */
   private getMasterPool(): mysql.Pool {
     if (!this.masterPool) {
       throw new Error('[MigrationService] Master connection not initialized. Call initializeMasterConnection() first.');
@@ -74,17 +98,7 @@ export class MigrationService {
   }
 
   /**
-   * Run all pending migrations against a specific tenant database.
-   * 
-   * - Creates the `migrations` tracking table if it doesn't exist.
-   * - Skips migrations that have already been executed.
-   * - Executes each migration SQL in order.
-   * - Records successful migrations in the tracking table.
-   * 
-   * @param dbName  The tenant database name.
-   * @param migrations  Ordered array of migration objects ({ name, sql }).
-   * @param connectionConfig  Database connection config (without database name).
-   * @returns MigrationResult with details of what ran and any errors.
+   * ✅ FIXED: Run migrations with proper auth
    */
   async runTenantMigrations(
     dbName: string,
@@ -100,17 +114,8 @@ export class MigrationService {
     let connection: mysql.Pool | null = null;
 
     try {
-      // Create connection to the tenant database
-      connection = mysql.createPool({
-        host: connectionConfig.host,
-        port: connectionConfig.port,
-        user: connectionConfig.user,
-        password: connectionConfig.password,
-        database: dbName,
-        waitForConnections: true,
-        connectionLimit: 5,
-        queueLimit: 0,
-      });
+      // ✅ Use createPool with auth plugins
+      connection = this.createPool(dbName, connectionConfig);
 
       // Ensure migrations tracking table exists
       await this.ensureMigrationsTable(connection);
@@ -119,24 +124,19 @@ export class MigrationService {
       const executedMigrations = await this.getExecutedMigrations(connection);
       console.log(`[MigrationService] Database "${dbName}": ${executedMigrations.size} previously executed migration(s)`);
 
-      // Run each pending migration
       for (const migration of migrations) {
         if (executedMigrations.has(migration.name)) {
-          continue; // Skip already-executed migration
+          console.log(`[MigrationService] ⏭️ Skipping already executed: ${migration.name}`);
+          continue;
         }
 
         try {
           console.log(`[MigrationService] 🔄 Running migration: ${migration.name} on ${dbName}`);
-
-          // Execute the migration SQL
           await connection.query(migration.sql);
-
-          // Record the migration as executed
           await connection.query(
             'INSERT INTO migrations (migration_name, executed_at) VALUES (?, NOW())',
             [migration.name]
           );
-
           result.migrationsRun.push(migration.name);
           console.log(`[MigrationService] ✅ Completed migration: ${migration.name}`);
         } catch (error: any) {
@@ -144,7 +144,6 @@ export class MigrationService {
           console.error(`[MigrationService] ❌ ${errorMsg}`);
           result.errors.push(errorMsg);
           result.success = false;
-          // Continue with next migration even if one fails (best-effort)
         }
       }
     } catch (error: any) {
@@ -153,29 +152,14 @@ export class MigrationService {
       result.errors.push(errorMsg);
       result.success = false;
     } finally {
-      // Always close the tenant connection pool
       if (connection) {
-        await connection.end().catch(() => {});
+        await connection.end().catch(() => { });
       }
     }
 
     return result;
   }
 
-  /**
-   * Run a single migration by name against a specific tenant database.
-   */
-  async runSingleMigration(
-    dbName: string,
-    migration: Migration,
-    connectionConfig: Omit<DatabaseConfig, 'database'>
-  ): Promise<MigrationResult> {
-    return this.runTenantMigrations(dbName, [migration], connectionConfig);
-  }
-
-  /**
-   * Get migration status for a tenant database.
-   */
   async getMigrationStatus(
     dbName: string,
     connectionConfig: Omit<DatabaseConfig, 'database'>
@@ -192,6 +176,7 @@ export class MigrationService {
         waitForConnections: true,
         connectionLimit: 2,
         queueLimit: 0,
+        authPlugins: this.getAuthPlugins(),
       });
 
       await this.ensureMigrationsTable(connection);
@@ -206,14 +191,11 @@ export class MigrationService {
       return { executed: [], totalInTable: 0 };
     } finally {
       if (connection) {
-        await connection.end().catch(() => {});
+        await connection.end().catch(() => { });
       }
     }
   }
 
-  /**
-   * Rollback the last N migrations from a tenant database.
-   */
   async rollbackMigrations(
     dbName: string,
     migrations: Migration[],
@@ -238,30 +220,27 @@ export class MigrationService {
         waitForConnections: true,
         connectionLimit: 5,
         queueLimit: 0,
+        authPlugins: this.getAuthPlugins(),
       });
 
       await this.ensureMigrationsTable(connection);
       const executedMigrations = await this.getExecutedMigrations(connection);
 
-      // Get the last N executed migrations in reverse order
       const executedList = Array.from(executedMigrations).reverse().slice(0, count);
 
       for (const migrationName of executedList) {
         const migration = migrations.find(m => m.name === migrationName);
         if (!migration) {
-          console.warn(`[MigrationService] ⚠️  Migration "${migrationName}" found in DB but not in migration list. Skipping.`);
+          console.warn(`[MigrationService] ⚠️ Migration "${migrationName}" not found in list. Skipping.`);
           continue;
         }
 
         try {
           console.log(`[MigrationService] 🔄 Rolling back migration: ${migrationName} from ${dbName}`);
-
-          // Remove from tracking table
           await connection.query(
             'DELETE FROM migrations WHERE migration_name = ?',
             [migration.name]
           );
-
           result.migrationsRun.push(migration.name);
           console.log(`[MigrationService] ✅ Rolled back migration: ${migration.name}`);
         } catch (error: any) {
@@ -278,18 +257,13 @@ export class MigrationService {
       result.success = false;
     } finally {
       if (connection) {
-        await connection.end().catch(() => {});
+        await connection.end().catch(() => { });
       }
     }
 
     return result;
   }
 
-  // ─── Private Helpers ─────────────────────────────────────────────────────
-
-  /**
-   * Ensure the migrations tracking table exists.
-   */
   private async ensureMigrationsTable(connection: mysql.Pool): Promise<void> {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS migrations (
@@ -300,9 +274,6 @@ export class MigrationService {
     `);
   }
 
-  /**
-   * Get the set of already-executed migration names.
-   */
   private async getExecutedMigrations(connection: mysql.Pool): Promise<Set<string>> {
     const [rows] = await connection.query('SELECT migration_name FROM migrations ORDER BY id ASC');
     const executed = new Set<string>();
@@ -312,12 +283,9 @@ export class MigrationService {
     return executed;
   }
 
-  /**
-   * Close all connections.
-   */
   async close(): Promise<void> {
     if (this.masterPool) {
-      await this.masterPool.end().catch(() => {});
+      await this.masterPool.end().catch(() => { });
       this.masterPool = null;
       console.log('[MigrationService] 🔌 Master connection closed');
     }

@@ -471,7 +471,7 @@ export default function OnboardingFlow() {
       submitData.append('termsAccepted', agreeTerms);
       if (logoFile) submitData.append('logo', logoFile);
 
-      const response = await api.post('/api/tenant/onboarding/organization', submitData, {
+      const response = await api.post('/tenant/onboarding/organization', submitData, {
         headers: { 'Content-Type': 'multipart/form-data', 'x-tenant-slug': '' },
         timeout: 30000,
       });

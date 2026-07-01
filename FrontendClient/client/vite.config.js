@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     strictPort: true,
-  
+
     allowedHosts: [
       'restpoint.co.ke',
       'app.restpoint.co.ke',
@@ -76,3 +76,11 @@ export default defineConfig({
     }
   }
 })
+
+
+
+
+
+
+
+

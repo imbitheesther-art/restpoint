@@ -16,7 +16,7 @@ export const getTenantHeaders = () => {
     const tenantSlug = localStorage.getItem('tenantSlug') || sessionStorage.getItem('tenantSlug');
     const tenantId = localStorage.getItem('tenantId') || sessionStorage.getItem('tenantId');
     const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-    
+
     if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
     if (tenantId) headers['x-tenant-id'] = tenantId;
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -34,11 +34,17 @@ export const ENDPOINTS = {
     REFRESH: '/auth/refresh',
     LOGOUT: '/auth/logout',
     ME: '/auth/me',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    VERIFY_CODE: '/auth/verify-code',
+    RESET_PASSWORD: '/auth/reset-password',
   },
   TENANT: {
     BASE: '/tenant',
     ONBOARDING: '/tenant/onboarding',
     ORGANIZATION: '/tenant/onboarding/organization',
+    REGISTER: '/tenants/register',
+    LOGIN: '/tenant/onboarding/login',
+    CONFIG: (slug) => `/tenants/${slug}/config`,
     BRANCHES: '/tenant/branches',
   },
   MARKETPLACE: {
@@ -50,9 +56,16 @@ export const ENDPOINTS = {
   },
   DECEASED: {
     BASE: '/deceased',
-    CREATE: '/deceased/create',
+    CREATE: '/deceased/register-deceased',
     POSTMORTEM: '/deceased/postmortem',
     COFFIN: '/deceased/coffin',
+    LIST: '/deceased/deceased-all',
+    DETAIL: (id) => `/deceased/deceased-id/${id}`,
+    QR: (id) => `/deceased/${id}/qrcode`,
+    CHECKOUT: (id) => `/deceased/${id}/checkout`,
+    NEXT_OF_KIN: (id) => `/deceased/${id}/next-of-kin`,
+    DOCUMENTS: (id) => `/deceased/${id}/documents`,
+    DISPATCH: (id) => `/deceased/${id}/dispatch`,
   },
   MPESA: {
     STKPUSH: '/mpesa/stkpush',
@@ -61,13 +74,30 @@ export const ENDPOINTS = {
   },
   INVOICE: {
     BASE: '/invoices',
-    GENERATE: '/invoices/generate',
-    PAYMENTS: '/invoices/payments',
+    LIST: '/invoices',
+    ALL_DECEASED: '/invoices/all-deceased',
+    DETAIL: (id) => `/invoices/${id}`,
+    DECEASED_FINANCIALS: (id) => `/invoices/deceased-financials/${id}`,
+    CREATE: '/invoices',
+    SYSTEM_INVOICE: '/invoices/system-invoice',
+    PAYMENT: '/invoices/payment',
+    EXTRA_CHARGE: '/invoices/extra-charge',
+    UPDATE: (id) => `/invoices/${id}`,
+    DELETE: (id) => `/invoices/${id}`,
+    PDF: (id) => `/invoices/${id}/download`,
   },
-  COFFIN: {
+  COFFINS: {
     BASE: '/coffins',
+    LIST: '/coffins/list',
+    CREATE: '/coffins/create',
+    UPDATE: (id) => `/coffins/update/${id}`,
+    DELETE: (id) => `/coffins/delete/${id}`,
+    DETAIL: (id) => `/coffins/detail/${id}`,
     ASSIGN: '/coffins/assign',
+    ASSIGNMENTS: '/coffins/assignments',
+    EXPORT: '/coffins/export',
     USAGE: '/coffins/usage',
+    STOCK: (id) => `/coffins/${id}/stock`,
   },
   BILLING: {
     BASE: '/billing',
@@ -99,6 +129,7 @@ export const ENDPOINTS = {
     BASE: '/portal',
     MEMORIAL: '/portal/memorial',
     CONDOLENCES: '/portal/condolences',
+    LOGIN: '/portal/login',
   },
   QRCODE: {
     BASE: '/qrcode',
@@ -123,10 +154,35 @@ export const ENDPOINTS = {
   CALL: {
     BASE: '/call',
     LOGS: '/call/logs',
+    CREATE: '/call/create',
   },
   SOCKETIO: {
     BASE: '/socketio',
     CONNECT: '/socket.io',
+  },
+  PUBLIC: {
+    REQUEST_ACCESS: (slug) => `/public/${slug}/request-access`,
+    HEARSE_BOOK: (slug) => `/public/${slug}/hearse-book`,
+  },
+  USERS: {
+    REGISTER: '/users/register',
+  },
+  SUPPORT: {
+    TICKETS: '/support/tickets',
+  },
+  EMBALMING: {
+    LIST: '/embalming',
+    CREATE: '/embalming/create',
+    DETAIL: (id) => `/embalming/${id}`,
+  },
+  HEARSE: {
+    CREATE: '/hearse/create',
+    DISPATCH: '/hearse/dispatch',
+  },
+  CHEMICALS: {
+    CREATE: '/chemicals/create',
+    USAGE: '/chemicals/usage',
+    INVENTORY: '/chemicals/inventory',
   },
 };
 

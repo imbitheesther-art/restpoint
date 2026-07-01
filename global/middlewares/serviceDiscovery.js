@@ -100,7 +100,22 @@ class ServiceDiscoveryMiddleware {
         }
 
         // Fallback to hardcoded URL
-        const fallback = this.fallbackUrls[serviceName];
+        // Try exact match first, then try to find by removing common suffixes
+        let fallback = this.fallbackUrls[serviceName];
+        if (!fallback) {
+            // Try short name (e.g., 'deceased-service' -> 'deceased')
+            const shortName = serviceName.replace(/-service$/, '');
+            fallback = this.fallbackUrls[shortName];
+        }
+        if (!fallback) {
+            // Try by searching for any key that is a prefix of the serviceName
+            for (const [key, url] of Object.entries(this.fallbackUrls)) {
+                if (serviceName.startsWith(key) || key.startsWith(serviceName.replace(/-service$/, ''))) {
+                    fallback = url;
+                    break;
+                }
+            }
+        }
         if (fallback) {
             Logger.warn(`[SERVICE DISCOVERY] Using fallback URL for ${serviceName}: ${fallback}`);
             return fallback;

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Centralized Scanner Service API Configuration
-const SCANNER_API_BASE_URL = process.env.REACT_APP_SCANNER_API_URL || 'http://localhost:2024/api/v1/scanner';
+const SCANNER_API_BASE_URL = 'http://localhost:2024/api/v1/scanner';
 
 // Create axios instance for scanner service
 const scannerApi = axios.create({
@@ -14,21 +14,21 @@ const scannerApi = axios.create({
 // Add request interceptor for tenant slug
 scannerApi.interceptors.request.use(
   (config) => {
-    const tenantSlug = localStorage.getItem('tenantSlug') || 
-                       localStorage.getItem('tenant_slug') ||
-                       (() => {
-                         try {
-                           const user = JSON.parse(localStorage.getItem('user') || '{}');
-                           return user.tenantSlug || user.tenant?.slug || 'default';
-                         } catch {
-                           return 'default';
-                         }
-                       })();
-    
+    const tenantSlug = localStorage.getItem('tenantSlug') ||
+      localStorage.getItem('tenant_slug') ||
+      (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.tenantSlug || user.tenant?.slug || 'default';
+        } catch {
+          return 'default';
+        }
+      })();
+
     if (tenantSlug && tenantSlug !== 'default') {
       config.headers['x-tenant-slug'] = tenantSlug;
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -104,20 +104,20 @@ export const checkHealth = async () => {
 export const createScanWebSocket = (scanId, onMessage, onError, onClose) => {
   const wsUrl = `${SCANNER_API_BASE_URL.replace('/api/v1/scanner', '')}/api/v1/scanner/ws/scan/${scanId}`;
   const ws = new WebSocket(wsUrl);
-  
+
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (onMessage) onMessage(data);
   };
-  
+
   ws.onerror = (error) => {
     if (onError) onError(error);
   };
-  
+
   ws.onclose = () => {
     if (onClose) onClose();
   };
-  
+
   return ws;
 };
 

@@ -39,7 +39,7 @@ import styled, { keyframes } from 'styled-components';
 import ScannerComponent from '../scanner/ScannerComponent';
 
 // API Gateway URL - Centralized
-const API_GATEWAY_URL = 'http://localhost:8000';
+const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
 
 // Colors - Enhanced modern palette with gradients (Unified across all components)
@@ -238,7 +238,7 @@ const ClickableBadge = styled.button`
   font-size: 0.8rem;
   font-weight: 600;
   color: white;
-  background: ${(props) => props.bgColor};
+  background: ${(props) => props.$bgColor};
   border: none;
   cursor: pointer;
   flex: 1;
@@ -330,16 +330,16 @@ const MobileNavOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, ${(props) => (props.isOpen ? '0.5' : '0')});
+  background: rgba(0, 0, 0, ${(props) => (props.$isOpen ? '0.5' : '0')});
   z-index: 9998;
-  display: ${(props) => (props.isOpen ? 'block' : 'none')};
+  display: ${(props) => (props.$isOpen ? 'block' : 'none')};
   transition: background 0.3s ease;
 `;
 
 const MobileNavContainer = styled.div`
   position: fixed;
   top: 0;
-  left: ${(props) => (props.isOpen ? '0' : '-100%')};
+  left: ${(props) => (props.$isOpen ? '0' : '-100%')};
   width: 85%;
   max-width: 300px;
   height: 100vh;
@@ -1187,8 +1187,8 @@ const DeceasedDetails = () => {
         </Suspense>
       )}
 
-      <MobileNavOverlay isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(false)} />
-      <MobileNavContainer isOpen={mobileNavOpen}>
+      <MobileNavOverlay $isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(false)} />
+      <MobileNavContainer $isOpen={mobileNavOpen}>
         <MobileNavHeader>
           <h3>Quick Actions</h3>
           <MobileNavButton onClick={() => setMobileNavOpen(false)}>
@@ -1243,18 +1243,18 @@ const DeceasedDetails = () => {
 
         <BadgesContainer>
           <BadgeRow>
-            <ClickableBadge bgColor={Colors.warningYellow} style={{ minWidth: '60px' }}>
+            <ClickableBadge $bgColor={Colors.warningYellow} style={{ minWidth: '60px' }}>
               🪦 {deceasedData?.burial_type}
             </ClickableBadge>
             {primaryBadges.map((badge, index) => (
-              <ClickableBadge key={index} bgColor={badge.color} onClick={badge.onClick}>
+              <ClickableBadge key={index} $bgColor={badge.color} onClick={badge.onClick}>
                 {badge.icon} {badge.text}
               </ClickableBadge>
             ))}
           </BadgeRow>
           <BadgeRow>
             {secondaryBadges.map((badge, index) => (
-              <ClickableBadge key={index} bgColor={badge.color} onClick={badge.onClick}>
+              <ClickableBadge key={index} $bgColor={badge.color} onClick={badge.onClick}>
                 {badge.icon} {badge.text}
               </ClickableBadge>
             ))}

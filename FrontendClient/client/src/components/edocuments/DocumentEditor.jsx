@@ -26,7 +26,7 @@ const CONFIG = {
   PRODUCTION: process.env.NODE_ENV === 'production',
   ENABLE_AUTO_SAVE: true,
   ISOLATION_LEVEL: 'strict',
-  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v2/restpoint'
+  API_BASE_URL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/restpoint` : 'http://localhost:5000/api/v1/restpoint'
 };
 
 // ============================================

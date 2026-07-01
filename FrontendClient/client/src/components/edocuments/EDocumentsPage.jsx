@@ -9,7 +9,7 @@ import {
 import Swal from 'sweetalert2';
 import DocumentEditor from './DocumentEditor';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v2/restpoint';
+const API_BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/restpoint` : 'http://localhost:5000/api/v1/restpoint';
 
 const EDocumentsPage = () => {
   const [documents, setDocuments] = useState([]);

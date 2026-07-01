@@ -1,11 +1,33 @@
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8001;
+
+// CORS configuration
+const corsOptions = {
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
+        'https://restpoint.co.ke',
+        'https://app.restpoint.co.ke'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Tenant-Id'],
+    exposedHeaders: ['Set-Cookie']
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors(corsOptions));
 
 // Middleware
 app.use(express.json());
@@ -21,10 +43,10 @@ app.use((req, res, next) => {
 
 // HEALTH CHECK
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+    res.json({
+        status: 'OK',
         service: 'auth-service',
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -37,11 +59,12 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/restpoint/auth', authRoutes);
 app.use('/v1/restpoint/auth', authRoutes);
 app.use('/restpoint/auth', authRoutes);
+app.use('/auth', authRoutes);
 app.use(authRoutes);
 
 // 404 handler
 app.use((req, res) => {
- 
+
     res.status(404).json({
         success: false,
         message: `Route ${req.url} not found`
@@ -59,5 +82,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  
+
 });
