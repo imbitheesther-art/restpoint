@@ -69,7 +69,13 @@ const ProtectedRoute = ({ children }) => {
 const DashboardLayout = ({ children, tenantData }) => {
   const navigate = useNavigate();
   const { slug } = useParams();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return false;
+    }
+    const saved = localStorage.getItem('sidebarOpen');
+    return saved !== null ? saved === 'true' : true;
+  });
   const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; } })();
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -81,7 +87,7 @@ const DashboardLayout = ({ children, tenantData }) => {
   };
   const handleSidebarToggle = (isOpen) => setSidebarOpen(isOpen);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-  const marginLeft = isMobile ? '0' : (sidebarOpen ? '260px' : '56px');
+  const marginLeft = isMobile ? '0' : (sidebarOpen ? '260px' : '0');
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F7F9FB' }}>
       <ModernSidebar tenantData={tenantData} userData={{ name: user?.full_name || user?.name, role: user?.role || 'Administrator' }} onLogout={handleLogout} onToggle={handleSidebarToggle} />
