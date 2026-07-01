@@ -6,7 +6,10 @@ const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+// Load .env from the api-gateway directory specifically
+const dotenvPath = path.join(__dirname, '.env');
+console.log('Loading .env from:', dotenvPath);
+dotenv.config({ path: dotenvPath, override: true });
 
 const APP_NAME = 'restpoint-gateway';
 const APP_VERSION = '1.0.8';

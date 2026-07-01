@@ -69,7 +69,7 @@ const LoadingCalendar = () => (
 const CalendarPage = () => {
   const { slug } = useParams();
   const { tenantData } = useTenantStore();
-  
+
   // State
   const [events, setEvents] = useState([]);
   const [filters, setFilters] = useState(['interment', 'exhumation', 'memorial', 'maintenance']);
@@ -83,7 +83,9 @@ const CalendarPage = () => {
   const [currentEditingId, setCurrentEditingId] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+  const [viewAll, setViewAll] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
   // Form state
   const [formData, setFormData] = useState({
     title: '',
@@ -125,18 +127,39 @@ const CalendarPage = () => {
   // ============================================
   // DATA LOADING
   // ============================================
+
+  // Get current user from localStorage
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setCurrentUser(user);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  }, []);
+
   const loadEvents = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await calendarApi.getEvents({ types: filters });
-      setEvents(data);
+      const params = {
+        types: filters,
+        viewAll: viewAll,
+        tenantSlug: slug || tenantData?.slug || localStorage.getItem('tenantSlug'),
+        userId: currentUser?.id || currentUser?.userId
+      };
+
+      const data = await calendarApi.list(params);
+      setEvents(data.data || data || []);
     } catch (error) {
       console.error('Error loading events:', error);
       showToast('Failed to load calendar events', 'error');
     } finally {
       setLoading(false);
     }
-  }, [filters, showToast]);
+  }, [filters, viewAll, slug, tenantData, currentUser, showToast]);
 
   useEffect(() => {
     loadEvents();
@@ -216,6 +239,10 @@ const CalendarPage = () => {
     setCurrentView(view);
   };
 
+  const handleViewAllToggle = () => {
+    setViewAll(prev => !prev);
+  };
+
   // ============================================
   // FORM HANDLERS
   // ============================================
@@ -238,15 +265,18 @@ const CalendarPage = () => {
     const eventData = {
       ...formData,
       start: startDateTime,
-      end: endDateTime
+      end: endDateTime,
+      tenantSlug: slug || tenantData?.slug || localStorage.getItem('tenantSlug'),
+      createdBy: currentUser?.id || currentUser?.userId,
+      userId: currentUser?.id || currentUser?.userId
     };
 
     try {
       if (currentEditingId) {
-        await calendarApi.updateEvent(currentEditingId, eventData);
+        await calendarApi.update(currentEditingId, eventData);
         showToast('Entry updated successfully', 'success');
       } else {
-        await calendarApi.createEvent(eventData);
+        await calendarApi.create(eventData);
         showToast('New entry created successfully', 'success');
       }
       setModalOpen(false);
@@ -261,7 +291,7 @@ const CalendarPage = () => {
 
     if (window.confirm('Are you sure you want to delete this entry?')) {
       try {
-        await calendarApi.deleteEvent(selectedEvent.id);
+        await calendarApi.delete(selectedEvent.id);
         showToast('Entry deleted successfully', 'success');
         setDetailsModalOpen(false);
         loadEvents();
@@ -273,7 +303,7 @@ const CalendarPage = () => {
 
   const handleEditEntry = () => {
     if (!selectedEvent) return;
-    
+
     const start = moment(selectedEvent.start);
     const end = selectedEvent.end ? moment(selectedEvent.end) : null;
 
@@ -301,13 +331,18 @@ const CalendarPage = () => {
     setSettingsModalOpen(false);
   };
 
+  // Update loadEvents when viewAll or filters change
+  useEffect(() => {
+    loadEvents();
+  }, [viewAll, filters, loadEvents]);
+
   // ============================================
   // CUSTOM EVENT RENDER
   // ============================================
   const renderEventContent = (eventInfo) => {
     const entryType = eventInfo.event.extendedProps?.entryType || 'interment';
     const typeConfig = CONFIG.ENTRY_TYPES[entryType] || CONFIG.ENTRY_TYPES.interment;
-    
+
     return (
       <div className="calendar-event" style={{ backgroundColor: typeConfig.color }}>
         <div className="event-time">
@@ -405,6 +440,27 @@ const CalendarPage = () => {
           </div>
 
           <div className="sidebar-content">
+            {/* View All Toggle */}
+            <div className="filter-section">
+              <h4>Calendar View</h4>
+              <div className="filter-list">
+                <label className="filter-item view-all-toggle">
+                  <input
+                    type="checkbox"
+                    checked={viewAll}
+                    onChange={handleViewAllToggle}
+                  />
+                  <span className="filter-color" style={{ backgroundColor: '#EF4444' }} />
+                  <div className="filter-info">
+                    <span className="filter-label">View All Tasks</span>
+                    <span className="filter-desc">
+                      {viewAll ? 'Showing all tenant tasks' : 'Showing my tasks only'}
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
             {/* Entry Type Filters */}
             <div className="filter-section">
               <h4>Entry Types</h4>
