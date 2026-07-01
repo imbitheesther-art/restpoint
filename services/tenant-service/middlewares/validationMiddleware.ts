@@ -2,14 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 
 export const validateOnboarding = (req: Request, res: Response, next: NextFunction) => {
   const data = req.body || {};
-  
+
   // Accept both frontend field names (organizationName) and backend field names (tenant_name)
   const organizationName = data.organizationName || data.tenant_name || '';
   const email = data.email || '';
   const location = data.location || '';
   const password = data.password || '';
   const full_name = data.full_name || data.fullName || 'Admin';
-  const termsAccepted = data.termsAccepted === true || data.termsAccepted === 'true' || data.termsAccepted === 1;
+  // Accept both termsAccepted and acceptTerms from frontend
+  const termsAccepted = (data.termsAccepted === true || data.termsAccepted === 'true' || data.termsAccepted === 1) ||
+    (data.acceptTerms === true || data.acceptTerms === 'true' || data.acceptTerms === 1);
 
   const errors: string[] = [];
 

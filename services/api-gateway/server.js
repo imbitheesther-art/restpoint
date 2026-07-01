@@ -28,7 +28,7 @@ const isProd = (process.env.NODE_ENV || 'development') === 'production';
 const SERVICE_URLS = {
   auth: process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:5001',
   users: process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:5001',
-  tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:5002',
+  tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:8002',
   deceased: process.env.DECEASED_SERVICE_URL || 'http://127.0.0.1:5003',
   coffin: process.env.COFFIN_SERVICE_URL || 'http://127.0.0.1:8108',  // ✅ FIXED: Actual running port
   marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://127.0.0.1:5005',
