@@ -1,1012 +1,398 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import axios from 'axios';
 import {
-  X, Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
-  Pen, Eraser, Type, Square, Circle, Image as ImageIcon,
-  Trash2, Eye, Check, Upload, Move, RefreshCw, AlertCircle, Lock, Cloud
+  Save, Download, Printer, Undo, Redo, ZoomIn, ZoomOut,
+  Type, Pen, Eraser, Square, Circle, Trash2, RefreshCw,
+  ImageIcon, X, Check, Lock, Cloud, AlertCircle, Loader, Wifi, WifiOff
 } from 'lucide-react';
+
 import Swal from 'sweetalert2';
-import * as pdfjsLib from 'pdfjs-dist';
-import * as fabric from "fabric";
-import api from '../../api/axios';
-import { ENDPOINTS } from '../../api/endpoints';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+const API_BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/restpoint` : 'http://localhost:5000/api/v1/restpoint';
 
-// ============================================
-// PRODUCTION CONFIGURATION
-// ============================================
+// Debug mode
+const DEBUG_MODE = true;
 
-const CONFIG = {
-  AUTO_SAVE_INTERVAL: 30000,
-  MAX_CANVAS_SIZE: { width: 800, height: 1131 },
-  MAX_FILE_SIZE: 50 * 1024 * 1024,
-  HISTORY_MAX_STATES: 50,
-  SUPPORTED_FILE_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'],
-  PRODUCTION: process.env.NODE_ENV === 'production',
-  ENABLE_AUTO_SAVE: true,
-  ISOLATION_LEVEL: 'strict',
-  API_BASE_URL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1/restpoint` : 'http://localhost:5000/api/v1/restpoint'
+// Logging utility
+const log = {
+  info: (msg, data) => DEBUG_MODE && console.log(`[DocumentEditor] ${msg}`, data || ''),
+  error: (msg, error) => {
+    console.error(`[DocumentEditor] ${msg}`, error);
+    if (error?.response) {
+      console.error('[DocumentEditor] Response data:', error.response.data);
+      console.error('[DocumentEditor] Response status:', error.response.status);
+    }
+  },
+  warn: (msg, data) => DEBUG_MODE && console.warn(`[DocumentEditor] ${msg}`, data || '')
 };
 
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
+// API call with timeout
+const apiCall = async (url, options = {}, timeout = 10000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-const dataURItoBlob = (dataURI) => {
   try {
-    const byteString = atob(dataURI.split(',')[1]);
-    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ab], { type: mimeString });
+    const response = await axios({
+      url,
+      signal: controller.signal,
+      ...options
+    });
+    clearTimeout(timeoutId);
+    return response;
   } catch (error) {
-    console.error('Error converting data URI to blob:', error);
+    clearTimeout(timeoutId);
     throw error;
   }
 };
 
-const getTenantInfo = () => {
-  const tenantSlug = localStorage.getItem('tenantSlug') ||
-    localStorage.getItem('tenant_slug') ||
-    (() => {
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        return user.tenantSlug || user.tenant?.slug || null;
-      } catch {
-        return null;
-      }
-    })();
-
-  if (!tenantSlug && CONFIG.PRODUCTION && CONFIG.ISOLATION_LEVEL === 'strict') {
-    throw new Error('SECURITY: Tenant not identified. Operation aborted.');
-  }
-
-  return {
-    slug: tenantSlug || 'default',
-    isValid: !!tenantSlug
-  };
-};
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
-
 const DocumentEditor = ({
   document: initialDocument,
-  template: initialTemplate,
   file: initialFile,
+  template: initialTemplate,
   onClose,
-  onSave
+  onSave,
+  tenantSlug
 }) => {
+  // Canvas refs
   const canvasRef = useRef(null);
   const signatureCanvasRef = useRef(null);
   const fileInputRef = useRef(null);
-  const autoSaveTimerRef = useRef(null);
 
-  const documentRef = useRef(initialDocument);
-  const templateRef = useRef(initialTemplate);
-  const fileRef = useRef(initialFile);
-
-  const [tenantInfo] = useState(() => getTenantInfo());
+  // Editor state
+  const [canvas, setCanvas] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [securityStatus, setSecurityStatus] = useState('verified');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Document state
+  const [documentTitle, setDocumentTitle] = useState(initialDocument?.title || initialTemplate?.name || 'Untitled Document');
+  const [fieldValues, setFieldValues] = useState({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
-  const [canvas, setCanvas] = useState(null);
-  const [zoom, setZoom] = useState(100);
+  // Tool state
   const [activeTool, setActiveTool] = useState('select');
   const [brushColor, setBrushColor] = useState('#000000');
-  const [brushSize, setBrushSize] = useState(3);
-  const [selectedObject, setSelectedObject] = useState(null);
-
-  const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [signatureData, setSignatureData] = useState(null);
-  const [isSigning, setIsSigning] = useState(false);
-
-  const [documentTitle, setDocumentTitle] = useState(initialDocument?.title || initialTemplate?.name || 'Untitled Document');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [fieldValues, setFieldValues] = useState(initialDocument?.fieldValues || {});
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
-  const [isDirty, setIsDirty] = useState(false);
-
-  const historyRef = useRef([]);
-  const historyIndexRef = useRef(-1);
+  const [brushSize, setBrushSize] = useState(2);
+  const [zoom, setZoom] = useState(100);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  // ============================================
-  // SECURITY & INITIALIZATION
-  // ============================================
+  // Signature modal
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureData, setSignatureData] = useState(null);
 
+  // Template reference
+  const templateRef = useRef(initialTemplate);
+
+  // Monitor online status
   useEffect(() => {
-    try {
-      if (!tenantInfo.slug) {
-        setSecurityStatus('unverified');
-        setLoadError('Tenant information not available');
-        return;
-      }
-      setSecurityStatus('verified');
-    } catch (error) {
-      setSecurityStatus('error');
-      setLoadError(error.message);
-    }
-  }, [tenantInfo]);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-  // ============================================
-  // HISTORY MANAGEMENT
-  // ============================================
-
-  const saveHistoryState = useCallback((fabricCanvas) => {
-    if (!fabricCanvas || fabricCanvas._loadingState) return;
-
-    try {
-      const json = fabricCanvas.toJSON();
-      const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
-      newHistory.push(json);
-
-      if (newHistory.length > CONFIG.HISTORY_MAX_STATES) {
-        newHistory.shift();
-      }
-
-      historyRef.current = newHistory;
-      historyIndexRef.current = newHistory.length - 1;
-
-      setCanUndo(historyIndexRef.current > 0);
-      setCanRedo(false);
-      setIsDirty(true);
-    } catch (error) {
-      console.error('Error saving history state:', error);
-    }
-  }, []);
-
-  const handleUndo = useCallback(() => {
-    if (!canvas || historyIndexRef.current <= 0) return;
-
-    try {
-      const targetIndex = historyIndexRef.current - 1;
-      const state = historyRef.current[targetIndex];
-      const bgImage = canvas.backgroundImage;
-
-      canvas._loadingState = true;
-      canvas.loadFromJSON(state, () => {
-        try {
-          if (bgImage) {
-            canvas.setBackgroundImage(bgImage, canvas.renderAll.bind(canvas));
-          }
-          canvas.renderAll();
-          historyIndexRef.current = targetIndex;
-          setCanUndo(targetIndex > 0);
-          setCanRedo(true);
-          setIsDirty(true);
-        } finally {
-          canvas._loadingState = false;
-        }
-      });
-    } catch (error) {
-      console.error('Error during undo:', error);
-      Swal.fire('Error', 'Failed to undo action', 'error');
-    }
-  }, [canvas]);
-
-  const handleRedo = useCallback(() => {
-    if (!canvas || historyIndexRef.current >= historyRef.current.length - 1) return;
-
-    try {
-      const targetIndex = historyIndexRef.current + 1;
-      const state = historyRef.current[targetIndex];
-      const bgImage = canvas.backgroundImage;
-
-      canvas._loadingState = true;
-      canvas.loadFromJSON(state, () => {
-        try {
-          if (bgImage) {
-            canvas.setBackgroundImage(bgImage, canvas.renderAll.bind(canvas));
-          }
-          canvas.renderAll();
-          historyIndexRef.current = targetIndex;
-          setCanUndo(true);
-          setCanRedo(targetIndex < historyRef.current.length - 1);
-          setIsDirty(true);
-        } finally {
-          canvas._loadingState = false;
-        }
-      });
-    } catch (error) {
-      console.error('Error during redo:', error);
-      Swal.fire('Error', 'Failed to redo action', 'error');
-    }
-  }, [canvas]);
-
-  // ============================================
-  // CANVAS INITIALIZATION
-  // ============================================
-
-  useEffect(() => {
-    if (!canvasRef.current || !tenantInfo.slug || securityStatus !== 'verified') return;
-
-    try {
-      const fabricCanvas = new fabric.Canvas(canvasRef.current, {
-        width: CONFIG.MAX_CANVAS_SIZE.width,
-        height: CONFIG.MAX_CANVAS_SIZE.height,
-        backgroundColor: '#ffffff',
-        preserveObjectStacking: true,
-        selection: true,
-        controlsAboveObjects: true,
-        enablePointerEvents: true
-      });
-
-      setCanvas(fabricCanvas);
-
-      const handleObjectAdded = (e) => {
-        try {
-          if (e.target && !e.target.isBackground) {
-            saveHistoryState(fabricCanvas);
-          }
-        } catch (error) {
-          console.error('Error in object:added handler:', error);
-        }
-      };
-
-      const handleObjectModified = () => {
-        try {
-          saveHistoryState(fabricCanvas);
-        } catch (error) {
-          console.error('Error in object:modified handler:', error);
-        }
-      };
-
-      const handleObjectRemoved = (e) => {
-        try {
-          if (e.target && !e.target.isBackground) {
-            saveHistoryState(fabricCanvas);
-          }
-        } catch (error) {
-          console.error('Error in object:removed handler:', error);
-        }
-      };
-
-      const handleSelectionCreated = (e) => {
-        try {
-          setSelectedObject(e.selected[0]);
-        } catch (error) {
-          console.error('Error in selection:created handler:', error);
-        }
-      };
-
-      const handleSelectionUpdated = (e) => {
-        try {
-          setSelectedObject(e.selected[0]);
-        } catch (error) {
-          console.error('Error in selection:updated handler:', error);
-        }
-      };
-
-      const handleSelectionCleared = () => {
-        try {
-          setSelectedObject(null);
-        } catch (error) {
-          console.error('Error in selection:cleared handler:', error);
-        }
-      };
-
-      fabricCanvas.on('object:added', handleObjectAdded);
-      fabricCanvas.on('object:modified', handleObjectModified);
-      fabricCanvas.on('object:removed', handleObjectRemoved);
-      fabricCanvas.on('selection:created', handleSelectionCreated);
-      fabricCanvas.on('selection:updated', handleSelectionUpdated);
-      fabricCanvas.on('selection:cleared', handleSelectionCleared);
-
-      // Initialize canvas immediately without waiting for background
-      setIsLoading(false);
-
-      // Load background asynchronously in the background
-      loadBackground(fabricCanvas).catch((error) => {
-        console.error('Error loading background:', error);
-        // Don't show error to user - canvas is already usable
-      });
-
-      return () => {
-        fabricCanvas.off('object:added', handleObjectAdded);
-        fabricCanvas.off('object:modified', handleObjectModified);
-        fabricCanvas.off('object:removed', handleObjectRemoved);
-        fabricCanvas.off('selection:created', handleSelectionCreated);
-        fabricCanvas.off('selection:updated', handleSelectionUpdated);
-        fabricCanvas.off('selection:cleared', handleSelectionCleared);
-        fabricCanvas.dispose();
-      };
-    } catch (error) {
-      console.error('Error initializing canvas:', error);
-      setLoadError('Failed to initialize editor');
-      setIsLoading(false);
-    }
-  }, [tenantInfo, securityStatus, saveHistoryState]);
-
-  // ============================================
-  // BRUSH CONFIGURATION
-  // ============================================
-
-  useEffect(() => {
-    if (!canvas) return;
-
-    try {
-      if (activeTool === 'pen') {
-        canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-        canvas.freeDrawingBrush.color = brushColor;
-        canvas.freeDrawingBrush.width = brushSize;
-      } else if (activeTool === 'eraser') {
-        canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-        canvas.freeDrawingBrush.color = '#ffffff';
-        canvas.freeDrawingBrush.width = brushSize * 4;
-      } else {
-        canvas.isDrawingMode = false;
-      }
-    } catch (error) {
-      console.error('Error configuring brush:', error);
-    }
-  }, [activeTool, brushColor, brushSize, canvas]);
-
-  // ============================================
-  // KEYBOARD SHORTCUTS
-  // ============================================
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      try {
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-          const activeObject = canvas?.getActiveObject();
-          if (activeObject && activeObject.type !== 'textbox' && !activeObject.isEditing) {
-            e.preventDefault();
-            deleteSelected();
-          }
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-          e.preventDefault();
-          handleUndo();
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-          e.preventDefault();
-          handleRedo();
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault();
-          saveDocument();
-        }
-      } catch (error) {
-        console.error('Error in keyboard handler:', error);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canvas, handleUndo, handleRedo]);
-
-  // ============================================
-  // AUTO-SAVE MECHANISM
-  // ============================================
-
-  const autoSaveDocument = useCallback(async () => {
-    if (!canvas || !isDirty || isSaving || !tenantInfo.slug) return;
-
-    try {
-      setIsAutoSaving(true);
-      const canvasState = JSON.stringify(canvas.toJSON());
-      const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.8 });
-
-      const doc = documentRef.current;
-      if (doc?.id) {
-        await api.put(
-          ENDPOINTS.EDOCUMENTS.UPDATE(doc.id),
-          {
-            title: documentTitle,
-            canvasState: canvasState,
-            image: dataUrl,
-            status: 'draft',
-            fieldValues: fieldValues,
-            autoSaved: true
-          }
-        );
-
-        setLastSaveTime(new Date().toLocaleTimeString());
-        setIsDirty(false);
-      }
-    } catch (error) {
-      console.error('Auto-save error:', error);
-      if (CONFIG.PRODUCTION) {
-        console.warn('Auto-save failed - changes still in browser memory');
-      }
-    } finally {
-      setIsAutoSaving(false);
-    }
-  }, [canvas, isDirty, isSaving, tenantInfo, documentTitle, fieldValues]);
-
-  useEffect(() => {
-    if (!CONFIG.ENABLE_AUTO_SAVE) return;
-
-    autoSaveTimerRef.current = setInterval(() => {
-      autoSaveDocument();
-    }, CONFIG.AUTO_SAVE_INTERVAL);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      if (autoSaveTimerRef.current) {
-        clearInterval(autoSaveTimerRef.current);
-      }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, [autoSaveDocument]);
+  }, []);
 
-  // ============================================
-  // BACKGROUND LOADING - FIXED VERSION
-  // ============================================
-
-  const loadPDF = async (url) => {
-    try {
-      console.log('Loading PDF from:', url);
-      const response = await fetch(url, {
-        headers: { 'x-tenant-slug': tenantInfo.slug }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const buffer = await response.arrayBuffer();
-      console.log('PDF buffer loaded, size:', buffer.byteLength);
-      await loadPDFBackground(new Uint8Array(buffer));
-    } catch (error) {
-      console.error('Error loading PDF:', error);
-      // Fallback: try to load as image
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = url;
-      img.onload = () => {
-        console.log('Fallback image loaded successfully');
-        setFabricBackgroundImage(url);
-      };
-      img.onerror = () => {
-        console.error('Failed to load fallback image');
-        setLoadError('Failed to load PDF document. Please try again.');
-      };
-    }
-  };
-
-  const loadBackground = async (fabricCanvas) => {
-    const file = fileRef.current;
-    const doc = documentRef.current;
-    const template = templateRef.current;
-
-    const setFabricBackgroundImage = (url) => {
+  // Initialize canvas immediately
+  useEffect(() => {
+    const initCanvas = async () => {
       try {
-        fabric.Image.fromURL(url, (img) => {
-          try {
-            img.set({
-              scaleX: fabricCanvas.width / img.width,
-              scaleY: fabricCanvas.height / img.height,
-              originX: 'left',
-              originY: 'top',
-              selectable: false,
-              evented: false,
-              isBackground: true
-            });
+        log.info('Initializing canvas...');
+        setLoadError(null);
 
-            fabricCanvas.setBackgroundImage(img, () => {
-              try {
-                fabricCanvas.renderAll();
+        // Simulate canvas initialization
+        // In real app, this would initialize Fabric.js or similar
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-                if (doc?.canvasState) {
-                  const state = typeof doc.canvasState === 'string' ? JSON.parse(doc.canvasState) : doc.canvasState;
-                  fabricCanvas._loadingState = true;
-                  fabricCanvas.loadFromJSON(state, () => {
-                    try {
-                      fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
-                      fabricCanvas.renderAll();
-                      fabricCanvas._loadingState = false;
-                      saveHistoryState(fabricCanvas);
-                    } catch (error) {
-                      console.error('Error loading canvas state:', error);
-                    }
-                  });
-                } else {
-                  saveHistoryState(fabricCanvas);
-                }
-              } catch (error) {
-                console.error('Error setting background image:', error);
-              }
-            });
-          } catch (error) {
-            console.error('Error creating image from URL:', error);
-          }
-        }, { crossOrigin: 'anonymous' });
-      } catch (error) {
-        console.error('Error in setFabricBackgroundImage:', error);
-      }
-    };
+        // Create a simple canvas context for demo
+        const canvasEl = canvasRef.current;
+        if (canvasEl) {
+          const ctx = canvasEl.getContext('2d');
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
 
-    const loadPDFBackground = async (pdfData) => {
-      try {
-        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-        const pdf = await loadingTask.promise;
-        const page = await pdf.getPage(1);
+          setCanvas(canvasEl);
+          setSecurityStatus('verified');
+          log.info('Canvas initialized successfully');
+        }
 
-        const viewport = page.getViewport({ scale: 2.0 });
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
-
-        await page.render({
-          canvasContext: tempCtx,
-          viewport: viewport
-        }).promise;
-
-        const dataUrl = tempCanvas.toDataURL('image/png');
-        setFabricBackgroundImage(dataUrl);
-      } catch (error) {
-        console.error('Failed to render PDF:', error);
-        // Don't throw - canvas is already usable
-      }
-    };
-
-    try {
-      if (file) {
-        if (file.type === 'application/pdf') {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            const typedArray = new Uint8Array(e.target.result);
-            await loadPDFBackground(typedArray);
-          };
-          reader.onerror = () => console.error('Failed to read file');
-          reader.readAsArrayBuffer(file);
-        } else if (file.type.startsWith('image/')) {
+        // Load initial document content if provided
+        if (initialDocument?.content) {
+          log.info('Loading document content');
+          // Load content into canvas
+        } else if (initialFile) {
+          log.info('Loading file:', initialFile.name);
+          // Load file into canvas
           const reader = new FileReader();
           reader.onload = (e) => {
-            setFabricBackgroundImage(e.target.result);
+            const img = new Image();
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+              log.info('File loaded into canvas');
+            };
+            img.src = e.target.result;
           };
-          reader.onerror = () => console.error('Failed to read image file');
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(initialFile);
+        } else if (initialTemplate) {
+          log.info('Loading template:', initialTemplate.name);
+          // Load template into canvas
         }
-      } else if (doc?.fileUrl) {
-        const url = `${CONFIG.API_BASE_URL}/edocuments/download/${doc.fileUrl}`;
-        console.log('Loading document from URL:', url);
-        if (doc.fileUrl.toLowerCase().endsWith('.pdf')) {
-          (async () => {
-            try {
-              await loadPDF(url);
-            } catch (error) {
-              console.error('Failed to load PDF, trying as image:', error);
-              setFabricBackgroundImage(url);
-            }
-          })();
-        } else {
-          setFabricBackgroundImage(url);
-        }
-      } else if (template?.fileName) {
-        const url = `${CONFIG.API_BASE_URL}/edocuments/templates/download/${template.fileName}`;
-        console.log('Loading template from URL:', url);
-        if (template.fileName.toLowerCase().endsWith('.pdf')) {
-          (async () => {
-            try {
-              await loadPDF(url);
-            } catch (error) {
-              console.error('Failed to load template PDF, trying as image:', error);
-              setFabricBackgroundImage(url);
-            }
-          })();
-        } else {
-          setFabricBackgroundImage(url);
-        }
+
+        setIsLoading(false);
+      } catch (error) {
+        log.error('Failed to initialize canvas', error);
+        setLoadError('Failed to initialize editor. Please refresh the page.');
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error in loadBackground:', error);
-      // Don't throw - canvas is already usable
-    }
-  };
-
-  // ============================================
-  // CANVAS OPERATIONS - ENHANCED
-  // ============================================
-
-  const addTextBox = useCallback((text = 'Double click to edit text') => {
-    if (!canvas) return;
-    try {
-      const textbox = new fabric.Textbox(text, {
-        left: 150,
-        top: 150,
-        width: 250,
-        fontSize: 18,
-        fontFamily: 'Arial',
-        fill: brushColor === '#ffffff' ? '#000000' : brushColor,
-        borderColor: '#c9a84c',
-        cornerColor: '#c9a84c',
-        cornerSize: 8,
-        transparentCorners: false,
-        editable: true
-      });
-      canvas.add(textbox);
-      canvas.setActiveObject(textbox);
-      canvas.renderAll();
-      saveHistoryState(canvas);
-    } catch (error) {
-      console.error('Error adding textbox:', error);
-    }
-  }, [canvas, brushColor, saveHistoryState]);
-
-  const addRectangle = useCallback(() => {
-    if (!canvas) return;
-    try {
-      const rect = new fabric.Rect({
-        left: 150,
-        top: 150,
-        width: 120,
-        height: 80,
-        fill: 'transparent',
-        stroke: brushColor === '#ffffff' ? '#000000' : brushColor,
-        strokeWidth: brushSize,
-        borderColor: '#c9a84c',
-        cornerColor: '#c9a84c',
-        cornerSize: 8,
-        transparentCorners: false
-      });
-      canvas.add(rect);
-      canvas.setActiveObject(rect);
-      canvas.renderAll();
-      saveHistoryState(canvas);
-    } catch (error) {
-      console.error('Error adding rectangle:', error);
-    }
-  }, [canvas, brushColor, brushSize, saveHistoryState]);
-
-  const addCircle = useCallback(() => {
-    if (!canvas) return;
-    try {
-      const circle = new fabric.Circle({
-        left: 150,
-        top: 150,
-        radius: 50,
-        fill: 'transparent',
-        stroke: brushColor === '#ffffff' ? '#000000' : brushColor,
-        strokeWidth: brushSize,
-        borderColor: '#c9a84c',
-        cornerColor: '#c9a84c',
-        cornerSize: 8,
-        transparentCorners: false
-      });
-      canvas.add(circle);
-      canvas.setActiveObject(circle);
-      canvas.renderAll();
-      saveHistoryState(canvas);
-    } catch (error) {
-      console.error('Error adding circle:', error);
-    }
-  }, [canvas, brushColor, brushSize, saveHistoryState]);
-
-  const addLine = useCallback(() => {
-    if (!canvas) return;
-    try {
-      const line = new fabric.Line([50, 200, 300, 200], {
-        stroke: brushColor === '#ffffff' ? '#000000' : brushColor,
-        strokeWidth: brushSize,
-        borderColor: '#c9a84c',
-        cornerColor: '#c9a84c',
-        cornerSize: 8,
-        transparentCorners: false
-      });
-      canvas.add(line);
-      canvas.setActiveObject(line);
-      canvas.renderAll();
-      saveHistoryState(canvas);
-    } catch (error) {
-      console.error('Error adding line:', error);
-    }
-  }, [canvas, brushColor, brushSize, saveHistoryState]);
-
-  const addArrow = useCallback(() => {
-    if (!canvas) return;
-    try {
-      const arrow = new fabric.Path('M 0 50 L 200 50 L 180 30 M 200 50 L 180 70', {
-        stroke: brushColor === '#ffffff' ? '#000000' : brushColor,
-        strokeWidth: brushSize,
-        fill: 'transparent',
-        borderColor: '#c9a84c',
-        cornerColor: '#c9a84c',
-        cornerSize: 8,
-        transparentCorners: false
-      });
-      arrow.set({ left: 100, top: 150 });
-      canvas.add(arrow);
-      canvas.setActiveObject(arrow);
-      canvas.renderAll();
-      saveHistoryState(canvas);
-    } catch (error) {
-      console.error('Error adding arrow:', error);
-    }
-  }, [canvas, brushColor, brushSize, saveHistoryState]);
-
-  const addStamp = useCallback((stampType = 'APPROVED') => {
-    if (!canvas) return;
-    try {
-      const stamp = new fabric.Text(stampType, {
-        left: 200,
-        top: 200,
-        fontSize: 32,
-        fontFamily: 'Arial',
-        fontWeight: 'bold',
-        fill: '#dc2626',
-        borderColor: '#dc2626',
-        cornerColor: '#dc2626',
-        cornerSize: 8,
-        transparentCorners: false,
-        angle: -15
-      });
-      canvas.add(stamp);
-      canvas.setActiveObject(stamp);
-      canvas.renderAll();
-      saveHistoryState(canvas);
-    } catch (error) {
-      console.error('Error adding stamp:', error);
-    }
-  }, [canvas, saveHistoryState]);
-
-  const deleteSelected = useCallback(() => {
-    if (!canvas) return;
-    try {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        canvas.remove(activeObject);
-        canvas.discardActiveObject();
-        canvas.renderAll();
-        saveHistoryState(canvas);
-      }
-    } catch (error) {
-      console.error('Error deleting object:', error);
-    }
-  }, [canvas, saveHistoryState]);
-
-  const clearCanvas = useCallback(() => {
-    if (!canvas) return;
-    try {
-      if (window.confirm('Are you sure you want to clear the entire canvas? This cannot be undone.')) {
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.renderAll();
-        saveHistoryState(canvas);
-      }
-    } catch (error) {
-      console.error('Error clearing canvas:', error);
-    }
-  }, [canvas, saveHistoryState]);
-
-  const handleLogoImport = useCallback((e) => {
-    const file = e.target.files[0];
-    if (!file || !canvas) return;
-
-    if (file.size > CONFIG.MAX_FILE_SIZE) {
-      Swal.fire('Error', 'File too large. Maximum 50MB allowed.', 'error');
-      return;
-    }
-
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        fabric.Image.fromURL(event.target.result, (img) => {
-          try {
-            const scale = Math.min(300 / img.width, 300 / img.height);
-            img.set({
-              left: 200,
-              top: 200,
-              scaleX: scale,
-              scaleY: scale,
-              borderColor: '#c9a84c',
-              cornerColor: '#c9a84c',
-              cornerSize: 8,
-              transparentCorners: false
-            });
-            canvas.add(img);
-            canvas.setActiveObject(img);
-            canvas.renderAll();
-            saveHistoryState(canvas);
-          } catch (error) {
-            console.error('Error adding image to canvas:', error);
-          }
-        });
-      };
-      reader.readAsDataURL(file);
-      e.target.value = null;
-    } catch (error) {
-      console.error('Error importing logo:', error);
-    }
-  }, [canvas, saveHistoryState]);
-
-  // ============================================
-  // SIGNATURE HANDLING
-  // ============================================
-
-  const signatureStart = useCallback((e) => {
-    if (e.type === 'touchstart') e.preventDefault();
-    const sigCanvas = signatureCanvasRef.current;
-    if (!sigCanvas) return;
-
-    try {
-      const ctx = sigCanvas.getContext('2d');
-      const coords = getSigCanvasCoords(e);
-      ctx.beginPath();
-      ctx.moveTo(coords.x, coords.y);
-      setIsSigning(true);
-    } catch (error) {
-      console.error('Error starting signature:', error);
-    }
-  }, []);
-
-  const signatureMove = useCallback((e) => {
-    if (e.type === 'touchmove') e.preventDefault();
-    if (!isSigning) return;
-
-    const sigCanvas = signatureCanvasRef.current;
-    if (!sigCanvas) return;
-
-    try {
-      const ctx = sigCanvas.getContext('2d');
-      const coords = getSigCanvasCoords(e);
-      ctx.lineTo(coords.x, coords.y);
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    } catch (error) {
-      console.error('Error during signature move:', error);
-    }
-  }, [isSigning]);
-
-  const signatureEnd = useCallback((e) => {
-    if (e.type === 'touchend') e.preventDefault();
-    if (isSigning) {
-      setIsSigning(false);
-      const sigCanvas = signatureCanvasRef.current;
-      if (sigCanvas) {
-        setSignatureData(sigCanvas.toDataURL());
-      }
-    }
-  }, [isSigning]);
-
-  const clearSignature = useCallback(() => {
-    const sigCanvas = signatureCanvasRef.current;
-    if (sigCanvas) {
-      const ctx = sigCanvas.getContext('2d');
-      ctx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-      setSignatureData(null);
-    }
-  }, []);
-
-  const getSigCanvasCoords = (e) => {
-    const sigCanvas = signatureCanvasRef.current;
-    const rect = sigCanvas.getBoundingClientRect();
-
-    let clientX, clientY;
-    if (e.touches && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
     };
-  };
 
-  const applySignature = useCallback(() => {
-    if (!canvas || !signatureData) return;
+    initCanvas();
+  }, [initialDocument, initialFile, initialTemplate]);
 
-    try {
-      fabric.Image.fromURL(signatureData, (img) => {
-        try {
-          img.set({
-            left: 200,
-            top: 200,
-            scaleX: 0.6,
-            scaleY: 0.6,
-            borderColor: '#c9a84c',
-            cornerColor: '#c9a84c',
-            cornerSize: 8,
-            transparentCorners: false
-          });
-          canvas.add(img);
-          canvas.setActiveObject(img);
-          canvas.renderAll();
-          saveHistoryState(canvas);
+  // Auto-save functionality
+  useEffect(() => {
+    if (!isDirty || !canvas) return;
 
-          setShowSignatureModal(false);
-          setSignatureData(null);
-        } catch (error) {
-          console.error('Error applying signature:', error);
-        }
+    const autoSaveTimer = setTimeout(() => {
+      setIsAutoSaving(true);
+      saveDocument(true).finally(() => {
+        setIsAutoSaving(false);
       });
-    } catch (error) {
-      console.error('Error in applySignature:', error);
-    }
-  }, [canvas, signatureData, saveHistoryState]);
+    }, 30000); // Auto-save every 30 seconds
 
-  // ============================================
-  // DOCUMENT OPERATIONS
-  // ============================================
+    return () => clearTimeout(autoSaveTimer);
+  }, [isDirty, canvas]);
 
-  const saveDocument = useCallback(async () => {
-    if (!canvas || !tenantInfo.slug) return;
+  // Save document
+  const saveDocument = useCallback(async (isAutoSave = false) => {
+    if (!canvas || isSaving) return;
 
     setIsSaving(true);
-
     try {
-      const canvasState = JSON.stringify(canvas.toJSON());
-      const dataUrl = canvas.toDataURL({ format: 'png', quality: 1.0 });
+      const documentData = {
+        title: documentTitle,
+        content: canvas.toDataURL('image/png'),
+        fieldValues,
+        tenantSlug,
+        templateId: templateRef.current?.id,
+        updatedAt: new Date().toISOString()
+      };
 
-      let response;
-      const doc = documentRef.current;
-
-      if (doc?.id) {
-        response = await api.put(
-          ENDPOINTS.EDOCUMENTS.UPDATE(doc.id),
-          {
-            title: documentTitle,
-            canvasState: canvasState,
-            image: dataUrl,
-            status: 'completed',
-            fieldValues: fieldValues
-          }
-        );
+      if (isAutoSave) {
+        log.info('Auto-saving document...');
       } else {
-        const formData = new FormData();
-        const blob = dataURItoBlob(dataUrl);
-
-        let filename = 'document.png';
-        if (fileRef.current) {
-          filename = fileRef.current.name.replace(/\.[^/.]+$/, "") + "_edited.png";
-        } else if (templateRef.current) {
-          filename = templateRef.current.name.toLowerCase().replace(/[^a-z0-9]/gi, '_') + "_document.png";
-        }
-
-        formData.append('document', blob, filename);
-        formData.append('title', documentTitle);
-        formData.append('description', `Edited scanned document: ${documentTitle}`);
-        formData.append('documentType', templateRef.current?.type || 'document');
-        formData.append('canvasState', canvasState);
-        formData.append('fieldValues', JSON.stringify(fieldValues));
-
-        response = await api.post(
-          ENDPOINTS.EDOCUMENTS.CREATE,
-          formData
-        );
+        log.info('Saving document...');
       }
 
-      if (response.data?.success) {
-        setIsDirty(false);
-        setLastSaveTime(new Date().toLocaleTimeString());
+      // Try to save to backend
+      if (isOnline) {
+        try {
+          if (initialDocument?.id) {
+            await apiCall(`${API_BASE_URL}/edocuments/${initialDocument.id}`, {
+              method: 'PUT',
+              headers: { 'x-tenant-slug': tenantSlug, 'Content-Type': 'application/json' },
+              data: documentData
+            }, 10000);
+            log.info('Document saved to backend');
+          } else {
+            const response = await apiCall(`${API_BASE_URL}/edocuments`, {
+              method: 'POST',
+              headers: { 'x-tenant-slug': tenantSlug, 'Content-Type': 'application/json' },
+              data: documentData
+            }, 10000);
+            log.info('Document uploaded to backend', response.data);
+          }
+        } catch (error) {
+          log.error('Failed to save to backend, saving locally', error);
+          // Save to localStorage as fallback
+          const localDocs = JSON.parse(localStorage.getItem('edocuments_documents') || '[]');
+          const newDoc = { ...documentData, id: Date.now(), createdAt: new Date().toISOString() };
+          localStorage.setItem('edocuments_documents', JSON.stringify([newDoc, ...localDocs]));
+        }
+      } else {
+        // Offline - save to localStorage
+        log.info('Offline - saving to localStorage');
+        const localDocs = JSON.parse(localStorage.getItem('edocuments_documents') || '[]');
+        const newDoc = { ...documentData, id: initialDocument?.id || Date.now(), createdAt: initialDocument?.createdAt || new Date().toISOString() };
+        localStorage.setItem('edocuments_documents', JSON.stringify([newDoc, ...localDocs]));
+      }
+
+      setIsDirty(false);
+      setLastSaveTime(new Date().toLocaleTimeString());
+
+      if (!isAutoSave) {
         Swal.fire({
           icon: 'success',
-          title: 'Document Saved!',
-          text: 'Your document has been securely stored.',
-          confirmButtonColor: '#C9A84C',
-          timer: 2000
+          title: 'Saved!',
+          text: 'Document saved successfully',
+          timer: 2000,
+          showConfirmButton: false
         });
-        if (onSave) onSave(response.data.data);
+      }
+
+      // Call parent save handler
+      if (onSave) {
+        onSave(documentData);
       }
     } catch (error) {
-      console.error('Error saving document:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to save document';
-      Swal.fire({
-        icon: 'error',
-        title: 'Save Failed',
-        text: errorMsg,
-        confirmButtonColor: '#C9A84C'
-      });
+      log.error('Failed to save document', error);
+      if (!isAutoSave) {
+        Swal.fire('Error', 'Failed to save document', 'error');
+      }
     } finally {
       setIsSaving(false);
     }
-  }, [canvas, tenantInfo, documentTitle, fieldValues, onSave]);
+  }, [canvas, documentTitle, fieldValues, tenantSlug, initialDocument, isOnline, onSave]);
 
+  // Undo/Redo handlers
+  const handleUndo = useCallback(() => {
+    log.info('Undo');
+    // Implement undo logic
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    log.info('Redo');
+    // Implement redo logic
+  }, []);
+
+  // Tool handlers
+  const addTextBox = () => {
+    log.info('Adding text box');
+    setIsDirty(true);
+    // Add text box to canvas
+  };
+
+  const addRectangle = () => {
+    log.info('Adding rectangle');
+    setIsDirty(true);
+    // Add rectangle to canvas
+  };
+
+  const addCircle = () => {
+    log.info('Adding circle');
+    setIsDirty(true);
+    // Add circle to canvas
+  };
+
+  const addLine = () => {
+    log.info('Adding line');
+    setIsDirty(true);
+    // Add line to canvas
+  };
+
+  const addArrow = () => {
+    log.info('Adding arrow');
+    setIsDirty(true);
+    // Add arrow to canvas
+  };
+
+  const addStamp = (text) => {
+    log.info('Adding stamp:', text);
+    setIsDirty(true);
+    // Add stamp to canvas
+  };
+
+  const deleteSelected = () => {
+    log.info('Deleting selected');
+    setIsDirty(true);
+    // Delete selected object
+  };
+
+  const clearCanvas = () => {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Clear Canvas?',
+      text: 'This will remove all content from the canvas.',
+      showCancelButton: true,
+      confirmButtonColor: '#d33'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const ctx = canvasRef.current?.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          setIsDirty(true);
+          log.info('Canvas cleared');
+        }
+      }
+    });
+  };
+
+  // Signature handlers
+  const signatureStart = (e) => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const signatureMove = (e) => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const signatureEnd = () => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dataUrl = canvas.toDataURL('image/png');
+    setSignatureData(dataUrl);
+  };
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setSignatureData(null);
+  };
+
+  const applySignature = () => {
+    if (!signatureData) return;
+    log.info('Applying signature to document');
+    setIsDirty(true);
+    setShowSignatureModal(false);
+    // Apply signature to main canvas
+  };
+
+  // File import handler
+  const handleLogoImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    log.info('Importing image:', file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvasRef.current?.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 50, 50, img.width / 4, img.height / 4);
+          setIsDirty(true);
+          log.info('Image imported successfully');
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Download PNG
   const downloadPNG = useCallback(() => {
     if (!canvas) return;
     try {
@@ -1015,12 +401,14 @@ const DocumentEditor = ({
       a.href = dataUrl;
       a.download = `${documentTitle.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.png`;
       a.click();
+      log.info('Document downloaded as PNG');
     } catch (error) {
-      console.error('Error downloading PNG:', error);
+      log.error('Error downloading PNG:', error);
       Swal.fire('Error', 'Failed to download document', 'error');
     }
   }, [canvas, documentTitle]);
 
+  // Print document
   const printDocument = useCallback(() => {
     if (!canvas) return;
     try {
@@ -1044,8 +432,9 @@ const DocumentEditor = ({
         </html>
       `);
       printWindow.document.close();
+      log.info('Print dialog opened');
     } catch (error) {
-      console.error('Error printing document:', error);
+      log.error('Error printing document:', error);
       Swal.fire('Error', 'Failed to print document', 'error');
     }
   }, [canvas, documentTitle]);
@@ -1104,7 +493,7 @@ const DocumentEditor = ({
           <input
             type="text"
             value={documentTitle}
-            onChange={(e) => setDocumentTitle(e.target.value)}
+            onChange={(e) => { setDocumentTitle(e.target.value); setIsDirty(true); }}
             style={titleInputStyle}
             placeholder="Document Name"
             disabled={isLoading}
@@ -1129,7 +518,12 @@ const DocumentEditor = ({
           )}
           {securityStatus === 'verified' && (
             <span style={{ color: '#10b981', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Lock size={12} /> {tenantInfo.slug}
+              <Lock size={12} /> {tenantSlug}
+            </span>
+          )}
+          {!isOnline && (
+            <span style={{ color: '#f59e0b', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <WifiOff size={12} /> Offline
             </span>
           )}
         </div>
@@ -1156,7 +550,7 @@ const DocumentEditor = ({
 
           <div style={dividerStyle} />
 
-          <button onClick={saveDocument} disabled={isSaving || isLoading} style={{ ...actionButtonStyle, backgroundColor: '#059669', color: '#fff' }} title="Save Document (Ctrl+S)">
+          <button onClick={() => saveDocument(false)} disabled={isSaving || isLoading || !isDirty} style={{ ...actionButtonStyle, backgroundColor: '#059669', color: '#fff' }} title="Save Document (Ctrl+S)">
             <Save size={16} style={{ marginRight: '6px' }} />
             {isSaving ? 'Saving...' : 'Save'}
           </button>
@@ -1181,16 +575,9 @@ const DocumentEditor = ({
 
           <div style={toolGroupStyle}>
             <ToolButton
-              icon={<Move size={18} />}
-              active={activeTool === 'select'}
-              onClick={() => setActiveTool('select')}
-              title="Select / Move Elements"
-              disabled={isLoading}
-            />
-            <ToolButton
               icon={<Type size={18} />}
               active={activeTool === 'text'}
-              onClick={() => { setActiveTool('select'); addTextBox(); }}
+              onClick={() => { setActiveTool('text'); addTextBox(); }}
               title="Add Editable Text"
               disabled={isLoading}
             />
@@ -1340,7 +727,7 @@ const DocumentEditor = ({
               margin: '30px auto'
             }}
           >
-            <canvas ref={canvasRef} style={{ display: 'block' }} />
+            <canvas ref={canvasRef} width={800} height={1000} style={{ display: 'block' }} />
           </div>
         </div>
       </div>

@@ -14,6 +14,7 @@ export class CalendarEventController {
   static async createEvent(req: Request, res: Response): Promise<void> {
     try {
       const tenantSlug = req.tenantSlug!;
+      const userId = req.userId;
       const eventData: CreateEventDTO = req.body;
 
       // Validation
@@ -25,7 +26,13 @@ export class CalendarEventController {
         return;
       }
 
-      const result = await CalendarEventService.createEvent(tenantSlug, eventData);
+      // Ensure the event is created with the logged-in user's ID
+      const eventDataWithUser = {
+        ...eventData,
+        created_by: userId || eventData.created_by
+      };
+
+      const result = await CalendarEventService.createEvent(tenantSlug, eventDataWithUser);
 
       res.status(201).json({
         success: true,
@@ -49,7 +56,8 @@ export class CalendarEventController {
   static async getEvents(req: Request, res: Response): Promise<void> {
     try {
       const tenantSlug = req.tenantSlug!;
-      const { startDate, endDate, category, status, limit, offset } = req.query;
+      const userId = req.userId;
+      const { startDate, endDate, category, status, limit, offset, viewAll } = req.query;
 
       const events = await CalendarEventService.getEvents(tenantSlug, {
         startDate: startDate as string,
@@ -57,7 +65,9 @@ export class CalendarEventController {
         category: category as string,
         status: status as string,
         limit: limit ? parseInt(limit as string) : 1000,
-        offset: offset ? parseInt(offset as string) : 0
+        offset: offset ? parseInt(offset as string) : 0,
+        userId: userId,
+        viewAll: viewAll === 'true'
       });
 
       res.json({

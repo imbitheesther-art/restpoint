@@ -1,23 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 
 /**
- * Extend Express Request to include tenant information
+ * Extend Express Request to include tenant and user information
  */
 declare global {
   namespace Express {
     interface Request {
       tenantSlug?: string;
       tenantId?: string;
+      userId?: number;
     }
   }
 }
 
 /**
- * Middleware to extract tenant information from headers
+ * Middleware to extract tenant and user information from headers
  */
 export const tenantMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const tenantSlug = req.headers['x-tenant-slug'] as string;
   const tenantId = req.headers['x-tenant-id'] as string;
+  const userId = req.headers['x-user-id'] as string;
 
   if (!tenantSlug && !tenantId) {
     res.status(400).json({
@@ -29,8 +31,9 @@ export const tenantMiddleware = (req: Request, res: Response, next: NextFunction
 
   req.tenantSlug = tenantSlug || tenantId || 'default';
   req.tenantId = tenantId;
+  req.userId = userId ? parseInt(userId) : undefined;
 
-  console.log(`📍 Request from tenant: ${req.tenantSlug}`);
+  console.log(`📍 Request from tenant: ${req.tenantSlug}, user: ${req.userId || 'anonymous'}`);
 
   next();
 };

@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTenantStore } from '../../store/useTenantStore';
 import {
   Save, Upload, Building2, User, MapPin, Phone, Mail, Globe, Image,
-  Palette, CheckCircle, AlertCircle, Smartphone, CreditCard, History,
-  Settings, Key, Hash, DollarSign, Send, Clock, ArrowUpRight,
-  ArrowDownLeft, Filter, RefreshCw, Eye, EyeOff, Wifi
+  Palette, CheckCircle, AlertCircle, CreditCard, History,
+  Settings, DollarSign, Clock, ArrowUpRight,
+  ArrowDownLeft, Filter, RefreshCw, Eye, EyeOff, FileText
 } from 'lucide-react';
 import { paymentApi } from '../../api/paymentApi';
 import api from '../../api/axios';
@@ -15,16 +15,13 @@ const Colors = {
   primary: '#3b82f6', success: '#22c55e', danger: '#ef4444',
   warning: '#f59e0b', dark: '#1e293b', light: '#f8fafc',
   border: '#e2e8f0', text: '#1e293b', textMuted: '#64748b',
-  mpesa: '#4CAF50', surface: '#ffffff',
+  surface: '#ffffff',
 };
-
-
 
 const tabs = [
   { id: 'organization', label: 'Organization', icon: Building2 },
-  { id: 'mpesa', label: 'M-Pesa Config', icon: Smartphone },
+  { id: 'billing', label: 'Billing & Charges', icon: DollarSign },
   { id: 'payments', label: 'Payment History', icon: History },
-  { id: 'stk', label: 'STK Push', icon: Send },
   { id: 'quickbooks', label: 'QuickBooks', icon: CreditCard },
 ];
 
@@ -36,20 +33,27 @@ const SettingsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState({});
-  const [showKeys, setShowKeys] = useState({ consumerKey: false, consumerSecret: false, passkey: false });
 
   // Organization form
   const [orgForm, setOrgForm] = useState({
     name: '', location: '', phone: '', email: '', website: '',
-    primaryColor: '#1e293b', logo: null,
+    primaryColor: '#1e293b', logo: null, signature: null,
   });
   const [logoPreview, setLogoPreview] = useState(null);
+  const [signaturePreview, setSignaturePreview] = useState(null);
 
-  // M-Pesa form
-  const [mpesaForm, setMpesaForm] = useState({
-    consumerKey: '', consumerSecret: '', passkey: '',
-    shortcode: '', tillNumber: '', callbackUrl: '',
-    environment: 'sandbox', businessName: '',
+  // Billing settings form
+  const [billingForm, setBillingForm] = useState({
+    embalming_charge: 0,
+    coffin_markup_percentage: 0,
+    transportation_charge: 0,
+    storage_charge_per_day: 0,
+    certificate_fee: 0,
+    permit_fee: 0,
+    other_services_charge: 0,
+    tax_percentage: 0,
+    payment_terms_days: 30,
+    currency: 'KES',
   });
 
   // Payment history
@@ -74,11 +78,14 @@ const SettingsPage = () => {
         phone: tenantData.phone || '', email: tenantData.email || '',
         website: tenantData.website || '', primaryColor: tenantData.primaryColor || '#1e293b',
         logo: tenantData.logo || null,
+        signature: tenantData.signature || null,
       });
       if (tenantData.logo) setLogoPreview(tenantData.logo);
-      // Load M-Pesa settings if available
-      if (tenantData.mpesa) {
-        setMpesaForm(prev => ({ ...prev, ...tenantData.mpesa }));
+      if (tenantData.signature) setSignaturePreview(tenantData.signature);
+
+      // Load billing settings if available
+      if (tenantData.billing) {
+        setBillingForm(prev => ({ ...prev, ...tenantData.billing }));
       }
     }
   }, [tenantData]);
@@ -125,14 +132,25 @@ const SettingsPage = () => {
     }
   };
 
-  const handleMpesaChange = (e) => {
-    const { name, value } = e.target;
-    setMpesaForm(prev => ({ ...prev, [name]: value }));
+  const handleSignatureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, signature: 'Signature size must be less than 5MB' }));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSignaturePreview(reader.result);
+        setOrgForm(prev => ({ ...prev, signature: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleStkChange = (e) => {
+  const handleBillingChange = (e) => {
     const { name, value } = e.target;
-    setStkForm(prev => ({ ...prev, [name]: value }));
+    setBillingForm(prev => ({ ...prev, [name]: value }));
   };
 
   const validateOrg = () => {
@@ -158,7 +176,6 @@ const SettingsPage = () => {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      // Fallback: update local store even if API fails
       setTenantData({ ...tenantData, ...orgForm });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -167,18 +184,18 @@ const SettingsPage = () => {
     }
   };
 
-  const handleSaveMpesa = async (e) => {
+  const handleSaveBilling = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.put(ENDPOINTS.TENANT.CONFIG(slug) + '/mpesa', mpesaForm, {
+      await api.put(ENDPOINTS.TENANT.CONFIG(slug) + '/billing', billingForm, {
         headers: { 'x-tenant-slug': slug || 'system_shared' }
       });
-      setTenantData({ ...tenantData, mpesa: mpesaForm });
+      setTenantData({ ...tenantData, billing: billingForm });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      setTenantData({ ...tenantData, mpesa: mpesaForm });
+      setTenantData({ ...tenantData, billing: billingForm });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } finally {
@@ -237,7 +254,7 @@ const SettingsPage = () => {
           <Settings size={24} /> {tenantData?.name || 'Tenant'} Settings
         </h1>
         <p style={{ color: Colors.textMuted, marginTop: '0.25rem', fontSize: '0.875rem' }}>
-          Manage your funeral home profile, M-Pesa integration, and view payments
+          Manage your funeral home profile, billing settings, and view payments
         </p>
       </div>
 
@@ -330,6 +347,33 @@ const SettingsPage = () => {
                 </div>
                 {errors.logo && <p style={errorStyle}>{errors.logo}</p>}
               </div>
+
+              <div>
+                <label style={labelStyle}>Official Signature</label>
+                <div style={{ border: `2px dashed ${Colors.border}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center', background: signaturePreview ? 'transparent' : Colors.light }}>
+                  {signaturePreview ? (
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <img src={signaturePreview} alt="Signature" style={{ maxWidth: '200px', maxHeight: '80px', borderRadius: '8px', objectFit: 'contain' }} />
+                      <label style={{ display: 'block', marginTop: '0.75rem', cursor: 'pointer', color: Colors.primary, fontSize: '0.8rem', fontWeight: 600 }}>
+                        Change Signature <input type="file" accept="image/*" onChange={handleSignatureChange} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                  ) : (
+                    <label style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '48px', height: '48px', background: 'rgba(59,130,246,0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileText size={24} color={Colors.primary} />
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: '600', color: Colors.text, margin: 0, fontSize: '0.875rem' }}>Click to upload signature</p>
+                        <p style={{ fontSize: '0.75rem', color: Colors.textMuted, margin: '0.25rem 0 0' }}>PNG with transparent background, up to 5MB</p>
+                      </div>
+                      <input type="file" accept="image/*" onChange={handleSignatureChange} style={{ display: 'none' }} />
+                    </label>
+                  )}
+                </div>
+                {errors.signature && <p style={errorStyle}>{errors.signature}</p>}
+              </div>
+
               <div>
                 <label style={labelStyle}>Brand Color</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -356,158 +400,105 @@ const SettingsPage = () => {
         </form>
       )}
 
-      {/* M-Pesa Config Tab */}
-      {activeTab === 'mpesa' && (
-        <form onSubmit={handleSaveMpesa}>
+      {/* Billing & Charges Tab */}
+      {activeTab === 'billing' && (
+        <form onSubmit={handleSaveBilling}>
           <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: `1px solid ${Colors.border}`, padding: '1.5rem', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '600', color: Colors.text, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Smartphone size={18} color={Colors.mpesa} /> M-Pesa Daraja API Configuration
+            <h2 style={{ fontSize: '1rem', fontWeight: '600', color: Colors.text, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <DollarSign size={18} /> Service Charges & Billing
             </h2>
-            <p style={{ fontSize: '0.8rem', color: Colors.textMuted, marginBottom: '1rem' }}>
-              Configure your M-Pesa credentials to enable STK push payments from customers.
+            <p style={{ fontSize: '0.8rem', color: Colors.textMuted, marginBottom: '1.5rem' }}>
+              Configure default charges for various services. These will be used as defaults when creating new deceased records.
             </p>
 
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              {/* Environment Toggle */}
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              {/* Service Charges */}
               <div>
-                <label style={labelStyle}>Environment</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {['sandbox', 'production'].map(env => (
-                    <button key={env} type="button" onClick={() => setMpesaForm(prev => ({ ...prev, environment: env }))}
-                      style={{ flex: 1, padding: '0.6rem', border: `2px solid ${mpesaForm.environment === env ? Colors.mpesa : Colors.border}`, borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, background: mpesaForm.environment === env ? 'rgba(76,175,80,0.08)' : 'white', color: mpesaForm.environment === env ? Colors.mpesa : Colors.textMuted, textTransform: 'capitalize', transition: 'all 0.2s' }}>
-                      {env === 'sandbox' ? '🧪 Sandbox' : '🟢 Production'}
-                    </button>
-                  ))}
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: Colors.text, marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: `1px solid ${Colors.border}` }}>
+                  Service Charges (KES)
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                  <div>
+                    <label style={labelStyle}>Embalming Charge</label>
+                    <input type="number" name="embalming_charge" value={billingForm.embalming_charge} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Transportation Charge</label>
+                    <input type="number" name="transportation_charge" value={billingForm.transportation_charge} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Storage Charge (per day)</label>
+                    <input type="number" name="storage_charge_per_day" value={billingForm.storage_charge_per_day} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Certificate Fee</label>
+                    <input type="number" name="certificate_fee" value={billingForm.certificate_fee} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Permit Fee</label>
+                    <input type="number" name="permit_fee" value={billingForm.permit_fee} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Other Services Charge</label>
+                    <input type="number" name="other_services_charge" value={billingForm.other_services_charge} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" step="0.01" />
+                  </div>
                 </div>
               </div>
 
-              {/* Consumer Key */}
+              {/* Coffin & Tax Settings */}
               <div>
-                <label style={labelStyle}><Key size={14} /> Consumer Key</label>
-                <div style={{ position: 'relative' }}>
-                  <input type={showKeys.consumerKey ? 'text' : 'password'} name="consumerKey" value={mpesaForm.consumerKey} onChange={handleMpesaChange} placeholder="Enter Consumer Key" style={{ ...inputStyle, paddingRight: '2.5rem' }} />
-                  <button type="button" onClick={() => setShowKeys(p => ({ ...p, consumerKey: !p.consumerKey }))} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: Colors.textMuted }}>
-                    {showKeys.consumerKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: Colors.text, marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: `1px solid ${Colors.border}` }}>
+                  Coffin & Tax Settings
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                  <div>
+                    <label style={labelStyle}>Coffin Markup Percentage (%)</label>
+                    <input type="number" name="coffin_markup_percentage" value={billingForm.coffin_markup_percentage} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" max="100" step="0.1" />
+                    <p style={{ fontSize: '0.75rem', color: Colors.textMuted, marginTop: '0.25rem' }}>Percentage added to coffin cost</p>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Tax Percentage (%)</label>
+                    <input type="number" name="tax_percentage" value={billingForm.tax_percentage} onChange={handleBillingChange} placeholder="0" style={inputStyle} min="0" max="100" step="0.1" />
+                    <p style={{ fontSize: '0.75rem', color: Colors.textMuted, marginTop: '0.25rem' }}>VAT or other applicable taxes</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Consumer Secret */}
+              {/* Payment Terms */}
               <div>
-                <label style={labelStyle}><Key size={14} /> Consumer Secret</label>
-                <div style={{ position: 'relative' }}>
-                  <input type={showKeys.consumerSecret ? 'text' : 'password'} name="consumerSecret" value={mpesaForm.consumerSecret} onChange={handleMpesaChange} placeholder="Enter Consumer Secret" style={{ ...inputStyle, paddingRight: '2.5rem' }} />
-                  <button type="button" onClick={() => setShowKeys(p => ({ ...p, consumerSecret: !p.consumerSecret }))} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: Colors.textMuted }}>
-                    {showKeys.consumerSecret ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: Colors.text, marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: `1px solid ${Colors.border}` }}>
+                  Payment Terms
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                  <div>
+                    <label style={labelStyle}>Payment Terms (days)</label>
+                    <input type="number" name="payment_terms_days" value={billingForm.payment_terms_days} onChange={handleBillingChange} placeholder="30" style={inputStyle} min="0" step="1" />
+                    <p style={{ fontSize: '0.75rem', color: Colors.textMuted, marginTop: '0.25rem' }}>Days until payment is due</p>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Currency</label>
+                    <select name="currency" value={billingForm.currency} onChange={handleBillingChange} style={inputStyle}>
+                      <option value="KES">KES - Kenyan Shilling</option>
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="EUR">EUR - Euro</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-
-              {/* Passkey */}
-              <div>
-                <label style={labelStyle}><Key size={14} /> Passkey</label>
-                <div style={{ position: 'relative' }}>
-                  <input type={showKeys.passkey ? 'text' : 'password'} name="passkey" value={mpesaForm.passkey} onChange={handleMpesaChange} placeholder="Enter Passkey" style={{ ...inputStyle, paddingRight: '2.5rem' }} />
-                  <button type="button" onClick={() => setShowKeys(p => ({ ...p, passkey: !p.passkey }))} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: Colors.textMuted }}>
-                    {showKeys.passkey ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Shortcode & Till */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={labelStyle}><Hash size={14} /> Business Shortcode</label>
-                  <input type="text" name="shortcode" value={mpesaForm.shortcode} onChange={handleMpesaChange} placeholder="e.g., 174379" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}><CreditCard size={14} /> Till Number (Optional)</label>
-                  <input type="text" name="tillNumber" value={mpesaForm.tillNumber} onChange={handleMpesaChange} placeholder="e.g., 123456" style={inputStyle} />
-                </div>
-              </div>
-
-              {/* Business Name */}
-              <div>
-                <label style={labelStyle}><Building2 size={14} /> Business Name</label>
-                <input type="text" name="businessName" value={mpesaForm.businessName} onChange={handleMpesaChange} placeholder="e.g., Rest Point Funeral Home" style={inputStyle} />
-              </div>
-
-              {/* Callback URL */}
-              <div>
-                <label style={labelStyle}><Globe size={14} /> Callback URL</label>
-                <input type="url" name="callbackUrl" value={mpesaForm.callbackUrl} onChange={handleMpesaChange} placeholder="https://your-domain.com/api/mpesa/callback" style={inputStyle} />
-                <p style={{ fontSize: '0.75rem', color: Colors.textMuted, marginTop: '0.25rem' }}>
-                  Safaricom will POST payment notifications to this URL
-                </p>
-              </div>
-
-              {/* Connection Status */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: mpesaForm.consumerKey ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', borderRadius: '8px', border: `1px solid ${mpesaForm.consumerKey ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-                <Wifi size={16} color={mpesaForm.consumerKey ? Colors.success : Colors.danger} />
-                <span style={{ fontSize: '0.8rem', fontWeight: 500, color: mpesaForm.consumerKey ? Colors.success : Colors.danger }}>
-                  {mpesaForm.consumerKey ? `Connected (${mpesaForm.environment})` : 'Not configured — add credentials to enable payments'}
-                </span>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => navigate(`/tenant/${slug}/dashboard`)}
+              style={{ padding: '0.75rem 1.5rem', background: 'transparent', border: `1px solid ${Colors.border}`, borderRadius: '8px', color: Colors.textMuted, fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer' }}>
+              Cancel
+            </button>
             <button type="submit" disabled={isSubmitting}
-              style={{ padding: '0.75rem 2rem', background: isSubmitting ? Colors.textMuted : Colors.mpesa, color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {isSubmitting ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Saving...</> : <><Save size={18} /> Save M-Pesa Config</>}
+              style={{ padding: '0.75rem 2rem', background: isSubmitting ? Colors.textMuted : `linear-gradient(135deg, ${Colors.primary} 0%, #2563eb 100%)`, color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {isSubmitting ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Saving...</> : <><Save size={18} /> Save Billing Settings</>}
             </button>
           </div>
         </form>
-      )}
-
-      {/* STK Push Tab */}
-      {activeTab === 'stk' && (
-        <div>
-          <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: `1px solid ${Colors.border}`, padding: '1.5rem', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '600', color: Colors.text, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Send size={18} color={Colors.mpesa} /> Send M-Pesa STK Push
-            </h2>
-            <p style={{ fontSize: '0.8rem', color: Colors.textMuted, marginBottom: '1rem' }}>
-              Initiate a Lipa Na M-Pesa Online (STK Push) payment request to a customer's phone.
-            </p>
-
-            <form onSubmit={handleSTKPush}>
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                <div>
-                  <label style={labelStyle}><Phone size={14} /> Customer Phone Number</label>
-                  <input type="tel" name="phoneNumber" value={stkForm.phoneNumber} onChange={handleStkChange} placeholder="e.g., 0712345678" style={inputStyle} required />
-                </div>
-                <div>
-                  <label style={labelStyle}><DollarSign size={14} /> Amount (KES)</label>
-                  <input type="number" name="amount" value={stkForm.amount} onChange={handleStkChange} placeholder="e.g., 1500" min="1" step="0.01" style={inputStyle} required />
-                </div>
-                <div>
-                  <label style={labelStyle}>Description (Optional)</label>
-                  <input type="text" name="description" value={stkForm.description} onChange={handleStkChange} placeholder="e.g., Payment for services" style={inputStyle} />
-                </div>
-                {errors.stk && (
-                  <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.08)', border: `1px solid rgba(239,68,68,0.2)`, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', color: Colors.danger, fontSize: '0.8rem' }}>
-                    <AlertCircle size={14} /> {errors.stk}
-                  </div>
-                )}
-                <button type="submit" disabled={stkLoading}
-                  style={{ padding: '0.75rem 2rem', background: stkLoading ? Colors.textMuted : Colors.mpesa, color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: '600', cursor: stkLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                  {stkLoading ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Sending STK Push...</> : <><Send size={18} /> Send STK Push</>}
-                </button>
-              </div>
-            </form>
-
-            {/* STK Result */}
-            {stkResult && (
-              <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: '8px', border: `1px solid ${stkResult.success ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, background: stkResult.success ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: stkResult.success ? Colors.success : Colors.danger, fontWeight: 600, fontSize: '0.875rem' }}>
-                  {stkResult.success ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-                  {stkResult.message}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       )}
 
       {/* Payment History Tab */}

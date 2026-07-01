@@ -74,6 +74,8 @@ export interface EventQueryOptions {
   status?: string;
   limit?: number;
   offset?: number;
+  userId?: number;
+  viewAll?: boolean;
 }
 
 export interface CalendarEventResponse {

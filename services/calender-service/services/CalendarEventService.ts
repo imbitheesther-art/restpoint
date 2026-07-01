@@ -97,7 +97,7 @@ export class CalendarEventService {
    */
   static async getEventById(tenantSlug: string, eventId: number): Promise<CalendarEvent | null> {
     const tenantDb = await getTenantDatabaseName(tenantSlug);
-    
+
     const result = await executeTenantQuery(
       tenantDb,
       `SELECT * FROM events WHERE id = ? AND is_deleted = FALSE`,
@@ -125,7 +125,9 @@ export class CalendarEventService {
       category,
       status,
       limit = 1000,
-      offset = 0
+      offset = 0,
+      userId,
+      viewAll = false
     } = options;
 
     let query = `
@@ -133,6 +135,12 @@ export class CalendarEventService {
       WHERE is_deleted = FALSE
     `;
     const params: any[] = [];
+
+    // Filter by user ID unless viewAll is true
+    if (!viewAll && userId) {
+      query += ` AND created_by = ?`;
+      params.push(userId);
+    }
 
     if (startDate) {
       query += ` AND start >= ?`;
@@ -303,7 +311,7 @@ export class CalendarEventService {
     );
 
     // Generate time slots for the day (30-minute intervals)
-    const slots = [];
+    const slots: { time: string; available: boolean }[] = [];
     let currentTime = new Date(`${date}T09:00:00`);
     const endTime = new Date(`${date}T17:00:00`);
 

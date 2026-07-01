@@ -37,18 +37,31 @@ const api = axios.create({
   timeout: env.API_TIMEOUT,
 });
 
-// Request interceptor - adds auth token and tenant headers
+// Request interceptor - adds auth token, tenant headers, and user ID
 api.interceptors.request.use((config) => {
   // Always refresh from localStorage to get latest values
   const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
   const slug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
   const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
 
+  // Get user ID from localStorage
+  let userId = null;
+  try {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      userId = user.id || user.userId;
+    }
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+  }
+
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
   if (slug) config.headers['x-tenant-slug'] = slug;
   if (tenantId) config.headers['x-tenant-id'] = tenantId;
+  if (userId) config.headers['x-user-id'] = userId.toString();
 
   return config;
 }, (error) => Promise.reject(error));
