@@ -53,15 +53,23 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          'vendor-fabric': ['fabric'],
-          'vendor-calendar': ['@fullcalendar/core', '@fullcalendar/react', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction'],
-          'vendor-pdf': ['pdfjs-dist', 'react-pdf'],
-          'vendor-charts': ['recharts'],
-          'vendor-utils': ['lodash', 'moment', 'date-fns'],
-        },
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'vendor-react'
+            if (id.includes('@mui')) return 'vendor-mui'
+            if (id.includes('fabric')) return 'vendor-fabric'
+            if (id.includes('@fullcalendar')) return 'vendor-calendar'
+            if (id.includes('pdf')) return 'vendor-pdf'
+            if (id.includes('recharts')) return 'vendor-charts'
+            if (
+              id.includes('lodash') ||
+              id.includes('moment') ||
+              id.includes('date-fns')
+            ) return 'vendor-utils'
+
+            return 'vendor'
+          }
+        }
       },
     },
     manifest: true,
