@@ -983,10 +983,6 @@ networks:
   restpoint_network:
     driver: bridge
     name: restpoint_network
-
-# ============================================================================
-# VOLUMES
-# ============================================================================
 volumes:
   mariadb_data:
     driver: local
@@ -1011,4 +1007,6 @@ volumes:
   documents_service_data:
     driver: local
   socketio_service_data:
+    driver: local
+  loki_data:
     driver: local
