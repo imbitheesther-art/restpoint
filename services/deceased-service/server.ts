@@ -24,6 +24,7 @@ app.use(cors({
         'x-slug',
         'x-tenant-slug',
         'x-tenant-id',
+        'x-user-id',
         'Origin',
         'X-Requested-With',
         'Accept'
@@ -79,6 +80,10 @@ app.use('/charges', chargesRoutes);
 app.use('/api/v1/restpoint/charge-settings', chargeSettingsRoutes);
 app.use('/v1/restpoint/charge-settings', chargeSettingsRoutes);
 app.use('/charge-settings', chargeSettingsRoutes);
+
+// Mount charge-settings under /deceased prefix for frontend compatibility
+app.use('/api/v1/restpoint/deceased/charge-settings', chargeSettingsRoutes);
+app.use('/v1/restpoint/deceased/charge-settings', chargeSettingsRoutes);
 
 // Next of Kin routes - mount at root for /:deceased_id/next-of-kin pattern
 // Gateway strips /api/v1/restpoint/deceased, so service receives /:deceased_id/next-of-kin

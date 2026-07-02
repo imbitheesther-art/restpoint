@@ -65,7 +65,7 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'Origin', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'Origin', 'X-Requested-With', 'Accept'],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
@@ -116,10 +116,11 @@ const createProxy = (targetUrl) => {
       '^/v1/restpoint': '',
     },
     onProxyReq: (proxyReq, req, res) => {
-      // Forward auth/tenant headers
+      // Forward auth/tenant/user headers
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
       if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
       if (req.headers['x-tenant-id']) proxyReq.setHeader('x-tenant-id', req.headers['x-tenant-id']);
+      if (req.headers['x-user-id']) proxyReq.setHeader('x-user-id', req.headers['x-user-id']);
 
       // CRITICAL: Re-serialize and write back the JSON body.
       // express.json() consumed the original stream, so we must re-write it.

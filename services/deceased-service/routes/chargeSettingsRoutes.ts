@@ -14,16 +14,10 @@ const { protect } = require('../../../global/middlewares/authMiddleware');
 // All routes are protected with JWT authentication
 router.use(protect);
 
-// Charge Settings routes - Full paths
-router.get('/api/v1/restpoint/deceased/charge-settings', getChargeSettings);
-router.put('/api/v1/restpoint/deceased/charge-settings/:id', updateChargeSettings);
-router.get('/api/v1/restpoint/deceased/billing-summary/:id', getBillingSummary);
-router.post('/api/v1/restpoint/deceased/charge-settings/:id/recalculate', recalculateBalance);
-
-// Short paths (without full API prefix)
-router.get('/charge-settings', getChargeSettings);
-router.put('/charge-settings/:id', updateChargeSettings);
+// Charge Settings routes
+router.get('/', getChargeSettings);
+router.put('/:id', updateChargeSettings);
 router.get('/billing-summary/:id', getBillingSummary);
-router.post('/charge-settings/:id/recalculate', recalculateBalance);
+router.post('/:id/recalculate', recalculateBalance);
 
 export default router;

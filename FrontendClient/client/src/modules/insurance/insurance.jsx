@@ -85,6 +85,7 @@ const PolicyDropdown = ({ navigate, goTerms }) => {
     const policies = [
         { label: 'Terms of Service', onClick: goTerms },
         { label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+        { label: 'Security Policy', onClick: () => navigate('/security') },
         { label: 'Data Migration Policy', onClick: () => navigate('/data-migration') },
         { label: 'SLA Policy', onClick: () => navigate('/sla') },
         { label: 'Release Notes', onClick: () => navigate('/releases') },
@@ -192,19 +193,8 @@ const MobileMenu = ({ navigate, goTerms, goLogin, goStart }) => {
     );
 };
 
-/* ---------- Interactive Claim Simulator Component ---------- */
+/* ---------- Insurance Providers Display ---------- */
 const MockInsuranceEngine = () => {
-    const [provider, setProvider] = useState('Old Mutual');
-    const [status, setStatus] = useState('Idle');
-    const [coverageAmount, setCoverageAmount] = useState(350000);
-
-    const triggerVerification = () => {
-        setStatus('Verifying');
-        setTimeout(() => {
-            setStatus('Approved');
-        }, 2200);
-    };
-
     return (
         <div style={{
             background: C.verdigrisDark,
@@ -216,69 +206,28 @@ const MockInsuranceEngine = () => {
             boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
         }}>
             <div style={{ marginBottom: '1.4rem' }}>
-                <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>INTEGRATED ASSURANCE ENGINE</div>
-                <div style={{ fontSize: '1.4rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>Real-time Policy Matching</div>
-                <div style={{ fontSize: '0.78rem', color: 'rgba(250,248,244,0.6)' }}>Bridge the gap between funeral home ledgers & carriers.</div>
+                <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>INTEGRATED INSURANCE PROVIDERS</div>
+                <div style={{ fontSize: '1.4rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>Trusted Partners</div>
+                <div style={{ fontSize: '0.78rem', color: 'rgba(250,248,244,0.6)' }}>Working with leading insurance companies</div>
             </div>
 
-            <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, marginBottom: '0.4rem' }}>SELECT UNDERWRITER</label>
-                    <select
-                        value={provider}
-                        onChange={(e) => { setProvider(e.target.value); setStatus('Idle'); }}
-                        style={{ width: '100%', background: C.ink, border: `1px solid ${C.verdigrisLight}`, color: C.bone, padding: '0.6rem', fontSize: '0.85rem', outline: 'none' }}
-                    >
-                        <option value="Old Mutual">Old Mutual Funeral Cover</option>
-                        <option value="CIC Insurance">CIC Group Standard Plan</option>
-                        <option value="Britam">Britam Jamii Premium</option>
-                        <option value="Sanlam">Sanlam Corporate Assurance</option>
-                    </select>
-                </div>
-
-                <div>
-                    <div style={{ display: 'flex', justifyWith: 'space-between', justifyContent: 'space-between', fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, marginBottom: '0.4rem' }}>
-                        <span>ASSURED CAP</span>
-                        <span style={{ color: C.bone }}>KES {coverageAmount.toLocaleString()}</span>
+            <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                {[
+                    { name: 'Old Mutual', plan: 'Funeral Cover' },
+                    { name: 'CIC Insurance', plan: 'Group Standard Plan' },
+                    { name: 'Britam', plan: 'Jamii Premium' },
+                    { name: 'Sanlam', plan: 'Corporate Assurance' }
+                ].map((insurer, idx) => (
+                    <div key={idx} style={{
+                        background: 'rgba(250,248,244,0.05)',
+                        padding: '1rem',
+                        borderRadius: '4px',
+                        border: `1px solid ${C.verdigrisLight}`
+                    }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: C.bone, marginBottom: '0.2rem' }}>{insurer.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: C.grayLight }}>{insurer.plan}</div>
                     </div>
-                    <input
-                        type="range" min="100000" max="1000000" step="50000"
-                        value={coverageAmount}
-                        onChange={(e) => { setCoverageAmount(Number(e.target.value)); setStatus('Idle'); }}
-                        style={{ width: '100%', height: '2px', background: 'rgba(250,248,244,0.2)', outline: 'none', cursor: 'pointer' }}
-                    />
-                </div>
-
-                <div style={{ background: 'rgba(0,0,0,0.15)', padding: '1rem', borderLeft: `2px solid ${status === 'Approved' ? C.accent : status === 'Verifying' ? C.brass : C.lineDark}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.8rem', color: C.grayLight }}>Claim Status</span>
-                        <span style={{
-                            fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", padding: '0.2rem 0.6rem',
-                            background: status === 'Approved' ? 'rgba(199,123,94,0.2)' : status === 'Verifying' ? 'rgba(139,115,85,0.2)' : 'rgba(250,248,244,0.05)',
-                            color: status === 'Approved' ? C.accent : status === 'Verifying' ? C.brassLight : C.grayLight
-                        }}>
-                            {status === 'Idle' ? 'READY TO DISPATCH' : status === 'Verifying' ? 'SWIFT DISPATCH ROUTING...' : 'DISPATCH ACKNOWLEDGED'}
-                        </span>
-                    </div>
-                    {status === 'Approved' && (
-                        <div style={{ fontSize: '0.78rem', color: C.bone, marginTop: '0.6rem', lineHeight: '1.4' }}>
-                            ✓ Guarantee of Payment generated against {provider}. KES {Math.round(coverageAmount * 0.4).toLocaleString()} liquidity advance cleared for inmediato payouts.
-                        </div>
-                    )}
-                </div>
-
-                <button
-                    onClick={triggerVerification}
-                    disabled={status !== 'Idle'}
-                    style={{
-                        width: '100%', padding: '0.75rem', background: status === 'Approved' ? C.verdigrisLight : C.brass,
-                        border: 'none', color: C.bone, fontSize: '0.8rem', fontWeight: 500,
-                        cursor: status !== 'Idle' ? 'default' : 'pointer', fontFamily: "'JetBrains Mono', monospace",
-                        transition: 'background 0.2s'
-                    }}
-                >
-                    {status === 'Idle' ? 'Test Instant Verification' : status === 'Verifying' ? 'Querying API Gateways...' : 'Verification Complete'}
-                </button>
+                ))}
             </div>
         </div>
     );
@@ -386,119 +335,138 @@ export default function InsurancePage() {
                 <div className="wrap">
                     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '4rem', alignItems: 'center' }}>
                         <div>
-                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', color: C.brass, textTransform: 'uppercase', marginBottom: '1rem', fontWeight: 600 }}>BROKERAGE INTEGRATION MODULE</div>
-                            <h1>Bridge the Funeral Assurance Deficit.</h1>
+                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', color: C.brass, textTransform: 'uppercase', marginBottom: '1rem', fontWeight: 600 }}>FUNERAL INSURANCE MADE SIMPLE</div>
+                            <h1>Easing the burden when families need it most.</h1>
                             <p style={{ fontSize: '1.1rem', marginBottom: '2.2rem', maxWidth: '540px' }}>
-                                Rest Point found systemic liquidity caps averaging **KES 250k–900k per family ledger**. Our modular infrastructure turns funeral operating hubs into authorized assurance nodes, validating cover claims and unlocking immediate underwriter payouts.
+                                We understand the <strong>financial strain</strong> families go through when they lose a loved one  there's also a <strong>technology gap</strong> in this space that we are solving. That's why we're introducing a <strong>digital portal</strong> that helps funeral homes offer families a better way buy plans, <strong>pay directly from their phones using STK push</strong>, add dependents, and <strong>track contributions in real-time</strong>. No more chasing payments or wondering where things stand.
                             </p>
-                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                <button onClick={goStart} className="btn btn-dark">
-                                    Integrate API Brokerage <ArrowRight size={14} />
-                                </button>
-                                <a href="#mechanics" className="btn btn-line">Read Ledger Specs</a>
-                            </div>
+
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <MockInsuranceEngine />
+                            <div style={{
+                                background: C.verdigrisDark,
+                                border: `1px solid ${C.verdigrisLight}`,
+                                padding: '2rem',
+                                maxWidth: '400px',
+                                width: '100%',
+                                borderRadius: '2px',
+                                boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                            }}>
+                                <div style={{ marginBottom: '1.4rem' }}>
+                                    <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>FOR FUNERAL HOMES</div>
+                                    <div style={{ fontSize: '1.4rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>Complete Insurance Management</div>
+                                    <div style={{ fontSize: '0.78rem', color: 'rgba(250,248,244,0.6)' }}>Everything you need in one platform</div>
+                                </div>
+                                <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                    <div style={{ background: 'rgba(250,248,244,0.05)', padding: '1rem', borderRadius: '4px', border: `1px solid ${C.verdigrisLight}` }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: C.bone, marginBottom: '0.2rem' }}>Family Portal</div>
+                                        <div style={{ fontSize: '0.75rem', color: C.grayLight }}>Secure registration & management</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(250,248,244,0.05)', padding: '1rem', borderRadius: '4px', border: `1px solid ${C.verdigrisLight}` }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: C.bone, marginBottom: '0.2rem' }}>Real-Time Dashboard</div>
+                                        <div style={{ fontSize: '0.75rem', color: C.grayLight }}>Track collections & claims live</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(250,248,244,0.05)', padding: '1rem', borderRadius: '4px', border: `1px solid ${C.verdigrisLight}` }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: C.bone, marginBottom: '0.2rem' }}>Claims Processing</div>
+                                        <div style={{ fontSize: '0.75rem', color: C.grayLight }}>Streamlined & automated</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* ---------- Analytics / Discovery Metrics ---------- */}
+            {/* ---------- Key Benefits ---------- */}
             <section style={{ borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`, background: C.bone, padding: '4rem 0' }}>
                 <div className="wrap">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2.5rem' }}>
-                        <div className="metric-card">
-                            <div className="metric-num">KES 900K</div>
-                            <p style={{ fontSize: '0.88rem', fontWeight: 500, color: C.ink }}>Maximum Cover Deficit Discovered</p>
-                            <p style={{ fontSize: '0.8rem', color: C.gray, marginTop: '0.2rem' }}>Identified across regional family ledger balance audits.</p>
+                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: C.brass, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>WHY CHOOSE US</div>
+                        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Everything you need in one platform</h2>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                        <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', border: `1px solid ${C.line}` }}>
+                            <div style={{ width: '48px', height: '48px', background: 'rgba(61,79,71,0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                                <Shield size={24} color={C.verdigris} />
+                            </div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Secure Family Portal</h3>
+                            <p style={{ fontSize: '0.9rem' }}>Families register securely, add dependents, and manage their funeral cover online anytime, anywhere.</p>
                         </div>
-                        <div className="metric-card">
-                            <div className="metric-num">&lt; 15 Min</div>
-                            <p style={{ fontSize: '0.88rem', fontWeight: 500, color: C.ink }}>Claim Pipeline Verification</p>
-                            <p style={{ fontSize: '0.8rem', color: C.gray, marginTop: '0.2rem' }}>Bypassing administrative phone tags via instant carrier endpoints.</p>
+                        <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', border: `1px solid ${C.line}` }}>
+                            <div style={{ width: '48px', height: '48px', background: 'rgba(61,79,71,0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                                <Activity size={24} color={C.verdigris} />
+                            </div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Real-Time Tracking</h3>
+                            <p style={{ fontSize: '0.9rem' }}>Families see their contributions grow in real-time. Staff monitor collections, claims, and processing instantly.</p>
                         </div>
-                        <div className="metric-card">
-                            <div className="metric-num">0%</div>
-                            <p style={{ fontSize: '0.88rem', fontWeight: 500, color: C.ink }}>Reconciliation Variances</p>
-                            <p style={{ fontSize: '0.8rem', color: C.gray, marginTop: '0.2rem' }}>Automatic escrow matching from policy approval directly to active cases.</p>
+                        <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', border: `1px solid ${C.line}` }}>
+                            <div style={{ width: '48px', height: '48px', background: 'rgba(61,79,71,0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                                <Layers size={24} color={C.verdigris} />
+                            </div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Complete Dashboard</h3>
+                            <p style={{ fontSize: '0.9rem' }}>Staff get a powerful dashboard with real-time collections, claims processing, and document management all in one place.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* ---------- Technical Mechanics Architecture ---------- */}
-            <section id="mechanics" style={{ padding: '6rem 0', background: C.bone }}>
+            {/* ---------- How It Works ---------- */}
+            <section style={{ padding: '6rem 0', background: C.bone }}>
                 <div className="wrap">
-                    <Reveal>
-                        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: C.brass, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>LEDGER MECHANICS</div>
-                            <h2>Unified Claims Processing. Architecture built for operational dignity.</h2>
+                    <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: C.brass, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>HOW IT WORKS</div>
+                        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Simple, transparent, and fast</h2>
+                        <p style={{ fontSize: '1rem', color: C.gray, maxWidth: '600px', margin: '0 auto' }}>From registration to claims, everything is streamlined for families and funeral homes.</p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <div style={{ width: '64px', height: '64px', background: C.verdigris, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: C.bone, fontSize: '1.5rem', fontWeight: 600 }}>1</div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Register Online</h3>
+                            <p style={{ fontSize: '0.9rem' }}>Families sign up securely through the portal and add their dependents in minutes.</p>
                         </div>
-                    </Reveal>
-
-                    <div className="grid-cards">
-                        <Reveal delay={100} className="feature-block">
-                            <div>
-                                <div style={{ color: C.verdigris, marginBottom: '1.2rem' }}><Shield size={28} strokeWidth={1.5} /></div>
-                                <h3>Automated Policy Querying</h3>
-                                <p style={{ fontSize: '0.9rem' }}>
-                                    Input national registry variables or coverage identifiers once. Rest Point connects with key underwriter database mirrors across East Africa to instantly index verified policy riders.
-                                </p>
-                            </div>
-                        </Reveal>
-
-                        <Reveal delay={200} className="feature-block">
-                            <div>
-                                <div style={{ color: C.verdigris, marginBottom: '1.2rem' }}><Layers size={28} strokeWidth={1.5} /></div>
-                                <h3>Advanced Reconciliation</h3>
-                                <p style={{ fontSize: '0.9rem' }}>
-                                    Eliminate spreadsheet discrepancies. Approved claim structures auto-inject directly into invoice parameters, distributing credit transparently across vault storage, mortuary management, and logistics items.
-                                </p>
-                            </div>
-                        </Reveal>
-
-                        <Reveal delay={300} className="feature-block">
-                            <div>
-                                <div style={{ color: C.verdigris, marginBottom: '1.2rem' }}><Cpu size={28} strokeWidth={1.5} /></div>
-                                <h3>Underwriter Liquidity Dispatch</h3>
-                                <p style={{ fontSize: '0.9rem' }}>
-                                    Bypass standard 48-hour cash retention loops. Rest Point issues digital guarantees of payment, allowing funeral homes to dispatch transport setups and secure permits with confirmed fiscal visibility.
-                                </p>
-                            </div>
-                        </Reveal>
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <div style={{ width: '64px', height: '64px', background: C.verdigris, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: C.bone, fontSize: '1.5rem', fontWeight: 600 }}>2</div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Make Contributions</h3>
+                            <p style={{ fontSize: '0.9rem' }}>Track contributions in real-time. Watch savings grow with full transparency.</p>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <div style={{ width: '64px', height: '64px', background: C.verdigris, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: C.bone, fontSize: '1.5rem', fontWeight: 600 }}>3</div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Submit Claims</h3>
+                            <p style={{ fontSize: '0.9rem' }}>When needed, submit claims digitally with all documents attached. Fast and hassle-free.</p>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <div style={{ width: '64px', height: '64px', background: C.brass, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: C.bone, fontSize: '1.5rem', fontWeight: 600 }}>4</div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Get Paid Fast</h3>
+                            <p style={{ fontSize: '0.9rem' }}>Claims are verified and processed quickly. Families get support when they need it most.</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* ---------- Carrier Ecosystem ---------- */}
-            <section style={{ padding: '5rem 0', background: C.ink, color: C.bone }}>
+            {/* ---------- For Funeral Homes ---------- */}
+            <section style={{ padding: '5rem 0', background: C.verdigrisDark, color: C.bone }}>
                 <div className="wrap">
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '4rem', alignItems: 'center' }}>
-                        <div>
-                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: C.brassLight, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>CARRIER NETWORKS</div>
-                            <h2 style={{ color: C.bone, marginBottom: '1.2rem' }}>Compatible Underwriter Standards</h2>
-                            <p style={{ color: C.grayLight, fontSize: '0.95rem' }}>
-                                Rest Point integrates seamlessly with standard corporate enterprise API platforms. If your underwriter uses legacy systems or manual claim channels, our operational clearing system provides automated template routing via secure file structures.
-                            </p>
+                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: C.brass, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>FOR FUNERAL HOMES</div>
+                        <h2 style={{ color: C.bone, marginBottom: '1rem' }}>Powerful tools for your team</h2>
+                        <p style={{ color: C.grayLight, fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>Everything you need to manage insurance operations efficiently.</p>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                        <div style={{ background: 'rgba(250,248,244,0.05)', padding: '2rem', borderRadius: '8px', border: `1px solid ${C.verdigrisLight}` }}>
+                            <Activity size={32} color={C.brass} style={{ marginBottom: '1rem' }} />
+                            <h3 style={{ color: C.bone, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Real-Time Dashboard</h3>
+                            <p style={{ color: C.grayLight, fontSize: '0.9rem' }}>Monitor collections, claims, and processing status in real-time. Make informed decisions with live data.</p>
                         </div>
-                        <div style={{ background: 'rgba(250,248,244,0.03)', border: `1px solid ${C.lineDark}`, padding: '2rem', borderRadius: '2px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {[
-                                    { name: 'REST/JSON Direct API Connectors', desc: 'Real-time query endpoints for instant digital claim authorization loops.' },
-                                    { name: 'ISO 20022 Financial Document Formats', desc: 'Secure message validation mapping directly into clearing networks.' },
-                                    { name: 'Automated Secure SFTP Remittance Logs', desc: 'Nightly asynchronous parsing for legacy systems lacking active API connections.' }
-                                ].map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '1rem', borderBottom: idx < 2 ? `1px solid ${C.lineDark}` : 'none', paddingBottom: idx < 2 ? '1rem' : '0' }}>
-                                        <div style={{ color: C.brassLight, paddingTop: '0.2rem' }}><Check size={16} /></div>
-                                        <div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: 500, color: C.bone, marginBottom: '0.2rem' }}>{item.name}</div>
-                                            <div style={{ fontSize: '0.8rem', color: C.grayLight }}>{item.desc}</div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div style={{ background: 'rgba(250,248,244,0.05)', padding: '2rem', borderRadius: '8px', border: `1px solid ${C.verdigrisLight}` }}>
+                            <Layers size={32} color={C.brass} style={{ marginBottom: '1rem' }} />
+                            <h3 style={{ color: C.bone, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Document Management</h3>
+                            <p style={{ color: C.grayLight, fontSize: '0.9rem' }}>Upload, track, and manage all insurance documents in one secure location. Never lose paperwork again.</p>
+                        </div>
+                        <div style={{ background: 'rgba(250,248,244,0.05)', padding: '2rem', borderRadius: '8px', border: `1px solid ${C.verdigrisLight}` }}>
+                            <DollarSign size={32} color={C.brass} style={{ marginBottom: '1rem' }} />
+                            <h3 style={{ color: C.bone, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Claims Processing</h3>
+                            <p style={{ color: C.grayLight, fontSize: '0.9rem' }}>Streamline claims from submission to payout. Automated workflows reduce processing time significantly.</p>
                         </div>
                     </div>
                 </div>

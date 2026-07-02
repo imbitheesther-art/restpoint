@@ -5,11 +5,12 @@ import {
   Save, Upload, Building2, User, MapPin, Phone, Mail, Globe, Image,
   Palette, CheckCircle, AlertCircle, CreditCard, History,
   Settings, DollarSign, Clock, ArrowUpRight,
-  ArrowDownLeft, Filter, RefreshCw, Eye, EyeOff, FileText
+  ArrowDownLeft, Filter, RefreshCw, Eye, EyeOff, FileText, Users
 } from 'lucide-react';
 import { paymentApi } from '../../api/paymentApi';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
+import UserManagement from '../user/users';
 
 const Colors = {
   primary: '#3b82f6', success: '#22c55e', danger: '#ef4444',
@@ -20,6 +21,7 @@ const Colors = {
 
 const tabs = [
   { id: 'organization', label: 'Organization', icon: Building2 },
+  { id: 'users', label: 'User Management', icon: Users },
   { id: 'billing', label: 'Billing & Charges', icon: DollarSign },
   { id: 'payments', label: 'Payment History', icon: History },
   { id: 'quickbooks', label: 'QuickBooks', icon: CreditCard },
@@ -583,6 +585,11 @@ const SettingsPage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* User Management Tab */}
+      {activeTab === 'users' && (
+        <UserManagement />
       )}
 
       {/* QuickBooks Integration Tab */}

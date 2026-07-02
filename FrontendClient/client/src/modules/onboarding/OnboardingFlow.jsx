@@ -577,6 +577,11 @@ export default function OnboardingFlow() {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         .fade-in { animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .wrap { max-width: 1140px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.5rem); }
+        .footer-content { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 3rem; margin-bottom: 4rem; }
+        @media (max-width: 1000px) { .footer-content { grid-template-columns: 2fr 1fr 1fr !important; gap: 2.5rem !important; } }
+        @media (max-width: 700px) { .footer-content { grid-template-columns: 1fr !important; gap: 2rem !important; } }
+        @media (max-width: 600px) { .footer-bottom { flex-direction: column !important; gap: 1rem !important; text-align: center !important; } }
       `}</style>
 
       {/* Navbar */}
@@ -806,7 +811,7 @@ export default function OnboardingFlow() {
           </div>
         </section>
       </main>
-      <Footer navigate={navigate} goTerms={() => { }} />
+      <Footer navigate={navigate} goTerms={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); }} />
     </div>
   );
 }

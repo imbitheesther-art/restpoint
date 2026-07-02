@@ -62,11 +62,11 @@ export class NextOfKinModel {
 
     const result = await execute(req,
       `INSERT INTO next_of_kin (
-        deceased_id, tenant_slug, full_name, relationship, contact, email,
+        deceased_id, full_name, relationship, contact, email,
         is_primary, address, alternative_contact, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
-        data.deceased_id, data.tenant_slug || 'default', data.full_name, data.relationship, data.contact,
+        data.deceased_id, data.full_name, data.relationship, data.contact,
         data.email || null, data.is_primary || false, data.address || null,
         data.alternative_contact || null, data.created_by || null
       ]

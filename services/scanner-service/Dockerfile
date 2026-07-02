@@ -11,15 +11,15 @@ WORKDIR /app
 ENV GONOSUMDB=* GOFLAGS=-mod=mod GOTOOLCHAIN=auto
 
 # Copy go mod files first to cache deps
-COPY go.mod ./
+COPY services/scanner-service/go.mod ./
 
 # Tidy & download dependencies (generates go.sum from imports)
 RUN go mod tidy && go mod download
 
 # Copy source code
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
-COPY pkg/ ./pkg/
+COPY services/scanner-service/cmd/ ./cmd/
+COPY services/scanner-service/internal/ ./internal/
+COPY services/scanner-service/pkg/ ./pkg/
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o scanner-service ./cmd/server/

@@ -768,6 +768,41 @@ services:
       start_period: 40s
 
   # =============================================================================
+  # SCANNER SERVICE (Go)
+  # =============================================================================
+  
+  scanner-service:
+    build:
+      context: .
+      dockerfile: services/scanner-service/Dockerfile
+    image: restpoint-scanner-service:latest
+    container_name: restpoint_scanner_service
+    restart: always
+    ports:
+      - "${SCANNER_SERVICE_EXTERNAL_PORT:-2024}:2024"
+    environment:
+      SERVER_PORT: 2024
+      SERVER_HOST: 0.0.0.0
+      SERVER_ENV: production
+      STORAGE_TYPE: local
+      STORAGE_UPLOAD_PATH: ./uploads/scanned
+      SCANNER_AUTO_DETECT: true
+      SCANNER_DEFAULT_DPI: 300
+      SCANNER_DEFAULT_FORMAT: pdf
+      TZ: Africa/Nairobi
+    volumes:
+      - scanner_uploads:/app/uploads
+      - scanner_config:/app/config
+    networks:
+      - restpoint_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # =============================================================================
   # FRONTEND
   # =============================================================================
   

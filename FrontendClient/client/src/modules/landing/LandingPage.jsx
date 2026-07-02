@@ -73,6 +73,7 @@ const PolicyDropdown = ({ navigate, goTerms }) => {
   const policies = [
     { label: 'Terms of Service', onClick: goTerms },
     { label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+    { label: 'Security Policy', onClick: () => navigate('/security') },
     { label: 'Data Migration Policy', onClick: () => navigate('/data-migration') },
     { label: 'SLA Policy', onClick: () => navigate('/sla') },
     { label: 'Release Notes', onClick: () => navigate('/releases') },
@@ -210,14 +211,14 @@ const MockPortal = () => (
   <div style={{
     background: C.ink,
     border: `1px solid ${C.line}`,
-    padding: '1.6rem',
-    maxWidth: '340px',
+    padding: '2.5rem',
+    maxWidth: '520px',
     borderRadius: '2px',
   }}>
     <div style={{ marginBottom: '1.2rem' }}>
       <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>MWANGI FAMILY</div>
       <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>Arrangements confirmed</div>
-      <div style={{ fontSize: '0.78rem', color: C.grayLight }}>SMS link sent to family</div>
+      <div style={{ fontSize: '0.78rem', color: C.grayLight }}>Online link for  Family</div>
     </div>
     <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.7rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.84rem', color: C.grayLight }}>
@@ -252,16 +253,16 @@ const MockMemorial = () => {
     <div style={{
       background: C.verdigrisDark,
       border: `1px solid ${C.verdigrisLight}`,
-      padding: '1.6rem',
-      maxWidth: '340px',
+      padding: '2.5rem',
+      maxWidth: '520px',
       borderRadius: '2px',
     }}>
-      <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.6rem' }}>ONLINE MEMORIAL</div>
-        <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>{candles} candles lit</div>
-        <div style={{ fontSize: '0.78rem', color: 'rgba(250,248,244,0.6)' }}>In loving memory</div>
+      <div style={{ marginBottom: '1.2rem' }}>
+        <div style={{ fontSize: '0.82rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>ONLINE MEMORIAL</div>
+        <div style={{ fontSize: '1.6rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>{candles} candles lit</div>
+        <div style={{ fontSize: '0.9rem', color: 'rgba(250,248,244,0.6)' }}>In loving memory</div>
       </div>
-      <div style={{ marginTop: '1rem', borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
+      <div style={{ marginTop: '1.2rem', borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
         <textarea
           placeholder="Leave a message of condolence..."
           value={message}
@@ -297,13 +298,13 @@ const MockDispatch = () => {
     <div style={{
       background: C.ink,
       border: `1px solid ${C.line}`,
-      padding: '1.6rem',
-      maxWidth: '340px',
+      padding: '2.2rem',
+      maxWidth: '460px',
       borderRadius: '2px',
     }}>
       <div style={{ marginBottom: '1.2rem' }}>
         <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>SMART DISPATCH</div>
-        <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone }}>Hearse 02 — Karen to Lang'ata</div>
+        <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone }}>Hearse 02  Karen to Lang'ata</div>
       </div>
       <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
         <div style={{ marginBottom: '1.2rem' }}>
@@ -321,7 +322,7 @@ const MockDispatch = () => {
           <input type="range" min="150" max="250" value={rate} onChange={(e) => setRate(Number(e.target.value))} style={{ width: '100%', height: '2px', background: 'rgba(250,248,244,0.2)', outline: 'none', cursor: 'pointer' }} />
         </div>
         <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span style={{ fontSize: '0.78rem', color: C.grayLight }}>Trip cost (auto-billed)</span>
+          <span style={{ fontSize: '0.78rem', color: C.grayLight }}>Trip cost (auto billed)</span>
           <span style={{ fontSize: '1.4rem', fontFamily: "'Fraunces', serif", color: C.bone, fontWeight: 600 }}>KES {cost.toLocaleString()}</span>
         </div>
       </div>
@@ -333,8 +334,8 @@ const MockDocuments = () => (
   <div style={{
     background: C.bone2,
     border: `1px solid ${C.line}`,
-    padding: '1.6rem',
-    maxWidth: '340px',
+    padding: '2.2rem',
+    maxWidth: '460px',
     borderRadius: '2px',
   }}>
     <div style={{ marginBottom: '1.2rem' }}>
@@ -363,8 +364,8 @@ const MockStorefront = () => (
   <div style={{
     background: C.ink,
     border: `1px solid ${C.line}`,
-    padding: '1.6rem',
-    maxWidth: '340px',
+    padding: '2.2rem',
+    maxWidth: '460px',
     borderRadius: '2px',
   }}>
     <div style={{ marginBottom: '1.2rem' }}>
@@ -393,13 +394,13 @@ const MockInsurance = () => (
   <div style={{
     background: C.verdigrisDark,
     border: `1px solid ${C.verdigrisLight}`,
-    padding: '1.6rem',
-    maxWidth: '340px',
+    padding: '2.2rem',
+    maxWidth: '460px',
     borderRadius: '2px',
   }}>
     <div style={{ marginBottom: '1.2rem' }}>
       <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>INSURANCE CLAIM</div>
-      <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone }}>Old Mutual Funeral Cover</div>
+      <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone }}>Funeral Cover</div>
       <div style={{ fontSize: '0.78rem', color: 'rgba(250,248,244,0.6)' }}>Automated claim submission</div>
     </div>
     <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
@@ -476,27 +477,28 @@ export default function App() {
   const goAbout = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/about'); };
   const goInsurance = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/insurance'); };
   const goFamilyPortal = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/family-portal'); };
+  const goMemorial = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/memorial'); };
 
   const faqs = [
     {
       q: 'How are my case files backed up?',
-      a: 'Rest Point performs automated daily backups across geo-redundant cloud servers. All data is encrypted with AES-256 at rest. You can initiate a full backup export anytime from settings. Backups are stored in multiple data centers for maximum resilience.'
+      a: 'Rest Point performs automated daily backups across cloud servers. All data is encrypted with AES-256 at rest. You can initiate a full backup export anytime from settings. Backups are stored in multiple data centers for maximum resilience.'
     },
     {
       q: 'How long does backup restoration take?',
-      a: 'Full restoration typically completes in 2–4 hours. Critical case data can be restored in under 15 minutes. Our SLA guarantees 99.9% uptime with automatic failover across multiple data centers.'
+      a: 'Full restoration typically completes in 2 - 4 hours. Critical case data can be restored in under 15 minutes. Our SLA guarantees 99.9% uptime with automatic failover across multiple data centers.'
     },
     {
-      q: 'Is Rest Point cloud-based infrastructure?',
-      a: 'Yes. Rest Point runs on enterprise-grade cloud infrastructure with automatic scaling, geographic redundancy, and zero-downtime deployments. Your system is always responsive whether you\'re handling 1 case or 100.'
+      q: 'Is Rest Point cloud based infrastructure?',
+      a: 'Yes. Rest Point runs on enterprise grade cloud infrastructure .  Your system is always responsive whether you\'re handling 1 case or 100.'
     },
     {
-      q: 'What about data security and compliance?',
-      a: 'We use AES-256 encryption for data at rest, TLS 1.3 for transit, and role-based access controls. Rest Point is ISO 27001 compliant, GDPR-ready, and undergoes regular security audits. All data stays in East African data centers.'
+      q: 'What about data security ?',
+      a: 'We use AES-256 encryption for data at rest, TLS 1.3 for transit, and role-based access controls. Rest Point  undergoes regular security audits.'
     },
     {
       q: 'Can I integrate funeral insurance?',
-      a: 'Yes. We\'ve discovered funeral cover gaps of KES 250k–900k per case. Rest Point offers seamless integration for funeral homes that want to become insurance brokers or partners. Contact our team to discuss partnership options.'
+      a: 'Yes. We\'ve discovered funeral cover gaps of KES 250k–900k per case. Rest Point offers seamless integration for funeral homes that want to become insurance a  complete   death care  package . Contact our team to discuss partnership options.'
     },
     {
       q: 'What if I need custom features?',
@@ -512,9 +514,10 @@ export default function App() {
       savings: 1,
       color: C.verdigris,
       features: [
-        'Up to 3 users',
+        'Up to 20   users',
         'Unlimited cases & documents',
-        'Family portal & SMS',
+        'Family portal',
+        'Analytics & reporting',
         'Case management & billing',
         'Standard support (business hours)',
         'Daily backups',
@@ -528,13 +531,12 @@ export default function App() {
       color: C.brass,
       featured: true,
       features: [
-        'Up to 15 users',
+        'Unlimited  users',
         'Unlimited cases & documents',
         'All Single features +',
-        'Insurance claim integration',
         'Advanced analytics & reporting',
         'Priority 24/7 support',
-        'Custom integrations',
+        'Custom integrations  & Adds on',
         'Hourly backups',
       ],
     },
@@ -917,27 +919,67 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="hero-image" style={{
+              <div style={{
                 opacity: loaded ? 1 : 0,
                 transform: loaded ? 'translateY(0)' : 'translateY(20px)',
                 transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1) 200ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) 200ms',
-                position: 'relative', /* Allows absolute positioning if needed, or structured overflow */
-                overflow: 'hidden',    /* Keeps the image rounded/contained if the card has border-radius */
-                display: 'flex',
-                flexDirection: 'column',
                 width: '100%',
-                height: '100%',        /* Forces the container to fill its grid space */
                 minHeight: '400px'
               }}>
-
-
-
-                {/* Added the image right below it */}
-                <img
-                  src="landing.png"
-                  alt="Rest Point Dashboard Preview"
-                  style={{ width: '100%', height: '100%', display: 'block', }}
-                />
+                <div style={{
+                  background: C.verdigrisDark,
+                  border: `1px solid ${C.verdigrisLight}`,
+                  padding: '2rem',
+                  width: '100%',
+                  height: '100%',
+                  minHeight: '400px',
+                  borderRadius: '4px',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}>
+                  <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>DASHBOARD PREVIEW</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '2rem', fontFamily: "'Fraunces', serif", color: C.bone, fontWeight: 600 }}>24</div>
+                        <div style={{ fontSize: '0.72rem', color: C.grayLight }}>Active Cases</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '2rem', fontFamily: "'Fraunces', serif", color: C.bone, fontWeight: 600 }}>KES 84K</div>
+                        <div style={{ fontSize: '0.72rem', color: C.grayLight }}>Pending Bill</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '2rem', fontFamily: "'Fraunces', serif", color: C.bone, fontWeight: 600 }}>7</div>
+                        <div style={{ fontSize: '0.72rem', color: C.grayLight }}>New Today</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ borderTop: `1px solid ${C.lineDark}`, paddingTop: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.7rem 0', borderBottom: `1px solid ${C.lineDark}`, fontSize: '0.84rem', color: C.grayLight }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.verdigrisLight, display: 'inline-block' }} />
+                        Otieno Family
+                      </span>
+                      <span style={{ color: C.brass }}>In Progress</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.7rem 0', borderBottom: `1px solid ${C.lineDark}`, fontSize: '0.84rem', color: C.grayLight }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.brass, display: 'inline-block' }} />
+                        Mwangi Family
+                      </span>
+                      <span style={{ color: C.brass }}>Documents Pending</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.7rem 0', borderBottom: `1px solid ${C.lineDark}`, fontSize: '0.84rem', color: C.grayLight }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.accent, display: 'inline-block' }} />
+                        Kamau Family
+                      </span>
+                      <span style={{ color: C.bone, fontFamily: "'JetBrains Mono', monospace" }}>KES 120,000</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -971,7 +1013,7 @@ export default function App() {
             <Reveal>
               <h2>Built for reliability</h2>
               <p style={{ marginTop: '1rem', fontSize: '1.05rem', color: C.gray, maxWidth: '600px', marginBottom: '3rem' }}>
-                Enterprise-grade cloud infrastructure, bank-level security, and 99.9% uptime guarantee.
+                Enterprise grade cloud infrastructure, bank level security, and 99.9% uptime guarantee.
               </p>
             </Reveal>
 
@@ -981,7 +1023,7 @@ export default function App() {
                   <Cloud size={32} color={C.verdigris} style={{ marginBottom: '1rem' }} />
                   <h3>Cloud-based infrastructure</h3>
                   <p style={{ color: C.gray, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                    Enterprise servers with automatic scaling, geographic redundancy, and zero-downtime deployments. Your system is always responsive.
+                    Enterprise servers with redundancy, and zero downtime deployments. Your system is always responsive.
                   </p>
                 </div>
               </Reveal>
@@ -989,9 +1031,9 @@ export default function App() {
               <Reveal delay={150}>
                 <div className="infra-item">
                   <Lock size={32} color={C.verdigris} style={{ marginBottom: '1rem' }} />
-                  <h3>Bank-grade security</h3>
+                  <h3>Bank grade security</h3>
                   <p style={{ color: C.gray, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                    AES-256 encryption at rest, TLS 1.3 in transit, ISO 27001 compliant, and role-based access controls. Audit-ready.
+                    AES-256 encryption at rest, TLS 1.3 in transit,  and role based access controls. Audit-ready.
                   </p>
                 </div>
               </Reveal>
@@ -1001,7 +1043,7 @@ export default function App() {
                   <Zap size={32} color={C.verdigris} style={{ marginBottom: '1rem' }} />
                   <h3>99.9% uptime guarantee</h3>
                   <p style={{ color: C.gray, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                    Monitored 24/7 with automated failover across data centers. SLA-backed performance with daily backups.
+                    Monitored 24/7 with automated failover . SLA-backed performance with daily backups.
                   </p>
                 </div>
               </Reveal>
@@ -1017,28 +1059,33 @@ export default function App() {
                 <div className="label" style={{ marginBottom: '0.5rem' }}>System capabilities</div>
                 <h2 style={{ fontSize: '2.2rem' }}>Everything your funeral home needs</h2>
                 <p style={{ fontSize: '1.1rem', color: C.gray, maxWidth: '600px', margin: '1rem auto 0' }}>
-                  From case intake to family communication to dispatch — all in one system.
+                  From case intake to family communication to dispatch all in one system.
                 </p>
               </div>
             </Reveal>
 
-            <Showcase no="01" title="Family Portal" desc="Send families a single SMS link. They view case status, download documents, and pay balances by M-Pesa or card without calling your desk." reverse={false}>
+            <Showcase no="01" title="Family Portal" desc="Families log in with their phone number to access everything happening in the funeral home in real time — without calling your desk. Download invoices, view postmortem results, track case progress, and more. Only accessible when the deceased is in the facility." reverse={false}>
               <MockPortal />
             </Showcase>
 
-            <Showcase no="02" title="Digital memorial board" desc="Give families a place to gather, remember, and honour their loved ones. Light a digital candle, share a memory, and find comfort online." reverse={true}>
-              <MockMemorial />
+            <Showcase no="02" title="Digital memorial board" desc="Give families a place to gather, remember, and honour their loved ones. Light a digital candle, share a memory, and find comfort online. Your funeral home can provide a beautiful, secure memorial page where families can light candles, share tributes, and receive condolences from loved ones." reverse={true}>
+              <div>
+                <MockMemorial />
+                <button className="btn btn-dark" onClick={goMemorial} style={{ marginTop: '1.5rem', width: '100%' }}>
+                  Learn more about online memorials <ArrowRight size={16} />
+                </button>
+              </div>
             </Showcase>
 
             <Showcase no="03" title="Insurance claim integration" desc="Submit funeral cover claims directly from the case file with all documents attached. Track approval status in real time without chasing insurers." reverse={false}>
               <MockInsurance />
             </Showcase>
 
-            <Showcase no="04" title="Smart dispatch & logistics" desc="Log vehicle trips with auto-calculated fuel costs. Every dispatch is instantly billed to the right case so costs never slip through." reverse={true}>
+            <Showcase no="04" title="Smart dispatch & logistics" desc="Uses algorithms to calculate dispatch costs with zero losses. Add several trips for a single deceased. Every dispatch is instantly billed to the right case so costs never slip through." reverse={true}>
               <MockDispatch />
             </Showcase>
 
-            <Showcase no="05" title="Document & compliance vault" desc="Upload, verify, and track death certificates, permits, abstracts, and authorizations. Know instantly what's verified, pending, or missing." reverse={false}>
+            <Showcase no="05" title="Document & compliance vault" desc="Store all documents on the cloud — no paper works in your office. Upload, verify, and track death certificates, permits, abstracts, and authorizations. Know instantly what's verified, pending, or missing." reverse={false}>
               <MockDocuments />
             </Showcase>
 
@@ -1046,8 +1093,8 @@ export default function App() {
               <div style={{
                 background: C.ink,
                 border: `1px solid ${C.line}`,
-                padding: '1.6rem',
-                maxWidth: '340px',
+                padding: '2.2rem',
+                maxWidth: '460px',
                 borderRadius: '2px',
                 color: C.bone,
               }}>
@@ -1075,7 +1122,7 @@ export default function App() {
                   Funeral costs in Kenya range from <strong>KES 250,000 to KES 900,000+</strong>. Most families are financially unprepared.
                 </p>
                 <p>
-                  By offering insurance, you provide complete death care — differentiating your home from competitors and building lasting trust.
+                  By offering insurance, you provide complete death care differentiating your home from competitors and building lasting trust.
                 </p>
                 <div className="insurance-highlight">
                   <p style={{ color: C.bone }}>
@@ -1102,7 +1149,7 @@ export default function App() {
                   <div className="label" style={{ marginBottom: '0.8rem' }}>About Rest Point</div>
                   <h2>Built for families and funeral professionals.</h2>
                   <p>
-                    Rest Point is developed by <strong>Welt Tallis Technologies</strong> — a team that believes the best software is built by people who understand the work. We built the register first, and the features around it.
+                    Rest Point is developed by <strong>Welt Tallis Technologies</strong>  a team that believes the best software is built by people who understand the work. We built the register first, and the features around it.
                   </p>
                   <p>
                     Every detail is designed to help funeral homes run with dignity, accuracy, and care.
@@ -1201,7 +1248,7 @@ export default function App() {
                     color: plan.featured ? C.bone : C.ink,
                     borderColor: plan.color,
                   }}>
-                    {plan.featured && <div className="pricing-badge">RECOMMENDED</div>}
+                    {plan.featured && <div className="pricing-badge">POPULAR</div>}
                     <h3 className="pricing-name" style={{ color: plan.featured ? C.bone : C.ink }}>{plan.name}</h3>
                     <div className="pricing-amount" style={{ color: plan.featured ? C.bone : C.ink }}>
                       KES {billingYearly ? (plan.annual).toLocaleString() : plan.monthly.toLocaleString()}

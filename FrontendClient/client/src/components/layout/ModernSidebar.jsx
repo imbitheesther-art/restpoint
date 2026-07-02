@@ -10,7 +10,7 @@ import {
   ShoppingCart,
   Package,
   Truck,
-  Bell,
+  Beaker,
   Activity,
   BarChart3,
   FileBarChart,
@@ -414,6 +414,7 @@ const ModernSidebar = ({
       section: 'Inventory',
       items: [
         { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins` },
+        { icon: Beaker, label: 'Chemicals', path: `/tenant/${tenantSlug}/chemicals` },
         { icon: ShoppingCart, label: 'Marketplace', path: `/tenant/${tenantSlug}/marketplace` },
         { icon: Truck, label: 'Hearse', path: `/tenant/${tenantSlug}/hearse` },
       ]
@@ -435,8 +436,6 @@ const ModernSidebar = ({
     {
       section: 'System',
       items: [
-        { icon: Users, label: 'Users', path: `/tenant/${tenantSlug}/users` },
-        { icon: Bell, label: 'Notifications', path: `/tenant/${tenantSlug}/notifications`, badge: '8' },
         { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings` },
       ]
     }

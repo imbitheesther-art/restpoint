@@ -1,1 +1,0 @@
-const s = require("fs").readFileSync("userProfile.jsx","utf8");console.log(s);

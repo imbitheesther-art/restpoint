@@ -227,6 +227,21 @@ const DECEASED_SERVICE_MIGRATIONS: Migration[] = [
     `,
   },
   {
+    name: '011a_add_next_of_kin_missing_columns',
+    sql: `
+      ALTER TABLE next_of_kin
+        ADD COLUMN IF NOT EXISTS is_primary BOOLEAN DEFAULT FALSE AFTER email,
+        ADD COLUMN IF NOT EXISTS is_notified BOOLEAN DEFAULT FALSE AFTER is_primary,
+        ADD COLUMN IF NOT EXISTS notified_at DATETIME NULL AFTER is_notified,
+        ADD COLUMN IF NOT EXISTS alternative_contact VARCHAR(50) NULL AFTER address,
+        ADD COLUMN IF NOT EXISTS created_by VARCHAR(100) NULL AFTER alternative_contact,
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at,
+        ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted,
+        ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(100) NULL AFTER deleted_at,
+        ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at
+    `,
+  },
+  {
     name: '012_create_portal_sessions_table',
     sql: `
       CREATE TABLE IF NOT EXISTS portal_sessions (

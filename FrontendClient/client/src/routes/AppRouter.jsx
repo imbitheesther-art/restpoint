@@ -3,11 +3,14 @@ import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 're
 import { useTenantStore } from '../store/useTenantStore';
 import { tenantApi } from '../api/tenant.api';
 import ModernSidebar from '../components/layout/ModernSidebar';
+import UserProfile from '../components/userProfile';
+import FooterComponent from '../components/footer-sys/globalFooter';
 import PortalRouter from '../portal/PortalRouter';
 
 const LandingPage = lazy(() => import('../modules/landing/LandingPage'));
 const OnboardingFlow = lazy(() => import('../modules/onboarding/OnboardingFlow'));
 const InsurancePage = lazy(() => import('../modules/insurance/insurance'));
+const MemorialPage = lazy(() => import('../modules/memorial/MemorialPage'));
 
 const PrivacyPolicy = lazy(() => import('../components/privacy/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('../components/privacy/TermsOfService'));
@@ -90,13 +93,18 @@ const DashboardLayout = ({ children, tenantData }) => {
   };
   const handleSidebarToggle = (isOpen) => setSidebarOpen(isOpen);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-  const marginLeft = isMobile ? '0' : (sidebarOpen ? '260px' : '0');
+  const marginLeft = isMobile ? '0' : (sidebarOpen ? '260px' : '68px');
+  const contentPadding = sidebarOpen ? '2rem' : '1.5rem';
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F7F9FB' }}>
-      <ModernSidebar tenantData={tenantData} userData={{ name: user?.full_name || user?.name, role: user?.role || 'Administrator' }} onLogout={handleLogout} onToggle={handleSidebarToggle} />
-      <main style={{ flex: 1, marginLeft, padding: '2rem', minHeight: '100vh', background: '#F7F9FB', transition: 'margin-left 0.3s ease' }}>
-        <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
-      </main>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F7F9FB', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flex: 1 }}>
+        <ModernSidebar tenantData={tenantData} userData={{ name: user?.full_name || user?.name, role: user?.role || 'Administrator' }} onLogout={handleLogout} onToggle={handleSidebarToggle} />
+        <main style={{ flex: 1, marginLeft, padding: contentPadding, minHeight: '100vh', background: '#F7F9FB', transition: 'margin-left 0.3s ease, padding 0.3s ease' }}>
+          <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
+        </main>
+      </div>
+      <UserProfile />
+      <FooterComponent />
     </div>
   );
 };
@@ -195,7 +203,6 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="edocuments" element={<DashboardLayout tenantData={tenantData}><EDocumentsPage /></DashboardLayout>} />
       <Route path="reports" element={<DashboardLayout tenantData={tenantData}><ReportGenerator /></DashboardLayout>} />
       <Route path="chemicals" element={<DashboardLayout tenantData={tenantData}><ChemicalsPage /></DashboardLayout>} />
-      <Route path="notifications" element={<DashboardLayout tenantData={tenantData}><Notifications /></DashboardLayout>} />
       <Route path="marketplace" element={<DashboardLayout tenantData={tenantData}><MarketplacePage /></DashboardLayout>} />
       <Route path="marketplace/upload" element={<DashboardLayout tenantData={tenantData}><UploadProduct /></DashboardLayout>} />
       <Route path="settings" element={<DashboardLayout tenantData={tenantData}><SettingsPage /></DashboardLayout>} />
@@ -241,6 +248,7 @@ const AppRouter = () => (
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
       <Route path="/insurance" element={<InsurancePage />} />
+      <Route path="/memorial" element={<MemorialPage />} />
       <Route path="/portal/login" element={<PortalLoginPage />} />
       <Route path="/portal/*" element={<PortalRouter />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />

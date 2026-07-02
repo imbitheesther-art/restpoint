@@ -3,7 +3,6 @@ import { Bell, CheckCircle, AlertCircle, Info, Clock } from 'lucide-react';
 import api from '../api/axios';
 
 const UserProfile = () => {
-    const [user, setUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -12,8 +11,6 @@ const UserProfile = () => {
     const dropdownRef = useRef(null);
 
     useEffect(() => {
-        const ud = localStorage.getItem('user');
-        if (ud) try { setUser(JSON.parse(ud)); } catch (e) { }
         fetchNotifications();
     }, []);
 
@@ -54,11 +51,6 @@ const UserProfile = () => {
         } catch (e) { }
     };
 
-    const getInitials = (n) => {
-        if (!n) return 'U';
-        return n.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2);
-    };
-
     const formatTime = (d) => {
         if (!d) return '';
         const dt = new Date(d);
@@ -69,116 +61,174 @@ const UserProfile = () => {
         return dt.toLocaleDateString();
     };
 
-    const userName = user?.full_name || user?.name || user?.username || 'User';
-    const userRole = user?.role || '';
-
     return (
         <div style={{
-            display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px',
-            background: '#FFFFFF', borderBottom: '1px solid #E8ECF0',
-            justifyContent: 'flex-end', position: 'sticky', top: 0, zIndex: 40
+            position: 'fixed',
+            top: '16px',
+            right: '16px',
+            zIndex: 1000
         }}>
             <div ref={bellRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <button onClick={() => setShowNotifications(!showNotifications)}
+                <button
+                    onClick={() => setShowNotifications(!showNotifications)}
                     style={{
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        padding: '8px', borderRadius: '8px', color: '#6B7280', position: 'relative'
-                    }} title="Notifications">
-                    <Bell size={20} />
+                        background: '#FFFFFF',
+                        border: '1px solid #E8ECF0',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        color: '#6B7280',
+                        position: 'relative',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                    title="Notifications">
+                    <Bell size={18} />
                     {unreadCount > 0 && (
                         <span style={{
-                            position: 'absolute', top: 0, right: 0,
-                            background: '#EF4444', color: 'white', fontSize: '10px',
-                            fontWeight: 700, minWidth: '16px', height: '16px',
-                            borderRadius: '8px', display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', padding: '0 4px',
-                            transform: 'translate(25%, -25%)'
+                            position: 'absolute',
+                            top: '-3px',
+                            right: '-3px',
+                            background: '#EF4444',
+                            color: 'white',
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            minWidth: '16px',
+                            height: '16px',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '0 3px',
+                            boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
                         }}>
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
                 </button>
 
+                {/* Notifications Dropdown */}
                 {showNotifications && (
                     <div ref={dropdownRef} style={{
-                        position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                        width: '360px', maxHeight: '480px', background: '#FFFFFF',
-                        borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
-                        border: '1px solid #E8ECF0', overflow: 'hidden', zIndex: 1000
+                        position: 'absolute',
+                        top: 'calc(100% + 8px)',
+                        right: 0,
+                        width: '360px',
+                        maxHeight: '480px',
+                        background: '#FFFFFF',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+                        border: '1px solid #E8ECF0',
+                        overflow: 'hidden',
+                        zIndex: 1001
                     }}>
                         <div style={{
-                            padding: '12px 16px', borderBottom: '1px solid #E8ECF0',
-                            display: 'flex', justifyContent: 'space-between',
-                            alignItems: 'center', background: '#F9FAFB'
+                            padding: '12px 16px',
+                            borderBottom: '1px solid #E8ECF0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: '#F9FAFB'
                         }}>
-                            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1A1D24' }}>
+                            <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1A1D24' }}>
                                 Notifications
                                 {unreadCount > 0 && (
                                     <span style={{
-                                        marginLeft: '8px', background: '#EF4444', color: 'white',
-                                        fontSize: '11px', fontWeight: 600, padding: '1px 6px',
-                                        borderRadius: '10px'
+                                        marginLeft: '6px',
+                                        background: '#EF4444',
+                                        color: 'white',
+                                        fontSize: '10px',
+                                        fontWeight: 600,
+                                        padding: '1px 6px',
+                                        borderRadius: '8px'
                                     }}>
                                         {unreadCount} new
                                     </span>
                                 )}
                             </h3>
                             {unreadCount > 0 && (
-                                <button onClick={markAllAsRead} style={{
-                                    background: 'transparent', border: 'none', cursor: 'pointer',
-                                    fontSize: '12px', color: '#3B82F6', fontWeight: 500,
-                                    padding: '4px 8px', borderRadius: '6px'
-                                }}>Mark all read</button>
+                                <button
+                                    onClick={markAllAsRead}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '11px',
+                                        color: '#3B82F6',
+                                        fontWeight: 500,
+                                        padding: '3px 6px',
+                                        borderRadius: '4px'
+                                    }}>
+                                    Mark all read
+                                </button>
                             )}
                         </div>
 
-                        <div style={{ overflowY: 'auto', maxHeight: '400px' }}>
+                        <div style={{ overflowY: 'auto', maxHeight: '380px' }}>
                             {loading ? (
-                                <div style={{ padding: '24px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+                                <div style={{ padding: '20px', textAlign: 'center', color: '#9CA3AF', fontSize: '12px' }}>
                                     Loading notifications...
                                 </div>
                             ) : notifications.length === 0 ? (
-                                <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9CA3AF' }}>
-                                    <Bell size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                                    <p style={{ margin: 0, fontSize: '13px' }}>No notifications yet</p>
+                                <div style={{ padding: '28px 16px', textAlign: 'center', color: '#9CA3AF' }}>
+                                    <Bell size={24} style={{ marginBottom: '6px', opacity: 0.5 }} />
+                                    <p style={{ margin: 0, fontSize: '12px' }}>No notifications yet</p>
                                 </div>
                             ) : (
                                 notifications.map(n => (
-                                    <div key={n.id} onClick={() => !n.read && markAsRead(n.id)}
+                                    <div
+                                        key={n.id}
+                                        onClick={() => !n.read && markAsRead(n.id)}
                                         style={{
-                                            padding: '12px 16px', borderBottom: '1px solid #F3F4F6',
-                                            cursor: 'pointer', background: n.read ? '#FFFFFF' : '#EFF6FF',
-                                            display: 'flex', gap: '10px', alignItems: 'flex-start'
+                                            padding: '10px 14px',
+                                            borderBottom: '1px solid #F3F4F6',
+                                            cursor: 'pointer',
+                                            background: n.read ? '#FFFFFF' : '#EFF6FF',
+                                            display: 'flex',
+                                            gap: '8px',
+                                            alignItems: 'flex-start'
                                         }}>
                                         <div style={{ marginTop: '2px', flexShrink: 0 }}>
-                                            {n.type === 'success' ? <CheckCircle size={16} color="#10B981" /> :
-                                                n.type === 'error' ? <AlertCircle size={16} color="#EF4444" /> :
-                                                    n.type === 'warning' ? <AlertCircle size={16} color="#F59E0B" /> :
-                                                        <Info size={16} color="#3B82F6" />}
+                                            {n.type === 'success' ? <CheckCircle size={14} color="#10B981" /> :
+                                                n.type === 'error' ? <AlertCircle size={14} color="#EF4444" /> :
+                                                    n.type === 'warning' ? <AlertCircle size={14} color="#F59E0B" /> :
+                                                        <Info size={14} color="#3B82F6" />}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <p style={{
-                                                margin: 0, fontSize: '13px',
+                                                margin: 0,
+                                                fontSize: '12px',
                                                 fontWeight: n.read ? 400 : 600,
-                                                color: '#1A1D24', lineHeight: 1.4
+                                                color: '#1A1D24',
+                                                lineHeight: 1.4
                                             }}>{n.title || n.message}</p>
                                             {n.message && n.title && (
-                                                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#6B7280' }}>
+                                                <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#6B7280' }}>
                                                     {n.message}
                                                 </p>
                                             )}
                                             <div style={{
-                                                display: 'flex', alignItems: 'center', gap: '4px',
-                                                marginTop: '4px', fontSize: '11px', color: '#9CA3AF'
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '3px',
+                                                marginTop: '3px',
+                                                fontSize: '10px',
+                                                color: '#9CA3AF'
                                             }}>
-                                                <Clock size={10} />
+                                                <Clock size={9} />
                                                 <span>{formatTime(n.created_at || n.timestamp)}</span>
                                             </div>
                                         </div>
                                         {!n.read && (
                                             <div style={{
-                                                width: '8px', height: '8px', borderRadius: '50%',
-                                                background: '#3B82F6', flexShrink: 0, marginTop: '6px'
+                                                width: '6px',
+                                                height: '6px',
+                                                borderRadius: '50%',
+                                                background: '#3B82F6',
+                                                flexShrink: 0,
+                                                marginTop: '5px'
                                             }} />
                                         )}
                                     </div>
@@ -187,24 +237,6 @@ const UserProfile = () => {
                         </div>
                     </div>
                 )}
-            </div>
-
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '4px 8px', borderRadius: '8px', cursor: 'pointer'
-            }}>
-                <div style={{
-                    width: '32px', height: '32px', borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #0A2463 0%, #1A3A7A 100%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'white', fontWeight: 600, fontSize: '12px'
-                }}>
-                    {getInitials(userName)}
-                </div>
-                <div style={{ lineHeight: 1.2 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1A1D24' }}>{userName}</div>
-                    {userRole && <div style={{ fontSize: '11px', color: '#6B7280' }}>{userRole}</div>}
-                </div>
             </div>
         </div>
     );

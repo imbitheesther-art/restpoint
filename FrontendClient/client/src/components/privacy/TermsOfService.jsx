@@ -126,7 +126,7 @@ export default function TermsOfService() {
 
           <Reveal delay={250}>
             <h2>Payment Terms</h2>
-            <p>Fees are billed monthly or annually as agreed. Late payments may result in service suspension. All fees are non-refundable except as explicitly stated in your agreement.</p>
+            <p>We accept payments monthly, annually, or as agreed. There are no strict restrictions — fees remain flexible and we work with you. Refunds are processed only if the client specifically requests otherwise. We accept all major payment methods including M-Pesa, bank transfer, and card.</p>
           </Reveal>
 
           <Reveal delay={300}>
@@ -137,7 +137,10 @@ export default function TermsOfService() {
 
           <Reveal delay={350}>
             <h2>Limitation of Liability</h2>
-            <p>Rest Point is provided "as is" without warranty. We are not liable for indirect damages arising from use of the platform. Our total liability is limited to fees paid in the 12 months preceding a claim.</p>
+            <p>We are committed to protecting your data. Rest Point performs regular automated backups to support daily operations and business continuity. Where configured by the customer, the platform also creates backups to the customer's own Google Drive account, giving the customer an additional copy of their data under their control.</p>
+            <p>While we use reasonable technical and organizational measures to safeguard data and maintain reliable backup systems, no software or online service can guarantee uninterrupted operation or absolute protection against every possible failure.</p>
+            <p>To the fullest extent permitted by applicable law, Rest Point will not be liable for any indirect, incidental, consequential, special, or punitive damages, including loss of profits, loss of business opportunities, or business interruption arising from the use of the Services.</p>
+            <p>Except where liability cannot be limited by law, our total liability for any claim arising out of or relating to the Services will not exceed the total fees paid by the customer for the Services during the twelve (12) months immediately preceding the event giving rise to the claim.</p>
           </Reveal>
 
           <Reveal delay={400}>
