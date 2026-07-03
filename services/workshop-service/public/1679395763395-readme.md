@@ -1,0 +1,1 @@
+Your query collection should be stored in this folder. Feel free to edit this file should you need to add any comment.

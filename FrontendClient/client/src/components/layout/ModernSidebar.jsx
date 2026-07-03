@@ -7,6 +7,7 @@ import {
   FileText,
   Calendar,
   FolderOpen,
+  Hammer,
   ShoppingCart,
   Package,
   Truck,
@@ -417,6 +418,7 @@ const ModernSidebar = ({
         { icon: Beaker, label: 'Chemicals', path: `/tenant/${tenantSlug}/chemicals` },
         { icon: ShoppingCart, label: 'Marketplace', path: `/tenant/${tenantSlug}/marketplace` },
         { icon: Truck, label: 'Hearse', path: `/tenant/${tenantSlug}/hearse` },
+        { icon: Hammer, label: 'Workshop', path: `/tenant/${tenantSlug}/workshop` },
       ]
     },
     {

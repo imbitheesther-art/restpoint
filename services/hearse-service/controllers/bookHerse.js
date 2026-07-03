@@ -1,5 +1,6 @@
-const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps');
+const { safeQuery } = require('../../../configurations/sqlConfig/db');
+const { query, execute } = require('../../../shared/dbConfig');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const { EventEmitter } = require('events');
 const asyncHandler = require('express-async-handler');
 
@@ -7,8 +8,6 @@ const asyncHandler = require('express-async-handler');
 /**
  * Create a new hearse booking
  */
-
-const queue = require('../../queueEmmitter/queue');
 
 const makeHearseBooking = asyncHandler(async (req, res) => {
     try {
@@ -591,6 +590,44 @@ const getBookingsByDriver = asyncHandler(async (req, res) => {
     }
 });
 
+/**
+ * Get availability across branches (tenant-aware)
+ */
+const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
+    try {
+        const bookings = await query(req, `
+      SELECT 
+        hb.id AS booking_id,
+        hb.status,
+        hb.destination,
+        hb.estimated_departure_time,
+        h.id AS hearse_id,
+        h.number_plate,
+        h.model,
+        h.status AS hearse_status,
+        b.id AS branch_id,
+        b.branch_name,
+        b.location AS branch_location
+      FROM hearse_bookings hb
+      LEFT JOIN hearses h ON hb.hearse_id = h.id
+      LEFT JOIN branches b ON h.branch_id = b.id
+      ORDER BY hb.created_at DESC
+    `);
+
+        res.status(200).json({
+            status: 'success',
+            total: bookings.length,
+            bookings
+        });
+    } catch (error) {
+        console.error('❌ Availability Across Branches Error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch availability across branches.'
+        });
+    }
+});
+
 const getDriverDashboard = asyncHandler(async (req, res) => {
     try {
         const { driver_id } = req.params;
@@ -687,11 +724,6 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
 });
 
 
-
-queue.on('booking_created', (msg) => {
-    console.log(' Booking Created Event Triggered:', msg);
-});
-
 module.exports = {
     makeHearseBooking,
     getAllHearseBookings,
@@ -700,6 +732,6 @@ module.exports = {
     postponeHearseBooking,
     getAllDrivers,
     getBookingsByDriver,
-    getDriverDashboard
-
+    getDriverDashboard,
+    getAvailabilityAcrossBranches
 };

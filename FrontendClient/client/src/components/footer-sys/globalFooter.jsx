@@ -115,8 +115,21 @@ const SystemMeta = styled.div`
 // ------------------- COMPONENT -------------------
 const FooterComponent = () => {
   const [latency, setLatency] = useState('24ms');
-  const user = JSON.parse(localStorage.getItem('user') || '{"name":"User"}');
+  const [userName, setUserName] = useState('User');
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const name = user.full_name || user.name || user.username || user.email || 'User';
+        setUserName(name);
+      }
+    } catch (e) {
+      setUserName('User');
+    }
+  }, []);
 
   // Generate a random product ID
   const generateProductId = () => {
@@ -142,7 +155,7 @@ const FooterComponent = () => {
         <div style={{ opacity: 0.5 }}>|</div>
         <span>
           {' '}
-          - Logged in as : <RedText>{user.name || user.username}</RedText>
+          - Logged in as : <RedText>{userName}</RedText>
         </span>
       </Section>
 

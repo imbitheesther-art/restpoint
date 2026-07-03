@@ -45,6 +45,7 @@ const CalendarPage = lazy(() => import('../components/calender/CalendarPage'));
 const EDocumentsPage = lazy(() => import('../components/edocuments/EDocumentsPage'));
 const ReportGenerator = lazy(() => import('../components/reports/reportGenerator'));
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
+const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
 const HearseBookings = lazy(() => import('../components/herarse/hearseBookings'));
 
 
@@ -91,18 +92,21 @@ const DashboardLayout = ({ children, tenantData }) => {
   };
   const handleSidebarToggle = (isOpen) => setSidebarOpen(isOpen);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-  const marginLeft = isMobile ? '0' : (sidebarOpen ? '260px' : '68px');
+  const marginLeft = isMobile ? '0' : (sidebarOpen ? '240px' : '68px');
   const contentPadding = sidebarOpen ? '2rem' : '1.5rem';
+  const footerMarginLeft = isMobile ? '0' : (sidebarOpen ? '240px' : '68px');
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F7F9FB', flexDirection: 'column' }}>
       <div style={{ display: 'flex', flex: 1 }}>
         <ModernSidebar tenantData={tenantData} userData={{ name: user?.full_name || user?.name, role: user?.role || 'Administrator' }} onLogout={handleLogout} onToggle={handleSidebarToggle} />
-        <main style={{ flex: 1, marginLeft, padding: contentPadding, minHeight: '100vh', background: '#F7F9FB', transition: 'margin-left 0.3s ease, padding 0.3s ease' }}>
+        <main style={{ flex: 1, marginLeft, padding: contentPadding, minHeight: 'calc(100vh - 60px)', background: '#F7F9FB', transition: 'margin-left 0.3s ease, padding 0.3s ease' }}>
           <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
         </main>
       </div>
-      <UserProfile />
-      <FooterComponent />
+      <div style={{ marginLeft: footerMarginLeft, transition: 'margin-left 0.3s ease' }}>
+        <UserProfile />
+        <FooterComponent />
+      </div>
     </div>
   );
 };
@@ -201,6 +205,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="edocuments" element={<DashboardLayout tenantData={tenantData}><EDocumentsPage /></DashboardLayout>} />
       <Route path="reports" element={<DashboardLayout tenantData={tenantData}><ReportGenerator /></DashboardLayout>} />
       <Route path="chemicals" element={<DashboardLayout tenantData={tenantData}><ChemicalManagementDashboard /></DashboardLayout>} />
+      <Route path="workshop" element={<DashboardLayout tenantData={tenantData}><WorkshopDashboard /></DashboardLayout>} />
 
       <Route path="settings" element={<DashboardLayout tenantData={tenantData}><SettingsPage /></DashboardLayout>} />
       <Route path="release-form/:id" element={<DashboardLayout tenantData={tenantData}><ReleaseFormPage /></DashboardLayout>} />

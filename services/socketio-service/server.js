@@ -30,16 +30,19 @@ const io = new Server(server, {
   reconnectionAttempts: Infinity
 });
 
-// Redis Adapter for Scalability
+// Redis Adapter for Scalability - FIXED: Gracefully fallback if Redis unavailable
 const pubClient = createClient({ url: REDIS_URL });
 const subClient = pubClient.duplicate();
 
 Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
   io.adapter(createAdapter(pubClient, subClient));
-  console.log(" Socket.IO Redis Adapter connected");
+  console.log("✅ Socket.IO Redis Adapter connected");
 }).catch(err => {
-  console.error(" Redis connection error:", err);
-  process.exit(1);
+  console.warn("⚠️ Redis connection failed, falling back to in-memory adapter:", err.message);
+  console.warn("⚠️ Socket.IO will work without Redis, but horizontal scaling won't be available");
+  // Clean up failed clients
+  pubClient.disconnect().catch(() => { });
+  subClient.disconnect().catch(() => { });
 });
 
 // Store active user rooms

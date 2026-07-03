@@ -38,14 +38,34 @@ import {
     ArrowRight,
     MoreHorizontal
 } from 'lucide-react';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
+import env from '../../config/env';
 
-// API Service Layer
-const API_BASE_URL = 'http://localhost:5001/api/v1/restpoint';
+// Centralized API Service Layer
+const API_BASE_URL = `${env.FULL_API_URL}`;
+
+// Helper to get tenant slug
+const getTenantSlug = () => {
+    return localStorage.getItem('tenantSlug') ||
+        localStorage.getItem('tenant_slug') ||
+        (() => {
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                return user.tenantSlug || user.tenant?.slug || 'default';
+            } catch {
+                return 'default';
+            }
+        })();
+};
 
 const bookingService = {
     getBookings: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/hearse-bookings`);
+            const tenantSlug = getTenantSlug();
+            const response = await fetch(`${API_BASE_URL}/hearse-bookings`, {
+                headers: { 'x-tenant-slug': tenantSlug }
+            });
             if (!response.ok) throw new Error('Failed to fetch bookings');
             const data = await response.json();
             return data.bookings || [];
@@ -59,10 +79,13 @@ const bookingService = {
 
     getCrossBranchAvailability: async (branchId) => {
         try {
+            const tenantSlug = getTenantSlug();
             const url = branchId
                 ? `${API_BASE_URL}/hearses/available/cross-branch?branch_id=${branchId}`
                 : `${API_BASE_URL}/hearses/available/cross-branch`;
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: { 'x-tenant-slug': tenantSlug }
+            });
             if (!response.ok) throw new Error('Failed to fetch cross-branch availability');
             const data = await response.json();
             return data;
@@ -74,16 +97,17 @@ const bookingService = {
 
     registerHearse: async (hearseData) => {
         try {
+            const tenantSlug = getTenantSlug();
             const formData = new FormData();
             formData.append('number_plate', hearseData.number_plate);
-            formData.append('min_charge_ksh', hearseData.min_charge_ksh);
-            formData.append('max_charge_ksh', hearseData.max_charge_ksh);
+            formData.append('charge_ksh', hearseData.charge_ksh);
             formData.append('branch_id', hearseData.branch_id);
             if (hearseData.model) formData.append('model', hearseData.model);
             if (hearseData.image) formData.append('image', hearseData.image);
 
             const response = await fetch(`${API_BASE_URL}/hearses`, {
                 method: 'POST',
+                headers: { 'x-tenant-slug': tenantSlug },
                 body: formData
             });
             if (!response.ok) throw new Error('Failed to register hearse');
@@ -96,7 +120,10 @@ const bookingService = {
 
     getAllHearses: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/hearses`);
+            const tenantSlug = getTenantSlug();
+            const response = await fetch(`${API_BASE_URL}/hearses`, {
+                headers: { 'x-tenant-slug': tenantSlug }
+            });
             if (!response.ok) throw new Error('Failed to fetch hearses');
             const data = await response.json();
             return data.hearses || [];
@@ -108,10 +135,12 @@ const bookingService = {
 
     assignDriver: async (bookingId, driverId, hearseId) => {
         try {
+            const tenantSlug = getTenantSlug();
             const response = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/assign-driver`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-tenant-slug': tenantSlug
                 },
                 body: JSON.stringify({
                     driver_id: parseInt(driverId),
@@ -128,10 +157,12 @@ const bookingService = {
 
     updateBookingStatus: async (bookingId, status) => {
         try {
+            const tenantSlug = getTenantSlug();
             const response = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-tenant-slug': tenantSlug
                 },
                 body: JSON.stringify({ status })
             });
@@ -145,10 +176,12 @@ const bookingService = {
 
     postponeBooking: async (bookingId, postponeData) => {
         try {
+            const tenantSlug = getTenantSlug();
             const response = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/postpone`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-tenant-slug': tenantSlug
                 },
                 body: JSON.stringify(postponeData)
             });
@@ -164,7 +197,10 @@ const bookingService = {
 const driverService = {
     getDrivers: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/all-drivers`);
+            const tenantSlug = getTenantSlug();
+            const response = await fetch(`${API_BASE_URL}/all-drivers`, {
+                headers: { 'x-tenant-slug': tenantSlug }
+            });
             if (!response.ok) throw new Error('Failed to fetch drivers');
             const data = await response.json();
             return data.drivers || data || [];
@@ -203,6 +239,16 @@ const utils = {
         } catch {
             return '1';
         }
+    },
+
+    getBranchName: (branchId) => {
+        const branches = {
+            '1': 'Lee Funeral Home - Nairobi',
+            '2': 'Lee Funeral Home - Mombasa',
+            '3': 'Lee Funeral Home - Kisumu',
+            '4': 'Lee Funeral Home - Nakuru'
+        };
+        return branches[branchId] || `Branch ${branchId}`;
     },
 
     generateBookingId: (bookingId) => {
@@ -943,6 +989,7 @@ const BookingSystem = () => {
     const [registerForm, setRegisterForm] = useState({
         number_plate: '',
         model: '',
+        charge_ksh: '',
         branch_id: utils.getBranchId()
     });
 
@@ -1107,10 +1154,8 @@ const BookingSystem = () => {
             setRegisterForm({
                 number_plate: '',
                 model: '',
-                min_charge_ksh: '',
-                max_charge_ksh: '',
-                branch_id: utils.getBranchId(),
-                image: null
+                charge_ksh: '',
+                branch_id: utils.getBranchId()
             });
             // Reload hearses list
             loadHearses();
@@ -1384,24 +1429,12 @@ const BookingSystem = () => {
                             </Col>
                             <Col md={6}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">Min Charge (KSH) *</Form.Label>
+                                    <Form.Label className="fw-semibold">Charge (KSH) *</Form.Label>
                                     <Form.Control
                                         type="number"
-                                        value={registerForm.min_charge_ksh}
-                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, min_charge_ksh: e.target.value }))}
+                                        value={registerForm.charge_ksh}
+                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, charge_ksh: e.target.value }))}
                                         placeholder="5000"
-                                        required
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">Max Charge (KSH) *</Form.Label>
-                                    <Form.Control
-                                        type="number"
-                                        value={registerForm.max_charge_ksh}
-                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, max_charge_ksh: e.target.value }))}
-                                        placeholder="10000"
                                         required
                                     />
                                 </Form.Group>
@@ -1414,16 +1447,16 @@ const BookingSystem = () => {
                                         onChange={(e) => setRegisterForm(prev => ({ ...prev, branch_id: e.target.value }))}
                                         required
                                     >
-                                        <option value="1">Branch 1</option>
-                                        <option value="2">Branch 2</option>
-                                        <option value="3">Branch 3</option>
-                                        <option value="4">Branch 4</option>
+                                        <option value="1">Lee Funeral Home - Nairobi</option>
+                                        <option value="2">Lee Funeral Home - Mombasa</option>
+                                        <option value="3">Lee Funeral Home - Kisumu</option>
+                                        <option value="4">Lee Funeral Home - Nakuru</option>
                                     </Form.Select>
                                 </Form.Group>
                             </Col>
                             <Col md={12}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">Hearse Image</Form.Label>
+                                    <Form.Label className="fw-semibold">Hearse Image (Optional)</Form.Label>
                                     <Form.Control
                                         type="file"
                                         accept="image/*"
@@ -1434,6 +1467,9 @@ const BookingSystem = () => {
                                             }
                                         }}
                                     />
+                                    <Form.Text className="text-muted">
+                                        Image is optional - you can upload later
+                                    </Form.Text>
                                 </Form.Group>
                             </Col>
                         </Row>
@@ -1474,8 +1510,7 @@ const BookingSystem = () => {
                                         <th className="fw-bold">Model</th>
                                         <th className="fw-bold">Branch</th>
                                         <th className="fw-bold">Status</th>
-                                        <th className="fw-bold">Min Charge</th>
-                                        <th className="fw-bold">Max Charge</th>
+                                        <th className="fw-bold">Charge (KSH)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1485,14 +1520,13 @@ const BookingSystem = () => {
                                                 <strong className="text-primary">{hearse.number_plate}</strong>
                                             </td>
                                             <td>{hearse.model || 'N/A'}</td>
-                                            <td>Branch {hearse.branch_id}</td>
+                                            <td>{utils.getBranchName(hearse.branch_id)}</td>
                                             <td>
                                                 <Badge bg={hearse.status === 'available' ? 'success' : 'warning'}>
                                                     {hearse.status}
                                                 </Badge>
                                             </td>
-                                            <td>KSH {parseInt(hearse.min_charge_ksh).toLocaleString()}</td>
-                                            <td>KSH {parseInt(hearse.max_charge_ksh).toLocaleString()}</td>
+                                            <td>KSH {parseInt(hearse.charge_ksh || hearse.min_charge_ksh || 0).toLocaleString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>

@@ -33,13 +33,13 @@ const SERVICE_URLS = {
   users: process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:5001',
   tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:8002',
   deceased: process.env.DECEASED_SERVICE_URL || 'http://127.0.0.1:5003',
-  coffin: process.env.COFFIN_SERVICE_URL || 'http://127.0.0.1:8108',  // ✅ FIXED: Actual running port
+  coffin: process.env.COFFIN_SERVICE_URL || 'http://127.0.0.1:8108',
   marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://127.0.0.1:5005',
   mpesa: process.env.MPESA_SERVICE_URL || 'http://127.0.0.1:5006',
   portal: process.env.PORTAL_SERVICE_URL || 'http://127.0.0.1:5007',
   invoices: process.env.INVOICES_SERVICE_URL || 'http://127.0.0.1:5008',
   visitors: process.env.VISITORS_SERVICE_URL || 'http://127.0.0.1:5009',
-  notification: process.env.NOTIFICATION_SERVICE_URL || 'http://127.0.0.1:8111',  // ✅ FIXED: Actual running port
+  notification: process.env.NOTIFICATION_SERVICE_URL || 'http://127.0.0.1:8111',
   documents: process.env.DOCUMENTS_SERVICE_URL || 'http://127.0.0.1:5011',
   analytics: process.env.ANALYTICS_SERVICE_URL || 'http://127.0.0.1:5012',
   bodycheckout: process.env.BODYCHECKOUT_SERVICE_URL || 'http://127.0.0.1:5013',
@@ -48,10 +48,12 @@ const SERVICE_URLS = {
   chemicals: process.env.CHEMICALS_SERVICE_URL || 'http://127.0.0.1:5016',
   billing: process.env.BILLING_SERVICE_URL || 'http://127.0.0.1:5017',
   socketio: process.env.SOCKETIO_SERVICE_URL || 'http://127.0.0.1:5018',
+  workshop: process.env.WORKSHOP_SERVICE_URL || 'http://127.0.0.1:6969',
   extra: process.env.EXTRA_SERVICES_URL || 'http://127.0.0.1:5019',
   call: process.env.CALL_SERVICE_URL || 'http://127.0.0.1:5020',
   qrcode: process.env.QRCODE_SERVICE_URL || 'http://127.0.0.1:5021',
-  scanner: process.env.SCANNER_SERVICE_URL || 'http://127.0.0.1:5022',  // ✅ ADDED: Scanner service
+  scanner: process.env.SCANNER_SERVICE_URL || 'http://127.0.0.1:5022',
+  hearse: process.env.HEARSE_SERVICE_URL || 'http://127.0.0.1:5001',
 };
 
 const app = express();
@@ -100,6 +102,7 @@ const createProxy = (targetUrl) => {
     timeout: 30000,
     // Strip gateway prefixes so microservices receive clean paths
     pathRewrite: {
+      // Specific routes MUST come before catch-all
       '^/api/v1/restpoint/auth': '/auth',
       '^/v1/restpoint/auth': '/auth',
       '^/api/v1/restpoint/deceased': '/deceased',
@@ -112,8 +115,14 @@ const createProxy = (targetUrl) => {
       '^/v1/restpoint/billing': '/billing',
       '^/api/v1/restpoint/invoices': '/invoices',
       '^/v1/restpoint/invoices': '/invoices',
-      '^/api/v1/restpoint': '',
-      '^/v1/restpoint': '',
+      '^/api/v1/restpoint/hearses': '/hearses',
+      '^/v1/restpoint/hearses': '/hearses',
+      '^/api/v1/restpoint/hearse-bookings': '/hearse-bookings',
+      '^/v1/restpoint/hearse-bookings': '/hearse-bookings',
+      '^/api/v1/restpoint/all-drivers': '/all-drivers',
+      '^/v1/restpoint/all-drivers': '/all-drivers',
+      '^/api/v1/restpoint/hearse$': '/hearse',
+      '^/v1/restpoint/hearse$': '/hearse',
     },
     onProxyReq: (proxyReq, req, res) => {
       // Forward auth/tenant/user headers
@@ -199,11 +208,26 @@ app.use('/chemicals', chemicalsProxy);
 app.use('/api/v1/restpoint/chemicals', chemicalsProxy);
 app.use('/v1/restpoint/chemicals', chemicalsProxy);
 
-// Hearse - proxy to deceased service
-const hearseProxy = createProxy(SERVICE_URLS.deceased);
+// Workshop - proxy to workshop service
+const workshopProxy = createProxy(SERVICE_URLS.workshop);
+app.use('/workshop', workshopProxy);
+app.use('/api/v1/restpoint/workshop', workshopProxy);
+app.use('/v1/restpoint/workshop', workshopProxy);
+
+// Hearse - proxy to hearse service
+const hearseProxy = createProxy(SERVICE_URLS.hearse);
+app.use('/hearses', hearseProxy);
 app.use('/hearse', hearseProxy);
+app.use('/hearse-bookings', hearseProxy);
+app.use('/all-drivers', hearseProxy);
+app.use('/api/v1/restpoint/hearses', hearseProxy);
 app.use('/api/v1/restpoint/hearse', hearseProxy);
+app.use('/api/v1/restpoint/hearse-bookings', hearseProxy);
+app.use('/api/v1/restpoint/all-drivers', hearseProxy);
+app.use('/v1/restpoint/hearses', hearseProxy);
 app.use('/v1/restpoint/hearse', hearseProxy);
+app.use('/v1/restpoint/hearse-bookings', hearseProxy);
+app.use('/v1/restpoint/all-drivers', hearseProxy);
 
 // Documents - proxy to documents service
 const documentsProxy = createProxy(SERVICE_URLS.documents);

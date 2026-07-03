@@ -2,8 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
-const { safeQuery } = require('../../configurations/sqlConfig/db');
-const { getKenyaTimeISO } = require('../../utilities/timeStamps/timeStamps');
+const { safeQuery } = require('../../../configurations/sqlConfig/db');
+const { query, execute } = require('../../../shared/dbConfig');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 
 // === Ensure uploads/hearses folder exists ===

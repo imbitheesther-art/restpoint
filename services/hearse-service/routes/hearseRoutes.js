@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 
-const hearseBookingController = require('../controllers/restpoint/hearseBookingController');
+const hearseBookingController = require('../controllers/bookHerse');
 const hearseController = require('../controllers/restpoint/hearseController');
 
 // ============================================================

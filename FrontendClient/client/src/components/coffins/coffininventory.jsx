@@ -7,6 +7,7 @@ import {
 } from 'react-bootstrap';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
+import env from '../../config/env';
 import {
   Search,
   Plus,
@@ -973,7 +974,7 @@ function CoffinInventory() {
     if (images.length === 1) {
       return (
         <img
-          src={`http://localhost:5000${images[0]}`}
+          src={images[0].startsWith('http') ? images[0] : `${env.API_GATEWAY_URL}${images[0]}`}
           alt={coffin.type}
           className="coffin-image"
           onError={(e) => {
@@ -989,7 +990,7 @@ function CoffinInventory() {
           <Carousel.Item key={index}>
             <img
               className="d-block w-100 coffin-image"
-              src={`http://localhost:5000${image}`}
+              src={image.startsWith('http') ? image : `${env.API_GATEWAY_URL}${image}`}
               alt={`${coffin.type} - ${index + 1}`}
               onError={(e) => {
                 e.target.src = 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&h=300&fit=crop';

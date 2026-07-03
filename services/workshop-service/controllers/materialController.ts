@@ -1,0 +1,227 @@
+import { Request, Response } from "express"
+import { safeTenantQuery, safeTenantExecute } from '../database/db.js'
+// @ts-ignore - socket module types not fully declared
+import { getIO } from '../socket.js'
+
+/* 
+    @route  GET /api/workshop/materials
+    @desc   Get all materials with optional category filter
+*/
+const getMaterials = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        let query = 'SELECT * FROM materials WHERE 1=1';
+        const params: any[] = [];
+
+        if (req.query.category) {
+            query += ' AND category = ?';
+            params.push(req.query.category);
+        }
+        if (req.query.low_stock) {
+            query += ' AND quantity <= min_stock_level';
+        }
+
+        query += ' ORDER BY name ASC';
+        const rows = await safeTenantQuery(tenantDb, query, params);
+        res.json(rows);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/* 
+    @route  GET /api/workshop/materials/:id
+    @desc   Get a single material
+*/
+const getMaterial = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        const [rows] = await safeTenantQuery(tenantDb, 'SELECT * FROM materials WHERE id = ?', [req.params.id]);
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Material not found' });
+        }
+        res.json(rows[0]);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/* 
+    @route  POST /api/workshop/materials
+    @desc   Create a new material
+*/
+const createMaterial = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        const { name, category, unit, quantity, unit_price, min_stock_level, description } = req.body;
+
+        const [result] = await safeTenantExecute(tenantDb,
+            `INSERT INTO materials (name, category, unit, quantity, unit_price, min_stock_level, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [name, category, unit, quantity || 0, unit_price || 0, min_stock_level || 0, description]
+        );
+
+        const [newMaterial] = await safeTenantQuery(tenantDb, 'SELECT * FROM materials WHERE id = ?', [(result as any).insertId]);
+
+        const io = getIO();
+        io.emit('material:created', newMaterial[0]);
+
+        res.status(201).json(newMaterial[0]);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/* 
+    @route  PATCH /api/workshop/materials/:id
+    @desc   Update a material
+*/
+const updateMaterial = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        const allowedFields = ['name', 'category', 'unit', 'quantity', 'unit_price', 'min_stock_level', 'description'];
+        const updates: string[] = [];
+        const values: any[] = [];
+
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updates.push(`${field} = ?`);
+                values.push(req.body[field]);
+            }
+        }
+
+        if (!updates.length) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        values.push(req.params.id);
+        const [result] = await safeTenantExecute(tenantDb,
+            `UPDATE materials SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
+
+        if (!(result as any).affectedRows) {
+            return res.status(404).json({ error: 'Material not found' });
+        }
+
+        const [updated] = await safeTenantQuery(tenantDb, 'SELECT * FROM materials WHERE id = ?', [req.params.id]);
+
+        const io = getIO();
+        io.emit('material:updated', updated[0]);
+
+        res.json(updated[0]);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/* 
+    @route  DELETE /api/workshop/materials/:id
+    @desc   Delete a material
+*/
+const deleteMaterial = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        const [result] = await safeTenantExecute(tenantDb, 'DELETE FROM materials WHERE id = ?', [req.params.id]);
+        if (!(result as any).affectedRows) {
+            return res.status(404).json({ error: 'Material not found' });
+        }
+
+        const io = getIO();
+        io.emit('material:deleted', { id: Number(req.params.id) });
+
+        res.json({ message: 'Material deleted successfully' });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/* 
+    @route  POST /api/workshop/materials/use
+    @desc   Record material usage for an order and deduct from inventory
+*/
+const useMaterial = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        const { coffin_order_id, material_id, quantity_used, notes } = req.body;
+
+        // Get material current info
+        const [materials] = await safeTenantQuery(tenantDb,
+            'SELECT * FROM materials WHERE id = ?',
+            [material_id]
+        );
+
+        if (!materials.length) {
+            return res.status(404).json({ error: 'Material not found' });
+        }
+
+        const material = materials[0];
+
+        if (material.quantity < quantity_used) {
+            return res.status(400).json({
+                error: `Insufficient stock. Available: ${material.quantity} ${material.unit}, Required: ${quantity_used}`
+            });
+        }
+
+        // Deduct from inventory
+        await safeTenantExecute(tenantDb,
+            'UPDATE materials SET quantity = quantity - ? WHERE id = ?',
+            [quantity_used, material_id]
+        );
+
+        // Record usage
+        const [result] = await safeTenantExecute(tenantDb,
+            `INSERT INTO material_usage (coffin_order_id, material_id, quantity_used, unit_cost, notes)
+             VALUES (?, ?, ?, ?, ?)`,
+            [coffin_order_id, material_id, quantity_used, material.unit_price, notes]
+        );
+
+        const [usage] = await safeTenantQuery(tenantDb,
+            `SELECT mu.*, m.name as material_name, m.category 
+             FROM material_usage mu 
+             JOIN materials m ON mu.material_id = m.id 
+             WHERE mu.id = ?`,
+            [(result as any).insertId]
+        );
+
+        const io = getIO();
+        io.emit('material:used', usage[0]);
+
+        res.status(201).json(usage[0]);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export {
+    getMaterials,
+    getMaterial,
+    createMaterial,
+    updateMaterial,
+    deleteMaterial,
+    useMaterial
+};

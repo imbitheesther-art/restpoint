@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const axios = require('axios');
-const { safeMasterQuery, lookupTenantDatabase } = require('../../shared/dbConfig');
+const { lookupTenantDatabase } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
 const notificationsController = require('./controllers/notifications');
 const supportTicketsRouter = require('./routes/supportTickets');
@@ -140,18 +140,33 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`notification-service is running on port ${PORT}`);
 
   // Start background notification job for all tenants (runs every 60s)
+  // FIXED: Skip background job if Redis is not available to avoid crashes
   setInterval(async () => {
     try {
-      const tenants = await safeMasterQuery(`SELECT tenant_slug, db_name FROM tenants WHERE status = 'active'`);
-      for (const t of tenants) {
-        if (t.db_name) {
-          notificationsController.handleDeceasedNotifications(t.db_name, null);
+      // Skip background job in development or when Redis is unavailable
+      if (process.env.NODE_ENV === 'development' || process.env.DISABLE_BACKGROUND_JOBS === 'true') {
+        return;
+      }
+
+      const tenants = await lookupTenantDatabase('system');
+      if (!tenants) {
+        console.log('⚠️ Background job skipped: no tenant database available');
+        return;
+      }
+
+      // Process notifications for each tenant
+      for (const tenant of tenants) {
+        if (tenant.db_name) {
+          try {
+            await notificationsController.handleDeceasedNotifications(tenant.db_name, null);
+          } catch (err) {
+            console.error(`Notification job error for ${tenant.tenant_slug}:`, err.message);
+          }
         }
       }
     } catch (err) {
-      console.error('Notification background job error:', err);
+      console.error('Notification background job error:', err.message);
     }
-
   }, 60 * 1000);
 
 });

@@ -13,21 +13,14 @@ const optionalAuth = (req, res, next) => {
 // ============================================
 // CHEMICAL INVENTORY ROUTES
 // ============================================
+// NOTE: Specific routes MUST come BEFORE wildcard /:id routes
+// to prevent Express from matching "analytics", "transfers" etc. as :id
 
 // Get all chemicals (with low stock flag, usage data)
 router.get('/', chemicalController.getAll);
 
-// Get single chemical - MUST come after specific routes
-router.get('/:id', chemicalController.getById);
-
 // Create new chemical
 router.post('/', chemicalController.create);
-
-// Update chemical
-router.put('/:id', chemicalController.update);
-
-// Delete chemical (soft delete)
-router.delete('/:id', chemicalController.remove);
 
 // ============================================
 // STOCK TRANSACTIONS
@@ -115,5 +108,18 @@ router.get('/transfers', chemicalController.getTransfers);
 
 // Approve/reject/complete a transfer
 router.put('/transfers/:id', chemicalController.approveTransfer);
+
+// ============================================
+// WILDCARD ROUTES (must come AFTER all specific routes)
+// ============================================
+
+// Get single chemical
+router.get('/:id', chemicalController.getById);
+
+// Update chemical
+router.put('/:id', chemicalController.update);
+
+// Delete chemical (soft delete)
+router.delete('/:id', chemicalController.remove);
 
 module.exports = router;

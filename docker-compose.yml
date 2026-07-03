@@ -752,6 +752,39 @@ services:
       retries: 3
       start_period: 40s
 
+  # Workshop Service
+  workshop-service:
+    build:
+      context: .
+      dockerfile: ./services/workshop-service/Dockerfile
+    container_name: restpoint_workshop_service
+    ports:
+      - "6969:6969"
+    environment:
+      - PORT=6969
+      - NODE_ENV=production
+      - SERVICE_NAME=workshop-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
+      - DB_HOST=restpoint_mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6969/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # Extra Services
   extra-services:
     build:
@@ -1007,6 +1040,8 @@ volumes:
   documents_service_data:
     driver: local
   socketio_service_data:
+    driver: local
+  workshop_service_data:
     driver: local
   loki_data:
     driver: local

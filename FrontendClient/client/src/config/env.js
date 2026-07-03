@@ -29,7 +29,7 @@ const env = {
   API_TIMEOUT: 30000,
 
   // WebSocket URL for real-time features
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:8010'),
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:5018'),
 
   // Feature flags
   FEATURES: {

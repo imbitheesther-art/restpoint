@@ -5,7 +5,9 @@ const path = require('path');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const restpointRoutes = require('./routes/restpointRoutes');
+
+
+const restpointRoutes = require('./routes/hearseRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -45,23 +47,50 @@ io.on('connection', (socket) => {
     // branch-specific events later (e.g. driver dashboards)
     socket.on('join_branch', (branchId) => {
         socket.join(`branch_${branchId}`);
-        console.log(`🏢 Socket ${socket.id} joined branch_${branchId}`);
+        console.log(` Socket ${socket.id} joined branch_${branchId}`);
     });
 
     socket.on('join_admin', () => {
         socket.join('admin');
-        console.log(`👑 Socket ${socket.id} joined admin room`);
+        console.log(`Socket ${socket.id} joined admin room`);
     });
 
     socket.on('disconnect', () => {
-        console.log(`❌ Client disconnected: ${socket.id}`);
+        console.log(` Client disconnected: ${socket.id}`);
     });
 });
 
 // ============================================================
-// Routes
+// Tenant Middleware - Set database context for each request
 // ============================================================
-app.use('/api/v1/restpoint', restpointRoutes);
+app.use(async (req, res, next) => {
+    try {
+        // Extract tenant slug from headers (set by API gateway)
+        const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-slug'];
+
+        if (tenantSlug) {
+            // Set the tenant database for this request
+            await safeTenantQuery('SELECT 1');
+            console.log(`[Tenant] Database set to: ${tenantSlug}`);
+        } else {
+            console.warn('[Tenant] No tenant slug found in headers');
+        }
+
+        next();
+    } catch (error) {
+        console.error('[Tenant] Error setting database:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to initialize tenant database',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// Routes - Mount at root since API Gateway strips /api/v1/restpoint prefix
+// ============================================================
+app.use('/', restpointRoutes);
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
@@ -82,10 +111,10 @@ app.use((err, req, res, next) => {
 // ============================================================
 // Start server
 // ============================================================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`🔌 Socket.IO ready for real-time cross-branch updates`);
+    console.log(` Server running on http://localhost:${PORT}`);
+    console.log(` Socket.IO ready for real-time cross-branch updates`);
 });
 
 module.exports = { app, server, io };

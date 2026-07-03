@@ -392,7 +392,14 @@ exports.getChemicalAnalytics = async (req, res) => {
       const currentStock = parseFloat(r.current_stock) || 0;
       const dailyAvg = used30d > 0 ? used30d / 30 : 0;
       const avgPerEmbalming = usedToday > 0 ? (usedToday / Math.max(1, usedToday)) : 0;
-      const daysRemaining = dailyAvg > 0 ? (currentStock / dailyAvg) : 999;
+
+      // Fix: Handle zero daily avg gracefully - show "N/A" or 999
+      let daysRemaining = 999;
+      let daysRemainingDisplay = '999+';
+      if (dailyAvg > 0) {
+        daysRemaining = currentStock / dailyAvg;
+        daysRemainingDisplay = daysRemaining < 1 ? '<1' : Math.round(daysRemaining).toString();
+      }
 
       return {
         chemical_id: r.chemical_id,
@@ -406,7 +413,8 @@ exports.getChemicalAnalytics = async (req, res) => {
         used_today: usedToday,
         total_used_30d: used30d,
         avg_usage_per_embalming: avgPerEmbalming.toFixed(2),
-        estimate_days_remaining: daysRemaining.toFixed(1),
+        estimate_days_remaining: daysRemainingDisplay,
+        actual_days_remaining: daysRemaining.toFixed(1),
         is_low_stock: r.is_low_stock,
         branch_id: r.branch_id
       };
@@ -433,7 +441,7 @@ exports.getUsageByBranch = async (req, res) => {
     const rows = await safeTenantQuery(tenantDb,
       `SELECT dcu.*, c.name as chemical_name, c.unit, c.category,
               c.hazard_level,
-              (SELECT CONCAT(first_name, ' ', last_name) FROM deceased WHERE id = dcu.deceased_id) as deceased_name
+              dcu.deceased_id
        FROM deceased_chemical_usage dcu
        JOIN chemicals c ON c.id = dcu.chemical_id
        WHERE dcu.branch_id = ?
@@ -442,11 +450,11 @@ exports.getUsageByBranch = async (req, res) => {
       [branchId]
     );
 
-    // Map to frontend format
+    // Map to frontend format - remove reference to deceased table which doesn't exist in chemical service DB
     const data = rows.map(r => ({
       usage_id: r.id,
       deceased_id: r.deceased_id,
-      deceased_name: r.deceased_name,
+      deceased_name: `Deceased #${r.deceased_id}`,
       chemical_id: r.chemical_id,
       chemical_name: r.chemical_name,
       category: r.category,
