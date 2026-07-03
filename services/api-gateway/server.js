@@ -193,6 +193,12 @@ app.use('/scanner', scannerProxy);
 app.use('/api/v1/scanner', scannerProxy);
 app.use('/api/v1/restpoint/scanner', scannerProxy);
 
+// Chemicals
+const chemicalsProxy = createProxy(SERVICE_URLS.chemicals);
+app.use('/chemicals', chemicalsProxy);
+app.use('/api/v1/restpoint/chemicals', chemicalsProxy);
+app.use('/v1/restpoint/chemicals', chemicalsProxy);
+
 // Hearse - proxy to deceased service
 const hearseProxy = createProxy(SERVICE_URLS.deceased);
 app.use('/hearse', hearseProxy);

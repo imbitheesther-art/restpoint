@@ -3,7 +3,7 @@
  * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
  */
 
-import mysql from 'mysql2/promise';
+import * as mysql from 'mysql2/promise';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ let rootPool: mysql.Pool | null = null;
 const tenantPoolCache = new Map<string, mysql.Pool>();
 
 // FIXED: Now actively used to prevent recurring multi-hop queries
-const branchDbCache = new Map<string, string>(); 
+const branchDbCache = new Map<string, string>();
 
 // ─── Root Pool ───────────────────────────────────────────────────────────────
 
@@ -104,7 +104,7 @@ export const resolveDatabase = async (slug: string): Promise<string | null> => {
            LIMIT 1`,
           [`%${branchName}%`, `%${branchName}%`]
         );
-        
+
         const list = rows as any[];
         if (list.length > 0) {
           const branchDbName = list[0].branch_db_name;
@@ -241,7 +241,7 @@ export const safeTenantExecute = async (dbName: string, sql: string, params: any
 export const closeTenantDB = async (tenantDbName: string): Promise<void> => {
   const pool = tenantPoolCache.get(tenantDbName);
   if (pool) {
-    await pool.end().catch(() => {});
+    await pool.end().catch(() => { });
     tenantPoolCache.delete(tenantDbName);
     console.log(`🔌 Closed pool for: ${tenantDbName}`);
   }
@@ -249,14 +249,14 @@ export const closeTenantDB = async (tenantDbName: string): Promise<void> => {
 
 export const closeAllConnections = async (): Promise<void> => {
   for (const [dbName, pool] of tenantPoolCache) {
-    await pool.end().catch(() => {});
+    await pool.end().catch(() => { });
     console.log(`🔌 Closed pool for: ${dbName}`);
   }
   tenantPoolCache.clear();
   branchDbCache.clear(); // Clear mapping definitions cache too
 
   if (rootPool) {
-    await rootPool.end().catch(() => {});
+    await rootPool.end().catch(() => { });
     rootPool = null;
     console.log('🔌 Closed root pool');
   }

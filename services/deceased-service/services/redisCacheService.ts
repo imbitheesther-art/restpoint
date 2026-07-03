@@ -1,3 +1,4 @@
+import { tryCatch } from 'bullmq';
 import IORedis from 'ioredis';
 import type { Redis } from 'ioredis';
 
@@ -41,8 +42,11 @@ export class RedisCacheService {
           }
           return 100;
         }
-      });
+      });   
 
+
+
+     
       this.client.on('connect', () => {
         this.isConnected = true;
         this.connectionAttempted = true;
@@ -69,6 +73,17 @@ export class RedisCacheService {
       this.isConnected = false;
     }
   }
+
+
+    
+
+
+  
+  
+
+
+
+
 
   async get(key: string): Promise<any> {
     if (!this.client || !this.isConnected) return null;

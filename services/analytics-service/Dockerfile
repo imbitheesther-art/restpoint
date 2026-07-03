@@ -11,7 +11,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /usr/src/app
 
 # Copy root workspace config first
-COPY package.json tsconfig.base.json ./
+COPY package.json ./
 
 # Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/

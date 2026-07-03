@@ -57,7 +57,7 @@ export class DeceasedModel {
    */
   static async create(tenantSlug: string, data: CreateDeceasedDTO): Promise<DeceasedRecord | null> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       // Generate unique deceased_id: TENANT_YYYY_COUNT
       const year = new Date(data.date_of_death).getFullYear();
@@ -97,7 +97,7 @@ export class DeceasedModel {
    */
   static async getById(tenantSlug: string, id: number): Promise<DeceasedRecord | null> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       const result = await conn.execute(
         'SELECT * FROM deceased WHERE id = ? AND tenant_slug = ? AND is_deleted = FALSE',
@@ -116,7 +116,7 @@ export class DeceasedModel {
    */
   static async getByDeceasedId(tenantSlug: string, deceasedId: string): Promise<DeceasedRecord | null> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       const result = await conn.execute(
         'SELECT * FROM deceased WHERE deceased_id = ? AND tenant_slug = ? AND is_deleted = FALSE',
@@ -140,7 +140,7 @@ export class DeceasedModel {
     offset?: number;
   }): Promise<DeceasedRecord[]> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       let query = 'SELECT * FROM deceased WHERE tenant_slug = ? AND is_deleted = FALSE';
       const params: any[] = [tenantSlug];
@@ -179,7 +179,7 @@ export class DeceasedModel {
    */
   static async update(tenantSlug: string, id: number, data: UpdateDeceasedDTO): Promise<DeceasedRecord | null> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       const updates: string[] = [];
       const params: any[] = [];
@@ -232,7 +232,7 @@ export class DeceasedModel {
    */
   static async delete(tenantSlug: string, id: number): Promise<boolean> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       const result = await conn.execute(
         'UPDATE deceased SET is_deleted = TRUE, updated_at = NOW() WHERE id = ? AND tenant_slug = ?',
@@ -250,7 +250,7 @@ export class DeceasedModel {
    */
   static async getStatistics(tenantSlug: string): Promise<any> {
     const conn = await tenantDB.getConnection(tenantSlug);
-    
+
     try {
       const result = await conn.execute(
         `SELECT
@@ -272,3 +272,4 @@ export class DeceasedModel {
     }
   }
 }
+

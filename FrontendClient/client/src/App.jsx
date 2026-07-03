@@ -5,6 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AppRouter from './routes/AppRouter';
 import { initManifest } from './services/manifestService';
+import { SocketProvider } from './context/socketContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +22,7 @@ const App = () => {
   useEffect(() => { initManifest(); }, []);
   const hostname = window.location.hostname;
   const isTenantSubdomain = hostname !== 'localhost' && hostname !== 'restpoint.co.ke';
-  const routeElement = <QueryClientProvider client={queryClient}><AppRouter /></QueryClientProvider>;
+  const routeElement = <QueryClientProvider client={queryClient}><SocketProvider><AppRouter /></SocketProvider></QueryClientProvider>;
   if (isTenantSubdomain) {
     const tenantSlug = hostname.split('.')[0];
     return (

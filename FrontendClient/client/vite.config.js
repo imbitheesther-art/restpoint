@@ -28,6 +28,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/v1/restpoint/chemicals': {
+        target: 'http://localhost:5016',
+        changeOrigin: true,
+        secure: false,
+      },
       '/uploads': {
         target: 'http://localhost:5000',
         changeOrigin: true,

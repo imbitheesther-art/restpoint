@@ -30,7 +30,9 @@
     "migrate:soft-delete:tenant": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --tenant="
   },
   "dependencies": {
-    "axios": "^1.18.1"
+    "axios": "^1.18.1",
+    "prop-types": "^15.8.1",
+    "react-gauge-chart": "^0.5.1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

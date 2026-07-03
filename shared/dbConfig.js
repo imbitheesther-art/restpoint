@@ -3,12 +3,42 @@
  * @file shared/dbConfig.ts
  * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.closeAllConnections = exports.closeTenantDB = exports.safeTenantExecute = exports.safeTenantQuery = exports.execute = exports.query = exports.getTenantDBBySlug = exports.getTenantDB = exports.resolveDatabase = exports.lookupTenantDatabase = exports.getRootPool = void 0;
-const promise_1 = __importDefault(require("mysql2/promise"));
+const mysql = __importStar(require("mysql2/promise"));
 // ─── Configuration ───────────────────────────────────────────────────────────
 const DB_CONFIG = {
     host: process.env.DB_HOST || 'localhost',
@@ -24,7 +54,7 @@ const branchDbCache = new Map();
 // ─── Root Pool ───────────────────────────────────────────────────────────────
 const getRootPool = async () => {
     if (!rootPool) {
-        rootPool = promise_1.default.createPool({
+        rootPool = mysql.createPool({
             ...DB_CONFIG,
             database: 'tenant_tracking',
             waitForConnections: true,
@@ -32,7 +62,6 @@ const getRootPool = async () => {
             queueLimit: 0,
             enableKeepAlive: true,
             keepAliveInitialDelay: 0,
-            permitAuthPlugins: true
         });
         console.log('✅ Root database pool created (default DB: tenant_tracking)');
     }
@@ -114,7 +143,7 @@ const getTenantDB = async (tenantDbName) => {
     if (tenantPoolCache.has(tenantDbName)) {
         return tenantPoolCache.get(tenantDbName);
     }
-    const pool = promise_1.default.createPool({
+    const pool = mysql.createPool({
         ...DB_CONFIG,
         database: tenantDbName,
         waitForConnections: true,

@@ -142,7 +142,16 @@ export const registerDeceased = async (req: Request, res: Response): Promise<Res
         const deceased_id = generateUniqueDeceasedId(full_name, tenantSlug);
         const portal_slug = `${tenantSlug}-${full_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${crypto.randomBytes(3).toString('hex')}`;
         const now = nowNairobi();
-        const admissionNum = admission_number || `ADM-${Date.now()}`;
+        const generateAdmissionNumber = (tenantSlug: string): string => {
+            const shortTenant = tenantSlug.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const seq = String(Math.floor(Math.random() * 9000) + 1000);
+            return `ADM-${shortTenant}-${year}${month}${day}-${seq}`;
+        };
+        const admissionNum = admission_number || generateAdmissionNumber(tenantSlug);
         const admittedDate = date_admitted || now;
 
         const insertQuery = `

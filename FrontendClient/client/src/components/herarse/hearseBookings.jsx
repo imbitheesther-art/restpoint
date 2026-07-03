@@ -15,7 +15,7 @@ import {
     Table,
     Dropdown
 } from 'react-bootstrap';
-import { useSocket } from '../../../context/socketContext';
+import { useSocket } from '../../context/socketContext';
 import {
     Eye,
     RefreshCw,
@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 
 // API Service Layer
-const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
+const API_BASE_URL = 'http://localhost:5001/api/v1/restpoint';
 
 const bookingService = {
     getBookings: async () => {
@@ -51,6 +51,57 @@ const bookingService = {
             return data.bookings || [];
         } catch (error) {
             console.error('Error fetching bookings:', error);
+            throw error;
+        }
+    },
+
+
+
+    getCrossBranchAvailability: async (branchId) => {
+        try {
+            const url = branchId
+                ? `${API_BASE_URL}/hearses/available/cross-branch?branch_id=${branchId}`
+                : `${API_BASE_URL}/hearses/available/cross-branch`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch cross-branch availability');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching cross-branch availability:', error);
+            throw error;
+        }
+    },
+
+    registerHearse: async (hearseData) => {
+        try {
+            const formData = new FormData();
+            formData.append('number_plate', hearseData.number_plate);
+            formData.append('min_charge_ksh', hearseData.min_charge_ksh);
+            formData.append('max_charge_ksh', hearseData.max_charge_ksh);
+            formData.append('branch_id', hearseData.branch_id);
+            if (hearseData.model) formData.append('model', hearseData.model);
+            if (hearseData.image) formData.append('image', hearseData.image);
+
+            const response = await fetch(`${API_BASE_URL}/hearses`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!response.ok) throw new Error('Failed to register hearse');
+            return await response.json();
+        } catch (error) {
+            console.error('Error registering hearse:', error);
+            throw error;
+        }
+    },
+
+    getAllHearses: async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/hearses`);
+            if (!response.ok) throw new Error('Failed to fetch hearses');
+            const data = await response.json();
+            return data.hearses || [];
+        } catch (error) {
+            console.error('Error fetching hearses:', error);
             throw error;
         }
     },
@@ -874,6 +925,7 @@ const PostponeBookingModal = ({ show, onHide, booking, onPostpone }) => {
 const BookingSystem = () => {
     const [bookings, setBookings] = useState([]);
     const [drivers, setDrivers] = useState([]);
+    const [hearses, setHearses] = useState([]);
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -881,8 +933,18 @@ const BookingSystem = () => {
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
     const [showPostpone, setShowPostpone] = useState(false);
+    const [showRegisterHearse, setShowRegisterHearse] = useState(false);
+    const [showHearsesList, setShowHearsesList] = useState(false);
     const [notification, setNotification] = useState(null);
     const [showToast, setShowToast] = useState(false);
+    const [showCrossBranch, setShowCrossBranch] = useState(false);
+    const [crossBranchData, setCrossBranchData] = useState(null);
+    const [loadingCrossBranch, setLoadingCrossBranch] = useState(false);
+    const [registerForm, setRegisterForm] = useState({
+        number_plate: '',
+        model: '',
+        branch_id: utils.getBranchId()
+    });
 
     const { socket } = useSocket();
     const playAudioNotification = useAudioNotification();
@@ -1001,6 +1063,77 @@ const BookingSystem = () => {
         setShowPostpone(true);
     };
 
+    const handleShowCrossBranch = async () => {
+        try {
+            setLoadingCrossBranch(true);
+            setError('');
+            const branchId = utils.getBranchId();
+            const data = await bookingService.getCrossBranchAvailability(branchId);
+            setCrossBranchData(data);
+            setShowCrossBranch(true);
+        } catch (err) {
+            setError('Failed to load cross-branch availability. Please try again.');
+            console.error('Error loading cross-branch availability:', err);
+        } finally {
+            setLoadingCrossBranch(false);
+        }
+    };
+
+    const handleBookFromBranch = async (hearseId) => {
+        // This will open the booking form with pre-selected hearse from another branch
+        try {
+            const hearse = crossBranchData.hearses.find(h => h.id === hearseId);
+            if (!hearse) return;
+
+            // Navigate to booking form or open booking modal with pre-selected hearse
+            // For now, we'll show a success message
+            setSuccess(`Hearse ${hearse.number_plate} from ${hearse.branch_name} selected. Create a booking to use it.`);
+            setTimeout(() => setSuccess(''), 4000);
+            setShowCrossBranch(false);
+        } catch (err) {
+            setError('Failed to select hearse. Please try again.');
+            console.error('Error selecting hearse:', err);
+        }
+    };
+
+    const handleRegisterHearse = async (e) => {
+        e.preventDefault();
+        try {
+            setError('');
+            const result = await bookingService.registerHearse(registerForm);
+            setSuccess(`Hearse ${registerForm.number_plate} registered successfully!`);
+            setTimeout(() => setSuccess(''), 4000);
+            setShowRegisterHearse(false);
+            setRegisterForm({
+                number_plate: '',
+                model: '',
+                min_charge_ksh: '',
+                max_charge_ksh: '',
+                branch_id: utils.getBranchId(),
+                image: null
+            });
+            // Reload hearses list
+            loadHearses();
+        } catch (err) {
+            setError('Failed to register hearse. Please try again.');
+            console.error('Error registering hearse:', err);
+        }
+    };
+
+    const loadHearses = async () => {
+        try {
+            const hearsesData = await bookingService.getAllHearses();
+            setHearses(hearsesData);
+        } catch (err) {
+            console.error('Error loading hearses:', err);
+        }
+    };
+
+    const handleShowHearsesList = async () => {
+        await loadHearses();
+        setShowHearsesList(true);
+    };
+
     const getAvailableDrivers = () => {
         return drivers.filter(driver =>
             driver.status === 'available' || driver.availability_status === 'available'
@@ -1064,6 +1197,85 @@ const BookingSystem = () => {
 
             <BookingStats bookings={bookings} />
             <BookingFilter currentFilter={filter} onFilterChange={setFilter} />
+
+            {/* Management Buttons */}
+            <Row className="mb-4 g-3">
+                <Col md={4}>
+                    <Card className="border-0 shadow-sm h-100">
+                        <Card.Body className="py-3">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                        <Car size={18} />
+                                        Register Hearse
+                                    </h6>
+                                    <small className="text-muted">
+                                        Add new hearse to fleet
+                                    </small>
+                                </div>
+                                <Button
+                                    variant="success"
+                                    onClick={() => setShowRegisterHearse(true)}
+                                    className="d-flex align-items-center gap-2"
+                                >
+                                    <Car size={16} />
+                                    Register
+                                </Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className="border-0 shadow-sm h-100">
+                        <Card.Body className="py-3">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                        <Eye size={18} />
+                                        View Hearses
+                                    </h6>
+                                    <small className="text-muted">
+                                        Manage hearse fleet
+                                    </small>
+                                </div>
+                                <Button
+                                    variant="info"
+                                    onClick={handleShowHearsesList}
+                                    className="d-flex align-items-center gap-2"
+                                >
+                                    <Eye size={16} />
+                                    View All
+                                </Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className="border-0 shadow-sm h-100">
+                        <Card.Body className="py-3">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                        <Truck size={18} />
+                                        Cross-Branch Availability
+                                    </h6>
+                                    <small className="text-muted">
+                                        View and book available hearses from other branches
+                                    </small>
+                                </div>
+                                <Button
+                                    variant="primary"
+                                    onClick={handleShowCrossBranch}
+                                    className="d-flex align-items-center gap-2"
+                                >
+                                    <Truck size={16} />
+                                    View Available
+                                </Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
 
             <Card className="shadow border-0">
                 <Card.Header className="bg-white border-bottom-0 py-3">
@@ -1135,6 +1347,250 @@ const BookingSystem = () => {
                 booking={selectedBooking}
                 onPostpone={handlePostponeBooking}
             />
+
+            {/* Register Hearse Modal */}
+            <Modal show={showRegisterHearse} onHide={() => setShowRegisterHearse(false)} centered>
+                <Modal.Header closeButton className="bg-success text-white">
+                    <Modal.Title className="fw-bold d-flex align-items-center gap-2">
+                        <Car size={20} />
+                        Register New Hearse
+                    </Modal.Title>
+                </Modal.Header>
+                <form onSubmit={handleRegisterHearse}>
+                    <Modal.Body className="p-4">
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold">Number Plate *</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={registerForm.number_plate}
+                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, number_plate: e.target.value }))}
+                                        placeholder="e.g., KCA 1234"
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold">Model</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={registerForm.model}
+                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, model: e.target.value }))}
+                                        placeholder="e.g., Toyota Hiace"
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold">Min Charge (KSH) *</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        value={registerForm.min_charge_ksh}
+                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, min_charge_ksh: e.target.value }))}
+                                        placeholder="5000"
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold">Max Charge (KSH) *</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        value={registerForm.max_charge_ksh}
+                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, max_charge_ksh: e.target.value }))}
+                                        placeholder="10000"
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={12}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold">Branch *</Form.Label>
+                                    <Form.Select
+                                        value={registerForm.branch_id}
+                                        onChange={(e) => setRegisterForm(prev => ({ ...prev, branch_id: e.target.value }))}
+                                        required
+                                    >
+                                        <option value="1">Branch 1</option>
+                                        <option value="2">Branch 2</option>
+                                        <option value="3">Branch 3</option>
+                                        <option value="4">Branch 4</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={12}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold">Hearse Image</Form.Label>
+                                    <Form.Control
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                setRegisterForm(prev => ({ ...prev, image: file }));
+                                            }
+                                        }}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="outline-secondary" onClick={() => setShowRegisterHearse(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="success" type="submit" className="text-white d-flex align-items-center gap-2">
+                            <Car size={16} />
+                            Register Hearse
+                        </Button>
+                    </Modal.Footer>
+                </form>
+            </Modal>
+
+            {/* Hearses List Modal */}
+            <Modal show={showHearsesList} onHide={() => setShowHearsesList(false)} size="xl" centered>
+                <Modal.Header closeButton className="bg-info text-white">
+                    <Modal.Title className="fw-bold d-flex align-items-center gap-2">
+                        <Eye size={20} />
+                        Hearse Fleet Management
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    {hearses.length === 0 ? (
+                        <div className="text-center py-5">
+                            <Car size={48} className="text-muted mb-3" />
+                            <h5 className="text-muted">No hearses registered yet</h5>
+                            <p className="text-muted">Click "Register" to add your first hearse</p>
+                        </div>
+                    ) : (
+                        <div className="table-responsive">
+                            <Table hover>
+                                <thead className="bg-light">
+                                    <tr>
+                                        <th className="fw-bold">Number Plate</th>
+                                        <th className="fw-bold">Model</th>
+                                        <th className="fw-bold">Branch</th>
+                                        <th className="fw-bold">Status</th>
+                                        <th className="fw-bold">Min Charge</th>
+                                        <th className="fw-bold">Max Charge</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {hearses.map(hearse => (
+                                        <tr key={hearse.id}>
+                                            <td>
+                                                <strong className="text-primary">{hearse.number_plate}</strong>
+                                            </td>
+                                            <td>{hearse.model || 'N/A'}</td>
+                                            <td>Branch {hearse.branch_id}</td>
+                                            <td>
+                                                <Badge bg={hearse.status === 'available' ? 'success' : 'warning'}>
+                                                    {hearse.status}
+                                                </Badge>
+                                            </td>
+                                            <td>KSH {parseInt(hearse.min_charge_ksh).toLocaleString()}</td>
+                                            <td>KSH {parseInt(hearse.max_charge_ksh).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="outline-secondary" onClick={() => setShowHearsesList(false)}>
+                        Close
+                    </Button>
+                    <Button variant="success" onClick={() => { setShowHearsesList(false); setShowRegisterHearse(true); }}>
+                        <Car size={16} className="me-2" />
+                        Register New Hearse
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Cross-Branch Availability Modal */}
+            <Modal show={showCrossBranch} onHide={() => setShowCrossBranch(false)} size="xl" centered>
+                <Modal.Header closeButton className="bg-primary text-white">
+                    <Modal.Title className="fw-bold d-flex align-items-center gap-2">
+                        <Truck size={20} />
+                        Cross-Branch Hearse Availability
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    {loadingCrossBranch ? (
+                        <div className="text-center py-5">
+                            <Spinner animation="border" variant="primary" />
+                            <p className="mt-3">Loading available hearses...</p>
+                        </div>
+                    ) : crossBranchData ? (
+                        <>
+                            <div className="alert alert-info mb-4">
+                                <strong>Real-time Availability:</strong> Showing {crossBranchData.total_available} available hearses across {crossBranchData.total_branches} branches
+                            </div>
+
+                            {crossBranchData.branches && crossBranchData.branches.map(branch => (
+                                <Card key={branch.branch_id} className="mb-3 border-0 shadow-sm">
+                                    <Card.Header className="bg-light fw-bold d-flex align-items-center gap-2">
+                                        <MapPin size={16} />
+                                        {branch.branch_name}
+                                        <Badge bg="primary" className="ms-auto">
+                                            {branch.hearses.length} Available
+                                        </Badge>
+                                    </Card.Header>
+                                    <Card.Body>
+                                        <div className="row g-3">
+                                            {branch.hearses.map(hearse => (
+                                                <div key={hearse.id} className="col-md-6 col-lg-4">
+                                                    <Card className="h-100 border-0 shadow-sm">
+                                                        <Card.Body>
+                                                            <div className="d-flex justify-content-between align-items-start mb-2">
+                                                                <div>
+                                                                    <h6 className="fw-bold mb-1">{hearse.number_plate}</h6>
+                                                                    <small className="text-muted">{hearse.model || 'N/A'}</small>
+                                                                </div>
+                                                                <Badge bg="success">Available</Badge>
+                                                            </div>
+                                                            <div className="mb-2">
+                                                                <small className="text-muted">
+                                                                    <Phone size={12} className="me-1" />
+                                                                    {branch.branch_phone}
+                                                                </small>
+                                                            </div>
+                                                            <div className="mb-3">
+                                                                <small className="text-muted">
+                                                                    <MapPin size={12} className="me-1" />
+                                                                    {branch.branch_location}
+                                                                </small>
+                                                            </div>
+                                                            <Button
+                                                                variant="primary"
+                                                                size="sm"
+                                                                className="w-100 d-flex align-items-center justify-content-center gap-2"
+                                                                onClick={() => handleBookFromBranch(hearse.id)}
+                                                            >
+                                                                <PhoneCall size={14} />
+                                                                Book This Hearse
+                                                            </Button>
+                                                        </Card.Body>
+                                                    </Card>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            ))}
+                        </>
+                    ) : (
+                        <div className="text-center py-5">
+                            <Truck size={48} className="text-muted mb-3" />
+                            <h5 className="text-muted">No cross-branch hearses available</h5>
+                        </div>
+                    )}
+                </Modal.Body>
+            </Modal>
         </Container>
     );
 };

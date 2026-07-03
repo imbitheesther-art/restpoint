@@ -25,7 +25,7 @@ const UserProfile = () => {
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            const r = await api.get('/api/v1/restpoint/notifications');
+            const r = await api.get('/notifications');
             if (r.data?.success) {
                 const d = r.data.data || [];
                 setNotifications(d);
@@ -37,7 +37,7 @@ const UserProfile = () => {
 
     const markAsRead = async (id) => {
         try {
-            await api.put('/api/v2/restpoint/notifications/' + id + '/read');
+            await api.put('/notifications/' + id + '/read');
             setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
             setUnreadCount(p => Math.max(0, p - 1));
         } catch (e) { }
@@ -45,7 +45,7 @@ const UserProfile = () => {
 
     const markAllAsRead = async () => {
         try {
-            await api.put('/api/v1/restpoint/notifications/read-all');
+            await api.put('/notifications/read-all');
             setNotifications(p => p.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
         } catch (e) { }

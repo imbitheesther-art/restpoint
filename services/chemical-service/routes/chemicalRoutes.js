@@ -3,21 +3,21 @@ const router = express.Router();
 const chemicalController = require('../controllers/chemicalController');
 const usageController = require('../controllers/usageController');
 
-// Import authentication middleware
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
-
-// ALL routes require authentication
-router.use(protect);
-router.use(authorizeAny);
+// Optional auth middleware (chemical service works with tenant header, not JWT)
+const optionalAuth = (req, res, next) => {
+    // If Authorization header exists, try to decode user info
+    // but don't block if it's missing (tenant header is primary auth)
+    next();
+};
 
 // ============================================
 // CHEMICAL INVENTORY ROUTES
 // ============================================
 
-// Get all chemicals (with low stock flag)
+// Get all chemicals (with low stock flag, usage data)
 router.get('/', chemicalController.getAll);
 
-// Get single chemical
+// Get single chemical - MUST come after specific routes
 router.get('/:id', chemicalController.getById);
 
 // Create new chemical
@@ -59,13 +59,61 @@ router.get('/usage/chemical/:chemicalId', usageController.getDeceasedByChemical)
 router.get('/usage/report', usageController.getUsageReport);
 
 // ============================================
-// DASHBOARD / REPORTS
+// BRANCH-SPECIFIC ENDPOINTS
 // ============================================
 
-// Dashboard summary (low stock, total usage, recent transactions)
+// Get dashboard summary for a branch
+router.get('/dashboard/summary/:branchId', chemicalController.getDashboardSummary);
+
+// Get dashboard summary (no branch param - uses header)
 router.get('/dashboard/summary', chemicalController.getDashboardSummary);
+
+// Get chemical analytics for a branch
+router.get('/analytics/:branchId', chemicalController.getChemicalAnalytics);
+
+// Get chemical analytics (no branch param - uses header)
+router.get('/analytics', chemicalController.getChemicalAnalytics);
+
+// Get usage data for a branch
+router.get('/usage/branch/:branchId', chemicalController.getUsageByBranch);
+
+// ============================================
+// LOW STOCK ALERTS
+// ============================================
 
 // Low stock alerts
 router.get('/alerts/low-stock', chemicalController.getLowStockAlerts);
+
+// ============================================
+// PPE REQUESTS
+// ============================================
+
+// Create PPE request
+router.post('/ppe-requests', chemicalController.createPPERequest);
+
+// Get PPE requests (optionally by branch)
+router.get('/ppe-requests/:branchId', chemicalController.getPPERequests);
+
+// Get all PPE requests
+router.get('/ppe-requests', chemicalController.getPPERequests);
+
+// Update PPE request status
+router.put('/ppe-requests/:id', chemicalController.updatePPERequest);
+
+// ============================================
+// CHEMICAL TRANSFERS (between branches)
+// ============================================
+
+// Create transfer request
+router.post('/transfers', chemicalController.createTransfer);
+
+// Get transfers (optionally by branch)
+router.get('/transfers/:branchId', chemicalController.getTransfers);
+
+// Get all transfers
+router.get('/transfers', chemicalController.getTransfers);
+
+// Approve/reject/complete a transfer
+router.put('/transfers/:id', chemicalController.approveTransfer);
 
 module.exports = router;

@@ -26,7 +26,6 @@ const ContactPage = lazy(() => import('../components/pages/ContactPage'));
 const LoginPage = lazy(() => import('../components/auth/login'));
 const PortalLoginPage = lazy(() => import('../components/auth/PortalLogin'));
 const ForgotPassword = lazy(() => import('../components/auth/ForgotPassword'));
-const Notifications = lazy(() => import('../components/notifications/notifications'));
 const InvoiceManager = lazy(() => import('../components/invoices/invoicemanager'));
 const DocumentsPage = lazy(() => import('../components/documents/documentspage'));
 const DeceasedRegistrationForm = lazy(() => import('../components/deceasedinfo/registerDeceased'));
@@ -37,8 +36,7 @@ const NotFound = lazy(() => import('../components/common/NotFound'));
 const DeceasedDetails = lazy(() => import('../components/deceasedprofile/deceasedDetailPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
-const MarketplacePage = lazy(() => import('../components/marketplace/MarketplacePage'));
-const UploadProduct = lazy(() => import('../components/marketplace/UploadProduct'));
+
 const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
 const UserManagement = lazy(() => import('../components/user/users'));
@@ -46,8 +44,8 @@ const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemor
 const CalendarPage = lazy(() => import('../components/calender/CalendarPage'));
 const EDocumentsPage = lazy(() => import('../components/edocuments/EDocumentsPage'));
 const ReportGenerator = lazy(() => import('../components/reports/reportGenerator'));
-const CallPage = lazy(() => import('../components/call/CallPage'));
-const ChemicalsPage = lazy(() => import('../components/chemicals/chemicals'));
+const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
+const HearseBookings = lazy(() => import('../components/herarse/hearseBookings'));
 
 
 const RouteLoadingFallback = () => (
@@ -202,16 +200,14 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="calendar" element={<DashboardLayout tenantData={tenantData}><CalendarPage /></DashboardLayout>} />
       <Route path="edocuments" element={<DashboardLayout tenantData={tenantData}><EDocumentsPage /></DashboardLayout>} />
       <Route path="reports" element={<DashboardLayout tenantData={tenantData}><ReportGenerator /></DashboardLayout>} />
-      <Route path="chemicals" element={<DashboardLayout tenantData={tenantData}><ChemicalsPage /></DashboardLayout>} />
-      <Route path="marketplace" element={<DashboardLayout tenantData={tenantData}><MarketplacePage /></DashboardLayout>} />
-      <Route path="marketplace/upload" element={<DashboardLayout tenantData={tenantData}><UploadProduct /></DashboardLayout>} />
+      <Route path="chemicals" element={<DashboardLayout tenantData={tenantData}><ChemicalManagementDashboard /></DashboardLayout>} />
+
       <Route path="settings" element={<DashboardLayout tenantData={tenantData}><SettingsPage /></DashboardLayout>} />
       <Route path="release-form/:id" element={<DashboardLayout tenantData={tenantData}><ReleaseFormPage /></DashboardLayout>} />
       <Route path="memorial/:deceasedId" element={<DashboardLayout tenantData={tenantData}><PublicMemorialPage /></DashboardLayout>} />
       <Route path="memorial/:deceasedId/:token" element={<DashboardLayout tenantData={tenantData}><PublicMemorialPage /></DashboardLayout>} />
       <Route path="users" element={<DashboardLayout tenantData={tenantData}><UserManagement /></DashboardLayout>} />
-      <Route path="call" element={<DashboardLayout tenantData={tenantData}><CallPage /></DashboardLayout>} />
-      <Route path="hearse" element={<DashboardLayout tenantData={tenantData}><div style={{ padding: '2rem', textAlign: 'center' }}><h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1a1a1a' }}>Hearse Management</h1><p style={{ color: '#6B7280', marginTop: '0.5rem' }}>Hearse management module coming soon.</p></div></DashboardLayout>} />
+      <Route path="hearse" element={<DashboardLayout tenantData={tenantData}><HearseBookings /></DashboardLayout>} />
       <Route path="*" element={<DashboardLayout tenantData={tenantData}><NotFound /></DashboardLayout>} />
     </Routes>
   );

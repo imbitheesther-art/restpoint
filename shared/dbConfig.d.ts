@@ -2,7 +2,7 @@
  * @file shared/dbConfig.ts
  * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
  */
-import mysql from 'mysql2/promise';
+import * as mysql from 'mysql2/promise';
 export declare const getRootPool: () => Promise<mysql.Pool>;
 export declare const lookupTenantDatabase: (tenantSlug: string) => Promise<string | null>;
 export declare const resolveDatabase: (slug: string) => Promise<string | null>;
