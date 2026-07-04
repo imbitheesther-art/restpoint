@@ -180,6 +180,8 @@ export const ENDPOINTS = {
   HEARSE: {
     CREATE: '/hearse/create',
     DISPATCH: '/hearse/dispatch',
+    DETAIL: (id) => `/hearse/${id}`,
+    VEHICLES: '/hearse/vehicles',
   },
   CHEMICALS: {
     CREATE: '/chemicals/create',
