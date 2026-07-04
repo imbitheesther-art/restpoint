@@ -93,8 +93,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     const [hearses, setHearses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState(null);
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
+    const [bookingDate, setBookingDate] = useState('');
     const [clientName, setClientName] = useState('');
     const [clientPhone, setClientPhone] = useState('');
     const [fromLocation, setFromLocation] = useState('');
@@ -104,7 +103,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     useEffect(() => {
         if (show) {
             setSelected(null);
-            setFromDate(''); setToDate(''); setClientName(''); setClientPhone('');
+            setBookingDate(''); setClientName(''); setClientPhone('');
             setFromLocation(''); setToLocation('');
             loadHearses();
         }
@@ -115,7 +114,9 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
         try {
             const data = await bookingService.getAllHearses();
             console.log('Loaded hearses:', data);
-            setHearses(data.filter(h => h.status === 'available'));
+            // Only show available hearses
+            const available = data.filter(h => h.status === 'available');
+            setHearses(available);
         } catch (e) {
             console.error('Failed to load hearses:', e);
         } finally {
@@ -124,7 +125,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     };
 
     const handleBook = async () => {
-        if (!selected || !fromDate || !clientName || !fromLocation || !toLocation) return;
+        if (!selected || !bookingDate || !clientName || !fromLocation || !toLocation) return;
         setSubmitting(true);
         try {
             await bookingService.createBooking({
@@ -132,8 +133,8 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                 client_name: clientName,
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
-                from_timestamp: fromDate,
-                to_timestamp: fromDate
+                from_timestamp: bookingDate,
+                to_timestamp: bookingDate
             });
             onBookingCreated();
             onHide();
@@ -191,7 +192,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                         <h5 className="fw-bold mb-3">Booking Details</h5>
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-semibold">Booking Date *</Form.Label>
-                            <Form.Control type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} required />
+                            <Form.Control type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} required />
                         </Form.Group>
                         <Row>
                             <Col md={6}>
@@ -223,7 +224,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                         </Row>
                         <div className="d-flex justify-content-between mt-3">
                             <Button variant="outline-secondary" onClick={() => setSelected(null)}>Back</Button>
-                            <Button variant="success" onClick={handleBook} disabled={!fromDate || !clientName || !fromLocation || !toLocation || submitting}>
+                            <Button variant="success" onClick={handleBook} disabled={!bookingDate || !clientName || !fromLocation || !toLocation || submitting}>
                                 {submitting ? <><Spinner animation="border" size="sm" className="me-2" />Booking...</> : <><CheckCircle size={16} className="me-2" />Confirm Booking</>}
                             </Button>
                         </div>
