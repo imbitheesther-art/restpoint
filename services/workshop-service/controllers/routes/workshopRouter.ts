@@ -5,7 +5,7 @@ import {
     createOrder,
     updateOrder,
     deleteOrder
-} from '../coffinOrderController.js'
+} from '../coffinOrderController'
 import {
     getMaterials,
     getMaterial,
@@ -13,27 +13,27 @@ import {
     updateMaterial,
     deleteMaterial,
     useMaterial
-} from '../materialController.js'
+} from '../materialController'
 import {
     getStages,
     updateStage,
     assignWorker,
     updateAssignment,
     getAssignments
-} from '../productionController.js'
+} from '../productionController'
 import {
     getDailyReport,
     getWeeklyReport,
     getInventoryReport,
     getProductionReport,
     getCostingReport
-} from '../reportController.js'
+} from '../reportController'
 import {
     getWorkers,
     createWorker,
     updateWorker,
     deleteWorker
-} from '../workerController.js'
+} from '../workerController'
 
 const workshopRouter = express.Router()
 

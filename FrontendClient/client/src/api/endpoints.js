@@ -186,6 +186,35 @@ export const ENDPOINTS = {
     USAGE: '/chemicals/usage',
     INVENTORY: '/chemicals/inventory',
   },
+  WORKSHOP: {
+    BASE: '/workshop',
+    ORDERS: '/workshop/orders',
+    ORDER_DETAIL: (id) => `/workshop/orders/${id}`,
+    MATERIALS: '/workshop/materials',
+    MATERIAL_USE: '/workshop/materials/use',
+    WORKERS: '/workshop/workers',
+    STAGES: (orderId) => `/workshop/orders/${orderId}/stages`,
+    ASSIGN_WORKER: (orderId) => `/workshop/orders/${orderId}/assign`,
+    REPORTS: {
+      DAILY: '/workshop/reports/daily',
+      WEEKLY: '/workshop/reports/weekly',
+      INVENTORY: '/workshop/reports/inventory',
+      PRODUCTION: '/workshop/reports/production',
+      COSTING: '/workshop/reports/costing',
+    },
+  },
+  LEAVE: {
+    BASE: '/leaves',
+    APPLY: '/leaves/apply',
+    ALL: '/leaves/all',
+    MY_LEAVES: '/leaves/my-leaves',
+    DETAIL: (id) => `/leaves/${id}`,
+    UPDATE_STATUS: (id) => `/leaves/${id}/status`,
+    CANCEL: (id) => `/leaves/${id}/cancel`,
+    UPLOAD_DOCUMENT: (id) => `/leaves/${id}/upload-document`,
+    STATS: '/leaves/stats/overview',
+    USERS_ON_LEAVE: '/leaves/users/on-leave',
+  },
 };
 
 export default ENDPOINTS;

@@ -47,6 +47,7 @@ const ReportGenerator = lazy(() => import('../components/reports/reportGenerator
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
 const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
 const HearseBookings = lazy(() => import('../components/herarse/hearseBookings'));
+const DriverPortal = lazy(() => import('../components/herarse/DriverPortal'));
 
 
 const RouteLoadingFallback = () => (
@@ -213,6 +214,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="memorial/:deceasedId/:token" element={<DashboardLayout tenantData={tenantData}><PublicMemorialPage /></DashboardLayout>} />
       <Route path="users" element={<DashboardLayout tenantData={tenantData}><UserManagement /></DashboardLayout>} />
       <Route path="hearse" element={<DashboardLayout tenantData={tenantData}><HearseBookings /></DashboardLayout>} />
+      <Route path="driver-portal" element={<DashboardLayout tenantData={tenantData}><DriverPortal /></DashboardLayout>} />
       <Route path="*" element={<DashboardLayout tenantData={tenantData}><NotFound /></DashboardLayout>} />
     </Routes>
   );

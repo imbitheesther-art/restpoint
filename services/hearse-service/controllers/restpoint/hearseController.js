@@ -9,7 +9,7 @@ const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableH
  */
 const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
     try {
-        console.log('\n🌐 [CrossBranchAvailability] Fetching available hearses across all branches...');
+        console.log('\n [CrossBranchAvailability] Fetching available hearses across all branches...');
 
         const { branch_id } = req.query;
 
@@ -56,7 +56,7 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
         const branches = Object.values(groupedByBranch);
         const totalAvailable = availableHearses.length;
 
-        console.log(`✅ Found ${totalAvailable} available hearses across ${branches.length} branches`);
+        console.log(` Found ${totalAvailable} available hearses across ${branches.length} branches`);
 
         res.json({
             success: true,

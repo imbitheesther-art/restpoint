@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
-import { Hammer, Package, ClipboardList, Users, BarChart3, Plus, Eye, Edit, Trash2 } from 'lucide-react';
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { useSocket } from '../../../context/socketContext';
+import { api, ENDPOINTS } from '../../../api';
+import { Hammer, Package, ClipboardList, Users, BarChart3, Plus, Eye, Edit, Trash2, AlertTriangle, CheckCircle, TrendingUp, Clock, DollarSign } from 'lucide-react';
 
 const COLORS = {
     primary: '#0A2463',
@@ -227,39 +227,87 @@ const WorkshopDashboard = () => {
     const [orders, setOrders] = useState([]);
     const [materials, setMaterials] = useState([]);
     const [workers, setWorkers] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('orders');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [formData, setFormData] = useState({
+        customer_name: '',
+        deceased_name: '',
+        coffin_type: 'standard',
+        selling_price: '',
+        delivery_date: '',
+        notes: ''
+    });
+    const { socket, connected } = useSocket();
 
     useEffect(() => {
         fetchData();
     }, [slug]);
 
+    // Real-time socket listeners
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleOrderCreated = (order) => {
+            if (order) setOrders(prev => [order, ...(prev || [])]);
+        };
+
+        const handleOrderUpdated = (order) => {
+            if (order) setOrders(prev => (prev || []).map(o => o && o.id === order.id ? order : o));
+        };
+
+        const handleOrderDeleted = ({ id }) => {
+            if (id) setOrders(prev => (prev || []).filter(o => o && o.id !== id));
+        };
+
+        const handleMaterialCreated = (material) => {
+            if (material) setMaterials(prev => [material, ...(prev || [])]);
+        };
+
+        const handleMaterialUpdated = (material) => {
+            if (material) setMaterials(prev => (prev || []).map(m => m && m.id === material.id ? material : m));
+        };
+
+        const handleMaterialUsed = (usage) => {
+            if (usage) setMaterials(prev => (prev || []).map(m => {
+                if (m && m.id === usage.material_id) {
+                    return { ...m, quantity: (m.quantity || 0) - (usage.quantity_used || 0) };
+                }
+                return m;
+            }));
+        };
+
+        socket.on('order:created', handleOrderCreated);
+        socket.on('order:updated', handleOrderUpdated);
+        socket.on('order:deleted', handleOrderDeleted);
+        socket.on('material:created', handleMaterialCreated);
+        socket.on('material:updated', handleMaterialUpdated);
+        socket.on('material:used', handleMaterialUsed);
+
+        return () => {
+            socket.off('order:created', handleOrderCreated);
+            socket.off('order:updated', handleOrderUpdated);
+            socket.off('order:deleted', handleOrderDeleted);
+            socket.off('material:created', handleMaterialCreated);
+            socket.off('material:updated', handleMaterialUpdated);
+            socket.off('material:used', handleMaterialUsed);
+        };
+    }, [socket]);
+
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('authToken');
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'x-tenant-slug': slug,
-            };
-
-            const [ordersRes, materialsRes, workersRes] = await Promise.all([
-                fetch(`${API_BASE}/api/v1/restpoint/workshop/orders`, { headers }),
-                fetch(`${API_BASE}/api/v1/restpoint/workshop/materials`, { headers }),
-                fetch(`${API_BASE}/api/v1/restpoint/workshop/workers`, { headers }),
+            const [ordersRes, materialsRes, workersRes, reportRes] = await Promise.all([
+                api.get(ENDPOINTS.WORKSHOP.ORDERS).catch(() => ({ data: [] })),
+                api.get(ENDPOINTS.WORKSHOP.MATERIALS).catch(() => ({ data: [] })),
+                api.get(ENDPOINTS.WORKSHOP.WORKERS).catch(() => ({ data: [] })),
+                api.get(ENDPOINTS.WORKSHOP.REPORTS.PRODUCTION).catch(() => ({ data: null })),
             ]);
 
-            if (ordersRes.ok) {
-                const ordersData = await ordersRes.json();
-                setOrders(Array.isArray(ordersData) ? ordersData : []);
-            }
-            if (materialsRes.ok) {
-                const materialsData = await materialsRes.json();
-                setMaterials(Array.isArray(materialsData) ? materialsData : []);
-            }
-            if (workersRes.ok) {
-                const workersData = await workersRes.json();
-                setWorkers(Array.isArray(workersData) ? workersData : []);
-            }
+            setOrders(Array.isArray(ordersRes?.data) ? ordersRes.data : []);
+            setMaterials(Array.isArray(materialsRes?.data) ? materialsRes.data : []);
+            setWorkers(Array.isArray(workersRes?.data) ? workersRes.data : []);
+            setAnalytics(reportRes?.data || null);
         } catch (error) {
             console.error('Error fetching workshop data:', error);
         } finally {
@@ -268,15 +316,57 @@ const WorkshopDashboard = () => {
     };
 
     const getStatusBadge = (status) => {
-        return <Badge $status={status}>{status?.replace(/_/g, ' ') || 'Unknown'}</Badge>;
+        if (!status) return <Badge $status="pending">Unknown</Badge>;
+        return <Badge $status={status}>{status.replace(/_/g, ' ')}</Badge>;
     };
 
+    // Safe calculations with null checks
+    const safeOrders = orders || [];
+    const safeMaterials = materials || [];
+    const safeWorkers = workers || [];
+
+    const lowStockCount = safeMaterials.filter(m => m && m.quantity <= m.min_stock_level).length;
+    const inProgressCount = safeOrders.filter(o => o && (o.status === 'in_progress' || ['design', 'cutting', 'assembly', 'polishing', 'finishing'].includes(o.status))).length;
+    const completedCount = safeOrders.filter(o => o && (o.status === 'completed' || o.status === 'delivered')).length;
+    const totalRevenue = safeOrders.reduce((sum, o) => sum + (Number(o?.selling_price) || 0), 0);
+
     const stats = [
-        { label: 'Total Orders', value: orders.length, icon: ClipboardList, color: COLORS.primary },
-        { label: 'In Progress', value: orders.filter(o => o.status === 'in_progress').length, icon: Package, color: COLORS.info },
-        { label: 'Materials', value: materials.length, icon: Package, color: COLORS.success },
-        { label: 'Workers', value: workers.length, icon: Users, color: COLORS.warning },
+        { label: 'Total Orders', value: safeOrders.length, icon: ClipboardList, color: COLORS.primary },
+        { label: 'In Production', value: inProgressCount, icon: Package, color: COLORS.info },
+        { label: 'Completed', value: completedCount, icon: CheckCircle, color: COLORS.success },
+        { label: 'Low Stock Items', value: lowStockCount, icon: AlertTriangle, color: lowStockCount > 0 ? COLORS.danger : COLORS.warning },
+        { label: 'Total Revenue', value: `KES ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: COLORS.success },
+        { label: 'Materials', value: safeMaterials.length, icon: Package, color: COLORS.info },
     ];
+
+    const handleCreateOrder = async () => {
+        try {
+            const response = await api.post(ENDPOINTS.WORKSHOP.ORDERS, {
+                customer_name: formData.customer_name,
+                deceased_name: formData.deceased_name,
+                coffin_type: formData.coffin_type,
+                selling_price: formData.selling_price || 0,
+                delivery_date: formData.delivery_date || null,
+                notes: formData.notes
+            });
+
+            if (response?.data) {
+                setOrders(prev => [response.data, ...(prev || [])]);
+                setShowCreateModal(false);
+                setFormData({
+                    customer_name: '',
+                    deceased_name: '',
+                    coffin_type: 'standard',
+                    selling_price: '',
+                    delivery_date: '',
+                    notes: ''
+                });
+            }
+        } catch (error) {
+            console.error('Error creating order:', error);
+            alert('Failed to create order: ' + (error?.response?.data?.error || error?.message || 'Unknown error'));
+        }
+    };
 
     if (loading) {
         return (
@@ -296,7 +386,7 @@ const WorkshopDashboard = () => {
                     <Title>Workshop Management</Title>
                     <Subtitle>Coffin building, materials, and production tracking</Subtitle>
                 </div>
-                <ActionButton onClick={() => alert('Create order modal - to be implemented')}>
+                <ActionButton onClick={() => setShowCreateModal(true)}>
                     <Plus size={18} />
                     New Order
                 </ActionButton>
@@ -316,11 +406,72 @@ const WorkshopDashboard = () => {
                 ))}
             </StatsGrid>
 
+            {!connected && (
+                <div style={{
+                    padding: '0.75rem 1rem',
+                    background: '#FEF3C7',
+                    border: '1px solid #F59E0B',
+                    borderRadius: '8px',
+                    marginBottom: '1rem',
+                    color: '#92400E',
+                    fontSize: '0.9rem'
+                }}>
+                    ⚠️ Real-time updates disconnected. Changes may not sync automatically.
+                </div>
+            )}
+
+            {/* Analytics Section */}
+            {analytics && (
+                <Section>
+                    <SectionHeader>
+                        <SectionTitle>
+                            <BarChart3 size={20} />
+                            Production Analytics
+                        </SectionTitle>
+                    </SectionHeader>
+                    <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        {analytics?.order_status_summary && Array.isArray(analytics.order_status_summary) && analytics.order_status_summary.map((item, i) => (
+                            <div key={i} style={{
+                                padding: '1rem',
+                                background: COLORS.bg,
+                                borderRadius: '10px',
+                                textAlign: 'center'
+                            }}>
+                                <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary, marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                    {item?.status || 'Unknown'}
+                                </div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: COLORS.text }}>
+                                    {item?.count || 0}
+                                </div>
+                            </div>
+                        ))}
+                        {analytics?.stage_distribution && Array.isArray(analytics.stage_distribution) && analytics.stage_distribution.map((stage, i) => (
+                            <div key={`stage-${i}`} style={{
+                                padding: '1rem',
+                                background: COLORS.bg,
+                                borderRadius: '10px',
+                                textAlign: 'center'
+                            }}>
+                                <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary, marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                    {stage?.stage || 'Stage'}
+                                </div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: COLORS.text }}>
+                                    {stage?.in_progress || 0} / {stage?.total || 0}
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: COLORS.textSecondary }}>
+                                    {stage?.completed || 0} completed
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </Section>
+            )}
+
             <Section>
                 <SectionHeader>
                     <SectionTitle>
                         <ClipboardList size={20} />
-                        Recent Orders
+                        {activeTab === 'orders' ? 'Orders' : activeTab === 'materials' ? 'Materials' : 'Workers'}
                     </SectionTitle>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
@@ -370,7 +521,7 @@ const WorkshopDashboard = () => {
 
                 {activeTab === 'orders' && (
                     <>
-                        {orders.length === 0 ? (
+                        {safeOrders.length === 0 ? (
                             <EmptyState>
                                 <ClipboardList size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
                                 <p>No orders yet. Create your first coffin order to get started.</p>
@@ -389,14 +540,14 @@ const WorkshopDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {orders.slice(0, 10).map((order) => (
-                                        <Tr key={order.id}>
-                                            <Td>{order.order_number}</Td>
-                                            <Td>{order.customer_name}</Td>
-                                            <Td>{order.deceased_name}</Td>
-                                            <Td>{order.coffin_type}</Td>
-                                            <Td>{getStatusBadge(order.status)}</Td>
-                                            <Td>KES {Number(order.selling_price || 0).toLocaleString()}</Td>
+                                    {safeOrders.slice(0, 10).map((order) => (
+                                        <Tr key={order?.id || Math.random()}>
+                                            <Td>{order?.order_number || '-'}</Td>
+                                            <Td>{order?.customer_name || '-'}</Td>
+                                            <Td>{order?.deceased_name || '-'}</Td>
+                                            <Td>{order?.coffin_type || '-'}</Td>
+                                            <Td>{getStatusBadge(order?.status)}</Td>
+                                            <Td>KES {Number(order?.selling_price || 0).toLocaleString()}</Td>
                                             <Td>
                                                 <div style={{ display: 'flex', gap: '0.25rem' }}>
                                                     <ActionIcon title="View">
@@ -420,7 +571,7 @@ const WorkshopDashboard = () => {
 
                 {activeTab === 'materials' && (
                     <>
-                        {materials.length === 0 ? (
+                        {safeMaterials.length === 0 ? (
                             <EmptyState>
                                 <Package size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
                                 <p>No materials in inventory. Add materials to get started.</p>
@@ -438,16 +589,16 @@ const WorkshopDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {materials.slice(0, 10).map((material) => (
-                                        <Tr key={material.id}>
-                                            <Td>{material.name}</Td>
-                                            <Td>{material.category}</Td>
-                                            <Td>{material.quantity}</Td>
-                                            <Td>{material.unit}</Td>
-                                            <Td>KES {Number(material.unit_price || 0).toLocaleString()}</Td>
+                                    {safeMaterials.slice(0, 10).map((material) => (
+                                        <Tr key={material?.id || Math.random()}>
+                                            <Td>{material?.name || '-'}</Td>
+                                            <Td>{material?.category || '-'}</Td>
+                                            <Td>{material?.quantity ?? 0}</Td>
+                                            <Td>{material?.unit || '-'}</Td>
+                                            <Td>KES {Number(material?.unit_price || 0).toLocaleString()}</Td>
                                             <Td>
-                                                <Badge $status={material.quantity <= material.min_stock_level ? 'pending' : 'completed'}>
-                                                    {material.quantity <= material.min_stock_level ? 'Low Stock' : 'In Stock'}
+                                                <Badge $status={(material?.quantity ?? 0) <= (material?.min_stock_level ?? 0) ? 'pending' : 'completed'}>
+                                                    {(material?.quantity ?? 0) <= (material?.min_stock_level ?? 0) ? 'Low Stock' : 'In Stock'}
                                                 </Badge>
                                             </Td>
                                         </Tr>
@@ -460,7 +611,7 @@ const WorkshopDashboard = () => {
 
                 {activeTab === 'workers' && (
                     <>
-                        {workers.length === 0 ? (
+                        {safeWorkers.length === 0 ? (
                             <EmptyState>
                                 <Users size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
                                 <p>No workers registered. Add workers to assign them to orders.</p>
@@ -477,16 +628,16 @@ const WorkshopDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {workers.slice(0, 10).map((worker) => (
-                                        <Tr key={worker.id}>
-                                            <Td>{worker.first_name} {worker.last_name}</Td>
-                                            <Td>{worker.email}</Td>
+                                    {safeWorkers.slice(0, 10).map((worker) => (
+                                        <Tr key={worker?.id || Math.random()}>
+                                            <Td>{(worker?.first_name || '') + ' ' + (worker?.last_name || '')}</Td>
+                                            <Td>{worker?.email || '-'}</Td>
                                             <Td>
-                                                <Badge $status={worker.role === 'manager' ? 'in_progress' : 'pending'}>
-                                                    {worker.role}
+                                                <Badge $status={worker?.role === 'manager' ? 'in_progress' : 'pending'}>
+                                                    {worker?.role || 'worker'}
                                                 </Badge>
                                             </Td>
-                                            <Td>{worker.phone || '-'}</Td>
+                                            <Td>{worker?.phone || '-'}</Td>
                                             <Td>
                                                 <div style={{ display: 'flex', gap: '0.25rem' }}>
                                                     <ActionIcon title="Edit">
@@ -505,8 +656,247 @@ const WorkshopDashboard = () => {
                     </>
                 )}
             </Section>
+
+            {/* Create Order Modal */}
+            {showCreateModal && (
+                <ModalOverlay>
+                    <Modal>
+                        <ModalHeader>
+                            <ModalTitle>Create New Coffin Order</ModalTitle>
+                            <CloseButton onClick={() => setShowCreateModal(false)}>×</CloseButton>
+                        </ModalHeader>
+                        <ModalBody>
+                            <FormGroup>
+                                <Label>Customer Name *</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Enter customer name"
+                                    value={formData.customer_name}
+                                    onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Deceased Name *</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Enter deceased name"
+                                    value={formData.deceased_name}
+                                    onChange={(e) => setFormData({ ...formData, deceased_name: e.target.value })}
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Coffin Type</Label>
+                                <Select
+                                    value={formData.coffin_type}
+                                    onChange={(e) => setFormData({ ...formData, coffin_type: e.target.value })}
+                                >
+                                    <option value="standard">Standard</option>
+                                    <option value="premium">Premium</option>
+                                    <option value="deluxe">Deluxe</option>
+                                </Select>
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Selling Price (KES)</Label>
+                                <Input
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={formData.selling_price}
+                                    onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Delivery Date</Label>
+                                <Input
+                                    type="date"
+                                    value={formData.delivery_date}
+                                    onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>Notes</Label>
+                                <Textarea
+                                    placeholder="Additional notes..."
+                                    value={formData.notes}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                />
+                            </FormGroup>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+                            <Button variant="primary" onClick={handleCreateOrder} disabled={!formData.customer_name || !formData.deceased_name}>
+                                Create Order
+                            </Button>
+                        </ModalFooter>
+                    </Modal>
+                </ModalOverlay>
+            )}
         </DashboardContainer>
     );
 };
+
+// Modal Styles
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+`;
+
+const Modal = styled.div`
+  background: ${COLORS.white};
+  border-radius: 14px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+`;
+
+const ModalHeader = styled.div`
+  padding: 1.5rem;
+  border-bottom: 1px solid ${COLORS.border};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: ${COLORS.text};
+  margin: 0;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: ${COLORS.textSecondary};
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+
+  &:hover {
+    background: ${COLORS.bg};
+    color: ${COLORS.text};
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 1.5rem;
+`;
+
+const ModalFooter = styled.div`
+  padding: 1rem 1.5rem;
+  border-top: 1px solid ${COLORS.border};
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.25rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: ${COLORS.text};
+  margin-bottom: 0.5rem;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: ${COLORS.text};
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: ${COLORS.primary};
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: ${COLORS.text};
+  background: ${COLORS.white};
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: ${COLORS.primary};
+  }
+`;
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: ${COLORS.text};
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: ${COLORS.primary};
+  }
+`;
+
+const Button = styled.button`
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  ${props => props.$variant === 'primary' ? `
+    background: ${COLORS.primary};
+    color: ${COLORS.white};
+
+    &:hover:not(:disabled) {
+      background: ${COLORS.primaryLight};
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  ` : `
+    background: ${COLORS.white};
+    color: ${COLORS.text};
+    border: 1px solid ${COLORS.border};
+
+    &:hover {
+      background: ${COLORS.bg};
+    }
+  `}
+`;
 
 export default WorkshopDashboard;

@@ -7,8 +7,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import { initSocket } from './socket.js';
-import { workshopRouter } from './controllers/routes/workshopRouter.js';
+import { initSocket } from './socket';
+import { workshopRouter } from './controllers/routes/workshopRouter';
 
 const app = express();
 const server = http.createServer(app);
@@ -47,6 +47,7 @@ app.use(async (req: any, res: any, next: any) => {
 
     // For non-system tenants, validate
     try {
+        // @ts-ignore - dynamic import for shared module
         const { validateTenantActive } = await import('../../shared/tenancy.js');
         const tenantStatus = await validateTenantActive(tenantSlug);
 
@@ -67,6 +68,7 @@ app.use(async (req: any, res: any, next: any) => {
             if (lastDash > 0) {
                 const branchPart = tenantSlug.substring(lastDash + 1);
                 try {
+                    // @ts-ignore - dynamic import for shared module
                     const { safeTenantQuery } = await import('../../shared/dbConfig.js');
                     const branches = await safeTenantQuery(
                         tenantStatus.tenant.db_name,
@@ -77,8 +79,8 @@ app.use(async (req: any, res: any, next: any) => {
                         req.branchId = branches[0].branch_id.toString();
                         console.log(`[WORKSHOP] Branch resolved: ${req.branchId}`);
                     }
-                } catch (e: any) {
-                    console.log('[WORKSHOP] Branch resolution skipped:', e.message);
+                } catch (e) {
+                    console.log('[WORKSHOP] Branch resolution skipped:', (e as Error).message);
                 }
             }
         }
@@ -108,7 +110,7 @@ app.use(async (req: any, res: any, next: any) => {
 // ============================================
 // ROUTES - Mount workshop routes
 // ============================================
-app.use('/api/workshop', workshopRouter);
+app.use('/api/v1/restpoint/workshop', workshopRouter);
 
 // Health check
 app.get('/api/health', (_req: any, res: any) => {
@@ -118,8 +120,6 @@ app.get('/api/health', (_req: any, res: any) => {
 // ============================================
 // AUTO-MIGRATION: Ensure workshop tables exist
 // ============================================
-import { safeTenantQuery, safeTenantExecute } from './database/db.js';
-
 const WORKSHOP_TABLES_SQL = `
 CREATE TABLE IF NOT EXISTS coffin_orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -219,6 +219,7 @@ CREATE TABLE IF NOT EXISTS costing (
 async function ensureWorkshopTables(dbName: string) {
     let connection;
     try {
+        // @ts-ignore - dynamic import for shared module
         const { getTenantDB } = await import('../../shared/dbConfig.js');
         const pool = await getTenantDB(dbName);
         connection = await pool.getConnection();
@@ -232,7 +233,8 @@ async function ensureWorkshopTables(dbName: string) {
             try {
                 await connection.query(statement + ';');
             } catch (err) {
-                console.warn(`[WORKSHOP] Table creation warning: ${err.message}`);
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                console.warn(`[WORKSHOP] Table creation warning: ${errorMessage}`);
             }
         }
 

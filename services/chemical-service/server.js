@@ -49,7 +49,7 @@ app.use(async (req, res, next) => {
   if (tenantSlug === 'system_shared') {
     console.log('[CHEMICAL] Using system_shared tenant (bypassing validation)');
     req.tenant = {
-      db_name: process.env.DB_NAME || 'restpoint_db',
+      db_name: process.env.DB_NAME || 'restpoint_main',
       tenant_id: 1,
       name: 'System Shared'
     };
@@ -106,7 +106,7 @@ app.use(async (req, res, next) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('[CHEMICAL] Development fallback: Using default tenant');
       req.tenant = {
-        db_name: process.env.DB_NAME || 'restpoint_db',
+        db_name: process.env.DB_NAME || 'restpoint_main',
         tenant_id: 1,
         name: 'Development Fallback'
       };

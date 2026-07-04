@@ -18,9 +18,13 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         // Use centralized env config for socket URL
-        const socketUrl = env.SOCKET_URL || 'http://localhost:5001';
+        // Default to workshop service on port 6969 for workshop features
+        // Other services (call, hearse) connect to their own sockets
+        const socketUrl = env.SOCKET_URL || 'http://localhost:6969';
 
-        // Connect to hearse service Socket.IO server
+        console.log('[Socket] Connecting to:', socketUrl);
+
+        // Connect to Socket.IO server (workshop service by default)
         const socketInstance = io(socketUrl, {
             transports: ['websocket', 'polling'],
             autoConnect: true,
@@ -29,6 +33,11 @@ export const SocketProvider = ({ children }) => {
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
+            // Add CORS and other options for better compatibility
+            withCredentials: false,
+            extraHeaders: {
+                'x-tenant-slug': localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default'
+            }
         });
 
         socketInstance.on('connect', () => {

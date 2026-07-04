@@ -1,3 +1,6 @@
+// Load .env FIRST before any other imports - explicitly from hearse-service directory
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -5,7 +8,6 @@ const path = require('path');
 const { Server } = require('socket.io');
 const { safeTenantQuery, safeTenantExecute } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
-require('dotenv').config();
 
 const restpointRoutes = require('./routes/hearseRoutes');
 
@@ -159,7 +161,7 @@ app.get('/', (req, res) => {
 // ============================================================
 // Debug: Print all registered routes
 // ============================================================
-console.log('\n📋 Registered Routes:');
+console.log('\n Registered Routes:');
 const printRoutes = (layer, path = '') => {
     if (layer.route) {
         const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
@@ -221,8 +223,8 @@ app.use((err, req, res, next) => {
 // Start server
 // ============================================================
 const PORT = process.env.PORT || 5002;
-server.listen(PORT, () => {
-    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🚀 Server running on http://0.0.0.0:${PORT}`);
     console.log(`📡 Socket.IO ready for real-time cross-branch updates`);
     console.log(`\n📋 Available Endpoints:`);
     console.log(`   GET  http://localhost:${PORT}/`);

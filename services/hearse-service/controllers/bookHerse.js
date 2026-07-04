@@ -104,12 +104,12 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         const bookingNumber = String((idResult.count || 0) + 1).padStart(3, '0');
         const booking_code = `BK-${bookingNumber}`;
 
-        // ✅ Insert booking — using actual schema columns
+        // ✅ Insert booking — essential fields only
         const insertQuery = `
       INSERT INTO hearse_bookings
       (booking_code, hearse_id, client_name, client_phone, client_email, destination,
-       booking_date, event_date, event_time, pickup_location, dropoff_location, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+       booking_date, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'booked', ?, ?)
     `;
         const insertParams = [
             booking_code,
@@ -118,11 +118,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             client_phone.trim(),
             client_email ? client_email.trim() : null,
             destination.trim(),
-            from_timestamp || null,
-            to_timestamp || null,
-            null,
-            from_location || null,
-            to_location || null,
+            from_timestamp || now,
             now,
             now
         ];
@@ -144,8 +140,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             `
       SELECT 
         hb.id AS booking_id, hb.client_name, hb.client_phone, hb.client_email, hb.destination,
-        hb.status, hb.booking_date, hb.event_date, hb.event_time,
-        hb.pickup_location, hb.dropoff_location, hb.created_at,
+        hb.status, hb.booking_date, hb.created_at,
         h.id AS hearse_id, h.plate_number, h.hearse_name, h.model, h.status AS hearse_status, h.capacity
       FROM hearse_bookings hb
       LEFT JOIN hearses h ON hb.hearse_id = h.id
@@ -201,10 +196,6 @@ const getAllHearseBookings = asyncHandler(async (req, res) => {
         hb.destination,
         hb.status,
         hb.booking_date,
-        hb.event_date,
-        hb.event_time,
-        hb.service_type,
-        hb.special_requests AS special_remarks,
         hb.created_at,
         h.id AS hearse_id,
         h.plate_number,
@@ -405,8 +396,8 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
         const [updatedBooking] = await safeQuery(`
       SELECT 
         hb.id AS booking_id, hb.client_name, hb.client_phone, hb.client_email, hb.destination,
-        hb.status, hb.estimated_departure_time, hb.special_remarks, hb.created_at,
-        h.id AS hearse_id, h.number_plate, h.model, h.status AS hearse_status, h.capacity,
+        hb.status, hb.booking_date, hb.special_requests AS special_remarks, hb.created_at,
+        h.id AS hearse_id, h.plate_number, h.model, h.status AS hearse_status, h.capacity,
         dr.id AS driver_id, dr.driver_name, dr.driver_phone, dr.license_number,
         dcd.deceased_id AS deceased_id, dcd.full_name AS deceased_name, dcd.gender AS deceased_gender
       FROM hearse_bookings hb
@@ -416,7 +407,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
       WHERE hb.id = ?
     `, [booking_id], req.tenantSlug);
 
-        // ✅ Emit real-time update via socket.io
+        //  Emit real-time update via socket.io
         if (io && updatedBooking) {
             io.emit('booking_status_updated', {
                 type: 'STATUS_UPDATE',
@@ -428,7 +419,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Final success response
+        //  Final success response
         res.status(200).json({
             status: 'success',
             message: `Booking status updated to '${status}'.`,
@@ -438,7 +429,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
             booking: updatedBooking
         });
     } catch (error) {
-        console.error('❌ Update Status Error:', error);
+        console.error(' Update Status Error:', error);
         res.status(500).json({
             status: 'error',
             message: 'Failed to update booking status.'
@@ -460,7 +451,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'New departure time is required.' });
         }
 
-        // ✅ 1. Check if booking exists
+        //  1. Check if booking exists
         const [booking] = await safeQuery('SELECT * FROM hearse_bookings WHERE id = ?', [booking_id], req.tenantSlug);
         if (!booking) {
             return res.status(404).json({ status: 'error', message: 'Booking not found.' });
@@ -468,7 +459,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
 
         const now = getKenyaTimeISO();
 
-        // ✅ 2. Update booking with new time and status
+        //  2. Update booking with new time and status
         await safeQuery(
             `UPDATE hearse_bookings 
        SET booking_date = ?, special_requests = ?, status = ?, updated_at = ? 
@@ -477,7 +468,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             req.tenantSlug
         );
 
-        // ✅ 3. Notify clients (Socket)
+        //  3. Notify clients (Socket)
         if (io) io.emit('booking_postponed', { booking_id, new_departure_time, reason });
 
         res.status(200).json({
@@ -491,7 +482,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ Postpone Booking Error:', error);
+        console.error(' Postpone Booking Error:', error);
         res.status(500).json({
             status: 'error',
             message: 'Server error while postponing booking.'
@@ -517,7 +508,7 @@ const getAllDrivers = asyncHandler(async (req, res) => {
         ORDER BY driver_name ASC
       `, [], req.tenantSlug);
         } catch (driverErr) {
-            console.warn('⚠️ Drivers table not available, returning empty:', driverErr.message);
+            console.warn(' Drivers table not available, returning empty:', driverErr.message);
             drivers = [];
         }
 
@@ -527,7 +518,7 @@ const getAllDrivers = asyncHandler(async (req, res) => {
             drivers
         });
     } catch (error) {
-        console.error('❌ Fetch Drivers Error:', error);
+        console.error(' Fetch Drivers Error:', error);
         res.status(500).json({
             status: 'error',
             message: 'Failed to fetch drivers.'

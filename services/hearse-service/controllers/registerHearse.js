@@ -10,7 +10,7 @@ const asyncHandler = require('express-async-handler');
 const hearsesDir = path.join(__dirname, '../../uploads/hearses');
 if (!fs.existsSync(hearsesDir)) {
     fs.mkdirSync(hearsesDir, { recursive: true });
-    console.log('📁 Created uploads/hearses directory');
+    console.log(' Created uploads/hearses directory');
 }
 
 // === Multer Storage Config ===
@@ -29,14 +29,14 @@ const upload = multer({ storage });
  */
 const registerHearse = asyncHandler(async (req, res) => {
     try {
-        console.log('\n🚗 [RegisterHearse] Starting process...');
-        console.log('📸 Uploaded file:', req.file);
-        console.log('📦 Request body:', req.body);
+        console.log('\n [RegisterHearse] Starting process...');
+        console.log(' Uploaded file:', req.file);
+        console.log(' Request body:', req.body);
 
         // Get tenant database name from request
         const dbName = req.tenant?.db_name;
         if (!dbName) {
-            console.log('❌ No tenant database found');
+            console.log(' No tenant database found');
             return res.status(400).json({
                 success: false,
                 message: 'Tenant database not found'
@@ -48,17 +48,10 @@ const registerHearse = asyncHandler(async (req, res) => {
             hearse_name,
             model,
             capacity,
-            min_charge_ksh,
-            max_charge_ksh,
             status,
             branch_id,
+            branch_code,
             driver_id,
-            make,
-            year,
-            description,
-            features,
-            chassis_number,
-            engine_number,
             insurance_expiry,
             service_due_date
         } = req.body;
@@ -67,7 +60,7 @@ const registerHearse = asyncHandler(async (req, res) => {
 
         // Validate required fields
         if (!plate_number) {
-            console.log('❌ Missing plate_number');
+            console.log(' Missing plate_number');
             return res.status(400).json({
                 success: false,
                 message: 'Missing required field: plate_number.',
@@ -79,13 +72,30 @@ const registerHearse = asyncHandler(async (req, res) => {
         // Auto-assign branch_id (default to 1 if not provided)
         let assigned_branch_id = branch_id || 1;
 
-        // Try to get the first available branch for this tenant
-        if (!branch_id) {
+        // If branch_code is provided, look up the branch_id
+        if (branch_code && !branch_id) {
             try {
                 const [branch] = await safeTenantQuery(
                     dbName,
-                    'SELECT branch_id FROM branches WHERE tenant_id = ? LIMIT 1',
-                    [req.tenant?.tenant_id]
+                    'SELECT branch_id FROM branches WHERE branch_code = ? LIMIT 1',
+                    [branch_code]
+                );
+                if (branch) {
+                    assigned_branch_id = branch.branch_id;
+                    console.log(`[RegisterHearse] Resolved branch_code "${branch_code}" to branch_id: ${assigned_branch_id}`);
+                } else {
+                    console.log(`[RegisterHearse] Branch code "${branch_code}" not found, using default branch_id: 1`);
+                }
+            } catch (e) {
+                console.log('[RegisterHearse] Error looking up branch by code, using default:', e.message);
+            }
+        } else if (!branch_id) {
+            // Try to get the first available branch
+            try {
+                const [branch] = await safeTenantQuery(
+                    dbName,
+                    'SELECT branch_id FROM branches LIMIT 1',
+                    []
                 );
                 if (branch) {
                     assigned_branch_id = branch.branch_id;
@@ -104,7 +114,7 @@ const registerHearse = asyncHandler(async (req, res) => {
         const hearseNumber = String((countResult?.count || 0) + 1).padStart(3, '0');
         const hearse_code = `HRS-${hearseNumber}`;
 
-        // Insert hearse with ALL fields
+        // Insert hearse with essential fields only
         const query = `
             INSERT INTO hearses (
                 hearse_code,
@@ -113,22 +123,12 @@ const registerHearse = asyncHandler(async (req, res) => {
                 plate_number,
                 model,
                 capacity,
-                min_charge_ksh,
-                max_charge_ksh,
                 status,
                 branch_id,
                 driver_id,
-                make,
-                year,
-                description,
-                features,
-                chassis_number,
-                engine_number,
-                insurance_expiry,
-                service_due_date,
                 created_at,
                 updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const params = [
@@ -138,19 +138,9 @@ const registerHearse = asyncHandler(async (req, res) => {
             plate_number.trim(),
             model || null,
             capacity || null,
-            min_charge_ksh || 0,
-            max_charge_ksh || 0,
             status || 'available',
             assigned_branch_id,
             driver_id || null,
-            make || null,
-            year || null,
-            description || null,
-            features || null,
-            chassis_number || null,
-            engine_number || null,
-            insurance_expiry || null,
-            service_due_date || null,
             now,
             now
         ];

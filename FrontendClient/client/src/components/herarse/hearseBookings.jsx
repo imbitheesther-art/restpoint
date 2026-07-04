@@ -38,6 +38,7 @@ const bookingService = {
         fd.append('hearse_name', data.hearse_name || '');
         fd.append('model', data.model || '');
         fd.append('capacity', data.capacity || 1);
+        fd.append('branch_code', data.branch_code || '');
         const r = await fetch(`${API_BASE_URL}/hearses`, {
             method: 'POST',
             headers: { 'x-tenant-slug': getTenantSlug() },
@@ -162,7 +163,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                             <div className="table-responsive">
                                 <Table hover>
                                     <thead className="bg-light">
-                                        <tr><th>ID</th><th>Name</th><th>Plate</th><th>Model</th><th>Capacity</th><th>Action</th></tr>
+                                        <tr><th>ID</th><th>Name</th><th>Plate</th><th>Model</th><th>Capacity</th><th>Branch</th><th>Action</th></tr>
                                     </thead>
                                     <tbody>
                                         {hearses.map(h => (
@@ -172,6 +173,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                                                 <td><strong className="text-primary">{h.plate_number || h.number_plate}</strong></td>
                                                 <td>{h.model || 'N/A'}</td>
                                                 <td>{h.capacity || 'N/A'}</td>
+                                                <td><strong className="text-primary">{h.branch_code || 'N/A'}</strong></td>
                                                 <td>
                                                     <Button size="sm" variant="success" onClick={() => setSelected(h)}>
                                                         <Car size={14} className="me-1" />Book
@@ -250,7 +252,7 @@ const BookingSystem = () => {
     const [showRegister, setShowRegister] = useState(false);
     const [showHearses, setShowHearses] = useState(false);
     const [showAvailable, setShowAvailable] = useState(false);
-    const [registerForm, setRegisterForm] = useState({ plate_number: '', hearse_name: '', model: '', capacity: '' });
+    const [registerForm, setRegisterForm] = useState({ plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '' });
     const [registering, setRegistering] = useState(false);
     const { socket } = useSocket();
 
@@ -304,7 +306,7 @@ const BookingSystem = () => {
             setSuccess('Registered!');
             setTimeout(() => setSuccess(''), 3000);
             setShowRegister(false);
-            setRegisterForm({ plate_number: '', hearse_name: '', model: '', capacity: '' });
+            setRegisterForm({ plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '' });
             loadHearses();
         } catch (e) {
             setError('Failed.');
@@ -340,8 +342,9 @@ const BookingSystem = () => {
 
     const stats = [
         { label: 'Total', value: bookings.length, bg: 'bg-dark' },
+        { label: 'Booked', value: bookings.filter(b => b.status === 'booked').length, bg: 'bg-primary' },
         { label: 'Pending', value: bookings.filter(b => b.status === 'pending').length, bg: 'bg-warning' },
-        { label: 'Assigned', value: bookings.filter(b => b.status === 'assigned').length, bg: 'bg-primary' },
+        { label: 'Assigned', value: bookings.filter(b => b.status === 'assigned').length, bg: 'bg-info' },
         { label: 'In Transit', value: bookings.filter(b => b.status === 'in_transit').length, bg: 'bg-info' },
         { label: 'Completed', value: bookings.filter(b => b.status === 'completed').length, bg: 'bg-success' },
         { label: 'Cancelled', value: bookings.filter(b => b.status === 'cancelled').length, bg: 'bg-danger' }
@@ -385,7 +388,7 @@ const BookingSystem = () => {
                             <Form.Group>
                                 <Form.Label className="fw-semibold">Filter by Status</Form.Label>
                                 <div className="d-flex flex-wrap gap-2">
-                                    {['all', 'pending', 'assigned', 'in_transit', 'completed', 'cancelled'].map(k => (
+                                    {['all', 'booked', 'pending', 'assigned', 'in_transit', 'completed', 'cancelled'].map(k => (
                                         <Button key={k} variant={filter === k ? 'dark' : 'outline-dark'} size="sm" className="fw-semibold rounded-pill px-3" onClick={() => setFilter(k)}>
                                             {k === 'all' ? 'All' : k.replace('_', ' ').toUpperCase()}
                                         </Button>
@@ -428,20 +431,26 @@ const BookingSystem = () => {
                                     <td><StatusBadge status={b.status} /></td>
                                     <td>
                                         <div className="d-flex gap-1 flex-wrap">
-                                            <Button size="sm" variant="outline-primary" onClick={() => { setSelectedBooking(b); setShowDetails(true); }}><Eye size={14} /></Button>
-                                            {b.status === 'pending' && (
+                                            <Button size="sm" variant="outline-primary" onClick={() => { setSelectedBooking(b); setShowDetails(true); }}><Eye size={14} className="me-1" />View</Button>
+                                            {(b.status === 'booked' || b.status === 'pending') && (
                                                 <>
-                                                    <Button size="sm" variant="success" onClick={() => handleStatus(b.booking_id, 'assigned')} title="Mark as Assigned"><CheckCircle size={14} /></Button>
-                                                    <Button size="sm" variant="danger" onClick={() => handleStatus(b.booking_id, 'cancelled')} title="Cancel"><XCircle size={14} /></Button>
+                                                    <Button size="sm" variant="success" onClick={() => handleStatus(b.booking_id, 'assigned')}><CheckCircle size={14} className="me-1" />Assign</Button>
+                                                    <Button size="sm" variant="danger" onClick={() => handleStatus(b.booking_id, 'cancelled')}><XCircle size={14} className="me-1" />Cancel</Button>
                                                 </>
                                             )}
                                             {b.status === 'assigned' && (
-                                                <Button size="sm" variant="info" onClick={() => handleStatus(b.booking_id, 'in_transit')} title="Mark as In Transit"><Truck size={14} /></Button>
+                                                <>
+                                                    <Button size="sm" variant="info" onClick={() => handleStatus(b.booking_id, 'in_transit')}><Truck size={14} className="me-1" />In Transit</Button>
+                                                    <Button size="sm" variant="danger" onClick={() => handleStatus(b.booking_id, 'cancelled')}><XCircle size={14} className="me-1" />Cancel</Button>
+                                                </>
                                             )}
                                             {b.status === 'in_transit' && (
-                                                <Button size="sm" variant="success" onClick={() => handleStatus(b.booking_id, 'completed')} title="Mark as Completed"><CheckCircle size={14} /></Button>
+                                                <>
+                                                    <Button size="sm" variant="success" onClick={() => handleStatus(b.booking_id, 'completed')}><CheckCircle size={14} className="me-1" />Complete</Button>
+                                                    <Button size="sm" variant="danger" onClick={() => handleStatus(b.booking_id, 'cancelled')}><XCircle size={14} className="me-1" />Cancel</Button>
+                                                </>
                                             )}
-                                            <Button size="sm" variant="warning" onClick={() => { setSelectedBooking(b); setShowPostpone(true); }}><Calendar size={14} /></Button>
+                                            <Button size="sm" variant="warning" onClick={() => { setSelectedBooking(b); setShowPostpone(true); }}><Calendar size={14} className="me-1" />Postpone</Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -486,6 +495,7 @@ const BookingSystem = () => {
                             <Col md={6}><Form.Group><Form.Label className="fw-semibold">Plate *</Form.Label><Form.Control value={registerForm.plate_number} onChange={e => setRegisterForm(p => ({ ...p, plate_number: e.target.value }))} placeholder="KCA 1234" required /></Form.Group></Col>
                             <Col md={6}><Form.Group><Form.Label className="fw-semibold">Model</Form.Label><Form.Control value={registerForm.model} onChange={e => setRegisterForm(p => ({ ...p, model: e.target.value }))} placeholder="Toyota Hiace" /></Form.Group></Col>
                             <Col md={6}><Form.Group><Form.Label className="fw-semibold">Capacity</Form.Label><Form.Control type="number" value={registerForm.capacity} onChange={e => setRegisterForm(p => ({ ...p, capacity: e.target.value }))} placeholder="4" min="1" /></Form.Group></Col>
+                            <Col md={6}><Form.Group><Form.Label className="fw-semibold">Branch Code *</Form.Label><Form.Control value={registerForm.branch_code} onChange={e => setRegisterForm(p => ({ ...p, branch_code: e.target.value }))} placeholder="e.g., NBI, MBS, KSL" required /></Form.Group></Col>
                         </Row>
                     </Modal.Body>
                     <Modal.Footer>

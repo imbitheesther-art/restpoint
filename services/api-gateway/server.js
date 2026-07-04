@@ -54,6 +54,7 @@ const SERVICE_URLS = {
   qrcode: process.env.QRCODE_SERVICE_URL || 'http://127.0.0.1:5021',
   scanner: process.env.SCANNER_SERVICE_URL || 'http://127.0.0.1:5022',
   hearse: process.env.HEARSE_SERVICE_URL || 'http://127.0.0.1:5002',
+  leave: process.env.LEAVE_SERVICE_URL || 'http://127.0.0.1:5017',
 };
 
 const app = express();
@@ -287,6 +288,12 @@ const edocumentsProxy = createFullPathProxy(SERVICE_URLS.edocuments, '/api/v1/re
 app.use('/api/v1/restpoint/edocuments', edocumentsProxy);
 app.use('/v1/restpoint/edocuments', edocumentsProxy);
 app.use('/edocuments', edocumentsProxy);
+
+// --- Leave Management ---
+const leaveProxy = createFullPathProxy(SERVICE_URLS.leave, '/api/v1/restpoint/leaves');
+app.use('/api/v1/restpoint/leaves', leaveProxy);
+app.use('/v1/restpoint/leaves', leaveProxy);
+app.use('/leaves', leaveProxy);
 
 // =============================================================================
 // HEALTH & DEBUG
