@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Users,
-  Microscope,
   DollarSign,
   FileText,
   Box,
@@ -24,7 +23,6 @@ import {
   Settings,
   Download,
   Printer,
-  FileText as Report,
   Calendar,
   MapPin,
   Phone,
@@ -42,34 +40,48 @@ import ScannerComponent from '../scanner/ScannerComponent';
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
 
-// Colors - Enhanced modern palette with gradients (Unified across all components)
+// Colors - Elegant vintage palette
 const Colors = {
-  primaryDark: '#0f172a',
-  primaryGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-  accentRed: '#ef4444',
-  accentRedGradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-  accentBlue: '#3b82f6',
-  accentBlueGradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-  accentPurple: '#8b5cf6',
-  accentPurpleGradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-  lightGray: '#f8fafc',
-  mediumGray: '#e2e8f0',
-  darkGray: '#1e293b',
-  chargeSetting: '#6b21a5',
-  chargeSettingGradient: 'linear-gradient(135deg, #6b21a5 0%, #7c3aed 100%)',
-  successGreen: '#10b981',
-  successGreenGradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-  dangerRed: '#dc2626',
-  warningYellow: '#f59e0b',
-  warningYellowGradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-  infoBlue: '#0ea5e9',
-  infoBluGradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-  textMuted: '#64748b',
-  cardBg: '#ffffff',
-  cardShadow: '0 4px 20px rgba(0,0,0,0.08)',
-  cardShadowHover: '0 12px 35px rgba(0,0,0,0.12)',
-  borderColor: '#e2e8f0',
-  borderColorLight: '#f1f5f9',
+  ink: '#15171A',
+  bone: '#FAF8F4',
+  bone2: '#F3EFE6',
+  brass: '#8B7355',
+  brassLight: '#A98F6E',
+  verdigris: '#3D4F47',
+  verdigrisDark: '#2E3F37',
+  verdigrisLight: '#4D6359',
+  verdigrisTint: '#EBEFEF',
+  line: '#E3DDD0',
+  lineDark: 'rgba(250,248,244,0.14)',
+  gray: '#6B6862',
+  grayLight: 'rgba(250,248,244,0.62)',
+  accent: '#C77B5E',
+  primaryDark: '#15171A',
+  primaryGradient: 'linear-gradient(135deg, #3D4F47 0%, #2E3F37 100%)',
+  accentRed: '#C77B5E',
+  accentRedGradient: 'linear-gradient(135deg, #C77B5E 0%, #A66B52 100%)',
+  accentBlue: '#3D4F47',
+  accentBlueGradient: 'linear-gradient(135deg, #3D4F47 0%, #2E3F37 100%)',
+  accentPurple: '#8B7355',
+  accentPurpleGradient: 'linear-gradient(135deg, #8B7355 0%, #6B5A45 100%)',
+  lightGray: '#FAF8F4',
+  mediumGray: '#E3DDD0',
+  darkGray: '#15171A',
+  chargeSetting: '#8B7355',
+  chargeSettingGradient: 'linear-gradient(135deg, #8B7355 0%, #6B5A45 100%)',
+  successGreen: '#4D6359',
+  successGreenGradient: 'linear-gradient(135deg, #4D6359 0%, #3D4F47 100%)',
+  dangerRed: '#C77B5E',
+  warningYellow: '#8B7355',
+  warningYellowGradient: 'linear-gradient(135deg, #8B7355 0%, #6B5A45 100%)',
+  infoBlue: '#4D6359',
+  infoBluGradient: 'linear-gradient(135deg, #4D6359 0%, #3D4F47 100%)',
+  textMuted: '#6B6862',
+  cardBg: '#FAF8F4',
+  cardShadow: '0 4px 20px rgba(21, 23, 26, 0.08)',
+  cardShadowHover: '0 12px 35px rgba(21, 23, 26, 0.12)',
+  borderColor: '#E3DDD0',
+  borderColorLight: '#F3EFE6',
 };
 
 // Keyframes animations for smooth transitions
@@ -117,39 +129,39 @@ const spin = keyframes`
 const AppContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, ${Colors.lightGray} 0%, #f1f5f9 100%);
-  padding: 1rem;
+  padding: 1.5rem 1rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: ${Colors.darkGray};
   animation: ${fadeIn} 0.5s ease-out;
 
   @media (max-width: 768px) {
-    padding: 0.75rem;
+    padding: 1rem 0.75rem;
   }
 `;
 
 const ContentGrid = styled.div`
   width: 100%;
-  max-width: 1800px;
+  max-width: 1400px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
+  gap: 1.25rem;
 
   @media (min-width: 992px) {
-    grid-template-columns: 60% 40%;
+    grid-template-columns: 65% 35%;
   }
 `;
 
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 `;
 
 const SidebarContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 `;
 
 const HeaderCard = styled.div`
@@ -157,7 +169,7 @@ const HeaderCard = styled.div`
   color: white;
   border-radius: 1rem;
   padding: 1.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   box-shadow: ${Colors.cardShadow};
   animation: ${slideInLeft} 0.5s ease-out;
   transition: all 0.3s ease;
@@ -191,8 +203,8 @@ const BackButton = styled.button`
 
 const Card = styled.div`
   background: ${Colors.cardBg};
-  padding: 1.5rem;
-  border-radius: 1rem;
+  padding: 1.25rem;
+  border-radius: 0.875rem;
   box-shadow: ${Colors.cardShadow};
   border: 1px solid ${Colors.borderColorLight};
   animation: ${fadeIn} 0.6s ease-out;
@@ -204,15 +216,15 @@ const Card = styled.div`
   }
 
   @media (max-width: 768px) {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 `;
 
 const CardTitle = styled.h4`
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin: 0 0 1.25rem 0;
-  padding-bottom: 0.75rem;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.625rem;
   border-bottom: 2px solid ${Colors.accentBlue}20;
   display: flex;
   align-items: center;
@@ -222,8 +234,8 @@ const CardTitle = styled.h4`
 
   svg {
     stroke-width: 2;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     color: ${Colors.accentBlue};
   }
 `;
@@ -233,9 +245,9 @@ const ClickableBadge = styled.button`
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border-radius: 0.6rem;
-  font-size: 0.8rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: white;
   background: ${(props) => props.$bgColor};
@@ -260,27 +272,27 @@ const ClickableBadge = styled.button`
 
   svg {
     stroke-width: 2.5;
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
 
   @media (max-width: 640px) {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.7rem;
   }
 `;
 
 const BadgesContainer = styled.div`
   display: flex;
-  gap: 0.75rem;
+  gap: 0.625rem;
   flex-wrap: wrap;
   width: 100%;
-  margin-top: 1.25rem;
+  margin-top: 1rem;
 `;
 
 const BadgeRow = styled.div`
   display: flex;
-  gap: 0.75rem;
+  gap: 0.625rem;
   width: 100%;
   flex-wrap: wrap;
 
@@ -412,8 +424,8 @@ const MobileNavItem = styled.button`
   }
 `;
 
-// Report Modal Styles
-const ReportModalOverlay = styled.div`
+// Modal Styles
+const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -425,51 +437,32 @@ const ReportModalOverlay = styled.div`
   align-items: center;
   z-index: 10000;
   backdrop-filter: blur(4px);
+  padding: 1rem;
 `;
 
-const ReportModalContent = styled.div`
+const ModalContent = styled.div`
   background: white;
   border-radius: 1rem;
-  width: 90%;
-  max-width: 900px;
+  padding: 1.5rem;
+  max-width: 600px;
+  width: 100%;
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: ${fadeIn} 0.3s ease-out;
 `;
 
-const ReportHeader = styled.div`
-  background: ${Colors.primaryGradient};
-  color: white;
-  padding: 1.5rem 2rem;
-  border-radius: 1rem 1rem 0 0;
+const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-`;
-
-const ReportBody = styled.div`
-  padding: 2rem;
-`;
-
-const ReportSection = styled.div`
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: ${Colors.lightGray};
-  border-radius: 0.75rem;
-  border-left: 4px solid ${Colors.accentBlue};
+  padding-bottom: 1rem;
+  border-bottom: 2px solid ${Colors.borderColor};
 
   h3 {
-    margin: 0 0 0.75rem 0;
-    font-size: 1rem;
+    margin: 0;
+    font-size: 1.25rem;
     color: ${Colors.primaryDark};
     display: flex;
     align-items: center;
@@ -477,65 +470,21 @@ const ReportSection = styled.div`
   }
 `;
 
-const ReportRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-  border-bottom: 1px dashed ${Colors.borderColor};
-  font-size: 0.9rem;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  span:first-child {
-    color: ${Colors.textMuted};
-    font-weight: 500;
-  }
-
-  span:last-child {
-    color: ${Colors.primaryDark};
-    font-weight: 600;
-  }
-`;
-
-const ReportFooter = styled.div`
-  padding: 1.5rem 2rem;
-  background: ${Colors.lightGray};
-  border-radius: 0 0 1rem 1rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  border-top: 1px solid ${Colors.borderColor};
-`;
-
-const ReportButton = styled.button`
+const ModalButton = styled.button`
+  background: none;
+  border: none;
+  color: ${Colors.textMuted};
+  cursor: pointer;
+  padding: 0.25rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
+  justify-content: center;
   transition: all 0.2s ease;
-  background: ${(props) => props.primary ? Colors.accentBlue : Colors.mediumGray};
-  color: ${(props) => props.primary ? 'white' : Colors.darkGray};
 
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: ${Colors.dangerRed};
+    transform: rotate(90deg);
   }
-`;
-
-const LoadingSpinner = styled.div`
-  border: 3px solid ${Colors.borderColor};
-  border-top: 3px solid ${Colors.accentBlue};
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  animation: ${spin} 1s linear infinite;
 `;
 
 // Helper function to get tenant slug
@@ -594,11 +543,6 @@ const Loader = lazy(() =>
 const DeceasedInfoSection = lazy(() =>
   import('../deceasedinfo/deceasedInfoSection').catch(() => ({
     default: () => <div>Deceased Info component not available</div>,
-  }))
-);
-const PostmortemInfoSection = lazy(() =>
-  import('../autopsy/postmortemSection').catch(() => ({
-    default: () => <div>Postmortem Info component not available</div>,
   }))
 );
 
@@ -711,185 +655,6 @@ class ErrorBoundary extends Component {
 }
 
 // ============================================================================
-// REPORT GENERATION COMPONENT
-// ============================================================================
-
-const DeceasedReport = ({ deceased, onClose }) => {
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
-  };
-
-  const calculateAge = (dob, dod) => {
-    if (!dob || !dod) return '-';
-    const birth = new Date(dob);
-    const death = new Date(dod);
-    if (isNaN(birth.getTime()) || isNaN(death.getTime())) return '-';
-    let years = death.getFullYear() - birth.getFullYear();
-    const monthDiff = death.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) years--;
-    return `${years} years`;
-  };
-
-  const getDaysInMortuary = (admissionDate) => {
-    if (!admissionDate) return 0;
-    const admitted = new Date(admissionDate);
-    const today = new Date();
-    return Math.max(0, Math.floor((today - admitted) / (1000 * 60 * 60 * 24)));
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownloadPDF = async () => {
-    setIsGenerating(true);
-    try {
-      // Use browser's print to PDF functionality
-      handlePrint();
-      toast.success('Use "Save as PDF" in the print dialog');
-    } catch (error) {
-      toast.error('Failed to generate PDF');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  if (!deceased) return null;
-
-  return (
-    <ReportModalOverlay>
-      <ReportModalContent id="report-content">
-        <ReportHeader>
-          <h2><Report size={20} /> Deceased Summary Report</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <X size={20} />
-          </button>
-        </ReportHeader>
-
-        <ReportBody>
-          {/* Header Info */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem', paddingBottom: '1rem', borderBottom: `2px solid ${Colors.accentBlue}` }}>
-            <h2 style={{ margin: '0 0 0.5rem 0', color: Colors.primaryDark }}>{deceased.full_name || 'Unknown'}</h2>
-            <p style={{ margin: 0, color: Colors.textMuted, fontSize: '0.9rem' }}>
-              Deceased ID: {deceased.deceased_id || deceased.id || '-'} |
-              Generated: {new Date().toLocaleString()}
-            </p>
-          </div>
-
-          {/* Personal Information */}
-          <ReportSection>
-            <h3><User size={16} /> Personal Information</h3>
-            <ReportRow><span>Full Name</span><span>{deceased.full_name || '-'}</span></ReportRow>
-            <ReportRow><span>Gender</span><span>{deceased.gender || '-'}</span></ReportRow>
-            <ReportRow><span>Date of Birth</span><span>{formatDate(deceased.date_of_birth)}</span></ReportRow>
-            <ReportRow><span>Date of Death</span><span>{formatDate(deceased.date_of_death)}</span></ReportRow>
-            <ReportRow><span>Age at Death</span><span>{calculateAge(deceased.date_of_birth, deceased.date_of_death)}</span></ReportRow>
-            <ReportRow><span>Cause of Death</span><span>{deceased.cause_of_death || '-'}</span></ReportRow>
-            <ReportRow><span>Place of Death</span><span>{deceased.place_of_death || '-'}</span></ReportRow>
-          </ReportSection>
-
-          {/* Location Information */}
-          <ReportSection>
-            <h3><MapPin size={16} /> Location Information</h3>
-            <ReportRow><span>County/Region</span><span>{deceased.county || '-'}</span></ReportRow>
-            <ReportRow><span>Specific Location</span><span>{deceased.location || '-'}</span></ReportRow>
-          </ReportSection>
-
-          {/* Timeline */}
-          <ReportSection>
-            <h3><Clock size={16} /> Timeline</h3>
-            <ReportRow><span>Date Admitted</span><span>{formatDate(deceased.date_admitted)}</span></ReportRow>
-            <ReportRow><span>Date Registered</span><span>{formatDate(deceased.date_registered)}</span></ReportRow>
-            <ReportRow><span>Days in Mortuary</span><span>{getDaysInMortuary(deceased.date_admitted)} days</span></ReportRow>
-            <ReportRow><span>Dispatch Date</span><span>{formatDate(deceased.dispatch_date)}</span></ReportRow>
-          </ReportSection>
-
-          {/* Financial Information */}
-          <ReportSection>
-            <h3><DollarSign size={16} /> Financial Information</h3>
-            <ReportRow><span>Total Charges</span><span>{deceased.total_mortuary_charge || 0} {deceased.currency || 'KES'}</span></ReportRow>
-            <ReportRow><span>Burial Type</span><span>{deceased.burial_type || '-'}</span></ReportRow>
-          </ReportSection>
-
-          {/* Next of Kin */}
-          {deceased.next_of_kin && deceased.next_of_kin.length > 0 && (
-            <ReportSection>
-              <h3><Users size={16} /> Next of Kin ({deceased.next_of_kin.length})</h3>
-              {deceased.next_of_kin.map((kin, idx) => (
-                <div key={idx} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: idx < deceased.next_of_kin.length - 1 ? '1px dashed ' + Colors.borderColor : 'none' }}>
-                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{kin.full_name}</div>
-                  <div style={{ fontSize: '0.85rem', color: Colors.textMuted }}>
-                    {kin.relationship} | {kin.contact}
-                    {kin.email && ` | ${kin.email}`}
-                  </div>
-                </div>
-              ))}
-            </ReportSection>
-          )}
-
-          {/* Postmortem Information */}
-          {deceased.postmortem && (
-            <ReportSection>
-              <h3><Microscope size={16} /> Postmortem Information</h3>
-              <ReportRow><span>Summary</span><span>{deceased.postmortem.examination_summary || deceased.postmortem.summary || '-'}</span></ReportRow>
-              <ReportRow><span>Cause of Death</span><span>{deceased.postmortem.cause_of_death || '-'}</span></ReportRow>
-            </ReportSection>
-          )}
-
-          {/* Dispatch Information */}
-          {deceased.dispatch && (
-            <ReportSection>
-              <h3><Truck size={16} /> Dispatch Information</h3>
-              <ReportRow><span>Dispatch Date</span><span>{formatDate(deceased.dispatch_date)}</span></ReportRow>
-            </ReportSection>
-          )}
-
-          {/* Status */}
-          <ReportSection style={{ borderLeftColor: deceased.status === 'dispatched' ? Colors.successGreen : Colors.warningYellow }}>
-            <h3><Activity size={16} /> Current Status</h3>
-            <ReportRow><span>Status</span><span style={{ textTransform: 'capitalize' }}>{deceased.status || 'active'}</span></ReportRow>
-            <ReportRow><span>Admission Number</span><span>{deceased.admission_number || '-'}</span></ReportRow>
-            <ReportRow><span>Registered By</span><span>{deceased.created_by || 'System'}</span></ReportRow>
-          </ReportSection>
-        </ReportBody>
-
-        <ReportFooter>
-          <ReportButton onClick={onClose}>
-            <X size={16} /> Close
-          </ReportButton>
-          <ReportButton onClick={handlePrint}>
-            <Printer size={16} /> Print
-          </ReportButton>
-          <ReportButton primary onClick={handleDownloadPDF} disabled={isGenerating}>
-            {isGenerating ? <LoadingSpinner /> : <Download size={16} />}
-            {isGenerating ? 'Generating...' : 'Download PDF'}
-          </ReportButton>
-        </ReportFooter>
-      </ReportModalContent>
-    </ReportModalOverlay>
-  );
-};
-
-// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -906,8 +671,8 @@ const DeceasedDetails = () => {
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false);
   const [showChargeSettingsModal, setShowChargeSettingsModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Key to force re-render of child components
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const showExternalLoader = () => setShowLoader(true);
   const hideExternalLoader = () => setShowLoader(false);
@@ -936,11 +701,6 @@ const DeceasedDetails = () => {
     navigate(`/documents/${currentDeceasedId}`);
   };
 
-  const openReportModal = () => {
-    setShowReportModal(true);
-  };
-
-  // FIXED: Correct endpoint - no extra /deceased prefix
   const fetchDeceasedData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -959,7 +719,6 @@ const DeceasedDetails = () => {
         next_of_kin: apiData.next_of_kin || [],
         documents: apiData.documents || [],
         charges: apiData.charges || [],
-        postmortem: apiData.postmortem || null,
         dispatch: apiData.dispatch || null,
         status: apiData.status || 'active',
       };
@@ -976,7 +735,6 @@ const DeceasedDetails = () => {
     }
   }, [id]);
 
-  // FIXED: Correct coffins endpoint
   const fetchCoffins = useCallback(async () => {
     try {
       const tenantSlug = getTenantSlug();
@@ -1002,7 +760,6 @@ const DeceasedDetails = () => {
     }
   }, [id, fetchDeceasedData, fetchCoffins]);
 
-  // Force refresh all child components
   const handleRefresh = () => {
     fetchDeceasedData();
     fetchCoffins();
@@ -1093,12 +850,6 @@ const DeceasedDetails = () => {
         action: navigateToReleaseForm,
         badge: 'New',
       },
-      {
-        icon: <Report size={14} />,
-        label: 'Generate Report',
-        action: openReportModal,
-        badge: 'PDF',
-      },
     ],
   };
 
@@ -1113,7 +864,7 @@ const DeceasedDetails = () => {
       text: `Days: ${daysInMortuary}`,
       color: Colors.accentBlue,
       icon: <Activity size={12} />,
-      onClick: () => setShowDeceasedInfoModal(true),
+      onClick: () => setShowProgressModal(true),
     },
     {
       text: `Charges: ${deceasedData?.total_mortuary_charge || 0} ${deceasedData?.currency || 'KES'}`,
@@ -1124,6 +875,12 @@ const DeceasedDetails = () => {
   ];
 
   const secondaryBadges = [
+    {
+      text: 'Next of Kin',
+      color: Colors.accentPurple,
+      icon: <Users size={12} />,
+      onClick: () => setShowNextOfKinModal(true),
+    },
     {
       text: 'Charge Settings',
       color: Colors.chargeSetting,
@@ -1141,12 +898,6 @@ const DeceasedDetails = () => {
       color: Colors.successGreen,
       icon: <LogOut size={12} />,
       onClick: navigateToReleaseForm,
-    },
-    {
-      text: 'Generate Report',
-      color: Colors.accentPurple,
-      icon: <Report size={12} />,
-      onClick: openReportModal,
     },
   ];
 
@@ -1215,7 +966,7 @@ const DeceasedDetails = () => {
         ))}
       </MobileNavContainer>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem', gap: '0.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', gap: '0.25rem', marginBottom: '0.5rem' }}>
         <BackButton onClick={() => navigate(-1)}>
           <ArrowLeft size={14} /> Back
         </BackButton>
@@ -1236,15 +987,15 @@ const DeceasedDetails = () => {
               <User size={16} /> {deceasedData?.full_name}
             </h2>
             <div style={{ fontSize: '0.875rem' }}>
-              Total: {deceasedData?.total_mortuary_charge} {deceasedData?.currency}
+              Total: {deceasedData?.total_mortuary_charge || 0} {deceasedData?.currency || 'KES'}
             </div>
           </NameChargesContainer>
         </HeaderTopSection>
 
         <BadgesContainer>
           <BadgeRow>
-            <ClickableBadge $bgColor={Colors.warningYellow} style={{ minWidth: '60px' }}>
-              🪦 {deceasedData?.burial_type}
+            <ClickableBadge $bgColor={Colors.brass} style={{ minWidth: '60px' }}>
+              🪦 {deceasedData?.burial_type || 'Burial'}
             </ClickableBadge>
             {primaryBadges.map((badge, index) => (
               <ClickableBadge key={index} $bgColor={badge.color} onClick={badge.onClick}>
@@ -1272,18 +1023,6 @@ const DeceasedDetails = () => {
                 deceasedId={currentDeceasedId}
                 deceased={deceasedData}
                 ageInfo={ageInfo}
-                onUpdate={fetchDeceasedData}
-              />
-            </Suspense>
-          </Card>
-
-          <Card>
-            <CardTitle><Microscope size={14} /> Postmortem Information</CardTitle>
-            <Suspense fallback={<LoadingFallback />}>
-              <PostmortemInfoSection
-                key={`postmortem-${refreshKey}`}
-                deceasedId={currentDeceasedId}
-                deceased={deceasedData}
                 onUpdate={fetchDeceasedData}
               />
             </Suspense>
@@ -1399,6 +1138,7 @@ const DeceasedDetails = () => {
         </SidebarContent>
       </ContentGrid>
 
+      {/* Modals */}
       <Suspense fallback={null}>
         {showDeceasedInfoModal && (
           <DeceasedInfoModal
@@ -1439,11 +1179,25 @@ const DeceasedDetails = () => {
             onUpdate={fetchDeceasedData}
           />
         )}
-        {showReportModal && deceasedData && (
-          <DeceasedReport
-            deceased={deceasedData}
-            onClose={() => setShowReportModal(false)}
-          />
+        {showProgressModal && (
+          <ModalOverlay onClick={() => setShowProgressModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><Activity size={20} /> Mortuary Progress</h3>
+                <ModalButton onClick={() => setShowProgressModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <MortuaryProgress
+                  key={`progress-${refreshKey}`}
+                  daysInMortuary={daysInMortuary}
+                  dispatchDate={deceasedData?.dispatch_date}
+                  isOverdue={daysInMortuary > 30}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
       </Suspense>
     </AppContainer>

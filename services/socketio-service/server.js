@@ -36,10 +36,10 @@ const subClient = pubClient.duplicate();
 
 Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
   io.adapter(createAdapter(pubClient, subClient));
-  console.log("✅ Socket.IO Redis Adapter connected");
+  console.log(" Socket.IO Redis Adapter connected");
 }).catch(err => {
-  console.warn("⚠️ Redis connection failed, falling back to in-memory adapter:", err.message);
-  console.warn("⚠️ Socket.IO will work without Redis, but horizontal scaling won't be available");
+  console.warn(" Redis connection failed, falling back to in-memory adapter:", err.message);
+  console.warn(" Socket.IO will work without Redis, but horizontal scaling won't be available");
   // Clean up failed clients
   pubClient.disconnect().catch(() => { });
   subClient.disconnect().catch(() => { });
@@ -49,7 +49,7 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
 const userRooms = new Map();
 
 io.on("connection", (socket) => {
-  console.log(`👤 User connected: ${socket.id}`);
+  console.log(` User connected: ${socket.id}`);
 
   // ============================================
   // TENANT & USER ROOM MANAGEMENT
@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
 
     userRooms.set(socket.id, { tenantSlug, userId, userRole });
 
-    console.log(`📡 Socket ${socket.id} joined tenant_${tenantSlug} as ${userRole}`);
+    console.log(` Socket ${socket.id} joined tenant_${tenantSlug} as ${userRole}`);
 
     socket.emit("joined", {
       room: tenantRoom,
@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
     const deceasedRoom = `deceased_${tenantSlug}_${deceasedId}`;
 
     socket.join(deceasedRoom);
-    console.log(`📡 Socket ${socket.id} joined ${deceasedRoom}`);
+    console.log(` Socket ${socket.id} joined ${deceasedRoom}`);
 
     socket.emit("joined-deceased", { room: deceasedRoom, deceasedId });
   });
@@ -118,7 +118,7 @@ io.on("connection", (socket) => {
       timestamp: new Date()
     });
 
-    console.log(`✅ New admission: ${fullName} (${deceasedId})`);
+    console.log(` New admission: ${fullName} (${deceasedId})`);
   });
 
   /**
@@ -155,7 +155,7 @@ io.on("connection", (socket) => {
       timestamp: new Date()
     });
 
-    console.log(`🔔 Release requested for: ${deceasedName}`);
+    console.log(` Release requested for: ${deceasedName}`);
   });
 
   /**
@@ -237,7 +237,7 @@ io.on("connection", (socket) => {
       timestamp: new Date()
     });
 
-    console.log(`💰 Payment received: ${invoiceNumber} - ${amount}`);
+    console.log(` Payment received: ${invoiceNumber} - ${amount}`);
   });
 
   /**
@@ -272,7 +272,7 @@ io.on("connection", (socket) => {
       timestamp: new Date()
     });
 
-    console.log(`⚠️ Low stock alert: ${itemName} (${currentStock}/${minimumStock})`);
+    console.log(` Low stock alert: ${itemName} (${currentStock}/${minimumStock})`);
   });
 
   /**
@@ -367,11 +367,11 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     userRooms.delete(socket.id);
-    console.log(`👋 User disconnected: ${socket.id}`);
+    console.log(` User disconnected: ${socket.id}`);
   });
 
   socket.on("error", (error) => {
-    console.error(`❌ Socket error (${socket.id}):`, error);
+    console.error(` Socket error (${socket.id}):`, error);
   });
 });
 
@@ -408,7 +408,7 @@ app.post("/emit/:event", express.json(), (req, res) => {
     });
   }
 
-  console.log(`📤 Emitted ${event} to tenant_${tenantSlug}`);
+  console.log(` Emitted ${event} to tenant_${tenantSlug}`);
   res.json({ success: true, event, tenantSlug });
 });
 
@@ -440,17 +440,5 @@ app.get("/connections", (req, res) => {
 // ============================================
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n⚡ Socket.IO Service running on port ${PORT}`);
-  console.log(`📍 WebSocket: ws://localhost:${PORT}`);
-  console.log(`📍 Health: http://localhost:${PORT}/health`);
-  console.log(`📍 API: http://localhost:${PORT}/emit/:event`);
-  console.log('\n🎯 Event handlers configured for:');
-  console.log('   - Deceased admissions');
-  console.log('   - Embalming status updates');
-  console.log('   - Release approvals');
-  console.log('   - Invoice notifications');
-  console.log('   - Payment alerts');
-  console.log('   - Stock notifications');
-  console.log('   - Document generation');
-  console.log('\n✅ Ready for real-time mortuary notifications!\n');
+
 });

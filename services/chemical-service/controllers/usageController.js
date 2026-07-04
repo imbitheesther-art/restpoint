@@ -10,8 +10,8 @@ exports.recordUsage = async (req, res) => {
 
     const { deceased_id, chemical_id, quantity_used, usage_notes, branch_id } = req.body;
 
-    if (!deceased_id || !chemical_id || !quantity_used || parseFloat(quantity_used) <= 0) {
-      return res.status(400).json({ success: false, message: 'deceased_id, chemical_id and quantity_used (>0) are required' });
+    if (!chemical_id || !quantity_used || parseFloat(quantity_used) <= 0) {
+      return res.status(400).json({ success: false, message: 'chemical_id and quantity_used (>0) are required' });
     }
 
     const effectiveBranchId = branch_id || req.branchId || 1;
@@ -42,16 +42,18 @@ exports.recordUsage = async (req, res) => {
     // Record stock transaction
     const txnResult = await safeTenantExecute(tenantDb,
       `INSERT INTO chemical_transactions (chemical_id, branch_id, transaction_type, quantity, unit, previous_stock, new_stock, reference_type, reference_id, notes)
-       VALUES (?, ?, 'consumed', ?, ?, ?, ?, 'deceased', ?, ?)`,
-      [chemical_id, effectiveBranchId, qty, chem[0].unit, previousStock, newStock, deceased_id, usage_notes || `Used on deceased #${deceased_id}`]
+       VALUES (?, ?, 'consumed', ?, ?, ?, ?, ?, ?, ?)`,
+      [chemical_id, effectiveBranchId, qty, chem[0].unit, previousStock, newStock, deceased_id ? 'deceased' : 'general', deceased_id || null, usage_notes || (deceased_id ? `Used on deceased #${deceased_id}` : 'General usage')]
     );
 
-    // Record the usage against the deceased
-    await safeTenantExecute(tenantDb,
-      `INSERT INTO deceased_chemical_usage (branch_id, deceased_id, chemical_id, quantity_used, unit, transaction_id, used_by, usage_notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [effectiveBranchId, deceased_id, chemical_id, qty, chem[0].unit, txnResult.insertId, req.user?.id || null, usage_notes || null]
-    );
+    // Record the usage against the deceased (only if deceased_id is provided)
+    if (deceased_id) {
+      await safeTenantExecute(tenantDb,
+        `INSERT INTO deceased_chemical_usage (branch_id, deceased_id, chemical_id, quantity_used, unit, transaction_id, used_by, usage_notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [effectiveBranchId, deceased_id, chemical_id, qty, chem[0].unit, txnResult.insertId, req.user?.id || null, usage_notes || null]
+      );
+    }
 
     res.status(201).json({
       success: true,

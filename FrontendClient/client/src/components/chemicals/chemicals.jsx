@@ -1,42 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import {
-  Battery,
-  Package,
-  TrendingUp,
-  TrendingDown,
-  ArrowRightLeft,
-  Plus,
-  Download,
-  Upload,
-  AlertTriangle,
-  CheckCircle,
-  Search,
-  BarChart3,
-  Warehouse,
-  Beaker,
-  Eye,
-  Calendar,
-  FileText,
-  X,
-  Save,
-  History,
-  Users,
-  PieChart,
-  BarChart,
-  FileUp,
-  FileDown,
-  Printer,
-  DollarSign,
-  Edit3,
-  Trash2,
-  User,
-  Syringe,
-  Shield,
-  RefreshCw,
-  Zap,
-  Clock,
-  Target
+  Battery, Package, TrendingUp, TrendingDown, ArrowRightLeft, Plus,
+  AlertTriangle, CheckCircle, Search, BarChart3, Beaker, Eye,
+  Calendar, FileText, X, Save, History, Users, PieChart, BarChart,
+  RefreshCw, Zap, Target, Syringe, Shield, Truck, FlaskConical
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -70,32 +38,52 @@ const modalIn = keyframes`
 
 // Styled Components
 const DashboardContainer = styled.div`
-  padding: 24px;
+  padding: 16px;
   background: ${COLORS.light};
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  @media (min-width: 768px) {
+    padding: 24px;
+  }
 `;
 
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
 `;
 
 const Title = styled.h1`
   color: ${COLORS.primaryDark};
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  
+  @media (min-width: 768px) {
+    font-size: 28px;
+  }
 `;
 
 const HeaderActions = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+  
+  @media (min-width: 768px) {
+    gap: 12px;
+  }
 `;
 
 const ActionButton = styled.button`
@@ -106,14 +94,19 @@ const ActionButton = styled.button`
   color: ${({ variant }) => variant ? 'white' : COLORS.textPrimary};
   border: ${({ variant }) => variant ? 'none' : `1px solid ${COLORS.border}`};
   border-radius: 8px;
-  padding: 10px 16px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.3s ease;
+  
+  @media (min-width: 768px) {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
   
   &:hover {
     transform: translateY(-2px);
@@ -129,18 +122,28 @@ const ActionButton = styled.button`
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
 `;
 
 const StatCard = styled.div`
   background: ${COLORS.cardBg};
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   border: 1px solid ${COLORS.border};
   animation: ${fadeIn} 0.6s ease-out;
   transition: all 0.3s ease;
+  
+  @media (min-width: 768px) {
+    padding: 20px;
+  }
   
   &:hover {
     transform: translateY(-2px);
@@ -152,135 +155,188 @@ const StatHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 12px;
+  }
 `;
 
 const StatTitle = styled.div`
   color: ${COLORS.textSecondary};
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  
+  @media (min-width: 768px) {
+    font-size: 12px;
+  }
 `;
 
 const StatValue = styled.div`
   color: ${COLORS.textPrimary};
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
-  margin-bottom: 6px;
-`;
-
-const StatTrend = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ trend }) => trend === 'up' ? COLORS.successGreen : COLORS.accentRed};
+  margin-bottom: 4px;
+  
+  @media (min-width: 768px) {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
 `;
 
 const ContentSection = styled.div`
   background: ${COLORS.cardBg};
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
   border: 1px solid ${COLORS.border};
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   animation: ${fadeIn} 0.6s ease-out;
+  
+  @media (min-width: 768px) {
+    padding: 24px;
+    margin-bottom: 24px;
+  }
 `;
 
 const SectionHeader = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
 `;
 
 const SectionTitle = styled.h3`
   color: ${COLORS.textPrimary};
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  
+  @media (min-width: 768px) {
+    font-size: 18px;
+  }
 `;
 
-const ChemicalTable = styled.table`
+const SearchInput = styled.input`
   width: 100%;
-  border-collapse: collapse;
+  padding: 10px 12px;
+  border: 1px solid ${COLORS.border};
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: ${COLORS.accentBlue};
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  @media (min-width: 768px) {
+    width: 300px;
+  }
 `;
 
-const TableHeader = styled.th`
-  background: ${COLORS.light};
-  padding: 12px 16px;
-  text-align: left;
+const ChemicalCard = styled.div`
+  background: ${COLORS.cardBg};
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid ${COLORS.border};
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  
+  @media (min-width: 768px) {
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  }
+`;
+
+const ChemicalMeta = styled.div`
   font-size: 12px;
+  color: ${COLORS.textSecondary};
+  margin-top: 4px;
+`;
+
+const StatusBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: ${props => props.lowStock ? '#FEF2F2' : '#F0F9FF'};
+  color: ${props => props.lowStock ? '#DC2626' : '#0369A1'};
+  border: 1px solid ${props => props.lowStock ? '#FECACA' : '#BAE6FD'};
+  white-space: nowrap;
+`;
+
+const StockInfo = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+  padding: 12px;
+  background: ${COLORS.light};
+  border-radius: 8px;
+`;
+
+const StockItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const StockLabel = styled.div`
+  font-size: 11px;
+  color: ${COLORS.textSecondary};
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: ${COLORS.textSecondary};
-  border-bottom: 1px solid ${COLORS.border};
 `;
 
-const TableCell = styled.td`
-  padding: 12px 16px;
-  border-bottom: 1px solid ${COLORS.border};
-  font-size: 14px;
+const StockValue = styled.div`
+  font-size: 16px;
+  font-weight: 700;
   color: ${COLORS.textPrimary};
 `;
 
-const TableRow = styled.tr`
-  transition: background 0.2s ease;
-  
-  &:hover {
-    background: ${COLORS.light};
-  }
-  
-  &:last-child ${TableCell} {
-    border-bottom: none;
-  }
-`;
-
-const StockLevel = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const BatteryBar = styled.div`
-  width: 60px;
-  height: 6px;
-  background: ${COLORS.border};
-  border-radius: 3px;
-  overflow: hidden;
-`;
-
-const BatteryFill = styled.div`
-  height: 100%;
-  background: ${({ level }) =>
-    level > 70 ? COLORS.successGreen :
-      level > 30 ? COLORS.warningYellow : COLORS.accentRed};
-  border-radius: 3px;
-  width: ${({ level }) => level}%;
-  transition: width 0.5s ease;
-`;
-
 const ActionButtons = styled.div`
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
 `;
 
 const IconButton = styled.button`
   background: transparent;
   color: ${COLORS.textSecondary};
   border: 1px solid ${COLORS.border};
-  border-radius: 6px;
-  padding: 6px;
+  border-radius: 8px;
+  padding: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  
+  @media (min-width: 768px) {
+    padding: 6px;
+    font-size: 14px;
+  }
   
   &:hover {
     background: ${COLORS.light};
@@ -296,135 +352,6 @@ const IconButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`;
-
-// Circular Chart Components
-const AnalyticsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  margin-top: 20px;
-`;
-
-const AnalyticsCard = styled.div`
-  background: ${COLORS.cardBg};
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid ${COLORS.border};
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-`;
-
-const ChartContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 20px;
-`;
-
-const CircularChart = styled.div`
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: conic-gradient(
-    ${props => props.color} 0% ${props => props.percentage}%,
-    ${COLORS.border} ${props => props.percentage}% 100%
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
-  &::before {
-    content: '';
-    position: absolute;
-    width: 90px;
-    height: 90px;
-    background: ${COLORS.cardBg};
-    border-radius: 50%;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const ChartValue = styled.div`
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  font-weight: 800;
-  font-size: 20px;
-  color: ${props => props.color};
-`;
-
-const ChartLabel = styled.div`
-  font-size: 12px;
-  color: ${COLORS.textSecondary};
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-`;
-
-const AnalyticsContent = styled.div`
-  flex: 1;
-`;
-
-const ChemicalHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-`;
-
-const ChemicalName = styled.h4`
-  color: ${COLORS.textPrimary};
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const StatusBadge = styled.span`
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  background: ${props => props.lowStock ? '#FEF2F2' : '#F0F9FF'};
-  color: ${props => props.lowStock ? '#DC2626' : '#0369A1'};
-  border: 1px solid ${props => props.lowStock ? '#FECACA' : '#BAE6FD'};
-`;
-
-const AnalyticsItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid ${COLORS.border};
-  
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const AnalyticsLabel = styled.div`
-  color: ${COLORS.textPrimary};
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const AnalyticsValue = styled.div`
-  color: ${COLORS.accentBlue};
-  font-size: 14px;
-  font-weight: 700;
 `;
 
 const UsageTable = styled.table`
@@ -451,14 +378,15 @@ const ModalOverlay = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 16px;
+  overflow-y: auto;
 `;
 
 const Modal = styled.div`
   background: ${COLORS.cardBg};
   border-radius: 16px;
   padding: 0;
-  max-width: 800px;
+  max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
@@ -469,58 +397,63 @@ const Modal = styled.div`
 `;
 
 const ModalHeader = styled.div`
-  padding: 24px 24px 0;
+  padding: 20px 20px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  
+  @media (min-width: 768px) {
+    padding: 24px 24px 0;
+    margin-bottom: 20px;
+  }
 `;
 
 const ModalTitle = styled.h2`
   color: ${COLORS.textPrimary};
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  
+  @media (min-width: 768px) {
+    font-size: 20px;
+  }
 `;
 
 const ModalContent = styled.div`
-  padding: 0 24px 24px;
+  padding: 0 20px 20px;
   overflow-y: auto;
   flex: 1;
+  
+  @media (min-width: 768px) {
+    padding: 0 24px 24px;
+  }
 `;
 
 const FormGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
-`;
-
-const FormSection = styled.div`
-  margin-bottom: 20px;
-`;
-
-const FormTitle = styled.h4`
-  color: ${COLORS.textPrimary};
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 `;
 
 const Label = styled.label`
   display: block;
   color: ${COLORS.textPrimary};
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   margin-bottom: 6px;
 `;
@@ -572,9 +505,15 @@ const TextArea = styled.textarea`
 `;
 
 const ButtonGroup = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+  
+  @media (min-width: 768px) {
+    gap: 12px;
+    margin-top: 24px;
+  }
 `;
 
 const PrimaryButton = styled.button`
@@ -582,12 +521,13 @@ const PrimaryButton = styled.button`
   color: white;
   border: none;
   border-radius: 6px;
-  padding: 10px 20px;
+  padding: 10px 16px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   transition: all 0.2s ease;
   
@@ -599,105 +539,164 @@ const PrimaryButton = styled.button`
   &:disabled {
     background: #9CA3AF;
     cursor: not-allowed;
-    transform: none;
   }
 `;
 
 const SecondaryButton = styled.button`
-  background: ${COLORS.light};
+  background: white;
   color: ${COLORS.textPrimary};
   border: 1px solid ${COLORS.border};
   border-radius: 6px;
-  padding: 10px 20px;
+  padding: 10px 16px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   transition: all 0.2s ease;
   
   &:hover {
-    background: ${COLORS.border};
+    background: ${COLORS.light};
   }
 `;
 
-// Search Component
-const SearchBar = styled.div`
-  display: flex;
-  align-items: center;
-  background: ${COLORS.cardBg};
-  border: 1px solid ${COLORS.border};
-  border-radius: 8px;
-  padding: 8px 12px;
-  gap: 8px;
-`;
-
-const SearchInput = styled.input`
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 14px;
-  background: transparent;
-  
-  &::placeholder {
-    color: ${COLORS.textSecondary};
-  }
-`;
-
-const LoadingSpinner = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px;
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px 20px;
   color: ${COLORS.textSecondary};
   
-  svg {
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  @media (min-width: 768px) {
+    padding: 60px 40px;
   }
 `;
 
-// API Base URL
-const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
+const EmptyIcon = styled.div`
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+`;
 
-// Main Component
+const EmptyTitle = styled.h3`
+  color: ${COLORS.textPrimary};
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+`;
+
+const EmptyDescription = styled.p`
+  font-size: 14px;
+  margin: 0;
+`;
+
+// Tabs
+const TabsContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  
+  @media (min-width: 768px) {
+    gap: 12px;
+  }
+`;
+
+const TabButton = styled.button`
+  background: ${props => props.active ? COLORS.accentBlue : COLORS.cardBg};
+  color: ${props => props.active ? 'white' : COLORS.textPrimary};
+  border: 1px solid ${props => props.active ? COLORS.accentBlue : COLORS.border};
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  @media (min-width: 768px) {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+`;
+
+// Helper functions
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+const genId = (id) => `CH-${String(id).padStart(4, '0')}`;
+
 const ChemicalManagementDashboard = () => {
   const [chemicals, setChemicals] = useState([]);
   const [usageData, setUsageData] = useState([]);
-  const [analyticsData, setAnalyticsData] = useState([]);
-  const [ppeRequests, setPpeRequests] = useState([]);
+  const [ppeRequests, setPPERequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [showReceiveModal, setShowReceiveModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showPPERequestModal, setShowPPERequestModal] = useState(false);
-  const [selectedChemical, setSelectedChemical] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('inventory');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [showPPEModal, setShowPPEModal] = useState(false);
+  const [selectedChemical, setSelectedChemical] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    total_chemicals: 0,
+    low_stock_count: 0,
+    total_usage_30d: 0,
+    recent_transactions: [],
+    top_used_chemicals: []
+  });
 
-  // Get branch ID from localStorage or use default
-  const getBranchId = () => {
-    const branchId = localStorage.getItem('branch_id');
-    return branchId || '1';
-  };
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'embalming',
+    unit: 'liters',
+    current_stock: '',
+    min_stock_level: '',
+    reorder_level: '',
+    unit_cost: '',
+    hazard_level: 'low',
+    expiry_date: '',
+    notes: '',
+    jerican_capacity: '',
+    jericans_received: ''
+  });
 
-  // Fetch chemicals from API
+  const [usageFormData, setUsageFormData] = useState({
+    chemical_id: '',
+    quantity_used: '',
+    used_by: '',
+    usage_notes: '',
+    deceased_id: ''
+  });
+
+  const [ppeFormData, setPPEFormData] = useState({
+    item_name: '',
+    quantity_requested: '',
+    requested_by: '',
+    notes: ''
+  });
+
+  const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
+
+  // Fetch data
+  useEffect(() => {
+    fetchChemicals();
+    fetchUsageData();
+    fetchPPERequests();
+    fetchDashboardStats();
+  }, []);
+
   const fetchChemicals = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await fetch(`${API_BASE_URL}/chemicals`);
       const result = await response.json();
-
       if (result.success) {
-        setChemicals(result.data);
+        setChemicals(result.data || []);
       } else {
-        throw new Error(result.message || 'Failed to fetch chemicals');
+        toast.error(result.message || 'Failed to fetch chemicals');
       }
     } catch (error) {
       console.error('Error fetching chemicals:', error);
@@ -707,621 +706,238 @@ const ChemicalManagementDashboard = () => {
     }
   };
 
-  // Fetch usage data from API
   const fetchUsageData = async () => {
     try {
-      const branchId = getBranchId();
-      const response = await fetch(`${API_BASE_URL}/usage/${branchId}`);
+      const branchId = 1;
+      const response = await fetch(`${API_BASE_URL}/chemicals/usage/branch/${branchId}`);
       const result = await response.json();
-
       if (result.success) {
-        setUsageData(result.data);
-      } else {
-        throw new Error(result.message || 'Failed to fetch usage data');
+        setUsageData(result.data || []);
       }
     } catch (error) {
       console.error('Error fetching usage data:', error);
-      toast.error('Failed to load usage data');
     }
   };
 
-  // Fetch analytics data
-  const fetchAnalyticsData = async () => {
+  const fetchPPERequests = async () => {
     try {
-      const branchId = getBranchId();
-      const response = await fetch(`${API_BASE_URL}/chemical-analytics/${branchId}`);
+      const branchId = 1;
+      const response = await fetch(`${API_BASE_URL}/chemicals/ppe-requests/branch/${branchId}`);
       const result = await response.json();
-
       if (result.success) {
-        setAnalyticsData(result.data);
-      } else {
-        throw new Error(result.message || 'Failed to fetch analytics data');
-      }
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
-      toast.error('Failed to load analytics data');
-    }
-  };
-
-  // Fetch PPE requests
-  const fetchPpeRequests = async () => {
-    try {
-      const branchId = getBranchId();
-      const response = await fetch(`${API_BASE_URL}/ppe-requests/${branchId}`);
-      const result = await response.json();
-
-      if (result.success) {
-        setPpeRequests(result.data);
-      } else {
-        // If endpoint doesn't exist, use empty array
-        setPpeRequests([]);
+        setPPERequests(result.data || []);
       }
     } catch (error) {
       console.error('Error fetching PPE requests:', error);
-      setPpeRequests([]);
     }
   };
 
-  // Add new chemical
-  const handleAddChemical = async (chemicalData) => {
+  const fetchDashboardStats = async () => {
     try {
-      setActionLoading(true);
-      const branchId = getBranchId();
+      const branchId = 1;
+      const response = await fetch(`${API_BASE_URL}/chemicals/dashboard/summary/${branchId}`);
+      const result = await response.json();
+      if (result.success) {
+        setDashboardStats(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    }
+  };
 
+  // Handle add chemical
+  const handleAddChemical = async (e) => {
+    e.preventDefault();
+    try {
       const payload = {
-        name: chemicalData.name,
-        category: chemicalData.category.toLowerCase(),
-        unit: chemicalData.unit,
-        hazard_level: chemicalData.hazardLevel.toLowerCase(),
-        reorder_level: parseFloat(chemicalData.reorderLevel),
-        branch_id: parseInt(branchId),
-        initial_quantity: parseFloat(chemicalData.initialQuantity) || 0
+        name: formData.name,
+        category: formData.category.toLowerCase(),
+        unit: formData.unit,
+        current_stock: parseFloat(formData.current_stock) || 0,
+        min_stock_level: parseFloat(formData.min_stock_level) || 0,
+        reorder_level: parseFloat(formData.reorder_level) || 0,
+        unit_cost: parseFloat(formData.unit_cost) || 0,
+        hazard_level: formData.hazard_level.toLowerCase(),
+        expiry_date: formData.expiry_date || null,
+        notes: formData.notes || null,
+        branch_id: 1,
+        initial_quantity: parseFloat(formData.current_stock) || 0,
+        // Only include jerican fields if unit is NOT liters
+        ...(formData.unit.toLowerCase() !== 'liters' && {
+          jerican_capacity: formData.jerican_capacity ? parseFloat(formData.jerican_capacity) : null,
+          jericans_received: formData.jericans_received ? parseInt(formData.jericans_received) : 0
+        })
       };
 
       const response = await fetch(`${API_BASE_URL}/chemicals`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const result = await response.json();
-
       if (result.success) {
         toast.success('Chemical added successfully');
         setShowAddModal(false);
-        await fetchChemicals();
-        await fetchAnalyticsData();
+        resetForm();
+        fetchChemicals();
+        fetchDashboardStats();
       } else {
-        throw new Error(result.message || 'Failed to add chemical');
+        toast.error(result.message || 'Failed to add chemical');
       }
     } catch (error) {
       console.error('Error adding chemical:', error);
       toast.error(error.message);
-    } finally {
-      setActionLoading(false);
     }
   };
 
-  // Update chemical
-  const handleUpdateChemical = async (chemicalId, updateData) => {
+  // Handle record usage
+  const handleRecordUsage = async (e) => {
+    e.preventDefault();
     try {
-      setActionLoading(true);
-
       const payload = {
-        name: updateData.name,
-        category: updateData.category,
-        unit: updateData.unit,
-        hazard_level: updateData.hazard_level,
-        reorder_level: parseFloat(updateData.reorder_level)
+        chemical_id: parseInt(usageFormData.chemical_id),
+        quantity_used: parseFloat(usageFormData.quantity_used),
+        used_by: usageFormData.used_by,
+        usage_notes: usageFormData.usage_notes,
+        deceased_id: usageFormData.deceased_id || null
       };
 
-      const response = await fetch(`${API_BASE_URL}/chemicals/${chemicalId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch(`${API_BASE_URL}/chemicals/usage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const result = await response.json();
-
       if (result.success) {
-        toast.success('Chemical updated successfully');
-        setShowEditModal(false);
-        await fetchChemicals();
-        await fetchAnalyticsData();
+        toast.success('Usage recorded successfully');
+        setShowUsageModal(false);
+        resetUsageForm();
+        fetchChemicals();
+        fetchUsageData();
+        fetchDashboardStats();
       } else {
-        throw new Error(result.message || 'Failed to update chemical');
+        toast.error(result.message || 'Failed to record usage');
       }
     } catch (error) {
-      console.error('Error updating chemical:', error);
+      console.error('Error recording usage:', error);
       toast.error(error.message);
-    } finally {
-      setActionLoading(false);
     }
   };
 
-  // Receive stock
-  const handleReceiveStock = async (chemicalId, quantity) => {
+  // Handle PPE request
+  const handlePPERequest = async (e) => {
+    e.preventDefault();
     try {
-      const chemical = chemicals.find(c => c.chemical_id === chemicalId);
-      if (!chemical) return;
-
-      const newQuantity = parseFloat(chemical.quantity_available) + parseFloat(quantity);
-
-      await handleUpdateChemical(chemicalId, {
-        ...chemical,
-        quantity_available: newQuantity
-      });
-
-      setShowReceiveModal(false);
-      toast.success(`Successfully received ${quantity}${chemical.unit} of ${chemical.chemical_name}`);
-    } catch (error) {
-      toast.error('Failed to receive stock');
-    }
-  };
-
-  // Submit PPE request
-  const handlePPERequest = async (ppeData) => {
-    try {
-      setActionLoading(true);
-      const branchId = getBranchId();
-
       const payload = {
-        branch_id: parseInt(branchId),
-        item_name: ppeData.itemName,
-        quantity_requested: parseInt(ppeData.quantity),
-        requested_by: ppeData.requestedBy
+        item_name: ppeFormData.item_name,
+        quantity_requested: parseInt(ppeFormData.quantity_requested),
+        requested_by: ppeFormData.requested_by,
+        notes: ppeFormData.notes,
+        branch_id: 1
       };
 
-      const response = await fetch(`${API_BASE_URL}/ppe-requests`, {
+      const response = await fetch(`${API_BASE_URL}/chemicals/ppe-requests`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const result = await response.json();
-
       if (result.success) {
         toast.success('PPE request submitted successfully');
-        setShowPPERequestModal(false);
-        await fetchPpeRequests();
+        setShowPPEModal(false);
+        resetPPEForm();
+        fetchPPERequests();
       } else {
-        throw new Error(result.message || 'Failed to submit PPE request');
+        toast.error(result.message || 'Failed to submit PPE request');
       }
     } catch (error) {
       console.error('Error submitting PPE request:', error);
       toast.error(error.message);
-    } finally {
-      setActionLoading(false);
     }
   };
 
-  // Calculate stock level percentage
-  const calculateStockLevel = (chemical) => {
-    const currentStock = parseFloat(chemical.quantity_available);
-    const reorderLevel = parseFloat(chemical.reorder_level);
-    const percentage = (currentStock / (reorderLevel * 3)) * 100;
-    return Math.min(Math.max(percentage, 0), 100);
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      category: 'embalming',
+      unit: 'liters',
+      current_stock: '',
+      min_stock_level: '',
+      reorder_level: '',
+      unit_cost: '',
+      hazard_level: 'low',
+      expiry_date: '',
+      notes: '',
+      jerican_capacity: '',
+      jericans_received: ''
+    });
   };
 
-  // Calculate chart percentage for analytics
-  const calculateChartPercentage = (analytic) => {
-    const currentStock = parseFloat(analytic.current_stock);
-    const reorderLevel = parseFloat(analytic.reorder_level);
-    const maxLevel = reorderLevel * 3;
-    const percentage = (currentStock / maxLevel) * 100;
-    return Math.min(Math.max(percentage, 0), 100);
+  const resetUsageForm = () => {
+    setUsageFormData({
+      chemical_id: '',
+      quantity_used: '',
+      used_by: '',
+      usage_notes: '',
+      deceased_id: ''
+    });
   };
 
-  // Get chart color based on stock level
-  const getChartColor = (percentage, isLowStock) => {
-    if (isLowStock) return COLORS.accentRed;
-    if (percentage > 70) return COLORS.successGreen;
-    if (percentage > 30) return COLORS.warningYellow;
-    return COLORS.accentRed;
+  const resetPPEForm = () => {
+    setPPEFormData({
+      item_name: '',
+      quantity_requested: '',
+      requested_by: '',
+      notes: ''
+    });
   };
 
-  // Initialize data
-  useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([
-        fetchChemicals(),
-        fetchUsageData(),
-        fetchAnalyticsData(),
-        fetchPpeRequests()
-      ]);
-    };
-
-    loadData();
-  }, []);
-
-  // Filter chemicals based on search
+  // Filter chemicals
   const filteredChemicals = chemicals.filter(chemical =>
     chemical.chemical_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     chemical.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate statistics from analytics data
+  // Calculate statistics
   const totalChemicals = chemicals.length;
-  const lowStockCount = analyticsData.filter(item => item.is_low_stock === 1).length;
-  const totalUsageToday = analyticsData.reduce((sum, item) =>
-    sum + parseFloat(item.used_today), 0
-  );
-
-  const totalEmbalmingsToday = analyticsData.length > 0 ? analyticsData[0].embalming_today : 0;
-
-  const renderAddModal = () => (
-    <ModalOverlay onClick={() => setShowAddModal(false)}>
-      <Modal onClick={(e) => e.stopPropagation()}>
-        <ModalHeader>
-          <ModalTitle>
-            <Plus size={20} />
-            Add New Chemical
-          </ModalTitle>
-          <IconButton onClick={() => setShowAddModal(false)} disabled={actionLoading}>
-            <X size={18} />
-          </IconButton>
-        </ModalHeader>
-
-        <ModalContent>
-          <FormGrid>
-            <div>
-              <FormSection>
-                <FormTitle>
-                  <Search size={16} />
-                  Basic Information
-                </FormTitle>
-                <FormGroup>
-                  <Label>Chemical Name *</Label>
-                  <Input
-                    placeholder="Enter chemical name"
-                    id="chemName"
-                    required
-                    disabled={actionLoading}
-                  />
-                </FormGroup>
-
-                <FormGroup>
-                  <Label>Category *</Label>
-                  <Select id="chemCategory" required disabled={actionLoading}>
-                    <option value="">Select Category</option>
-                    <option value="preservative">Preservative</option>
-                    <option value="disinfectant">Disinfectant</option>
-                    <option value="humectant">Humectant</option>
-                    <option value="solvent">Solvent</option>
-                  </Select>
-                </FormGroup>
-
-                <FormGroup>
-                  <Label>Unit *</Label>
-                  <Select id="chemUnit" required disabled={actionLoading}>
-                    <option value="">Select Unit</option>
-                    <option value="L">Liters (L)</option>
-                    <option value="kg">Kilograms (kg)</option>
-                    <option value="units">Units</option>
-                  </Select>
-                </FormGroup>
-              </FormSection>
-            </div>
-
-            <div>
-              <FormSection>
-                <FormTitle>
-                  <AlertTriangle size={16} />
-                  Safety & Stock
-                </FormTitle>
-                <FormGroup>
-                  <Label>Hazard Level *</Label>
-                  <Select id="chemHazard" required disabled={actionLoading}>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </Select>
-                </FormGroup>
-
-                <FormGroup>
-                  <Label>Reorder Level *</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    placeholder="Enter reorder level"
-                    id="chemReorder"
-                    required
-                    disabled={actionLoading}
-                  />
-                </FormGroup>
-
-                <FormGroup>
-                  <Label>Initial Quantity</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    placeholder="Enter initial quantity"
-                    id="initialQuantity"
-                    disabled={actionLoading}
-                  />
-                </FormGroup>
-              </FormSection>
-            </div>
-          </FormGrid>
-
-          <ButtonGroup>
-            <SecondaryButton onClick={() => setShowAddModal(false)} disabled={actionLoading}>
-              <X size={16} />
-              Cancel
-            </SecondaryButton>
-            <PrimaryButton onClick={() => {
-              const name = document.getElementById('chemName').value;
-              const category = document.getElementById('chemCategory').value;
-              const unit = document.getElementById('chemUnit').value;
-              const hazard = document.getElementById('chemHazard').value;
-              const reorder = document.getElementById('chemReorder').value;
-              const initialQuantity = document.getElementById('initialQuantity').value || '0';
-
-              if (name && category && unit && hazard && reorder) {
-                handleAddChemical({
-                  name,
-                  category,
-                  unit,
-                  hazardLevel: hazard,
-                  reorderLevel: reorder,
-                  initialQuantity
-                });
-              } else {
-                toast.error('Please fill in all required fields');
-              }
-            }} disabled={actionLoading}>
-              <Save size={16} />
-              {actionLoading ? 'Adding...' : 'Add Chemical'}
-            </PrimaryButton>
-          </ButtonGroup>
-        </ModalContent>
-      </Modal>
-    </ModalOverlay>
-  );
-
-  const renderEditModal = () => (
-    <ModalOverlay onClick={() => setShowEditModal(false)}>
-      <Modal onClick={(e) => e.stopPropagation()}>
-        <ModalHeader>
-          <ModalTitle>
-            <Edit3 size={20} />
-            Edit Chemical
-          </ModalTitle>
-          <IconButton onClick={() => setShowEditModal(false)} disabled={actionLoading}>
-            <X size={18} />
-          </IconButton>
-        </ModalHeader>
-
-        <ModalContent>
-          {selectedChemical && (
-            <FormGrid>
-              <div>
-                <FormSection>
-                  <FormTitle>
-                    <Search size={16} />
-                    Basic Information
-                  </FormTitle>
-                  <FormGroup>
-                    <Label>Chemical Name *</Label>
-                    <Input
-                      placeholder="Enter chemical name"
-                      id="editChemName"
-                      defaultValue={selectedChemical.chemical_name}
-                      required
-                      disabled={actionLoading}
-                    />
-                  </FormGroup>
-
-                  <FormGroup>
-                    <Label>Category *</Label>
-                    <Select id="editChemCategory" required disabled={actionLoading} defaultValue={selectedChemical.category}>
-                      <option value="preservative">Preservative</option>
-                      <option value="disinfectant">Disinfectant</option>
-                      <option value="humectant">Humectant</option>
-                      <option value="solvent">Solvent</option>
-                    </Select>
-                  </FormGroup>
-
-                  <FormGroup>
-                    <Label>Unit *</Label>
-                    <Select id="editChemUnit" required disabled={actionLoading} defaultValue={selectedChemical.unit}>
-                      <option value="L">Liters (L)</option>
-                      <option value="kg">Kilograms (kg)</option>
-                      <option value="units">Units</option>
-                    </Select>
-                  </FormGroup>
-                </FormSection>
-              </div>
-
-              <div>
-                <FormSection>
-                  <FormTitle>
-                    <AlertTriangle size={16} />
-                    Safety & Stock
-                  </FormTitle>
-                  <FormGroup>
-                    <Label>Hazard Level *</Label>
-                    <Select id="editChemHazard" required disabled={actionLoading} defaultValue={selectedChemical.hazard_level}>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </Select>
-                  </FormGroup>
-
-                  <FormGroup>
-                    <Label>Reorder Level *</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      placeholder="Enter reorder level"
-                      id="editChemReorder"
-                      defaultValue={selectedChemical.reorder_level}
-                      required
-                      disabled={actionLoading}
-                    />
-                  </FormGroup>
-                </FormSection>
-              </div>
-            </FormGrid>
-          )}
-
-          <ButtonGroup>
-            <SecondaryButton onClick={() => setShowEditModal(false)} disabled={actionLoading}>
-              <X size={16} />
-              Cancel
-            </SecondaryButton>
-            <PrimaryButton onClick={() => {
-              const name = document.getElementById('editChemName').value;
-              const category = document.getElementById('editChemCategory').value;
-              const unit = document.getElementById('editChemUnit').value;
-              const hazard = document.getElementById('editChemHazard').value;
-              const reorder = document.getElementById('editChemReorder').value;
-
-              if (name && category && unit && hazard && reorder && selectedChemical) {
-                handleUpdateChemical(selectedChemical.chemical_id, {
-                  name,
-                  category,
-                  unit,
-                  hazard_level: hazard,
-                  reorder_level: reorder
-                });
-              } else {
-                toast.error('Please fill in all required fields');
-              }
-            }} disabled={actionLoading}>
-              <Save size={16} />
-              {actionLoading ? 'Updating...' : 'Update Chemical'}
-            </PrimaryButton>
-          </ButtonGroup>
-        </ModalContent>
-      </Modal>
-    </ModalOverlay>
-  );
-
-  const renderPPERequestModal = () => (
-    <ModalOverlay onClick={() => setShowPPERequestModal(false)}>
-      <Modal onClick={(e) => e.stopPropagation()}>
-        <ModalHeader>
-          <ModalTitle>
-            <Shield size={20} />
-            Request PPE Equipment
-          </ModalTitle>
-          <IconButton onClick={() => setShowPPERequestModal(false)} disabled={actionLoading}>
-            <X size={18} />
-          </IconButton>
-        </ModalHeader>
-
-        <ModalContent>
-          <FormSection>
-            <FormTitle>
-              <User size={16} />
-              Request Details
-            </FormTitle>
-            <FormGroup>
-              <Label>Item Name *</Label>
-              <Input
-                placeholder="Enter PPE item name"
-                id="ppeItemName"
-                required
-                disabled={actionLoading}
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Quantity Requested *</Label>
-              <Input
-                type="number"
-                placeholder="Enter quantity"
-                id="ppeQuantity"
-                required
-                disabled={actionLoading}
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Requested By *</Label>
-              <Input
-                placeholder="Enter your name"
-                id="ppeRequestedBy"
-                required
-                disabled={actionLoading}
-              />
-            </FormGroup>
-          </FormSection>
-
-          <ButtonGroup>
-            <SecondaryButton onClick={() => setShowPPERequestModal(false)} disabled={actionLoading}>
-              <X size={16} />
-              Cancel
-            </SecondaryButton>
-            <PrimaryButton onClick={() => {
-              const itemName = document.getElementById('ppeItemName').value;
-              const quantity = document.getElementById('ppeQuantity').value;
-              const requestedBy = document.getElementById('ppeRequestedBy').value;
-
-              if (itemName && quantity && requestedBy) {
-                handlePPERequest({
-                  itemName,
-                  quantity,
-                  requestedBy
-                });
-              } else {
-                toast.error('Please fill in all required fields');
-              }
-            }} disabled={actionLoading}>
-              <Save size={16} />
-              {actionLoading ? 'Submitting...' : 'Submit Request'}
-            </PrimaryButton>
-          </ButtonGroup>
-        </ModalContent>
-      </Modal>
-    </ModalOverlay>
-  );
+  const lowStockCount = dashboardStats.low_stock_count || 0;
 
   if (loading) {
     return (
       <DashboardContainer>
-        <LoadingSpinner>
-          <RefreshCw size={24} />
-          <span style={{ marginLeft: '12px' }}>Loading chemical inventory...</span>
-        </LoadingSpinner>
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <RefreshCw size={48} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
+          <p style={{ color: COLORS.textSecondary }}>Loading chemical inventory...</p>
+        </div>
       </DashboardContainer>
     );
   }
 
   return (
     <DashboardContainer>
+      {/* Header */}
       <Header>
         <Title>
-          <Beaker size={28} />
-          Chemical Inventory Management
+          <Beaker size={24} />
+          Chemical Inventory
         </Title>
         <HeaderActions>
-          <ActionButton onClick={() => {
-            fetchChemicals();
-            fetchAnalyticsData();
-            fetchUsageData();
-          }} disabled={loading}>
-            <RefreshCw size={16} />
-            Refresh
-          </ActionButton>
-          <ActionButton onClick={() => setShowPPERequestModal(true)} variant="warning">
-            <Shield size={16} />
-            Request PPE
-          </ActionButton>
-          <ActionButton onClick={() => setShowAddModal(true)} variant="success" disabled={actionLoading}>
-            <Plus size={16} />
+          <ActionButton variant="primary" onClick={() => setShowAddModal(true)}>
+            <Plus size={18} />
             Add Chemical
+          </ActionButton>
+          <ActionButton variant="success" onClick={() => setShowUsageModal(true)}>
+            <FlaskConical size={18} />
+            Record Usage
+          </ActionButton>
+          <ActionButton variant="warning" onClick={() => setShowPPEModal(true)}>
+            <Shield size={18} />
+            PPE Request
           </ActionButton>
         </HeaderActions>
       </Header>
 
+      {/* Stats */}
       <StatsGrid>
         <StatCard>
           <StatHeader>
@@ -1329,292 +945,534 @@ const ChemicalManagementDashboard = () => {
             <Package size={20} color={COLORS.accentBlue} />
           </StatHeader>
           <StatValue>{totalChemicals}</StatValue>
-          <StatTrend trend="up">
-            <TrendingUp size={14} />
-            Active
-          </StatTrend>
         </StatCard>
-
         <StatCard>
           <StatHeader>
-            <StatTitle>Low Stock Items</StatTitle>
-            <AlertTriangle size={20} color={COLORS.warningYellow} />
+            <StatTitle>Low Stock Alerts</StatTitle>
+            <AlertTriangle size={20} color={COLORS.accentRed} />
           </StatHeader>
-          <StatValue>{lowStockCount}</StatValue>
-          <StatTrend trend={lowStockCount > 0 ? 'down' : 'up'}>
-            {lowStockCount > 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
-            {lowStockCount > 0 ? 'Need attention' : 'All good'}
-          </StatTrend>
+          <StatValue style={{ color: lowStockCount > 0 ? COLORS.accentRed : COLORS.textPrimary }}>
+            {lowStockCount}
+          </StatValue>
         </StatCard>
-
         <StatCard>
           <StatHeader>
-            <StatTitle>Today's Usage</StatTitle>
-            <Syringe size={20} color={COLORS.infoBlue} />
+            <StatTitle>Usage (30 days)</StatTitle>
+            <TrendingUp size={20} color={COLORS.successGreen} />
           </StatHeader>
-          <StatValue>{totalUsageToday}L</StatValue>
-          <StatTrend trend="up">
-            <TrendingUp size={14} />
-            {totalEmbalmingsToday} procedures
-          </StatTrend>
+          <StatValue>{dashboardStats.total_usage_30d}L</StatValue>
+        </StatCard>
+        <StatCard>
+          <StatHeader>
+            <StatTitle>PPE Requests</StatTitle>
+            <Shield size={20} color={COLORS.warningYellow} />
+          </StatHeader>
+          <StatValue>{ppeRequests.length}</StatValue>
         </StatCard>
       </StatsGrid>
 
-      <ContentSection>
-        <SectionHeader>
-          <SectionTitle>
-            <Package size={18} />
-            Chemical Inventory
-          </SectionTitle>
-          <SearchBar>
-            <Search size={16} color={COLORS.textSecondary} />
+      {/* Tabs */}
+      <TabsContainer>
+        <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}>
+          <Package size={16} />
+          Inventory
+        </TabButton>
+        <TabButton active={activeTab === 'usage'} onClick={() => setActiveTab('usage')}>
+          <History size={16} />
+          Usage History
+        </TabButton>
+        <TabButton active={activeTab === 'ppe'} onClick={() => setActiveTab('ppe')}>
+          <Shield size={16} />
+          PPE Requests
+        </TabButton>
+      </TabsContainer>
+
+      {/* Inventory Tab */}
+      {activeTab === 'inventory' && (
+        <ContentSection>
+          <SectionHeader>
+            <SectionTitle>
+              <Package size={20} />
+              Chemical Inventory
+            </SectionTitle>
             <SearchInput
               placeholder="Search chemicals..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </SearchBar>
-        </SectionHeader>
-
-        <ChemicalTable>
-          <thead>
-            <tr>
-              <TableHeader>Chemical</TableHeader>
-              <TableHeader>Category</TableHeader>
-              <TableHeader>Stock</TableHeader>
-              <TableHeader>Level</TableHeader>
-              <TableHeader>Reorder Level</TableHeader>
-              <TableHeader>Hazard Level</TableHeader>
-              <TableHeader>Actions</TableHeader>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredChemicals.map(chemical => (
-              <TableRow key={chemical.chemical_id}>
-                <TableCell>
-                  <div style={{ fontWeight: '600' }}>{chemical.chemical_name}</div>
-                  <div style={{ fontSize: '12px', color: COLORS.textSecondary }}>
-                    ID: {chemical.chemical_uid}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span style={{
-                    textTransform: 'capitalize',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: chemical.category === 'preservative' ? '#FEF3C7' :
-                      chemical.category === 'disinfectant' ? '#DBEAFE' : '#F3E8FF',
-                    color: chemical.category === 'preservative' ? '#92400E' :
-                      chemical.category === 'disinfectant' ? '#1E40AF' : '#6B21A8'
-                  }}>
-                    {chemical.category}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {chemical.quantity_available} {chemical.unit}
-                </TableCell>
-                <TableCell>
-                  <StockLevel>
-                    <BatteryBar>
-                      <BatteryFill level={calculateStockLevel(chemical)} />
-                    </BatteryBar>
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: calculateStockLevel(chemical) > 30 ? COLORS.successGreen : COLORS.accentRed,
-                      minWidth: '30px'
-                    }}>
-                      {Math.round(calculateStockLevel(chemical))}%
-                    </span>
-                  </StockLevel>
-                </TableCell>
-                <TableCell>{chemical.reorder_level} {chemical.unit}</TableCell>
-                <TableCell>
-                  <span style={{
-                    textTransform: 'capitalize',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: chemical.hazard_level === 'high' ? '#FEE2E2' :
-                      chemical.hazard_level === 'medium' ? '#FEF3C7' : '#D1FAE5',
-                    color: chemical.hazard_level === 'high' ? '#DC2626' :
-                      chemical.hazard_level === 'medium' ? '#92400E' : '#059669'
-                  }}>
-                    {chemical.hazard_level}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <ActionButtons>
-                    <IconButton
-                      onClick={() => {
-                        setSelectedChemical(chemical);
-                        setShowReceiveModal(true);
-                      }}
-                      disabled={actionLoading}
-                    >
-                      <Download size={14} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => {
-                        setSelectedChemical(chemical);
-                        setShowEditModal(true);
-                      }}
-                      disabled={actionLoading}
-                    >
-                      <Edit3 size={14} />
-                    </IconButton>
-                  </ActionButtons>
-                </TableCell>
-              </TableRow>
-            ))}
-          </tbody>
-        </ChemicalTable>
-      </ContentSection>
-
-      {analyticsData.length > 0 && (
-        <ContentSection>
-          <SectionHeader>
-            <SectionTitle>
-              <BarChart3 size={18} />
-              Chemical Analytics
-            </SectionTitle>
           </SectionHeader>
 
-          <AnalyticsGrid>
-            {analyticsData.map(analytic => {
-              const chartPercentage = calculateChartPercentage(analytic);
-              const chartColor = getChartColor(chartPercentage, analytic.is_low_stock === 1);
+          {filteredChemicals.length === 0 ? (
+            <EmptyState>
+              <EmptyIcon>🧪</EmptyIcon>
+              <EmptyTitle>No chemicals found</EmptyTitle>
+              <EmptyDescription>Add your first chemical to get started</EmptyDescription>
+            </EmptyState>
+          ) : (
+            filteredChemicals.map(chemical => (
+              <ChemicalCard key={chemical.chemical_id}>
+                <ChemicalHeader>
+                  <div>
+                    <ChemicalName>
+                      <Beaker size={18} />
+                      {chemical.chemical_name}
+                    </ChemicalName>
+                    <ChemicalMeta>
+                      ID: {chemical.chemical_uid} | {chemical.category}
+                    </ChemicalMeta>
+                  </div>
+                  <StatusBadge lowStock={chemical.is_low_stock === 1}>
+                    {chemical.is_low_stock === 1 ? 'LOW STOCK' : 'IN STOCK'}
+                  </StatusBadge>
+                </ChemicalHeader>
 
-              return (
-                <AnalyticsCard key={analytic.chemical_id}>
-                  <ChartContainer>
-                    <div style={{ position: 'relative' }}>
-                      <CircularChart
-                        percentage={chartPercentage}
-                        color={chartColor}
-                      >
-                        <ChartValue color={chartColor}>
-                          {Math.round(chartPercentage)}%
-                        </ChartValue>
-                      </CircularChart>
-                      <ChartLabel style={{ textAlign: 'center', marginTop: '8px' }}>
-                        Stock Level
-                      </ChartLabel>
-                    </div>
+                <StockInfo>
+                  <StockItem>
+                    <StockLabel>Available</StockLabel>
+                    <StockValue>{chemical.quantity_available} {chemical.unit}</StockValue>
+                  </StockItem>
+                  <StockItem>
+                    <StockLabel>Min Level</StockLabel>
+                    <StockValue>{chemical.min_stock_level} {chemical.unit}</StockValue>
+                  </StockItem>
+                  {chemical.jerican_capacity && (
+                    <StockItem>
+                      <StockLabel>Jerican Size</StockLabel>
+                      <StockValue>{chemical.jerican_capacity}L</StockValue>
+                    </StockItem>
+                  )}
+                  {chemical.jericans_received > 0 && (
+                    <StockItem>
+                      <StockLabel>Jericans</StockLabel>
+                      <StockValue>{chemical.jericans_received}</StockValue>
+                    </StockItem>
+                  )}
+                </StockInfo>
 
-                    <AnalyticsContent>
-                      <ChemicalHeader>
-                        <ChemicalName>
-                          <Beaker size={16} />
-                          {analytic.chemical_name}
-                        </ChemicalName>
-                        <StatusBadge lowStock={analytic.is_low_stock === 1}>
-                          {analytic.is_low_stock === 1 ? 'Low Stock' : 'Good Stock'}
-                        </StatusBadge>
-                      </ChemicalHeader>
+                {/* Usage Line */}
+                <div style={{
+                  padding: '8px 12px',
+                  background: COLORS.light,
+                  borderRadius: '6px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '13px'
+                }}>
+                  <span style={{ color: COLORS.textSecondary, fontWeight: 600 }}>Usage (30 days):</span>
+                  <span style={{ color: COLORS.accentBlue, fontWeight: 700 }}>{chemical.total_used || 0} {chemical.unit}</span>
+                </div>
 
-                      <AnalyticsItem>
-                        <AnalyticsLabel>
-                          <Package size={14} />
-                          Current Stock
-                        </AnalyticsLabel>
-                        <AnalyticsValue>
-                          {analytic.current_stock} {analytic.unit}
-                        </AnalyticsValue>
-                      </AnalyticsItem>
-
-                      <AnalyticsItem>
-                        <AnalyticsLabel>
-                          <Zap size={14} />
-                          Used Today
-                        </AnalyticsLabel>
-                        <AnalyticsValue>
-                          {analytic.used_today} {analytic.unit}
-                        </AnalyticsValue>
-                      </AnalyticsItem>
-
-                      <AnalyticsItem>
-                        <AnalyticsLabel>
-                          <Target size={14} />
-                          Avg per Embalming
-                        </AnalyticsLabel>
-                        <AnalyticsValue>
-                          {parseFloat(analytic.avg_usage_per_embalming).toFixed(2)} {analytic.unit}
-                        </AnalyticsValue>
-                      </AnalyticsItem>
-
-                      <AnalyticsItem>
-                        <AnalyticsLabel>
-                          <Clock size={14} />
-                          Days Remaining
-                        </AnalyticsLabel>
-                        <AnalyticsValue style={{
-                          color: parseFloat(analytic.estimate_days_remaining) < 7 ? COLORS.accentRed : COLORS.successGreen
-                        }}>
-                          {parseFloat(analytic.estimate_days_remaining).toFixed(1)} days
-                        </AnalyticsValue>
-                      </AnalyticsItem>
-                    </AnalyticsContent>
-                  </ChartContainer>
-                </AnalyticsCard>
-              );
-            })}
-          </AnalyticsGrid>
+                <ActionButtons>
+                  <IconButton onClick={() => {
+                    setSelectedChemical(chemical);
+                    setShowUsageModal(true);
+                  }}>
+                    <FlaskConical size={16} />
+                    Use
+                  </IconButton>
+                  <IconButton onClick={() => {
+                    setSelectedChemical(chemical);
+                    setShowAddModal(true);
+                  }}>
+                    <Plus size={16} />
+                    Add Stock
+                  </IconButton>
+                </ActionButtons>
+              </ChemicalCard>
+            ))
+          )}
         </ContentSection>
       )}
 
-      <ContentSection>
-        <SectionHeader>
-          <SectionTitle>
-            <History size={18} />
-            Recent Chemical Usage
-          </SectionTitle>
-        </SectionHeader>
+      {/* Usage History Tab */}
+      {activeTab === 'usage' && (
+        <ContentSection>
+          <SectionHeader>
+            <SectionTitle>
+              <History size={20} />
+              Usage History
+            </SectionTitle>
+          </SectionHeader>
 
-        <UsageTable>
-          <thead>
-            <tr>
-              <TableHeader>Deceased</TableHeader>
-              <TableHeader>Chemical</TableHeader>
-              <TableHeader>Quantity Used</TableHeader>
-              <TableHeader>Used By</TableHeader>
-              <TableHeader>Date & Time</TableHeader>
-            </tr>
-          </thead>
-          <tbody>
-            {usageData.slice(0, 10).map(usage => (
-              <UsageRow key={usage.usage_id}>
-                <TableCell>
-                  <div style={{ fontWeight: '600' }}>{usage.deceased_name}</div>
-                </TableCell>
-                <TableCell>
-                  <div style={{ fontWeight: '600' }}>{usage.chemical_name}</div>
-                </TableCell>
-                <TableCell>
-                  <strong>{usage.quantity_used} {usage.unit}</strong>
-                </TableCell>
-                <TableCell>{usage.used_by}</TableCell>
-                <TableCell>
-                  {new Date(usage.used_at).toLocaleString('en-KE', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </TableCell>
-              </UsageRow>
-            ))}
-          </tbody>
-        </UsageTable>
-      </ContentSection>
+          {usageData.length === 0 ? (
+            <EmptyState>
+              <EmptyIcon>📋</EmptyIcon>
+              <EmptyTitle>No usage records</EmptyTitle>
+              <EmptyDescription>Usage history will appear here after recording chemical usage</EmptyDescription>
+            </EmptyState>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <UsageTable>
+                <thead>
+                  <tr style={{ borderBottom: `2px solid ${COLORS.border}` }}>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Date</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Chemical</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Quantity</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Used By</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usageData.slice(0, 20).map(usage => (
+                    <UsageRow key={usage.usage_id}>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{fmtDate(usage.used_at)}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 600 }}>{usage.chemical_name}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{usage.quantity_used} {usage.unit}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{usage.used_by || 'N/A'}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', color: COLORS.textSecondary }}>{usage.usage_notes || '-'}</td>
+                    </UsageRow>
+                  ))}
+                </tbody>
+              </UsageTable>
+            </div>
+          )}
+        </ContentSection>
+      )}
 
-      {showAddModal && renderAddModal()}
-      {showEditModal && renderEditModal()}
-      {showPPERequestModal && renderPPERequestModal()}
+      {/* PPE Requests Tab */}
+      {activeTab === 'ppe' && (
+        <ContentSection>
+          <SectionHeader>
+            <SectionTitle>
+              <Shield size={20} />
+              PPE Requests
+            </SectionTitle>
+          </SectionHeader>
+
+          {ppeRequests.length === 0 ? (
+            <EmptyState>
+              <EmptyIcon>🛡️</EmptyIcon>
+              <EmptyTitle>No PPE requests</EmptyTitle>
+              <EmptyDescription>
+                Use the "PPE Request" button in the header to submit new requests.
+                <br /><br />
+                Submitted requests will appear here with their status (pending, approved, rejected, fulfilled).
+              </EmptyDescription>
+            </EmptyState>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <UsageTable>
+                <thead>
+                  <tr style={{ borderBottom: `2px solid ${COLORS.border}` }}>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Date</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Item</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Quantity</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Requested By</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ppeRequests.map(request => (
+                    <UsageRow key={request.id}>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{fmtDate(request.created_at)}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 600 }}>{request.item_name}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{request.quantity_requested}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{request.requested_by}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>
+                        <StatusBadge lowStock={request.status === 'pending'}>
+                          {request.status}
+                        </StatusBadge>
+                      </td>
+                    </UsageRow>
+                  ))}
+                </tbody>
+              </UsageTable>
+            </div>
+          )}
+        </ContentSection>
+      )}
+
+      {/* Add Chemical Modal */}
+      {showAddModal && (
+        <ModalOverlay onClick={() => setShowAddModal(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>
+                <Plus size={20} />
+                {selectedChemical ? 'Add Stock' : 'Add Chemical'}
+              </ModalTitle>
+              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: COLORS.textSecondary }}>
+                <X size={24} />
+              </button>
+            </ModalHeader>
+            <ModalContent>
+              <form onSubmit={handleAddChemical}>
+                <FormGrid>
+                  <FormGroup>
+                    <Label>Chemical Name *</Label>
+                    <Input
+                      placeholder="Enter chemical name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Category *</Label>
+                    <Input
+                      placeholder="e.g., embalming, disinfectant"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Unit *</Label>
+                    <Input
+                      placeholder="e.g., liters, kg, ml"
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Initial Stock *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.current_stock}
+                      onChange={(e) => setFormData({ ...formData, current_stock: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Min Stock Level *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.min_stock_level}
+                      onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Reorder Level *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.reorder_level}
+                      onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Hazard Level</Label>
+                    <Input
+                      placeholder="low, medium, high"
+                      value={formData.hazard_level}
+                      onChange={(e) => setFormData({ ...formData, hazard_level: e.target.value })}
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Expiry Date</Label>
+                    <Input
+                      type="date"
+                      value={formData.expiry_date}
+                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                    />
+                  </FormGroup>
+                  {/* Only show jerican fields if unit is NOT liters */}
+                  {formData.unit.toLowerCase() !== 'liters' && (
+                    <>
+                      <FormGroup>
+                        <Label>Jerican Capacity (L)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g., 20"
+                          value={formData.jerican_capacity}
+                          onChange={(e) => setFormData({ ...formData, jerican_capacity: e.target.value })}
+                        />
+                      </FormGroup>
+                      <FormGroup>
+                        <Label>Jericans Received</Label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={formData.jericans_received}
+                          onChange={(e) => setFormData({ ...formData, jericans_received: e.target.value })}
+                        />
+                      </FormGroup>
+                    </>
+                  )}
+                  <FormGroup style={{ gridColumn: '1 / -1' }}>
+                    <Label>Notes</Label>
+                    <TextArea
+                      placeholder="Additional notes..."
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    />
+                  </FormGroup>
+                </FormGrid>
+                <ButtonGroup>
+                  <SecondaryButton type="button" onClick={() => setShowAddModal(false)}>
+                    Cancel
+                  </SecondaryButton>
+                  <PrimaryButton type="submit">
+                    <Save size={16} />
+                    Save Chemical
+                  </PrimaryButton>
+                </ButtonGroup>
+              </form>
+            </ModalContent>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {/* Record Usage Modal */}
+      {showUsageModal && (
+        <ModalOverlay onClick={() => setShowUsageModal(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>
+                <FlaskConical size={20} />
+                Record Chemical Usage
+              </ModalTitle>
+              <button onClick={() => setShowUsageModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: COLORS.textSecondary }}>
+                <X size={24} />
+              </button>
+            </ModalHeader>
+            <ModalContent>
+              <form onSubmit={handleRecordUsage}>
+                <FormGrid>
+                  <FormGroup>
+                    <Label>Chemical *</Label>
+                    <Select
+                      value={usageFormData.chemical_id}
+                      onChange={(e) => setUsageFormData({ ...usageFormData, chemical_id: e.target.value })}
+                      required
+                    >
+                      <option value="">Select chemical...</option>
+                      {chemicals.map(chem => (
+                        <option key={chem.chemical_id} value={chem.chemical_id}>
+                          {chem.chemical_name} ({chem.quantity_available} {chem.unit})
+                        </option>
+                      ))}
+                    </Select>
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Quantity Used *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={usageFormData.quantity_used}
+                      onChange={(e) => setUsageFormData({ ...usageFormData, quantity_used: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Used By</Label>
+                    <Input
+                      placeholder="Staff name"
+                      value={usageFormData.used_by}
+                      onChange={(e) => setUsageFormData({ ...usageFormData, used_by: e.target.value })}
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Deceased ID (Optional)</Label>
+                    <Input
+                      placeholder="Deceased #"
+                      value={usageFormData.deceased_id}
+                      onChange={(e) => setUsageFormData({ ...usageFormData, deceased_id: e.target.value })}
+                    />
+                  </FormGroup>
+                  <FormGroup style={{ gridColumn: '1 / -1' }}>
+                    <Label>Usage Notes</Label>
+                    <TextArea
+                      placeholder="Notes about usage..."
+                      value={usageFormData.usage_notes}
+                      onChange={(e) => setUsageFormData({ ...usageFormData, usage_notes: e.target.value })}
+                    />
+                  </FormGroup>
+                </FormGrid>
+                <ButtonGroup>
+                  <SecondaryButton type="button" onClick={() => setShowUsageModal(false)}>
+                    Cancel
+                  </SecondaryButton>
+                  <PrimaryButton type="submit">
+                    <Save size={16} />
+                    Record Usage
+                  </PrimaryButton>
+                </ButtonGroup>
+              </form>
+            </ModalContent>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {/* PPE Request Modal */}
+      {showPPEModal && (
+        <ModalOverlay onClick={() => setShowPPEModal(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>
+                <Shield size={20} />
+                Request PPE Items
+              </ModalTitle>
+              <button onClick={() => setShowPPEModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: COLORS.textSecondary }}>
+                <X size={24} />
+              </button>
+            </ModalHeader>
+            <ModalContent>
+              <form onSubmit={handlePPERequest}>
+                <FormGrid>
+                  <FormGroup>
+                    <Label>Item Name *</Label>
+                    <Input
+                      placeholder="e.g., Gloves, Masks, Gowns"
+                      value={ppeFormData.item_name}
+                      onChange={(e) => setPPEFormData({ ...ppeFormData, item_name: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Quantity Requested *</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={ppeFormData.quantity_requested}
+                      onChange={(e) => setPPEFormData({ ...ppeFormData, quantity_requested: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Requested By *</Label>
+                    <Input
+                      placeholder="Your name"
+                      value={ppeFormData.requested_by}
+                      onChange={(e) => setPPEFormData({ ...ppeFormData, requested_by: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup style={{ gridColumn: '1 / -1' }}>
+                    <Label>Notes</Label>
+                    <TextArea
+                      placeholder="Additional notes..."
+                      value={ppeFormData.notes}
+                      onChange={(e) => setPPEFormData({ ...ppeFormData, notes: e.target.value })}
+                    />
+                  </FormGroup>
+                </FormGrid>
+                <ButtonGroup>
+                  <SecondaryButton type="button" onClick={() => setShowPPEModal(false)}>
+                    Cancel
+                  </SecondaryButton>
+                  <PrimaryButton type="submit">
+                    <Save size={16} />
+                    Submit Request
+                  </PrimaryButton>
+                </ButtonGroup>
+              </form>
+            </ModalContent>
+          </Modal>
+        </ModalOverlay>
+      )}
     </DashboardContainer>
   );
 };

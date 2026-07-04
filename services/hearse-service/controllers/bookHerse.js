@@ -310,8 +310,8 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
         const { booking_id } = req.params;
         const { status } = req.body;
 
-        // ✅ Allow all valid booking statuses
-        const validStatuses = ['pending', 'in_transit', 'assigned', 'completed', 'cancelled', 'postponed'];
+        // ✅ Allow only these valid booking statuses
+        const validStatuses = ['booked', 'in_transit', 'completed', 'cancelled', 'postponed'];
 
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
@@ -344,13 +344,21 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
             req.tenantSlug
         );
 
-        // ✅ Free hearse when booking is completed/cancelled
-        if (['completed', 'cancelled'].includes(status) && booking.hearse_id) {
+        // ✅ Free hearse when booking is completed/cancelled/postponed
+        if (['completed', 'cancelled', 'postponed'].includes(status) && booking.hearse_id) {
+            console.log(`[UpdateStatus] Freeing hearse ${booking.hearse_id} - booking ${booking_id} status: ${status}`);
             await safeQuery(
                 'UPDATE hearses SET status = ?, updated_at = ? WHERE id = ?',
                 ['available', now, booking.hearse_id],
                 req.tenantSlug
             );
+            // Verify the update
+            const [hearseCheck] = await safeQuery(
+                'SELECT id, status FROM hearses WHERE id = ?',
+                [booking.hearse_id],
+                req.tenantSlug
+            );
+            console.log(`[UpdateStatus] Hearse ${booking.hearse_id} status after update:`, hearseCheck?.status);
         }
 
         // ✅ Update driver statistics if linked

@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS chemical_transactions (
 CREATE TABLE IF NOT EXISTS deceased_chemical_usage (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL DEFAULT 1,
-  deceased_id INT NOT NULL,
+  deceased_id INT DEFAULT NULL,
   chemical_id INT NOT NULL,
   quantity_used DECIMAL(10,2) NOT NULL,
   unit VARCHAR(50) NOT NULL DEFAULT 'liters',

@@ -15,6 +15,9 @@ const env = {
   // Base path for all RestPoint API endpoints
   API_BASE_PATH: '/api/v1/restpoint',
 
+  // Hearse service direct URL (bypass API gateway for CORS issues)
+  HEARSE_SERVICE_URL: import.meta.env.VITE_HEARSE_SERVICE_URL || 'http://localhost:5002',
+
   // Full API base URL (gateway + base path)
   get FULL_API_URL() {
     // In production, nginx handles the /api to /api/v1/restpoint rewrite
@@ -25,11 +28,19 @@ const env = {
     return `${this.API_GATEWAY_URL}${this.API_BASE_PATH}`;
   },
 
+  // Hearse API URL (direct to hearse service to avoid CORS)
+  get HEARSE_API_URL() {
+    if (import.meta.env.PROD) {
+      return `${this.API_URL}/hearse-bookings`;
+    }
+    return `${this.HEARSE_SERVICE_URL}/api/v1/restpoint`;
+  },
+
   // Timeout for API requests in milliseconds
   API_TIMEOUT: 30000,
 
-  // WebSocket URL for real-time features (default to hearse service port 5002)
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'http://localhost:5018',
+  // WebSocket URL for real-time features (hearse service port 5002)
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'http://localhost:5002',
 
   // Feature flags
   FEATURES: {

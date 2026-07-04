@@ -394,23 +394,17 @@ const getAllHearses = asyncHandler(async (req, res) => {
             `SELECT 
                 h.*,
                 b.branch_name,
-                b.branch_location as location,
-                b.branch_code
+                b.branch_location as location
             FROM hearses h
             LEFT JOIN branches b ON h.branch_id = b.branch_id
             ORDER BY h.created_at DESC`,
             []
         );
 
-        // Generate ETag for caching
-        const etag = crypto.createHash('md5').update(JSON.stringify(hearses)).digest('hex');
-        res.set('Cache-Control', 'public, max-age=300');
-        res.set('ETag', etag);
-
-        if (req.headers['if-none-match'] === etag) {
-            console.log('⚡ Cache hit: Returning 304');
-            return res.status(304).end();
-        }
+        // No caching - always return fresh data
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         console.log(`✅ ${hearses.length} hearses fetched.`);
         res.json({
@@ -443,13 +437,13 @@ const getAvailableHearses = asyncHandler(async (req, res) => {
             });
         }
 
+        // Only return hearses that are truly available
         const hearses = await safeTenantQuery(
             dbName,
             `SELECT 
                 h.*,
                 b.branch_name,
-                b.branch_location as location,
-                b.branch_code
+                b.branch_location as location
             FROM hearses h
             LEFT JOIN branches b ON h.branch_id = b.branch_id
             WHERE h.status = 'available' 
@@ -457,14 +451,10 @@ const getAvailableHearses = asyncHandler(async (req, res) => {
             []
         );
 
-        const etag = crypto.createHash('md5').update(JSON.stringify(hearses)).digest('hex');
-        res.set('Cache-Control', 'public, max-age=300');
-        res.set('ETag', etag);
-
-        if (req.headers['if-none-match'] === etag) {
-            console.log('⚡ Cache hit: Returning 304');
-            return res.status(304).end();
-        }
+        // No caching - always return fresh data
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         console.log(`✅ ${hearses.length} available hearses fetched.`);
         res.json({
