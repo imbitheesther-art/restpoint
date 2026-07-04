@@ -15,6 +15,7 @@ import {
   Activity,
   BarChart3,
   FileBarChart,
+  LifeBuoy,
   Settings,
   LogOut,
   Menu,
@@ -430,6 +431,7 @@ const ModernSidebar = ({
       items: [
         { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings` },
         { icon: Calendar, label: 'Leave', path: `/tenant/${tenantSlug}/leaves` },
+        { icon: LifeBuoy, label: 'Support', path: `/tenant/${tenantSlug}/support` },
       ]
     }
   ];

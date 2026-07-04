@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { api, ENDPOINTS } from '../../../api';
+import { api, ENDPOINTS } from '../../api';
 import { Calendar, FileText, Upload, X } from 'lucide-react';
 
 const COLORS = {
