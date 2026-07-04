@@ -2,7 +2,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
@@ -12,7 +12,7 @@ console.log('Loading .env from:', dotenvPath);
 dotenv.config({ path: dotenvPath, override: true });
 
 const APP_NAME = 'restpoint-gateway';
-const APP_VERSION = '1.0.8';
+const APP_VERSION = '1.0.9';
 
 const Logger = {
   info: (m, d) => { console.log(`[INFO] ${m}`, d || ''); },
@@ -53,7 +53,7 @@ const SERVICE_URLS = {
   call: process.env.CALL_SERVICE_URL || 'http://127.0.0.1:5020',
   qrcode: process.env.QRCODE_SERVICE_URL || 'http://127.0.0.1:5021',
   scanner: process.env.SCANNER_SERVICE_URL || 'http://127.0.0.1:5022',
-  hearse: process.env.HEARSE_SERVICE_URL || 'http://127.0.0.1:5001',
+  hearse: process.env.HEARSE_SERVICE_URL || 'http://127.0.0.1:5002',
 };
 
 const app = express();
@@ -71,8 +71,6 @@ app.use(cors({
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-// Do NOT use express.json() here - the proxy needs the raw body stream to forward to services.
-// Body parsing is handled by each microservice independently.
 
 // Rate limiting
 const apiLimiter = rateLimit({
@@ -89,10 +87,22 @@ app.use((req, res, next) => {
 });
 
 // =============================================================================
-// PROXY FACTORY — with pathRewrite + fixRequestBody
+// PROXY FACTORIES
 // =============================================================================
-const createProxy = (targetUrl) => {
-  Logger.debug(`[PROXY] Creating proxy targeting: ${targetUrl}`);
+// Express strips the mount path from req.url when using app.use(path, handler).
+// For example, app.use('/api/v1/restpoint/hearses', proxy) strips '/api/v1/restpoint/hearses'
+// from req.url, so the proxy receives '/available' instead of '/api/v1/restpoint/hearses/available'.
+//
+// We need two proxy types:
+//   1. Full-path proxy: For services that mount routes at /api/v1/restpoint/<service>
+//      (hearse, chemical, deceased, etc.) — prepends the mount path back
+//   2. Clean-path proxy: For services that mount routes at / (root)
+//      (auth) — strips the /api/v1/restpoint/<service> prefix
+// =============================================================================
+
+// Proxy for services that expect the FULL path (e.g., /api/v1/restpoint/hearses)
+const createFullPathProxy = (targetUrl, mountPath) => {
+  Logger.debug(`[PROXY-FULL] ${targetUrl} (mount: ${mountPath})`);
 
   return createProxyMiddleware({
     target: targetUrl,
@@ -100,39 +110,59 @@ const createProxy = (targetUrl) => {
     secure: false,
     proxyTimeout: 30000,
     timeout: 30000,
-    // Strip gateway prefixes so microservices receive clean paths
-    pathRewrite: {
-      // Specific routes MUST come before catch-all
-      '^/api/v1/restpoint/auth': '/auth',
-      '^/v1/restpoint/auth': '/auth',
-      '^/api/v1/restpoint/deceased': '/deceased',
-      '^/v1/restpoint/deceased': '/deceased',
-      '^/api/v1/restpoint/tenant': '/tenant',
-      '^/v1/restpoint/tenant': '/tenant',
-      '^/api/v1/restpoint/coffins': '/coffins',
-      '^/v1/restpoint/coffins': '/coffins',
-      '^/api/v1/restpoint/billing': '/billing',
-      '^/v1/restpoint/billing': '/billing',
-      '^/api/v1/restpoint/invoices': '/invoices',
-      '^/v1/restpoint/invoices': '/invoices',
-      '^/api/v1/restpoint/hearses': '/hearses',
-      '^/v1/restpoint/hearses': '/hearses',
-      '^/api/v1/restpoint/hearse-bookings': '/hearse-bookings',
-      '^/v1/restpoint/hearse-bookings': '/hearse-bookings',
-      '^/api/v1/restpoint/all-drivers': '/all-drivers',
-      '^/v1/restpoint/all-drivers': '/all-drivers',
-      '^/api/v1/restpoint/hearse$': '/hearse',
-      '^/v1/restpoint/hearse$': '/hearse',
+    // Express strips mountPath from req.url, so we prepend it back
+    pathRewrite: (path, req) => {
+      const fullPath = mountPath + path;
+      Logger.debug(`[PROXY-FULL] "${path}" → "${fullPath}"`);
+      return fullPath;
     },
     onProxyReq: (proxyReq, req, res) => {
-      // Forward auth/tenant/user headers
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
       if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
       if (req.headers['x-tenant-id']) proxyReq.setHeader('x-tenant-id', req.headers['x-tenant-id']);
       if (req.headers['x-user-id']) proxyReq.setHeader('x-user-id', req.headers['x-user-id']);
+      if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+        const bodyStr = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyStr));
+        proxyReq.write(bodyStr);
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      Logger.debug(`[PROXY] ${req.method} ${req.originalUrl} → ${proxyRes.statusCode}`);
+    },
+    onError: (err, req, res) => {
+      Logger.error(`[PROXY ERROR] ${req.method} ${req.originalUrl}: ${err.message}`);
+      if (!res.headersSent) {
+        res.status(504).json({
+          success: false,
+          message: 'Gateway Timeout: The microservice failed to respond.',
+          error: err.code,
+          target: targetUrl
+        });
+      }
+    }
+  });
+};
 
-      // CRITICAL: Re-serialize and write back the JSON body.
-      // express.json() consumed the original stream, so we must re-write it.
+// Proxy for services that expect CLEAN paths (e.g., /login instead of /api/v1/restpoint/auth/login)
+const createCleanPathProxy = (targetUrl, stripPrefix) => {
+  Logger.debug(`[PROXY-CLEAN] ${targetUrl} (strip: ${stripPrefix})`);
+
+  const rewriteRule = {};
+  rewriteRule['^' + stripPrefix] = '';
+
+  return createProxyMiddleware({
+    target: targetUrl,
+    changeOrigin: true,
+    secure: false,
+    proxyTimeout: 30000,
+    timeout: 30000,
+    pathRewrite: rewriteRule,
+    onProxyReq: (proxyReq, req, res) => {
+      if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
+      if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
+      if (req.headers['x-tenant-id']) proxyReq.setHeader('x-tenant-id', req.headers['x-tenant-id']);
+      if (req.headers['x-user-id']) proxyReq.setHeader('x-user-id', req.headers['x-user-id']);
       if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
         const bodyStr = JSON.stringify(req.body);
         proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyStr));
@@ -159,93 +189,104 @@ const createProxy = (targetUrl) => {
 // =============================================================================
 // ROUTE REGISTRATION
 // =============================================================================
+// Services that mount at /api/v1/restpoint/<service> → use createFullPathProxy
+// Services that mount at / (root) → use createCleanPathProxy
+// =============================================================================
 
-// Auth
-const authProxy = createProxy(SERVICE_URLS.auth);
-app.use('/auth', authProxy);
+// --- Auth (mounts at /, expects clean paths like /login) ---
+const authProxy = createCleanPathProxy(SERVICE_URLS.auth, '/api/v1/restpoint/auth');
 app.use('/api/v1/restpoint/auth', authProxy);
 app.use('/v1/restpoint/auth', authProxy);
+app.use('/auth', authProxy);
 
-// Tenant
-const tenantProxy = createProxy(SERVICE_URLS.tenant);
-app.use('/tenant', tenantProxy);
+// --- Tenant ---
+const tenantProxy = createFullPathProxy(SERVICE_URLS.tenant, '/api/v1/restpoint/tenant');
 app.use('/api/v1/restpoint/tenant', tenantProxy);
 app.use('/v1/restpoint/tenant', tenantProxy);
+app.use('/tenant', tenantProxy);
 
-// Deceased
-const deceasedProxy = createProxy(SERVICE_URLS.deceased);
-app.use('/deceased', deceasedProxy);
+// --- Deceased (mounts at /api/v1/restpoint/deceased) ---
+const deceasedProxy = createFullPathProxy(SERVICE_URLS.deceased, '/api/v1/restpoint/deceased');
 app.use('/api/v1/restpoint/deceased', deceasedProxy);
 app.use('/v1/restpoint/deceased', deceasedProxy);
+app.use('/deceased', deceasedProxy);
 
-// Coffin
-const coffinProxy = createProxy(SERVICE_URLS.coffin);
-app.use('/coffins', coffinProxy);
+// --- Coffin ---
+const coffinProxy = createFullPathProxy(SERVICE_URLS.coffin, '/api/v1/restpoint/coffins');
 app.use('/api/v1/restpoint/coffins', coffinProxy);
 app.use('/v1/restpoint/coffins', coffinProxy);
+app.use('/coffins', coffinProxy);
 
-// Billing
-const billingProxy = createProxy(SERVICE_URLS.billing);
-app.use('/billing', billingProxy);
+// --- Billing ---
+const billingProxy = createFullPathProxy(SERVICE_URLS.billing, '/api/v1/restpoint/billing');
 app.use('/api/v1/restpoint/billing', billingProxy);
 app.use('/v1/restpoint/billing', billingProxy);
+app.use('/billing', billingProxy);
 
-// Invoices
-const invoiceProxy = createProxy(SERVICE_URLS.invoices);
-app.use('/invoices', invoiceProxy);
+// --- Invoices ---
+const invoiceProxy = createFullPathProxy(SERVICE_URLS.invoices, '/api/v1/restpoint/invoices');
 app.use('/api/v1/restpoint/invoices', invoiceProxy);
 app.use('/v1/restpoint/invoices', invoiceProxy);
+app.use('/invoices', invoiceProxy);
 
-// Scanner
-const scannerProxy = createProxy(SERVICE_URLS.scanner);
-app.use('/scanner', scannerProxy);
-app.use('/api/v1/scanner', scannerProxy);
+// --- Scanner ---
+const scannerProxy = createFullPathProxy(SERVICE_URLS.scanner, '/api/v1/restpoint/scanner');
 app.use('/api/v1/restpoint/scanner', scannerProxy);
+app.use('/v1/restpoint/scanner', scannerProxy);
+app.use('/scanner', scannerProxy);
 
-// Chemicals
-const chemicalsProxy = createProxy(SERVICE_URLS.chemicals);
-app.use('/chemicals', chemicalsProxy);
+// --- Chemicals (mounts at /api/v1/restpoint/chemicals) ---
+const chemicalsProxy = createFullPathProxy(SERVICE_URLS.chemicals, '/api/v1/restpoint/chemicals');
 app.use('/api/v1/restpoint/chemicals', chemicalsProxy);
 app.use('/v1/restpoint/chemicals', chemicalsProxy);
+app.use('/chemicals', chemicalsProxy);
 
-// Workshop - proxy to workshop service
-const workshopProxy = createProxy(SERVICE_URLS.workshop);
-app.use('/workshop', workshopProxy);
+// --- Workshop ---
+const workshopProxy = createFullPathProxy(SERVICE_URLS.workshop, '/api/v1/restpoint/workshop');
 app.use('/api/v1/restpoint/workshop', workshopProxy);
 app.use('/v1/restpoint/workshop', workshopProxy);
+app.use('/workshop', workshopProxy);
 
-// Hearse - proxy to hearse service
-const hearseProxy = createProxy(SERVICE_URLS.hearse);
-app.use('/hearses', hearseProxy);
-app.use('/hearse', hearseProxy);
-app.use('/hearse-bookings', hearseProxy);
-app.use('/all-drivers', hearseProxy);
+// =============================================================================
+// HEARSE ROUTES (mounts at /api/v1/restpoint, expects full paths)
+// =============================================================================
+const hearseProxy = createFullPathProxy(SERVICE_URLS.hearse, '/api/v1/restpoint/hearses');
+const hearseBookingsProxy = createFullPathProxy(SERVICE_URLS.hearse, '/api/v1/restpoint/hearse-bookings');
+const allDriversProxy = createFullPathProxy(SERVICE_URLS.hearse, '/api/v1/restpoint/all-drivers');
+const hearseSingularProxy = createFullPathProxy(SERVICE_URLS.hearse, '/api/v1/restpoint/hearse');
+
 app.use('/api/v1/restpoint/hearses', hearseProxy);
-app.use('/api/v1/restpoint/hearse', hearseProxy);
-app.use('/api/v1/restpoint/hearse-bookings', hearseProxy);
-app.use('/api/v1/restpoint/all-drivers', hearseProxy);
-app.use('/v1/restpoint/hearses', hearseProxy);
-app.use('/v1/restpoint/hearse', hearseProxy);
-app.use('/v1/restpoint/hearse-bookings', hearseProxy);
-app.use('/v1/restpoint/all-drivers', hearseProxy);
+app.use('/api/v1/restpoint/hearse-bookings', hearseBookingsProxy);
+app.use('/api/v1/restpoint/all-drivers', allDriversProxy);
+app.use('/api/v1/restpoint/hearse', hearseSingularProxy);
 
-// Documents - proxy to documents service
-const documentsProxy = createProxy(SERVICE_URLS.documents);
-app.use('/documents', documentsProxy);
+app.use('/v1/restpoint/hearses', hearseProxy);
+app.use('/v1/restpoint/hearse-bookings', hearseBookingsProxy);
+app.use('/v1/restpoint/all-drivers', allDriversProxy);
+app.use('/v1/restpoint/hearse', hearseSingularProxy);
+
+app.use('/hearses', hearseProxy);
+app.use('/hearse-bookings', hearseBookingsProxy);
+app.use('/all-drivers', allDriversProxy);
+app.use('/hearse', hearseSingularProxy);
+
+// --- Documents ---
+const documentsProxy = createFullPathProxy(SERVICE_URLS.documents, '/api/v1/restpoint/documents');
 app.use('/api/v1/restpoint/documents', documentsProxy);
 app.use('/v1/restpoint/documents', documentsProxy);
+app.use('/documents', documentsProxy);
 
-// Notification - proxy to notification service
-const notificationProxy = createProxy(SERVICE_URLS.notification);
-app.use('/notification', notificationProxy);
+// --- Notification ---
+const notificationProxy = createFullPathProxy(SERVICE_URLS.notification, '/api/v1/restpoint/notification');
 app.use('/api/v1/restpoint/notification', notificationProxy);
 app.use('/v1/restpoint/notification', notificationProxy);
+app.use('/notification', notificationProxy);
 
-// E-Documents - proxy to edocuments service
-const edocumentsProxy = createProxy(SERVICE_URLS.edocuments);
-app.use('/edocuments', edocumentsProxy);
+// --- E-Documents ---
+const edocumentsProxy = createFullPathProxy(SERVICE_URLS.edocuments, '/api/v1/restpoint/edocuments');
 app.use('/api/v1/restpoint/edocuments', edocumentsProxy);
 app.use('/v1/restpoint/edocuments', edocumentsProxy);
+app.use('/edocuments', edocumentsProxy);
 
 // =============================================================================
 // HEALTH & DEBUG
@@ -259,6 +300,14 @@ app.get('/health', (req, res) => {
     port: PORT,
     uptime: process.uptime(),
     services: Object.keys(SERVICE_URLS),
+    hearse_service: SERVICE_URLS.hearse,
+  });
+});
+
+app.get('/services', (req, res) => {
+  res.json({
+    success: true,
+    services: SERVICE_URLS,
   });
 });
 
@@ -292,6 +341,16 @@ const server = app.listen(PORT, HOST, () => {
   Logger.info('========================================');
   Logger.info(`  ${APP_NAME} v${APP_VERSION}`);
   Logger.info(`  Running on http://${HOST}:${PORT}`);
+  Logger.info(`  Hearse Service: ${SERVICE_URLS.hearse}`);
+  Logger.info('========================================');
+  Logger.info('📋 Available Endpoints:');
+  Logger.info(`   GET  http://localhost:${PORT}/health`);
+  Logger.info(`   GET  http://localhost:${PORT}/services`);
+  Logger.info(`   POST http://localhost:${PORT}/api/v1/restpoint/hearses`);
+  Logger.info(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses`);
+  Logger.info(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses/available`);
+  Logger.info(`   POST http://localhost:${PORT}/api/v1/restpoint/hearse-bookings`);
+  Logger.info(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearse-bookings`);
   Logger.info('========================================');
 });
 

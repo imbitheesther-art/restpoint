@@ -37,6 +37,7 @@ router.get('/hearses/available/cross-branch', hearseController.getAvailableHears
 // style dynamic routes, otherwise Express will try to match "availability"
 // as a booking_id param and break this endpoint.
 router.get('/hearse-bookings/availability', hearseBookingController.getAvailabilityAcrossBranches);
+router.get('/hearse-bookings/check-date', hearseBookingController.checkAvailabilityByDate);
 
 router.post('/hearse-bookings', hearseBookingController.makeHearseBooking);
 router.get('/hearse-bookings', hearseBookingController.getAllHearseBookings);

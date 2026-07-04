@@ -3,9 +3,9 @@ const http = require('http');
 const cors = require('cors');
 const path = require('path');
 const { Server } = require('socket.io');
+const { safeTenantQuery, safeTenantExecute } = require('../../shared/dbConfig');
+const { validateTenantActive } = require('../../shared/tenancy');
 require('dotenv').config();
-
-
 
 const restpointRoutes = require('./routes/hearseRoutes');
 
@@ -13,18 +13,15 @@ const app = express();
 const server = http.createServer(app);
 
 // ============================================================
-// Socket.IO — every branch connects to the SAME server instance,
-// so io.emit() below reaches ALL branches simultaneously.
-// This is what replaces the manual phone-call check.
+// Socket.IO
 // ============================================================
 const io = new Server(server, {
     cors: {
-        origin: '*', // restrict to your branch app domains in production
+        origin: '*',
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
     }
 });
 
-// Make io available inside controllers via req.app.get('io')
 app.set('io', io);
 
 // ============================================================
@@ -33,8 +30,6 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve uploaded hearse images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================================
@@ -42,43 +37,71 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ============================================================
 io.on('connection', (socket) => {
     console.log(`🔌 Client connected: ${socket.id}`);
-
-    // Optional: let a branch join a room so you can target
-    // branch-specific events later (e.g. driver dashboards)
     socket.on('join_branch', (branchId) => {
         socket.join(`branch_${branchId}`);
-        console.log(` Socket ${socket.id} joined branch_${branchId}`);
+        console.log(`Socket ${socket.id} joined branch_${branchId}`);
     });
-
     socket.on('join_admin', () => {
         socket.join('admin');
         console.log(`Socket ${socket.id} joined admin room`);
     });
-
     socket.on('disconnect', () => {
-        console.log(` Client disconnected: ${socket.id}`);
+        console.log(`Client disconnected: ${socket.id}`);
     });
 });
 
 // ============================================================
-// Tenant Middleware - Set database context for each request
+// Tenant Middleware
 // ============================================================
 app.use(async (req, res, next) => {
     try {
-        // Extract tenant slug from headers (set by API gateway)
-        const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-slug'];
+        const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-slug'] || 'system_shared';
+        const branchId = req.headers['x-branch-id'] || null;
 
-        if (tenantSlug) {
-            // Set the tenant database for this request
-            await safeTenantQuery('SELECT 1');
-            console.log(`[Tenant] Database set to: ${tenantSlug}`);
-        } else {
-            console.warn('[Tenant] No tenant slug found in headers');
+        req.tenantSlug = tenantSlug;
+        req.branchId = branchId;
+
+        console.log(`[HEARSE] ${req.method} ${req.path} - Tenant: ${tenantSlug}`);
+
+        if (tenantSlug === 'system_shared') {
+            req.tenant = {
+                db_name: process.env.DB_NAME || 'restpoint_db',
+                tenant_id: 1,
+                name: 'System Shared'
+            };
+            return next();
+        }
+
+        const tenantStatus = await validateTenantActive(tenantSlug);
+        if (!tenantStatus.active) {
+            return res.status(403).json({
+                status: 'error',
+                message: tenantStatus.reason || 'Tenant not active'
+            });
+        }
+
+        req.tenant = tenantStatus.tenant;
+        console.log(`[HEARSE] Tenant validated: ${tenantStatus.tenant.db_name}`);
+
+        // Resolve branch if not provided
+        if (!req.branchId && tenantStatus.tenant?.db_name) {
+            try {
+                const branches = await safeTenantQuery(
+                    tenantStatus.tenant.db_name,
+                    'SELECT branch_id FROM branches LIMIT 1'
+                );
+                if (branches.length > 0) {
+                    req.branchId = branches[0].branch_id.toString();
+                    console.log(`[HEARSE] Branch resolved: ${req.branchId}`);
+                }
+            } catch (e) {
+                console.log('[HEARSE] Branch resolution skipped:', e.message);
+            }
         }
 
         next();
     } catch (error) {
-        console.error('[Tenant] Error setting database:', error);
+        console.error('[HEARSE] Error:', error);
         res.status(500).json({
             status: 'error',
             message: 'Failed to initialize tenant database',
@@ -88,33 +111,127 @@ app.use(async (req, res, next) => {
 });
 
 // ============================================================
-// Routes - Mount at root since API Gateway strips /api/v1/restpoint prefix
+// Routes - Mount at /api/v1/restpoint
 // ============================================================
+// FIX: Mount routes at /api/v1/restpoint
+app.use('/api/v1/restpoint', restpointRoutes);
+
+// Also mount at root for direct access (optional)
 app.use('/', restpointRoutes);
 
-// Health check
+// ============================================================
+// Health checks
+// ============================================================
 app.get('/api/v1/health', (req, res) => {
-    res.json({ status: 'success', message: 'Server is running', timestamp: new Date().toISOString() });
+    res.json({
+        status: 'success',
+        message: 'Hearse Service is running',
+        port: PORT,
+        timestamp: new Date().toISOString()
+    });
 });
 
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'success',
+        message: 'Hearse Service is running',
+        port: PORT,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({
+        status: 'success',
+        message: 'Hearse Service',
+        endpoints: {
+            hearses: 'POST/GET /api/v1/restpoint/hearses',
+            hearse_detail: 'PUT/DELETE /api/v1/restpoint/hearses/:id',
+            available: 'GET /api/v1/restpoint/hearses/available',
+            bookings: 'POST/GET /api/v1/restpoint/hearse-bookings',
+            drivers: 'GET /api/v1/restpoint/drivers',
+            health: 'GET /api/v1/health'
+        }
+    });
+});
+
+// ============================================================
+// Debug: Print all registered routes
+// ============================================================
+console.log('\n📋 Registered Routes:');
+const printRoutes = (layer, path = '') => {
+    if (layer.route) {
+        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+        console.log(`   ${methods}  ${path}${layer.route.path}`);
+    }
+    if (layer.name === 'router' && layer.handle.stack) {
+        layer.handle.stack.forEach((l) => {
+            if (l.route) {
+                const methods = Object.keys(l.route.methods).join(', ').toUpperCase();
+                console.log(`   ${methods}  ${path}${l.route.path}`);
+            }
+        });
+    }
+};
+
+app._router.stack.forEach((layer) => {
+    if (layer.route) {
+        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+        console.log(`   ${methods}  ${layer.route.path}`);
+    }
+    if (layer.name === 'router' && layer.handle.stack) {
+        printRoutes(layer, '/api/v1/restpoint');
+    }
+});
+console.log('');
+
+// ============================================================
 // 404 handler
+// ============================================================
 app.use((req, res) => {
-    res.status(404).json({ status: 'error', message: `Route ${req.originalUrl} not found.` });
+    console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({
+        status: 'error',
+        message: `Route ${req.originalUrl} not found.`,
+        available_endpoints: {
+            hearses: 'POST/GET /api/v1/restpoint/hearses',
+            hearse_detail: 'PUT/DELETE /api/v1/restpoint/hearses/:id',
+            available: 'GET /api/v1/restpoint/hearses/available',
+            bookings: 'POST/GET /api/v1/restpoint/hearse-bookings',
+            drivers: 'GET /api/v1/restpoint/drivers',
+            health: 'GET /api/v1/health'
+        }
+    });
 });
 
+// ============================================================
 // Global error handler
+// ============================================================
 app.use((err, req, res, next) => {
     console.error('❌ Unhandled Error:', err);
-    res.status(500).json({ status: 'error', message: 'Internal server error.', error: err.message });
+    res.status(500).json({
+        status: 'error',
+        message: 'Internal server error.',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
 });
 
 // ============================================================
 // Start server
 // ============================================================
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 server.listen(PORT, () => {
-    console.log(` Server running on http://localhost:${PORT}`);
-    console.log(` Socket.IO ready for real-time cross-branch updates`);
+    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📡 Socket.IO ready for real-time cross-branch updates`);
+    console.log(`\n📋 Available Endpoints:`);
+    console.log(`   GET  http://localhost:${PORT}/`);
+    console.log(`   GET  http://localhost:${PORT}/api/v1/health`);
+    console.log(`   POST http://localhost:${PORT}/api/v1/restpoint/hearses`);
+    console.log(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses`);
+    console.log(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses/available`);
+    console.log(`   POST http://localhost:${PORT}/api/v1/restpoint/hearse-bookings`);
+    console.log(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearse-bookings\n`);
 });
 
 module.exports = { app, server, io };

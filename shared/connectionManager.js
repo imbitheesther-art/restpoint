@@ -40,6 +40,41 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.safeExecute = exports.safeQuery = exports.connectionManager = exports.ConnectionManager = void 0;
 const promise_1 = __importDefault(require("mysql2/promise"));
+// ============================================
+// FIX: Handle MariaDB GSSAPI authentication
+// ============================================
+// This patch handles the GSSAPI authentication issue with MariaDB 10.11+
+// by telling the server we don't support GSSAPI and to use mysql_native_password
+const mysql2 = promise_1.default;
+// Store original createPool
+const originalCreatePool = mysql2.createPool;
+// Create patched version that adds GSSAPI auth plugin
+const patchedCreatePool = function (config) {
+    if (!config)
+        config = {};
+    // Ensure authPlugins exists
+    if (!config.authPlugins) {
+        config.authPlugins = {};
+    }
+    // Handle GSSAPI - return empty buffer to signal fallback to mysql_native_password
+    // This allows the server to fall back to mysql_native_password authentication
+    config.authPlugins.auth_gssapi_client = function () {
+        return function () {
+            return Buffer.from([]);
+        };
+    };
+    return originalCreatePool.call(this, config);
+};
+// Try to override createPool on the mysql2 module
+try {
+    mysql2.createPool = patchedCreatePool;
+}
+catch (e) {
+    // If we can't override, we'll use the patched version directly
+    console.warn('Could not override mysql2.createPool in connectionManager, using patched wrapper');
+}
+// Use the patched version for all subsequent calls
+const createPool = patchedCreatePool;
 const DEFAULT_CONFIG = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306', 10),
@@ -288,7 +323,7 @@ class ConnectionManager {
             return existing;
         }
         // Create a new pool with STRICT connection limits
-        const pool = promise_1.default.createPool({
+        const pool = createPool({
             host: this.config.host,
             port: this.config.port,
             user: this.config.user,

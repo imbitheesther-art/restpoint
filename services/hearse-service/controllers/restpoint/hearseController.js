@@ -1,82 +1,41 @@
 const { safeQuery } = require('../../../../configurations/sqlConfig/db');
-const { query, execute } = require('../../../../shared/dbConfig');
 const { getKenyaTimeISO } = require('../../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableHearses, upload } = require('../registerHearse');
 
 /**
  * Get available hearses across all branches for cross-branch booking
- * This enables branches to see and book hearses from other branches
+ * Simplified - no branch table joins
  */
 const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
     try {
         console.log('\n🌐 [CrossBranchAvailability] Fetching available hearses across all branches...');
 
-        const { branch_id } = req.query; // Current user's branch (to exclude from available list if needed)
+        const { branch_id } = req.query;
 
-        // Get all available hearses with branch information
-        let query = `
-            SELECT 
+        // Get all available hearses (simplified - no branch table)
+        const availableHearses = await safeQuery(
+            `SELECT 
                 h.id,
-                h.number_plate,
+                h.hearse_code,
+                h.plate_number,
                 h.model,
-                h.min_charge_ksh,
-                h.max_charge_ksh,
+                h.capacity,
                 h.status,
                 h.branch_id,
                 h.image,
                 h.created_at,
                 h.updated_at,
-                b.branch_name,
-                b.location as branch_location,
-                b.phone as branch_phone,
-                -- Calculate if this hearse is from the requesting branch
-                CASE WHEN h.branch_id = ? THEN 1 ELSE 0 END as is_own_branch,
-                -- Count active bookings for this hearse
+                h.min_charge_ksh,
+                h.max_charge_ksh,
+                0 as is_own_branch,
                 (SELECT COUNT(*) FROM hearse_bookings hb 
                  WHERE hb.hearse_id = h.id 
                  AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
             FROM hearses h
-            LEFT JOIN branches b ON h.branch_id = b.id
             WHERE h.status = 'available'
-            AND h.branch_id != ?  -- Exclude own branch hearses (optional, remove if you want to show all)
-            ORDER BY 
-                is_own_branch DESC,  -- Own branch first
-                h.branch_id ASC,
-                h.created_at DESC
-        `;
-
-        const params = [branch_id || 0, branch_id || 0];
-
-        // If no branch_id provided, show all available hearses
-        if (!branch_id) {
-            query = `
-                SELECT 
-                    h.id,
-                    h.number_plate,
-                    h.model,
-                    h.min_charge_ksh,
-                    h.max_charge_ksh,
-                    h.status,
-                    h.branch_id,
-                    h.image,
-                    h.created_at,
-                    h.updated_at,
-                    b.branch_name,
-                    b.location as branch_location,
-                    b.phone as branch_phone,
-                    0 as is_own_branch,
-                    (SELECT COUNT(*) FROM hearse_bookings hb 
-                     WHERE hb.hearse_id = h.id 
-                     AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
-                FROM hearses h
-                LEFT JOIN branches b ON h.branch_id = b.id
-                WHERE h.status = 'available'
-                ORDER BY h.branch_id ASC, h.created_at DESC
-            `;
-        }
-
-        const availableHearses = await safeQuery(query, params);
+            ORDER BY h.branch_id ASC, h.created_at DESC`
+        );
 
         // Group by branch for better organization
         const groupedByBranch = availableHearses.reduce((acc, hearse) => {
@@ -84,9 +43,9 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
             if (!acc[branchKey]) {
                 acc[branchKey] = {
                     branch_id: hearse.branch_id,
-                    branch_name: hearse.branch_name || `Branch ${hearse.branch_id}`,
-                    branch_location: hearse.branch_location || 'Unknown',
-                    branch_phone: hearse.branch_phone || 'N/A',
+                    branch_name: `Branch ${hearse.branch_id}`,
+                    branch_location: 'N/A',
+                    branch_phone: 'N/A',
                     hearses: []
                 };
             }
@@ -118,7 +77,7 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
 
 /**
  * Get availability summary across all branches
- * Returns count of available/booked hearses per branch
+ * Simplified - no branch table joins
  */
 const getAvailabilitySummary = asyncHandler(async (req, res) => {
     try {
@@ -126,18 +85,14 @@ const getAvailabilitySummary = asyncHandler(async (req, res) => {
 
         const query = `
             SELECT 
-                b.id as branch_id,
-                b.branch_name,
-                b.location,
-                b.phone,
+                h.branch_id,
                 COUNT(h.id) as total_hearses,
                 SUM(CASE WHEN h.status = 'available' THEN 1 ELSE 0 END) as available_hearses,
                 SUM(CASE WHEN h.status = 'booked' THEN 1 ELSE 0 END) as booked_hearses,
                 SUM(CASE WHEN h.status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_hearses
-            FROM branches b
-            LEFT JOIN hearses h ON h.branch_id = b.id
-            GROUP BY b.id, b.branch_name, b.location, b.phone
-            ORDER BY b.id ASC
+            FROM hearses h
+            GROUP BY h.branch_id
+            ORDER BY h.branch_id ASC
         `;
 
         const summary = await safeQuery(query);

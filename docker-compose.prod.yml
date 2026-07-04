@@ -8,7 +8,7 @@ services:
   # =============================================================================
   # INFRASTRUCTURE SERVICES
   # =============================================================================
-  
+
   mariadb:
     image: mariadb:10.11
     container_name: restpoint_mariadb
@@ -25,7 +25,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      test: [ "CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -43,7 +43,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -71,7 +71,7 @@ services:
   # =============================================================================
   # API GATEWAY
   # =============================================================================
-  
+
   api-gateway:
     build:
       context: .
@@ -104,6 +104,7 @@ services:
       CALENDAR_SERVICE_URL: http://restpoint_calender_service:5000
       CHEMICALS_SERVICE_URL: http://restpoint_chemical_service:5000
       BILLING_SERVICE_URL: http://restpoint_billing_service:5000
+      HEARSE_SERVICE_URL: http://restpoint_hearse_service:5000
       SOCKETIO_SERVICE_URL: http://restpoint_socketio_service:5000
       EXTRA_SERVICES_URL: http://restpoint_extra_services:5000
       CALL_SERVICE_URL: http://restpoint_call_service:5000
@@ -118,7 +119,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -159,7 +160,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -196,7 +197,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -227,7 +228,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -257,7 +258,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -288,7 +289,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -318,7 +319,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -349,7 +350,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -380,7 +381,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -410,7 +411,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -440,7 +441,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -468,7 +469,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -500,7 +501,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -529,7 +530,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -558,7 +559,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -588,7 +589,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -618,7 +619,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -646,7 +647,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -674,7 +675,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -702,7 +703,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -730,7 +731,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -761,7 +762,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -770,7 +771,7 @@ services:
   # =============================================================================
   # SCANNER SERVICE (Go)
   # =============================================================================
-  
+
   scanner-service:
     build:
       context: .
@@ -796,16 +797,51 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health" ]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
 
   # =============================================================================
+  # HEARSE SERVICE
+  # =============================================================================
+
+  hearse-service:
+    build:
+      context: .
+      dockerfile: services/hearse-service/Dockerfile
+    image: restpoint-hearse-service:latest
+    container_name: restpoint_hearse_service
+    restart: always
+    ports:
+      - "${HEARSE_SERVICE_EXTERNAL_PORT:-5008}:5000"
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      SERVICE_NAME: hearse-service
+      DB_HOST: restpoint_mariadb
+      DB_PORT: 3306
+      REDIS_HOST: restpoint_redis
+      REDIS_PORT: 6379
+    volumes:
+      - hearse_service_data:/usr/src/app/data
+      - ./services/hearse-service/uploads:/usr/src/app/uploads
+    networks:
+      - restpoint_network
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
   # FRONTEND
   # =============================================================================
-  
+
   frontend:
     build:
       context: ./FrontendClient/client
@@ -821,7 +857,7 @@ services:
     networks:
       - restpoint_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -891,4 +927,6 @@ volumes:
   chemical_service_data:
     driver: local
   billing_service_data:
+    driver: local
+  hearse_service_data:
     driver: local

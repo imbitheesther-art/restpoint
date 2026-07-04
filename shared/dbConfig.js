@@ -3,24 +3,24 @@
  * @file shared/dbConfig.ts
  * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function (o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
     if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+        desc = { enumerable: true, get: function () { return m[k]; } };
     }
     Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
+}) : (function (o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function (o, v) {
     Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
+}) : function (o, v) {
     o["default"] = v;
 });
 var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
+    var ownKeys = function (o) {
         ownKeys = Object.getOwnPropertyNames || function (o) {
             var ar = [];
             for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
@@ -39,12 +39,47 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.closeAllConnections = exports.closeTenantDB = exports.safeTenantExecute = exports.safeTenantQuery = exports.execute = exports.query = exports.getTenantDBBySlug = exports.getTenantDB = exports.resolveDatabase = exports.lookupTenantDatabase = exports.getRootPool = void 0;
 const mysql = __importStar(require("mysql2/promise"));
+// ============================================
+// FIX: Handle MariaDB GSSAPI authentication
+// ============================================
+// This patch handles the GSSAPI authentication issue with MariaDB 10.11+
+// by telling the server we don't support GSSAPI and to use mysql_native_password
+// Store original createPool
+const originalCreatePool = mysql.createPool;
+// Create patched version that adds GSSAPI auth plugin
+const patchedCreatePool = function (config) {
+    if (!config)
+        config = {};
+    // Ensure authPlugins exists
+    if (!config.authPlugins) {
+        config.authPlugins = {};
+    }
+    // Handle GSSAPI - return empty buffer to signal fallback to mysql_native_password
+    // This allows the server to fall back to mysql_native_password authentication
+    config.authPlugins.auth_gssapi_client = function () {
+        return function () {
+            return Buffer.from([]);
+        };
+    };
+    return originalCreatePool.call(this, config);
+};
+// Try to override createPool on the mysql module
+// This may not work in all versions of mysql2, but we try anyway
+try {
+    mysql.createPool = patchedCreatePool;
+}
+catch (e) {
+    // If we can't override, we'll use the patched version directly
+    console.warn('Could not override mysql.createPool, using patched wrapper');
+}
+// Use the patched version for all subsequent calls
+const createPool = patchedCreatePool;
 // ─── Configuration ───────────────────────────────────────────────────────────
 const DB_CONFIG = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306', 10),
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD || 'root',
 };
 // ─── Connection Pool Caches ──────────────────────────────────────────────────
 let rootPool = null;
@@ -54,7 +89,7 @@ const branchDbCache = new Map();
 // ─── Root Pool ───────────────────────────────────────────────────────────────
 const getRootPool = async () => {
     if (!rootPool) {
-        rootPool = mysql.createPool({
+        rootPool = createPool({
             ...DB_CONFIG,
             database: 'tenant_tracking',
             waitForConnections: true,
@@ -143,7 +178,7 @@ const getTenantDB = async (tenantDbName) => {
     if (tenantPoolCache.has(tenantDbName)) {
         return tenantPoolCache.get(tenantDbName);
     }
-    const pool = mysql.createPool({
+    const pool = createPool({
         ...DB_CONFIG,
         database: tenantDbName,
         waitForConnections: true,
