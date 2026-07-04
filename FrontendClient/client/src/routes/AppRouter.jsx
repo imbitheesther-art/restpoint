@@ -224,6 +224,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="driver-portal" element={<Layout tenantData={tenantData}><DriverPortal /></Layout>} />
       <Route path="leaves" element={<Layout tenantData={tenantData}><LeaveDashboard /></Layout>} />
       <Route path="leaves/apply" element={<Layout tenantData={tenantData}><ApplyLeave /></Layout>} />
+      <Route path="support" element={<Layout tenantData={tenantData}><TicketPage /></Layout>} />
       <Route path="*" element={<Layout tenantData={tenantData}><NotFound /></Layout>} />
     </Routes>
   );
