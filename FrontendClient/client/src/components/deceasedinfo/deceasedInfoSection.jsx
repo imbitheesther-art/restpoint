@@ -29,6 +29,32 @@ import 'react-toastify/dist/ReactToastify.css';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
+// Elegant Vintage Color Palette
+const THEME = {
+  colors: {
+    ink: '#15171A',
+    bone: '#FAF8F4',
+    bone2: '#F3EFE6',
+    brass: '#8B7355',
+    brassHover: '#A98F6E',
+    verdigris: '#3D4F47',
+    verdigrisDark: '#2E3F37',
+    line: '#E3DDD0',
+    lineDark: '#2C2F33',
+    gray: '#6B6862',
+    grayLight: 'rgba(250,248,244,0.62)',
+    red: '#9B4A3F',
+    redBg: '#F7ECE9',
+    redLine: '#E8D2CC',
+    white: '#FFFFFF',
+    success: '#475A43',
+    successBg: '#EEF3EC',
+    successLine: '#DCE6D9',
+    shadow: 'rgba(21,23,26,0.12)',
+    overlay: 'rgba(21,23,26,0.88)',
+  }
+};
+
 // Animations
 const fadeIn = keyframes`
   from {
@@ -52,20 +78,19 @@ const slideRight = keyframes`
   }
 `;
 
-
-// --- Sleek Styled Components with Larger Boxes ---
+// Styled Components
 const Container = styled.div`
-  background: white;
+  background: ${THEME.colors.bone};
   border-radius: 16px;
   padding: 1.75rem;
-  border: 1px solid #eef2f6;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid ${THEME.colors.line};
+  box-shadow: 0 4px 20px ${THEME.colors.shadow};
   animation: ${fadeIn} 0.5s ease-out;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border-color: #d9e2ef;
+    box-shadow: 0 8px 32px ${THEME.colors.shadow};
+    border-color: ${THEME.colors.brass};
   }
 `;
 
@@ -74,8 +99,8 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid ${THEME.colors.line};
   flex-wrap: wrap;
   gap: 1rem;
 `;
@@ -84,16 +109,20 @@ const Title = styled.h3`
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #0f172a;
+  color: ${THEME.colors.ink};
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+
+  svg {
+    color: ${THEME.colors.brass};
+  }
 `;
 
 const Badge = styled.span`
-  background: ${(props) => props.color || '#4361ee'};
-  color: white;
+  background: ${THEME.colors.verdigris};
+  color: ${THEME.colors.bone};
   padding: 0.3rem 0.8rem;
   border-radius: 30px;
   font-size: 0.8rem;
@@ -122,14 +151,14 @@ const Button = styled.button`
   white-space: nowrap;
 
   &.primary {
-    background: #4361ee;
-    color: white;
-    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.2);
+    background: ${THEME.colors.verdigris};
+    color: ${THEME.colors.bone};
+    box-shadow: 0 2px 8px rgba(61, 79, 71, 0.2);
 
     &:hover {
-      background: #3a56d4;
+      background: ${THEME.colors.verdigrisDark};
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+      box-shadow: 0 4px 12px rgba(61, 79, 71, 0.3);
     }
 
     &:disabled {
@@ -140,24 +169,24 @@ const Button = styled.button`
   }
 
   &.secondary {
-    background: #f8fafc;
-    color: #1e293b;
-    border: 1px solid #e2e8f0;
+    background: ${THEME.colors.bone2};
+    color: ${THEME.colors.ink};
+    border: 1px solid ${THEME.colors.line};
 
     &:hover {
-      background: #f1f5f9;
+      background: ${THEME.colors.line};
     }
   }
 
   &.success {
-    background: #10b981;
-    color: white;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    background: ${THEME.colors.success};
+    color: ${THEME.colors.bone};
+    box-shadow: 0 2px 8px rgba(71, 90, 67, 0.2);
 
     &:hover {
-      background: #0ea271;
+      background: #3d4a3a;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 4px 12px rgba(71, 90, 67, 0.3);
     }
   }
 `;
@@ -181,19 +210,19 @@ const DataGrid = styled.div`
 `;
 
 const DataGroup = styled.div`
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, ${THEME.colors.bone} 0%, ${THEME.colors.bone2} 100%);
   border-radius: 12px;
   padding: 1.5rem;
-  border: 1px solid #e9edf2;
+  border: 1px solid ${THEME.colors.line};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 200px;
   animation: ${slideRight} 0.5s ease-out;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px ${THEME.colors.shadow};
 
   &:hover {
-    background: linear-gradient(135deg, white 0%, #f8fafc 100%);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    border-color: #3b82f6;
+    background: linear-gradient(135deg, ${THEME.colors.white} 0%, ${THEME.colors.bone} 100%);
+    box-shadow: 0 8px 24px ${THEME.colors.shadow};
+    border-color: ${THEME.colors.brass};
     transform: translateY(-2px);
   }
 
@@ -206,14 +235,14 @@ const DataGroup = styled.div`
 const GroupTitle = styled.div`
   font-size: 0.8rem;
   font-weight: 600;
-  color: #475569;
+  color: ${THEME.colors.brass};
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #e9edf2;
+  border-bottom: 1px solid ${THEME.colors.line};
   padding-bottom: 0.75rem;
 
   svg {
@@ -229,7 +258,7 @@ const DataRow = styled.div`
   align-items: center;
   padding: 0.6rem 0;
   font-size: 0.95rem;
-  border-bottom: 1px dashed #e9edf2;
+  border-bottom: 1px dashed ${THEME.colors.line};
 
   &:last-child {
     border-bottom: none;
@@ -242,7 +271,7 @@ const DataRow = styled.div`
 `;
 
 const Label = styled.span`
-  color: #64748b;
+  color: ${THEME.colors.gray};
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -251,7 +280,7 @@ const Label = styled.span`
 `;
 
 const Value = styled.span`
-  color: #0f172a;
+  color: ${THEME.colors.ink};
   font-weight: ${(props) => (props.bold ? '600' : '500')};
   text-align: right;
   word-break: break-word;
@@ -259,8 +288,8 @@ const Value = styled.span`
   font-size: 0.95rem;
 
   .status-badge {
-    background: ${(props) => props.statusColor || '#64748b'};
-    color: white;
+    background: ${(props) => props.statusColor || THEME.colors.gray};
+    color: ${THEME.colors.bone};
     padding: 0.3rem 0.8rem;
     border-radius: 30px;
     font-size: 0.8rem;
@@ -271,11 +300,11 @@ const Value = styled.span`
 `;
 
 const EditForm = styled.div`
-  background: #f8fafc;
+  background: ${THEME.colors.bone};
   border-radius: 16px;
   padding: 1.5rem;
   margin-top: 1.5rem;
-  border: 1px solid #eef2f6;
+  border: 1px solid ${THEME.colors.line};
 `;
 
 const FormGrid = styled.div`
@@ -302,39 +331,39 @@ const FormLabel = styled.label`
   gap: 0.35rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #475569;
+  color: ${THEME.colors.ink};
   margin-bottom: 0.4rem;
 `;
 
 const FormInput = styled.input`
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid ${THEME.colors.line};
   border-radius: 10px;
   font-size: 0.9rem;
   transition: all 0.2s ease;
-  background: white;
+  background: ${THEME.colors.white};
 
   &:focus {
     outline: none;
-    border-color: #4361ee;
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    border-color: ${THEME.colors.brass};
+    box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
   }
 `;
 
 const FormSelect = styled.select`
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid ${THEME.colors.line};
   border-radius: 10px;
   font-size: 0.9rem;
-  background: white;
+  background: ${THEME.colors.white};
   cursor: pointer;
 
   &:focus {
     outline: none;
-    border-color: #4361ee;
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    border-color: ${THEME.colors.brass};
+    box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
   }
 `;
 
@@ -343,13 +372,13 @@ const Loading = styled.div`
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  color: #64748b;
+  color: ${THEME.colors.gray};
   font-size: 1rem;
   gap: 0.75rem;
 
   .spinner {
-    border: 3px solid #f1f5f9;
-    border-top: 3px solid #4361ee;
+    border: 3px solid ${THEME.colors.line};
+    border-top: 3px solid ${THEME.colors.brass};
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -369,16 +398,16 @@ const Loading = styled.div`
 const NoData = styled.div`
   text-align: center;
   padding: 3rem;
-  color: #94a3b8;
+  color: ${THEME.colors.gray};
   font-size: 1rem;
 `;
 
-// Field groups with larger layout
+// Field groups configuration
 const fieldGroups = [
   {
     title: 'Personal Information',
     icon: User,
-    color: '#4361ee',
+    color: THEME.colors.verdigris,
     fields: [
       { key: 'full_name', label: 'Full Name', bold: true },
       { key: 'gender', label: 'Gender' },
@@ -387,19 +416,9 @@ const fieldGroups = [
     ],
   },
   {
-    title: 'Death Details',
-    icon: Heart,
-    color: '#f43f5e',
-    fields: [
-      { key: 'cause_of_death', label: 'Cause of Death', bold: true },
-      { key: 'place_of_death', label: 'Place of Death' },
-      { key: 'admission_number', label: 'Admission Number' },
-    ],
-  },
-  {
     title: 'Timeline',
     icon: CalendarDays,
-    color: '#f59e0b',
+    color: THEME.colors.brass,
     fields: [
       { key: 'date_admitted', label: 'Admitted On' },
       { key: 'date_registered', label: 'Registered On' },
@@ -407,18 +426,9 @@ const fieldGroups = [
     ],
   },
   {
-    title: 'Location',
-    icon: Map,
-    color: '#10b981',
-    fields: [
-      { key: 'county', label: 'County/Region' },
-      { key: 'location', label: 'Specific Location' },
-    ],
-  },
-  {
     title: 'Status & Registry',
     icon: Activity,
-    color: '#8b5cf6',
+    color: THEME.colors.verdigrisDark,
     fields: [
       { key: 'status', label: 'Current Status', bold: true },
       { key: 'created_by', label: 'Registered By' },
@@ -427,7 +437,7 @@ const fieldGroups = [
   {
     title: 'Additional Info',
     icon: Info,
-    color: '#64748b',
+    color: THEME.colors.gray,
     fields: [
       { key: 'age', label: 'Age at Death', bold: true },
       { key: 'deceased_id', label: 'Deceased ID' },
@@ -448,20 +458,9 @@ const formFields = [
     ],
   },
   {
-    section: 'Death & Location',
-    icon: Map,
-    fields: [
-      { name: 'cause_of_death', label: 'Cause of Death', type: 'text' },
-      { name: 'place_of_death', label: 'Place of Death', type: 'text' },
-      { name: 'county', label: 'County/Region', type: 'text' },
-      { name: 'location', label: 'Specific Location', type: 'text' },
-    ],
-  },
-  {
     section: 'Status & Details',
     icon: Activity,
     fields: [
-      { name: 'admission_number', label: 'Admission Number', type: 'text' },
       {
         name: 'status',
         label: 'Status',
@@ -472,11 +471,11 @@ const formFields = [
   },
 ];
 
-// --- Main Component ---
+// Main Component
 const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDeceased, ageInfo, onUpdate }) => {
   const { id: paramId } = useParams();
   const deceasedId = propDeceasedId || paramId;
-  
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
@@ -492,13 +491,12 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      // Use centralized API with ENDPOINTS
       const endpoint = `${ENDPOINTS.DECEASED.BASE}/deceased-id/${deceasedId}`;
       const response = await api.get(endpoint);
       console.log('📦 DeceasedInfoSection API Response:', response.data);
-      
+
       const deceasedData = response.data?.data || response.data;
 
       if (deceasedData && Object.keys(deceasedData).length > 0) {
@@ -538,7 +536,6 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
 
   useEffect(() => {
     if (propDeceased) {
-      // If data is passed as prop, use it directly
       const cleanedData = {
         ...propDeceased,
         date_of_birth: propDeceased.date_of_birth
@@ -600,10 +597,10 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
     return isNaN(date.getTime())
       ? '-'
       : date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
   };
 
   const formatDateTime = (dateString) => {
@@ -612,12 +609,12 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
     return isNaN(date.getTime())
       ? '-'
       : date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
   };
 
   const calculateAge = (dob, dod) => {
@@ -637,15 +634,15 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'active':
-        return '#10b981';
+        return THEME.colors.success;
       case 'completed':
-        return '#4361ee';
+        return THEME.colors.verdigris;
       case 'pending':
-        return '#f59e0b';
+        return THEME.colors.brass;
       case 'dispatched':
-        return '#8b5cf6';
+        return THEME.colors.verdigrisDark;
       default:
-        return '#64748b';
+        return THEME.colors.gray;
     }
   };
 
@@ -669,7 +666,7 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
       );
     } else if (field.key === 'created_by') {
       return (
-        <Value bold style={{ color: value?.toLowerCase() === 'system' ? '#f43f5e' : '#10b981' }}>
+        <Value bold style={{ color: value?.toLowerCase() === 'system' ? THEME.colors.red : THEME.colors.success }}>
           {value || 'System'}
         </Value>
       );
@@ -688,12 +685,11 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
       </GroupTitle>
       {section.fields.map((field, fieldIndex) => {
         let displayValue = formData[field.key];
-        
-        // Special handling for age
+
         if (field.key === 'age' && (!displayValue || displayValue === '-')) {
           displayValue = calculateAge(formData.date_of_birth, formData.date_of_death);
         }
-        
+
         return (
           <DataRow key={fieldIndex}>
             <Label>{field.label}:</Label>
@@ -724,7 +720,7 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
       <Container>
         <NoData>
           <Info size={32} strokeWidth={1.5} />
-          <div style={{ marginTop: '1rem', color: '#dc2626' }}>{error || 'No data found for this deceased record'}</div>
+          <div style={{ marginTop: '1rem', color: THEME.colors.red }}>{error || 'No data found for this deceased record'}</div>
           <Button className="secondary" onClick={fetchDeceasedData} style={{ marginTop: '1rem' }}>
             <RefreshCw size={16} />
             Retry
@@ -741,7 +737,7 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
           <Title>
             <User size={22} />
             Deceased Information
-            <Badge color="#4361ee">ID: {formData.deceased_id || formData.id || deceasedId}</Badge>
+            <Badge>ID: {formData.deceased_id || formData.id || deceasedId}</Badge>
           </Title>
 
           <Actions>
@@ -811,17 +807,6 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
         )}
       </Container>
 
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
     </>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useSocket } from '../../../context/socketContext';
-import { api, ENDPOINTS } from '../../../api';
+import { useSocket } from '../../context/socketContext';
+import { api, ENDPOINTS } from '../../api';
 import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp, Filter } from 'lucide-react';
 
 const COLORS = {

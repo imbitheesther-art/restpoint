@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useSocket } from '../../../context/socketContext';
-import { api, ENDPOINTS } from '../../../api';
+import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../../context/socketContext';
+import { api, ENDPOINTS } from '../../api';
 import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 
 const COLORS = {
@@ -247,12 +248,14 @@ const EmptyState = styled.div`
 `;
 
 const LeaveDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [leaves, setLeaves] = useState([]);
   const [usersOnLeave, setUsersOnLeave] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const { socket, connected } = useSocket();
+  const tenantSlug = localStorage.getItem('tenantSlug') || 'default';
 
   useEffect(() => {
     fetchData();
@@ -366,7 +369,7 @@ const LeaveDashboard = () => {
           <Title>Leave Management</Title>
           <Subtitle>Manage employee leave requests and approvals</Subtitle>
         </div>
-        <ActionButton onClick={() => window.location.href = '/leaves/apply'}>
+        <ActionButton onClick={() => navigate(`/tenant/${tenantSlug}/leaves/apply`)}>
           <Calendar size={18} />
           Apply for Leave
         </ActionButton>

@@ -3,7 +3,7 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { TenantModel } from '../models/Tenant.model';
 import { Request, Response } from 'express';
-
+import logger from '@montezuma/shared-logger';
 /**
  * OnboardingController — handles tenant registration, login, logout, org info
  * 
@@ -12,26 +12,39 @@ import { Request, Response } from 'express';
  * NOTE: Marketplace routes to be migrated to marketplace service
  */
 export class OnboardingController {
+
+
+
   async createOrganization(req: Request, res: Response): Promise<void> {
+
+    logger.info({
+      service: "hearse-service",
+      function: "createBooking",
+      message: "Booking creation started",
+    });
+
+
+
     try {
-      const { 
-        tenant_name, 
-        tenant_slug, 
-        email, 
-        password, 
-        full_name, 
-        phone, 
-        location, 
+      const {
+        tenant_name,
+        tenant_slug,
+        email,
+        password,
+        full_name,
+        phone,
+        location,
         country,
         termsAccepted,
-        branches 
+        branches
       } = req.body;
 
-      // CRITICAL FIX: Validate terms acceptance
+      //  Validate terms acceptance
       if (!termsAccepted) {
-        res.status(400).json({ 
-          success: false, 
-          errors: ['You must accept terms and conditions'] 
+        res.status(400).json({
+          success: false,
+          message: "You  Must  Accept   Terms  and   conditions",
+
         });
         return;
       }
@@ -62,17 +75,38 @@ export class OnboardingController {
         data: { token: result.token, tenant: result.tenant, user: { email, full_name, role: 'admin' } }
       });
     } catch (error: any) {
-      console.error('❌ Registration error:', error);
+
+
+      logger.error({
+        service: "tenant-service",
+        controller: "OnboardingController",
+        function: "registerOrganization",
+        message: "Organization registration failed !",
+        error: error.message,
+        stack: error.stack,
+      });
+
+
       if (error.message === 'Tenant slug already exists') { res.status(409).json({ success: false, message: 'An organization with this name already exists' }); return; }
       res.status(500).json({ success: false, message: 'Registration failed', error: error.message });
     }
   }
 
 
- 
 
+  //    login  
   async login(req: Request, res: Response): Promise<void> {
     try {
+
+
+      logger.info({
+        service: "tenant-service",
+        controller: "login   requets",
+        function: "registerOrganization",
+        message: "Organization registration failed",
+
+      });
+
       const { identifier, password } = req.body;
       if (!identifier || !password) { res.status(400).json({ success: false, message: 'Email/username and password are required' }); return; }
 
@@ -122,7 +156,14 @@ export class OnboardingController {
         });
       } finally { await conn.end(); }
     } catch (error: any) {
-      console.error('❌ Login error:', error);
+      logger.error({
+        service: "tenant-service",
+        controller: "OnboardingController",
+        function: "login",
+        message: "Login failed",
+        error: error.message,
+        stack: error.stack,
+      });
       res.status(500).json({ success: false, message: 'Login failed', error: error.message });
     }
   }

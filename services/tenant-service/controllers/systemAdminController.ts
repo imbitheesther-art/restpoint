@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
 import { clearTenantCache } from '../../../packages/shared-services/src/redisService';
+import logger from '@montezuma/shared-logger';
 
 // Server connection (same as Tenant.model)
 let serverConnection: mysql.Connection | null = null;
@@ -91,7 +92,14 @@ export class SystemAdminController {
                 total: tenantsWithStats.length,
             });
         } catch (error: any) {
-            console.error('Error fetching tenants:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "getTenants",
+                message: "Error fetching tenants",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to fetch tenants',
@@ -134,12 +142,12 @@ export class SystemAdminController {
                 const [users] = await tenantConn.query('SELECT user_id, email, full_name, role, is_active, created_at FROM users ORDER BY created_at DESC');
                 const [deceased] = await tenantConn.query('SELECT COUNT(*) as count FROM deceased');
                 const [branches] = await tenantConn.query('SELECT * FROM branches ORDER BY branch_name');
-                
+
                 let invoices: any = { total: 0, revenue: 0 };
                 try {
                     const [invResult] = await tenantConn.query('SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as revenue FROM invoices');
                     invoices = (invResult as any[])[0] || invoices;
-                } catch (e) {}
+                } catch (e) { }
 
                 stats = {
                     users,
@@ -162,7 +170,14 @@ export class SystemAdminController {
                 },
             });
         } catch (error: any) {
-            console.error('Error fetching tenant details:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "getTenantDetails",
+                message: "Error fetching tenant details",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to fetch tenant details',
@@ -206,16 +221,35 @@ export class SystemAdminController {
                     await tenantConn.query('UPDATE users SET is_active = FALSE');
                     await tenantConn.end();
                 } catch (e) {
-                    console.warn('Could not deactivate users:', e);
+                    logger.warn({
+                        service: "tenant-service",
+                        controller: "SystemAdminController",
+                        function: "suspendTenant",
+                        message: "Could not deactivate users",
+                        error: e,
+                    });
                 }
             }
 
             // Clear Redis cache for this tenant
             try {
                 const cleared = await clearTenantCache(tenantSlug);
-                console.log(`[SystemAdmin] 🧹 Cleared ${cleared} Redis cache entries for suspended tenant: ${tenantSlug}`);
+                logger.info({
+                    service: "tenant-service",
+                    controller: "SystemAdminController",
+                    function: "suspendTenant",
+                    message: `Cleared ${cleared} Redis cache entries for suspended tenant`,
+                    tenantSlug,
+                    clearedCount: cleared,
+                });
             } catch (cacheErr) {
-                console.warn('[SystemAdmin] ⚠️ Could not clear Redis cache:', cacheErr);
+                logger.warn({
+                    service: "tenant-service",
+                    controller: "SystemAdminController",
+                    function: "suspendTenant",
+                    message: "Could not clear Redis cache",
+                    error: cacheErr,
+                });
             }
 
             res.json({
@@ -223,7 +257,14 @@ export class SystemAdminController {
                 message: 'Tenant suspended successfully',
             });
         } catch (error: any) {
-            console.error('Error suspending tenant:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "suspendTenant",
+                message: "Error suspending tenant",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to suspend tenant',
@@ -266,7 +307,13 @@ export class SystemAdminController {
                     await tenantConn.query('UPDATE users SET is_active = TRUE');
                     await tenantConn.end();
                 } catch (e) {
-                    console.warn('Could not reactivate users:', e);
+                    logger.warn({
+                        service: "tenant-service",
+                        controller: "SystemAdminController",
+                        function: "activateTenant",
+                        message: "Could not reactivate users",
+                        error: e,
+                    });
                 }
             }
 
@@ -275,7 +322,14 @@ export class SystemAdminController {
                 message: 'Tenant activated successfully',
             });
         } catch (error: any) {
-            console.error('Error activating tenant:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "activateTenant",
+                message: "Error activating tenant",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to activate tenant',
@@ -319,16 +373,35 @@ export class SystemAdminController {
                     await tenantConn.query('UPDATE users SET is_active = FALSE');
                     await tenantConn.end();
                 } catch (e) {
-                    console.warn('Could not deactivate users:', e);
+                    logger.warn({
+                        service: "tenant-service",
+                        controller: "SystemAdminController",
+                        function: "stopTenant",
+                        message: "Could not deactivate users",
+                        error: e,
+                    });
                 }
             }
 
             // Clear ALL Redis cache for this tenant
             try {
                 const cleared = await clearTenantCache(tenantSlug);
-                console.log(`[SystemAdmin] 🧹 Cleared ${cleared} Redis cache entries for deleted tenant: ${tenantSlug}`);
+                logger.info({
+                    service: "tenant-service",
+                    controller: "SystemAdminController",
+                    function: "stopTenant",
+                    message: `Cleared ${cleared} Redis cache entries for deleted tenant`,
+                    tenantSlug,
+                    clearedCount: cleared,
+                });
             } catch (cacheErr) {
-                console.warn('[SystemAdmin] ⚠️ Could not clear Redis cache:', cacheErr);
+                logger.warn({
+                    service: "tenant-service",
+                    controller: "SystemAdminController",
+                    function: "stopTenant",
+                    message: "Could not clear Redis cache",
+                    error: cacheErr,
+                });
             }
 
             res.json({
@@ -336,7 +409,14 @@ export class SystemAdminController {
                 message: 'Tenant stopped (soft-deleted) successfully',
             });
         } catch (error: any) {
-            console.error('Error stopping tenant:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "stopTenant",
+                message: "Error stopping tenant",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to stop tenant',
@@ -367,12 +447,28 @@ export class SystemAdminController {
                 [subscription_status, subscription_expires_at || null, tenantId]
             );
 
+            logger.info({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "updateSubscription",
+                message: "Subscription updated successfully",
+                tenantId,
+                subscriptionStatus: subscription_status,
+            });
+
             res.json({
                 success: true,
                 message: 'Subscription updated successfully',
             });
         } catch (error: any) {
-            console.error('Error updating subscription:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "updateSubscription",
+                message: "Error updating subscription",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to update subscription',
@@ -422,17 +518,17 @@ export class SystemAdminController {
                     try {
                         const [users] = await tenantConn.query('SELECT COUNT(*) as count FROM users');
                         totalUsers += (users as any[])[0]?.count || 0;
-                    } catch (e) {}
+                    } catch (e) { }
 
                     try {
                         const [deceased] = await tenantConn.query('SELECT COUNT(*) as count FROM deceased');
                         totalDeceased += (deceased as any[])[0]?.count || 0;
-                    } catch (e) {}
+                    } catch (e) { }
 
                     try {
                         const [invoices] = await tenantConn.query('SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices');
                         totalRevenue += (invoices as any[])[0]?.total || 0;
-                    } catch (e) {}
+                    } catch (e) { }
 
                     await tenantConn.end();
                 } catch (e) {
@@ -442,6 +538,16 @@ export class SystemAdminController {
 
             // Recent tenants (last 10)
             const recentTenants = allTenants.slice(0, 10);
+
+            logger.info({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "getDashboardStats",
+                message: "Dashboard stats retrieved successfully",
+                totalTenants,
+                activeTenants,
+                totalRevenue,
+            });
 
             res.json({
                 success: true,
@@ -465,7 +571,14 @@ export class SystemAdminController {
                 },
             });
         } catch (error: any) {
-            console.error('Error fetching dashboard stats:', error);
+            logger.error({
+                service: "tenant-service",
+                controller: "SystemAdminController",
+                function: "getDashboardStats",
+                message: "Error fetching dashboard stats",
+                error: error.message,
+                stack: error.stack,
+            });
             res.status(500).json({
                 success: false,
                 message: 'Failed to fetch dashboard stats',

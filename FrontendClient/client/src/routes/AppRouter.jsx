@@ -1,24 +1,28 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { useTenantStore } from '../store/useTenantStore';
+
 import { tenantApi } from '../api/tenant.api';
+import { useTenantStore } from '../components/store/useTenantStore';
 import ModernSidebar from '../components/layout/ModernSidebar';
-import UserProfile from '../components/userProfile';
-import FooterComponent from '../components/footer-sys/globalFooter';
+import UserProfile from '../components/layout/userProfile';
+import FooterComponent from '../components/layout/globalFooter';
 import PortalRouter from '../portal/PortalRouter';
+import SingleTenantLayout from '../components/layout/SingleTenantLayout';
+
+
 
 const LandingPage = lazy(() => import('../modules/landing/LandingPage'));
 const OnboardingFlow = lazy(() => import('../modules/onboarding/OnboardingFlow'));
 const InsurancePage = lazy(() => import('../modules/insurance/insurance'));
 const MemorialPage = lazy(() => import('../modules/memorial/MemorialPage'));
 
-const PrivacyPolicy = lazy(() => import('../components/privacy/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('../components/privacy/TermsOfService'));
-const AccountDeletion = lazy(() => import('../components/privacy/AccountDeletion'));
-const DataMigrationPolicy = lazy(() => import('../components/privacy/DataMigrationPolicy'));
-const SecurityPolicy = lazy(() => import('../components/privacy/securityPolicy'));
-const SLAPolicy = lazy(() => import('../components/privacy/slaPolicy'));
-const ReleasePolicy = lazy(() => import('../components/privacy/releasePolicy'));
+const PrivacyPolicy = lazy(() => import('../components/pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('../components/pages/TermsOfService'));
+const AccountDeletion = lazy(() => import('../components/pages/AccountDeletion'));
+const DataMigrationPolicy = lazy(() => import('../components/pages/DataMigrationPolicy'));
+const SecurityPolicy = lazy(() => import('../components/pages/securityPolicy'));
+const SLAPolicy = lazy(() => import('../components/pages/slaPolicy'));
+const ReleasePolicy = lazy(() => import('../components/pages/releasePolicy'));
 const TicketPage = lazy(() => import('../components/support/TicketPage'));
 const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
 const AboutPage = lazy(() => import('../components/pages/AboutPage'));
@@ -32,22 +36,24 @@ const DeceasedRegistrationForm = lazy(() => import('../components/deceasedinfo/r
 const RegisterCoffin = lazy(() => import('../components/coffins/registerCoffin'));
 const CoffinInventory = lazy(() => import('../components/coffins/coffininventory'));
 const AllDeceasedPage = lazy(() => import('../components/deceasedinfo/listDeceased'));
-const NotFound = lazy(() => import('../components/common/NotFound'));
+const NotFound = lazy(() => import('../components/layout/notFound'));
 const DeceasedDetails = lazy(() => import('../components/deceasedprofile/deceasedDetailPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
 
 const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
-const UserManagement = lazy(() => import('../components/user/users'));
+const UserManagement = lazy(() => import('../components/modals/users'));
 const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemorialPage'));
-const CalendarPage = lazy(() => import('../components/calender/CalendarPage'));
-const EDocumentsPage = lazy(() => import('../components/edocuments/EDocumentsPage'));
-const ReportGenerator = lazy(() => import('../components/reports/reportGenerator'));
+
+
+
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
 const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
-const HearseBookings = lazy(() => import('../components/herarse/hearseBookings'));
-const DriverPortal = lazy(() => import('../components/herarse/DriverPortal'));
+const HearseBookings = lazy(() => import('../components/hearse/hearseBookings'));
+const DriverPortal = lazy(() => import('../components/hearse/DriverPortal'));
+const LeaveDashboard = lazy(() => import('../components/leave/Dashboard'));
+const ApplyLeave = lazy(() => import('../components/leave/ApplyLeave'));
 
 
 const RouteLoadingFallback = () => (
@@ -189,33 +195,36 @@ const TenantResolver = () => {
 
 const TenantDashboardRoutes = ({ tenantData }) => {
   const { slug } = useParams();
+  const isSingleTenant = tenantData?.deploymentType === 'single';
+
+  const Layout = isSingleTenant ? SingleTenantLayout : DashboardLayout;
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to="all-deceased" replace />} />
-      <Route path="/dashboard" element={<DashboardLayout tenantData={tenantData}><DashboardPage /></DashboardLayout>} />
-      <Route path="all-deceased" element={<DashboardLayout tenantData={tenantData}><AllDeceasedPage /></DashboardLayout>} />
-      <Route path="deceased" element={<DashboardLayout tenantData={tenantData}><AllDeceasedPage /></DashboardLayout>} />
-      <Route path="deceased/register" element={<DashboardLayout tenantData={tenantData}><DeceasedRegistrationForm /></DashboardLayout>} />
-      <Route path="deceased/:id" element={<DashboardLayout tenantData={tenantData}><DeceasedDetails /></DashboardLayout>} />
-      <Route path="deceased-details/:id" element={<DashboardLayout tenantData={tenantData}><DeceasedDetails /></DashboardLayout>} />
-      <Route path="coffins" element={<DashboardLayout tenantData={tenantData}><CoffinInventory /></DashboardLayout>} />
-      <Route path="coffins/register" element={<DashboardLayout tenantData={tenantData}><RegisterCoffin /></DashboardLayout>} />
-      <Route path="documents" element={<DashboardLayout tenantData={tenantData}><DocumentsPage /></DashboardLayout>} />
-      <Route path="invoices" element={<DashboardLayout tenantData={tenantData}><InvoiceManager /></DashboardLayout>} />
-      <Route path="calendar" element={<DashboardLayout tenantData={tenantData}><CalendarPage /></DashboardLayout>} />
-      <Route path="edocuments" element={<DashboardLayout tenantData={tenantData}><EDocumentsPage /></DashboardLayout>} />
-      <Route path="reports" element={<DashboardLayout tenantData={tenantData}><ReportGenerator /></DashboardLayout>} />
-      <Route path="chemicals" element={<DashboardLayout tenantData={tenantData}><ChemicalManagementDashboard /></DashboardLayout>} />
-      <Route path="workshop" element={<DashboardLayout tenantData={tenantData}><WorkshopDashboard /></DashboardLayout>} />
+      <Route path="/dashboard" element={<Layout tenantData={tenantData}><DashboardPage /></Layout>} />
+      <Route path="all-deceased" element={<Layout tenantData={tenantData}><AllDeceasedPage /></Layout>} />
+      <Route path="deceased" element={<Layout tenantData={tenantData}><AllDeceasedPage /></Layout>} />
+      <Route path="deceased/register" element={<Layout tenantData={tenantData}><DeceasedRegistrationForm /></Layout>} />
+      <Route path="deceased/:id" element={<Layout tenantData={tenantData}><DeceasedDetails /></Layout>} />
+      <Route path="deceased-details/:id" element={<Layout tenantData={tenantData}><DeceasedDetails /></Layout>} />
+      <Route path="coffins" element={<Layout tenantData={tenantData}><CoffinInventory /></Layout>} />
+      <Route path="coffins/register" element={<Layout tenantData={tenantData}><RegisterCoffin /></Layout>} />
+      <Route path="documents" element={<Layout tenantData={tenantData}><DocumentsPage /></Layout>} />
+      <Route path="invoices" element={<Layout tenantData={tenantData}><InvoiceManager /></Layout>} />
+      <Route path="chemicals" element={<Layout tenantData={tenantData}><ChemicalManagementDashboard /></Layout>} />
+      <Route path="workshop" element={<Layout tenantData={tenantData}><WorkshopDashboard /></Layout>} />
 
-      <Route path="settings" element={<DashboardLayout tenantData={tenantData}><SettingsPage /></DashboardLayout>} />
-      <Route path="release-form/:id" element={<DashboardLayout tenantData={tenantData}><ReleaseFormPage /></DashboardLayout>} />
-      <Route path="memorial/:deceasedId" element={<DashboardLayout tenantData={tenantData}><PublicMemorialPage /></DashboardLayout>} />
-      <Route path="memorial/:deceasedId/:token" element={<DashboardLayout tenantData={tenantData}><PublicMemorialPage /></DashboardLayout>} />
-      <Route path="users" element={<DashboardLayout tenantData={tenantData}><UserManagement /></DashboardLayout>} />
-      <Route path="hearse" element={<DashboardLayout tenantData={tenantData}><HearseBookings /></DashboardLayout>} />
-      <Route path="driver-portal" element={<DashboardLayout tenantData={tenantData}><DriverPortal /></DashboardLayout>} />
-      <Route path="*" element={<DashboardLayout tenantData={tenantData}><NotFound /></DashboardLayout>} />
+      <Route path="settings" element={<Layout tenantData={tenantData}><SettingsPage /></Layout>} />
+      <Route path="release-form/:id" element={<Layout tenantData={tenantData}><ReleaseFormPage /></Layout>} />
+      <Route path="memorial/:deceasedId" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
+      <Route path="memorial/:deceasedId/:token" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
+      <Route path="users" element={<Layout tenantData={tenantData}><UserManagement /></Layout>} />
+      <Route path="hearse" element={<Layout tenantData={tenantData}><HearseBookings /></Layout>} />
+      <Route path="driver-portal" element={<Layout tenantData={tenantData}><DriverPortal /></Layout>} />
+      <Route path="leaves" element={<Layout tenantData={tenantData}><LeaveDashboard /></Layout>} />
+      <Route path="leaves/apply" element={<Layout tenantData={tenantData}><ApplyLeave /></Layout>} />
+      <Route path="*" element={<Layout tenantData={tenantData}><NotFound /></Layout>} />
     </Routes>
   );
 };

@@ -15,22 +15,30 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CoffinSelectionModal from './coffinselectModal';
 
-// --- Enhanced Color Palette ---
+// Elegant Vintage Color Palette
 const Colors = {
-    primaryDark: '#1a1a2e',
-    accentTeal: '#0ea5e9',
-    accentOrange: '#f59e0b',
-    accentPurple: '#8b5cf6',
-    white: '#FFFFFF',
-    lightGray: '#f8fafc',
-    mediumGray: '#e2e8f0',
-    darkGray: '#334155',
-    successGreen: '#10b981',
-    dangerRed: '#ef4444',
-    infoBlue: '#3b82f6',
-    inputBorder: '#cbd5e1',
-    inputFocus: '#0ea5e9',
-    textMuted: '#64748b',
+    colors: {
+        ink: '#15171A',
+        bone: '#FAF8F4',
+        bone2: '#F3EFE6',
+        brass: '#8B7355',
+        brassHover: '#A98F6E',
+        verdigris: '#3D4F47',
+        verdigrisDark: '#2E3F37',
+        line: '#E3DDD0',
+        lineDark: '#2C2F33',
+        gray: '#6B6862',
+        grayLight: 'rgba(250,248,244,0.62)',
+        red: '#9B4A3F',
+        redBg: '#F7ECE9',
+        redLine: '#E8D2CC',
+        white: '#FFFFFF',
+        success: '#475A43',
+        successBg: '#EEF3EC',
+        successLine: '#DCE6D9',
+        shadow: 'rgba(21,23,26,0.12)',
+        overlay: 'rgba(21,23,26,0.88)',
+    }
 };
 
 // --- Animations ---
@@ -1101,18 +1109,6 @@ const CoffinAssignment = () => {
                 </ImageModal>
             )}
 
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
-            />
         </>
     );
 };

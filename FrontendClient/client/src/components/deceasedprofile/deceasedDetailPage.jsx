@@ -129,13 +129,13 @@ const spin = keyframes`
 const AppContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, ${Colors.lightGray} 0%, #f1f5f9 100%);
-  padding: 1.5rem 1rem;
+  padding: 0.75rem 0.5rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: ${Colors.darkGray};
   animation: ${fadeIn} 0.5s ease-out;
 
   @media (max-width: 768px) {
-    padding: 1rem 0.75rem;
+    padding: 0.5rem 0.375rem;
   }
 `;
 
@@ -145,7 +145,7 @@ const ContentGrid = styled.div`
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.25rem;
+  gap: 0.75rem;
 
   @media (min-width: 992px) {
     grid-template-columns: 65% 35%;
@@ -155,13 +155,13 @@ const ContentGrid = styled.div`
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.75rem;
 `;
 
 const SidebarContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.75rem;
 `;
 
 const HeaderCard = styled.div`
@@ -202,40 +202,36 @@ const BackButton = styled.button`
 `;
 
 const Card = styled.div`
-  background: ${Colors.cardBg};
-  padding: 1.25rem;
-  border-radius: 0.875rem;
-  box-shadow: ${Colors.cardShadow};
-  border: 1px solid ${Colors.borderColorLight};
+  background: ${Colors.white};
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid ${Colors.line};
   animation: ${fadeIn} 0.6s ease-out;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    box-shadow: ${Colors.cardShadowHover};
-    border-color: ${Colors.accentBlue}20;
-  }
-
-  @media (max-width: 768px) {
-    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border-color: ${Colors.brass};
   }
 `;
 
 const CardTitle = styled.h4`
-  font-size: 1rem;
+  font-size: 0.5625rem;
   font-weight: 700;
-  margin: 0 0 1rem 0;
-  padding-bottom: 0.625rem;
-  border-bottom: 2px solid ${Colors.accentBlue}20;
+  margin: 0 0 0.0625rem 0;
+  padding-bottom: 0.03125rem;
+  border-bottom: 1px solid ${Colors.accentBlue}05;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.15rem;
   color: ${Colors.primaryDark};
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 
   svg {
     stroke-width: 2;
-    width: 16px;
-    height: 16px;
+    width: 9px;
+    height: 9px;
     color: ${Colors.accentBlue};
   }
 `;
@@ -555,7 +551,7 @@ const NextOfKinSection = lazy(() =>
 
 // Mortuary Operations Components
 const MortuaryProgress = lazy(() =>
-  import('../user/mortuaryProgress').catch(() => ({
+  import('../modals/mortuaryProgress').catch(() => ({
     default: () => <div>Progress component not available</div>,
   }))
 );
@@ -577,22 +573,22 @@ const DocumentUpload = lazy(() =>
 
 // Modal Components
 const DeceasedInfoModal = lazy(() =>
-  import('../user/modals/deceasedinfomodal').catch(() => ({
+  import('../modals/deceasedinfomodal').catch(() => ({
     default: () => null,
   }))
 );
 const NextOfKinModal = lazy(() =>
-  import('../user/modals/nextofKinModal').catch(() => ({
+  import('../modals/nextofKinModal').catch(() => ({
     default: () => null,
   }))
 );
 const FinancialDetailsModal = lazy(() =>
-  import('../user/modals/financialdetailsmodal').catch(() => ({
+  import('../modals/financialdetailsmodal').catch(() => ({
     default: () => null,
   }))
 );
 const PaymentHistoryModal = lazy(() =>
-  import('../user/modals/paymenthistoryModals').catch(() => ({
+  import('../modals/paymenthistoryModals').catch(() => ({
     default: () => null,
   }))
 );
@@ -930,7 +926,19 @@ const DeceasedDetails = () => {
 
   return (
     <AppContainer>
-      <ToastContainer position="top-right" autoClose={2000} />
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        limit={3}
+      />
 
       {showLoader && (
         <Suspense fallback={null}>
@@ -994,9 +1002,6 @@ const DeceasedDetails = () => {
 
         <BadgesContainer>
           <BadgeRow>
-            <ClickableBadge $bgColor={Colors.brass} style={{ minWidth: '60px' }}>
-              🪦 {deceasedData?.burial_type || 'Burial'}
-            </ClickableBadge>
             {primaryBadges.map((badge, index) => (
               <ClickableBadge key={index} $bgColor={badge.color} onClick={badge.onClick}>
                 {badge.icon} {badge.text}
@@ -1016,7 +1021,6 @@ const DeceasedDetails = () => {
       <ContentGrid>
         <MainContent>
           <Card>
-            <CardTitle><Info size={14} /> Deceased Information</CardTitle>
             <Suspense fallback={<LoadingFallback />}>
               <DeceasedInfoSection
                 key={`deceased-${refreshKey}`}
@@ -1029,49 +1033,6 @@ const DeceasedDetails = () => {
           </Card>
 
           <Card>
-            <CardTitle><Users size={14} /> Next of Kin</CardTitle>
-            <div style={{
-              marginBottom: '1rem',
-              padding: '0.75rem',
-              background: Colors.chargeSettingGradient,
-              borderRadius: '0.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              color: 'white',
-              boxShadow: '0 2px 8px rgba(107, 33, 165, 0.3)'
-            }}
-              onClick={openChargeSettingsModal}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 33, 165, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(107, 33, 165, 0.3)';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Settings size={16} />
-                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Configure Charges</span>
-              </div>
-              <span style={{ fontSize: '0.75rem', opacity: 0.9 }}>Click to open</span>
-            </div>
-            <Suspense fallback={<LoadingFallback />}>
-              <NextOfKinSection
-                key={`nextofkin-${refreshKey}`}
-                deceasedId={currentDeceasedId}
-                nextOfKin={deceasedData?.next_of_kin}
-                onUpdate={fetchDeceasedData}
-              />
-            </Suspense>
-          </Card>
-
-          {/* Scanner Section - NEW */}
-          <Card>
-            <CardTitle><Printer size={14} /> Document Scanner</CardTitle>
             <Suspense fallback={<LoadingFallback />}>
               <ScannerComponent
                 key={`scanner-${refreshKey}`}
@@ -1084,7 +1045,6 @@ const DeceasedDetails = () => {
           </Card>
 
           <Card>
-            <CardTitle><FileText size={14} /> Documents</CardTitle>
             <Suspense fallback={<LoadingFallback />}>
               <DocumentUpload
                 key={`documents-${refreshKey}`}
@@ -1098,7 +1058,6 @@ const DeceasedDetails = () => {
 
         <SidebarContent>
           <Card>
-            <CardTitle><Activity size={14} /> Progress</CardTitle>
             <Suspense fallback={<LoadingFallback />}>
               <MortuaryProgress
                 key={`progress-${refreshKey}`}
@@ -1110,7 +1069,17 @@ const DeceasedDetails = () => {
           </Card>
 
           <Card>
-            <CardTitle><Box size={14} /> Coffin Assignment</CardTitle>
+            <Suspense fallback={<LoadingFallback />}>
+              <NextOfKinSection
+                key={`nextofkin-${refreshKey}`}
+                deceasedId={currentDeceasedId}
+                nextOfKin={deceasedData?.next_of_kin}
+                onUpdate={fetchDeceasedData}
+              />
+            </Suspense>
+          </Card>
+
+          <Card>
             <Suspense fallback={<LoadingFallback />}>
               <CoffinAssignment
                 key={`coffin-${refreshKey}`}
@@ -1123,7 +1092,6 @@ const DeceasedDetails = () => {
           </Card>
 
           <Card>
-            <CardTitle><Truck size={14} /> Dispatch</CardTitle>
             <Suspense fallback={<LoadingFallback />}>
               <ErrorBoundary fallback={<div>Failed to load Dispatch component</div>}>
                 <DispatchSection

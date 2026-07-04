@@ -372,7 +372,13 @@ export default function OnboardingFlow() {
     location: '',
     password: '',
     verifyPassword: '',
+    branchName: '',
+    deploymentType: 'multi', // 'single' or 'multi'
   });
+
+  const [branches, setBranches] = useState([
+    { name: '', location: '' }
+  ]);
 
   const [errors, setErrors] = useState({});
 
@@ -449,6 +455,7 @@ export default function OnboardingFlow() {
     if (!formData.email.trim()) newErrors.email = 'Email required';
     else if (!validateEmail(formData.email)) newErrors.email = 'Valid email required';
     if (!formData.location.trim()) newErrors.location = 'Location required';
+    if (!formData.branchName.trim()) newErrors.branchName = 'Primary branch name required';
     if (!logoFile && !logoPreview) newErrors.logo = 'Logo required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -507,8 +514,17 @@ export default function OnboardingFlow() {
       submitData.append('email', formData.email);
       submitData.append('location', formData.location);
       submitData.append('password', formData.password);
+      submitData.append('deploymentType', formData.deploymentType);
       submitData.append('termsAccepted', agreeTerms);
       if (logoFile) submitData.append('logo', logoFile);
+
+      // For multi-tenant, send all branches
+      if (formData.deploymentType === 'multi') {
+        submitData.append('branches', JSON.stringify(branches.filter(b => b.name.trim())));
+      } else {
+        // For single tenant, send single branch
+        submitData.append('branchName', formData.branchName);
+      }
 
       // Join tenant room for progress updates (use slug from organization name)
       const tenantSlug = formData.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -744,6 +760,63 @@ export default function OnboardingFlow() {
                       <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g., Nairobi, Kenya" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.location ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
                       {errors.location && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.location}</span>}
                     </div>
+
+                    <div style={{ marginBottom: THEME.spacing.lg, padding: THEME.spacing.lg, background: THEME.colors.bone2, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
+                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm, fontWeight: 600 }}>
+                        Deployment Type <span style={{ color: THEME.colors.red }}>*</span>
+                      </label>
+                      <div style={{ display: 'flex', gap: THEME.spacing.md, marginTop: THEME.spacing.sm }}>
+                        <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: THEME.spacing.sm, padding: THEME.spacing.md, background: THEME.colors.white, border: `2px solid ${formData.deploymentType === 'single' ? THEME.colors.brass : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, cursor: 'pointer', transition: 'all 0.2s' }}>
+                          <input type="radio" name="deploymentType" value="single" checked={formData.deploymentType === 'single'} onChange={handleChange} style={{ accentColor: THEME.colors.brass }} />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: THEME.colors.ink }}>Single Tenant</div>
+                            <div style={{ fontSize: '0.72rem', color: THEME.colors.gray, marginTop: '0.15rem' }}>One location, simple setup</div>
+                          </div>
+                        </label>
+                        <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: THEME.spacing.sm, padding: THEME.spacing.md, background: THEME.colors.white, border: `2px solid ${formData.deploymentType === 'multi' ? THEME.colors.brass : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, cursor: 'pointer', transition: 'all 0.2s' }}>
+                          <input type="radio" name="deploymentType" value="multi" checked={formData.deploymentType === 'multi'} onChange={handleChange} style={{ accentColor: THEME.colors.brass }} />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: THEME.colors.ink }}>Multi Tenant</div>
+                            <div style={{ fontSize: '0.72rem', color: THEME.colors.gray, marginTop: '0.15rem' }}>Multiple branches, each with own database</div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {formData.deploymentType === 'multi' ? (
+                      <div style={{ marginBottom: THEME.spacing.lg, padding: THEME.spacing.lg, background: THEME.colors.bone2, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.spacing.md }}>
+                          <label style={{ fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, fontWeight: 600 }}>
+                            Branches <span style={{ color: THEME.colors.red }}>*</span>
+                          </label>
+                          <button type="button" onClick={() => setBranches([...branches, { name: '', location: '' }])} style={{ padding: '0.4rem 0.8rem', background: THEME.colors.brass, color: THEME.colors.white, border: 'none', borderRadius: THEME.borderRadius.sm, fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' }}>
+                            + Add Branch
+                          </button>
+                        </div>
+                        {branches.map((branch, index) => (
+                          <div key={index} style={{ marginBottom: THEME.spacing.md, padding: THEME.spacing.md, background: THEME.colors.white, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.spacing.sm }}>
+                              <span style={{ fontWeight: 600, fontSize: '0.82rem', color: THEME.colors.ink }}>Branch {index + 1}</span>
+                              {branches.length > 1 && (
+                                <button type="button" onClick={() => setBranches(branches.filter((_, i) => i !== index))} style={{ background: 'none', border: 'none', color: THEME.colors.red, cursor: 'pointer', fontSize: '0.75rem' }}>
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                            <input type="text" placeholder="Branch name" value={branch.name} onChange={(e) => { const newBranches = [...branches]; newBranches[index].name = e.target.value; setBranches(newBranches); }} style={{ width: '100%', padding: THEME.spacing.sm, marginBottom: THEME.spacing.sm, border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.sm, fontSize: '0.85rem' }} />
+                            <input type="text" placeholder="Branch location" value={branch.location} onChange={(e) => { const newBranches = [...branches]; newBranches[index].location = e.target.value; setBranches(newBranches); }} style={{ width: '100%', padding: THEME.spacing.sm, border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.sm, fontSize: '0.85rem' }} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: THEME.spacing.lg }}>
+                        <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
+                          Branch Name <span style={{ color: THEME.colors.red }}>*</span>
+                        </label>
+                        <input type="text" name="branchName" value={formData.branchName} onChange={handleChange} placeholder="e.g., Main Branch" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.branchName ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
+                        {errors.branchName && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.branchName}</span>}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -776,6 +849,7 @@ export default function OnboardingFlow() {
                       <ReviewItem label="Organization" value={formData.organizationName} />
                       <ReviewItem label="Email Contact" value={formData.email} />
                       <ReviewItem label="Location" value={formData.location} />
+                      <ReviewItem label="Primary Branch" value={formData.branchName} />
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: THEME.spacing.xl }}>

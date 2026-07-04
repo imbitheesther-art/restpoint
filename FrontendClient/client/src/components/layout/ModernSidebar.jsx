@@ -405,40 +405,31 @@ const ModernSidebar = ({
     {
       section: 'Main',
       items: [
-        { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/dashboard` },
-        { icon: Users, label: 'Deceased', path: `/tenant/${tenantSlug}/deceased` },
-        { icon: FileText, label: 'Invoices', path: `/tenant/${tenantSlug}/invoices`, badge: '3' },
-        { icon: Calendar, label: 'Calendar', path: `/tenant/${tenantSlug}/calendar` },
-      ]
-    },
-    {
-      section: 'Inventory',
-      items: [
-        { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins` },
-        { icon: Beaker, label: 'Chemicals', path: `/tenant/${tenantSlug}/chemicals` },
-        { icon: ShoppingCart, label: 'Marketplace', path: `/tenant/${tenantSlug}/marketplace` },
         { icon: Truck, label: 'Hearse', path: `/tenant/${tenantSlug}/hearse` },
+        { icon: Users, label: 'Deceased', path: `/tenant/${tenantSlug}/deceased` },
+        { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins` },
+
+        { icon: Beaker, label: 'Chemicals', path: `/tenant/${tenantSlug}/chemicals` },
+
         { icon: Hammer, label: 'Workshop', path: `/tenant/${tenantSlug}/workshop` },
+
       ]
     },
-    {
-      section: 'Documents',
-      items: [
-        { icon: FolderOpen, label: 'Documents', path: `/tenant/${tenantSlug}/documents` },
-        { icon: FileBarChart, label: 'E-Documents', path: `/tenant/${tenantSlug}/edocuments` },
-      ]
-    },
+
+
     {
       section: 'Analytics',
       items: [
-        { icon: Activity, label: 'Analytics', path: `/tenant/${tenantSlug}/analytics` },
-        { icon: BarChart3, label: 'Reports', path: `/tenant/${tenantSlug}/reports` },
+
+        { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/dashboard` },
+        { icon: Activity, label: 'Insurance', path: `/tenant/${tenantSlug}/insurance` },
       ]
     },
     {
-      section: 'System',
+      section: 'Extra',
       items: [
         { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings` },
+        { icon: Calendar, label: 'Leave', path: `/tenant/${tenantSlug}/leaves` },
       ]
     }
   ];

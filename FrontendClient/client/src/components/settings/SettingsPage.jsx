@@ -10,7 +10,7 @@ import {
 import { paymentApi } from '../../api/paymentApi';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
-import UserManagement from '../user/users';
+import UserManagement from '../modals/users';
 
 const Colors = {
   primary: '#3b82f6', success: '#22c55e', danger: '#ef4444',

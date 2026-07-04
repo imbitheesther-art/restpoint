@@ -109,7 +109,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
       INSERT INTO hearse_bookings
       (booking_code, hearse_id, client_name, client_phone, client_email, destination,
        booking_date, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'booked', ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?)
     `;
         const insertParams = [
             booking_code,

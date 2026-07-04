@@ -215,6 +215,15 @@ const ApplyLeave = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const getUserId = () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            return user.id || user.userId || 1;
+        } catch {
+            return 1;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -224,7 +233,7 @@ const ApplyLeave = () => {
         try {
             const submitData = {
                 ...formData,
-                user_id: 1 // TODO: Get from auth context
+                user_id: getUserId()
             };
 
             const response = await api.post(ENDPOINTS.LEAVE.APPLY, submitData);
