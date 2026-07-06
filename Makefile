@@ -17,8 +17,8 @@ CYAN := \033[0;36m
 NC := \033[0m # No Color
 
 # Environment
-COMPOSE := docker-compose
-COMPOSE_PROD := docker-compose -f docker-compose.prod.yml
+COMPOSE := docker compose
+COMPOSE_PROD := docker compose -f docker-compose.prod.yml
 
 # Default target
 .DEFAULT_GOAL := help

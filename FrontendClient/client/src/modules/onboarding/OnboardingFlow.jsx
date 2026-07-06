@@ -455,11 +455,23 @@ export default function OnboardingFlow() {
     if (!formData.email.trim()) newErrors.email = 'Email required';
     else if (!validateEmail(formData.email)) newErrors.email = 'Valid email required';
     if (!formData.location.trim()) newErrors.location = 'Location required';
-    if (!formData.branchName.trim()) newErrors.branchName = 'Primary branch name required';
+
+    // Validate branches based on deployment type
+    if (formData.deploymentType === 'multi') {
+      // For multi-tenant, validate that at least one branch has a name
+      const validBranches = branches.filter(b => b.name.trim());
+      if (validBranches.length === 0) {
+        newErrors.branches = 'At least one branch with a name is required';
+      }
+    } else {
+      // For single tenant, validate branchName
+      if (!formData.branchName.trim()) newErrors.branchName = 'Primary branch name required';
+    }
+
     if (!logoFile && !logoPreview) newErrors.logo = 'Logo required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, logoFile, logoPreview]);
+  }, [formData, logoFile, logoPreview, branches]);
 
   const validateStep2 = useCallback(() => {
     const newErrors = {};
@@ -793,6 +805,7 @@ export default function OnboardingFlow() {
                             + Add Branch
                           </button>
                         </div>
+                        {errors.branches && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginBottom: THEME.spacing.sm }}>{errors.branches}</span>}
                         {branches.map((branch, index) => (
                           <div key={index} style={{ marginBottom: THEME.spacing.md, padding: THEME.spacing.md, background: THEME.colors.white, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.spacing.sm }}>
