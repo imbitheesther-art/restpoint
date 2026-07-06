@@ -625,7 +625,7 @@ export default function InsurancePage() {
                     <div className="label" style={{ marginBottom: '0.5rem' }}>Complete insurance platform</div>
                     <h2 style={{ marginBottom: '1rem' }}>Everything you need to offer funeral insurance</h2>
                     <p style={{ maxWidth: '600px', color: C.gray, fontSize: '1.05rem', marginBottom: '1rem' }}>
-                        From policy creation to contribution tracking to claims management — all in one system.
+                        From policy creation to contribution tracking to claims management  all in one system.
                     </p>
 
                     <div className="features-grid">
@@ -680,7 +680,7 @@ export default function InsurancePage() {
             <section className="section">
                 <div className="wrap">
                     <div className="label" style={{ marginBottom: '0.5rem' }}>Integration timeline</div>
-                    <h2 style={{ marginBottom: '1rem' }}>Full integration in 1-2 months</h2>
+                    <h2 style={{ marginBottom: '1rem' }}>Full integration in 1 - 2 months</h2>
                     <p style={{ maxWidth: '600px', color: C.gray, fontSize: '1.05rem', marginBottom: '2rem' }}>
                         We work with you to connect to your existing insurance partners and get your insurance system up and running.
                     </p>
@@ -727,8 +727,8 @@ export default function InsurancePage() {
                     <div className="cta-content">
                         <h2>Ready to offer funeral insurance through your funeral home?</h2>
                         <p>
-                            Rest Point Insurance System lets you become a full-service funeral provider. Sell policies, track contributions,
-                            manage claims, and earn commission — all from one platform. Integration takes 1-2 months.
+                            Rest Point Insurance System lets you become a full service funeral provider. Sell policies, track contributions,
+                            manage claims, and earn commission  all from one platform. Integration takes 1-2 months.
                         </p>
                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                             <button className="btn btn-brass" onClick={goStart}>
@@ -749,7 +749,7 @@ export default function InsurancePage() {
                         <div>
                             <div className="footer-brand">Rest Point</div>
                             <p className="footer-desc">
-                                The operating system for mortuaries and funeral homes across East Africa. Case files, billing, dispatch, insurance, and family care — all in one system.
+                                The operating system for mortuaries and funeral homes across East Africa. Case files, billing, dispatch, insurance, and family care  all in one system.
                             </p>
                         </div>
 
@@ -777,7 +777,7 @@ export default function InsurancePage() {
                                 </div>
                                 <div className="footer-contact-item">
                                     <Phone size={16} />
-                                    <a href="tel:+254712345678">+254 712 345 678</a>
+                                    <a href="tel:+254712345678">+254 740 045 355</a>
                                 </div>
                                 <div className="footer-contact-item">
                                     <MapPin size={16} />

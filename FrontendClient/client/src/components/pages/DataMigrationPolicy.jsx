@@ -210,7 +210,7 @@ export default function DataMigrationPolicy() {
               Data migration is a specialized service that combines automation with careful manual verification. While many parts of the migration process are automated, every migration also requires human review to ensure information is transferred accurately.
             </p>
             <p>
-              This process is intentionally thorough because every funeral home stores information differently, and no two datasets are exactly alike. Our objective is accuracy—not speed at the expense of your records.
+              This process is intentionally thorough because every funeral home stores information differently, and no two datasets are exactly alike. Our objective is accuracy not speed at the expense of your records.
             </p>
           </Reveal>
 
@@ -321,7 +321,7 @@ export default function DataMigrationPolicy() {
               After migration is complete, your submitted migration files are retained securely for <strong>30 days</strong> to allow post-migration verification and the resolution of any migration-related queries.
             </p>
             <p>
-              After the 30-day verification window closes, raw configuration materials, portal pipelines, secure archives, and working data structures are permanently scrubbed from our systems to reduce long-term compliance overhead.
+              After the 30-day verification window closes, raw configuration materials, portal pipelines, secure archives, and working data structures are permanently scrubbed from our systems to reduce long term compliance overhead.
             </p>
           </Reveal>
 

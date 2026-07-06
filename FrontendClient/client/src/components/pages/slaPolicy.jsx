@@ -318,7 +318,7 @@ export default function SLAPolicy() {
             <div className="section">
               <h2>Our Commitment</h2>
               <p>
-                When an organization chooses RestPoint, they are doing far more than purchasing software—they are
+                When an organization chooses RestPoint, they are doing far more than purchasing software they are
                 entrusting us with one of the most critical parts of their daily operations.
               </p>
               <p>
@@ -350,7 +350,7 @@ export default function SLAPolicy() {
                 maintenance—meaning your operations continue without interruption during software updates.
               </p>
               <p>
-                When you trust RestPoint, you gain more than a software provider—you gain a technology partner
+                When you trust RestPoint, you gain more than a software provider you gain a technology partner
                 that understands the importance of every operation, every record, and every family you serve.
               </p>
             </div>
@@ -366,7 +366,7 @@ export default function SLAPolicy() {
                   <div>
                     <strong>99.9% Target Monthly Uptime</strong>
                     <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
-                      Industry-leading reliability target for mission-critical access.
+                      Industry-leading reliability target for mission critical access.
                     </p>
                   </div>
                 </div>
@@ -493,7 +493,7 @@ export default function SLAPolicy() {
                 At RestPoint, reliability is not a feature—it is a responsibility.
               </p>
               <p>
-                We understand that when our system is unavailable, your work does not simply slow down—it can
+                We understand that when our system is unavailable, your work does not simply slow down it can
                 affect the smooth operation of your entire organization. That is why we invest in resilient
                 infrastructure, proactive monitoring, rapid incident response, and continuous improvements to
                 deliver the dependable service you expect.

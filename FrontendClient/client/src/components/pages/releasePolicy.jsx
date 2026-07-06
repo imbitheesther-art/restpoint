@@ -203,10 +203,10 @@ export default function ReleasePolicy() {
             <h2>What We Release</h2>
             <p>To keep RestPoint operating at peak performance, engineering artifacts are structured across four core classifications:</p>
             <ul>
-              <li><strong>Security Updates</strong> – Protocols and hotfixes deployed to continuously safeguard your platform and sensitive records.</li>
-              <li><strong>Bug Fixes</strong> – targeted structural resolutions designed to eliminate technical friction and enhance platform reliability.</li>
-              <li><strong>Feature Releases</strong> – New functional pipelines, workflows, and tools developed directly from partner funeral home feedback.</li>
-              <li><strong>Maintenance Updates</strong> – Code optimizations, underlying infrastructure scalability tweaks, and engine tuning.</li>
+              <li><strong>Security Updates</strong>  Protocols and hotfixes deployed to continuously safeguard your platform and sensitive records.</li>
+              <li><strong>Bug Fixes</strong>  targeted structural resolutions designed to eliminate technical friction and enhance platform reliability.</li>
+              <li><strong>Feature Releases</strong>  New functional pipelines, workflows, and tools developed directly from partner funeral home feedback.</li>
+              <li><strong>Maintenance Updates</strong> Code optimizations, underlying infrastructure scalability tweaks, and engine tuning.</li>
             </ul>
           </Reveal>
 
