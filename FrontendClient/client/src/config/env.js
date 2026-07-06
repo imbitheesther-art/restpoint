@@ -12,8 +12,10 @@ const env = {
   // API Gateway base path for all microservices
   API_GATEWAY_URL: import.meta.env.VITE_API_GATEWAY_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000'),
 
-  // Base path for all RestPoint API endpoints (CLEAN ROUTES - NO PREFIX)
-  API_BASE_PATH: '',
+  // Base path for all RestPoint API endpoints
+  // In development: /api/v1/restpoint (matches API Gateway route)
+  // In production: empty string (nginx rewrites /api to /api/v1/restpoint)
+  API_BASE_PATH: import.meta.env.PROD ? '' : '/api/v1/restpoint',
 
   // Full API base URL (gateway + base path)
   get FULL_API_URL() {

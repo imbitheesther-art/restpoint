@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ENDPOINTS } from '../../api/endpoints';
+import env from '../../config/env';
 import {
   UserPlus,
   Check,
@@ -245,7 +246,7 @@ const DeceasedRegistrationForm = () => {
         date_admitted: formData.date_admitted,
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${ENDPOINTS.DECEASED.CREATE}`, {
+      const response = await fetch(`${env.FULL_API_URL}${ENDPOINTS.DECEASED.CREATE}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -29,14 +29,14 @@ export const getTenantHeaders = () => {
 // All service endpoint definitions
 export const ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    REFRESH: '/auth/refresh',
-    LOGOUT: '/auth/logout',
-    ME: '/auth/me',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    VERIFY_CODE: '/auth/verify-code',
-    RESET_PASSWORD: '/auth/reset-password',
+    LOGIN: '/login',
+    REGISTER: '/register',
+    REFRESH: '/refresh',
+    LOGOUT: '/logout',
+    ME: '/me',
+    FORGOT_PASSWORD: '/forgot-password',
+    VERIFY_CODE: '/verify-code',
+    RESET_PASSWORD: '/reset-password',
   },
   TENANT: {
     BASE: '/tenant',

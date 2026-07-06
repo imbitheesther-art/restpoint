@@ -4,7 +4,8 @@ import { useSocket } from '../../context/socketContext';
 import { RefreshCw, User, Car, CheckCircle, XCircle, Truck, Phone, MapPin } from 'lucide-react';
 import env from '../../config/env';
 
-const API_BASE_URL = `${env.HEARSE_API_URL}`;
+// Use the main API gateway URL for consistency (includes /api/v1/restpoint in dev)
+const API_BASE_URL = `${env.FULL_API_URL}`;
 
 const getTenantSlug = () => {
     return localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';

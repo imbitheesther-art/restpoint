@@ -7,9 +7,9 @@ const supportRoutes = require('./routes/supportRoutes');
 const app = express();
 const PORT = process.env.PORT || 8111;
 
-// Middleware
+// Middleware - Allow all origins for development
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: true, // Allow all origins
     credentials: true,
 }));
 app.use(helmet());

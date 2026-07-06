@@ -43,7 +43,7 @@ const DeceasedDetails = lazy(() => import('../components/deceasedprofile/decease
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
 
-const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
+const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
 const UserManagement = lazy(() => import('../components/modals/users'));
 const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemorialPage'));
@@ -195,39 +195,158 @@ const TenantResolver = () => {
   return <TenantDashboardRoutes tenantData={tenantData || {}} />;
 };
 
+// Role-based access control helper
+const RoleBasedRoute = ({ children, allowedRoles, userRole }) => {
+  if (!allowedRoles.includes(userRole)) {
+    return <Navigate to="/tenant/default/dashboard" replace />;
+  }
+  return children;
+};
+
 const TenantDashboardRoutes = ({ tenantData }) => {
   const { slug } = useParams();
-  const isSingleTenant = tenantData?.deploymentType === 'single';
+  // Multi-tenant if deploymentType is 'multi' OR if there are multiple branches
+  const isMultiTenant = tenantData?.deploymentType === 'multi' || (tenantData?.branches?.length > 1);
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const userRole = user?.role || 'user';
 
-  const Layout = isSingleTenant ? SingleTenantLayout : DashboardLayout;
+  const Layout = isMultiTenant ? DashboardLayout : SingleTenantLayout;
 
   return (
     <Routes>
       <Route path="/" element={<Navigate to="all-deceased" replace />} />
-      <Route path="/dashboard" element={<Layout tenantData={tenantData}><DashboardPage /></Layout>} />
-      <Route path="all-deceased" element={<Layout tenantData={tenantData}><AllDeceasedPage /></Layout>} />
-      <Route path="deceased" element={<Layout tenantData={tenantData}><AllDeceasedPage /></Layout>} />
-      <Route path="deceased/register" element={<Layout tenantData={tenantData}><DeceasedRegistrationForm /></Layout>} />
-      <Route path="deceased/:id" element={<Layout tenantData={tenantData}><DeceasedDetails /></Layout>} />
-      <Route path="deceased-details/:id" element={<Layout tenantData={tenantData}><DeceasedDetails /></Layout>} />
-      <Route path="coffins" element={<Layout tenantData={tenantData}><CoffinInventory /></Layout>} />
-      <Route path="coffins/register" element={<Layout tenantData={tenantData}><RegisterCoffin /></Layout>} />
-      <Route path="coffins/:coffinId/details" element={<Layout tenantData={tenantData}><CoffinDetails /></Layout>} />
-      <Route path="documents" element={<Layout tenantData={tenantData}><DocumentsPage /></Layout>} />
-      <Route path="invoices" element={<Layout tenantData={tenantData}><InvoiceManager /></Layout>} />
-      <Route path="chemicals" element={<Layout tenantData={tenantData}><ChemicalManagementDashboard /></Layout>} />
-      <Route path="workshop" element={<Layout tenantData={tenantData}><WorkshopDashboard /></Layout>} />
 
-      <Route path="settings" element={<Layout tenantData={tenantData}><SettingsPage /></Layout>} />
-      <Route path="release-form/:id" element={<Layout tenantData={tenantData}><ReleaseFormPage /></Layout>} />
+      {/* Analytics - Available to all authenticated users */}
+      <Route path="analytics" element={<Layout tenantData={tenantData}><DashboardPage /></Layout>} />
+
+      {/* Deceased Management - Available to admin, manager, staff, user */}
+      <Route path="all-deceased" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><AllDeceasedPage /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="deceased" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><AllDeceasedPage /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="deceased/register" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><DeceasedRegistrationForm /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="deceased/:id" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><DeceasedDetails /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="deceased-details/:id" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><DeceasedDetails /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Coffins - Available to admin, manager, staff */}
+      <Route path="coffins" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><CoffinInventory /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="coffins/register" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><RegisterCoffin /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="coffins/:coffinId/details" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><CoffinDetails /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Documents - Available to admin, manager, staff, user */}
+      <Route path="documents" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><DocumentsPage /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Invoices - Available to admin, manager, staff */}
+      <Route path="invoices" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><InvoiceManager /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Chemicals - Available to admin, manager, staff */}
+      <Route path="chemicals" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><ChemicalManagementDashboard /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Workshop - Available to admin, manager, staff */}
+      <Route path="workshop" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><WorkshopDashboard /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Settings - Available to admin and manager only */}
+      <Route path="settings" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager']} userRole={userRole}>
+          <Layout tenantData={tenantData}><SettingsPage /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Release Form - Available to admin, manager, staff */}
+      <Route path="release-form/:id" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><ReleaseFormPage /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Memorial - Public access */}
       <Route path="memorial/:deceasedId" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
       <Route path="memorial/:deceasedId/:token" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
-      <Route path="users" element={<Layout tenantData={tenantData}><UserManagement /></Layout>} />
-      <Route path="hearse" element={<Layout tenantData={tenantData}><HearseBookings /></Layout>} />
-      <Route path="driver-portal" element={<Layout tenantData={tenantData}><DriverPortal /></Layout>} />
-      <Route path="leaves" element={<Layout tenantData={tenantData}><LeaveDashboard /></Layout>} />
-      <Route path="leaves/apply" element={<Layout tenantData={tenantData}><ApplyLeave /></Layout>} />
+
+      {/* User Management - Available to admin and manager only */}
+      <Route path="users" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager']} userRole={userRole}>
+          <Layout tenantData={tenantData}><UserManagement /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Hearse - Available to admin, manager, staff */}
+      <Route path="hearse" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><HearseBookings /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Driver Portal - Only for drivers */}
+      <Route path="driver-portal" element={
+        <RoleBasedRoute allowedRoles={['driver']} userRole={userRole}>
+          <Layout tenantData={tenantData}><DriverPortal /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Leave Management - Available to all except drivers */}
+      <Route path="leaves" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><LeaveDashboard /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="leaves/apply" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><ApplyLeave /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Support - Available to all */}
       <Route path="support" element={<Layout tenantData={tenantData}><TicketPage /></Layout>} />
+
+      {/* 404 */}
       <Route path="*" element={<Layout tenantData={tenantData}><NotFound /></Layout>} />
     </Routes>
   );

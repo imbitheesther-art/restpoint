@@ -89,10 +89,24 @@ app.use(async (req: any, res: any, next: any) => {
                     if (branches.length > 0) {
                         req.branchId = branches[0].branch_id.toString();
                         console.log(`[WORKSHOP] Branch resolved: ${req.branchId}`);
+                    } else {
+                        console.log(`[WORKSHOP] No branch found for "${branchPart}", using single-tenant mode (no branch filter)`);
                     }
                 } catch (e) {
                     console.log('[WORKSHOP] Branch resolution skipped:', (e as Error).message);
                 }
+            } else {
+                console.log(`[WORKSHOP] Single-tenant mode detected (no dash in slug), using main DB without branch filter`);
+            }
+        }
+
+        // Ensure workshop tables exist in tenant database
+        if (tenantStatus.tenant?.db_name) {
+            try {
+                await ensureWorkshopTables(tenantStatus.tenant.db_name);
+            } catch (tableError: any) {
+                console.error(`[WORKSHOP] Warning: Could not ensure tables in ${tenantStatus.tenant.db_name}:`, tableError.message);
+                // Don't fail the request, tables might already exist
             }
         }
     } catch (err: any) {
@@ -309,23 +323,32 @@ async function ensureWorkshopTables(dbName: string) {
         const pool = await getTenantDB(dbName);
         connection = await pool.getConnection();
 
-        console.log(`[WORKSHOP] Creating workshop tables in: ${dbName}`);
+        console.log(`[WORKSHOP] Ensuring workshop tables in: ${dbName}`);
 
         const statements = WORKSHOP_TABLES_SQL
             .split(';')
             .map(s => s.trim())
-            .filter(s => s.length > 0 && s.toUpperCase().startsWith('CREATE'));
+            .filter(s => s.length > 0);
 
-        console.log(`[WORKSHOP] Found ${statements.length} CREATE statements to execute`);
+        console.log(`[WORKSHOP] Found ${statements.length} SQL statements to execute`);
 
         for (let i = 0; i < statements.length; i++) {
             const statement = statements[i];
+            if (!statement) continue;
+
             try {
                 await connection.query(statement + ';');
-                console.log(`[WORKSHOP] ✓ Created table (${i + 1}/${statements.length})`);
+                const match = statement.match(/(?:TABLE|COLUMN)\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/i);
+                const objectName = match ? match[1] : 'unknown';
+                console.log(`[WORKSHOP] ✓ ${objectName} (${i + 1}/${statements.length})`);
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : String(err);
-                console.warn(`[WORKSHOP] Table creation warning (${i + 1}/${statements.length}): ${errorMessage}`);
+                // Ignore "duplicate key" and "already exists" errors
+                if (errorMessage.includes('Duplicate') || errorMessage.includes('already exists')) {
+                    console.log(`[WORKSHOP] - ${errorMessage.split('.')[0]} (already exists)`);
+                } else {
+                    console.warn(`[WORKSHOP] Warning (${i + 1}/${statements.length}): ${errorMessage}`);
+                }
             }
         }
 

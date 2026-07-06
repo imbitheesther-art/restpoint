@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const axios = require('axios');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -6,11 +7,11 @@ dotenv.config();
 (async () => {
     try {
         const conn = await mysql.createConnection({
-            host: process.env.DB_HOST,
+            host: process.env.DB_HOST || '127.0.0.1',
             port: process.env.DB_PORT || 3306,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
+            user: process.env.DB_USER || 'restpoint_user',
+            password: process.env.DB_PASSWORD || 'RestPointUser2024!',
+            database: process.env.DB_NAME || 'support_db',
         });
         await conn.query(`
             CREATE TABLE IF NOT EXISTS support_tickets (
@@ -51,11 +52,11 @@ dotenv.config();
 })();
 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    user: process.env.DB_USER || 'restpoint_user',
+    password: process.env.DB_PASSWORD || 'RestPointUser2024!',
+    database: process.env.DB_NAME || 'support_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,

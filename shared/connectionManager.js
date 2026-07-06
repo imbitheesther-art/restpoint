@@ -106,16 +106,10 @@ class ConnectionManager {
         this.config = { ...DEFAULT_CONFIG, ...config };
         this.poolCache = new Map();
         this.lruOrder = [];
-        console.log(`[ConnectionManager] 🔐 Initialized singleton. Config:
-      ├─ Max connections per tenant: ${this.config.maxConnectionsPerTenant}
-      ├─ Max queue per tenant:       ${this.config.maxQueuePerTenant}
-      ├─ Queue timeout:              ${this.config.queueTimeoutMs}ms
-      ├─ Idle eviction timeout:      ${this.config.idleTimeoutMinutes}min
-      ├─ Eviction check interval:    ${this.config.evictionCheckIntervalMs}ms
-      └─ Connection timeout:         ${this.config.connectionTimeoutMs}ms`);
-        // Start the eviction timer immediately
+
+
         this.startEvictionTimer();
-        // Register shutdown handlers for graceful cleanup
+
         this.registerShutdownHandlers();
     }
     // ────────────────────────────────────────────────────────────────────────────
@@ -134,10 +128,10 @@ class ConnectionManager {
     static getInstance(config) {
         if (!ConnectionManager.instance) {
             ConnectionManager.instance = new ConnectionManager(config);
-            console.log('[ConnectionManager] 🆕 Singleton instance created');
+
         }
         else if (config) {
-            console.warn('[ConnectionManager] ⚠️ Instance already exists; config ignored');
+
         }
         return ConnectionManager.instance;
     }
@@ -152,7 +146,7 @@ class ConnectionManager {
         if (ConnectionManager.instance) {
             await ConnectionManager.instance.shutdown();
             ConnectionManager.instance = null;
-            console.log('[ConnectionManager] 🔄 Singleton instance reset');
+
         }
     }
     // ────────────────────────────────────────────────────────────────────────────
@@ -181,10 +175,10 @@ class ConnectionManager {
      */
     async query(tenantDbName, sql, params = []) {
         if (this.isShuttingDown) {
-            throw new Error('[ConnectionManager] 🔴 System is shutting down; rejecting query');
+            throw new Error('[ConnectionManager]  System is shutting down; rejecting query');
         }
         if (!tenantDbName || typeof tenantDbName !== 'string') {
-            throw new Error(`[ConnectionManager] ❌ Invalid tenantDbName: ${tenantDbName}`);
+            throw new Error(`[ConnectionManager]  Invalid tenantDbName: ${tenantDbName}`);
         }
         let connection = null;
         const queryStartTime = Date.now();
@@ -212,14 +206,14 @@ class ConnectionManager {
             // Log the error with context but DO NOT re-throw the original error
             // Wrap it in a safe, descriptive error to prevent sensitive data leakage
             const errorMessage = error.code === 'ER_CON_COUNT_ERROR'
-                ? `[ConnectionManager] 🔴 Too many connections for "${tenantDbName}". Pool exhausted (max: ${this.config.maxConnectionsPerTenant}). Try again later.`
+                ? `[ConnectionManager]  Too many connections for "${tenantDbName}". Pool exhausted (max: ${this.config.maxConnectionsPerTenant}). Try again later.`
                 : error.code === 'ECONNREFUSED'
-                    ? `[ConnectionManager] 🔴 Connection refused for "${tenantDbName}". Database server may be down.`
+                    ? `[ConnectionManager]  Connection refused for "${tenantDbName}". Database server may be down.`
                     : error.code === 'PROTOCOL_CONNECTION_LOST'
-                        ? `[ConnectionManager] 🔴 Connection lost for "${tenantDbName}". Dead connection pruned and recreated.`
+                        ? `[ConnectionManager]  Connection lost for "${tenantDbName}". Dead connection pruned and recreated.`
                         : error.code === 'ETIMEDOUT'
-                            ? `[ConnectionManager] 🔴 Connection timed out for "${tenantDbName}".`
-                            : `[ConnectionManager] ❌ Query error on "${tenantDbName}": ${error.message}`;
+                            ? `[ConnectionManager]  Connection timed out for "${tenantDbName}".`
+                            : `[ConnectionManager]  Query error on "${tenantDbName}": ${error.message}`;
             console.error(errorMessage, {
                 sql: sql.substring(0, 200),
                 paramsCount: params.length,
@@ -248,7 +242,7 @@ class ConnectionManager {
                 catch (releaseError) {
                     // If release fails (e.g., connection already destroyed), log it
                     // but do NOT throw — we must not crash the request at this point
-                    console.error(`[ConnectionManager] ⚠️ Error releasing connection for "${tenantDbName}": ${releaseError.message}`);
+                    console.error(`[ConnectionManager]  Error releasing connection for "${tenantDbName}": ${releaseError.message}`);
                 }
             }
         }

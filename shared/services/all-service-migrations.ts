@@ -54,13 +54,16 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
         full_name VARCHAR(255) NOT NULL,
         phone VARCHAR(20),
         role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'user',
+        branch_id INT NULL,
         is_active BOOLEAN DEFAULT TRUE,
         is_verified BOOLEAN DEFAULT FALSE,
         last_login_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email),
-        INDEX idx_role (role)
+        INDEX idx_role (role),
+        INDEX idx_branch_id (branch_id),
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -1003,51 +1006,107 @@ const VISITORS_SERVICE_MIGRATIONS: Migration[] = [
     sql: `
       CREATE TABLE IF NOT EXISTS visitor_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        deceased_id VARCHAR(50) NOT NULL,
         visitor_name VARCHAR(255) NOT NULL,
         visitor_phone VARCHAR(20),
         visitor_email VARCHAR(255),
+        visitor_id_number VARCHAR(50),
         purpose VARCHAR(255),
-        check_in TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        check_out TIMESTAMP NULL,
+        deceased_id VARCHAR(50),
+        branch_id INT,
+        check_in_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        check_out_time TIMESTAMP NULL,
+        is_approved BOOLEAN DEFAULT FALSE,
+        approved_by INT,
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_deceased_id (deceased_id),
-        INDEX idx_check_in (check_in)
+        INDEX idx_branch_id (branch_id),
+        INDEX idx_check_in_time (check_in_time),
+        INDEX idx_visitor_phone (visitor_phone)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
 ];
 
-// ─── Chemical Service Migrations ─────────────────────────────────────────────
+// ─── Hearse Service Migrations ───────────────────────────────────────────────
 
-const CHEMICAL_SERVICE_MIGRATIONS: Migration[] = [
+const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
+  {
+    name: '150_create_hearses_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS hearses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        plate_number VARCHAR(50) NOT NULL UNIQUE,
+        hearse_name VARCHAR(255) NOT NULL,
+        model VARCHAR(255),
+        capacity INT DEFAULT 4,
+        branch_id INT,
+        branch_code VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_plate_number (plate_number),
+        INDEX idx_branch_id (branch_id),
+        INDEX idx_branch_code (branch_code),
+        INDEX idx_is_active (is_active)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `,
+  },
+  {
+    name: '151_create_hearse_bookings_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS hearse_bookings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        booking_reference VARCHAR(100) UNIQUE,
+        hearse_id INT NOT NULL,
+        deceased_id VARCHAR(50) NOT NULL,
+        branch_id INT NOT NULL,
+        pickup_location TEXT NOT NULL,
+        destination TEXT NOT NULL,
+        booking_date DATETIME NOT NULL,
+        completed_at DATETIME NULL,
+        status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+        driver_id INT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_hearse_id (hearse_id),
+        INDEX idx_deceased_id (deceased_id),
+        INDEX idx_branch_id (branch_id),
+        INDEX idx_status (status),
+        INDEX idx_booking_date (booking_date),
+        FOREIGN KEY (hearse_id) REFERENCES hearses(id) ON DELETE RESTRICT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `,
+  },
+];
+
+// ─── Chemicals Service Migrations ────────────────────────────────────────────
+
+const CHEMICALS_SERVICE_MIGRATIONS: Migration[] = [
   {
     name: '140_create_chemicals_table',
     sql: `
       CREATE TABLE IF NOT EXISTS chemicals (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        branch_id INT NOT NULL DEFAULT 1,
-        name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) DEFAULT 'embalming',
-        unit VARCHAR(50) NOT NULL DEFAULT 'liters',
-        current_stock DECIMAL(10,2) NOT NULL DEFAULT 0,
-        min_stock_level DECIMAL(10,2) DEFAULT 0,
-        reorder_level DECIMAL(10,2) DEFAULT 0,
-        unit_cost DECIMAL(10,2) DEFAULT 0,
-        hazard_level ENUM('low', 'medium', 'high') DEFAULT 'low',
-        supplier VARCHAR(255) DEFAULT NULL,
-        batch_number VARCHAR(100) DEFAULT NULL,
-        expiry_date DATE DEFAULT NULL,
-        notes TEXT DEFAULT NULL,
-        is_active TINYINT(1) DEFAULT 1,
-        created_by INT DEFAULT NULL,
+        chemical_name VARCHAR(255) NOT NULL,
+        chemical_code VARCHAR(100) UNIQUE,
+        category VARCHAR(100),
+        unit VARCHAR(50),
+        current_stock DECIMAL(10, 2) DEFAULT 0,
+        minimum_stock DECIMAL(10, 2) DEFAULT 0,
+        unit_price DECIMAL(10, 2) DEFAULT 0,
+        supplier VARCHAR(255),
+        expiry_date DATE,
+        storage_location VARCHAR(255),
+        safety_data_sheet_url VARCHAR(500),
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_chemicals_branch (branch_id),
-        INDEX idx_chemicals_category (category),
-        INDEX idx_chemicals_active (is_active),
-        INDEX idx_chemicals_hazard (hazard_level)
+        INDEX idx_chemical_code (chemical_code),
+        INDEX idx_category (category),
+        INDEX idx_is_active (is_active)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -1057,22 +1116,23 @@ const CHEMICAL_SERVICE_MIGRATIONS: Migration[] = [
       CREATE TABLE IF NOT EXISTS chemical_transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         chemical_id INT NOT NULL,
-        branch_id INT NOT NULL DEFAULT 1,
-        transaction_type ENUM('received', 'consumed', 'adjusted', 'wasted', 'transferred') NOT NULL,
-        quantity DECIMAL(10,2) NOT NULL,
-        unit VARCHAR(50) NOT NULL DEFAULT 'liters',
-        previous_stock DECIMAL(10,2) NOT NULL,
-        new_stock DECIMAL(10,2) NOT NULL,
-        reference_type VARCHAR(50) DEFAULT NULL,
-        reference_id INT DEFAULT NULL,
-        performed_by INT DEFAULT NULL,
-        notes TEXT DEFAULT NULL,
+        transaction_type ENUM('received', 'used', 'disposed', 'transferred', 'adjusted') NOT NULL,
+        quantity DECIMAL(10, 2) NOT NULL,
+        unit_price DECIMAL(10, 2),
+        total_amount DECIMAL(10, 2),
+        reference_number VARCHAR(100),
+        deceased_id VARCHAR(50),
+        used_by INT,
+        approved_by INT,
+        notes TEXT,
+        transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
-        INDEX idx_transactions_chemical (chemical_id),
-        INDEX idx_transactions_branch (branch_id),
-        INDEX idx_transactions_type (transaction_type),
-        INDEX idx_transactions_date (created_at)
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_chemical_id (chemical_id),
+        INDEX idx_transaction_type (transaction_type),
+        INDEX idx_deceased_id (deceased_id),
+        INDEX idx_transaction_date (transaction_date),
+        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -1081,21 +1141,17 @@ const CHEMICAL_SERVICE_MIGRATIONS: Migration[] = [
     sql: `
       CREATE TABLE IF NOT EXISTS deceased_chemical_usage (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        branch_id INT NOT NULL DEFAULT 1,
-        deceased_id INT NOT NULL,
+        deceased_id VARCHAR(50) NOT NULL,
         chemical_id INT NOT NULL,
-        quantity_used DECIMAL(10,2) NOT NULL,
-        unit VARCHAR(50) NOT NULL DEFAULT 'liters',
-        transaction_id INT DEFAULT NULL,
-        used_by INT DEFAULT NULL,
-        usage_notes TEXT DEFAULT NULL,
+        quantity_used DECIMAL(10, 2) NOT NULL,
+        embalming_date TIMESTAMP NULL,
+        embalmed_by INT,
+        notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
-        FOREIGN KEY (transaction_id) REFERENCES chemical_transactions(id) ON DELETE SET NULL,
-        INDEX idx_usage_deceased (deceased_id),
-        INDEX idx_usage_chemical (chemical_id),
-        INDEX idx_usage_branch (branch_id),
-        INDEX idx_usage_date (created_at)
+        INDEX idx_deceased_id (deceased_id),
+        INDEX idx_chemical_id (chemical_id),
+        INDEX idx_embalming_date (embalming_date),
+        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -1104,15 +1160,18 @@ const CHEMICAL_SERVICE_MIGRATIONS: Migration[] = [
     sql: `
       CREATE TABLE IF NOT EXISTS chemical_alerts (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        branch_id INT NOT NULL DEFAULT 1,
         chemical_id INT NOT NULL,
-        alert_threshold DECIMAL(10,2) DEFAULT NULL,
-        is_triggered TINYINT(1) DEFAULT 0,
-        resolved_at TIMESTAMP NULL DEFAULT NULL,
-        resolved_by INT DEFAULT NULL,
+        alert_type ENUM('low_stock', 'expired', 'near_expiry') NOT NULL,
+        severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+        message TEXT,
+        is_resolved BOOLEAN DEFAULT FALSE,
+        resolved_by INT,
+        resolved_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
-        UNIQUE KEY uk_chemical_alert (chemical_id, branch_id)
+        INDEX idx_chemical_id (chemical_id),
+        INDEX idx_alert_type (alert_type),
+        INDEX idx_is_resolved (is_resolved),
+        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -1121,18 +1180,19 @@ const CHEMICAL_SERVICE_MIGRATIONS: Migration[] = [
     sql: `
       CREATE TABLE IF NOT EXISTS ppe_requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        branch_id INT NOT NULL DEFAULT 1,
-        item_name VARCHAR(255) NOT NULL,
-        quantity_requested INT NOT NULL DEFAULT 1,
-        quantity_approved INT DEFAULT NULL,
+        requester_id INT NOT NULL,
+        ppe_items JSON NOT NULL,
+        urgency ENUM('normal', 'urgent', 'emergency') DEFAULT 'normal',
         status ENUM('pending', 'approved', 'rejected', 'fulfilled') DEFAULT 'pending',
-        requested_by VARCHAR(255) NOT NULL,
-        approved_by INT DEFAULT NULL,
-        notes TEXT DEFAULT NULL,
+        approved_by INT,
+        approved_at TIMESTAMP NULL,
+        fulfilled_at TIMESTAMP NULL,
+        notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_ppe_branch (branch_id),
-        INDEX idx_ppe_status (status)
+        INDEX idx_requester_id (requester_id),
+        INDEX idx_status (status),
+        INDEX idx_urgency (urgency)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -1142,42 +1202,77 @@ const CHEMICAL_SERVICE_MIGRATIONS: Migration[] = [
       CREATE TABLE IF NOT EXISTS chemical_transfers (
         id INT AUTO_INCREMENT PRIMARY KEY,
         chemical_id INT NOT NULL,
-        from_branch_id INT NOT NULL,
-        to_branch_id INT NOT NULL,
-        quantity DECIMAL(10,2) NOT NULL,
-        unit VARCHAR(50) NOT NULL DEFAULT 'liters',
-        status ENUM('pending', 'approved', 'completed', 'cancelled') DEFAULT 'pending',
-        requested_by INT DEFAULT NULL,
-        approved_by INT DEFAULT NULL,
-        notes TEXT DEFAULT NULL,
+        from_branch_id INT,
+        to_branch_id INT,
+        quantity DECIMAL(10, 2) NOT NULL,
+        transferred_by INT NOT NULL,
+        approved_by INT,
+        notes TEXT,
+        transfer_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
-        INDEX idx_transfer_from (from_branch_id),
-        INDEX idx_transfer_to (to_branch_id),
-        INDEX idx_transfer_status (status)
+        INDEX idx_chemical_id (chemical_id),
+        INDEX idx_from_branch (from_branch_id),
+        INDEX idx_to_branch (to_branch_id),
+        INDEX idx_transfer_date (transfer_date)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
 ];
 
-// ─── Helper Functions (for main tenant vs branch database migrations) ─────────
+// ─── Export All Migrations ────────────────────────────────────────────────────
 
-/**
- * Returns migrations for the main tenant database.
- * CRITICAL FIX: Returns ALL migrations so that EVERYTHING goes into the tenant's main database.
- * This ensures complete data isolation - each tenant has their own database with ALL tables.
- * No data is shared between tenants.
- * 
- * Architecture:
- * - Each tenant gets ONE database (tenant_{slug})
- * - That database contains ALL tables: users, deceased, coffins, invoices, documents, etc.
- * - Branches are just logical divisions (tracked in branches table), NOT separate databases
- * - This ensures 100% data isolation between tenants
- */
+export const ALL_SERVICE_MIGRATIONS: Migration[] = [
+  ...TENANT_SERVICE_MIGRATIONS,
+  ...DECEASED_SERVICE_MIGRATIONS,
+  ...MARKETPLACE_SERVICE_MIGRATIONS,
+  ...INVOICE_SERVICE_MIGRATIONS,
+  ...DOCUMENTS_SERVICE_MIGRATIONS,
+  ...NOTIFICATIONS_SERVICE_MIGRATIONS,
+  ...CALENDAR_SERVICE_MIGRATIONS,
+  ...BODY_CHECKOUT_SERVICE_MIGRATIONS,
+  ...COFFIN_SERVICE_MIGRATIONS,
+  ...PORTAL_SERVICE_MIGRATIONS,
+  ...QRCODE_SERVICE_MIGRATIONS,
+  ...ANALYTICS_SERVICE_MIGRATIONS,
+  ...EDOCUMENTS_SERVICE_MIGRATIONS,
+  ...VISITORS_SERVICE_MIGRATIONS,
+  ...CHEMICALS_SERVICE_MIGRATIONS,
+  ...HEARSE_SERVICE_MIGRATIONS,
+];
+
+// ─── Export by Service ────────────────────────────────────────────────────────
+
+export {
+  TENANT_SERVICE_MIGRATIONS,
+  DECEASED_SERVICE_MIGRATIONS,
+  MARKETPLACE_SERVICE_MIGRATIONS,
+  INVOICE_SERVICE_MIGRATIONS,
+  DOCUMENTS_SERVICE_MIGRATIONS,
+  NOTIFICATIONS_SERVICE_MIGRATIONS,
+  CALENDAR_SERVICE_MIGRATIONS,
+  BODY_CHECKOUT_SERVICE_MIGRATIONS,
+  COFFIN_SERVICE_MIGRATIONS,
+  PORTAL_SERVICE_MIGRATIONS,
+  QRCODE_SERVICE_MIGRATIONS,
+  ANALYTICS_SERVICE_MIGRATIONS,
+  EDOCUMENTS_SERVICE_MIGRATIONS,
+  VISITORS_SERVICE_MIGRATIONS,
+  CHEMICALS_SERVICE_MIGRATIONS,
+  HEARSE_SERVICE_MIGRATIONS,
+};
+
+// ─── Helper Functions ────────────────────────────────────────────────────────
+
 export function getMainTenantMigrations(): Migration[] {
   return [
     ...TENANT_SERVICE_MIGRATIONS,
+    ...HEARSE_SERVICE_MIGRATIONS,
+  ];
+}
+
+export function getBranchMigrations(): Migration[] {
+  // Branch databases get a subset of migrations (no organizations, users, branches tables)
+  return [
     ...DECEASED_SERVICE_MIGRATIONS,
     ...MARKETPLACE_SERVICE_MIGRATIONS,
     ...INVOICE_SERVICE_MIGRATIONS,
@@ -1191,112 +1286,164 @@ export function getMainTenantMigrations(): Migration[] {
     ...ANALYTICS_SERVICE_MIGRATIONS,
     ...EDOCUMENTS_SERVICE_MIGRATIONS,
     ...VISITORS_SERVICE_MIGRATIONS,
-    ...CHEMICAL_SERVICE_MIGRATIONS,
+    ...CHEMICALS_SERVICE_MIGRATIONS,
+    ...HEARSE_SERVICE_MIGRATIONS,
   ];
 }
 
-/**
- * Returns migrations for a branch-specific database.
- * CRITICAL FIX: Branch databases are no longer used.
- * All data goes into the main tenant database for complete isolation.
- * This function is kept for backwards compatibility but returns empty array.
- */
-export function getBranchMigrations(): Migration[] {
-  // CRITICAL FIX: Branch databases are deprecated
-  // All data now goes into the main tenant database
-  // This ensures complete data isolation per tenant
-  console.log(`[MigrationService] ⚠️  Branch databases are deprecated - all data goes to main tenant database`);
-  return [];
+export function getSoftDeleteMigrations(): Migration[] {
+  return [
+    {
+      name: '001_add_soft_delete_to_users',
+      sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '002_add_soft_delete_to_organizations',
+      sql: `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '003_add_soft_delete_to_branches',
+      sql: `ALTER TABLE branches ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '004_add_soft_delete_to_deceased',
+      sql: `ALTER TABLE deceased ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_embalmed, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '005_add_soft_delete_to_next_of_kin',
+      sql: `ALTER TABLE next_of_kin ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(100) NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '006_add_soft_delete_to_postmortem',
+      sql: `ALTER TABLE postmortem ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '007_add_soft_delete_to_charges',
+      sql: `ALTER TABLE charges ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '008_add_soft_delete_to_portal_tracking',
+      sql: `ALTER TABLE portal_tracking ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '009_add_soft_delete_to_marketplace_products',
+      sql: `ALTER TABLE marketplace_products ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '010_add_soft_delete_to_shopping_cart',
+      sql: `ALTER TABLE shopping_cart ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER added_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '011_add_soft_delete_to_orders',
+      sql: `ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '012_add_soft_delete_to_order_items',
+      sql: `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '013_add_soft_delete_to_invoices',
+      sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '014_add_soft_delete_to_payments',
+      sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '015_add_soft_delete_to_documents',
+      sql: `ALTER TABLE documents ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '016_add_soft_delete_to_notifications',
+      sql: `ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_read, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '017_add_soft_delete_to_events',
+      sql: `ALTER TABLE events ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '018_add_soft_delete_to_event_attendees',
+      sql: `ALTER TABLE event_attendees ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '019_add_soft_delete_to_event_reminders',
+      sql: `ALTER TABLE event_reminders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '020_add_soft_delete_to_event_categories',
+      sql: `ALTER TABLE event_categories ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '021_add_soft_delete_to_event_logs',
+      sql: `ALTER TABLE event_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '022_add_soft_delete_to_body_checkout',
+      sql: `ALTER TABLE body_checkout ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '023_add_soft_delete_to_coffins',
+      sql: `ALTER TABLE coffins ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '024_add_soft_delete_to_coffin_images',
+      sql: `ALTER TABLE coffin_images ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '025_add_soft_delete_to_coffin_usage',
+      sql: `ALTER TABLE coffin_usage ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '026_add_soft_delete_to_deceased_coffin',
+      sql: `ALTER TABLE deceased_coffin ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '027_add_soft_delete_to_memorial_pages',
+      sql: `ALTER TABLE memorial_pages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '028_add_soft_delete_to_condolences',
+      sql: `ALTER TABLE condolences ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_flagged, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '029_add_soft_delete_to_virtual_candles',
+      sql: `ALTER TABLE virtual_candles ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER lit_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '030_add_soft_delete_to_memories_tributes',
+      sql: `ALTER TABLE memories_tributes ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_flagged, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '031_add_soft_delete_to_qr_codes',
+      sql: `ALTER TABLE qr_codes ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '032_add_soft_delete_to_search_logs',
+      sql: `ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '033_add_soft_delete_to_search_index',
+      sql: `ALTER TABLE search_index ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER indexed_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '034_add_soft_delete_to_edocuments',
+      sql: `ALTER TABLE edocuments ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '035_add_soft_delete_to_visitor_logs',
+      sql: `ALTER TABLE visitor_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '036_add_soft_delete_to_activity_logs',
+      sql: `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '037_add_soft_delete_to_refresh_tokens',
+      sql: `ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+    {
+      name: '038_add_soft_delete_to_mortuary_settings',
+      sql: `ALTER TABLE mortuary_settings ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
+    },
+  ];
 }
-
-/**
- * Returns all migrations (both main and branch) for backwards compatibility.
- */
-export function getAllTenantMigrations(): Migration[] {
-  return ALL_SERVICE_MIGRATIONS;
-}
-
-/**
- * Returns all migrations grouped by category for reporting.
- */
-export function getMigrationsByCategory(): Record<string, Migration[]> {
-  return {
-    tenant: TENANT_SERVICE_MIGRATIONS,
-    deceased: DECEASED_SERVICE_MIGRATIONS,
-    marketplace: MARKETPLACE_SERVICE_MIGRATIONS,
-    invoice: INVOICE_SERVICE_MIGRATIONS,
-    documents: DOCUMENTS_SERVICE_MIGRATIONS,
-    notifications: NOTIFICATIONS_SERVICE_MIGRATIONS,
-    calendar: CALENDAR_SERVICE_MIGRATIONS,
-    bodyCheckout: BODY_CHECKOUT_SERVICE_MIGRATIONS,
-    coffin: COFFIN_SERVICE_MIGRATIONS,
-    portal: PORTAL_SERVICE_MIGRATIONS,
-    qrcode: QRCODE_SERVICE_MIGRATIONS,
-    analytics: ANALYTICS_SERVICE_MIGRATIONS,
-    edocuments: EDOCUMENTS_SERVICE_MIGRATIONS,
-    visitors: VISITORS_SERVICE_MIGRATIONS,
-    chemicals: CHEMICAL_SERVICE_MIGRATIONS,
-  };
-}
-
-// ─── All Service Migrations (Exported) ───────────────────────────────────────
-
-/**
- * Complete ordered array of all migrations across all services.
- * 
- * Migration names are prefixed with a numeric order to ensure deterministic
- * execution across all tenant databases.
- * 
- * To add a new migration:
- * 1. Create it in the appropriate service migration array above
- * 2. Use the next available number prefix (e.g., 140_xxx)
- * 3. The name must be globally unique across all services
- */
-export const ALL_SERVICE_MIGRATIONS: Migration[] = [
-  // Tenant Service (001-009)
-  ...TENANT_SERVICE_MIGRATIONS,
-
-  // Deceased Service (010-019)
-  ...DECEASED_SERVICE_MIGRATIONS,
-
-  // Marketplace Service (020-029)
-  ...MARKETPLACE_SERVICE_MIGRATIONS,
-
-  // Invoice & Payments Service (030-039)
-  ...INVOICE_SERVICE_MIGRATIONS,
-
-  // Documents Service (040-049)
-  ...DOCUMENTS_SERVICE_MIGRATIONS,
-
-  // Notifications Service (050-059)
-  ...NOTIFICATIONS_SERVICE_MIGRATIONS,
-
-  // Calendar / Events Service (060-069)
-  ...CALENDAR_SERVICE_MIGRATIONS,
-
-  // Body Checkout Service (070-079)
-  ...BODY_CHECKOUT_SERVICE_MIGRATIONS,
-
-  // Coffin Service (080-089)
-  ...COFFIN_SERVICE_MIGRATIONS,
-
-  // Portal / Memorial Service (090-099)
-  ...PORTAL_SERVICE_MIGRATIONS,
-
-  // QR Code Service (100-109)
-  ...QRCODE_SERVICE_MIGRATIONS,
-
-  // Search / Analytics Service (110-119)
-  ...ANALYTICS_SERVICE_MIGRATIONS,
-
-  // EDocuments Service (120-129)
-  ...EDOCUMENTS_SERVICE_MIGRATIONS,
-
-  // Visitors Service (130-139)
-  ...VISITORS_SERVICE_MIGRATIONS,
-
-  // Chemical Service (140-149)
-  ...CHEMICAL_SERVICE_MIGRATIONS,
-];
-
-export default ALL_SERVICE_MIGRATIONS;

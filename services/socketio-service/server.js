@@ -392,8 +392,8 @@ app.post("/emit/:event", express.json(), (req, res) => {
     return res.status(400).json({ error: "Missing tenantSlug or data" });
   }
 
-  // Special events that don't get 'notification:' prefix (e.g., ticket events)
-  const noPrefixEvents = ['ticket_response', 'ticket_updated'];
+  // Special events that don't get 'notification:' prefix (e.g., ticket events, onboarding progress)
+  const noPrefixEvents = ['ticket_response', 'ticket_updated', 'onboarding-progress'];
 
   if (noPrefixEvents.includes(event)) {
     // Emit without prefix so frontend can listen directly

@@ -436,7 +436,7 @@ services:
       dockerfile: ./services/socketio-service/Dockerfile
     container_name: restpoint_socketio_service
     ports:
-      - "5013:5000"
+      - "5018:5000"
     volumes:
       - socketio_service_data:/usr/src/app/data
     environment:
@@ -706,39 +706,6 @@ services:
       - PORT=5000
       - NODE_ENV=production
       - SERVICE_NAME=extra-services
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Portal Service
-  portal-service:
-    build:
-      context: .
-      dockerfile: ./services/portal-service/Dockerfile
-    container_name: restpoint_portal_service
-    ports:
-      - "5019:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=portal-service
       - SERVICE_VERSION=1.0.0
       - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb

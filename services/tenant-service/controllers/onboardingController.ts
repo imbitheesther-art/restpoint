@@ -18,17 +18,18 @@ export class OnboardingController {
   async createOrganization(req: Request, res: Response): Promise<void> {
 
     logger.info({
-      service: "hearse-service",
-      function: "createBooking",
-      message: "Booking creation started",
+      service: "tenant-service",
+      function: "createOrganization",
+      message: "Organization registration started",
     });
 
 
 
     try {
+      // Handle both field name formats: organizationName (frontend) and tenant_name (backend)
       const {
+        organizationName,
         tenant_name,
-        tenant_slug,
         email,
         password,
         full_name,
@@ -36,21 +37,26 @@ export class OnboardingController {
         location,
         country,
         termsAccepted,
-        branches
+        branches,
+        branchName,
+        deploymentType
       } = req.body;
 
       //  Validate terms acceptance
       if (!termsAccepted) {
         res.status(400).json({
           success: false,
-          message: "You  Must  Accept   Terms  and   conditions",
-
+          message: "You must accept terms and conditions",
         });
         return;
       }
 
-      if (!tenant_name || !email || !password || !full_name) {
-        res.status(400).json({ success: false, message: 'Missing required fields: tenant_name, email, password, full_name' });
+      // Use organizationName if tenant_name is not provided (frontend compatibility)
+      const finalTenantName = tenant_name || organizationName;
+      const finalFullName = full_name || 'Admin User';
+
+      if (!finalTenantName || !email || !password) {
+        res.status(400).json({ success: false, message: 'Missing required fields: organization name, email, password' });
         return;
       }
 
@@ -59,20 +65,40 @@ export class OnboardingController {
         return;
       }
 
-      if (branches && Array.isArray(branches)) {
-        for (const branch of branches) {
+      // Handle branches - support both array format and single branch format
+      let finalBranches = branches || [];
+      if (branchName && !finalBranches.length) {
+        // Single tenant mode - create a branch from branchName
+        finalBranches = [{ branch_name: branchName, branch_location: location || '' }];
+      }
+
+      if (finalBranches && Array.isArray(finalBranches)) {
+        for (const branch of finalBranches) {
           if (!branch.branch_name) { res.status(400).json({ success: false, message: 'Each branch must have a name' }); return; }
         }
       }
 
       const result = await TenantModel.registerTenant({
-        tenant_name, email, password, full_name,
-        phone: phone || null, location: location || null, country: country || null, branches: branches || []
+        tenant_name: finalTenantName,
+        email,
+        password,
+        full_name: finalFullName,
+        phone: phone || null,
+        location: location || null,
+        country: country || null,
+        branches: finalBranches
       });
 
       res.status(201).json({
-        success: true, message: 'Organization created successfully',
-        data: { token: result.token, tenant: result.tenant, user: { email, full_name, role: 'admin' } }
+        success: true,
+        message: 'Organization created successfully',
+        data: {
+          token: result.token,
+          tenant: result.tenant,
+          user: { email, full_name: finalFullName, role: 'admin' },
+          organizationId: result.tenant?.tenant_id,
+          userId: 1
+        }
       });
     } catch (error: any) {
 
@@ -80,8 +106,8 @@ export class OnboardingController {
       logger.error({
         service: "tenant-service",
         controller: "OnboardingController",
-        function: "registerOrganization",
-        message: "Organization registration failed !",
+        function: "createOrganization",
+        message: "Organization registration failed",
         error: error.message,
         stack: error.stack,
       });

@@ -46,38 +46,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-// Import routes
-import deceasedRoutes from './routes/deceasedRoutes';
-import autopsyRoutes from './routes/autopsyRoutes';
-import chargesRoutes from './routes/chargesRoutes';
-import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
+// ============================================
+// REQUEST LOGGING (before routes for debugging)
+// ============================================
+app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`[DECEASED] ${req.method} ${req.path}`);
+    next();
+});
 
 // ============================================
-// ✅ MOUNT ROUTES - CLEAN ROOT MOUNT
-// ============================================
-// The API Gateway strips /api/v1/restpoint/deceased prefix and forwards clean paths
-// So we mount at / and routes use clean paths
-
-// Mount deceased routes at root
-app.use('/', deceasedRoutes);
-
-// Import other route modules
-import nextOfKinRoutes from './routes/nextOfKinRoutes';
-import hearseRoutes from './routes/hearseRoutes';
-import documentsRoutes from './routes/documentsRoutes';
-
-// Mount all sub-routers at root - routes use relative paths
-app.use('/', nextOfKinRoutes);
-app.use('/', hearseRoutes);
-app.use('/', documentsRoutes);
-
-// Other services mounted at root
-app.use('/', autopsyRoutes);
-app.use('/', chargesRoutes);
-app.use('/', chargeSettingsRoutes);
-
-// ============================================
-// HEALTH CHECK
+// HEALTH CHECK (MUST be before routes to avoid /:id catching it)
 // ============================================
 app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({
@@ -90,12 +68,38 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // ============================================
-// REQUEST LOGGING
+// ✅ MOUNT ROUTES - CLEAN ROOT MOUNT
 // ============================================
-app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log(`[${req.method}] ${req.path}`);
-    next();
-});
+// The API Gateway strips /api/v1/restpoint prefix and forwards remaining path
+// Gateway extracts first segment (e.g. "deceased") as routing key
+// It proxies the ENTIRE remaining URL to the target service
+//
+// For example: /api/v1/restpoint/deceased/deceased-all
+//   Gateway strips /api/v1/restpoint → /deceased/deceased-all
+//   Gateway proxies → http://localhost:5003/deceased/deceased-all
+//   We match it with full-prefix routes below
+
+// Import routes
+import deceasedRoutes from './routes/deceasedRoutes';
+import autopsyRoutes from './routes/autopsyRoutes';
+import chargesRoutes from './routes/chargesRoutes';
+import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
+
+// Mount all sub-routers at root - routes use paths relative to root
+// IMPORTANT: Routes must match the FULL forwarded path from the gateway
+app.use('/', deceasedRoutes);
+
+// Import other route modules
+import nextOfKinRoutes from './routes/nextOfKinRoutes';
+import hearseRoutes from './routes/hearseRoutes';
+import documentsRoutes from './routes/documentsRoutes';
+
+app.use('/', nextOfKinRoutes);
+app.use('/', hearseRoutes);
+app.use('/', documentsRoutes);
+app.use('/', autopsyRoutes);
+app.use('/', chargesRoutes);
+app.use('/', chargeSettingsRoutes);
 
 // ============================================
 // 404 HANDLER

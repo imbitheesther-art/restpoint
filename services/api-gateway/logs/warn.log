@@ -1,8 +1,0 @@
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123544382: ","timestamp":"2026-05-18 19:59:04"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123544393: ","timestamp":"2026-05-18 19:59:05"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123570734: ","timestamp":"2026-05-18 19:59:30"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123572047: ","timestamp":"2026-05-18 19:59:32"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123572984: ","timestamp":"2026-05-18 19:59:33"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123573246: ","timestamp":"2026-05-18 19:59:33"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123573732: ","timestamp":"2026-05-18 19:59:33"}
-{"label":"backend-api","level":"error","message":"[PROXY ERROR] GET /api/v1/endorsements/leader/LDR_1776428687374_cfc1e2e4/active?limit=100&t=1779123573918: ","timestamp":"2026-05-18 19:59:34"}

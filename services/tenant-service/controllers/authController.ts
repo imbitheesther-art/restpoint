@@ -115,16 +115,37 @@ export class AuthController {
         }
         await conn.query('UPDATE users SET last_login_at = NOW() WHERE user_id = ?', [user.user_id]);
 
+        // Get branch information
+        let branchInfo = null;
+        if (user.branch_id) {
+          const [branches] = await conn.query(
+            'SELECT branch_id, branch_name, branch_slug, branch_db_name FROM branches WHERE branch_id = ? AND is_active = TRUE',
+            [user.branch_id]
+          );
+          const branchList = branches as any[];
+          if (branchList.length > 0) {
+            branchInfo = branchList[0];
+          }
+        }
+
         // FIXED: Explicitly stringified JWT Secret fallbacks to prevent undefined runtime typing crashes
         const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret_fallback';
         const refreshSecret = process.env.REFRESH_TOKEN_SECRET || jwtSecret;
 
         const token = jwt.sign(
-          { userId: user.user_id, tenantId: tenant.tenant_id, tenantSlug: tenant.tenant_slug, email: user.email, role: user.role },
+          {
+            userId: user.user_id,
+            tenantId: tenant.tenant_id,
+            tenantSlug: tenant.tenant_slug,
+            email: user.email,
+            role: user.role,
+            branchId: user.branch_id,
+            branchSlug: branchInfo?.branch_slug
+          },
           jwtSecret, { expiresIn: '7d' }
         );
         const refreshToken = jwt.sign(
-          { userId: user.user_id, tenantSlug: tenant.tenant_slug },
+          { userId: user.user_id, tenantSlug: tenant.tenant_slug, branchId: user.branch_id },
           refreshSecret, { expiresIn: '30d' }
         );
         await conn.query(
@@ -137,7 +158,19 @@ export class AuthController {
           data: {
             token, refreshToken,
             tenant: { tenantId: tenant.tenant_id, tenantName: tenant.tenant_name, tenantSlug: tenant.tenant_slug, country: tenant.country },
-            user: { userId: user.user_id, email: user.email, fullName: user.full_name, role: user.role }
+            user: {
+              userId: user.user_id,
+              email: user.email,
+              fullName: user.full_name,
+              role: user.role,
+              branchId: user.branch_id,
+              branch: branchInfo ? {
+                branchId: branchInfo.branch_id,
+                branchName: branchInfo.branch_name,
+                branchSlug: branchInfo.branch_slug,
+                branchDbName: branchInfo.branch_db_name
+              } : null
+            }
           }
         });
       } finally {

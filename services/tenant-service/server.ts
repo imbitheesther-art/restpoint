@@ -3,8 +3,11 @@ import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import * as mysql from 'mysql2/promise';
+import { TenantModel } from './models/Tenant.model';
 import onboardingRoutes from './routes/onboardingRoutes';
 import systemAdminRoutes from './routes/systemAdminRoutes';
+import { UserController } from './controllers/userController';
 import { errorHandler, notFoundHandler, asyncHandler } from '../../global/middlewares/errorHandler';
 
 dotenv.config();
@@ -13,7 +16,7 @@ dotenv.config();
 // EXPRESS APP SETUP
 // ============================================
 const app: Application = express();
-const PORT = process.env.PORT || 8002;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(express.json());
@@ -78,16 +81,116 @@ const authLimiter = rateLimit({
 });
 
 // ============================================
-// ROUTES - Clean root mount
+// ROUTES - Fixed mount paths to match API Gateway routing
 // ============================================
-// The API Gateway strips /api/v1/restpoint/tenant prefix and forwards clean paths
-// So we mount at / and routes use clean paths
+// The API Gateway strips /api/v1/restpoint prefix and forwards the remaining path.
+// When frontend calls POST /tenant/onboarding/organization:
+//   Gateway receives: /api/v1/restpoint/tenant/onboarding/organization
+//   Gateway strips prefix: req.url = /tenant/onboarding/organization
+//   First segment = "tenant" → proxies to tenant service at /tenant/onboarding/organization
+//
+// So we must mount onboarding routes at /tenant/onboarding to match the forwarded path.
+// The route /organization inside onboardingRoutes.ts will then match correctly.
 
-// Onboarding routes - mounted at root
+// Onboarding routes - mounted at /tenant/onboarding to match gateway proxy path
+app.use('/tenant/onboarding', apiLimiter, onboardingRoutes);
+
+// Also mount at root for direct access (backward compatibility)
 app.use('/', apiLimiter, onboardingRoutes);
 
 // System Admin Routes - mounted at root
 app.use('/', systemAdminRoutes);
+
+// User Management Routes
+const userController = new UserController();
+
+// Get all users
+app.get('/tenant/users', asyncHandler(async (req: Request, res: Response) => {
+  await userController.getUsers(req, res);
+}));
+
+// Get all branches
+app.get('/tenant/branches', asyncHandler(async (req: Request, res: Response) => {
+  await userController.getBranches(req, res);
+}));
+
+// Register new user
+app.post('/tenant/users/register', asyncHandler(async (req: Request, res: Response) => {
+  await userController.registerUser(req, res);
+}));
+
+// Get tenant settings (deployment type, etc.)
+app.get('/tenant/settings', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const tenant = await TenantModel.findBySubdomain(user.tenantSlug);
+
+    if (!tenant) {
+      res.status(404).json({ success: false, message: 'Tenant not found' });
+      return;
+    }
+
+    const conn = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '3306'),
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: tenant.db_name
+    });
+
+    try {
+      // Get branches count
+      const [branches] = await conn.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
+      const branchCount = (branches as any[])[0]?.count || 0;
+
+      // Get deployment type from tenant_tracking database
+      const serverConn = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: 'tenant_tracking'
+      });
+
+      let deploymentType = 'single';
+      try {
+        const [tracking] = await serverConn.query(
+          'SELECT deployment_type FROM tenants WHERE tenant_slug = ?',
+          [user.tenantSlug]
+        );
+        const trackingData = tracking as any[];
+        if (trackingData.length > 0 && trackingData[0].deployment_type) {
+          deploymentType = trackingData[0].deployment_type;
+        } else {
+          // Fallback: determine from branch count
+          deploymentType = branchCount > 1 ? 'multi' : 'single';
+        }
+      } catch (err) {
+        // If column doesn't exist, use branch count
+        deploymentType = branchCount > 1 ? 'multi' : 'single';
+      } finally {
+        await serverConn.end();
+      }
+
+      res.json({
+        success: true,
+        data: {
+          deploymentType,
+          branchCount,
+          tenantName: tenant.tenant_name,
+          tenantSlug: tenant.tenant_slug,
+          country: tenant.country,
+          location: tenant.location,
+          email: tenant.email
+        }
+      });
+    } finally {
+      await conn.end();
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to fetch settings', error: error.message });
+  }
+}));
 
 // ============================================
 // HEALTH CHECK

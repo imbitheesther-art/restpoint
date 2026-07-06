@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, BarChart3, Users, Package, X, LogOut } from 'lucide-react';
 
 const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/analytics', label: 'Analytics', icon: '📈' },
-    { path: '/visitors', label: 'Visitors', icon: '👥' },
-    { path: '/coffins', label: 'Coffins', icon: '📦' },
+    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/visitors', label: 'Visitors', icon: Users },
+    { path: '/coffins', label: 'Coffins', icon: Package },
 ];
 
 export default function SingleTenantLayout({ children }) {
@@ -13,8 +14,31 @@ export default function SingleTenantLayout({ children }) {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // Get tenant slug from localStorage
+    const getTenantSlug = () => {
+        try {
+            const onboardingData = JSON.parse(localStorage.getItem('onboardingData') || '{}');
+            return onboardingData.tenantSlug || '';
+        } catch {
+            return '';
+        }
+    };
+
+    const tenantSlug = getTenantSlug();
+
     const handleNavigation = (path) => {
-        navigate(path);
+        // Prepend tenant slug to path for single-tenant mode
+        const fullPath = tenantSlug ? `/${tenantSlug}${path}` : path;
+        navigate(fullPath);
+        setIsOpen(false);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('onboardingData');
+        localStorage.removeItem('onboardingComplete');
+        navigate('/login');
         setIsOpen(false);
     };
 
@@ -38,8 +62,6 @@ export default function SingleTenantLayout({ children }) {
         justifyContent: 'center',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         transition: 'all 0.3s ease',
-        fontSize: '1.5rem',
-        fontWeight: 'bold',
     };
 
     const menuOverlayStyle = {
@@ -112,7 +134,10 @@ export default function SingleTenantLayout({ children }) {
                         <div style={menuOverlayStyle} onClick={() => setIsOpen(false)} />
                         <div style={menuContainerStyle}>
                             {menuItems.map((item) => {
-                                const isActive = location.pathname === item.path;
+                                const currentPath = location.pathname;
+                                const isActive = currentPath === item.path ||
+                                    currentPath === `/${tenantSlug}${item.path}` ||
+                                    currentPath.endsWith(item.path);
                                 return (
                                     <div
                                         key={item.path}
@@ -132,12 +157,35 @@ export default function SingleTenantLayout({ children }) {
                                         }}
                                     >
                                         <div style={iconWrapperStyle}>
-                                            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{item.icon}</span>
+                                            <item.icon size={20} />
                                         </div>
                                         <span>{item.label}</span>
                                     </div>
                                 );
                             })}
+
+                            {/* Logout Button */}
+                            <div
+                                onClick={handleLogout}
+                                style={{
+                                    ...menuItemStyle(false),
+                                    marginTop: '0.5rem',
+                                    borderTop: '1px solid #e3ddd0',
+                                    paddingTop: '0.75rem',
+                                    color: '#9B4A3F',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#f7ece9';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'none';
+                                }}
+                            >
+                                <div style={iconWrapperStyle}>
+                                    <LogOut size={20} />
+                                </div>
+                                <span>Logout</span>
+                            </div>
                         </div>
                     </>
                 )}
@@ -153,7 +201,7 @@ export default function SingleTenantLayout({ children }) {
                         e.currentTarget.style.transform = 'scale(1)';
                     }}
                 >
-                    {isOpen ? '✕' : '☰'}
+                    {isOpen ? <X size={24} /> : <LayoutDashboard size={24} />}
                 </div>
             </div>
         </div>

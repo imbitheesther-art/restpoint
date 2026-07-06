@@ -30,7 +30,7 @@ const isProd = (process.env.NODE_ENV || 'development') === 'production';
 // =============================================================================
 const SERVICE_URLS = {
   auth: process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:5001',
-  tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:8002',
+  tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:5002',
   deceased: process.env.DECEASED_SERVICE_URL || 'http://127.0.0.1:5003',
   coffin: process.env.COFFIN_SERVICE_URL || 'http://127.0.0.1:8108',
   marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://127.0.0.1:5005',
@@ -52,7 +52,7 @@ const SERVICE_URLS = {
   call: process.env.CALL_SERVICE_URL || 'http://127.0.0.1:5020',
   qrcode: process.env.QRCODE_SERVICE_URL || 'http://127.0.0.1:5021',
   scanner: process.env.SCANNER_SERVICE_URL || 'http://127.0.0.1:5022',
-  hearse: process.env.HEARSE_SERVICE_URL || 'http://127.0.0.1:5002',
+  hearse: process.env.HEARSE_SERVICE_URL || 'http://127.0.0.1:5023',
   leave: process.env.LEAVE_SERVICE_URL || 'http://127.0.0.1:5017',
   support: process.env.SUPPORT_SERVICE_URL || 'http://127.0.0.1:8111',
 };
@@ -208,8 +208,8 @@ for (const targetUrl of Object.values(SERVICE_ROUTES)) {
       target: targetUrl,
       changeOrigin: true,
       secure: false,
-      proxyTimeout: 30000,
-      timeout: 30000,
+      proxyTimeout: 300000, // 5 minutes for long operations like onboarding
+      timeout: 300000, // 5 minutes for long operations like onboarding
       onProxyReq: (proxyReq, req, res) => {
         if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
         if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
@@ -223,6 +223,12 @@ for (const targetUrl of Object.values(SERVICE_ROUTES)) {
       },
       onProxyRes: (proxyRes, req, res) => {
         Logger.debug(`[PROXY] ${req.method} ${req.originalUrl} → ${proxyRes.statusCode}`);
+        // Copy CORS headers from the backend response
+        const origin = req.headers.origin;
+        if (origin && allowedOrigins.includes(origin)) {
+          proxyRes.headers['Access-Control-Allow-Origin'] = origin;
+          proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+        }
       },
       onError: (err, req, res) => {
         Logger.error(`[PROXY ERROR] ${req.method} ${req.originalUrl}: ${err.message}`);

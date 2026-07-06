@@ -25,6 +25,40 @@ export const validateOnboarding = (req: Request, res: Response, next: NextFuncti
     return res.status(400).json({ success: false, errors });
   }
 
+  // Parse branches if it's a JSON string (comes from FormData)
+  let branches = data.branches || [];
+  if (typeof branches === 'string') {
+    try {
+      branches = JSON.parse(branches);
+    } catch (e) {
+      branches = [];
+    }
+  }
+  // Ensure branches is an array
+  if (!Array.isArray(branches)) {
+    branches = [];
+  }
+
+  // Handle single-tenant branchName: convert to branch object
+  const branchName = data.branchName || data.branch_name || '';
+  if (branchName && branches.length === 0) {
+    branches.push({
+      branch_name: branchName,
+      branch_location: location || 'Main Location',
+      branch_phone: data.phone || '',
+      branch_email: email
+    });
+  }
+
+  // Map frontend field names to backend field names for branches
+  // Frontend sends: { name, location } | Backend expects: { branch_name, branch_location, branch_phone, branch_email }
+  const mappedBranches = branches.map((b: any) => ({
+    branch_name: b.branch_name || b.name || '',
+    branch_location: b.branch_location || b.location || location || '',
+    branch_phone: b.branch_phone || b.phone || data.phone || '',
+    branch_email: b.branch_email || b.email || email
+  })).filter((b: any) => b.branch_name.trim());
+
   // Map to what controller.createOrganization expects
   req.body = {
     tenant_name: organizationName,
@@ -34,7 +68,7 @@ export const validateOnboarding = (req: Request, res: Response, next: NextFuncti
     full_name,
     phone: data.phone || '',
     country: data.country || 'Kenya',
-    branches: data.branches || [],
+    branches: mappedBranches,
     termsAccepted
   };
 
