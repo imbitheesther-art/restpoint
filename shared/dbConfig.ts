@@ -6,38 +6,10 @@
 import * as mysql from 'mysql2/promise';
 
 // ============================================
-// FIX: Handle MariaDB GSSAPI authentication
+// Database Configuration
 // ============================================
-// This patch handles the GSSAPI authentication issue with MariaDB 10.11+
-// by telling the server we don't support GSSAPI and to use mysql_native_password
-
-// Wrapper for createPool to add GSSAPI patch
-// @ts-ignore
-const originalCreatePool = (mysql as any).createPool;
-
-// @ts-ignore - Create a wrapper function for createPool
-// This is needed because mysql2 v3+ defines createPool as a getter that cannot be overridden
-const patchedCreatePool = function (config: any) {
-  if (!config) config = {};
-
-  // Ensure authPlugins exists
-  if (!config.authPlugins) {
-    config.authPlugins = {};
-  }
-
-  // Handle GSSAPI - return empty buffer to signal fallback to mysql_native_password
-  // This allows the server to fall back to mysql_native_password authentication
-  config.authPlugins.auth_gssapi_client = function () {
-    return function () {
-      return Buffer.from([]);
-    };
-  };
-
-  return originalCreatePool.call(this, config);
-} as any;
-
-// @ts-ignore - Replace createPool with patched version
-(mysql as any).createPool = patchedCreatePool;
+// Centralized database configuration with connection pooling
+// Each service uses this shared configuration for consistent database access
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 

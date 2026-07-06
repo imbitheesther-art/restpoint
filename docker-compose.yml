@@ -349,6 +349,46 @@ services:
       retries: 3
       start_period: 40s
 
+  # Support Service
+  support-service:
+    build:
+      context: .
+      dockerfile: ./services/support-service/Dockerfile
+    container_name: restpoint_support_service
+    ports:
+      - "8111:5000"
+    volumes:
+      - support_service_data:/usr/src/app/data
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - SERVICE_NAME=support-service
+      - SERVICE_VERSION=1.0.0
+      - CONSUL_HOST=http://restpoint_consul:8500
+      - DB_HOST=restpoint_mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=RestPointUser2024
+      - REDIS_HOST=restpoint_redis
+      - REDIS_PORT=6379
+      - SOCKETIO_SERVICE_URL=http://socketio-service:5018
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # Documents Service
   documents-service:
     build:
@@ -356,7 +396,7 @@ services:
       dockerfile: ./services/documents-service/Dockerfile
     container_name: restpoint_documents_service
     ports:
-      - "5007:5000"
+      - "5011:5000"
     volumes:
       - documents_service_data:/usr/src/app/data
       - ./services/documents-service/uploads:/usr/src/app/uploads
@@ -455,38 +495,6 @@ services:
   # MICROSERVICES
   # ============================================================================
 
-  # MPESA Service
-  mpesa-service:
-    build:
-      context: .
-      dockerfile: ./services/mpesa-service/Dockerfile
-    container_name: restpoint_mpesa_service
-    ports:
-      - "5011:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=mpesa-service
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # Invoice Service
   invoice-service:
@@ -500,39 +508,6 @@ services:
       - PORT=5000
       - NODE_ENV=production
       - SERVICE_NAME=invoice-service
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Marketplace Service
-  marketplace-service:
-    build:
-      context: .
-      dockerfile: ./services/marketplace-service/Dockerfile
-    container_name: restpoint_marketplace_service
-    ports:
-      - "5004:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=marketplace-service
       - SERVICE_VERSION=1.0.0
       - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
@@ -653,72 +628,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # EDocuments Service
-  edocuments-service:
-    build:
-      context: .
-      dockerfile: ./services/edocuments-service/Dockerfile
-    container_name: restpoint_edocuments_service
-    ports:
-      - "8116:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=edocuments-service
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Calendar Service
-  calender-service:
-    build:
-      context: .
-      dockerfile: ./services/calender-service/Dockerfile
-    container_name: restpoint_calender_service
-    ports:
-      - "5010:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=calender-service
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   # Chemical Service
   chemical-service:
     build:
@@ -797,72 +706,6 @@ services:
       - PORT=5000
       - NODE_ENV=production
       - SERVICE_NAME=extra-services
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Call Service
-  call-service:
-    build:
-      context: .
-      dockerfile: ./services/call-service/Dockerfile
-    container_name: restpoint_call_service
-    ports:
-      - "5018:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=call-service
-      - SERVICE_VERSION=1.0.0
-      - CONSUL_HOST=http://restpoint_consul:8500
-      - DB_HOST=restpoint_mariadb
-      - DB_PORT=3306
-      - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
-    env_file:
-      - .env
-    networks:
-      - restpoint_network
-    restart: unless-stopped
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # QRCode Service
-  qrcode-service:
-    build:
-      context: .
-      dockerfile: ./services/qrcode-service/Dockerfile
-    container_name: restpoint_qrcode_service
-    ports:
-      - "5012:5000"
-    environment:
-      - PORT=5000
-      - NODE_ENV=production
-      - SERVICE_NAME=qrcode-service
       - SERVICE_VERSION=1.0.0
       - CONSUL_HOST=http://restpoint_consul:8500
       - DB_HOST=restpoint_mariadb
@@ -1030,17 +873,17 @@ services:
         condition: service_healthy
 
   grafana:
-  image: grafana/grafana:latest
-  container_name: restpoint_grafana
-  ports:
-    - "3000:3000"
-  environment:
-    - GF_SECURITY_ADMIN_PASSWORD=admin
-  networks:
-    - restpoint_network
-  depends_on:
-    - loki
-  restart: unless-stopped
+    image: grafana/grafana:latest
+    container_name: restpoint_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - restpoint_network
+    depends_on:
+      - loki
+    restart: unless-stopped
 
   # Frontend Client
   frontend:
@@ -1069,6 +912,7 @@ networks:
   restpoint_network:
     driver: bridge
     name: restpoint_network
+
 volumes:
   mariadb_data:
     driver: local
@@ -1089,6 +933,8 @@ volumes:
   billing_service_data:
     driver: local
   notification_service_data:
+    driver: local
+  support_service_data:
     driver: local
   documents_service_data:
     driver: local

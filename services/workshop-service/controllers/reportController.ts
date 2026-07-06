@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { safeTenantQuery } from '../database/db.js'
+import { safeTenantQuery } from '../database/db'
 
 /* 
     @route  GET /api/workshop/reports/daily
@@ -47,7 +47,14 @@ const getDailyReport = async (req: Request, res: Response) => {
 
         res.json({
             report_date: date,
-            summary: orders[0],
+            summary: orders[0] || {
+                total_orders: 0,
+                completed_orders: 0,
+                pending_orders: 0,
+                total_revenue: 0,
+                total_cost: 0,
+                total_profit: 0
+            },
             materials_used: materialsUsed,
             orders: inProgress
         });
@@ -97,7 +104,12 @@ const getWeeklyReport = async (req: Request, res: Response) => {
         res.json({
             start_date: startDate,
             end_date: endDate,
-            summary: summary[0],
+            summary: summary[0] || {
+                total_orders: 0,
+                total_revenue: 0,
+                total_cost: 0,
+                total_profit: 0
+            },
             daily_breakdown: dailyStats
         });
     } catch (error: any) {

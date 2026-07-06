@@ -1,6 +1,7 @@
 import axios from 'axios';
+import env from '../config/env';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = env.FULL_API_URL;
 
 const getHeaders = () => {
   const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');

@@ -17,7 +17,18 @@ const server = http.createServer(app);
 initSocket(server);
 
 // Middleware
-app.use(cors());
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8082').split(',');
+    if (!origin || allowedOrigins.some(o => origin.includes(o.replace(/https?:\/\//, '')))) {
+        return callback(null, true);
+    }
+    return callback(new Error('Origin not allowed by CORS: ' + origin));
+};
+
+app.use(cors({
+    origin: corsOrigin,
+    credentials: true
+}));
 app.use(express.json());
 
 // ============================================
@@ -108,9 +119,33 @@ app.use(async (req: any, res: any, next: any) => {
 });
 
 // ============================================
-// ROUTES - Mount workshop routes
+// ROUTES - Mount workshop routes (CLEAN ROUTES - NO PREFIX)
 // ============================================
-app.use('/api/v1/restpoint/workshop', workshopRouter);
+console.log('[WORKSHOP] Registering routes...');
+app.use('/workshop', workshopRouter);
+
+// Log all registered routes for debugging
+const logRoutes = (router, prefix = '') => {
+    if (!router || !router.stack) {
+        console.log('[WORKSHOP] No routes to log');
+        return;
+    }
+
+    router.stack.forEach((layer) => {
+        if (layer.route) {
+            const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase()).join(', ');
+            console.log(`[WORKSHOP] Route registered: ${methods} ${prefix}${layer.route.path}`);
+        } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+            const path = layer.regexp.toString().replace(/\(/g, '').replace(/\)/g, '');
+            logRoutes(layer.handle, prefix + path);
+        }
+    });
+};
+
+setTimeout(() => {
+    console.log('[WORKSHOP] Registered routes:');
+    logRoutes(workshopRouter, '/workshop');
+}, 100);
 
 // Health check
 app.get('/api/health', (_req: any, res: any) => {
@@ -121,6 +156,27 @@ app.get('/api/health', (_req: any, res: any) => {
 // AUTO-MIGRATION: Ensure workshop tables exist
 // ============================================
 const WORKSHOP_TABLES_SQL = `
+-- Add id column if it doesn't exist (for tables created before id column was added)
+ALTER TABLE coffin_orders ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
+ALTER TABLE material_usage ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
+ALTER TABLE production_stages ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
+ALTER TABLE worker_assignments ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'worker',
+  phone VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_users_role (role),
+  INDEX idx_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS coffin_orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
   order_number VARCHAR(50) NOT NULL UNIQUE,
@@ -214,6 +270,35 @@ CREATE TABLE IF NOT EXISTS costing (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS design_specifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  coffin_order_id INT NOT NULL UNIQUE,
+  design_name VARCHAR(255),
+  description TEXT,
+  specifications JSON,
+  design_files JSON,
+  status VARCHAR(50) DEFAULT 'draft',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE,
+  INDEX idx_design_order (coffin_order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS material_intake (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  material_id INT NOT NULL,
+  quantity DECIMAL(10,2) NOT NULL,
+  unit_cost DECIMAL(10,2) DEFAULT 0,
+  supplier VARCHAR(255),
+  invoice_number VARCHAR(100),
+  notes TEXT,
+  received_by VARCHAR(255),
+  received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE,
+  INDEX idx_intake_material (material_id),
+  INDEX idx_intake_date (received_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 `;
 
 async function ensureWorkshopTables(dbName: string) {
@@ -224,24 +309,30 @@ async function ensureWorkshopTables(dbName: string) {
         const pool = await getTenantDB(dbName);
         connection = await pool.getConnection();
 
+        console.log(`[WORKSHOP] Creating workshop tables in: ${dbName}`);
+
         const statements = WORKSHOP_TABLES_SQL
             .split(';')
             .map(s => s.trim())
             .filter(s => s.length > 0 && s.toUpperCase().startsWith('CREATE'));
 
-        for (const statement of statements) {
+        console.log(`[WORKSHOP] Found ${statements.length} CREATE statements to execute`);
+
+        for (let i = 0; i < statements.length; i++) {
+            const statement = statements[i];
             try {
                 await connection.query(statement + ';');
+                console.log(`[WORKSHOP] ✓ Created table (${i + 1}/${statements.length})`);
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : String(err);
-                console.warn(`[WORKSHOP] Table creation warning: ${errorMessage}`);
+                console.warn(`[WORKSHOP] Table creation warning (${i + 1}/${statements.length}): ${errorMessage}`);
             }
         }
 
-        console.log(`[WORKSHOP] Workshop tables ensured in database: ${dbName}`);
+        console.log(`[WORKSHOP] ✅ Workshop tables ensured in database: ${dbName}`);
         return true;
     } catch (error: any) {
-        console.error(`[WORKSHOP] Failed to ensure workshop tables in ${dbName}:`, error.message);
+        console.error(`[WORKSHOP] ❌ Failed to ensure workshop tables in ${dbName}:`, error.message);
         return false;
     } finally {
         if (connection) await connection.release();
@@ -256,6 +347,28 @@ async function startServer() {
     const mainDb = process.env.DB_NAME || 'restpoint_main';
     console.log(`[WORKSHOP] Running auto-migration for workshop tables in: ${mainDb}`);
     await ensureWorkshopTables(mainDb);
+
+    // Run auto-migration on tenant databases
+    console.log('[WORKSHOP] Checking for tenant databases to migrate...');
+    try {
+        // @ts-ignore - dynamic import for shared module
+        const { safeTenantQuery } = await import('../../shared/dbConfig.js');
+        const tenants = await safeTenantQuery(mainDb, 'SELECT db_name, name FROM tenants WHERE is_active = 1');
+
+        console.log(`[WORKSHOP] Found ${tenants.length} active tenant(s)`);
+
+        for (const tenant of tenants) {
+            console.log(`[WORKSHOP] Migrating tenant: ${tenant.name} (${tenant.db_name})`);
+            const success = await ensureWorkshopTables(tenant.db_name);
+            if (success) {
+                console.log(`[WORKSHOP] ✅ Successfully migrated: ${tenant.name}`);
+            } else {
+                console.error(`[WORKSHOP] ❌ Failed to migrate: ${tenant.name}`);
+            }
+        }
+    } catch (error) {
+        console.error('[WORKSHOP] Tenant migration error:', error);
+    }
 
     const PORT = Number(process.env.PORT) || 6969;
 

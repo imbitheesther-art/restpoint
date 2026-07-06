@@ -1,7 +1,7 @@
 {
   "name": "@montezuma/shared-logger",
   "version": "1.0.0",
-  "description": "Shared logging utility using Winston",
+  "description": "Shared logging utility using Pino",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -15,11 +15,13 @@
   },
   "dependencies": {
     "dotenv": "^16.3.1",
-    "winston": "^3.11.0"
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
     "typescript": "^5.8.2",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "@types/pino": "^7.0.0"
   }
 }

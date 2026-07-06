@@ -1,9 +1,12 @@
 /**
  * Chemical Management API Service
  * Handles all chemical-related API calls with tenant/branch context
+ * Uses centralized API config for consistent routing
  */
 
-const API_BASE = 'http://localhost:5016/api/v1/restpoint/chemicals';
+import env from '../config/env';
+
+const API_BASE = `${env.FULL_API_URL}/chemicals`;
 
 const getHeaders = () => {
     const headers = {

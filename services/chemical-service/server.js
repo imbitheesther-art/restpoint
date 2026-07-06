@@ -156,18 +156,10 @@ app.get('/api/v1/restpoint/chemicals/test', (req, res) => {
 });
 
 // ============================================
-// ROUTES - Mount chemical routes
+// ROUTES - Mount chemical routes at root
 // ============================================
-app.use('/api/v1/restpoint/chemicals', chemicalRoutes);
-
-// Also support root path for testing
-app.get('/chemicals', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Chemical service is running. Use /api/v1/restpoint/chemicals for API endpoints.',
-    tenant: req.tenant?.db_name || 'unknown'
-  });
-});
+// The API Gateway strips /api/v1/restpoint/chemicals prefix and forwards clean paths
+app.use('/', chemicalRoutes);
 
 // ============================================
 // 404 HANDLER

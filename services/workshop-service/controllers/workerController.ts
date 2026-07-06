@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { safeTenantQuery, safeTenantExecute } from '../database/db.js'
+import { safeTenantQuery, safeTenantExecute } from '../database/db'
 import bcrypt from 'bcryptjs'
 
 /* 
@@ -38,15 +38,15 @@ const createWorker = async (req: Request, res: Response) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const [result] = await safeTenantExecute(tenantDb,
+        const insertResult: any = await safeTenantExecute(tenantDb,
             `INSERT INTO users (first_name, last_name, email, password, role, phone)
              VALUES (?, ?, ?, ?, ?, ?)`,
             [first_name, last_name, email, hashedPassword, role || 'worker', phone]
         );
 
-        const [newWorker] = await safeTenantQuery(tenantDb,
+        const newWorker: any = await safeTenantQuery(tenantDb,
             "SELECT id, first_name, last_name, email, role, phone, created_at FROM users WHERE id = ?",
-            [(result as any).insertId]
+            [insertResult.insertId]
         );
 
         res.status(201).json(newWorker[0]);
@@ -92,12 +92,12 @@ const updateWorker = async (req: Request, res: Response) => {
         }
 
         values.push(req.params.id);
-        const [result] = await safeTenantExecute(tenantDb,
+        const updateResult: any = await safeTenantExecute(tenantDb,
             `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
             values
         );
 
-        if (!(result as any).affectedRows) {
+        if (!updateResult.affectedRows) {
             return res.status(404).json({ error: 'Worker not found' });
         }
 
@@ -123,8 +123,8 @@ const deleteWorker = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Tenant database not resolved' });
         }
 
-        const [result] = await safeTenantExecute(tenantDb, 'DELETE FROM users WHERE id = ? AND role IN ("worker", "manager")', [req.params.id]);
-        if (!(result as any).affectedRows) {
+        const deleteResult: any = await safeTenantExecute(tenantDb, 'DELETE FROM users WHERE id = ? AND role IN ("worker", "manager")', [req.params.id]);
+        if (!deleteResult.affectedRows) {
             return res.status(404).json({ error: 'Worker not found' });
         }
         res.json({ message: 'Worker deleted successfully' });

@@ -345,9 +345,9 @@ export default function SLAPolicy() {
               </p>
               <p>
                 We target <strong>99.9% monthly uptime</strong>, with the goal of ensuring your team has
-                uninterrupted access to the system whenever it is needed. Although no software provider can
-                honestly promise zero downtime, we are committed to keeping interruptions to an absolute minimum
-                and restoring service immediately whenever an unexpected issue occurs.
+                uninterrupted access to the system whenever it is needed. Through our advanced PM2 cluster deployment
+                architecture, we achieve <strong>zero-downtime deployments</strong> for system updates and
+                maintenance—meaning your operations continue without interruption during software updates.
               </p>
               <p>
                 When you trust RestPoint, you gain more than a software provider—you gain a technology partner
@@ -373,6 +373,15 @@ export default function SLAPolicy() {
                 <div className="feature-item">
                   <span className="feature-icon">◉</span>
                   <div>
+                    <strong>Zero-Downtime Deployments</strong>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
+                      PM2 cluster architecture ensures updates happen without service interruption.
+                    </p>
+                  </div>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">◈</span>
+                  <div>
                     <strong>24/7 System Monitoring</strong>
                     <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
                       Continuous surveillance of all infrastructure and services.
@@ -380,7 +389,7 @@ export default function SLAPolicy() {
                   </div>
                 </div>
                 <div className="feature-item">
-                  <span className="feature-icon">◈</span>
+                  <span className="feature-icon">◉</span>
                   <div>
                     <strong>Performance Optimization</strong>
                     <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.9rem', opacity: 0.85 }}>
@@ -443,7 +452,7 @@ export default function SLAPolicy() {
                         <span className="icon">🔴</span> Critical
                       </td>
                       <td>Complete system outage or users cannot access the platform.</td>
-                      <td><strong>Immediate</strong></td>
+                      <td><strong>Immediate (0-15 min)</strong></td>
                       <td>Engineers work continuously until service is restored.</td>
                     </tr>
                     <tr>
@@ -451,7 +460,7 @@ export default function SLAPolicy() {
                         <span className="icon">🟠</span> High
                       </td>
                       <td>Essential functions such as Deceased Registration, Billing, Dispatch, or Body Management are unavailable.</td>
-                      <td><strong>Within 20 minutes</strong></td>
+                      <td><strong>Within 15 minutes</strong></td>
                       <td><strong>Within 1 hour</strong></td>
                     </tr>
                     <tr>
@@ -459,16 +468,16 @@ export default function SLAPolicy() {
                         <span className="icon">🟡</span> Medium
                       </td>
                       <td>Non-critical feature affected with an available workaround.</td>
-                      <td><strong>Within 2 hours</strong></td>
-                      <td><strong>Within 1 business day</strong></td>
+                      <td><strong>Within 1 hour</strong></td>
+                      <td><strong>Within 4 business hours</strong></td>
                     </tr>
                     <tr>
                       <td className="priority-badge">
                         <span className="icon">🟢</span> Low
                       </td>
                       <td>Minor issues, cosmetic defects, reports, or enhancement requests.</td>
-                      <td><strong>Within 1 business day</strong></td>
-                      <td><strong>Within 5 business days</strong></td>
+                      <td><strong>Within 4 business hours</strong></td>
+                      <td><strong>Within 3 business days</strong></td>
                     </tr>
                   </tbody>
                 </table>
@@ -489,6 +498,11 @@ export default function SLAPolicy() {
                 infrastructure, proactive monitoring, rapid incident response, and continuous improvements to
                 deliver the dependable service you expect.
               </p>
+              <p>
+                Our <strong>PM2 cluster deployment architecture</strong> ensures that system updates and
+                maintenance occur without any service interruption. New code is deployed seamlessly while
+                existing operations continue uninterrupted, guaranteeing zero downtime during updates.
+              </p>
             </div>
           </Reveal>
 
@@ -501,8 +515,11 @@ export default function SLAPolicy() {
               <p style={{ marginTop: '0.75rem', fontWeight: 500 }}>
                 "Your operations should never have to stop because of your software."
               </p>
-              <p>
-                That is the standard we strive to meet every single day.
+              <p style={{ marginTop: '0.75rem' }}>
+                Through our <strong>zero-downtime deployment architecture</strong>, we ensure that software
+                updates, maintenance, and improvements happen seamlessly—without interrupting your critical
+                mortuary operations. Your staff can continue their work without interruption, even during
+                system updates.
               </p>
             </div>
           </Reveal>
@@ -512,7 +529,7 @@ export default function SLAPolicy() {
             <h2>SLA Questions?</h2>
             <div className="contact-box">
               <p style={{ margin: 0, fontSize: '0.95rem' }}>
-                Questions about uptime, incidents, or maintenance schedules?
+                Questions about uptime, zero-downtime deployments, incidents, or maintenance schedules?
               </p>
               <p style={{ margin: '0.5rem 0 0 0' }}>
                 Email us at{' '}

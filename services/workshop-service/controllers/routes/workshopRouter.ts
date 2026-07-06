@@ -34,6 +34,21 @@ import {
     updateWorker,
     deleteWorker
 } from '../workerController'
+import {
+    generateWorkOrderPDF,
+    saveDesignSpec,
+    getDesignSpec,
+    recordMaterialIntake,
+    getMaterialIntakeHistory
+} from '../workOrderController'
+import {
+    assignWorkerToOrder,
+    recordMaterialUsage,
+    updateOrderStatus,
+    getTodayCompletedOrders,
+    getOrderTimeline,
+    completeProductionStage
+} from '../productionWorkflowController'
 
 const workshopRouter = express.Router()
 
@@ -73,5 +88,22 @@ workshopRouter.get('/reports/weekly', getWeeklyReport)
 workshopRouter.get('/reports/inventory', getInventoryReport)
 workshopRouter.get('/reports/production', getProductionReport)
 workshopRouter.get('/reports/costing', getCostingReport)
+
+// ============ WORK ORDERS & DESIGNS ============
+workshopRouter.get('/orders/:id/work-order/pdf', generateWorkOrderPDF)
+workshopRouter.post('/orders/:id/design', saveDesignSpec)
+workshopRouter.get('/orders/:id/design', getDesignSpec)
+
+// ============ MATERIAL INTAKE ============
+workshopRouter.post('/materials/intake', recordMaterialIntake)
+workshopRouter.get('/materials/intake', getMaterialIntakeHistory)
+
+// ============ PRODUCTION WORKFLOW ============
+workshopRouter.post('/orders/:orderId/assign-worker', assignWorkerToOrder)
+workshopRouter.post('/orders/:orderId/use-material', recordMaterialUsage)
+workshopRouter.patch('/orders/:orderId/status', updateOrderStatus)
+workshopRouter.get('/orders/today/completed', getTodayCompletedOrders)
+workshopRouter.get('/orders/:orderId/timeline', getOrderTimeline)
+workshopRouter.post('/orders/:orderId/complete-stage', completeProductionStage)
 
 export { workshopRouter }

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { Request, Response } from 'express'
-import pool from '../database/db.js'
+import { pool } from '../database/db'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 

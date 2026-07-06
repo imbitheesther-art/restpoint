@@ -3,7 +3,8 @@
  * Uses shared dbConfig for multi-tenant support
  */
 
-import { safeTenantQuery, safeTenantExecute, getTenantDB } from '../../shared/dbConfig';
+// @ts-ignore - Shared module loaded at runtime (JavaScript)
+const { safeTenantQuery, safeTenantExecute, getTenantDB } = require('../../../shared/dbConfig');
 
 // Re-export for use in controllers
 export { safeTenantQuery, safeTenantExecute, getTenantDB };

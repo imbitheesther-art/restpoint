@@ -394,6 +394,7 @@ const getAllHearses = asyncHandler(async (req, res) => {
             `SELECT 
                 h.*,
                 b.branch_name,
+                b.branch_code,
                 b.branch_location as location
             FROM hearses h
             LEFT JOIN branches b ON h.branch_id = b.branch_id
@@ -443,6 +444,7 @@ const getAvailableHearses = asyncHandler(async (req, res) => {
             `SELECT 
                 h.*,
                 b.branch_name,
+                b.branch_code,
                 b.branch_location as location
             FROM hearses h
             LEFT JOIN branches b ON h.branch_id = b.branch_id

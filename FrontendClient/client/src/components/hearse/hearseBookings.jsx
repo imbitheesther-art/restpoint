@@ -6,7 +6,7 @@ import { useSocket } from '../../context/socketContext';
 import { Eye, RefreshCw, Clock, User, Car, CheckCircle, XCircle, AlertCircle, Calendar, Phone, Truck, Search, MoreVertical } from 'lucide-react';
 import env from '../../config/env';
 
-const API_BASE_URL = `${env.HEARSE_API_URL}`;
+const API_BASE_URL = `${env.FULL_API_URL}`;
 
 const getTenantSlug = () => {
     return localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
@@ -136,14 +136,22 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
         if (!selected || !bookingDate || !clientName || !fromLocation || !toLocation) return;
         setSubmitting(true);
         try {
-            await bookingService.createBooking({
+            const bookingData = {
                 hearse_id: selected.id,
                 client_name: clientName,
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
                 from_timestamp: bookingDate,
                 to_timestamp: bookingDate
-            });
+            };
+
+            // Add user ID if logged in
+            const userId = localStorage.getItem('userId') || localStorage.getItem('user_id');
+            if (userId) {
+                bookingData.created_by = parseInt(userId);
+            }
+
+            await bookingService.createBooking(bookingData);
             onBookingCreated();
             onHide();
         } catch (e) {
@@ -280,7 +288,9 @@ const BookingSystem = () => {
                 fetch(`${API_BASE_URL}/hearse-bookings?t=${Date.now()}`, { headers: { 'x-tenant-slug': getTenantSlug() } }).then(r => r.json()),
                 driverService.getDrivers()
             ]);
-            setBookings(b.bookings || b || []);
+            // Ensure bookings is always an array
+            const bookingsData = Array.isArray(b.bookings) ? b.bookings : (Array.isArray(b) ? b : []);
+            setBookings(bookingsData);
             setDrivers(d);
         } catch (e) {
             setError('Failed to load data.');

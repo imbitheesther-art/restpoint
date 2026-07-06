@@ -1,619 +1,1179 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import styled, { keyframes, css } from 'styled-components';
 import {
-  Card, Spinner, Row, Col, Badge, Button, Modal, Form,
-  ListGroup, ListGroupItem, Alert, Carousel, InputGroup,
-  Table, Container
-} from 'react-bootstrap';
-import api from '../../api/axios';
-import { ENDPOINTS } from '../../api/endpoints';
-import env from '../../config/env';
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  Package,
-  AlertTriangle,
-  Filter,
-  Download,
-  Upload,
-  Box,
-  Database,
-  RotateCw,
-  Settings,
-  AlertTriangle as TriangleAlert,
-  Flame,
-  XCircle,
-  Trophy,
-  ChevronLeft,
-  ChevronRight,
-  BarChart3,
-  Users,
-  Tag,
-  DollarSign,
-  Warehouse,
-  Image as ImageIcon,
-  Calendar,
-  User,
-  Truck,
-  Layers,
-  Clock,
-  PersonStanding,
-  Save,
-  Users as UsersIcon,
-  FileSpreadsheet,
-  Grid3x3,
-  List
+  Search, Plus, Edit, Trash2, Eye, Package, AlertTriangle,
+  Filter, Download, Upload, Box, Database, RotateCw, Settings,
+  Flame, XCircle, Trophy, ChevronLeft, ChevronRight, BarChart3,
+  Users, Tag, DollarSign, Warehouse, Image as ImageIcon,
+  Calendar, User, Truck, Layers, Clock, PersonStanding,
+  Save, Users as UsersIcon, FileSpreadsheet, Grid3x3, List,
+  Home, ChevronDown, ShoppingBag, Star, Heart, Share2,
+  MoreHorizontal, CheckCircle, AlertCircle, Info, MinusCircle,
+  PlusCircle, RefreshCw, Printer, FileText, ArrowUpDown,
+  ArrowUp, ArrowDown, SearchX, SlidersHorizontal, Maximize2,
+  Diamond, CheckSquare, XSquare, Loader2
 } from 'lucide-react';
 
-// Define custom styles
-const styles = `
-  :root {
-    --primary-red: #FF4532;
-    --secondary-green: #00C853;
-    --dark-text: #1A202C;
-    --light-background: #F0F2F5;
-    --card-background: #FFFFFF;
-    --border-color: #D1D9E6;
-    --error-text: #EF4444;
-    --purple-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-    --primary-gradient: linear-gradient(135deg, var(--primary-red) 0%, color-mix(in srgb, var(--primary-red) 80%, black) 100%);
-    --success-gradient: linear-gradient(135deg, var(--secondary-green) 0%, color-mix(in srgb, var(--secondary-green) 80%, black) 100%);
-    --danger-gradient: linear-gradient(135deg, var(--error-text) 0%, color-mix(in srgb, var(--error-text) 80%, black) 100%);
-    --shadow-light: 0 2px 8px rgba(0,0,0,0.04);
-    --shadow-medium: 0 4px 16px rgba(0,0,0,0.08);
-    --shadow-heavy: 0 8px 32px rgba(0,0,0,0.12);
-  }
+// ─── Color Palette (Elegant Vintage) ───────────────────────────────────────
+const Colors = {
+  ink: '#15171A',
+  bone: '#FAF8F4',
+  bone2: '#F3EFE6',
+  brass: '#8B7355',
+  brassHover: '#A98F6E',
+  brassLight: '#C4B89A',
+  verdigris: '#3D4F47',
+  verdigrisDark: '#2E3F37',
+  line: '#E3DDD0',
+  lineDark: '#2C2F33',
+  gray: '#6B6862',
+  grayLight: 'rgba(250,248,244,0.62)',
+  red: '#9B4A3F',
+  redBg: '#F7ECE9',
+  redLine: '#E8D2CC',
+  white: '#FFFFFF',
+  success: '#475A43',
+  successBg: '#EEF3EC',
+  successLine: '#DCE6D9',
+  shadow: 'rgba(21,23,26,0.12)',
+  overlay: 'rgba(21,23,26,0.88)',
+  textMuted: '#8B8882',
+  darkGray: '#2C2F33',
+  primaryDark: '#15171A',
+  accentTeal: '#3D4F47',
+  infoBlue: '#5B7B8A',
+  dangerRed: '#9B4A3F',
+  mediumGray: '#E3DDD0',
+  lightGray: '#F3EFE6',
+  successGreen: '#475A43',
+  warningAmber: '#A68B5B',
+  warningBg: '#F8F3E8',
+  warningLine: '#EDE4D0',
+};
 
-  .inventory-container {
-    background: linear-gradient(135deg, var(--light-background) 0%, #E8EBF0 100%);
-    min-height: 100vh;
-    padding: 1.5rem;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
+// ─── Animations ────────────────────────────────────────────────────────────
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
-  .stylish-card {
-    background: var(--card-background);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-light);
-    border: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
-  }
+const slideIn = keyframes`
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+`;
 
-  .stylish-card:hover {
-    box-shadow: var(--shadow-medium);
-    transform: translateY(-2px);
-  }
+const slideInFromTop = keyframes`
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+`;
 
-  .modern-button {
-    border-radius: 0.75rem;
-    font-weight: 600;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 0.5rem 0.75rem;
-    border: none;
-    font-size: 0.875rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  }
+const pulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
 
-  .modern-button.btn-primary {
-    background: var(--primary-gradient);
-    color: white;
-    box-shadow: 0 2px 8px rgba(255, 69, 50, 0.2);
-  }
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
 
-  .modern-button.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(255, 69, 50, 0.35);
-  }
+const shimmer = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+`;
 
-  .modern-button.btn-primary:active {
-    transform: translateY(0);
-  }
+// ─── Styled Components ─────────────────────────────────────────────────────
 
-  .modern-button.btn-light {
-    background: white;
-    border: 1px solid var(--border-color);
-    color: var(--dark-text);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  }
+const PageContainer = styled.div`
+  background: ${Colors.bone};
+  min-height: 100vh;
+  padding: 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  .modern-button.btn-light:hover {
-    background: var(--light-background);
-    border-color: var(--primary-red);
-    color: var(--primary-red);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 69, 50, 0.15);
+  @media (max-width: 768px) {
+    padding: 0.75rem;
   }
+`;
 
-  .modern-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-  }
+const BreadcrumbNav = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: ${Colors.gray};
+  flex-wrap: wrap;
 
-  .card-header-styled {
-    background: var(--primary-gradient);
-    color: white;
-    padding: 1rem 1.25rem;
-    border-bottom: none;
+  a {
+    color: ${Colors.brass};
+    text-decoration: none;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.25rem;
+    transition: color 0.2s;
+
+    &:hover {
+      color: ${Colors.brassHover};
+    }
   }
 
-  .card-header-styled h4 {
+  span {
+    color: ${Colors.textMuted};
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .separator {
+    color: ${Colors.mediumGray};
+  }
+`;
+
+const Card = styled.div`
+  background: ${Colors.white};
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid ${Colors.mediumGray};
+  overflow: hidden;
+  animation: ${fadeIn} 0.6s ease-out;
+  margin-bottom: 1.5rem;
+`;
+
+const CardHeader = styled.div`
+  background: linear-gradient(135deg, ${Colors.ink} 0%, ${Colors.verdigrisDark} 100%);
+  color: ${Colors.bone};
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid ${Colors.lineDark};
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const HeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  h4 {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
+    letter-spacing: 0.5px;
   }
 
-  .stat-card {
-    border-radius: 1rem;
-    padding: 1.25rem;
+  svg {
+    color: ${Colors.brassLight};
+    width: 24px;
+    height: 24px;
+  }
+
+  @media (max-width: 576px) {
+    h4 { font-size: 1.125rem; }
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+`;
+
+const ViewToggle = styled.div`
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(255,255,255,0.1);
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.15);
+`;
+
+const ViewToggleButton = styled.button`
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: ${props => props.$active ? Colors.bone : 'transparent'};
+  color: ${props => props.$active ? Colors.ink : Colors.bone};
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: ${props => props.$active ? Colors.bone : 'rgba(255,255,255,0.15)'};
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+const Button = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 2px solid ${Colors.mediumGray};
+  background: ${Colors.white};
+  color: ${Colors.darkGray};
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 38px;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: ${Colors.brass};
+  }
+
+  &:active { transform: translateY(0); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+  svg { width: 16px; height: 16px; }
+
+  &.primary {
+    background: linear-gradient(135deg, ${Colors.brass} 0%, ${Colors.brassHover} 100%);
+    color: ${Colors.white};
+    border-color: transparent;
+    box-shadow: 0 4px 6px -1px rgba(139, 115, 85, 0.3);
+
+    &:hover {
+      box-shadow: 0 10px 20px -5px rgba(139, 115, 85, 0.4);
+      border-color: transparent;
+    }
+  }
+
+  &.danger {
+    background: linear-gradient(135deg, ${Colors.red} 0%, #7A3A30 100%);
     color: white;
-    box-shadow: var(--shadow-light);
-    height: 100%;
-    min-height: 120px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
+    border-color: transparent;
+
+    &:hover {
+      box-shadow: 0 10px 20px -5px rgba(155, 74, 63, 0.3);
+      border-color: transparent;
+    }
   }
 
-  .stat-card::before {
+  &.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: ${Colors.bone};
+
+    &:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: transparent;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  &.sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    min-height: 32px;
+
+    svg { width: 14px; height: 14px; }
+  }
+
+  &.icon-only {
+    padding: 0.5rem;
+    min-height: 36px;
+    min-width: 36px;
+    justify-content: center;
+  }
+
+  @media (max-width: 576px) {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    min-height: 34px;
+    svg { width: 14px; height: 14px; }
+  }
+`;
+
+const CardBody = styled.div`
+  padding: 1.5rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+
+  @media (max-width: 576px) {
+    padding: 0.75rem;
+  }
+`;
+
+// ─── Stats Cards ───────────────────────────────────────────────────────────
+
+const StatsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+`;
+
+const StatCard = styled.div`
+  background: ${props => props.$bg || `linear-gradient(135deg, ${Colors.verdigris} 0%, ${Colors.verdigrisDark} 100%)`};
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: ${Colors.bone};
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+
+  &::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
     pointer-events: none;
   }
 
-  .stat-card:hover {
+  &:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-heavy);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   }
 
-  .stat-card.bg-gradient-primary { background: var(--primary-gradient); }
-  .stat-card.bg-gradient-purple { background: var(--purple-gradient); }
-  .stat-card.bg-gradient-success { background: var(--success-gradient); }
-  .stat-card.bg-gradient-danger { background: var(--danger-gradient); }
+  @media (max-width: 576px) {
+    padding: 0.875rem;
+  }
+`;
 
-  .stat-card .icon-container {
-    background: rgba(255,255,255,0.25);
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    backdrop-filter: blur(10px);
+const StatIcon = styled.div`
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  backdrop-filter: blur(10px);
+
+  svg {
+    width: 20px;
+    height: 20px;
   }
 
-  .stat-card h2 {
-    font-size: 1.75rem;
-    font-weight: 800;
-    margin: 0.5rem 0;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  @media (max-width: 576px) {
+    width: 36px;
+    height: 36px;
+    svg { width: 16px; height: 16px; }
+  }
+`;
+
+const StatValue = styled.h2`
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  line-height: 1.2;
+
+  @media (max-width: 576px) {
+    font-size: 1.25rem;
+  }
+`;
+
+const StatLabel = styled.small`
+  font-size: 0.8125rem;
+  opacity: 0.9;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: block;
+`;
+
+// ─── Alert ─────────────────────────────────────────────────────────────────
+
+const AlertBox = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.875rem;
+  margin-bottom: 1.5rem;
+  animation: ${fadeIn} 0.5s ease-out;
+  border-left: 4px solid ${Colors.red};
+  background: ${Colors.redBg};
+  color: ${Colors.red};
+
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
   }
 
-  .stat-card small {
-    font-size: 0.8125rem;
-    opacity: 0.95;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+  .alert-content {
+    flex: 1;
+    strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    small {
+      opacity: 0.85;
+    }
   }
 
-  .alert-styled {
-    border-radius: 0.875rem;
-    padding: 1rem 1.25rem;
+  .alert-close {
+    background: none;
     border: none;
-    animation: fadeIn 0.5s ease-out;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
-  }
+    color: ${Colors.red};
+    cursor: pointer;
+    padding: 0.25rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
 
-  .alert-styled.alert-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
-    border-left: 4px solid var(--error-text);
+    &:hover { opacity: 1; }
   }
+`;
 
-  .table-modern {
-    border-collapse: separate;
-    border-spacing: 0;
-    width: 100%;
-    background: var(--card-background);
+// ─── Search & Filters ──────────────────────────────────────────────────────
+
+const FilterRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 200px 200px;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
+`;
 
-  .table-modern thead th {
-    background: var(--light-background);
-    border-bottom: 2px solid var(--border-color);
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    color: var(--dark-text);
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+const SearchWrapper = styled.div`
+  position: relative;
+
+  svg {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${Colors.textMuted};
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
   }
+`;
 
-  .table-modern tbody td {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
-    transition: all 0.2s ease;
-  }
+const Input = styled.input`
+  width: 100%;
+  padding: 0.625rem 1rem 0.625rem 2.75rem;
+  border-radius: 0.75rem;
+  border: 2px solid ${Colors.mediumGray};
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: ${Colors.white};
+  color: ${Colors.ink};
+  font-family: inherit;
 
-  .table-modern tbody tr {
-    transition: all 0.2s ease;
-  }
-
-  .table-modern tbody tr:hover {
-    transform: scale(1.005);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-
-  .table-modern tbody tr:hover td {
-    background-color: rgba(255, 69, 50, 0.03);
-  }
-
-  .search-input-modern {
-    border-radius: 0.75rem;
-    border: 2px solid var(--border-color);
-    padding: 0.625rem 1rem 0.625rem 2.5rem;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-    width: 100%;
-    background: white;
-  }
-
-  .search-input-modern:focus {
-    border-color: var(--primary-red);
-    box-shadow: 0 0 0 4px rgba(255, 69, 50, 0.1);
+  &:focus {
+    border-color: ${Colors.brass};
+    box-shadow: 0 0 0 4px rgba(139, 115, 85, 0.1);
     outline: none;
     transform: translateY(-1px);
   }
 
-  .search-input-modern::placeholder {
-    color: #94a3b8;
-  }
-
-  .coffin-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 0.75rem;
-  }
-
-  .stock-bar {
-    height: 6px;
-    background: var(--border-color);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-  }
-
-  .stock-fill {
-    height: 100%;
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 3px;
-  }
-
-  .stock-high { 
-    background: linear-gradient(90deg, var(--secondary-green), #10B981);
-  }
-  .stock-medium { 
-    background: linear-gradient(90deg, #F59E0B, #FBBF24);
-  }
-  .stock-low { 
-    background: linear-gradient(90deg, var(--error-text), #F87171);
-  }
-
-  .coffin-card {
-    border-radius: 1rem;
-    overflow: hidden;
-    box-shadow: var(--shadow-light);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    height: 100%;
-    border: 1px solid var(--border-color);
-    background: var(--card-background);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .coffin-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-heavy);
-    border-color: var(--primary-red);
-  }
-
-  .coffin-card-image {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .coffin-card-body {
-    padding: 1.25rem;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .coffin-card-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    color: var(--dark-text);
-    line-height: 1.3;
-  }
-
-  .coffin-card-text {
-    font-size: 0.875rem;
-    color: #64748B;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .coffin-card-text svg {
-    flex-shrink: 0;
-  }
-
-  .view-toggle {
-    display: flex;
-    gap: 0.5rem;
-    background: white;
-    padding: 0.25rem;
-    border-radius: 0.75rem;
-    border: 1px solid var(--border-color);
-  }
-
-  .view-toggle-button {
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    border: none;
-    background: transparent;
-    color: var(--dark-text);
-    transition: all 0.2s ease;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .view-toggle-button:hover {
-    background: var(--light-background);
-    color: var(--primary-red);
-  }
-
-  .view-toggle-button.active {
-    background: var(--primary-red);
-    color: white;
-  }
-
-  /* Mobile Optimizations */
-  @media (max-width: 768px) {
-    .inventory-container {
-      padding: 0.75rem;
-    }
-
-    .card-header-styled {
-      padding: 1rem;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.75rem;
-    }
-
-    .card-header-styled h4 {
-      font-size: 1.125rem;
-    }
-
-    .card-header-actions {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      width: 100%;
-    }
-
-    .stat-card {
-      padding: 0.875rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .stat-card h2 {
-      font-size: 1.25rem;
-    }
-
-    .stat-card .icon-container {
-      width: 36px;
-      height: 36px;
-      margin-bottom: 0.5rem;
-    }
-
-    .table-modern thead th,
-    .table-modern tbody td {
-      padding: 0.75rem;
-      font-size: 0.8125rem;
-    }
-
-    .modern-button {
-      padding: 0.5rem 0.625rem;
-      font-size: 0.8125rem;
-    }
-
-    .search-input-modern {
-      padding: 0.5625rem 0.875rem 0.5625rem 2.25rem;
-      font-size: 0.8125rem;
-    }
-
-    .coffin-card {
-      margin-bottom: 1rem;
-    }
-
-    .coffin-card-image {
-      height: 140px;
-    }
-
-    .coffin-card-body {
-      padding: 0.875rem;
-    }
-
-    .modal-dialog {
-      margin: 0.5rem;
-    }
-
-    .modal-content {
-      border-radius: 1rem;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .inventory-container {
-      padding: 0.5rem;
-    }
-
-    .stat-card {
-      padding: 0.75rem;
-    }
-
-    .stat-card h2 {
-      font-size: 1.125rem;
-    }
-
-    .card-header-styled {
-      padding: 0.875rem;
-    }
-
-    .table-responsive {
-      margin: 0 -0.5rem;
-      padding: 0 0.5rem;
-    }
-
-    .table-modern {
-      font-size: 0.75rem;
-    }
-
-    .table-modern thead th,
-    .table-modern tbody td {
-      padding: 0.5rem;
-    }
-
-    .coffin-card-image {
-      height: 120px;
-    }
-
-    .view-toggle {
-      display: none;
-    }
-  }
-
-  /* Smallest screens */
-  @media (max-width: 375px) {
-    .stat-card .icon-container {
-      width: 32px;
-      height: 32px;
-    }
-
-    .stat-card h2 {
-      font-size: 1rem;
-    }
-
-    .modern-button {
-      padding: 0.375rem 0.5rem;
-      font-size: 0.75rem;
-    }
-
-    .coffin-card-title {
-      font-size: 0.875rem;
-    }
-
-    .coffin-card-text {
-      font-size: 0.75rem;
-    }
-  }
-
-  /* Animation */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-  }
-
-  .sound-alert {
-    animation: pulse 1.5s infinite;
+  &::placeholder {
+    color: ${Colors.textMuted};
   }
 `;
 
-// Toast Notification Component
-function Toast({ message, type, onClose }) {
-  const [visible, setVisible] = useState(true);
+const Select = styled.select`
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid ${Colors.mediumGray};
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: ${Colors.white};
+  color: ${Colors.ink};
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6862' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-      onClose();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+  &:focus {
+    border-color: ${Colors.brass};
+    box-shadow: 0 0 0 4px rgba(139, 115, 85, 0.1);
+    outline: none;
+  }
+`;
 
-  if (!visible) return null;
+// ─── Table ─────────────────────────────────────────────────────────────────
 
-  const bgColor = type === 'success' ? '#10B981' : '#EF4444';
+const TableWrapper = styled.div`
+  overflow-x: auto;
+  border-radius: 0.875rem;
+  border: 1px solid ${Colors.mediumGray};
+`;
 
-  return (
-    <div style={{
-      position: 'fixed',
-      bottom: '20px',
-      right: '20px',
-      backgroundColor: bgColor,
-      color: 'white',
-      padding: '12px 16px',
-      borderRadius: '0.75rem',
-      boxShadow: 'var(--shadow-heavy)',
-      zIndex: 1050,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      fontSize: '0.875rem',
-      maxWidth: '320px',
-      animation: 'fadeIn 0.3s ease-out'
-    }}>
-      {type === 'success' ? '✅' : '⚠️'} {message}
-      <button
-        onClick={() => { setVisible(false); onClose(); }}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'white',
-          fontSize: '1.2em',
-          cursor: 'pointer',
-          padding: '0',
-          marginLeft: '8px'
-        }}
-      >
-        &times;
-      </button>
-    </div>
-  );
-}
+const Table = styled.table`
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+
+  thead th {
+    background: ${Colors.bone2};
+    border-bottom: 2px solid ${Colors.mediumGray};
+    padding: 0.875rem 1rem;
+    font-weight: 700;
+    color: ${Colors.ink};
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  tbody td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid ${Colors.mediumGray};
+    vertical-align: middle;
+    color: ${Colors.darkGray};
+    transition: background 0.2s ease;
+  }
+
+  tbody tr {
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+      background: ${Colors.bone};
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.8125rem;
+    thead th, tbody td { padding: 0.75rem; }
+  }
+`;
+
+const ProductCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 200px;
+`;
+
+const ProductImage = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 0.625rem;
+  overflow: hidden;
+  border: 2px solid ${Colors.mediumGray};
+  background: ${Colors.bone2};
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  svg {
+    color: ${Colors.textMuted};
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const ProductInfo = styled.div`
+  h6 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+    color: ${Colors.ink};
+    line-height: 1.3;
+  }
+
+  p {
+    font-size: 0.75rem;
+    color: ${Colors.textMuted};
+    margin: 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+`;
+
+const PriceBox = styled.div`
+  white-space: nowrap;
+
+  .old {
+    font-size: 0.75rem;
+    color: ${Colors.textMuted};
+    text-decoration: line-through;
+    display: block;
+  }
+
+  .new {
+    font-weight: 700;
+    color: ${Colors.red};
+    font-size: 0.9375rem;
+  }
+`;
+
+const StockBar = styled.div`
+  width: 100px;
+  height: 6px;
+  background: ${Colors.mediumGray};
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.375rem;
+`;
+
+const StockFill = styled.div`
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: ${props =>
+    props.$percentage > 50
+      ? `linear-gradient(90deg, ${Colors.success}, #5A6E55)`
+      : props.$percentage > 20
+        ? `linear-gradient(90deg, ${Colors.warningAmber}, #C4A86A)`
+        : `linear-gradient(90deg, ${Colors.red}, #B85A4F)`};
+`;
+
+const Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+
+  background: ${props =>
+    props.$variant === 'danger' ? Colors.redBg :
+      props.$variant === 'warning' ? Colors.warningBg :
+        Colors.successBg};
+  color: ${props =>
+    props.$variant === 'danger' ? Colors.red :
+      props.$variant === 'warning' ? Colors.warningAmber :
+        Colors.success};
+
+  border: 1px solid ${props =>
+    props.$variant === 'danger' ? Colors.redLine :
+      props.$variant === 'warning' ? Colors.warningLine :
+        Colors.successLine};
+`;
+
+const ActionsCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+`;
+
+const ActionButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 0.5rem;
+  border: 1px solid ${Colors.mediumGray};
+  background: ${Colors.white};
+  color: ${Colors.darkGray};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  }
+
+  svg { width: 16px; height: 16px; }
+
+  &.view { &:hover { border-color: ${Colors.verdigris}; color: ${Colors.verdigris}; } }
+  &.edit { &:hover { border-color: ${Colors.brass}; color: ${Colors.brass}; } }
+  &.delete { &:hover { border-color: ${Colors.red}; color: ${Colors.red}; } }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+`;
+
+// ─── Grid View ─────────────────────────────────────────────────────────────
+
+const GridContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+`;
+
+const CoffinCard = styled.div`
+  background: ${Colors.white};
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid ${Colors.mediumGray};
+  display: flex;
+  flex-direction: column;
+  animation: ${fadeIn} 0.5s ease-out;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    border-color: ${Colors.brass};
+  }
+`;
+
+const CoffinCardImage = styled.div`
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  border-bottom: 1px solid ${Colors.mediumGray};
+  background: ${Colors.bone2};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  ${CoffinCard}:hover & img {
+    transform: scale(1.05);
+  }
+
+  svg {
+    color: ${Colors.textMuted};
+    width: 48px;
+    height: 48px;
+  }
+`;
+
+const CoffinCardBody = styled.div`
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+`;
+
+const CoffinCardTitle = styled.h5`
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  color: ${Colors.ink};
+  line-height: 1.3;
+`;
+
+const CoffinCardText = styled.p`
+  font-size: 0.8125rem;
+  color: ${Colors.textMuted};
+  margin: 0 0 0.375rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: ${Colors.brass};
+  }
+`;
+
+const CoffinCardFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid ${Colors.mediumGray};
+`;
+
+// ─── Pagination ────────────────────────────────────────────────────────────
+
+const PaginationRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0 0;
+  margin-top: 1rem;
+  border-top: 1px solid ${Colors.mediumGray};
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+`;
+
+const PageInfo = styled.div`
+  font-size: 0.875rem;
+  color: ${Colors.textMuted};
+`;
+
+const PageButtons = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const PageButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 0.5rem;
+  border: 1px solid ${props => props.$active ? Colors.brass : Colors.mediumGray};
+  background: ${props => props.$active ? Colors.brass : Colors.white};
+  color: ${props => props.$active ? Colors.white : Colors.darkGray};
+  font-weight: ${props => props.$active ? '700' : '500'};
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${Colors.brass};
+    background: ${props => props.$active ? Colors.brassHover : Colors.bone};
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  svg { width: 16px; height: 16px; }
+`;
+
+// ─── Loading & Empty States ────────────────────────────────────────────────
+
+const LoadingState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: ${Colors.brass};
+
+  svg {
+    animation: ${spin} 1s linear infinite;
+    width: 32px;
+    height: 32px;
+  }
+
+  p {
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+    color: ${Colors.textMuted};
+  }
+`;
+
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  svg {
+    width: 64px;
+    height: 64px;
+    color: ${Colors.mediumGray};
+    margin-bottom: 1rem;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: ${Colors.ink};
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: ${Colors.textMuted};
+    margin: 0 0 1.5rem 0;
+  }
+`;
+
+// ─── Toast ─────────────────────────────────────────────────────────────────
+
+const ToastContainer = styled.div`
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  @media (max-width: 576px) {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+`;
+
+const ToastItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: 0.75rem;
+  background: ${props => props.$type === 'success' ? Colors.success : Colors.red};
+  color: ${Colors.white};
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  animation: ${slideInFromTop} 0.3s ease-out;
+  font-size: 0.875rem;
+  font-weight: 500;
+  max-width: 360px;
+
+  svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .toast-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    padding: 0.125rem;
+    margin-left: auto;
+    transition: color 0.2s;
+    &:hover { color: white; }
+  }
+
+  @media (max-width: 576px) {
+    max-width: 100%;
+    font-size: 0.8125rem;
+  }
+`;
+
+// ─── Modal ─────────────────────────────────────────────────────────────────
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: ${Colors.overlay};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: ${fadeIn} 0.2s ease-out;
+  backdrop-filter: blur(4px);
+`;
+
+const ModalBox = styled.div`
+  background: ${Colors.white};
+  border-radius: 1.25rem;
+  width: 100%;
+  max-width: ${props => props.$size === 'lg' ? '800px' : '500px'};
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  animation: ${fadeIn} 0.3s ease-out;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: ${Colors.mediumGray}; border-radius: 3px; }
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid ${Colors.mediumGray};
+
+  h5 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  svg { width: 20px; height: 20px; color: ${Colors.brass}; }
+`;
+
+const ModalClose = styled.button`
+  background: none;
+  border: none;
+  color: ${Colors.textMuted};
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${Colors.bone2};
+    color: ${Colors.ink};
+  }
+
+  svg { width: 20px; height: 20px; }
+`;
+
+const ModalBody = styled.div`
+  padding: 1.5rem;
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid ${Colors.mediumGray};
+`;
+
+// ─── Form ──────────────────────────────────────────────────────────────────
+
+const FormGroup = styled.div`
+  margin-bottom: 1rem;
+
+  label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: ${Colors.darkGray};
+    margin-bottom: 0.375rem;
+  }
+`;
+
+const FormInput = styled.input`
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.625rem;
+  border: 2px solid ${Colors.mediumGray};
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: ${Colors.white};
+  color: ${Colors.ink};
+  font-family: inherit;
+
+  &:focus {
+    border-color: ${Colors.brass};
+    box-shadow: 0 0 0 4px rgba(139, 115, 85, 0.1);
+    outline: none;
+  }
+`;
+
+const FormRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+// ─── Assignments List ──────────────────────────────────────────────────────
+
+const AssignmentList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const AssignmentItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: ${Colors.bone};
+  border-radius: 0.75rem;
+  border: 1px solid ${Colors.mediumGray};
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: ${Colors.brassLight};
+    background: ${Colors.white};
+  }
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+`;
+
+const AssignmentInfo = styled.div`
+  h6 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+    color: ${Colors.ink};
+  }
+
+  small {
+    font-size: 0.8125rem;
+    color: ${Colors.textMuted};
+  }
+`;
+
+// ─── Main Component ────────────────────────────────────────────────────────
 
 function CoffinInventory() {
   const navigate = useNavigate();
@@ -631,17 +1191,15 @@ function CoffinInventory() {
   const [itemsPerPage] = useState(10);
   const [selectedCoffin, setSelectedCoffin] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAssignmentsModal, setShowAssignmentsModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [toast, setToast] = useState(null);
   const [hasPlayedSound, setHasPlayedSound] = useState(false);
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [viewMode, setViewMode] = useState('table');
 
   const audioRef = useRef(null);
 
-  // Get tenant slug from URL params or localStorage
   const getTenantSlug = () => {
     return slug ||
       localStorage.getItem('tenantSlug') ||
@@ -658,15 +1216,14 @@ function CoffinInventory() {
 
   const showToast = useCallback((message, type) => {
     setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // Load beep sound
   useEffect(() => {
     audioRef.current = new Audio('../../../../public/audio/notification-bells.mp3');
-    audioRef.current.volume = 0.3;
+    if (audioRef.current) audioRef.current.volume = 0.3;
   }, []);
 
-  // Statistics
   const totalCoffins = useMemo(() => coffins.length, [coffins]);
   const totalStock = useMemo(() => coffins.reduce((sum, c) => sum + (c.quantity || 0), 0), [coffins]);
   const outOfStockCoffins = useMemo(() => coffins.filter(c => (c.quantity || 0) <= 0), [coffins]);
@@ -679,36 +1236,34 @@ function CoffinInventory() {
       title: "Total Models",
       value: totalCoffins,
       icon: <Box size={20} />,
-      color: "bg-gradient-primary",
+      bg: `linear-gradient(135deg, ${Colors.verdigris} 0%, ${Colors.verdigrisDark} 100%)`,
       description: "Unique coffin models"
     },
     {
       title: "Total Valuation",
       value: `Ksh ${totalInventoryValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
       icon: <Trophy size={20} />,
-      color: "bg-gradient-purple",
+      bg: `linear-gradient(135deg, ${Colors.brass} 0%, ${Colors.brassHover} 100%)`,
       description: "Inventory value"
     },
     {
       title: "Total Stock",
       value: totalStock,
       icon: <Database size={20} />,
-      color: "bg-gradient-success",
+      bg: `linear-gradient(135deg, ${Colors.success} 0%, #5A6E55 100%)`,
       description: "Units in inventory"
     },
     {
       title: "Out of Stock",
       value: outOfStockCoffins.length,
       icon: <XCircle size={20} />,
-      color: "bg-gradient-danger",
+      bg: `linear-gradient(135deg, ${Colors.red} 0%, #7A3A30 100%)`,
       description: "Need restocking"
     }
   ], [totalCoffins, totalInventoryValue, totalStock, outOfStockCoffins.length]);
 
-  // Filter coffins
   const filteredCoffins = useMemo(() => {
     let filtered = coffins;
-
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(coffin =>
@@ -719,42 +1274,33 @@ function CoffinInventory() {
         coffin.supplier?.toLowerCase().includes(term)
       );
     }
-
     if (statusFilter === 'low') {
-      filtered = filtered.filter(coffin => (coffin.quantity || 0) > 0 && (coffin.quantity || 0) <= 5);
+      filtered = filtered.filter(c => (c.quantity || 0) > 0 && (c.quantity || 0) <= 5);
     } else if (statusFilter === 'out') {
-      filtered = filtered.filter(coffin => (coffin.quantity || 0) <= 0);
+      filtered = filtered.filter(c => (c.quantity || 0) <= 0);
     } else if (statusFilter === 'in-stock') {
-      filtered = filtered.filter(coffin => (coffin.quantity || 0) > 5);
+      filtered = filtered.filter(c => (c.quantity || 0) > 5);
     }
-
     return filtered;
   }, [coffins, searchTerm, statusFilter]);
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCoffins = filteredCoffins.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredCoffins.length / itemsPerPage);
 
-  // Play alert sound
   const playAlertSound = useCallback(() => {
     if (audioRef.current) {
-      audioRef.current.play().catch(error => {
-        console.log('Audio play failed:', error);
-      });
+      audioRef.current.play().catch(() => { });
     }
   }, []);
 
-  // Check low stock with sound alert
   const checkLowStock = useCallback(() => {
-    const alerts = coffins.filter(coffin => {
-      const stock = coffin.quantity || 0;
+    const alerts = coffins.filter(c => {
+      const stock = c.quantity || 0;
       return stock > 0 && stock <= 5;
     });
-
     setLowStockCoffins(alerts);
-
     if (alerts.length > 0 && !hasPlayedSound) {
       playAlertSound();
       setHasPlayedSound(true);
@@ -763,35 +1309,21 @@ function CoffinInventory() {
     }
   }, [coffins, showToast, playAlertSound, hasPlayedSound]);
 
-  // Fetch coffins data
   const fetchCoffins = useCallback(async () => {
     setLoading(true);
     try {
+      const api = (await import('../../api/axios')).default;
+      const { ENDPOINTS } = await import('../../api/endpoints');
       const response = await api.get(ENDPOINTS.COFFINS.LIST, { timeout: 10000 });
-
       if (response.data.success) {
         const processedCoffins = (response.data.data || []).map(coffin => {
           let images = [];
-
-          if (Array.isArray(coffin.image_urls)) {
-            images = coffin.image_urls;
-          } else if (typeof coffin.image_urls === 'string') {
-            images = coffin.image_urls.split(',').map(url => url.trim());
-          }
-
-          if (coffin.images && Array.isArray(coffin.images)) {
-            images = [...images, ...coffin.images];
-          }
-
-          images = [...new Set(images)].filter(url => url && url.trim() !== '');
-
-          return {
-            ...coffin,
-            images: images,
-            primary_image: coffin.primary_image || images[0] || null
-          };
+          if (Array.isArray(coffin.image_urls)) images = coffin.image_urls;
+          else if (typeof coffin.image_urls === 'string') images = coffin.image_urls.split(',').map(u => u.trim());
+          if (coffin.images && Array.isArray(coffin.images)) images = [...images, ...coffin.images];
+          images = [...new Set(images)].filter(u => u && u.trim() !== '');
+          return { ...coffin, images, primary_image: coffin.primary_image || images[0] || null };
         });
-
         setCoffins(processedCoffins);
         setLastUpdated(new Date());
         showToast('Data loaded successfully!', 'success');
@@ -807,33 +1339,29 @@ function CoffinInventory() {
     }
   }, [showToast]);
 
-  // Fetch recent assignments
   const fetchRecentAssignments = useCallback(async () => {
     setAssignmentsLoading(true);
     try {
+      const api = (await import('../../api/axios')).default;
+      const { ENDPOINTS } = await import('../../api/endpoints');
       const response = await api.get(ENDPOINTS.COFFINS.ASSIGNMENTS);
       if (response.data.success) {
         setRecentAssignments(response.data.data || []);
-      } else {
-        throw new Error(response.data.message || 'Failed to fetch assignments');
       }
     } catch (error) {
       console.error('Failed to load recent assignments:', error);
-      showToast('Failed to load recent assignments', 'error');
       setRecentAssignments([]);
     } finally {
       setAssignmentsLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
-  // Export to Excel
   const handleExportToExcel = async () => {
     setExporting(true);
     try {
-      const response = await api.get(ENDPOINTS.COFFINS.EXPORT, {
-        responseType: 'blob'
-      });
-
+      const api = (await import('../../api/axios')).default;
+      const { ENDPOINTS } = await import('../../api/endpoints');
+      const response = await api.get(ENDPOINTS.COFFINS.EXPORT, { responseType: 'blob' });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -843,7 +1371,6 @@ function CoffinInventory() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-
       showToast('Excel report downloaded successfully!', 'success');
     } catch (error) {
       console.error('Export failed:', error);
@@ -867,23 +1394,23 @@ function CoffinInventory() {
   }, [fetchCoffins, fetchRecentAssignments]);
 
   useEffect(() => {
-    if (coffins.length > 0) {
-      checkLowStock();
-    }
+    if (coffins.length > 0) checkLowStock();
   }, [coffins, checkLowStock]);
 
-  // Handlers
   const handleAddCoffin = () => {
     const tenantSlug = getTenantSlug();
     navigate(`/tenant/${tenantSlug}/coffins/register`);
   };
-  const handleDelete = async (coffin) => {
+
+  const handleDelete = (coffin) => {
     setSelectedCoffin(coffin);
     setShowDeleteModal(true);
   };
 
   const confirmDelete = async () => {
     try {
+      const api = (await import('../../api/axios')).default;
+      const { ENDPOINTS } = await import('../../api/endpoints');
       const response = await api.delete(ENDPOINTS.COFFINS.DELETE(selectedCoffin.coffin_id));
       if (response.data.success) {
         setCoffins(coffins.filter(c => c.coffin_id !== selectedCoffin.coffin_id));
@@ -892,7 +1419,6 @@ function CoffinInventory() {
         throw new Error(response.data.message);
       }
     } catch (error) {
-      console.error('Delete failed:', error);
       showToast(error.response?.data?.message || 'Delete failed', 'error');
     }
     setShowDeleteModal(false);
@@ -916,12 +1442,12 @@ function CoffinInventory() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
+      const api = (await import('../../api/axios')).default;
+      const { ENDPOINTS } = await import('../../api/endpoints');
       const response = await api.put(ENDPOINTS.COFFINS.UPDATE(selectedCoffin.coffin_id), editFormData);
       if (response.data.success) {
         setCoffins(coffins.map(c =>
-          c.coffin_id === selectedCoffin.coffin_id
-            ? { ...c, ...editFormData }
-            : c
+          c.coffin_id === selectedCoffin.coffin_id ? { ...c, ...editFormData } : c
         ));
         showToast('Coffin updated successfully!', 'success');
         setShowEditModal(false);
@@ -930,14 +1456,13 @@ function CoffinInventory() {
         throw new Error(response.data.message);
       }
     } catch (error) {
-      console.error('Update failed:', error);
       showToast('Update failed', 'error');
     }
   };
 
   const handleViewDetails = (coffin) => {
-    setSelectedCoffin(coffin);
-    setShowDetailsModal(true);
+    const tenantSlug = getTenantSlug();
+    navigate(`/tenant/${tenantSlug}/coffins/${coffin.coffin_id}/details`);
   };
 
   const getStockPercentage = (stock) => Math.min((stock / 20) * 100, 100);
@@ -947,300 +1472,201 @@ function CoffinInventory() {
     return 'success';
   };
 
-  // Render coffin images
-  const renderCoffinImages = (coffin) => {
+  const renderCoffinImage = (coffin) => {
     let images = [];
-
-    if (Array.isArray(coffin.image_urls)) {
-      images = coffin.image_urls;
-    } else if (typeof coffin.image_urls === 'string') {
-      images = coffin.image_urls.split(',').map(url => url.trim());
-    }
-
-    if (coffin.images && Array.isArray(coffin.images)) {
-      images = [...images, ...coffin.images];
-    }
-
-    images = [...new Set(images)].filter(url => url && url.trim() !== '');
-
-    if (images.length === 0) {
-      return (
-        <div className="coffin-image bg-light d-flex align-items-center justify-content-center">
-          <Package size={48} color="#94a3b8" />
-        </div>
-      );
-    }
-
-    if (images.length === 1) {
+    if (Array.isArray(coffin.image_urls)) images = coffin.image_urls;
+    else if (typeof coffin.image_urls === 'string') images = coffin.image_urls.split(',').map(u => u.trim());
+    if (coffin.images && Array.isArray(coffin.images)) images = [...images, ...coffin.images];
+    images = [...new Set(images)].filter(u => u && u.trim() !== '');
+    const src = images[0];
+    if (src) {
       return (
         <img
-          src={images[0].startsWith('http') ? images[0] : `${env.API_GATEWAY_URL}${images[0]}`}
+          src={src.startsWith('http') ? src : `http://localhost:4000${src}`}
           alt={coffin.type}
-          className="coffin-image"
-          onError={(e) => {
-            e.target.src = 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&h=300&fit=crop';
-          }}
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
       );
     }
-
-    return (
-      <Carousel>
-        {images.map((image, index) => (
-          <Carousel.Item key={index}>
-            <img
-              className="d-block w-100 coffin-image"
-              src={image.startsWith('http') ? image : `${env.API_GATEWAY_URL}${image}`}
-              alt={`${coffin.type} - ${index + 1}`}
-              onError={(e) => {
-                e.target.src = 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&h=300&fit=crop';
-              }}
-            />
-          </Carousel.Item>
-        ))}
-      </Carousel>
-    );
+    return <Package size={20} />;
   };
 
-  // Render grid view item
-  const renderGridItem = (coffin) => {
-    const stock = coffin.quantity || 0;
-    const stockVariant = getStockVariant(stock);
-
-    return (
-      <Col xs={12} sm={6} md={4} lg={3} key={coffin.coffin_id}>
-        <div className="coffin-card">
-          <div style={{ height: '160px', overflow: 'hidden' }}>
-            {renderCoffinImages(coffin)}
-          </div>
-          <div className="coffin-card-body">
-            <h5 className="coffin-card-title">{coffin.type}</h5>
-            <p className="coffin-card-text">
-              <Tag size={12} className="me-1" />
-              ID: {coffin.custom_id || `COFF-${coffin.coffin_id}`}
-            </p>
-            <p className="coffin-card-text">
-              <Layers size={12} className="me-1" />
-              {coffin.material}
-            </p>
-            <p className="coffin-card-text">
-              <DollarSign size={12} className="me-1" />
-              Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}
-            </p>
-
-            <div className="d-flex justify-content-between align-items-center mt-3">
-              <Badge bg={stockVariant} className="rounded-pill">
-                {stock} units
-              </Badge>
-              <div className="d-flex gap-1">
-                <Button
-                  variant="light"
-                  size="sm"
-                  className="p-1"
-                  onClick={() => handleViewDetails(coffin)}
-                >
-                  <Eye size={14} />
-                </Button>
-                <Button
-                  variant="light"
-                  size="sm"
-                  className="p-1"
-                  onClick={() => handleEdit(coffin)}
-                >
-                  <Edit size={14} />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Col>
-    );
+  const renderCoffinImageUrl = (coffin) => {
+    let images = [];
+    if (Array.isArray(coffin.image_urls)) images = coffin.image_urls;
+    else if (typeof coffin.image_urls === 'string') images = coffin.image_urls.split(',').map(u => u.trim());
+    if (coffin.images && Array.isArray(coffin.images)) images = [...images, ...coffin.images];
+    images = [...new Set(images)].filter(u => u && u.trim() !== '');
+    return images[0] || null;
   };
 
   return (
-    <div className="inventory-container">
-      <style>{styles}</style>
+    <PageContainer>
+      {/* Breadcrumb */}
+      <BreadcrumbNav>
+        <Link to="/dashboard"><Home size={14} /> Dashboard</Link>
+        <span className="separator">/</span>
+        <span>Coffin Inventory</span>
+      </BreadcrumbNav>
 
-      <Card className="stylish-card mb-4">
-        <Card.Header className="card-header-styled">
-          <div className="d-flex align-items-center">
-            <Package className="me-2" />
+      <Card>
+        <CardHeader>
+          <HeaderTitle>
+            <Package />
             <h4>⚰️ Coffin Inventory</h4>
-          </div>
-          <div className="card-header-actions d-flex align-items-center flex-wrap gap-2">
-            <div className="view-toggle d-none d-md-flex">
-              <button
-                className={`view-toggle-button ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => setViewMode('table')}
-              >
-                <List size={16} />
-              </button>
-              <button
-                className={`view-toggle-button ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3x3 size={16} />
-              </button>
-            </div>
-            <Button
-              variant="light"
-              size="sm"
-              className="modern-button"
-              onClick={forceRefresh}
-            >
-              <RotateCw size={14} /> Refresh
+          </HeaderTitle>
+          <HeaderActions>
+            <ViewToggle>
+              <ViewToggleButton $active={viewMode === 'table'} onClick={() => setViewMode('table')}>
+                <List />
+              </ViewToggleButton>
+              <ViewToggleButton $active={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
+                <Grid3x3 />
+              </ViewToggleButton>
+            </ViewToggle>
+            <Button className="ghost sm" onClick={forceRefresh}>
+              <RefreshCw size={14} /> Refresh
             </Button>
-            <Button
-              variant="light"
-              size="sm"
-              className="modern-button"
-              onClick={() => setShowAssignmentsModal(true)}
-            >
+            <Button className="ghost sm" onClick={() => setShowAssignmentsModal(true)}>
               <UsersIcon size={14} /> Assigned
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="modern-button"
-              onClick={handleAddCoffin}
-            >
+            <Button className="primary sm" onClick={handleAddCoffin}>
               <Plus size={14} /> Add Coffin
             </Button>
-          </div>
-        </Card.Header>
+          </HeaderActions>
+        </CardHeader>
 
-        <Card.Body className="p-3">
+        <CardBody>
           {/* Low Stock Alert */}
           {lowStockCoffins.length > 0 && (
-            <Alert variant="danger" className="mb-4 alert-styled sound-alert" dismissible onClose={() => setLowStockCoffins([])}>
-              <div className="d-flex align-items-center">
-                <TriangleAlert className="me-3" size={20} />
-                <div>
-                  <strong className="d-block mb-1">Low Stock Alert</strong>
-                  <small className="d-block">{lowStockCoffins.length} coffin(s) need attention</small>
-                </div>
+            <AlertBox>
+              <AlertTriangle />
+              <div className="alert-content">
+                <strong>Low Stock Alert</strong>
+                <small>{lowStockCoffins.length} coffin(s) need attention</small>
               </div>
-            </Alert>
+              <button className="alert-close" onClick={() => setLowStockCoffins([])}>
+                <XCircle size={16} />
+              </button>
+            </AlertBox>
           )}
 
-          {/* Statistics Cards */}
-          <Row className="g-3 mb-4">
+          {/* Statistics */}
+          <StatsRow>
             {stats.map((stat, index) => (
-              <Col key={index} xs={6} sm={6} md={3} lg={3}>
-                <div className={`stat-card ${stat.color}`}>
-                  <div className="icon-container">
-                    {stat.icon}
-                  </div>
-                  <h2>{stat.value}</h2>
-                  <small>{stat.title}</small>
-                </div>
-              </Col>
+              <StatCard key={index} $bg={stat.bg}>
+                <StatIcon>{stat.icon}</StatIcon>
+                <StatValue>{stat.value}</StatValue>
+                <StatLabel>{stat.title}</StatLabel>
+              </StatCard>
             ))}
-          </Row>
+          </StatsRow>
 
-          {/* Search and Filters */}
-          <Row className="g-3 mb-4">
-            <Col md={6}>
-              <div className="position-relative">
-                <Search className="position-absolute top-50 start-3 translate-middle-y" size={16} color="#94a3b8" />
-                <Form.Control
-                  type="text"
-                  placeholder="Search coffins..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="search-input-modern"
-                />
-              </div>
-            </Col>
-            <Col md={3}>
-              <Form.Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="search-input-modern"
-                style={{ paddingLeft: '1rem' }}
-              >
-                <option value="all">All Stock</option>
-                <option value="in-stock">In Stock</option>
-                <option value="low">Low Stock</option>
-                <option value="out">Out of Stock</option>
-              </Form.Select>
-            </Col>
-            <Col md={3}>
-              <Button
-                variant="light"
-                className="modern-button w-100"
-                onClick={handleExportToExcel}
-                disabled={exporting || coffins.length === 0}
-              >
-                {exporting ? (
-                  <Spinner animation="border" size="sm" className="me-1" />
-                ) : (
-                  <FileSpreadsheet size={14} className="me-1" />
-                )}
-                Export
-              </Button>
-            </Col>
-          </Row>
+          {/* Search & Filters */}
+          <FilterRow>
+            <SearchWrapper>
+              <Search />
+              <Input
+                type="text"
+                placeholder="Search coffins by name, ID, material..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              />
+            </SearchWrapper>
+            <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
+              <option value="all">All Stock</option>
+              <option value="in-stock">In Stock</option>
+              <option value="low">Low Stock</option>
+              <option value="out">Out of Stock</option>
+            </Select>
+            <Button onClick={handleExportToExcel} disabled={exporting || coffins.length === 0}>
+              {exporting ? <Loader2 size={14} /> : <FileSpreadsheet size={14} />}
+              Export
+            </Button>
+          </FilterRow>
 
-          {/* View Toggle for Mobile */}
-          <div className="d-flex justify-content-between align-items-center mb-3 d-md-none">
-            <small className="text-muted">
-              Showing {filteredCoffins.length} coffins
-            </small>
-            <div className="view-toggle">
-              <button
-                className={`view-toggle-button ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => setViewMode('table')}
-              >
-                <List size={16} />
-              </button>
-              <button
-                className={`view-toggle-button ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3x3 size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Content Area */}
+          {/* Content */}
           {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" style={{ color: 'var(--primary-red)' }} />
-              <p className="mt-2 text-muted">Loading inventory...</p>
-            </div>
+            <LoadingState>
+              <Loader2 size={32} />
+              <p>Loading inventory...</p>
+            </LoadingState>
           ) : filteredCoffins.length === 0 ? (
-            <div className="text-center py-5">
-              <Package size={48} className="mb-3 text-muted" />
-              <h5 className="mb-2">No coffins found</h5>
-              <p className="text-muted mb-3">Try adjusting your search or filters</p>
-              <Button
-                variant="primary"
-                className="modern-button"
-                onClick={handleAddCoffin}
-              >
-                <Plus size={14} className="me-1" /> Add First Coffin
+            <EmptyState>
+              <Package />
+              <h5>No coffins found</h5>
+              <p>Try adjusting your search or filters</p>
+              <Button className="primary" onClick={handleAddCoffin}>
+                <Plus size={14} /> Add First Coffin
               </Button>
-            </div>
+            </EmptyState>
           ) : viewMode === 'grid' ? (
-            // Grid View
-            <Row className="g-3">
-              {currentCoffins.map(renderGridItem)}
-            </Row>
+            /* Grid View */
+            <GridContainer>
+              {currentCoffins.map((coffin) => {
+                const stock = coffin.quantity || 0;
+                const stockVariant = getStockVariant(stock);
+                const imgSrc = renderCoffinImageUrl(coffin);
+                return (
+                  <CoffinCard key={coffin.coffin_id}>
+                    <CoffinCardImage>
+                      {imgSrc ? (
+                        <img
+                          src={imgSrc.startsWith('http') ? imgSrc : `http://localhost:4000${imgSrc}`}
+                          alt={coffin.type}
+                          onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24a1 1 0 0 0-1.1 0L2 6.5l11 6 11-6-4.45-2.26Z"/><path d="M2 12.5 13 18l11-5.5"/><path d="M13 18V8"/></svg>'; }}
+                        />
+                      ) : (
+                        <Package size={48} />
+                      )}
+                    </CoffinCardImage>
+                    <CoffinCardBody>
+                      <CoffinCardTitle>{coffin.type}</CoffinCardTitle>
+                      <CoffinCardText>
+                        <Tag size={14} />
+                        ID: {coffin.custom_id || `COFF-${coffin.coffin_id}`}
+                      </CoffinCardText>
+                      <CoffinCardText>
+                        <Layers size={14} />
+                        {coffin.material || 'N/A'}
+                      </CoffinCardText>
+                      <CoffinCardText>
+                        <DollarSign size={14} />
+                        Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}
+                      </CoffinCardText>
+                      <CoffinCardFooter>
+                        <Badge $variant={stockVariant}>
+                          {stock} units
+                        </Badge>
+                        <div style={{ display: 'flex', gap: '0.375rem' }}>
+                          <ActionButton className="view" onClick={() => handleViewDetails(coffin)}>
+                            <Eye size={14} />
+                          </ActionButton>
+                          <ActionButton className="edit" onClick={() => handleEdit(coffin)}>
+                            <Edit size={14} />
+                          </ActionButton>
+                        </div>
+                      </CoffinCardFooter>
+                    </CoffinCardBody>
+                  </CoffinCard>
+                );
+              })}
+            </GridContainer>
           ) : (
-            // Table View
+            /* Table View */
             <>
-              <div className="table-responsive">
-                <Table className="table-modern">
+              <TableWrapper>
+                <Table>
                   <thead>
                     <tr>
-                      <th>Model</th>
+                      <th>Product</th>
                       <th>ID</th>
-                      <th className="d-none d-md-table-cell">Material</th>
+                      <th>Category</th>
+                      <th>Brand</th>
                       <th>Price</th>
                       <th>Stock</th>
                       <th>Status</th>
-                      <th>Actions</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1248,294 +1674,289 @@ function CoffinInventory() {
                       const stock = coffin.quantity || 0;
                       const stockPercentage = getStockPercentage(stock);
                       const stockVariant = getStockVariant(stock);
-
+                      const imgSrc = renderCoffinImageUrl(coffin);
                       return (
-                        <tr key={coffin.coffin_id}>
+                        <tr key={coffin.coffin_id} onClick={() => handleViewDetails(coffin)}>
                           <td>
-                            <div className="d-flex align-items-center">
-                              <div className="bg-light rounded me-2 d-flex align-items-center justify-content-center"
-                                style={{ width: '40px', height: '40px' }}>
-                                <Package size={16} color="#64748B" />
-                              </div>
-                              <div>
-                                <div className="fw-semibold">{coffin.type}</div>
-                                <small className="text-muted d-md-none">{coffin.material}</small>
-                              </div>
-                            </div>
+                            <ProductCell>
+                              <ProductImage>
+                                {imgSrc ? (
+                                  <img
+                                    src={imgSrc.startsWith('http') ? imgSrc : `http://localhost:4000${imgSrc}`}
+                                    alt={coffin.type}
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <Package size={20} />
+                                )}
+                              </ProductImage>
+                              <ProductInfo>
+                                <h6>{coffin.type}</h6>
+                                <p>{coffin.material} coffin - {coffin.color || 'Standard'} color</p>
+                              </ProductInfo>
+                            </ProductCell>
                           </td>
+                          <td><code style={{ color: Colors.textMuted, fontSize: '0.8125rem' }}>{coffin.custom_id || `COFF-${coffin.coffin_id}`}</code></td>
+                          <td>{coffin.material || 'N/A'}</td>
+                          <td>{coffin.supplier || 'N/A'}</td>
                           <td>
-                            <code className="text-muted">{coffin.custom_id || `COFF-${coffin.coffin_id}`}</code>
-                          </td>
-                          <td className="d-none d-md-table-cell">{coffin.material}</td>
-                          <td className="fw-semibold">
-                            Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}
+                            <PriceBox>
+                              <span className="new">Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}</span>
+                            </PriceBox>
                           </td>
                           <td>
                             <div>
-                              <div className="d-flex justify-content-between">
-                                <span>{stock}</span>
-                                <small>{Math.round(stockPercentage)}%</small>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 600 }}>{stock}</span>
+                                <small style={{ color: Colors.textMuted }}>{Math.round(stockPercentage)}%</small>
                               </div>
-                              <div className="stock-bar">
-                                <div
-                                  className={`stock-fill ${stockPercentage > 50 ? 'stock-high' :
-                                    stockPercentage > 20 ? 'stock-medium' : 'stock-low'
-                                    }`}
-                                  style={{ width: `${stockPercentage}%` }}
-                                />
-                              </div>
+                              <StockBar>
+                                <StockFill $percentage={stockPercentage} style={{ width: `${stockPercentage}%` }} />
+                              </StockBar>
                             </div>
                           </td>
                           <td>
-                            <Badge bg={stockVariant} className="rounded-pill">
+                            <Badge $variant={stockVariant}>
+                              {stockVariant === 'danger' ? <XCircle size={12} /> :
+                                stockVariant === 'warning' ? <AlertTriangle size={12} /> :
+                                  <CheckCircle size={12} />}
                               {stockVariant === 'danger' ? 'Out' :
                                 stockVariant === 'warning' ? 'Low' : 'In Stock'}
                             </Badge>
                           </td>
-                          <td>
-                            <div className="d-flex gap-1">
-                              <Button
-                                variant="light"
-                                size="sm"
-                                className="p-1"
-                                onClick={() => handleViewDetails(coffin)}
-                              >
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <ActionsCell>
+                              <ActionButton className="view" onClick={() => handleViewDetails(coffin)}>
                                 <Eye size={14} />
-                              </Button>
-                              <Button
-                                variant="light"
-                                size="sm"
-                                className="p-1"
-                                onClick={() => handleEdit(coffin)}
-                              >
+                              </ActionButton>
+                              <ActionButton className="edit" onClick={() => handleEdit(coffin)}>
                                 <Edit size={14} />
-                              </Button>
-                              <Button
-                                variant="light"
-                                size="sm"
-                                className="p-1"
+                              </ActionButton>
+                              <ActionButton
+                                className="delete"
                                 onClick={() => handleDelete(coffin)}
                                 disabled={stock > 0}
-                                style={{ opacity: stock > 0 ? 0.5 : 1 }}
                               >
                                 <Trash2 size={14} />
-                              </Button>
-                            </div>
+                              </ActionButton>
+                            </ActionsCell>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </Table>
-              </div>
+              </TableWrapper>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
-                  <div className="text-muted">
+                <PaginationRow>
+                  <PageInfo>
                     Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredCoffins.length)} of {filteredCoffins.length}
-                  </div>
-                  <div className="d-flex gap-2">
-                    <Button
-                      variant="light"
-                      className="modern-button"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft size={14} />
-                    </Button>
-                    <div className="d-flex align-items-center px-3 text-muted">
-                      Page {currentPage} of {totalPages}
-                    </div>
-                    <Button
-                      variant="light"
-                      className="modern-button"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight size={14} />
-                    </Button>
-                  </div>
-                </div>
+                  </PageInfo>
+                  <PageButtons>
+                    <PageButton onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+                      <ChevronLeft size={16} />
+                    </PageButton>
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <PageButton
+                          key={pageNum}
+                          $active={currentPage === pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </PageButton>
+                      );
+                    })}
+                    <PageButton onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+                      <ChevronRight size={16} />
+                    </PageButton>
+                  </PageButtons>
+                </PaginationRow>
               )}
             </>
           )}
-        </Card.Body>
+        </CardBody>
       </Card>
 
-      {/* Modals (same as before) */}
-      <Modal show={showAssignmentsModal} onHide={() => setShowAssignmentsModal(false)} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <UsersIcon className="me-2" />
-            Recently Assigned Coffins
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {assignmentsLoading ? (
-            <div className="text-center py-4">
-              <Spinner animation="border" />
-              <p className="mt-2">Loading assignments...</p>
-            </div>
-          ) : recentAssignments.length === 0 ? (
-            <div className="text-center py-4">
-              <Package size={48} className="mb-3 text-muted" />
-              <h5>No recent assignments</h5>
-            </div>
-          ) : (
-            <ListGroup variant="flush">
-              {recentAssignments.map((assignment) => (
-                <ListGroup.Item key={assignment.assignment_id}>
-                  <div className="d-flex justify-content-between">
-                    <div>
-                      <h6 className="mb-1">{assignment.deceased_name}</h6>
-                      <small className="text-muted">{assignment.coffin_type} • {assignment.material}</small>
-                    </div>
-                    <Badge bg="primary">Assigned</Badge>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="light" onClick={() => setShowAssignmentsModal(false)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Assignments Modal */}
+      {showAssignmentsModal && (
+        <ModalOverlay onClick={() => setShowAssignmentsModal(false)}>
+          <ModalBox $size="lg" onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h5><UsersIcon /> Recently Assigned Coffins</h5>
+              <ModalClose onClick={() => setShowAssignmentsModal(false)}>
+                <XCircle size={20} />
+              </ModalClose>
+            </ModalHeader>
+            <ModalBody>
+              {assignmentsLoading ? (
+                <LoadingState>
+                  <Loader2 size={24} />
+                  <p>Loading assignments...</p>
+                </LoadingState>
+              ) : recentAssignments.length === 0 ? (
+                <EmptyState style={{ padding: '2rem' }}>
+                  <Package size={48} />
+                  <h5>No recent assignments</h5>
+                  <p>No coffins have been assigned yet</p>
+                </EmptyState>
+              ) : (
+                <AssignmentList>
+                  {recentAssignments.map((assignment) => (
+                    <AssignmentItem key={assignment.assignment_id}>
+                      <AssignmentInfo>
+                        <h6>{assignment.deceased_name || 'Unknown'}</h6>
+                        <small>{assignment.coffin_type || 'N/A'} • {assignment.material || 'N/A'}</small>
+                      </AssignmentInfo>
+                      <Badge $variant="success">
+                        <CheckSquare size={12} /> Assigned
+                      </Badge>
+                    </AssignmentItem>
+                  ))}
+                </AssignmentList>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={() => setShowAssignmentsModal(false)}>Close</Button>
+            </ModalFooter>
+          </ModalBox>
+        </ModalOverlay>
+      )}
 
       {/* Delete Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Delete <strong>{selectedCoffin?.type}</strong>? This action cannot be undone.</p>
-          {selectedCoffin?.quantity > 0 && (
-            <Alert variant="warning">
-              Cannot delete - coffin still has stock remaining
-            </Alert>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="light" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={confirmDelete}
-            disabled={selectedCoffin?.quantity > 0}
-          >
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {showDeleteModal && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <ModalBox onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h5><Trash2 /> Confirm Deletion</h5>
+              <ModalClose onClick={() => setShowDeleteModal(false)}>
+                <XCircle size={20} />
+              </ModalClose>
+            </ModalHeader>
+            <ModalBody>
+              <p>Delete <strong>{selectedCoffin?.type}</strong>? This action cannot be undone.</p>
+              {selectedCoffin?.quantity > 0 && (
+                <AlertBox style={{ marginBottom: 0 }}>
+                  <Info size={18} />
+                  <div className="alert-content">
+                    <small>Cannot delete - coffin still has stock remaining</small>
+                  </div>
+                </AlertBox>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+              <Button className="danger" onClick={confirmDelete} disabled={selectedCoffin?.quantity > 0}>
+                <Trash2 size={14} /> Delete
+              </Button>
+            </ModalFooter>
+          </ModalBox>
+        </ModalOverlay>
+      )}
 
       {/* Edit Modal */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Coffin</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleEditSubmit}>
-          <Modal.Body>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Model Type</Form.Label>
-                  <Form.Control
-                    value={editFormData.type}
-                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Material</Form.Label>
-                  <Form.Control
-                    value={editFormData.material}
-                    onChange={(e) => setEditFormData({ ...editFormData, material: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Price</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={editFormData.exact_price}
-                    onChange={(e) => setEditFormData({ ...editFormData, exact_price: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Quantity</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={editFormData.quantity}
-                    onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="light" onClick={() => setShowEditModal(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              Update Coffin
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+      {showEditModal && (
+        <ModalOverlay onClick={() => setShowEditModal(false)}>
+          <ModalBox $size="lg" onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h5><Edit /> Edit Coffin</h5>
+              <ModalClose onClick={() => setShowEditModal(false)}>
+                <XCircle size={20} />
+              </ModalClose>
+            </ModalHeader>
+            <form onSubmit={handleEditSubmit}>
+              <ModalBody>
+                <FormRow>
+                  <FormGroup>
+                    <label>Model Type</label>
+                    <FormInput
+                      value={editFormData.type}
+                      onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Material</label>
+                    <FormInput
+                      value={editFormData.material}
+                      onChange={(e) => setEditFormData({ ...editFormData, material: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                </FormRow>
+                <FormRow>
+                  <FormGroup>
+                    <label>Price (Ksh)</label>
+                    <FormInput
+                      type="number"
+                      value={editFormData.exact_price}
+                      onChange={(e) => setEditFormData({ ...editFormData, exact_price: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Quantity</label>
+                    <FormInput
+                      type="number"
+                      value={editFormData.quantity}
+                      onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
+                      required
+                    />
+                  </FormGroup>
+                </FormRow>
+                <FormRow>
+                  <FormGroup>
+                    <label>Supplier</label>
+                    <FormInput
+                      value={editFormData.supplier}
+                      onChange={(e) => setEditFormData({ ...editFormData, supplier: e.target.value })}
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Color</label>
+                    <FormInput
+                      value={editFormData.color}
+                      onChange={(e) => setEditFormData({ ...editFormData, color: e.target.value })}
+                    />
+                  </FormGroup>
+                </FormRow>
+              </ModalBody>
+              <ModalFooter>
+                <Button type="button" onClick={() => setShowEditModal(false)}>Cancel</Button>
+                <Button type="submit" className="primary">
+                  <Save size={14} /> Update Coffin
+                </Button>
+              </ModalFooter>
+            </form>
+          </ModalBox>
+        </ModalOverlay>
+      )}
 
-      {/* Details Modal */}
-      <Modal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Coffin Details</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedCoffin && (
-            <>
-              {renderCoffinImages(selectedCoffin)}
-              <Row className="mt-3">
-                <Col md={6}>
-                  <p><strong>Model:</strong> {selectedCoffin.type}</p>
-                  <p><strong>ID:</strong> {selectedCoffin.custom_id || `COFF-${selectedCoffin.coffin_id}`}</p>
-                  <p><strong>Material:</strong> {selectedCoffin.material}</p>
-                </Col>
-                <Col md={6}>
-                  <p><strong>Price:</strong> Ksh {parseInt(selectedCoffin.exact_price || 0).toLocaleString()}</p>
-                  <p><strong>Stock:</strong> {selectedCoffin.quantity || 0} units</p>
-                  <p><strong>Supplier:</strong> {selectedCoffin.supplier || 'Not specified'}</p>
-                </Col>
-              </Row>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="light" onClick={() => setShowDetailsModal(false)}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={() => {
-            setShowDetailsModal(false);
-            handleEdit(selectedCoffin);
-          }}>
-            Edit Coffin
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </div>
+      {/* Toast */}
+      {toast && (
+        <ToastContainer>
+          <ToastItem $type={toast.type}>
+            {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            {toast.message}
+            <button className="toast-close" onClick={() => setToast(null)}>
+              <XCircle size={16} />
+            </button>
+          </ToastItem>
+        </ToastContainer>
+      )}
+    </PageContainer>
   );
 }
 

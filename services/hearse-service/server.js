@@ -1,4 +1,3 @@
-// Load .env FIRST before any other imports - explicitly from hearse-service directory
 require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
 const express = require('express');
@@ -14,9 +13,7 @@ const restpointRoutes = require('./routes/hearseRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// ============================================================
 // Socket.IO
-// ============================================================
 const io = new Server(server, {
     cors: {
         origin: '*',
@@ -26,17 +23,13 @@ const io = new Server(server, {
 
 app.set('io', io);
 
-// ============================================================
 // Middleware
-// ============================================================
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ============================================================
 // Socket.IO connection handling
-// ============================================================
 io.on('connection', (socket) => {
     console.log(`🔌 Client connected: ${socket.id}`);
     socket.on('join_branch', (branchId) => {
@@ -52,9 +45,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// ============================================================
 // Tenant Middleware
-// ============================================================
 app.use(async (req, res, next) => {
     try {
         const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-slug'] || 'system_shared';
@@ -113,26 +104,13 @@ app.use(async (req, res, next) => {
 });
 
 // ============================================================
-// Routes - Mount at /api/v1/restpoint
+// Routes - Mount at root for clean path forwarding from gateway
 // ============================================================
-// FIX: Mount routes at /api/v1/restpoint
-app.use('/api/v1/restpoint', restpointRoutes);
-
-// Also mount at root for direct access (optional)
+// The API Gateway strips /api/v1/restpoint prefix and forwards clean paths
+// So we mount at / and routes use clean paths like /hearses, /hearse-bookings, etc.
 app.use('/', restpointRoutes);
 
-// ============================================================
 // Health checks
-// ============================================================
-app.get('/api/v1/health', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Hearse Service is running',
-        port: PORT,
-        timestamp: new Date().toISOString()
-    });
-});
-
 app.get('/health', (req, res) => {
     res.json({
         status: 'success',
@@ -148,12 +126,12 @@ app.get('/', (req, res) => {
         status: 'success',
         message: 'Hearse Service',
         endpoints: {
-            hearses: 'POST/GET /api/v1/restpoint/hearses',
-            hearse_detail: 'PUT/DELETE /api/v1/restpoint/hearses/:id',
-            available: 'GET /api/v1/restpoint/hearses/available',
-            bookings: 'POST/GET /api/v1/restpoint/hearse-bookings',
-            drivers: 'GET /api/v1/restpoint/drivers',
-            health: 'GET /api/v1/health'
+            hearses: 'POST/GET /hearses',
+            hearse_detail: 'PUT/DELETE /hearses/:id',
+            available: 'GET /hearses/available',
+            bookings: 'POST/GET /hearse-bookings',
+            drivers: 'GET /all-drivers',
+            health: 'GET /health'
         }
     });
 });
@@ -162,54 +140,40 @@ app.get('/', (req, res) => {
 // Debug: Print all registered routes
 // ============================================================
 console.log('\n Registered Routes:');
-const printRoutes = (layer, path = '') => {
-    if (layer.route) {
-        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-        console.log(`   ${methods}  ${path}${layer.route.path}`);
-    }
-    if (layer.name === 'router' && layer.handle.stack) {
-        layer.handle.stack.forEach((l) => {
-            if (l.route) {
-                const methods = Object.keys(l.route.methods).join(', ').toUpperCase();
-                console.log(`   ${methods}  ${path}${l.route.path}`);
-            }
-        });
-    }
-};
-
 app._router.stack.forEach((layer) => {
     if (layer.route) {
         const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
         console.log(`   ${methods}  ${layer.route.path}`);
     }
     if (layer.name === 'router' && layer.handle.stack) {
-        printRoutes(layer, '/api/v1/restpoint');
+        layer.handle.stack.forEach((l) => {
+            if (l.route) {
+                const methods = Object.keys(l.route.methods).join(', ').toUpperCase();
+                console.log(`   ${methods}  ${l.route.path}`);
+            }
+        });
     }
 });
 console.log('');
 
-// ============================================================
 // 404 handler
-// ============================================================
 app.use((req, res) => {
     console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
         status: 'error',
         message: `Route ${req.originalUrl} not found.`,
         available_endpoints: {
-            hearses: 'POST/GET /api/v1/restpoint/hearses',
-            hearse_detail: 'PUT/DELETE /api/v1/restpoint/hearses/:id',
-            available: 'GET /api/v1/restpoint/hearses/available',
-            bookings: 'POST/GET /api/v1/restpoint/hearse-bookings',
-            drivers: 'GET /api/v1/restpoint/drivers',
-            health: 'GET /api/v1/health'
+            hearses: 'POST/GET /hearses',
+            hearse_detail: 'PUT/DELETE /hearses/:id',
+            available: 'GET /hearses/available',
+            bookings: 'POST/GET /hearse-bookings',
+            drivers: 'GET /all-drivers',
+            health: 'GET /health'
         }
     });
 });
 
-// ============================================================
 // Global error handler
-// ============================================================
 app.use((err, req, res, next) => {
     console.error('❌ Unhandled Error:', err);
     res.status(500).json({
@@ -219,21 +183,19 @@ app.use((err, req, res, next) => {
     });
 });
 
-// ============================================================
 // Start server
-// ============================================================
 const PORT = process.env.PORT || 5002;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 Server running on http://0.0.0.0:${PORT}`);
     console.log(`📡 Socket.IO ready for real-time cross-branch updates`);
     console.log(`\n📋 Available Endpoints:`);
     console.log(`   GET  http://localhost:${PORT}/`);
-    console.log(`   GET  http://localhost:${PORT}/api/v1/health`);
-    console.log(`   POST http://localhost:${PORT}/api/v1/restpoint/hearses`);
-    console.log(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses`);
-    console.log(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses/available`);
-    console.log(`   POST http://localhost:${PORT}/api/v1/restpoint/hearse-bookings`);
-    console.log(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearse-bookings\n`);
+    console.log(`   GET  http://localhost:${PORT}/health`);
+    console.log(`   POST http://localhost:${PORT}/hearses`);
+    console.log(`   GET  http://localhost:${PORT}/hearses`);
+    console.log(`   GET  http://localhost:${PORT}/hearses/available`);
+    console.log(`   POST http://localhost:${PORT}/hearse-bookings`);
+    console.log(`   GET  http://localhost:${PORT}/hearse-bookings\n`);
 });
 
 module.exports = { app, server, io };

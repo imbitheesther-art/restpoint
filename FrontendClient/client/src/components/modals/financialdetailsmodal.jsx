@@ -24,6 +24,7 @@ import {
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import env from '../../config/env';
 
 // Colors
 const Colors = {
@@ -56,9 +57,9 @@ const getTenantSlug = () => {
     })();
 };
 
-// API Client
+// API Client - uses centralized env config
 const apiClient = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/restpoint/deceased`,
+  baseURL: `${env.FULL_API_URL}/deceased`,
   headers: { "Content-Type": "application/json" },
 });
 

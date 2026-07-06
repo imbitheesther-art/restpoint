@@ -2,6 +2,29 @@ import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
 import env from '../config/env';
 
+// Workshop service axios instance (direct connection to port 6969)
+export const workshopApi = axios.create({
+  baseURL: env.WORKSHOP_API_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: env.API_TIMEOUT,
+});
+
+// Request interceptor for workshop API
+workshopApi.interceptors.request.use((config) => {
+  const slug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
+  const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
+
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (slug) config.headers['x-tenant-slug'] = slug;
+
+  return config;
+}, (error) => Promise.reject(error));
+
 // Cached session values to avoid repeated localStorage reads
 let cachedToken = null;
 let cachedSlug = null;

@@ -3,23 +3,40 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
-    "baseUrl": ".",
-    "paths": {
-      "../../shared/*": [
-        "../../shared/*"
-      ]
-    },
-    "typeRoots": [
-      "./types",
-      "./node_modules/@types"
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false,
+    "skipLibCheck": true,
+    "types": [
+      "node"
     ]
   },
   "include": [
-    "**/*.ts",
-    "types/**/*.ts"
+    "server.ts",
+    "routes/**/*.ts",
+    "controllers/**/*.ts",
+    "database/**/*.ts",
+    "models/**/*.ts",
+    "services/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "types/**/*.ts",
+    "../../shared/**/*.ts",
+    "../../packages/shared-config/src/**/*.ts",
+    "../../packages/shared-logger/src/**/*.ts",
+    "../../packages/shared-utils/src/**/*.ts",
+    "../../packages/shared-services/src/**/*.ts",
+    "../../global/**/*.ts",
+    "../../configurations/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts"
   ]
 }

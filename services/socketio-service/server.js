@@ -6,6 +6,7 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const dotenv = require("dotenv");
 const { tenantMiddleware } = require("../../global/middlewares/tenant-validation");
 
+
 dotenv.config();
 
 const app = express();

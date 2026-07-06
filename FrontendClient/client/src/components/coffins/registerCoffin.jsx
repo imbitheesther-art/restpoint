@@ -1073,14 +1073,16 @@ const RegisterCoffin = () => {
     // Add username/created_by information
     formData.append('created_by', getUsername());
 
-    // Append multiple images
+    // Append multiple images - field name must match multer upload.array('images', 10) on backend
     imageFiles.forEach((file, index) => {
-      formData.append('coffin_images', file); // Note: plural 'coffin_images'
+      formData.append('images', file);
     });
 
     try {
       console.log('Sending request to server...');
 
+      // Use the API gateway URL directly for coffin registration
+      // The gateway proxies /api/v1/restpoint/coffins/register to the coffin service
       const registerUrl = `${env.FULL_API_URL}${ENDPOINTS.COFFINS.BASE}/register`;
       const response = await fetch(registerUrl, {
         method: 'POST',

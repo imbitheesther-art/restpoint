@@ -13,12 +13,10 @@ const inlineHandlers = {
   healthCheck: async (req, res) => res.status(200).json({ status: 'UP', service: 'coffin-service' }),
 };
 
-// Try to load coffinService - try multiple approaches
+// Load the JavaScript controller bridge (works with CommonJS)
 let coffinController = { ...inlineHandlers };
 try {
-  // Try direct require of .ts via tsx
-  require('tsx').register();
-  const loaded = require('../coffinService.ts');
+  const loaded = require('../controllers/coffinController.cjs');
   if (loaded && typeof loaded.createCoffin === 'function') {
     coffinController = loaded;
   }
@@ -44,14 +42,29 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 router.use(tenantMiddleware);
 router.use(authenticateToken);
 
-// Coffin CRUD
+// ============================================================
+// COFFIN CRUD - match paths sent by API Gateway proxy
+// ============================================================
+// Gateway sends: POST /api/v1/restpoint/coffins → server mounts at /api/v1/restpoint/coffins → matches /
+// Gateway sends: POST /api/v1/restpoint/coffins/register → matches /register
+// Gateway sends: POST /api/v1/restpoint/coffins/create → matches /create
 router.post('/', upload.array('images', 10), (req, res) => coffinController.createCoffin(req, res));
+router.post('/register', upload.array('images', 10), (req, res) => coffinController.createCoffin(req, res));
+router.post('/create', upload.array('images', 10), (req, res) => coffinController.createCoffin(req, res));
+
 router.get('/', (req, res) => coffinController.getAllCoffins(req, res));
-router.get('/all-coffins', (req, res) => coffinController.getAllCoffins(req, res));  // ✅ ADDED: Support all-coffins endpoint
-router.get('/list', (req, res) => coffinController.getAllCoffins(req, res));         // ✅ ADDED: Support list endpoint
+router.get('/all-coffins', (req, res) => coffinController.getAllCoffins(req, res));
+router.get('/list', (req, res) => coffinController.getAllCoffins(req, res));
+router.get('/coffins-list', (req, res) => coffinController.getAllCoffins(req, res));
+
 router.get('/:id', (req, res) => coffinController.getCoffinById(req, res));
+router.get('/detail/:id', (req, res) => coffinController.getCoffinById(req, res));
+
 router.put('/:id', upload.array('images', 10), (req, res) => coffinController.updateCoffin(req, res));
+router.put('/update/:id', upload.array('images', 10), (req, res) => coffinController.updateCoffin(req, res));
+
 router.delete('/:id', (req, res) => coffinController.deleteCoffin(req, res));
+router.delete('/delete/:id', (req, res) => coffinController.deleteCoffin(req, res));
 
 // Assignments
 router.post('/assign', (req, res) => coffinController.assignCoffin(req, res));

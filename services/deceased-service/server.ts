@@ -53,52 +53,28 @@ import chargesRoutes from './routes/chargesRoutes';
 import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
 
 // ============================================
-// ✅ MOUNT ROUTES - ALL POSSIBLE PATHS
+// ✅ MOUNT ROUTES - CLEAN ROOT MOUNT
 // ============================================
+// The API Gateway strips /api/v1/restpoint/deceased prefix and forwards clean paths
+// So we mount at / and routes use clean paths
 
-// Mount at root level for direct access (IMPORTANT: must be first)
-app.use('/', deceasedRoutes);  // This handles /register-deceased, /deceased-id/:id, etc.
+// Mount deceased routes at root
+app.use('/', deceasedRoutes);
 
-// Mount with /deceased prefix
-app.use('/deceased', deceasedRoutes);
-
-// Mount with /api/v1/restpoint/deceased prefix
-app.use('/api/v1/restpoint/deceased', deceasedRoutes);
-
-// Mount with /v1/restpoint/deceased prefix
-app.use('/v1/restpoint/deceased', deceasedRoutes);
-
-// Other services
-app.use('/api/v1/restpoint/autopsy', autopsyRoutes);
-app.use('/v1/restpoint/autopsy', autopsyRoutes);
-app.use('/autopsy', autopsyRoutes);
-
-app.use('/api/v1/restpoint/charges', chargesRoutes);
-app.use('/v1/restpoint/charges', chargesRoutes);
-app.use('/charges', chargesRoutes);
-
-app.use('/api/v1/restpoint/charge-settings', chargeSettingsRoutes);
-app.use('/v1/restpoint/charge-settings', chargeSettingsRoutes);
-app.use('/charge-settings', chargeSettingsRoutes);
-
-// Mount charge-settings under /deceased prefix for frontend compatibility
-app.use('/api/v1/restpoint/deceased/charge-settings', chargeSettingsRoutes);
-app.use('/v1/restpoint/deceased/charge-settings', chargeSettingsRoutes);
-
-// Next of Kin routes - mount at root for /:deceased_id/next-of-kin pattern
-// Gateway strips /api/v1/restpoint/deceased, so service receives /:deceased_id/next-of-kin
+// Import other route modules
 import nextOfKinRoutes from './routes/nextOfKinRoutes';
-app.use('/', nextOfKinRoutes);
-
-// Hearse routes - mount at root for /hearse/* pattern
-// Gateway strips /api/v1/restpoint/hearse, so service receives /hearse/*
 import hearseRoutes from './routes/hearseRoutes';
-app.use('/', hearseRoutes);
-
-// Documents routes - mount at root for /:deceased_id/documents pattern
-// Gateway strips /api/v1/restpoint/deceased, so service receives /:deceased_id/documents
 import documentsRoutes from './routes/documentsRoutes';
+
+// Mount all sub-routers at root - routes use relative paths
+app.use('/', nextOfKinRoutes);
+app.use('/', hearseRoutes);
 app.use('/', documentsRoutes);
+
+// Other services mounted at root
+app.use('/', autopsyRoutes);
+app.use('/', chargesRoutes);
+app.use('/', chargeSettingsRoutes);
 
 // ============================================
 // HEALTH CHECK

@@ -6,8 +6,9 @@ import { useTenantStore } from '../components/store/useTenantStore';
 import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
-import PortalRouter from '../portal/PortalRouter';
+
 import SingleTenantLayout from '../components/layout/SingleTenantLayout';
+
 
 
 
@@ -35,6 +36,7 @@ const DocumentsPage = lazy(() => import('../components/documents/documentspage')
 const DeceasedRegistrationForm = lazy(() => import('../components/deceasedinfo/registerDeceased'));
 const RegisterCoffin = lazy(() => import('../components/coffins/registerCoffin'));
 const CoffinInventory = lazy(() => import('../components/coffins/coffininventory'));
+const CoffinDetails = lazy(() => import('../components/coffins/coffinDetails'));
 const AllDeceasedPage = lazy(() => import('../components/deceasedinfo/listDeceased'));
 const NotFound = lazy(() => import('../components/layout/notFound'));
 const DeceasedDetails = lazy(() => import('../components/deceasedprofile/deceasedDetailPage'));
@@ -49,7 +51,7 @@ const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemor
 
 
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
-const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
+const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopProductionFloor'));
 const HearseBookings = lazy(() => import('../components/hearse/hearseBookings'));
 const DriverPortal = lazy(() => import('../components/hearse/DriverPortal'));
 const LeaveDashboard = lazy(() => import('../components/leave/Dashboard'));
@@ -210,6 +212,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="deceased-details/:id" element={<Layout tenantData={tenantData}><DeceasedDetails /></Layout>} />
       <Route path="coffins" element={<Layout tenantData={tenantData}><CoffinInventory /></Layout>} />
       <Route path="coffins/register" element={<Layout tenantData={tenantData}><RegisterCoffin /></Layout>} />
+      <Route path="coffins/:coffinId/details" element={<Layout tenantData={tenantData}><CoffinDetails /></Layout>} />
       <Route path="documents" element={<Layout tenantData={tenantData}><DocumentsPage /></Layout>} />
       <Route path="invoices" element={<Layout tenantData={tenantData}><InvoiceManager /></Layout>} />
       <Route path="chemicals" element={<Layout tenantData={tenantData}><ChemicalManagementDashboard /></Layout>} />
@@ -263,7 +266,7 @@ const AppRouter = () => (
       <Route path="/insurance" element={<InsurancePage />} />
       <Route path="/memorial" element={<MemorialPage />} />
       <Route path="/portal/login" element={<PortalLoginPage />} />
-      <Route path="/portal/*" element={<PortalRouter />} />
+
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/security" element={<SecurityPolicy />} />

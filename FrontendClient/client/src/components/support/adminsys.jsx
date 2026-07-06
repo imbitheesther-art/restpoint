@@ -594,6 +594,14 @@ const PerformanceDashboard = () => {
   const [detailModal, setDetailModal] = useState(null);
   const [toast, setToast] = useState(null);
 
+  // ─── Support Tickets ──────────────────────────────────────────────
+  const [allTickets, setAllTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replying, setReplying] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+
   // ─── Show toast notification ──────────────────────────────────────
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -711,6 +719,59 @@ const PerformanceDashboard = () => {
     }
   };
 
+  // ─── Fetch all support tickets ────────────────────────────────────
+  const fetchAllTickets = useCallback(async () => {
+    setTicketsLoading(true);
+    try {
+      const res = await api.get('/support/tickets/all');
+      if (res.data?.success && Array.isArray(res.data.tickets)) {
+        setAllTickets(res.data.tickets);
+      }
+    } catch (err) {
+      console.warn('[Admin] Failed to fetch tickets:', err);
+    } finally {
+      setTicketsLoading(false);
+    }
+  }, []);
+
+  // ─── Reply to ticket ──────────────────────────────────────────────
+  const handleAdminReply = async (e) => {
+    e.preventDefault();
+    if (!replyText.trim() || !selectedTicket) return;
+    setReplying(true);
+    try {
+      await api.post('/support/tickets/' + selectedTicket.ticket_id + '/reply', {
+        message: replyText.trim(), userType: 'admin', is_admin: true,
+      });
+      setReplyText('');
+      showToast('Reply sent! User will see it instantly.', 'success');
+      fetchAllTickets();
+    } catch (err) {
+      showToast('Failed to send reply', 'error');
+    } finally {
+      setReplying(false);
+    }
+  };
+
+  // ─── Update ticket status ─────────────────────────────────────────
+  const handleUpdateStatus = async (ticketId, status) => {
+    setUpdatingStatus(ticketId);
+    try {
+      await api.patch('/support/tickets/' + ticketId, { status });
+      showToast(`Ticket marked as ${status}`, 'success');
+      fetchAllTickets();
+    } catch (err) {
+      showToast('Failed to update status', 'error');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Fetch tickets when support tab is active
+  useEffect(() => {
+    if (activeTab === 'support') fetchAllTickets();
+  }, [activeTab, fetchAllTickets]);
+
   // ─── Filter tenants ───────────────────────────────────────────────
   const filteredTenants = tenants.filter(t => {
     const term = searchTerm.toLowerCase();
@@ -794,6 +855,10 @@ const PerformanceDashboard = () => {
         </TabButton>
         <TabButton active={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')}>
           💰 Earnings
+        </TabButton>
+        <TabButton active={activeTab === 'support'} onClick={() => setActiveTab('support')}>
+          🎫 Support Tickets
+          {allTickets.filter(t => t.status === 'open').length > 0 && <span className="tab-badge">{allTickets.filter(t => t.status === 'open').length}</span>}
         </TabButton>
       </DashboardTabs>
 
@@ -1159,6 +1224,143 @@ const PerformanceDashboard = () => {
                       </div>
                     );
                   })}
+              </div>
+            )}
+          </div>
+        </TabContent>
+      )}
+
+      {/* ═══════════════ SUPPORT TICKETS TAB ═══════════════ */}
+      {activeTab === 'support' && (
+        <TabContent>
+          <div style={{
+            background: Colors.dark.card,
+            borderRadius: '20px',
+            border: `1px solid ${Colors.dark.border}`,
+            overflow: 'hidden',
+          }}>
+            <div style={{ padding: '1.5rem', borderBottom: `1px solid ${Colors.dark.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
+                🎫 All Support Tickets ({allTickets.length})
+              </h3>
+              <button onClick={fetchAllTickets} style={{
+                padding: '0.5rem 1rem', background: Colors.primary, color: 'white',
+                border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem',
+              }}>↻ Refresh</button>
+            </div>
+
+            {ticketsLoading ? (
+              <div style={{ padding: '3rem', textAlign: 'center', color: Colors.dark.text.muted }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid ' + Colors.dark.border, borderTop: '3px solid ' + Colors.primary, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }} />
+                Loading tickets...
+              </div>
+            ) : allTickets.length === 0 ? (
+              <EmptyState>
+                <h3>No support tickets yet</h3>
+                <p>When users submit questions, they'll appear here.</p>
+              </EmptyState>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {allTickets.map((ticket, idx) => (
+                  <div key={ticket.ticket_id} style={{
+                    borderBottom: idx < allTickets.length - 1 ? `1px solid ${Colors.dark.border}` : 'none',
+                    animation: `${slideIn} 0.3s ease-out`,
+                    animationDelay: `${idx * 0.03}s`,
+                  }}>
+                    <div
+                      onClick={() => setSelectedTicket(selectedTicket?.ticket_id === ticket.ticket_id ? null : ticket)}
+                      style={{
+                        padding: '1rem 1.5rem', cursor: 'pointer',
+                        background: selectedTicket?.ticket_id === ticket.ticket_id ? 'rgba(59,130,246,0.08)' : 'transparent',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.3rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600,
+                            background: ticket.status === 'open' ? 'rgba(245,158,11,0.2)' :
+                              ticket.status === 'in_progress' ? 'rgba(59,130,246,0.2)' :
+                                ticket.status === 'resolved' ? 'rgba(16,185,129,0.2)' : 'rgba(100,116,139,0.2)',
+                            color: ticket.status === 'open' ? Colors.warning :
+                              ticket.status === 'in_progress' ? Colors.primary :
+                                ticket.status === 'resolved' ? Colors.success : Colors.dark.text.muted,
+                          }}>
+                            {ticket.status || 'open'}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: Colors.dark.text.muted, fontFamily: 'monospace' }}>
+                            #{ticket.ticket_id}
+                          </span>
+                          {ticket.tenant_name && (
+                            <span style={{ fontSize: '0.7rem', color: Colors.secondary, fontWeight: 500 }}>
+                              {ticket.tenant_name}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: Colors.dark.text.muted, whiteSpace: 'nowrap' }}>
+                          {formatDate(ticket.created_at)}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: Colors.dark.text.primary, lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {ticket.message || ticket.subject}
+                      </p>
+                      {ticket.user_email && (
+                        <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', color: Colors.dark.text.muted }}>
+                          📧 {ticket.user_email} {ticket.user_name && `· ${ticket.user_name}`}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Expanded reply section */}
+                    {selectedTicket?.ticket_id === ticket.ticket_id && (
+                      <div style={{ padding: '0 1.5rem 1rem 1.5rem', borderTop: `1px solid ${Colors.dark.border}`, marginTop: '0.5rem' }}>
+                        {/* Status actions */}
+                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                          {['open', 'in_progress', 'resolved', 'closed'].map(s => (
+                            <button key={s} onClick={() => handleUpdateStatus(ticket.ticket_id, s)}
+                              disabled={updatingStatus === ticket.ticket_id || ticket.status === s}
+                              style={{
+                                padding: '0.3rem 0.6rem', border: 'none', borderRadius: '6px', cursor: 'pointer',
+                                fontSize: '0.7rem', fontWeight: 600, textTransform: 'capitalize',
+                                background: ticket.status === s ? Colors.primary : 'rgba(255,255,255,0.08)',
+                                color: ticket.status === s ? 'white' : Colors.dark.text.secondary,
+                                opacity: updatingStatus === ticket.ticket_id ? 0.5 : 1,
+                              }}>
+                              {s === 'open' ? '🟡' : s === 'in_progress' ? '🔵' : s === 'resolved' ? '🟢' : '⚪'} {s.replace('_', ' ')}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Reply form */}
+                        <form onSubmit={handleAdminReply}>
+                          <textarea
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            placeholder="Type your reply as support staff..."
+                            rows={3}
+                            style={{
+                              width: '100%', padding: '0.6rem 0.8rem', border: `1px solid ${Colors.dark.border}`,
+                              borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'inherit',
+                              color: Colors.dark.text.primary, background: Colors.dark.bg,
+                              resize: 'vertical', outline: 'none', marginBottom: '0.5rem',
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button type="submit" disabled={!replyText.trim() || replying}
+                              style={{
+                                padding: '0.5rem 1rem', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                                fontSize: '0.8rem', fontWeight: 600,
+                                background: Colors.primary, color: 'white',
+                                opacity: !replyText.trim() || replying ? 0.5 : 1,
+                              }}>
+                              {replying ? 'Sending...' : 'Reply as Support'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>

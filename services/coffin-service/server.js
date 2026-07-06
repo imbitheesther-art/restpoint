@@ -38,9 +38,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mount routes at BOTH prefixes for gateway compatibility
-app.use('/api/v1/restpoint', coffinRoutes);
-app.use('/v1/restpoint', coffinRoutes);
+// ==============================
+// MOUNT ROUTES - Clean root mount
+// ==============================
+// The API Gateway strips /api/v1/restpoint/coffins prefix and forwards clean paths
+// So we mount at / and routes use clean paths like /, /register, /list, etc.
+app.use('/', coffinRoutes);
 
 // 404 and error handlers
 app.use(notFoundHandler);

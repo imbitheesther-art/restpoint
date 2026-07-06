@@ -78,33 +78,16 @@ const authLimiter = rateLimit({
 });
 
 // ============================================
-// ROUTES
+// ROUTES - Clean root mount
 // ============================================
+// The API Gateway strips /api/v1/restpoint/tenant prefix and forwards clean paths
+// So we mount at / and routes use clean paths
 
-// --- Onboarding routes (api prefix) ---
-app.use('/api/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
-app.use('/onboarding', apiLimiter, onboardingRoutes);
-app.use('/tenant/onboarding', apiLimiter, onboardingRoutes);
-app.use('/api/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
-app.use('/api/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
+// Onboarding routes - mounted at root
+app.use('/', apiLimiter, onboardingRoutes);
 
-
-// --- Onboarding routes (v1 prefix — after gateway strips /api) ---
-app.use('/v1/restpoint/tenant/onboarding', apiLimiter, onboardingRoutes);
-app.use('/v1/restpoint/tenants/onboarding', apiLimiter, onboardingRoutes);
-app.use('/v1/restpoint/tenants/register', apiLimiter, onboardingRoutes);
-
-
-// --- System Admin Routes ---
-app.use('/api/system-admin', systemAdminRoutes);
-app.use('/api/v1/restpoint/system-admin', systemAdminRoutes);
-// System admin via gateway (after /api strip)
-app.use('/v1/restpoint/system-admin', systemAdminRoutes);
-app.use('/v1/system-admin', systemAdminRoutes);
-
-// --- Tenant Routes (direct access) ---
-app.use('/api/v1/restpoint/tenants', apiLimiter, onboardingRoutes);
-app.use('/v1/restpoint/tenants', apiLimiter, onboardingRoutes);
+// System Admin Routes - mounted at root
+app.use('/', systemAdminRoutes);
 
 // ============================================
 // HEALTH CHECK

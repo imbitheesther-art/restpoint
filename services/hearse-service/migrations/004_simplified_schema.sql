@@ -16,7 +16,7 @@ CREATE TABLE hearses (
     max_charge_ksh DECIMAL(10,2) DEFAULT 0,
     driver_id INT,
     branch_id INT DEFAULT 1,
-    status ENUM('available', 'booked', 'maintenance', 'unavailable') DEFAULT 'available',
+    status ENUM('available', 'booked', 'cancelled', 'in_transit', 'maintenance', 'unavailable') DEFAULT 'available', -- ✅ Fixed: Added comma
     image_url VARCHAR(500),
     description TEXT,
     features JSON,
@@ -47,16 +47,21 @@ CREATE TABLE hearse_bookings (
     dropoff_location VARCHAR(255),
     destination VARCHAR(255),
     booking_date DATETIME,
+    from_timestamp DATETIME, -- ✅ Added to match your controller
+    to_timestamp DATETIME,   -- ✅ Added to match your controller
+    from_location VARCHAR(255), -- ✅ Added to match your controller
+    to_location VARCHAR(255),   -- ✅ Added to match your controller
     event_date DATE,
     event_time TIME,
     service_type ENUM('funeral', 'transfer', 'other') DEFAULT 'funeral',
-    status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'booked') DEFAULT 'pending', -- ✅ Added 'booked' to ENUM
     driver_id INT,
     branch_id INT DEFAULT 1,
     special_requests TEXT,
     total_charge DECIMAL(10,2),
     paid_amount DECIMAL(10,2),
     payment_status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid',
+    created_by INT, -- ✅ Added created_by field
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_hearse_id (hearse_id),
