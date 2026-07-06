@@ -524,7 +524,7 @@ const ProductionFloorView = ({ orders, workers, materials, onOrderClick, onUpdat
               {renderOrderCard(order)}
             </Grid>
           ))}
-          {(Array.isArray(orders) ? orders.filter(o => o.order_type === 'showroom') : []).length === 0 && (
+          {(!Array.isArray(orders) || (Array.isArray(orders) ? orders.filter(o => o.order_type === 'showroom') : []).length === 0) && (
             <Grid item xs={12}>
               <Box textAlign="center" py={8}>
                 <Typography variant="h6" sx={{ color: theme.colors.textSecondary }}>

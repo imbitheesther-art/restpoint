@@ -53,14 +53,14 @@ const WorkshopProductionFloor = () => {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [ordersData, workersData, materialsData] = await Promise.all([
+            const [ordersResult, workersResult, materialsResult] = await Promise.all([
                 workshopService.getOrders(),
                 workshopService.getWorkers(),
                 workshopService.getMaterials(),
             ])
-            setOrders(ordersData || [])
-            setWorkers(workersData || [])
-            setMaterials(materialsData || [])
+            setOrders(Array.isArray(ordersResult?.data) ? ordersResult.data : [])
+            setWorkers(Array.isArray(workersResult?.data) ? workersResult.data : [])
+            setMaterials(Array.isArray(materialsResult?.data) ? materialsResult.data : [])
             setError(null)
         } catch (err) {
             setError('Failed to load data: ' + err.message)
