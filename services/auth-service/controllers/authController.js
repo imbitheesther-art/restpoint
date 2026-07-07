@@ -11,8 +11,6 @@ const GLOBAL_REFRESH_SECRET = process.env.REFRESH_SECRET || 'supersecretrefreshk
 // ============================================
 // CONNECTION POOL (CRITICAL FOR PERFORMANCE)
 // ============================================
-// Using a pool prevents creating a new connection for every query,
-// which was causing 30-second timeouts on login.
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306'),
@@ -39,12 +37,9 @@ const queryServer = async (sql, params = []) => {
 
 /**
  * Execute a query on a specific tenant database
- * Uses dbName.table notation to avoid connection-level database switching
  */
 const queryTenantDB = async (dbName, sql, params = []) => {
-  // Wrap dbName in backticks to handle hyphens in database names
   const escapedDbName = `\`${dbName}\``;
-  // Replace placeholder with actual database name for multi-tenant queries
   const qualifiedSQL = sql.replace(/FROM\s+users/gi, `FROM ${escapedDbName}.users`)
     .replace(/INTO\s+users/gi, `INTO ${escapedDbName}.users`)
     .replace(/UPDATE\s+users/gi, `UPDATE ${escapedDbName}.users`);
@@ -58,7 +53,6 @@ const queryTenantDB = async (dbName, sql, params = []) => {
 
 /**
  * Get tenant-specific JWT secrets from database
- * Each tenant has their own jwt_secret and refresh_secret stored in tenant_tracking.tenants
  */
 const getTenantJwtSecret = async (tenantId) => {
   try {
@@ -77,7 +71,6 @@ const getTenantJwtSecret = async (tenantId) => {
     console.error('Error fetching tenant JWT secret:', error.message);
   }
 
-  // Fallback to global secret if tenant-specific not found
   return {
     jwtSecret: GLOBAL_JWT_SECRET,
     refreshSecret: GLOBAL_REFRESH_SECRET
@@ -95,7 +88,6 @@ const findTenantByEmail = async (email) => {
   console.log('🔍 Searching for tenant with email:', email);
 
   try {
-    // Check if tenant_tracking database exists
     const [databases] = await pool.query(
       "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'tenant_tracking'"
     );
@@ -105,7 +97,6 @@ const findTenantByEmail = async (email) => {
       return null;
     }
 
-    // Query tenant from tenant_tracking database
     const [tenants] = await pool.query(
       `SELECT * FROM tenant_tracking.tenants 
        WHERE email = ? AND status = 'active'`,
@@ -124,6 +115,29 @@ const findTenantByEmail = async (email) => {
     console.error(' Error finding tenant:', error.message);
     return null;
   }
+};
+
+/**
+ * NEW: Find tenant by searching for user email across ALL tenant databases
+ */
+const findTenantByUserEmail = async (email) => {
+  console.log('Searching ALL tenants for user:', email);
+  try {
+    const [dbs] = await pool.query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'tenant_tracking'");
+    if (dbs.length === 0) return null;
+    const [tenants] = await pool.query("SELECT * FROM tenant_tracking.tenants WHERE status = 'active'");
+    console.log('Checking ' + tenants.length + ' tenants for user: ' + email);
+    for (const t of tenants) {
+      try {
+        const [users] = await pool.query('SELECT user_id FROM `' + t.db_name + '`.users WHERE email = ? AND is_active = 1 LIMIT 1', [email.toLowerCase()]);
+        if (users.length > 0) {
+          console.log('Found user in tenant:', t.tenant_name);
+          return t;
+        }
+      } catch (e) { continue; }
+    }
+    return null;
+  } catch (e) { return null; }
 };
 
 /**
@@ -148,19 +162,24 @@ const findUserInTenantDB = async (dbName, email) => {
 
 /**
  * Generate JWT tokens with per-tenant secrets
+ * @param {Object} user - User object from database
+ * @param {Object} tenant - Tenant object from tenant_tracking
+ * @param {string|null} [branchSlug=null] - Branch slug to use as tenantSlug if user belongs to a branch
  */
-const generateTokens = async (user, tenant) => {
+const generateTokens = async (user, tenant, branchSlug = null) => {
+  const effectiveSlug = branchSlug || tenant.tenant_slug;
+
   const payload = {
     userId: user.user_id,
     email: user.email,
     tenantId: tenant.tenant_id,
     tenantName: tenant.tenant_name,
-    tenantSlug: tenant.tenant_slug,
+    tenantSlug: effectiveSlug,
     dbName: tenant.db_name,
-    role: user.role || 'admin'
+    role: user.role || 'admin',
+    branchSlug: branchSlug // Store branch slug separately for middleware use
   };
 
-  // Get tenant-specific JWT secrets
   const { jwtSecret, refreshSecret } = await getTenantJwtSecret(tenant.tenant_id);
 
   const accessToken = jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
@@ -179,10 +198,8 @@ const generateTokens = async (user, tenant) => {
  * @body { email or identifier, password }
  */
 exports.login = asyncHandler(async (req, res) => {
-  // Accept both 'email' and 'identifier' fields
   const emailInput = req.body.email || req.body.identifier;
   const { password } = req.body;
-
 
   // Validation
   if (!emailInput || !validator.isEmail(emailInput)) {
@@ -203,7 +220,13 @@ exports.login = asyncHandler(async (req, res) => {
 
   try {
     // Step 1: Find tenant by email from tracking database
-    const tenant = await findTenantByEmail(emailInput);
+    let tenant = await findTenantByEmail(emailInput);
+
+    // If tenant not found by tenant email, search for user across all tenants
+    if (!tenant) {
+      console.log('Not found as tenant email, searching ALL tenant databases...');
+      tenant = await findTenantByUserEmail(emailInput);
+    }
 
     if (!tenant) {
       console.log('No tenant found');
@@ -212,7 +235,6 @@ exports.login = asyncHandler(async (req, res) => {
         message: 'Invalid email or password'
       });
     }
-
 
     // Step 2: Find user in tenant's database
     const user = await findUserInTenantDB(tenant.db_name, emailInput);
@@ -259,7 +281,6 @@ exports.login = asyncHandler(async (req, res) => {
 
     if (branchId) {
       try {
-        // Wrap dbName in backticks to handle hyphens in database names
         const escapedDbName = `\`${tenant.db_name}\``;
         const [branches] = await pool.query(
           `SELECT branch_slug, branch_db_name FROM ${escapedDbName}.branches WHERE branch_id = ? AND is_active = 1`,
@@ -269,21 +290,18 @@ exports.login = asyncHandler(async (req, res) => {
           branchSlug = branches[0].branch_slug;
           dbName = branches[0].branch_db_name || tenant.db_name;
         } else {
-          // User is assigned to a branch that doesn't exist or is inactive
           console.warn(`User ${user.user_id} assigned to invalid/inactive branch ${branchId}`);
-          // Reset branch assignment to prevent access issues
           branchId = null;
           branchSlug = null;
           dbName = tenant.db_name;
         }
       } catch (branchErr) {
-        // Non-critical - branch lookup may fail if branches table doesn't exist
         console.warn('Could not fetch branch info:', branchErr.message);
       }
     }
 
-    // Step 5.5: Get deployment type from tenant
-    let deploymentType = 'single';
+    // Step 5.5: Get deployment type from tenant (Ensure it checks the runtime state value or fallback)
+    let deploymentType = tenant.deployment_type || 'single';
     try {
       const [tenantRows] = await pool.query(
         `SELECT deployment_type FROM tenant_tracking.tenants WHERE tenant_id = ?`,
@@ -297,9 +315,14 @@ exports.login = asyncHandler(async (req, res) => {
     }
 
     // Step 6: Generate tokens with per-tenant secrets
-    const { accessToken, refreshToken } = await generateTokens(user, tenant);
+    // Pass branchSlug so JWT payload uses the branch slug as effective tenant slug
+    const { accessToken, refreshToken } = await generateTokens(user, tenant, branchSlug);
 
-    // Step 7: Return response
+    // Step 7: Determine effective slug for navigation
+    // If user belongs to a branch, use branchSlug as the primary slug
+    const effectiveSlug = branchSlug || tenant.tenant_slug;
+
+    // Step 8: Return response
     console.log(' Login successful!\n');
 
     res.status(200).json({
@@ -307,12 +330,12 @@ exports.login = asyncHandler(async (req, res) => {
       message: 'Login successful',
       accessToken,
       refreshToken,
-      deploymentType, // Include deployment type in response
+      deploymentType,
       user: {
         userId: user.user_id,
         email: user.email,
         fullName: user.full_name,
-        phone: user.phone,
+        phone: user.phone || "",
         role: user.role,
         branchId: branchId,
         branchSlug: branchSlug,
@@ -323,7 +346,7 @@ exports.login = asyncHandler(async (req, res) => {
       tenant: {
         tenantId: tenant.tenant_id,
         tenantName: tenant.tenant_name,
-        tenantSlug: tenant.tenant_slug,
+        tenantSlug: effectiveSlug,
         dbName: tenant.db_name
       }
     });
@@ -340,7 +363,6 @@ exports.login = asyncHandler(async (req, res) => {
 
 /**
  * @route POST /register
- * @desc Register new tenant (handled by your existing TenantModel)
  */
 exports.register = asyncHandler(async (req, res) => {
   res.status(501).json({
@@ -351,14 +373,9 @@ exports.register = asyncHandler(async (req, res) => {
 
 /**
  * @route POST /users
- * @desc Create additional user in tenant database
- * @body { email, password, full_name, phone, role }
- * @access Private (requires authentication)
  */
 exports.createUser = asyncHandler(async (req, res) => {
   const { email, password, full_name, phone, role } = req.body;
-
-  // Get tenant info from authenticated user
   const tenantDbName = req.user.dbName;
   const tenantId = req.user.tenantId;
 
@@ -369,7 +386,6 @@ exports.createUser = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validation
   if (!email || !password || !full_name) {
     return res.status(400).json({
       success: false,
@@ -385,7 +401,6 @@ exports.createUser = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Check if user already exists
     const existingUser = await findUserInTenantDB(tenantDbName, email);
     if (existingUser) {
       return res.status(409).json({
@@ -394,18 +409,15 @@ exports.createUser = asyncHandler(async (req, res) => {
       });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
-    // Insert new user
     await queryTenantDB(tenantDbName,
       `INSERT INTO users (email, password_hash, full_name, phone, role, is_active, is_verified) 
        VALUES (?, ?, ?, ?, ?, 1, 1)`,
       [email.toLowerCase(), password_hash, full_name, phone || null, role || 'staff']
     );
 
-    // Get created user
     const newUser = await findUserInTenantDB(tenantDbName, email);
 
     console.log(`✅ User created: ${email} in tenant ${tenantDbName}`);
@@ -436,12 +448,9 @@ exports.createUser = asyncHandler(async (req, res) => {
 
 /**
  * @route POST /refresh
- * @desc Refresh access token
  */
 exports.refresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
-
-
 
   if (!refreshToken) {
     return res.status(400).json({
@@ -451,14 +460,10 @@ exports.refresh = asyncHandler(async (req, res) => {
   }
 
   try {
-    // First decode to get tenantId (using global secret for initial verification)
     const decoded = jwt.verify(refreshToken, GLOBAL_REFRESH_SECRET);
-
-    // Get tenant-specific secret for full verification
     const { jwtSecret, refreshSecret } = await getTenantJwtSecret(decoded.tenantId);
     const verified = jwt.verify(refreshToken, refreshSecret);
 
-    // Find tenant
     const [tenants] = await pool.query(
       `SELECT * FROM tenant_tracking.tenants WHERE tenant_id = ? AND status = 'active'`,
       [verified.tenantId]
@@ -473,7 +478,6 @@ exports.refresh = asyncHandler(async (req, res) => {
 
     const tenant = tenants[0];
 
-    // Find user in tenant database
     const rows = await queryTenantDB(tenant.db_name,
       `SELECT * FROM users WHERE user_id = ? AND is_active = 1`,
       [verified.userId]
@@ -488,8 +492,24 @@ exports.refresh = asyncHandler(async (req, res) => {
 
     const user = rows[0];
 
-    // Generate new tokens with per-tenant secrets
-    const { accessToken } = await generateTokens(user, tenant);
+    // Fetch branch slug if user belongs to a branch
+    let branchSlug = null;
+    if (user.branch_id) {
+      try {
+        const escapedDbName = `\`${tenant.db_name}\``;
+        const [branches] = await pool.query(
+          `SELECT branch_slug FROM ${escapedDbName}.branches WHERE branch_id = ? AND is_active = 1`,
+          [user.branch_id]
+        );
+        if (branches.length > 0) {
+          branchSlug = branches[0].branch_slug;
+        }
+      } catch (branchErr) {
+        console.warn('Could not fetch branch info during refresh:', branchErr.message);
+      }
+    }
+
+    const { accessToken } = await generateTokens(user, tenant, branchSlug);
 
     console.log(' Token refreshed');
 
@@ -510,11 +530,8 @@ exports.refresh = asyncHandler(async (req, res) => {
 
 /**
  * @route POST /logout
- * @desc Logout user
  */
 exports.logout = asyncHandler(async (req, res) => {
-
-
   res.status(200).json({
     success: true,
     message: 'Logged out successfully'
@@ -523,7 +540,6 @@ exports.logout = asyncHandler(async (req, res) => {
 
 /**
  * @route GET /me
- * @desc Get current user info
  */
 exports.getMe = asyncHandler(async (req, res) => {
   const authHeader = req.headers.authorization;
@@ -538,7 +554,6 @@ exports.getMe = asyncHandler(async (req, res) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    // Decode to get tenantId first
     const decoded = jwt.decode(token);
     if (!decoded) {
       return res.status(401).json({
@@ -547,7 +562,6 @@ exports.getMe = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get tenant-specific secret for verification
     const { jwtSecret } = await getTenantJwtSecret(decoded.tenantId);
     const verified = jwt.verify(token, jwtSecret);
 

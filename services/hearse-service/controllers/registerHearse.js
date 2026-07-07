@@ -116,41 +116,59 @@ const registerHearse = asyncHandler(async (req, res) => {
         const hearseNumber = String((countResult?.count || 0) + 1).padStart(3, '0');
         const hearse_code = `HRS-${hearseNumber}`;
 
-        // Insert hearse with essential fields only
-        const query = `
-            INSERT INTO hearses (
-                hearse_code,
-                hearse_name,
-                image,
-                plate_number,
-                model,
-                capacity,
-                status,
-                branch_id,
-                driver_id,
-                created_at,
-                updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+        // Check which columns exist in the hearses table
+        let columnRows = [];
+        try {
+            const result = await safeTenantQuery(
+                dbName,
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'hearses'",
+                [dbName]
+            );
+            // Handle various response formats from safeTenantQuery
+            if (Array.isArray(result)) {
+                columnRows = result;
+            } else if (result && typeof result === 'object') {
+                if (Array.isArray(result.data)) {
+                    columnRows = result.data;
+                } else if (Array.isArray(result.rows)) {
+                    columnRows = result.rows;
+                } else if (result[0]) {
+                    columnRows = [result[0]];
+                }
+            }
+        } catch (e) {
+            console.log('⚠️ Could not fetch column info:', e.message);
+        }
 
-        const params = [
-            hearse_code,
-            hearse_name || null,
-            image,
-            plate_number.trim(),
-            model || null,
-            capacity || null,
-            status || 'available',
-            assigned_branch_id,
-            driver_id || null,
-            now,
-            now
-        ];
+        // Ensure columnRows is always an array before mapping
+        if (!Array.isArray(columnRows)) {
+            columnRows = [];
+        }
+
+        const existingColumns = new Set(columnRows.map(col => col.COLUMN_NAME || col.column_name || col));
+        console.log('📋 Existing columns in hearses:', Array.from(existingColumns).join(', '));
+
+        // Build dynamic INSERT query based on existing columns
+        const insertFields = ['hearse_code', 'hearse_name', 'plate_number'];
+        const insertValues = [hearse_code, hearse_name || null, plate_number.trim()];
+
+        if (existingColumns.has('model')) { insertFields.push('model'); insertValues.push(model || null); }
+        if (existingColumns.has('capacity')) { insertFields.push('capacity'); insertValues.push(capacity || null); }
+        if (existingColumns.has('status')) { insertFields.push('status'); insertValues.push(status || 'available'); }
+        if (existingColumns.has('branch_id')) { insertFields.push('branch_id'); insertValues.push(assigned_branch_id); }
+        if (existingColumns.has('branch_code')) { insertFields.push('branch_code'); insertValues.push(null); }
+        if (existingColumns.has('driver_id')) { insertFields.push('driver_id'); insertValues.push(driver_id || null); }
+        if (existingColumns.has('created_at')) { insertFields.push('created_at'); insertValues.push(now); }
+        if (existingColumns.has('updated_at')) { insertFields.push('updated_at'); insertValues.push(now); }
+
+        const placeholders = insertValues.map(() => '?').join(', ');
+        const escapedFields = insertFields.map(f => `\`${f}\``).join(', ');
+        const query = `INSERT INTO hearses (${escapedFields}) VALUES (${placeholders})`;
 
         console.log('🧠 Executing SQL:', query);
-        console.log('🧩 Parameters:', params);
+        console.log('🧩 Parameters:', insertValues);
 
-        const result = await safeTenantExecute(dbName, query, params);
+        const result = await safeTenantExecute(dbName, query, insertValues);
 
         console.log('✅ Hearse Insert Result:', result);
 
