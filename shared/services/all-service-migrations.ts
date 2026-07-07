@@ -45,7 +45,51 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
   },
 
   {
-    name: '002_create_users_table',
+    name: '001a_create_tenants_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS tenants (
+        tenant_id INT PRIMARY KEY AUTO_INCREMENT,
+        tenant_name VARCHAR(255) NOT NULL,
+        tenant_slug VARCHAR(255) UNIQUE NOT NULL,
+        db_name VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(50),
+        location TEXT,
+        country VARCHAR(100),
+        logo_url VARCHAR(500),
+        status ENUM('active', 'suspended', 'deleted') DEFAULT 'active',
+        subscription_status ENUM('active', 'trial', 'suspended', 'cancelled') DEFAULT 'trial',
+        subscription_expires_at TIMESTAMP NULL,
+        deployment_type ENUM('single', 'multi') DEFAULT 'single',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_deployment_type (deployment_type)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `,
+  },
+
+  {
+    name: '002_create_branches_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS branches (
+        branch_id INT PRIMARY KEY AUTO_INCREMENT,
+        branch_name VARCHAR(255) NOT NULL,
+        branch_slug VARCHAR(255) UNIQUE NOT NULL,
+        branch_db_name VARCHAR(255),
+        branch_location TEXT,
+        branch_phone VARCHAR(50),
+        branch_email VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_branch_slug (branch_slug),
+        INDEX idx_is_active (is_active)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `,
+  },
+
+  {
+    name: '003_create_users_table',
     sql: `
       CREATE TABLE IF NOT EXISTS users (
         user_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -113,25 +157,6 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
         INDEX idx_action (action),
         INDEX idx_entity (entity_type, entity_id),
         INDEX idx_created_at (created_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `,
-  },
-  {
-    name: '006_create_branches_table',
-    sql: `
-      CREATE TABLE IF NOT EXISTS branches (
-        branch_id INT PRIMARY KEY AUTO_INCREMENT,
-        branch_name VARCHAR(255) NOT NULL,
-        branch_slug VARCHAR(255) UNIQUE NOT NULL,
-        branch_db_name VARCHAR(255),
-        branch_location TEXT,
-        branch_phone VARCHAR(50),
-        branch_email VARCHAR(255),
-        is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_branch_slug (branch_slug),
-        INDEX idx_is_active (is_active)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -322,6 +347,7 @@ const DECEASED_SERVICE_MIGRATIONS: Migration[] = [
 ];
 
 // ─── Marketplace Service Migrations ──────────────────────────────────────────
+// NOTE: Shopping cart removed for simplicity
 
 const MARKETPLACE_SERVICE_MIGRATIONS: Migration[] = [
   {
@@ -344,23 +370,6 @@ const MARKETPLACE_SERVICE_MIGRATIONS: Migration[] = [
         INDEX idx_category (category),
         INDEX idx_status (status),
         INDEX idx_price (price)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `,
-  },
-  {
-    name: '021_create_shopping_cart_table',
-    sql: `
-      CREATE TABLE IF NOT EXISTS shopping_cart (
-        cart_id INT AUTO_INCREMENT PRIMARY KEY,
-        deceased_id VARCHAR(50) NOT NULL,
-        product_id INT NOT NULL,
-        quantity INT NOT NULL DEFAULT 1,
-        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-        FOREIGN KEY (product_id) REFERENCES marketplace_products(product_id) ON DELETE CASCADE,
-        INDEX idx_deceased_id (deceased_id),
-        INDEX idx_product_id (product_id),
-        UNIQUE KEY uk_deceased_product (deceased_id, product_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -687,31 +696,40 @@ const BODY_CHECKOUT_SERVICE_MIGRATIONS: Migration[] = [
     sql: `
       CREATE TABLE IF NOT EXISTS body_checkout (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        checkout_id VARCHAR(50) NOT NULL UNIQUE,
         deceased_id VARCHAR(50) NOT NULL,
-        checkout_type ENUM('burial', 'cremation', 'transfer', 'release', 'autopsy') NOT NULL,
-        checkout_status ENUM('pending', 'approved', 'completed', 'cancelled', 'rejected') DEFAULT 'pending',
-        requested_by INT,
-        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        checkout_type ENUM('release', 'transfer', 'burial', 'cremation') NOT NULL,
+        destination VARCHAR(255),
+        destination_contact VARCHAR(100),
+        release_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expected_return_date TIMESTAMP NULL,
+        actual_return_date TIMESTAMP NULL,
+        status ENUM('pending', 'approved', 'in_transit', 'completed', 'returned', 'rejected') DEFAULT 'pending',
         approved_by INT,
-        approved_at TIMESTAMP NULL,
-        completed_by INT,
-        completed_at TIMESTAMP NULL,
-        checkout_date TIMESTAMP NOT NULL,
-        release_to VARCHAR(255) NOT NULL,
-        release_to_relationship VARCHAR(100),
-        release_to_contact VARCHAR(50),
+        released_by INT,
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-        FOREIGN KEY (requested_by) REFERENCES users(user_id) ON DELETE SET NULL,
-        FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL,
-        FOREIGN KEY (completed_by) REFERENCES users(user_id) ON DELETE SET NULL,
-        INDEX idx_checkout_id (checkout_id),
         INDEX idx_deceased_id (deceased_id),
-        INDEX idx_checkout_status (checkout_status),
-        INDEX idx_checkout_date (checkout_date)
+        INDEX idx_checkout_type (checkout_type),
+        INDEX idx_status (status),
+        INDEX idx_release_date (release_date),
+        FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `,
+  },
+  {
+    name: '071_create_checkout_approvals_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS checkout_approvals (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        checkout_id INT NOT NULL,
+        approver_id INT NOT NULL,
+        approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        approval_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        comments TEXT,
+        INDEX idx_checkout_id (checkout_id),
+        INDEX idx_approver_id (approver_id),
+        FOREIGN KEY (checkout_id) REFERENCES body_checkout(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `,
   },
@@ -828,89 +846,9 @@ const COFFIN_SERVICE_MIGRATIONS: Migration[] = [
 ];
 
 // ─── Portal / Memorial Service Migrations ────────────────────────────────────
+// NOTE: Portal migrations removed for simplicity - can be re-added later if needed
 
-const PORTAL_SERVICE_MIGRATIONS: Migration[] = [
-  {
-    name: '090_create_memorial_pages_table',
-    sql: `
-      CREATE TABLE IF NOT EXISTS memorial_pages (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        tenant_id INT NOT NULL,
-        deceased_id INT NOT NULL,
-        slug VARCHAR(255) NOT NULL UNIQUE,
-        biography TEXT NULL,
-        family_message TEXT NULL,
-        tribute_message TEXT NULL,
-        funeral_details JSON NULL,
-        burial_details JSON NULL,
-        gallery JSON NULL,
-        is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP NULL,
-        updated_at TIMESTAMP NULL,
-        INDEX idx_tenant_slug (tenant_id, slug),
-        INDEX idx_deceased (deceased_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `,
-  },
-  {
-    name: '091_create_condolences_table',
-    sql: `
-      CREATE TABLE IF NOT EXISTS condolences (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        tenant_id INT NOT NULL,
-        memorial_id INT NOT NULL,
-        visitor_name VARCHAR(255) NOT NULL,
-        visitor_email VARCHAR(255) NULL,
-        message TEXT NOT NULL,
-        is_approved BOOLEAN DEFAULT FALSE,
-        is_flagged BOOLEAN DEFAULT FALSE,
-        ip_address VARCHAR(45) NULL,
-        created_at TIMESTAMP NULL,
-        updated_at TIMESTAMP NULL,
-        INDEX idx_memorial_approved (memorial_id, is_approved),
-        INDEX idx_created_at (created_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `,
-  },
-  {
-    name: '092_create_virtual_candles_table',
-    sql: `
-      CREATE TABLE IF NOT EXISTS virtual_candles (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        tenant_id INT NOT NULL,
-        memorial_id INT NOT NULL,
-        visitor_name VARCHAR(255) NULL DEFAULT 'Anonymous',
-        visitor_email VARCHAR(255) NULL,
-        message TEXT NULL,
-        ip_address VARCHAR(45) NULL,
-        lit_at TIMESTAMP NULL,
-        INDEX idx_memorial (memorial_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `,
-  },
-  {
-    name: '093_create_memories_tributes_table',
-    sql: `
-      CREATE TABLE IF NOT EXISTS memories_tributes (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        tenant_id INT NOT NULL,
-        memorial_id INT NOT NULL,
-        visitor_name VARCHAR(255) NOT NULL,
-        visitor_email VARCHAR(255) NULL,
-        message TEXT NULL,
-        media_url VARCHAR(500) NULL,
-        media_type ENUM('photo', 'video', 'text') DEFAULT 'text',
-        is_approved BOOLEAN DEFAULT FALSE,
-        is_flagged BOOLEAN DEFAULT FALSE,
-        ip_address VARCHAR(45) NULL,
-        created_at TIMESTAMP NULL,
-        updated_at TIMESTAMP NULL,
-        INDEX idx_memorial_approved (memorial_id, is_approved),
-        INDEX idx_created_at (created_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `,
-  },
-];
+const PORTAL_SERVICE_MIGRATIONS: Migration[] = [];
 
 // ─── QR Code Service Migrations ──────────────────────────────────────────────
 
@@ -1061,7 +999,7 @@ const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
         booking_reference VARCHAR(100) UNIQUE,
         hearse_id INT NOT NULL,
         deceased_id VARCHAR(50) NOT NULL,
-        branch_id INT NOT NULL,
+        tenant_db_name VARCHAR(255) NOT NULL,
         pickup_location TEXT NOT NULL,
         destination TEXT NOT NULL,
         booking_date DATETIME NOT NULL,
@@ -1073,7 +1011,7 @@ const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_hearse_id (hearse_id),
         INDEX idx_deceased_id (deceased_id),
-        INDEX idx_branch_id (branch_id),
+        INDEX idx_tenant_db (tenant_db_name),
         INDEX idx_status (status),
         INDEX idx_booking_date (booking_date),
         FOREIGN KEY (hearse_id) REFERENCES hearses(id) ON DELETE RESTRICT
@@ -1271,17 +1209,54 @@ export function getMainTenantMigrations(): Migration[] {
 }
 
 export function getBranchMigrations(): Migration[] {
-  // Branch databases get a subset of migrations (no organizations, users, branches tables)
+  // Branch databases need users table for authentication
   return [
+    {
+      name: 'branch_001_create_users_table',
+      sql: `
+        CREATE TABLE IF NOT EXISTS users (
+          user_id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          full_name VARCHAR(255) NOT NULL,
+          phone VARCHAR(20),
+          role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'user',
+          branch_id INT NULL,
+          is_active BOOLEAN DEFAULT TRUE,
+          is_verified BOOLEAN DEFAULT FALSE,
+          last_login_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_email (email),
+          INDEX idx_role (role),
+          INDEX idx_branch_id (branch_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `,
+    },
+    {
+      name: 'branch_002_create_refresh_tokens_table',
+      sql: `
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          token VARCHAR(500) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+          INDEX idx_token (token(255)),
+          INDEX idx_user_id (user_id),
+          INDEX idx_expires_at (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `,
+    },
     ...DECEASED_SERVICE_MIGRATIONS,
     ...MARKETPLACE_SERVICE_MIGRATIONS,
     ...INVOICE_SERVICE_MIGRATIONS,
     ...DOCUMENTS_SERVICE_MIGRATIONS,
     ...NOTIFICATIONS_SERVICE_MIGRATIONS,
     ...CALENDAR_SERVICE_MIGRATIONS,
-    ...BODY_CHECKOUT_SERVICE_MIGRATIONS,
     ...COFFIN_SERVICE_MIGRATIONS,
-    ...PORTAL_SERVICE_MIGRATIONS,
     ...QRCODE_SERVICE_MIGRATIONS,
     ...ANALYTICS_SERVICE_MIGRATIONS,
     ...EDOCUMENTS_SERVICE_MIGRATIONS,
@@ -1330,10 +1305,6 @@ export function getSoftDeleteMigrations(): Migration[] {
       sql: `ALTER TABLE marketplace_products ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
     },
     {
-      name: '010_add_soft_delete_to_shopping_cart',
-      sql: `ALTER TABLE shopping_cart ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER added_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
-    },
-    {
       name: '011_add_soft_delete_to_orders',
       sql: `ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
     },
@@ -1378,10 +1349,6 @@ export function getSoftDeleteMigrations(): Migration[] {
       sql: `ALTER TABLE event_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
     },
     {
-      name: '022_add_soft_delete_to_body_checkout',
-      sql: `ALTER TABLE body_checkout ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
-    },
-    {
       name: '023_add_soft_delete_to_coffins',
       sql: `ALTER TABLE coffins ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
     },
@@ -1396,22 +1363,6 @@ export function getSoftDeleteMigrations(): Migration[] {
     {
       name: '026_add_soft_delete_to_deceased_coffin',
       sql: `ALTER TABLE deceased_coffin ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
-    },
-    {
-      name: '027_add_soft_delete_to_memorial_pages',
-      sql: `ALTER TABLE memorial_pages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
-    },
-    {
-      name: '028_add_soft_delete_to_condolences',
-      sql: `ALTER TABLE condolences ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_flagged, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
-    },
-    {
-      name: '029_add_soft_delete_to_virtual_candles',
-      sql: `ALTER TABLE virtual_candles ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER lit_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
-    },
-    {
-      name: '030_add_soft_delete_to_memories_tributes',
-      sql: `ALTER TABLE memories_tributes ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_flagged, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)`
     },
     {
       name: '031_add_soft_delete_to_qr_codes',

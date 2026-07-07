@@ -250,10 +250,29 @@ exports.login = asyncHandler(async (req, res) => {
       console.warn('Could not update last login:', error.message);
     }
 
-    // Step 5: Generate tokens with per-tenant secrets
+    // Step 5: Get branch information
+    let branchId = user.branch_id || null;
+    let branchSlug = null;
+
+    if (branchId) {
+      try {
+        const [branches] = await pool.query(
+          `SELECT branch_slug FROM ${tenant.db_name}.branches WHERE branch_id = ? AND is_active = 1`,
+          [branchId]
+        );
+        if (branches.length > 0) {
+          branchSlug = branches[0].branch_slug;
+        }
+      } catch (branchErr) {
+        // Non-critical - branch lookup may fail if branches table doesn't exist
+        console.warn('Could not fetch branch info:', branchErr.message);
+      }
+    }
+
+    // Step 6: Generate tokens with per-tenant secrets
     const { accessToken, refreshToken } = await generateTokens(user, tenant);
 
-    // Step 6: Return response
+    // Step 7: Return response
     console.log(' Login successful!\n');
 
     res.status(200).json({
@@ -267,6 +286,8 @@ exports.login = asyncHandler(async (req, res) => {
         fullName: user.full_name,
         phone: user.phone,
         role: user.role,
+        branchId: branchId,
+        branchSlug: branchSlug,
         isActive: user.is_active === 1,
         isVerified: user.is_verified === 1
       },

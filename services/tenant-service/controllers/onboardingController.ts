@@ -66,17 +66,33 @@ export class OnboardingController {
       }
 
       // Handle branches - support both array format and single branch format
-      let finalBranches = branches || [];
-      if (branchName && !finalBranches.length) {
+      let rawBranches = branches || [];
+      if (branchName && !rawBranches.length) {
         // Single tenant mode - create a branch from branchName
-        finalBranches = [{ branch_name: branchName, branch_location: location || '' }];
+        rawBranches = [{ name: branchName, location: location || '' }];
       }
 
-      if (finalBranches && Array.isArray(finalBranches)) {
-        for (const branch of finalBranches) {
-          if (!branch.branch_name) { res.status(400).json({ success: false, message: 'Each branch must have a name' }); return; }
+      // Normalize branch fields from frontend format (name/location) to model format (branch_name/branch_location)
+      // This MUST be done before validation to support both frontend and backend field naming
+      const normalizedBranches = (rawBranches || []).map((branch: any) => ({
+        branch_name: branch.branch_name || branch.name,
+        branch_location: branch.branch_location || branch.location || '',
+        branch_phone: branch.branch_phone || branch.phone || '',
+        branch_email: branch.branch_email || branch.email || ''
+      }));
+
+      // Validate normalized branches
+      if (normalizedBranches && Array.isArray(normalizedBranches)) {
+        for (const branch of normalizedBranches) {
+          if (!branch.branch_name) {
+            res.status(400).json({ success: false, message: 'Each branch must have a name' });
+            return;
+          }
         }
       }
+
+      // Use deployment_type from frontend if provided, otherwise infer from branch count
+      const finalDeploymentType = deploymentType || (normalizedBranches.length > 1 ? 'multi' : 'single');
 
       const result = await TenantModel.registerTenant({
         tenant_name: finalTenantName,
@@ -86,7 +102,8 @@ export class OnboardingController {
         phone: phone || null,
         location: location || null,
         country: country || null,
-        branches: finalBranches
+        deployment_type: finalDeploymentType,
+        branches: normalizedBranches
       });
 
       res.status(201).json({
@@ -156,13 +173,28 @@ export class OnboardingController {
         if (userList.length === 0) { res.status(401).json({ success: false, message: 'Invalid email or password' }); return; }
 
         const user = userList[0];
+
+        // Get branch slug if user has a branch assigned
+        let branchSlug = null;
+        if (user.branch_id) {
+          try {
+            const [branchRows] = await conn.query('SELECT branch_slug FROM branches WHERE branch_id = ?', [user.branch_id]);
+            const branchList = branchRows as any[];
+            if (branchList.length > 0) {
+              branchSlug = branchList[0].branch_slug;
+            }
+          } catch (branchErr) {
+            // Non-critical - branch lookup may fail if branches table doesn't exist
+          }
+        }
+
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
         if (!isValidPassword) { res.status(401).json({ success: false, message: 'Invalid email or password' }); return; }
 
         await conn.query('UPDATE users SET last_login_at = NOW() WHERE user_id = ?', [user.user_id]);
 
         const token = jwt.sign(
-          { userId: user.user_id, tenantId: tenant.tenant_id, tenantSlug: tenant.tenant_slug, email: user.email, role: user.role, branchId: user.branch_id },
+          { userId: user.user_id, tenantId: tenant.tenant_id, tenantSlug: tenant.tenant_slug, email: user.email, role: user.role, branchId: user.branch_id, branchSlug },
           process.env.JWT_SECRET, { expiresIn: '7d' }
         );
         const refreshToken = jwt.sign(
@@ -177,7 +209,7 @@ export class OnboardingController {
           data: {
             token, refreshToken,
             tenant: { tenantId: tenant.tenant_id, tenantName: tenant.tenant_name, tenantSlug: tenant.tenant_slug, country: tenant.country },
-            user: { userId: user.user_id, email: user.email, fullName: user.full_name, role: user.role, branchId: user.branch_id }
+            user: { userId: user.user_id, email: user.email, fullName: user.full_name, role: user.role, branchId: user.branch_id, branchSlug }
           }
         });
       } finally { await conn.end(); }

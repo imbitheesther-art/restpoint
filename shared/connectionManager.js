@@ -40,41 +40,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.safeExecute = exports.safeQuery = exports.connectionManager = exports.ConnectionManager = void 0;
 const promise_1 = __importDefault(require("mysql2/promise"));
-// ============================================
-// FIX: Handle MariaDB GSSAPI authentication
-// ============================================
-// This patch handles the GSSAPI authentication issue with MariaDB 10.11+
-// by telling the server we don't support GSSAPI and to use mysql_native_password
-const mysql2 = promise_1.default;
-// Store original createPool
-const originalCreatePool = mysql2.createPool;
-// Create patched version that adds GSSAPI auth plugin
-const patchedCreatePool = function (config) {
-    if (!config)
-        config = {};
-    // Ensure authPlugins exists
-    if (!config.authPlugins) {
-        config.authPlugins = {};
-    }
-    // Handle GSSAPI - return empty buffer to signal fallback to mysql_native_password
-    // This allows the server to fall back to mysql_native_password authentication
-    config.authPlugins.auth_gssapi_client = function () {
-        return function () {
-            return Buffer.from([]);
-        };
-    };
-    return originalCreatePool.call(this, config);
-};
-// Try to override createPool on the mysql2 module
-try {
-    mysql2.createPool = patchedCreatePool;
-}
-catch (e) {
-    // If we can't override, we'll use the patched version directly
-    console.warn('Could not override mysql2.createPool in connectionManager, using patched wrapper');
-}
-// Use the patched version for all subsequent calls
-const createPool = patchedCreatePool;
 const DEFAULT_CONFIG = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306', 10),
@@ -106,10 +71,16 @@ class ConnectionManager {
         this.config = { ...DEFAULT_CONFIG, ...config };
         this.poolCache = new Map();
         this.lruOrder = [];
-
-
+        console.log(`[ConnectionManager] 🔐 Initialized singleton. Config:
+      ├─ Max connections per tenant: ${this.config.maxConnectionsPerTenant}
+      ├─ Max queue per tenant:       ${this.config.maxQueuePerTenant}
+      ├─ Queue timeout:              ${this.config.queueTimeoutMs}ms
+      ├─ Idle eviction timeout:      ${this.config.idleTimeoutMinutes}min
+      ├─ Eviction check interval:    ${this.config.evictionCheckIntervalMs}ms
+      └─ Connection timeout:         ${this.config.connectionTimeoutMs}ms`);
+        // Start the eviction timer immediately
         this.startEvictionTimer();
-
+        // Register shutdown handlers for graceful cleanup
         this.registerShutdownHandlers();
     }
     // ────────────────────────────────────────────────────────────────────────────
@@ -128,10 +99,10 @@ class ConnectionManager {
     static getInstance(config) {
         if (!ConnectionManager.instance) {
             ConnectionManager.instance = new ConnectionManager(config);
-
+            console.log('[ConnectionManager] 🆕 Singleton instance created');
         }
         else if (config) {
-
+            console.warn('[ConnectionManager] ⚠️ Instance already exists; config ignored');
         }
         return ConnectionManager.instance;
     }
@@ -146,7 +117,7 @@ class ConnectionManager {
         if (ConnectionManager.instance) {
             await ConnectionManager.instance.shutdown();
             ConnectionManager.instance = null;
-
+            console.log('[ConnectionManager] 🔄 Singleton instance reset');
         }
     }
     // ────────────────────────────────────────────────────────────────────────────
@@ -175,10 +146,10 @@ class ConnectionManager {
      */
     async query(tenantDbName, sql, params = []) {
         if (this.isShuttingDown) {
-            throw new Error('[ConnectionManager]  System is shutting down; rejecting query');
+            throw new Error('[ConnectionManager] 🔴 System is shutting down; rejecting query');
         }
         if (!tenantDbName || typeof tenantDbName !== 'string') {
-            throw new Error(`[ConnectionManager]  Invalid tenantDbName: ${tenantDbName}`);
+            throw new Error(`[ConnectionManager] ❌ Invalid tenantDbName: ${tenantDbName}`);
         }
         let connection = null;
         const queryStartTime = Date.now();
@@ -206,14 +177,14 @@ class ConnectionManager {
             // Log the error with context but DO NOT re-throw the original error
             // Wrap it in a safe, descriptive error to prevent sensitive data leakage
             const errorMessage = error.code === 'ER_CON_COUNT_ERROR'
-                ? `[ConnectionManager]  Too many connections for "${tenantDbName}". Pool exhausted (max: ${this.config.maxConnectionsPerTenant}). Try again later.`
+                ? `[ConnectionManager] 🔴 Too many connections for "${tenantDbName}". Pool exhausted (max: ${this.config.maxConnectionsPerTenant}). Try again later.`
                 : error.code === 'ECONNREFUSED'
-                    ? `[ConnectionManager]  Connection refused for "${tenantDbName}". Database server may be down.`
+                    ? `[ConnectionManager] 🔴 Connection refused for "${tenantDbName}". Database server may be down.`
                     : error.code === 'PROTOCOL_CONNECTION_LOST'
-                        ? `[ConnectionManager]  Connection lost for "${tenantDbName}". Dead connection pruned and recreated.`
+                        ? `[ConnectionManager] 🔴 Connection lost for "${tenantDbName}". Dead connection pruned and recreated.`
                         : error.code === 'ETIMEDOUT'
-                            ? `[ConnectionManager]  Connection timed out for "${tenantDbName}".`
-                            : `[ConnectionManager]  Query error on "${tenantDbName}": ${error.message}`;
+                            ? `[ConnectionManager] 🔴 Connection timed out for "${tenantDbName}".`
+                            : `[ConnectionManager] ❌ Query error on "${tenantDbName}": ${error.message}`;
             console.error(errorMessage, {
                 sql: sql.substring(0, 200),
                 paramsCount: params.length,
@@ -242,7 +213,7 @@ class ConnectionManager {
                 catch (releaseError) {
                     // If release fails (e.g., connection already destroyed), log it
                     // but do NOT throw — we must not crash the request at this point
-                    console.error(`[ConnectionManager]  Error releasing connection for "${tenantDbName}": ${releaseError.message}`);
+                    console.error(`[ConnectionManager] ⚠️ Error releasing connection for "${tenantDbName}": ${releaseError.message}`);
                 }
             }
         }
@@ -317,7 +288,7 @@ class ConnectionManager {
             return existing;
         }
         // Create a new pool with STRICT connection limits
-        const pool = createPool({
+        const pool = promise_1.default.createPool({
             host: this.config.host,
             port: this.config.port,
             user: this.config.user,

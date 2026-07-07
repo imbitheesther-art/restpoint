@@ -4,7 +4,7 @@
  * when loaded via ts-node (which handles .ts requires from .ts files)
  */
 
-const { safeQuery, getConnection, releaseConnection } = require('../../shared/database');
+const { query, getTenantDB, getRootPool } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
 const crypto = require('crypto');
 const path = require('path');
@@ -59,8 +59,6 @@ const createCoffin = async (req, res) => {
         return res.status(403).json({ success: false, message: 'Valid tenant required' });
     }
 
-    let connection = null;
-
     try {
         const {
             custom_id, type, material, exact_price, currency, quantity,
@@ -90,29 +88,14 @@ const createCoffin = async (req, res) => {
             priceUSD = price / EXCHANGE_RATES.USD;
         }
 
-        // Find user ID if created_by is provided
-        let userId = null;
-        if (created_by) {
-            const users = await safeQuery(
-                'SELECT id FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(name) = LOWER(?) LIMIT 1',
-                [created_by.trim(), created_by.trim()]
-            );
-            userId = users[0]?.id || null;
-        } else if (req.user?.userId) {
-            userId = parseInt(req.user.userId);
-        }
-
-        connection = await getConnection();
-        await connection.beginTransaction();
-
+        // Use the query function which resolves the database from the tenant slug
         // Check for duplicate custom ID
         if (custom_id) {
-            const [existing] = await connection.query(
+            const existing = await query(req,
                 'SELECT coffin_id FROM coffins WHERE custom_id = ? AND tenant_id = ?',
                 [custom_id, tenantSlug]
             );
             if (existing.length > 0) {
-                await connection.rollback();
                 return res.status(400).json({ success: false, message: 'Custom ID already exists' });
             }
         }
@@ -126,11 +109,11 @@ const createCoffin = async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
-        const [result] = await connection.query(insertSql, [
+        const result = await query(req, insertSql, [
             finalCoffinId, tenantSlug, type.trim(), material.trim(), priceKES, finalCurrency,
             priceUSD, EXCHANGE_RATES.USD, parseInt(quantity) || 1,
             supplier?.trim() || null, origin?.trim() || null, color?.trim() || null,
-            size?.trim() || null, category || 'locally_made', userId
+            size?.trim() || null, category || 'locally_made', created_by || null
         ]);
 
         const coffinDbId = result.insertId;
@@ -149,11 +132,9 @@ const createCoffin = async (req, res) => {
             if (imageUrls.length > 0) {
                 const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_id, image_url, created_at) VALUES ?`;
                 const imageValues = imageUrls.map(url => [coffinDbId, tenantSlug, url, new Date().toISOString()]);
-                await connection.query(imageSql, [imageValues]);
+                await query(req, imageSql, [imageValues]);
             }
         }
-
-        await connection.commit();
 
         // Clear cache
         clearCache('allCoffins');
@@ -169,15 +150,12 @@ const createCoffin = async (req, res) => {
         });
 
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('Create coffin error:', error);
 
         if (error.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ success: false, message: 'Custom ID already exists' });
         }
         return res.status(500).json({ success: false, message: error.message });
-    } finally {
-        if (connection) connection.release();
     }
 };
 
@@ -209,7 +187,7 @@ const getAllCoffins = async (req, res) => {
         ORDER BY c.created_at DESC
       `;
 
-            coffins = await safeQuery(sql, [tenantSlug]);
+            coffins = await query(req, sql, [tenantSlug]);
 
             coffins = coffins.map(coffin => ({
                 ...coffin,
@@ -266,7 +244,7 @@ const getCoffinById = async (req, res) => {
         GROUP BY c.coffin_id
       `;
 
-            const coffins = await safeQuery(sql, [id, id, tenantSlug]);
+            const coffins = await query(req, sql, [id, id, tenantSlug]);
 
             if (coffins.length === 0) {
                 return res.status(404).json({ success: false, message: 'Coffin not found' });
@@ -299,13 +277,11 @@ const updateCoffin = async (req, res) => {
         return res.status(403).json({ success: false, message: 'Valid tenant required' });
     }
 
-    let connection = null;
-
     try {
         const { type, material, exact_price, currency, quantity, supplier, origin, color, size, category } = req.body;
 
         // Check if coffin exists
-        const existingCoffin = await safeQuery(
+        const existingCoffin = await query(req,
             'SELECT * FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?',
             [id, id, tenantSlug]
         );
@@ -313,9 +289,6 @@ const updateCoffin = async (req, res) => {
         if (existingCoffin.length === 0) {
             return res.status(404).json({ success: false, message: 'Coffin not found' });
         }
-
-        connection = await getConnection();
-        await connection.beginTransaction();
 
         const updateFields = [];
         const updateValues = [];
@@ -350,10 +323,8 @@ const updateCoffin = async (req, res) => {
         SET ${updateFields.join(', ')} 
         WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? AND is_deleted = FALSE
       `;
-            await connection.query(updateSql, updateValues);
+            await query(req, updateSql, updateValues);
         }
-
-        await connection.commit();
 
         // Clear caches
         clearCache('allCoffins');
@@ -362,11 +333,8 @@ const updateCoffin = async (req, res) => {
         return res.status(200).json({ success: true, message: 'Coffin updated successfully' });
 
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('Update coffin error:', error);
         return res.status(500).json({ success: false, message: error.message });
-    } finally {
-        if (connection) connection.release();
     }
 };
 
@@ -381,21 +349,15 @@ const deleteCoffin = async (req, res) => {
         return res.status(403).json({ success: false, message: 'Valid tenant required' });
     }
 
-    let connection = null;
-
     try {
-        connection = await getConnection();
-        await connection.beginTransaction();
-
         // Check if coffin has assignments
-        const [assignments] = await connection.query(
+        const assignments = await query(req,
             `SELECT id FROM deceased_coffin 
        WHERE coffin_id = (SELECT coffin_id FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?)`,
             [id, id, tenantSlug]
         );
 
         if (assignments.length > 0) {
-            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: 'Cannot delete coffin with existing assignments to deceased persons'
@@ -403,12 +365,10 @@ const deleteCoffin = async (req, res) => {
         }
 
         // Soft delete
-        await connection.query(
+        await query(req,
             'UPDATE coffins SET is_deleted = TRUE WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?',
             [id, id, tenantSlug]
         );
-
-        await connection.commit();
 
         // Clear caches
         clearCache('allCoffins');
@@ -417,11 +377,8 @@ const deleteCoffin = async (req, res) => {
         return res.status(200).json({ success: true, message: 'Coffin deleted successfully' });
 
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('Delete coffin error:', error);
         return res.status(500).json({ success: false, message: error.message });
-    } finally {
-        if (connection) connection.release();
     }
 };
 
@@ -443,26 +400,19 @@ const assignCoffin = async (req, res) => {
         });
     }
 
-    let connection = null;
-
     try {
-        connection = await getConnection();
-        await connection.beginTransaction();
-
         // Check coffin availability
-        const [coffins] = await connection.query(
+        const coffins = await query(req,
             `SELECT coffin_id, quantity, type, material FROM coffins 
-       WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? AND is_deleted = FALSE FOR UPDATE`,
+       WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? AND is_deleted = FALSE`,
             [coffin_id, coffin_id, tenantSlug]
         );
 
         if (coffins.length === 0) {
-            await connection.rollback();
             return res.status(404).json({ success: false, message: 'Coffin not found' });
         }
 
         if (coffins[0].quantity <= 0) {
-            await connection.rollback();
             return res.status(400).json({ success: false, message: 'Coffin out of stock' });
         }
 
@@ -471,19 +421,17 @@ const assignCoffin = async (req, res) => {
         const assignedBy = assigned_by || req.user?.name || 'system';
 
         // Insert assignment
-        const [insertResult] = await connection.query(
+        const insertResult = await query(req,
             `INSERT INTO deceased_coffin (deceased_id, coffin_id, tenant_id, assigned_by_username, assigned_date, rfid, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
             [deceased_id, coffins[0].coffin_id, tenantSlug, assignedBy, finalAssignedDate, rfid]
         );
 
         // Update coffin stock
-        await connection.query(
+        await query(req,
             'UPDATE coffins SET quantity = quantity - 1, updated_at = NOW() WHERE coffin_id = ? AND tenant_id = ?',
             [coffins[0].coffin_id, tenantSlug]
         );
-
-        await connection.commit();
 
         // Clear cache
         clearCache('allCoffins');
@@ -497,11 +445,8 @@ const assignCoffin = async (req, res) => {
         });
 
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('Assign coffin error:', error);
         return res.status(500).json({ success: false, message: error.message });
-    } finally {
-        if (connection) connection.release();
     }
 };
 
@@ -520,7 +465,7 @@ const getCoffinAnalytics = async (req, res) => {
         let analytics = getCached(cacheKey);
 
         if (!analytics) {
-            const [overview] = await safeQuery(`
+            const overview = await query(req, `
         SELECT 
           COUNT(*) AS total_coffins,
           SUM(quantity) AS total_in_stock,

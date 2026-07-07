@@ -1,4 +1,4 @@
-﻿import express, { Application, Request, Response, NextFunction } from 'express';
+﻿git   import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -120,10 +120,27 @@ app.post('/tenant/users/register', asyncHandler(async (req: Request, res: Respon
 }));
 
 // Get tenant settings (deployment type, etc.)
+// Public endpoint - no auth required for basic tenant info
 app.get('/tenant/settings', asyncHandler(async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
-    const tenant = await TenantModel.findBySubdomain(user.tenantSlug);
+    // Try to get tenant from header or query param
+    const tenantSlug = req.headers['x-tenant-slug'] as string || req.query.slug as string;
+
+    if (!tenantSlug) {
+      // Return default settings if no tenant specified
+      res.json({
+        success: true,
+        data: {
+          deploymentType: 'single',
+          branchCount: 0,
+          tenantName: '',
+          tenantSlug: ''
+        }
+      });
+      return;
+    }
+
+    const tenant = await TenantModel.findBySubdomain(tenantSlug);
 
     if (!tenant) {
       res.status(404).json({ success: false, message: 'Tenant not found' });
@@ -156,7 +173,7 @@ app.get('/tenant/settings', asyncHandler(async (req: Request, res: Response) => 
       try {
         const [tracking] = await serverConn.query(
           'SELECT deployment_type FROM tenants WHERE tenant_slug = ?',
-          [user.tenantSlug]
+          [tenantSlug]
         );
         const trackingData = tracking as any[];
         if (trackingData.length > 0 && trackingData[0].deployment_type) {

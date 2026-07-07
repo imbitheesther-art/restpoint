@@ -30,8 +30,8 @@ export class BranchModel {
         });
         try {
             const [result] = await conn.query(
-                \INSERT INTO branches (branch_name, branch_slug, branch_db_name, branch_location, branch_phone, branch_email, is_active) 
-                 VALUES (?, ?, ?, ?, ?, ?, 1)\,
+                `INSERT INTO branches (branch_name, branch_slug, branch_db_name, branch_location, branch_phone, branch_email, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, 1)`,
                 [data.branch_name, data.branch_slug, data.branch_db_name, data.branch_location, data.branch_phone, data.branch_email]
             );
             return (result as any).insertId;

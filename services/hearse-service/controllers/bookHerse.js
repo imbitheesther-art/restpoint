@@ -145,18 +145,20 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         // ✅ Determine booking status - use 'booked' since it's now in ENUM
         const bookingStatus = 'booked';
 
-        // ✅ Insert booking — essential fields only
+        // ✅ Insert booking — essential fields only (tenant-level, shared across all branches)
         const insertQuery = `
             INSERT INTO hearse_bookings
-            (booking_code, hearse_id, client_name, client_phone, client_email, destination,
+            (booking_code, hearse_id, deceased_id, tenant_db_name, client_name, client_phone, client_email, destination,
              from_timestamp, to_timestamp, from_location, to_location,
              booking_date, status, created_by, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const insertParams = [
             booking_code,
             hearse_id || null,
+            deceased_id ? deceased_id.trim() : null,
+            req.tenantSlug, // tenant_db_name - shared across all branches
             client_name.trim(),
             client_phone.trim(),
             client_email ? client_email.trim() : null,

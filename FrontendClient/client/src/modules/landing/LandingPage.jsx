@@ -612,62 +612,66 @@ export default function App() {
           .mobile-nav { display: flex; gap: 0.5rem; align-items: center; }
         }
 
-        .hero { padding-top: 160px; padding-bottom: clamp(4rem, 8vw, 6rem); }
-        .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 4rem; align-items: center; }
-        @media (max-width: 920px) { .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
-        .hero-desc { font-size: 1.1rem; max-width: 520px; margin-bottom: 2.2rem; color: ${C.gray}; line-height: 1.75; }
-        .hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .hero { padding-top: 120px; padding-bottom: clamp(3rem, 6vw, 5rem); }
+        .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 3rem; align-items: center; }
+        @media (max-width: 768px) { .hero-grid { grid-template-columns: 1fr; gap: 2rem; } }
+        .hero-desc { font-size: 1rem; max-width: 100%; margin-bottom: 1.5rem; color: ${C.gray}; line-height: 1.7; }
+        .hero-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
         .hero-image {
           width: 100%;
-          height: 400px;
+          height: clamp(280px, 50vw, 400px);
           background: linear-gradient(135deg, ${C.verdigrisDark} 0%, ${C.verdigris} 100%);
           border: 1px solid ${C.line};
           border-radius: 4px;
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          padding: 2rem;
+          padding: 1.5rem;
           color: ${C.bone};
           font-size: 0.85rem;
           text-align: center;
         }
 
-        .proof { border-top: 1px solid ${C.line}; border-bottom: 1px solid ${C.line}; background: ${C.bone2}; padding: 3.5rem 0; }
-        .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-        @media (max-width: 720px) { .proof-grid { grid-template-columns: 1fr; gap: 2rem; } }
-        .proof-item { text-align: left; padding: 0 2rem; border-left: 1px solid ${C.line}; }
-        .proof-item:first-child { border-left: none; padding-left: 0; }
-        .proof-num { font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; color: ${C.verdigris}; font-weight: 600; margin-bottom: 0.4rem; }
-        .proof-cap { font-size: 0.9rem; color: ${C.ink}; font-weight: 500; }
+        .proof { border-top: 1px solid ${C.line}; border-bottom: 1px solid ${C.line}; background: ${C.bone2}; padding: clamp(2.5rem, 5vw, 3.5rem) 0; }
+        .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+        @media (max-width: 768px) { .proof-grid { grid-template-columns: 1fr; gap: 1.5rem; } }
+        .proof-item { text-align: center; padding: 0 1rem; border-left: 1px solid ${C.line}; }
+        .proof-item:first-child { border-left: none; padding-left: 1rem; }
+        @media (max-width: 768px) { 
+          .proof-item { border-left: none; padding: 0; }
+          .proof-item:first-child { padding-left: 0; }
+        }
+        .proof-num { font-family: 'JetBrains Mono', monospace; font-size: clamp(1.8rem, 4vw, 2.2rem); color: ${C.verdigris}; font-weight: 600; margin-bottom: 0.4rem; }
+        .proof-cap { font-size: 0.85rem; color: ${C.ink}; font-weight: 500; }
 
-        .section { padding: clamp(5rem, 10vw, 7rem) 0; }
+        .section { padding: clamp(3rem, 6vw, 5rem) 0; }
 
         .insurance-section { background: ${C.verdigrisDark}; padding: clamp(5rem, 10vw, 7rem) 0; }
         .insurance-content { max-width: 640px; }
         .insurance-heading { color: ${C.bone}; margin-bottom: 1.2rem; }
         .insurance-desc { color: 'rgba(250,248,244,0.75)'; line-height: 1.8; margin-bottom: 2rem; }
 
-        .infra-section { background: ${C.bone2}; padding: clamp(5rem, 10vw, 7rem) 0; }
-        .infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem; margin-top: 3rem; }
-        .infra-item { padding-right: 1rem; }
-        .infra-item h3 { font-size: 1.2rem; margin-bottom: 0.8rem; }
+        .infra-section { background: ${C.bone2}; padding: clamp(3rem, 6vw, 5rem) 0; }
+        .infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .infra-item { padding-right: 0.5rem; }
+        .infra-item h3 { font-size: 1.1rem; margin-bottom: 0.6rem; }
 
-        .faq-section { background: ${C.bone2}; padding: clamp(5rem, 10vw, 7rem) 0; }
-        .faq-container { max-width: 700px; }
-        .faq-item { border-top: 1px solid ${C.line}; padding: 1.8rem 0; }
-        .faq-question { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; cursor: pointer; background: none; border: none; width: 100%; text-align: left; padding: 0; }
-        .faq-q-text { font-family: 'Fraunces', serif; font-size: 1.1rem; color: ${C.ink}; font-weight: 500; }
+        .faq-section { background: ${C.bone2}; padding: clamp(3rem, 6vw, 5rem) 0; }
+        .faq-container { max-width: 100%; padding: 0 1rem; }
+        .faq-item { border-top: 1px solid ${C.line}; padding: 1.2rem 0; }
+        .faq-question { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; cursor: pointer; background: none; border: none; width: 100%; text-align: left; padding: 0; }
+        .faq-q-text { font-family: 'Fraunces', serif; font-size: 1rem; color: ${C.ink}; font-weight: 500; }
         .faq-toggle { color: ${C.brass}; font-size: '1rem'; flex-shrink: 0; transition: transform 0.3s; }
-        .faq-answer { margin-top: 1rem; color: ${C.gray}; line-height: 1.7; }
+        .faq-answer { margin-top: 0.8rem; color: ${C.gray}; line-height: 1.7; font-size: 0.95rem; }
 
-        .pricing-section { padding: clamp(5rem, 10vw, 7rem) 0; background: ${C.bone}; }
-        .pricing-header { text-align: center; margin-bottom: 3.5rem; }
-        .pricing-toggle { display: flex; align-items: center; justify-content: center; gap: 1.2rem; margin-bottom: 3rem; }
-        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2.5rem; }
+        .pricing-section { padding: clamp(3rem, 6vw, 5rem) 0; background: ${C.bone}; }
+        .pricing-header { text-align: center; margin-bottom: 2.5rem; padding: 0 1rem; }
+        .pricing-toggle { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
         .pricing-card {
           border: 2px solid ${C.verdigris};
-          padding: 2.4rem;
+          padding: 1.8rem;
           position: relative;
           border-radius: 8px;
           transition: all 0.25s ease;
@@ -679,31 +683,34 @@ export default function App() {
           transform: scale(1.02);
           box-shadow: 0 20px 40px rgba(21,23,26,0.12);
         }
+        @media (max-width: 768px) {
+          .pricing-card.featured { transform: none; }
+        }
         .pricing-card:not(.featured):hover {
           transform: translateY(-4px);
           box-shadow: 0 12px 30px rgba(21,23,26,0.08);
         }
         .pricing-badge {
           position: absolute;
-          top: -14px;
-          left: 1.5rem;
+          top: -12px;
+          left: 1rem;
           background: ${C.brass};
           color: ${C.bone};
-          padding: 0.35rem 0.85rem;
-          font-size: 0.72rem;
+          padding: 0.3rem 0.75rem;
+          font-size: 0.7rem;
           font-family: 'JetBrains Mono', monospace;
           letter-spacing: 0.08em;
           border-radius: 20px;
           font-weight: 500;
         }
-        .pricing-name { font-size: 1.4rem; font-family: 'Fraunces', serif; margin-bottom: 0.5rem; }
-        .pricing-amount { font-size: 2.6rem; font-family: 'Fraunces', serif; font-weight: 600; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
-        .pricing-period { font-size: 0.9rem; color: ${C.grayLight}; margin-bottom: 1.5rem; }
-        .pricing-savings { font-size: 0.85rem; margin-bottom: 1.8rem; padding: 0.8rem 1rem; border-radius: 4px; background: rgba(61,79,71,0.08); border: 1px solid ${C.line}; }
-        .pricing-btn { width: 100%; padding: 0.9rem; margin-bottom: 2rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+        .pricing-name { font-size: 1.2rem; font-family: 'Fraunces', serif; margin-bottom: 0.4rem; }
+        .pricing-amount { font-size: clamp(2rem, 5vw, 2.6rem); font-family: 'Fraunces', serif; font-weight: 600; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+        .pricing-period { font-size: 0.85rem; color: ${C.grayLight}; margin-bottom: 1.2rem; }
+        .pricing-savings { font-size: 0.82rem; margin-bottom: 1.5rem; padding: 0.7rem 0.9rem; border-radius: 4px; background: rgba(61,79,71,0.08); border: 1px solid ${C.line}; }
+        .pricing-btn { width: 100%; padding: 0.8rem; margin-bottom: 1.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
         .pricing-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .pricing-features { list-style: none; padding: 0; margin: 0; }
-        .pricing-feature { display: flex; gap: 0.8rem; margin-bottom: 0.9rem; font-size: 0.88rem; align-items: flex-start; }
+        .pricing-feature { display: flex; gap: 0.7rem; margin-bottom: 0.75rem; font-size: 0.85rem; align-items: flex-start; }
         .pricing-feature svg { flex-shrink: 0; margin-top: 2px; }
 
         .about-section { background: ${C.bone}; padding: clamp(3rem, 6vw, 4rem) 0; border-top: 1px solid ${C.line}; border-bottom: 1px solid ${C.line}; }
@@ -722,19 +729,19 @@ export default function App() {
 
         .cta-section {
           background: ${C.verdigrisDark};
-          padding: 5rem 0;
+          padding: clamp(3rem, 6vw, 5rem) 0;
           border-top: 1px solid ${C.verdigrisLight};
           border-bottom: 1px solid ${C.verdigrisLight};
         }
-        .cta-content { max-width: 700px; text-align: center; margin: 0 auto; }
-        .cta-content h2 { color: ${C.bone}; margin-bottom: 1.2rem; }
-        .cta-content p { color: rgba(250,248,244,0.75); font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem; }
-        .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .cta-content { max-width: 700px; text-align: center; margin: 0 auto; padding: 0 1rem; }
+        .cta-content h2 { color: ${C.bone}; margin-bottom: 1rem; font-size: clamp(1.5rem, 4vw, 2rem); }
+        .cta-content p { color: rgba(250,248,244,0.75); font-size: 1rem; line-height: 1.7; margin-bottom: 1.5rem; }
+        .cta-buttons { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
 
         footer {
           background: ${C.ink};
           color: ${C.grayLight};
-          padding: 5rem 0 2rem;
+          padding: clamp(3rem, 6vw, 5rem) 0 2rem;
           border-top: 2px solid ${C.verdigrisLight};
           position: relative;
           overflow: hidden;
@@ -753,26 +760,26 @@ export default function App() {
         .footer-content {
           display: grid;
           grid-template-columns: 2fr 1fr 1fr 1.2fr;
-          gap: 3rem;
-          margin-bottom: 4rem;
+          gap: 2.5rem;
+          margin-bottom: 3rem;
           position: relative;
           z-index: 1;
         }
 
-        @media (max-width: 1000px) {
-          .footer-content { grid-template-columns: 2fr 1fr 1fr; gap: 2.5rem; }
+        @media (max-width: 1024px) {
+          .footer-content { grid-template-columns: 2fr 1fr 1fr; gap: 2rem; }
         }
-        @media (max-width: 700px) {
-          .footer-content { grid-template-columns: 1fr; gap: 2rem; }
+        @media (max-width: 768px) {
+          .footer-content { grid-template-columns: 1fr; gap: 1.5rem; }
         }
 
         .footer-col h4 {
           font-family: 'JetBrains Mono', monospace;
-          font-size: 0.7rem;
+          font-size: 0.68rem;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           color: ${C.verdigrisTint};
-          margin-bottom: 1.2rem;
+          margin-bottom: 1rem;
           font-weight: 600;
           opacity: 0.7;
         }
@@ -780,10 +787,10 @@ export default function App() {
         .footer-col a,
         .footer-col button {
           display: block;
-          font-size: 0.85rem;
+          font-size: 0.82rem;
           color: ${C.grayLight};
           text-decoration: none;
-          margin-bottom: 0.6rem;
+          margin-bottom: 0.5rem;
           background: none;
           border: none;
           cursor: pointer;
@@ -801,18 +808,18 @@ export default function App() {
 
         .footer-brand {
           font-family: 'Fraunces', serif;
-          font-size: 1.5rem;
+          font-size: 1.3rem;
           color: ${C.bone};
           font-weight: 500;
-          margin-bottom: 0.6rem;
+          margin-bottom: 0.5rem;
           letter-spacing: -0.02em;
         }
 
         .footer-desc {
-          font-size: 0.88rem;
+          font-size: 0.85rem;
           color: ${C.grayLight};
           line-height: 1.7;
-          max-width: 300px;
+          max-width: 100%;
           opacity: 0.8;
         }
         .footer-desc:hover { opacity: 1; }
@@ -820,15 +827,15 @@ export default function App() {
         .footer-status {
           display: flex;
           align-items: center;
-          gap: 0.6rem;
-          font-size: 0.78rem;
+          gap: 0.5rem;
+          font-size: 0.75rem;
           color: ${C.grayLight};
-          margin-top: 0.5rem;
+          margin-top: 0.4rem;
           opacity: 0.7;
         }
         .footer-status .dot {
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           background: #4CAF50;
           display: inline-block;
@@ -852,16 +859,16 @@ export default function App() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 0.78rem;
+          font-size: 0.75rem;
           color: ${C.grayLight};
-          padding-top: 1.5rem;
+          padding-top: 1.2rem;
           border-top: 1px solid ${C.lineDark};
           position: relative;
           z-index: 1;
         }
 
         @media (max-width: 600px) {
-          .footer-bottom { flex-direction: column; gap: 1rem; text-align: center; }
+          .footer-bottom { flex-direction: column; gap: 0.75rem; text-align: center; }
         }
       `}</style>
 

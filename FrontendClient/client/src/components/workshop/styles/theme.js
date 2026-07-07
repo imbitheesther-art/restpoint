@@ -3,14 +3,14 @@ export const theme = {
   // Industrial Color Palette
   colors: {
     // Primary - Workshop/Industrial
-    primary: '#1a1a2e',        // Dark navy
-    secondary: '#16213e',      // Dark blue
-    accent: '#0f3460',         // Medium blue
+    primary: '#2c3e50',        // Workshop floor gray
+    secondary: '#34495e',      // Darker gray
+    accent: '#3498db',         // Production blue
 
     // Production Colors
     workshop: {
-      floor: '#2c3e50',        // Workshop floor gray
-      metal: '#7f8c8d',        // Metal gray
+      floor: '#ecf0f1',        // Light concrete floor
+      metal: '#95a5a6',        // Metal gray
       wood: '#8b4513',         // Wood brown
       fabric: '#d35400',       // Fabric orange
       paint: '#2980b9',        // Paint blue
@@ -29,14 +29,14 @@ export const theme = {
       showroom: '#9b59b6',     // Purple for showroom
     },
 
-    // UI Colors
-    background: '#0f0f1e',     // Very dark blue
-    surface: '#1a1a2e',        // Card background
-    surfaceLight: '#252542',   // Lighter card
-    border: '#2d2d4a',         // Border color
-    text: '#ecf0f1',           // White text
-    textSecondary: '#bdc3c7',  // Gray text
-    textMuted: '#7f8c8d',      // Muted text
+    // UI Colors - Clean industrial look
+    background: '#ffffff',     // Clean white background
+    surface: '#f8f9fa',        // Light card background
+    surfaceLight: '#ffffff',   // White card
+    border: '#dee2e6',         // Light border
+    text: '#2c3e50',           // Dark text
+    textSecondary: '#6c757d',  // Gray text
+    textMuted: '#adb5bd',      // Muted text
 
     // Stage Colors (Production Pipeline)
     stages: {

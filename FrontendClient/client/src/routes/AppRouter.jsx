@@ -169,9 +169,28 @@ const TenantResolver = () => {
         return;
       }
       try {
+        // Fetch branding/config info
         const data = await tenantApi.getBranding(slug);
+
+        // Fetch deployment settings (deploymentType, branchCount, etc.)
+        const settingsResult = await tenantApi.getTenantSettings();
+        const settings = settingsResult?.data || {};
+
         if (!cancelled) {
-          const safeData = data || {};
+          // Merge branding data with deployment settings
+          const safeData = {
+            ...(data || {}),
+            name: data?.name || settings?.tenantName || slug,
+            deploymentType: settings?.deploymentType || data?.deploymentType || 'single',
+            branchCount: settings?.branchCount || 0,
+            branches: data?.branches || (settings?.branchCount > 0 ? [{ name: settings?.tenantName || slug }] : []),
+            tenantName: settings?.tenantName || data?.name || slug,
+            tenantSlug: settings?.tenantSlug || slug,
+            country: settings?.country || data?.country,
+            location: settings?.location || data?.location,
+            email: settings?.email || data?.email
+          };
+
           memoryCache[cacheKey] = { data: safeData, timestamp: Date.now() };
           setTenantData(safeData);
           document.documentElement.style.setProperty('--tenant-primary', safeData.primaryColor || '#2b5a82');

@@ -18,6 +18,7 @@ export interface RegisterTenantData {
     phone?: string;
     location?: string;
     country?: string;
+    deployment_type?: 'single' | 'multi';
     branches?: Array<{
         branch_name: string;
         branch_location: string;
@@ -325,27 +326,6 @@ async function createCompleteTenantDatabase(
             console.log(`✅ Branch "${branch.branch_name}" created (slug: ${branchSlug}, db: ${branchDbName})`);
         }
 
-        // ✅ Create admin user and assign to first branch (primary branch)
-        const primaryBranch = branchData.length > 0 ? branchData[0] : null;
-        let adminBranchId = null;
-        if (primaryBranch) {
-            const [branchRows] = await tenantConn.query(
-                'SELECT branch_id FROM branches WHERE branch_slug = ?',
-                [primaryBranch.branch_slug]
-            );
-            const branches = branchRows as any[];
-            if (branches.length > 0) {
-                adminBranchId = branches[0].branch_id;
-            }
-        }
-
-        await tenantConn.query(`
-            INSERT INTO users (email, password_hash, full_name, phone, role, branch_id, is_verified, is_active)
-            VALUES (?, ?, ?, ?, 'admin', ?, 1, 1)
-        `, [email, password_hash, full_name, phone, adminBranchId]);
-        console.log(`✅ Admin user created and assigned to primary branch: ${primaryBranch?.branch_name || 'N/A'}`);
-        await emitOnboardingProgress(subdomain, 'Creating admin user', 90, `Admin user ${email} created`);
-
         // Log activity
         await tenantConn.query(`
             INSERT INTO activity_logs (user_id, action, details)
@@ -371,7 +351,7 @@ async function createCompleteTenantDatabase(
 
 export class TenantModel {
     static async registerTenant(data: RegisterTenantData): Promise<{ tenant: Tenant; token: string }> {
-        const { tenant_name, email, password, full_name, phone, location, country, branches } = data;
+        const { tenant_name, email, password, full_name, phone, location, country, deployment_type, branches } = data;
 
         const subdomain = generateSlug(tenant_name);
         const password_hash = await bcrypt.hash(password, 10);
@@ -379,20 +359,9 @@ export class TenantModel {
         const serverConn = await getServerPool();
 
         // Step 1: Create tracking database
-        await serverConn.query(`CREATE DATABASE IF NOT EXISTS tenant_tracking`);
+        await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`tenant_tracking\``);
 
-        // Add country column if missing
-        const [columns] = await serverConn.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = 'tenant_tracking' AND TABLE_NAME = 'tenants' AND COLUMN_NAME = 'country'`
-        );
-        if (!Array.isArray(columns) || columns.length === 0) {
-            try {
-                await serverConn.query(`ALTER TABLE tenant_tracking.tenants ADD COLUMN country VARCHAR(100) NULL AFTER location`);
-            } catch (e) { /* column may already exist */ }
-        }
-
-        // Create tenants table
+        // Ensure tenants table exists with correct schema
         await serverConn.query(`
             CREATE TABLE IF NOT EXISTS tenant_tracking.tenants (
                 tenant_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -411,8 +380,32 @@ export class TenantModel {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_deployment_type (deployment_type)
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
+
+        // Add missing columns if they don't exist (for existing databases)
+        const [missingColumns] = await serverConn.query(`
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = 'tenant_tracking' 
+            AND TABLE_NAME = 'tenants' 
+            AND COLUMN_NAME IN ('country', 'deployment_type')
+        `);
+
+        const existingColumns = Array.isArray(missingColumns)
+            ? missingColumns.map((col: any) => col.COLUMN_NAME)
+            : [];
+
+        if (!existingColumns.includes('country')) {
+            try {
+                await serverConn.query(`ALTER TABLE tenant_tracking.tenants ADD COLUMN country VARCHAR(100) NULL AFTER location`);
+            } catch (e) { /* column may already exist */ }
+        }
+
+        if (!existingColumns.includes('deployment_type')) {
+            try {
+                await serverConn.query(`ALTER TABLE tenant_tracking.tenants ADD COLUMN deployment_type ENUM('single', 'multi') DEFAULT 'single' AFTER subscription_expires_at`);
+            } catch (e) { /* column may already exist */ }
+        }
 
         // Create branch tracking table
         await serverConn.query(`
@@ -448,11 +441,12 @@ export class TenantModel {
         await emitOnboardingProgress(subdomain, 'Registering tenant', 98, 'Saving tenant record');
 
         // Step 4: Register tenant in tracking table
-        const deploymentType = (branches && branches.length > 1) ? 'multi' : 'single';
+        // Use deployment_type from request if provided, otherwise infer from branch count
+        const finalDeploymentType = deployment_type || ((branches && branches.length > 1) ? 'multi' : 'single');
         const [result] = await serverConn.query(
             `INSERT INTO tenant_tracking.tenants (tenant_name, tenant_slug, db_name, email, phone, location, country, status, subscription_status, deployment_type)
              VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'trial', ?)`,
-            [tenant_name, subdomain, dbName, email, phone || null, location || null, country || null, deploymentType]
+            [tenant_name, subdomain, dbName, email, phone || null, location || null, country || null, finalDeploymentType]
         );
 
         const tenantId = (result as any).insertId;
@@ -523,6 +517,59 @@ export class TenantModel {
             }
         } catch (trackingError: any) {
             console.warn(`⚠️ Could not create branch tracking records: ${trackingError.message}`);
+        }
+
+        // Step 9: Create admin user in tenant_tracking database for authentication
+        // This allows auth service to find users across all tenants
+        try {
+            await serverConn.query(`
+                CREATE TABLE IF NOT EXISTS tenant_tracking.users (
+                    user_id INT AUTO_INCREMENT PRIMARY KEY,
+                    email VARCHAR(255) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255) NOT NULL,
+                    full_name VARCHAR(255) NOT NULL,
+                    phone VARCHAR(20),
+                    role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'admin',
+                    tenant_id INT NOT NULL,
+                    branch_id INT NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    is_verified BOOLEAN DEFAULT TRUE,
+                    last_login_at TIMESTAMP NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_email (email),
+                    INDEX idx_tenant_id (tenant_id),
+                    INDEX idx_role (role),
+                    FOREIGN KEY (tenant_id) REFERENCES tenant_tracking.tenants(tenant_id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            `);
+
+            await serverConn.query(`
+                INSERT INTO tenant_tracking.users (email, password_hash, full_name, phone, role, tenant_id, is_verified, is_active)
+                VALUES (?, ?, ?, ?, 'admin', ?, 1, 1)
+            `, [email, password_hash, full_name, phone || '', tenantId]);
+            console.log(`✅ Admin user created in tenant_tracking for authentication`);
+            await emitOnboardingProgress(subdomain, 'Creating admin user', 90, `Admin user ${email} created`);
+        } catch (userError: any) {
+            console.warn(`⚠️ Could not create tenant_tracking user: ${userError.message}`);
+        }
+
+        // Step 10: Create admin user in tenant database for login control
+        // Users are stored in the tenant database, auth service will query tenant_tracking.tenants first,
+        // then connect to the tenant database to verify credentials
+        try {
+            const tenantConnForUser = await getTenantConnection(dbName);
+            try {
+                await tenantConnForUser.query(`
+                    INSERT INTO users (email, password_hash, full_name, phone, role, branch_id, is_verified, is_active)
+                    VALUES (?, ?, ?, ?, 'admin', NULL, 1, 1)
+                `, [email, password_hash, full_name, phone || '']);
+                console.log(`✅ Admin user created in tenant database for login control`);
+            } finally {
+                await tenantConnForUser.end();
+            }
+        } catch (userError: any) {
+            console.warn(`⚠️ Could not create admin user: ${userError.message}`);
         }
 
         console.log(`✅ Tenant registered: ${tenant.tenant_name} (${tenant.tenant_slug})`);
