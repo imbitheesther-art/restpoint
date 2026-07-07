@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 const useAuthStore = create((set, get) => ({
-    user: null,               // { id, email, fullName, role, branchId, branchSlug, tenantSlug, tenantId }
+    user: null,
     token: null,
     refreshToken: null,
     isAuthenticated: false,
@@ -19,6 +19,9 @@ const useAuthStore = create((set, get) => ({
         if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(userData));
         if (userData.tenantSlug) localStorage.setItem('tenantSlug', userData.tenantSlug);
+        if (userData.branchSlug) localStorage.setItem('branchSlug', userData.branchSlug);
+        if (userData.branchId) localStorage.setItem('branchId', userData.branchId);
+        if (userData.dbName) localStorage.setItem('dbName', userData.dbName);
 
         set({
             user: userData,

@@ -73,12 +73,14 @@ const registerHearse = asyncHandler(async (req, res) => {
         let assigned_branch_id = branch_id || 1;
 
         // If branch_code is provided, look up the branch_id
+        // branch_code from UI is actually the branch_slug (e.g. 'NRB' → 'branch-nrb')
         if (branch_code && !branch_id) {
             try {
+                // Try to match by branch_slug first (what UI sends), then branch_code
                 const [branch] = await safeTenantQuery(
                     dbName,
-                    'SELECT branch_id FROM branches WHERE branch_code = ? LIMIT 1',
-                    [branch_code]
+                    'SELECT branch_id, branch_slug, branch_code FROM branches WHERE branch_slug = ? OR branch_code = ? LIMIT 1',
+                    [branch_code, branch_code]
                 );
                 if (branch) {
                     assigned_branch_id = branch.branch_id;

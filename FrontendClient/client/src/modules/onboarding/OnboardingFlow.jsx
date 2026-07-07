@@ -544,7 +544,7 @@ export default function OnboardingFlow() {
         socket.emit('join-tenant', { tenantSlug, userId: 'temp', userRole: 'admin' });
       }
 
-      const response = await api.post('/tenant/onboarding/organization', submitData, {
+      const response = await api.post('/onboarding/organization', submitData, {
         headers: { 'Content-Type': 'multipart/form-data', 'x-tenant-slug': '' },
         timeout: 300000, // 5 minute timeout for onboarding
       });
@@ -862,7 +862,7 @@ export default function OnboardingFlow() {
                       <ReviewItem label="Organization" value={formData.organizationName} />
                       <ReviewItem label="Email Contact" value={formData.email} />
                       <ReviewItem label="Location" value={formData.location} />
-                      <ReviewItem label="Primary Branch" value={formData.branchName} />
+                      <ReviewItem label="Primary Branch" value={formData.deploymentType === 'multi' ? (branches[0]?.name || '—') : formData.branchName} />
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: THEME.spacing.xl }}>

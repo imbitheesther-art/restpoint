@@ -58,15 +58,18 @@ export class UserController {
                 // Validate branch_id if provided
                 let finalBranchId = null;
                 if (branch_id && role !== 'driver') {
+                    // Convert branch_id to number if it's a string
+                    const branchIdNum = typeof branch_id === 'string' ? parseInt(branch_id) : branch_id;
+
                     const [branches] = await conn.query(
                         'SELECT branch_id FROM branches WHERE branch_id = ? AND is_active = TRUE',
-                        [branch_id]
+                        [branchIdNum]
                     );
                     if ((branches as any[]).length === 0) {
                         res.status(400).json({ success: false, message: 'Invalid branch_id' });
                         return;
                     }
-                    finalBranchId = branch_id;
+                    finalBranchId = branchIdNum;
                 }
 
                 // Hash password
@@ -124,8 +127,9 @@ export class UserController {
      */
     async getUsers(req: Request, res: Response): Promise<void> {
         try {
-            const user = (req as any).user;
-            const tenant = await TenantModel.findBySubdomain(user.tenantSlug);
+            // Get tenantSlug from headers or query params (no auth required for this endpoint)
+            const tenantSlug = (req.headers['x-tenant-slug'] as string) || (req.query.slug as string);
+            const tenant = await TenantModel.findBySubdomain(tenantSlug);
 
             if (!tenant) {
                 res.status(404).json({ success: false, message: 'Tenant not found' });
@@ -185,8 +189,9 @@ export class UserController {
      */
     async getBranches(req: Request, res: Response): Promise<void> {
         try {
-            const user = (req as any).user;
-            const tenant = await TenantModel.findBySubdomain(user.tenantSlug);
+            // Get tenantSlug from headers or query params (no auth required for this endpoint)
+            const tenantSlug = (req.headers['x-tenant-slug'] as string) || (req.query.slug as string);
+            const tenant = await TenantModel.findBySubdomain(tenantSlug);
 
             if (!tenant) {
                 res.status(404).json({ success: false, message: 'Tenant not found' });

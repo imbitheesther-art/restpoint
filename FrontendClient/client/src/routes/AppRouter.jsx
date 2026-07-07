@@ -169,21 +169,36 @@ const TenantResolver = () => {
         return;
       }
       try {
-        // Fetch branding/config info
-        const data = await tenantApi.getBranding(slug);
+        // Get tenantSlug from localStorage for API calls
+        const tenantSlug = localStorage.getItem('tenantSlug');
+
+        // Fetch branding/config info using tenantSlug
+        const data = await tenantApi.getBranding(tenantSlug || slug);
 
         // Fetch deployment settings (deploymentType, branchCount, etc.)
         const settingsResult = await tenantApi.getTenantSettings();
         const settings = settingsResult?.data || {};
+
+        // Fetch branches to determine if multi-tenant
+        const branchesResult = await tenantApi.getBranches();
+        const branches = branchesResult?.data || branchesResult || [];
+        const branchCount = Array.isArray(branches) ? branches.length : 0;
+
+        // CRITICAL: If user has branchId in their profile, they're in a multi-branch system
+        // This overrides the deploymentType setting from the database
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : {};
+        const hasBranchAssignment = user?.branchId !== null && user?.branchId !== undefined;
+        const isMultiBranch = hasBranchAssignment || branchCount > 1;
 
         if (!cancelled) {
           // Merge branding data with deployment settings
           const safeData = {
             ...(data || {}),
             name: data?.name || settings?.tenantName || slug,
-            deploymentType: settings?.deploymentType || data?.deploymentType || 'single',
-            branchCount: settings?.branchCount || 0,
-            branches: data?.branches || (settings?.branchCount > 0 ? [{ name: settings?.tenantName || slug }] : []),
+            deploymentType: isMultiBranch ? 'multi' : (settings?.deploymentType || data?.deploymentType || 'single'),
+            branchCount: branchCount,
+            branches: data?.branches || branches || (branchCount > 0 ? [{ name: settings?.tenantName || slug }] : []),
             tenantName: settings?.tenantName || data?.name || slug,
             tenantSlug: settings?.tenantSlug || slug,
             country: settings?.country || data?.country,
@@ -195,6 +210,11 @@ const TenantResolver = () => {
           setTenantData(safeData);
           document.documentElement.style.setProperty('--tenant-primary', safeData.primaryColor || '#2b5a82');
           document.title = `${safeData.name || slug} | REST POINT`;
+
+          // Save deployment type to localStorage for sidebar to use
+          if (safeData.deploymentType) {
+            localStorage.setItem('deploymentType', safeData.deploymentType);
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -224,8 +244,8 @@ const RoleBasedRoute = ({ children, allowedRoles, userRole }) => {
 
 const TenantDashboardRoutes = ({ tenantData }) => {
   const { slug } = useParams();
-  // Multi-tenant if deploymentType is 'multi' OR if there are multiple branches
-  const isMultiTenant = tenantData?.deploymentType === 'multi' || (tenantData?.branches?.length > 1);
+  // Multi-tenant ONLY if deploymentType is explicitly 'multi'
+  const isMultiTenant = tenantData?.deploymentType === 'multi';
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : {};
   const userRole = user?.role || 'user';
@@ -378,9 +398,9 @@ const DashboardRedirect = () => {
   useEffect(() => {
     const tenantSlug = localStorage.getItem('tenantSlug');
     const userStr = localStorage.getItem('user');
-    let userSlug = '';
-    if (userStr) { try { const user = JSON.parse(userStr); userSlug = user.organization?.slug || user.tenantSlug || user.tenant?.slug; } catch (e) { console.error('Error parsing user', e); } }
-    const finalSlug = tenantSlug || userSlug || 'default';
+    let userTenantSlug = '';
+    if (userStr) { try { const user = JSON.parse(userStr); userTenantSlug = user.tenantSlug || ''; } catch (e) { console.error('Error parsing user', e); } }
+    const finalSlug = tenantSlug || userTenantSlug || 'default';
     if (from && from !== '/login' && from !== '/') { navigate(`/tenant/${finalSlug}${from}`, { replace: true }); } else { navigate(`/tenant/${finalSlug}/all-deceased`, { replace: true }); }
   }, [navigate, location]);
   return (

@@ -355,7 +355,8 @@ const ModernSidebar = ({
   onLogout = () => { },
   onToggle,
   menuItems: customMenuItems,
-  activePath: customActivePath
+  activePath: customActivePath,
+  tenantData
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -402,26 +403,24 @@ const ModernSidebar = ({
 
   const tenantSlug = slug || localStorage.getItem('tenantSlug') || '';
 
-  const defaultMenuItems = [
+  // Check if single tenant from tenantData prop or localStorage
+  const isSingleTenant = tenantData?.deploymentType === 'single' || localStorage.getItem('deploymentType') === 'single';
+
+  // Multi-tenant menu items (full menu)
+  const multiTenantMenuItems = [
     {
       section: 'Main',
       items: [
         { icon: Truck, label: 'Hearse', path: `/tenant/${tenantSlug}/hearse` },
         { icon: Users, label: 'Deceased', path: `/tenant/${tenantSlug}/deceased` },
         { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins` },
-
         { icon: Beaker, label: 'Chemicals', path: `/tenant/${tenantSlug}/chemicals` },
-
         { icon: Hammer, label: 'Workshop', path: `/tenant/${tenantSlug}/workshop` },
-
       ]
     },
-
-
     {
       section: 'Analytics',
       items: [
-
         { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/dashboard` },
         { icon: Activity, label: 'Insurance', path: `/tenant/${tenantSlug}/insurance` },
       ]
@@ -435,6 +434,21 @@ const ModernSidebar = ({
       ]
     }
   ];
+
+  // Single-tenant menu items (simplified menu)
+  const singleTenantMenuItems = [
+    {
+      section: 'Menu',
+      items: [
+        { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/all-deceased` },
+        { icon: Users, label: 'Deceased', path: `/tenant/${tenantSlug}/deceased` },
+        { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins` },
+        { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings` },
+      ]
+    }
+  ];
+
+  const defaultMenuItems = isSingleTenant ? singleTenantMenuItems : multiTenantMenuItems;
 
   const menuItems = customMenuItems || defaultMenuItems;
 

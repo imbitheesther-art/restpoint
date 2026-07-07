@@ -154,13 +154,25 @@ export default function LoginPage() {
           if (data.tenant.tenantSlug) localStorage.setItem('tenantSlug', data.tenant.tenantSlug);
           if (data.tenant.tenantId) localStorage.setItem('tenantId', data.tenant.tenantId.toString());
         }
+        if (data.user?.dbName) localStorage.setItem('dbName', data.user.dbName);
+        if (data.deploymentType) localStorage.setItem('deploymentType', data.deploymentType);
         if (data.user?.role) localStorage.setItem('userRole', data.user.role);
 
         setSuccessName(data.user?.fullName || 'Director');
         setShowSuccess(true);
 
         setTimeout(() => {
-          navigate('/dashboard');
+          // Navigate to tenant dashboard - tenant slug already contains branch info
+          // BULLETPROOF: Multiple fallbacks to ensure navigation never fails
+          const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug || 'default';
+
+          // Save to localStorage as backup
+          if (tenantSlug && tenantSlug !== 'default') {
+            localStorage.setItem('tenantSlug', tenantSlug);
+          }
+
+          // Always navigate to tenant path
+          navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
         }, 1600);
       } else {
         setMessage({

@@ -16,14 +16,24 @@ export const getTenantHeaders = () => {
     const tenantSlug = localStorage.getItem('tenantSlug') || sessionStorage.getItem('tenantSlug');
     const tenantId = localStorage.getItem('tenantId') || sessionStorage.getItem('tenantId');
     const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    const branchSlug = localStorage.getItem('branchSlug') || sessionStorage.getItem('branchSlug');
+    const branchId = localStorage.getItem('branchId') || sessionStorage.getItem('branchId');
 
     if (tenantSlug) headers['x-tenant-slug'] = tenantSlug;
     if (tenantId) headers['x-tenant-id'] = tenantId;
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (branchSlug) headers['x-branch-slug'] = branchSlug;
+    if (branchId) headers['x-branch-id'] = branchId;
   } catch (e) {
     // localStorage not available
   }
   return headers;
+};
+
+// Helper to build branch-aware URLs for multi-tenant using database name
+export const buildBranchUrl = (tenantSlug, dbName, path) => {
+  if (!tenantSlug || !dbName) return path;
+  return `/tenant/${tenantSlug}/${dbName}${path}`;
 };
 
 // All service endpoint definitions
@@ -40,12 +50,15 @@ export const ENDPOINTS = {
   },
   TENANT: {
     BASE: '/tenant',
-    ONBOARDING: '/tenant/onboarding',
-    ORGANIZATION: '/tenant/onboarding/organization',
+    ONBOARDING: '/onboarding',
+    ORGANIZATION: '/onboarding/organization',
     REGISTER: '/tenants/register',
-    LOGIN: '/tenant/onboarding/login',
+    LOGIN: '/onboarding/login',
     CONFIG: (slug) => `/tenants/${slug}/config`,
-    BRANCHES: '/tenant/branches',
+    SETTINGS: (slug) => `/tenant/${slug}/settings`,
+    USERS: (slug) => `/tenant/${slug}/users`,
+    BRANCHES: (slug) => `/tenant/${slug}/branches`,
+    CREATE_USER: (slug) => `/tenant/${slug}/users/register`,
   },
   MARKETPLACE: {
     PRODUCTS: '/marketplace/products',

@@ -139,8 +139,12 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         }
 
         // ✅ Get user ID from headers if logged in
-        const userId = req.headers['x-user-id'] || req.headers['x-user-id'];
+        const userId = req.headers['x-user-id'];
         const createdBy = userId ? parseInt(userId) : null;
+
+        // ✅ Get branch tracking info from request headers
+        // branch_code tells us which branch/Department this booking originated from
+        const branchCode = req.headers['x-branch-code'] || req.headers['x-branch-id'] || null;
 
         // ✅ Determine booking status - use 'booked' since it's now in ENUM
         const bookingStatus = 'booked';
@@ -150,8 +154,8 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             INSERT INTO hearse_bookings
             (booking_code, hearse_id, deceased_id, tenant_db_name, client_name, client_phone, client_email, destination,
              from_timestamp, to_timestamp, from_location, to_location,
-             booking_date, status, created_by, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             booking_date, status, created_by, branch_code, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const insertParams = [
@@ -170,6 +174,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             from_timestamp || now, // booking_date
             bookingStatus, // 'booked'
             createdBy,
+            branchCode, // Which branch/Department the booking came from
             now,
             now
         ];
@@ -509,7 +514,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Check if booking exists
+        //  Check if booking exists
         const [booking] = await safeQuery(
             'SELECT * FROM hearse_bookings WHERE id = ?',
             [booking_id],
@@ -525,7 +530,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
 
         const now = getKenyaTimeISO();
 
-        // ✅ Update booking with new time and status
+        // Update booking with new time and status
         await safeQuery(
             `UPDATE hearse_bookings 
              SET booking_date = ?, 
@@ -545,7 +550,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             req.tenantSlug
         );
 
-        // ✅ Free the hearse
+        // Free the hearse
         if (booking.hearse_id) {
             await safeQuery(
                 'UPDATE hearses SET status = ?, updated_at = ? WHERE id = ?',
@@ -554,7 +559,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             );
         }
 
-        // ✅ Notify clients (Socket)
+        // Notify clients (Socket)
         if (io) {
             io.emit('booking_postponed', {
                 booking_id,
@@ -574,7 +579,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ Postpone Booking Error:', error);
+        console.error(' Postpone Booking Error:', error);
         res.status(500).json({
             status: 'error',
             message: 'Server error while postponing booking.'
@@ -601,7 +606,7 @@ const getAllDrivers = asyncHandler(async (req, res) => {
                 ORDER BY driver_name ASC
             `, [], req.tenantSlug);
         } catch (driverErr) {
-            console.warn('⚠️ Drivers table not available, returning empty:', driverErr.message);
+            console.warn(' Drivers table not available, returning empty:', driverErr.message);
             drivers = [];
         }
 
@@ -611,7 +616,7 @@ const getAllDrivers = asyncHandler(async (req, res) => {
             drivers
         });
     } catch (error) {
-        console.error('❌ Fetch Drivers Error:', error);
+        console.error(' Fetch Drivers Error:', error);
         res.status(500).json({
             status: 'error',
             message: 'Failed to fetch drivers.'

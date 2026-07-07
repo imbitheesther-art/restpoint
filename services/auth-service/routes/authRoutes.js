@@ -5,7 +5,8 @@ const {
   login,
   refresh,
   logout,
-  createUser
+  createUser,
+  getMe
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -13,6 +14,7 @@ const { protect } = require('../middleware/authMiddleware');
 router.post('/login', login);
 router.post('/register', register);
 router.post('/refresh', refresh);
+router.get('/me', getMe);
 
 // Protected routes - require authentication
 router.post('/logout', protect, logout);
@@ -20,10 +22,10 @@ router.post('/users', protect, createUser); // Create additional users
 
 // Health check
 router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     service: 'auth-service',
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString()
   });
 });
 

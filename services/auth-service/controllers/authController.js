@@ -42,10 +42,12 @@ const queryServer = async (sql, params = []) => {
  * Uses dbName.table notation to avoid connection-level database switching
  */
 const queryTenantDB = async (dbName, sql, params = []) => {
+  // Wrap dbName in backticks to handle hyphens in database names
+  const escapedDbName = `\`${dbName}\``;
   // Replace placeholder with actual database name for multi-tenant queries
-  const qualifiedSQL = sql.replace(/FROM\s+users/gi, `FROM ${dbName}.users`)
-    .replace(/INTO\s+users/gi, `INTO ${dbName}.users`)
-    .replace(/UPDATE\s+users/gi, `UPDATE ${dbName}.users`);
+  const qualifiedSQL = sql.replace(/FROM\s+users/gi, `FROM ${escapedDbName}.users`)
+    .replace(/INTO\s+users/gi, `INTO ${escapedDbName}.users`)
+    .replace(/UPDATE\s+users/gi, `UPDATE ${escapedDbName}.users`);
   const [rows] = await pool.query(qualifiedSQL, params);
   return rows;
 };
@@ -250,23 +252,48 @@ exports.login = asyncHandler(async (req, res) => {
       console.warn('Could not update last login:', error.message);
     }
 
-    // Step 5: Get branch information
+    // Step 5: Get branch information and validate branch assignment
     let branchId = user.branch_id || null;
     let branchSlug = null;
+    let dbName = tenant.db_name; // Default to primary DB
 
     if (branchId) {
       try {
+        // Wrap dbName in backticks to handle hyphens in database names
+        const escapedDbName = `\`${tenant.db_name}\``;
         const [branches] = await pool.query(
-          `SELECT branch_slug FROM ${tenant.db_name}.branches WHERE branch_id = ? AND is_active = 1`,
+          `SELECT branch_slug, branch_db_name FROM ${escapedDbName}.branches WHERE branch_id = ? AND is_active = 1`,
           [branchId]
         );
         if (branches.length > 0) {
           branchSlug = branches[0].branch_slug;
+          dbName = branches[0].branch_db_name || tenant.db_name;
+        } else {
+          // User is assigned to a branch that doesn't exist or is inactive
+          console.warn(`User ${user.user_id} assigned to invalid/inactive branch ${branchId}`);
+          // Reset branch assignment to prevent access issues
+          branchId = null;
+          branchSlug = null;
+          dbName = tenant.db_name;
         }
       } catch (branchErr) {
         // Non-critical - branch lookup may fail if branches table doesn't exist
         console.warn('Could not fetch branch info:', branchErr.message);
       }
+    }
+
+    // Step 5.5: Get deployment type from tenant
+    let deploymentType = 'single';
+    try {
+      const [tenantRows] = await pool.query(
+        `SELECT deployment_type FROM tenant_tracking.tenants WHERE tenant_id = ?`,
+        [tenant.tenant_id]
+      );
+      if (tenantRows.length > 0 && tenantRows[0].deployment_type) {
+        deploymentType = tenantRows[0].deployment_type;
+      }
+    } catch (err) {
+      console.warn('Could not fetch deployment type:', err.message);
     }
 
     // Step 6: Generate tokens with per-tenant secrets
@@ -280,6 +307,7 @@ exports.login = asyncHandler(async (req, res) => {
       message: 'Login successful',
       accessToken,
       refreshToken,
+      deploymentType, // Include deployment type in response
       user: {
         userId: user.user_id,
         email: user.email,
@@ -288,6 +316,7 @@ exports.login = asyncHandler(async (req, res) => {
         role: user.role,
         branchId: branchId,
         branchSlug: branchSlug,
+        dbName: dbName,
         isActive: user.is_active === 1,
         isVerified: user.is_verified === 1
       },

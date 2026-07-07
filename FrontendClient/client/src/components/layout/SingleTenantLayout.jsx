@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, BarChart3, Users, Package, X, LogOut } from 'lucide-react';
 
 const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/all-deceased', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/visitors', label: 'Visitors', icon: Users },
+    { path: '/deceased', label: 'Deceased', icon: Users },
     { path: '/coffins', label: 'Coffins', icon: Package },
 ];
 
@@ -16,19 +16,14 @@ export default function SingleTenantLayout({ children }) {
 
     // Get tenant slug from localStorage
     const getTenantSlug = () => {
-        try {
-            const onboardingData = JSON.parse(localStorage.getItem('onboardingData') || '{}');
-            return onboardingData.tenantSlug || '';
-        } catch {
-            return '';
-        }
+        return localStorage.getItem('tenantSlug') || '';
     };
 
     const tenantSlug = getTenantSlug();
 
     const handleNavigation = (path) => {
-        // Prepend tenant slug to path for single-tenant mode
-        const fullPath = tenantSlug ? `/${tenantSlug}${path}` : path;
+        // Navigate to full tenant path
+        const fullPath = tenantSlug ? `/tenant/${tenantSlug}${path}` : path;
         navigate(fullPath);
         setIsOpen(false);
     };

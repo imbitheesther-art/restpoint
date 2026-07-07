@@ -193,7 +193,7 @@ async function emitOnboardingProgress(tenantSlug: string, step: string, progress
 
 async function createCompleteTenantDatabase(
     tenantName: string,
-    subdomain: string,
+    dbName: string,
     email: string,
     password_hash: string,
     full_name: string,
@@ -202,14 +202,9 @@ async function createCompleteTenantDatabase(
     location: string | null,
     branches: Array<{ branch_name: string; branch_location: string; branch_phone: string; branch_email: string }> | undefined
 ): Promise<{ dbName: string; branches: Array<{ branch_name: string; branch_slug: string; branch_db_name: string }> }> {
-    // ✅ FIXED: Clean database name without "tenant_" prefix showing in UI
-    const dbName = subdomain.replace(/-/g, '_');
-    const branchData: Array<{ branch_name: string; branch_slug: string; branch_db_name: string }> = [];
-
     const serverConn = await getServerPool();
     const migrationService = new MigrationService();
 
-    // ✅ Config with auth plugins for migration service
     const dbConfig = {
         host: process.env.DB_HOST || '127.0.0.1',
         port: parseInt(process.env.DB_PORT || '3306'),
@@ -218,23 +213,37 @@ async function createCompleteTenantDatabase(
         authPlugins: AUTH_PLUGINS
     };
 
-    console.log(`📦 Creating tenant database: ${dbName}`);
-    await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    await emitOnboardingProgress(subdomain, 'Database created', 10, `Tenant database ${dbName} created`);
-
-    // Grant permissions - use string concatenation
     const dbUser = process.env.DB_USER || 'restpoint_user';
-    await serverConn.query(`GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${dbUser}'@'%'`);
-    await serverConn.query('FLUSH PRIVILEGES');
-    console.log(`✅ Database permissions granted for ${dbName}`);
-    await emitOnboardingProgress(subdomain, 'Database configured', 15, 'Permissions granted');
 
-    // Run migrations
+    // Get branch list
+    const branchList = (branches && branches.length > 0) ? branches : [
+        { branch_name: tenantName, branch_location: location || 'Main Location', branch_phone: phone || '', branch_email: email }
+    ];
+
+    // dbName is already calculated and passed in - use it directly
+    // This prevents duplicate branch names in the database name
+
+    // Extract subdomain (tenant slug) from dbName for logging and progress tracking
+    const subdomain = dbName;
+
+    // Get branch info for creating additional branch databases
+    const firstBranch = branchList[0];
+    const firstBranchSlug = generateSlug(firstBranch.branch_name);
+
+    const branchData: Array<{ branch_name: string; branch_slug: string; branch_db_name: string }> = [];
+
+    console.log(`📦 Creating primary database: ${dbName}`);
+    await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await serverConn.query(`GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${dbUser}'@'%'`);
+    await emitOnboardingProgress(subdomain, 'Database created', 10, `Primary database ${dbName} created`);
+
+    // Run main tenant migrations on the primary DB
+    // Branch-specific migrations (users, refresh_tokens) are not needed here
+    // since the primary DB already has them from getMainTenantMigrations()
     const allMigrations = getMainTenantMigrations();
     const totalMigrations = allMigrations.length;
     let completedMigrations = 0;
 
-    // Create a wrapper to track migration progress
     const migrationResult = await migrationService.runTenantMigrations(dbName, allMigrations, dbConfig, (migrationName) => {
         completedMigrations++;
         const progress = 15 + Math.floor((completedMigrations / totalMigrations) * 30);
@@ -244,26 +253,19 @@ async function createCompleteTenantDatabase(
         console.error(`❌ Migration errors for ${dbName}:`, migrationResult.errors);
         throw new Error(`Failed to create tenant database: ${migrationResult.errors.join(', ')}`);
     }
-    console.log(`✅ Tenant database ready: ${migrationResult.migrationsRun.length} migrations executed`);
-    await emitOnboardingProgress(subdomain, 'Core migrations complete', 50, `${migrationResult.migrationsRun.length} tables created`);
+    console.log(`✅ Primary database ready: ${migrationResult.migrationsRun.length} migrations executed`);
 
     // Apply soft delete migrations
     const softDeleteMigrations = getSoftDeleteMigrations();
-    const totalSoftDelete = softDeleteMigrations.length;
-    let completedSoftDelete = 0;
-
     const softDeleteResult = await migrationService.runTenantMigrations(dbName, softDeleteMigrations, dbConfig, (migrationName) => {
-        completedSoftDelete++;
-        const progress = 50 + Math.floor((completedSoftDelete / totalSoftDelete) * 15);
-        emitOnboardingProgress(subdomain, `Enabling features (${completedSoftDelete}/${totalSoftDelete})`, progress, migrationName);
+        completedMigrations++;
+        emitOnboardingProgress(subdomain, `Enabling features`, 50, migrationName);
     });
     if (!softDeleteResult.success) {
-        console.warn(`⚠️ Continuing without soft delete support for some tables`);
-    } else {
-        console.log(`✅ Soft delete enabled: ${softDeleteResult.migrationsRun.length} tables protected`);
+        console.warn(`⚠️ Continuing without soft delete support`);
     }
 
-    await emitOnboardingProgress(subdomain, 'Setting up tenant', 70, 'Creating admin user and branches');
+    await emitOnboardingProgress(subdomain, 'Setting up', 70, 'Creating branches and admin user');
 
     // Connect to tenant DB for seeding
     const tenantConn = await getTenantConnection(dbName);
@@ -280,37 +282,38 @@ async function createCompleteTenantDatabase(
             ('date_format', 'YYYY-MM-DD'),
             ('time_format', '24h')
         `, [tenantName, subdomain, country || 'Kenya']);
-        console.log(`✅ Default settings inserted`);
-        await emitOnboardingProgress(subdomain, 'Configuring settings', 73, 'Default settings applied');
 
-        // ✅ FIXED: Create branches with clean slugs and separate databases
-        const branchList = (branches && branches.length > 0) ? branches : [
-            { branch_name: tenantName, branch_location: location || 'Main Location', branch_phone: phone || '', branch_email: email }
-        ];
+        // ─── FIRST BRANCH: points to primary DB ────────────────────────
+        const firstBranchSlugFull = `branch-${firstBranchSlug}`;
+        await tenantConn.query(
+            `INSERT INTO branches (branch_name, branch_slug, branch_db_name, branch_location, branch_phone, branch_email, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, 1)`,
+            [firstBranch.branch_name, firstBranchSlugFull, dbName, firstBranch.branch_location || '', firstBranch.branch_phone || '', firstBranch.branch_email || '']
+        );
 
-        for (const branch of branchList) {
-            // ✅ FIXED: Clean branch slug without timestamp
+        branchData.push({
+            branch_name: firstBranch.branch_name,
+            branch_slug: firstBranchSlugFull,
+            branch_db_name: dbName,
+        });
+
+        console.log(`✅ Primary branch "${firstBranch.branch_name}" → DB: ${dbName}`);
+
+        // ─── ADDITIONAL BRANCHES: create separate DBs ─────────────────
+        for (let i = 1; i < branchList.length; i++) {
+            const branch = branchList[i];
             const branchSlug = `branch-${generateSlug(branch.branch_name)}`;
-            // ✅ NEW: Each branch gets its own database
-            const branchDbName = `${dbName}_${generateSlug(branch.branch_name)}`.replace(/-/g, '_');
+            // Use tenant name (not subdomain/dbName) to avoid duplication
+            const branchDbName = `${generateSlug(tenantName)}-${generateSlug(branch.branch_name)}`;
 
-            // Create branch database
             await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${branchDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
             await serverConn.query(`GRANT ALL PRIVILEGES ON \`${branchDbName}\`.* TO '${dbUser}'@'%'`);
 
-            // Run branch migrations
             const branchMigrations = getBranchMigrations();
-            const branchMigrationResult = await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig, (migrationName) => {
+            await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig, (migrationName) => {
                 console.log(`   📦 Branch migration: ${migrationName}`);
             });
 
-            if (!branchMigrationResult.success) {
-                console.error(`❌ Branch migration errors for ${branchDbName}:`, branchMigrationResult.errors);
-            } else {
-                console.log(`   ✅ Branch database ready: ${branchMigrationResult.migrationsRun.length} migrations executed`);
-            }
-
-            // Insert into main tenant's branches table
             await tenantConn.query(
                 `INSERT INTO branches (branch_name, branch_slug, branch_db_name, branch_location, branch_phone, branch_email, is_active) 
                  VALUES (?, ?, ?, ?, ?, ?, 1)`,
@@ -323,20 +326,20 @@ async function createCompleteTenantDatabase(
                 branch_db_name: branchDbName,
             });
 
-            console.log(`✅ Branch "${branch.branch_name}" created (slug: ${branchSlug}, db: ${branchDbName})`);
+            console.log(`✅ Branch "${branch.branch_name}" created (db: ${branchDbName})`);
         }
 
         // Log activity
         await tenantConn.query(`
             INSERT INTO activity_logs (user_id, action, details)
             VALUES (1, 'TENANT_CREATED', ?)
-        `, [`Tenant ${dbName} created with ${branchData.length} branch(es): ${branchData.map(b => b.branch_name).join(', ')}`]);
+        `, [`Tenant ${subdomain} created with ${branchData.length} branch(es)`]);
 
-        console.log(`✅ Tenant setup complete: ${dbName}`);
-        console.log(`   📋 Branches: ${branchData.length}`);
+        console.log(`✅ Tenant setup complete: ${subdomain}`);
+        console.log(`   📁 Primary DB: ${dbName}`);
         branchData.forEach(b => console.log(`      - ${b.branch_name} (slug: ${b.branch_slug}, db: ${b.branch_db_name})`));
 
-        await emitOnboardingProgress(subdomain, 'Finalizing setup', 95, 'Branch tracking created');
+        await emitOnboardingProgress(subdomain, 'Finalizing', 95, 'Setup complete');
     } finally {
         await tenantConn.end();
     }
@@ -353,7 +356,21 @@ export class TenantModel {
     static async registerTenant(data: RegisterTenantData): Promise<{ tenant: Tenant; token: string }> {
         const { tenant_name, email, password, full_name, phone, location, country, deployment_type, branches } = data;
 
-        const subdomain = generateSlug(tenant_name);
+        // Generate dbName first (includes tenant + branch info)
+        const branchList = (branches && branches.length > 0) ? branches : [
+            { branch_name: tenant_name, branch_location: location || 'Main Location', branch_phone: phone || '', branch_email: email }
+        ];
+        const firstBranch = branchList[0];
+        const firstBranchSlug = generateSlug(firstBranch.branch_name);
+
+        // Generate dbName based on deployment type
+        const dbName = branchList.length > 1
+            ? `${generateSlug(tenant_name)}-${firstBranchSlug}`  // Multi: mbuvo-feuneral-mbuvo
+            : generateSlug(tenant_name);                          // Single: mbuvo-feuneral
+
+        // Tenant slug IS the database name (they must match exactly)
+        const subdomain = dbName;
+
         const password_hash = await bcrypt.hash(password, 10);
 
         const serverConn = await getServerPool();
@@ -432,9 +449,9 @@ export class TenantModel {
             throw new Error('Tenant slug already exists');
         }
 
-        // Step 3: Create complete tenant
-        const { dbName, branches: branchData } = await createCompleteTenantDatabase(
-            tenant_name, subdomain, email, password_hash, full_name,
+        // Step 3: Create complete tenant - pass dbName directly to avoid recalculation
+        const { branches: branchData } = await createCompleteTenantDatabase(
+            tenant_name, dbName, email, password_hash, full_name,
             phone || null, country || null, location || null, branches
         );
 
@@ -443,11 +460,44 @@ export class TenantModel {
         // Step 4: Register tenant in tracking table
         // Use deployment_type from request if provided, otherwise infer from branch count
         const finalDeploymentType = deployment_type || ((branches && branches.length > 1) ? 'multi' : 'single');
-        const [result] = await serverConn.query(
-            `INSERT INTO tenant_tracking.tenants (tenant_name, tenant_slug, db_name, email, phone, location, country, status, subscription_status, deployment_type)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'trial', ?)`,
-            [tenant_name, subdomain, dbName, email, phone || null, location || null, country || null, finalDeploymentType]
-        );
+
+        // Check if deployment_type column exists
+        const [columns] = await serverConn.query(`
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = 'tenant_tracking' 
+            AND TABLE_NAME = 'tenants' 
+            AND COLUMN_NAME = 'deployment_type'
+        `);
+
+        const hasDeploymentTypeColumn = Array.isArray(columns) && columns.length > 0;
+
+        let result;
+        if (hasDeploymentTypeColumn) {
+            // Insert with deployment_type column
+            const [insertResult] = await serverConn.query(
+                `INSERT INTO tenant_tracking.tenants (tenant_name, tenant_slug, db_name, email, phone, location, country, status, subscription_status, deployment_type)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'trial', ?)`,
+                [tenant_name, subdomain, dbName, email, phone || null, location || null, country || null, finalDeploymentType]
+            );
+            result = insertResult;
+        } else {
+            // Insert without deployment_type column (for backward compatibility)
+            const [insertResult] = await serverConn.query(
+                `INSERT INTO tenant_tracking.tenants (tenant_name, tenant_slug, db_name, email, phone, location, country, status, subscription_status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'trial')`,
+                [tenant_name, subdomain, dbName, email, phone || null, location || null, country || null]
+            );
+            result = insertResult;
+
+            // Try to add the column after successful insert
+            try {
+                await serverConn.query(`ALTER TABLE tenant_tracking.tenants ADD COLUMN deployment_type ENUM('single', 'multi') DEFAULT 'single' AFTER subscription_expires_at`);
+                // Update the newly inserted record with deployment_type
+                await serverConn.query(`UPDATE tenant_tracking.tenants SET deployment_type = ? WHERE tenant_id = ?`, [finalDeploymentType, (result as any).insertId]);
+            } catch (alterErr) {
+                console.warn('Could not add deployment_type column:', alterErr.message);
+            }
+        }
 
         const tenantId = (result as any).insertId;
 
@@ -560,11 +610,18 @@ export class TenantModel {
         try {
             const tenantConnForUser = await getTenantConnection(dbName);
             try {
+                // Get the first branch ID to assign to admin user
+                const [branchRows] = await tenantConnForUser.query(
+                    'SELECT branch_id FROM branches WHERE is_active = TRUE ORDER BY branch_id ASC LIMIT 1'
+                );
+                const branches = branchRows as any[];
+                const primaryBranchId = branches.length > 0 ? branches[0].branch_id : null;
+
                 await tenantConnForUser.query(`
                     INSERT INTO users (email, password_hash, full_name, phone, role, branch_id, is_verified, is_active)
-                    VALUES (?, ?, ?, ?, 'admin', NULL, 1, 1)
-                `, [email, password_hash, full_name, phone || '']);
-                console.log(`✅ Admin user created in tenant database for login control`);
+                    VALUES (?, ?, ?, ?, 'admin', ?, 1, 1)
+                `, [email, password_hash, full_name, phone || '', primaryBranchId]);
+                console.log(`✅ Admin user created in tenant database for login control (branch_id: ${primaryBranchId})`);
             } finally {
                 await tenantConnForUser.end();
             }
@@ -617,7 +674,7 @@ export class TenantModel {
         const migrationService = new MigrationService();
 
         const branchSlug = `branch-${generateSlug(branch.branch_name)}`;
-        const branchDbName = `${tenantDbName.replace('tenant_', '')}_${generateSlug(branch.branch_name)}`.replace(/-/g, '_');
+        const branchDbName = `${tenantDbName}-${generateSlug(branch.branch_name)}`;
 
         // Create branch database
         await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${branchDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);

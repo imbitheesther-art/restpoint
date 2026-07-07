@@ -81,42 +81,208 @@ const authLimiter = rateLimit({
 });
 
 // ============================================
-// ROUTES - Fixed mount paths to match API Gateway routing
+// SIMPLIFIED ROUTES (tenantSlug only) - MUST BE FIRST
 // ============================================
-// The API Gateway strips /api/v1/restpoint prefix and forwards the remaining path.
-// When frontend calls POST /tenant/onboarding/organization:
-//   Gateway receives: /api/v1/restpoint/tenant/onboarding/organization
-//   Gateway strips prefix: req.url = /tenant/onboarding/organization
-//   First segment = "tenant" → proxies to tenant service at /tenant/onboarding/organization
-//
-// So we must mount onboarding routes at /tenant/onboarding to match the forwarded path.
-// The route /organization inside onboardingRoutes.ts will then match correctly.
+// These routes use only tenantSlug and must be defined BEFORE
+// the /tenant/:tenantSlug/:dbName middleware to avoid conflicts
+// Pattern: /tenant/:tenantSlug/:resource
+// Example: /tenant/donholm-feuneral-donholm/settings
+// ============================================
 
-// Onboarding routes - mounted at /tenant/onboarding to match gateway proxy path
-app.use('/tenant/onboarding', apiLimiter, onboardingRoutes);
+// Simplified settings route (tenantSlug only)
+app.get('/tenant/:tenantSlug/settings', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
 
-// Also mount at root for direct access (backward compatibility)
-app.use('/', apiLimiter, onboardingRoutes);
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
 
-// System Admin Routes - mounted at root
-app.use('/', systemAdminRoutes);
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: tenant.db_name
+  });
 
-// User Management Routes
-const userController = new UserController();
+  try {
+    const [branches] = await conn.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
+    const branchCount = (branches as any[])[0]?.count || 0;
 
-// Get all users
-app.get('/tenant/users', asyncHandler(async (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      data: {
+        deploymentType: branchCount > 1 ? 'multi' : 'single',
+        branchCount,
+        tenantName: tenant.tenant_name,
+        tenantSlug: tenant.tenant_slug,
+        country: tenant.country,
+        location: tenant.location,
+        email: tenant.email
+      }
+    });
+  } finally {
+    await conn.end();
+  }
+}));
+
+// Simplified user routes (tenantSlug only)
+app.get('/tenant/:tenantSlug/users', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  const userController = new UserController();
+  const originalDbName = (req as any).dbName;
+  (req as any).dbName = tenant.db_name;
   await userController.getUsers(req, res);
+  (req as any).dbName = originalDbName;
 }));
 
-// Get all branches
-app.get('/tenant/branches', asyncHandler(async (req: Request, res: Response) => {
+// Simplified branches route (tenantSlug only)
+app.get('/tenant/:tenantSlug/branches', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  const userController = new UserController();
+  const originalDbName = (req as any).dbName;
+  (req as any).dbName = tenant.db_name;
   await userController.getBranches(req, res);
+  (req as any).dbName = originalDbName;
 }));
 
-// Register new user
-app.post('/tenant/users/register', asyncHandler(async (req: Request, res: Response) => {
+// Create user route (tenantSlug only)
+app.post('/tenant/:tenantSlug/users/register', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  // Set req.user for the controller (it expects user.tenantSlug)
+  (req as any).user = {
+    userId: 1, // Admin user creating this user
+    tenantSlug: tenantSlug
+  };
+
+  const userController = new UserController();
+  const originalDbName = (req as any).dbName;
+  (req as any).dbName = tenant.db_name;
   await userController.registerUser(req, res);
+  (req as any).dbName = originalDbName;
+}));
+
+// ============================================
+// BRANCH-AWARE ROUTING MIDDLEWARE (USING DB NAME)
+// ============================================
+// For multi-tenant: URLs include database name directly
+// Pattern: /tenant/:tenantSlug/:dbName/:resource
+// Example: /tenant/thika-feuneral/thika_feuneral_thika/all-deceased
+// Example: /tenant/thika-feuneral/thika_feuneral_wamasaa/all-deceased
+// ============================================
+
+interface BranchRequest extends Request {
+  branchDbName?: string;
+  tenantSlug?: string;
+}
+
+// Middleware to extract tenant and database from URL
+app.use('/tenant/:tenantSlug/:dbName', asyncHandler(async (req: BranchRequest, res: Response, next: NextFunction) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const dbName = Array.isArray(req.params.dbName) ? req.params.dbName[0] : req.params.dbName;
+
+  if (!tenantSlug || !dbName) {
+    return res.status(400).json({ success: false, message: 'Tenant slug and database name are required' });
+  }
+
+  // Find tenant
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  // The dbName from URL IS the branch database name
+  // Verify it exists by checking if it matches tenant.db_name (primary) or any branch
+  let branchDbName = dbName;
+
+  // If it's not the primary DB, verify it's a valid branch DB
+  if (dbName !== tenant.db_name) {
+    const verifiedDbName = await TenantModel.getBranchDbName(tenant.db_name, dbName);
+    if (!verifiedDbName) {
+      return res.status(404).json({ success: false, message: 'Branch database not found' });
+    }
+    branchDbName = verifiedDbName;
+  }
+
+  // Attach to request for use in controllers
+  req.tenantSlug = tenantSlug;
+  req.branchDbName = branchDbName;
+
+  next();
+}));
+
+// Branch-aware user routes (with dbName)
+app.get('/tenant/:tenantSlug/:dbName/users', asyncHandler(async (req: BranchRequest, res: Response) => {
+  const userController = new UserController();
+  const originalDbName = (req as any).dbName;
+  (req as any).dbName = req.branchDbName;
+  await userController.getUsers(req, res);
+  (req as any).dbName = originalDbName;
+}));
+
+// Branch-aware branches route (with dbName)
+app.get('/tenant/:tenantSlug/:dbName/branches', asyncHandler(async (req: BranchRequest, res: Response) => {
+  const userController = new UserController();
+  const originalDbName = (req as any).dbName;
+  (req as any).dbName = req.branchDbName;
+  await userController.getBranches(req, res);
+  (req as any).dbName = originalDbName;
+}));
+
+// Branch-aware settings route (with dbName)
+app.get('/tenant/:tenantSlug/:dbName/settings', asyncHandler(async (req: BranchRequest, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: tenant.db_name
+  });
+
+  try {
+    const [branches] = await conn.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
+    const branchCount = (branches as any[])[0]?.count || 0;
+
+    res.json({
+      success: true,
+      data: {
+        deploymentType: branchCount > 1 ? 'multi' : 'single',
+        branchCount,
+        tenantName: tenant.tenant_name,
+        tenantSlug: tenant.tenant_slug,
+        country: tenant.country,
+        location: tenant.location,
+        email: tenant.email
+      }
+    });
+  } finally {
+    await conn.end();
+  }
 }));
 
 // Get tenant settings (deployment type, etc.)
@@ -124,9 +290,12 @@ app.post('/tenant/users/register', asyncHandler(async (req: Request, res: Respon
 app.get('/tenant/settings', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Try to get tenant from header or query param
-    const tenantSlug = req.headers['x-tenant-slug'] as string || req.query.slug as string;
+    const headerSlug = req.headers['x-tenant-slug'] as string;
+    const querySlug = req.query.slug;
+    const querySlugStr = typeof querySlug === 'string' ? querySlug : (Array.isArray(querySlug) ? querySlug[0] : '');
+    const tenantSlug = headerSlug || querySlugStr;
 
-    if (!tenantSlug) {
+    if (!tenantSlug || typeof tenantSlug !== 'string') {
       // Return default settings if no tenant specified
       res.json({
         success: true,
@@ -208,6 +377,16 @@ app.get('/tenant/settings', asyncHandler(async (req: Request, res: Response) => 
     res.status(500).json({ success: false, message: 'Failed to fetch settings', error: error.message });
   }
 }));
+
+// ============================================
+// ONBOARDING ROUTES (Public - No tenant context required)
+// ============================================
+app.use('/onboarding', onboardingRoutes);
+
+// ============================================
+// SYSTEM ADMIN ROUTES
+// ============================================
+app.use('/system-admin', systemAdminRoutes);
 
 // ============================================
 // HEALTH CHECK

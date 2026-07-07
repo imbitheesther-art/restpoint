@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import env from '../../config/env';
+import { ENDPOINTS } from '../../api/endpoints';
 
 const THEME = {
     colors: {
@@ -39,6 +40,7 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [showAddUserModal, setShowAddUserModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
+    const [error, setError] = useState(null);
 
     const [userForm, setUserForm] = useState({
         email: '',
@@ -66,10 +68,12 @@ export default function SettingsPage() {
 
     const loadData = async () => {
         try {
+            const tenantSlug = localStorage.getItem('tenantSlug');
+
             const [settingsRes, usersRes, branchesRes] = await Promise.all([
-                api.get('/tenant/settings'),
-                api.get('/tenant/users'),
-                api.get('/tenant/branches'),
+                api.get(ENDPOINTS.TENANT.SETTINGS(tenantSlug)),
+                api.get(ENDPOINTS.TENANT.USERS(tenantSlug)),
+                api.get(ENDPOINTS.TENANT.BRANCHES(tenantSlug)),
             ]);
 
             setSettings(settingsRes.data.data);
@@ -77,6 +81,7 @@ export default function SettingsPage() {
             setBranches(branchesRes.data.data || []);
         } catch (error) {
             console.error('Failed to load settings:', error);
+            setError('Failed to load settings. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -85,12 +90,14 @@ export default function SettingsPage() {
     const handleAddUser = async (e) => {
         e.preventDefault();
         try {
+            const tenantSlug = localStorage.getItem('tenantSlug');
+
             const payload = {
                 ...userForm,
                 branch_id: userForm.role === 'driver' ? null : (userForm.branch_id || null),
             };
 
-            await api.post('/tenant/users/register', payload);
+            await api.post(ENDPOINTS.TENANT.CREATE_USER(tenantSlug), payload);
             setShowAddUserModal(false);
             setUserForm({ email: '', password: '', full_name: '', phone: '', role: 'staff', branch_id: '' });
             loadData();

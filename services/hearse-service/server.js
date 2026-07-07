@@ -158,7 +158,7 @@ console.log('');
 
 // 404 handler
 app.use((req, res) => {
-    console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
+    console.log(` Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
         status: 'error',
         message: `Route ${req.originalUrl} not found.`,
@@ -175,7 +175,7 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-    console.error('❌ Unhandled Error:', err);
+    console.error(' Unhandled Error:', err);
     res.status(500).json({
         status: 'error',
         message: 'Internal server error.',
@@ -186,16 +186,8 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5002;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 Server running on http://0.0.0.0:${PORT}`);
-    console.log(`📡 Socket.IO ready for real-time cross-branch updates`);
-    console.log(`\n📋 Available Endpoints:`);
-    console.log(`   GET  http://localhost:${PORT}/`);
-    console.log(`   GET  http://localhost:${PORT}/health`);
-    console.log(`   POST http://localhost:${PORT}/hearses`);
-    console.log(`   GET  http://localhost:${PORT}/hearses`);
-    console.log(`   GET  http://localhost:${PORT}/hearses/available`);
-    console.log(`   POST http://localhost:${PORT}/hearse-bookings`);
-    console.log(`   GET  http://localhost:${PORT}/hearse-bookings\n`);
+
+
 });
 
 module.exports = { app, server, io };

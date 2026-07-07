@@ -91,13 +91,12 @@ export const useAppInitialization = () => {
         fetchDeploymentInfo();
     }, [setDeployment, setAvailableBranches, setDeploymentLoading, location.pathname, location.search]);
 
-    // Handle branch routing for multi-tenant
+    // Handle branch routing for multi-tenant - BULLETPROOF VERSION WITH MULTIPLE FALLBACKS
     useEffect(() => {
         if (!isAuthenticated || deploymentLoading || deploymentType === null) {
             return;
         }
 
-        const branchFromUrl = getBranchFromUrl();
         const currentPath = location.pathname;
 
         // Skip for public pages
@@ -108,21 +107,52 @@ export const useAppInitialization = () => {
             return;
         }
 
-        // Multi-tenant: require branch in URL
+        // For multi-tenant, ensure user is always on their tenant path
         if (deploymentType === 'multi') {
-            if (!branchFromUrl) {
-                // Redirect to branch selector
-                navigate('/select-branch', { replace: true });
+            // FALLBACK 1: Try to get tenantSlug from localStorage
+            let tenantSlug = localStorage.getItem('tenantSlug');
+
+            // FALLBACK 2: If not in localStorage, try to get from user object
+            if (!tenantSlug && user?.tenantSlug) {
+                tenantSlug = user.tenantSlug;
+                localStorage.setItem('tenantSlug', tenantSlug);
+            }
+
+            // FALLBACK 3: If still no tenantSlug, try to get from URL
+            if (!tenantSlug) {
+                const urlParts = currentPath.split('/');
+                if (urlParts.length >= 3 && urlParts[1] === 'tenant') {
+                    tenantSlug = urlParts[2];
+                    localStorage.setItem('tenantSlug', tenantSlug);
+                }
+            }
+
+            // CRITICAL: If we still don't have tenantSlug, we can't route
+            if (!tenantSlug) {
+                console.error('No tenantSlug available anywhere, cannot route user');
                 return;
             }
 
-            // Set current branch from URL
-            const branch = useBranchStore.getState().findBranchBySlug(branchFromUrl);
-            if (branch) {
-                setCurrentBranch(branch);
+            // Check if we're on the correct tenant path
+            const expectedPath = `/tenant/${tenantSlug}`;
+            const isOnCorrectPath = currentPath.startsWith(expectedPath);
+
+            // If not on correct path, redirect immediately
+            if (!isOnCorrectPath) {
+                console.log(`Redirecting to tenant path: ${expectedPath}/all-deceased`);
+                navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
+                return;
+            }
+
+            // We're on the correct path - set branch info if available
+            if (user?.branchSlug) {
+                const branch = useBranchStore.getState().findBranchBySlug(user.branchSlug);
+                if (branch) {
+                    setCurrentBranch(branch);
+                }
             }
         }
-    }, [isAuthenticated, deploymentType, deploymentLoading, location.pathname, navigate, getBranchFromUrl, setCurrentBranch]);
+    }, [isAuthenticated, deploymentType, deploymentLoading, location.pathname, navigate, setCurrentBranch, user]);
 
     return {
         deploymentType,

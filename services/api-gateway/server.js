@@ -215,6 +215,8 @@ for (const targetUrl of Object.values(SERVICE_ROUTES)) {
         if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
         if (req.headers['x-tenant-id']) proxyReq.setHeader('x-tenant-id', req.headers['x-tenant-id']);
         if (req.headers['x-user-id']) proxyReq.setHeader('x-user-id', req.headers['x-user-id']);
+        if (req.headers['x-branch-slug']) proxyReq.setHeader('x-branch-slug', req.headers['x-branch-slug']);
+        if (req.headers['x-branch-id']) proxyReq.setHeader('x-branch-id', req.headers['x-branch-id']);
         if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
           const bodyStr = JSON.stringify(req.body);
           proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyStr));
