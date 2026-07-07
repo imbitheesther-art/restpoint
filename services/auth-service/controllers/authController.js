@@ -164,20 +164,20 @@ const findUserInTenantDB = async (dbName, email) => {
  * Generate JWT tokens with per-tenant secrets
  * @param {Object} user - User object from database
  * @param {Object} tenant - Tenant object from tenant_tracking
- * @param {string|null} [branchSlug=null] - Branch slug to use as tenantSlug if user belongs to a branch
+ * @param {string|null} [branchDbName=null] - Branch database slug to use for routing if user belongs to a branch
  */
-const generateTokens = async (user, tenant, branchSlug = null) => {
-  const effectiveSlug = branchSlug || tenant.tenant_slug;
+const generateTokens = async (user, tenant, branchDbName = null) => {
+  const effectiveSlug = branchDbName || tenant.tenant_slug;
 
   const payload = {
     userId: user.user_id,
     email: user.email,
     tenantId: tenant.tenant_id,
     tenantName: tenant.tenant_name,
-    tenantSlug: effectiveSlug,
+    tenantSlug: effectiveSlug, // This is used for routing - branch DB slug if user has branch
     dbName: tenant.db_name,
     role: user.role || 'admin',
-    branchSlug: branchSlug // Store branch slug separately for middleware use
+    branchDbName: branchDbName // Store branch database slug separately for middleware use
   };
 
   const { jwtSecret, refreshSecret } = await getTenantJwtSecret(tenant.tenant_id);
@@ -277,6 +277,7 @@ exports.login = asyncHandler(async (req, res) => {
     // Step 5: Get branch information and validate branch assignment
     let branchId = user.branch_id || null;
     let branchSlug = null;
+    let branchDbName = null; // The actual database slug for the branch
     let dbName = tenant.db_name; // Default to primary DB
 
     if (branchId) {
@@ -288,11 +289,13 @@ exports.login = asyncHandler(async (req, res) => {
         );
         if (branches.length > 0) {
           branchSlug = branches[0].branch_slug;
-          dbName = branches[0].branch_db_name || tenant.db_name;
+          branchDbName = branches[0].branch_db_name; // Use branch database slug for routing
+          dbName = branchDbName || tenant.db_name;
         } else {
           console.warn(`User ${user.user_id} assigned to invalid/inactive branch ${branchId}`);
           branchId = null;
           branchSlug = null;
+          branchDbName = null;
           dbName = tenant.db_name;
         }
       } catch (branchErr) {
@@ -315,12 +318,12 @@ exports.login = asyncHandler(async (req, res) => {
     }
 
     // Step 6: Generate tokens with per-tenant secrets
-    // Pass branchSlug so JWT payload uses the branch slug as effective tenant slug
-    const { accessToken, refreshToken } = await generateTokens(user, tenant, branchSlug);
+    // Pass branchDbName so JWT payload uses the branch database slug for routing
+    const { accessToken, refreshToken } = await generateTokens(user, tenant, branchDbName);
 
     // Step 7: Determine effective slug for navigation
-    // If user belongs to a branch, use branchSlug as the primary slug
-    const effectiveSlug = branchSlug || tenant.tenant_slug;
+    // If user belongs to a branch, use branchDbName (the actual database slug) for routing
+    const effectiveSlug = branchDbName || tenant.tenant_slug;
 
     // Step 8: Return response
     console.log(' Login successful!\n');
@@ -339,6 +342,7 @@ exports.login = asyncHandler(async (req, res) => {
         role: user.role,
         branchId: branchId,
         branchSlug: branchSlug,
+        branchDbName: branchDbName,
         dbName: dbName,
         isActive: user.is_active === 1,
         isVerified: user.is_verified === 1
@@ -346,7 +350,7 @@ exports.login = asyncHandler(async (req, res) => {
       tenant: {
         tenantId: tenant.tenant_id,
         tenantName: tenant.tenant_name,
-        tenantSlug: effectiveSlug,
+        tenantSlug: effectiveSlug, // This is now the branch database slug for routing
         dbName: tenant.db_name
       }
     });
@@ -492,24 +496,24 @@ exports.refresh = asyncHandler(async (req, res) => {
 
     const user = rows[0];
 
-    // Fetch branch slug if user belongs to a branch
-    let branchSlug = null;
+    // Fetch branch database slug if user belongs to a branch
+    let branchDbName = null;
     if (user.branch_id) {
       try {
         const escapedDbName = `\`${tenant.db_name}\``;
         const [branches] = await pool.query(
-          `SELECT branch_slug FROM ${escapedDbName}.branches WHERE branch_id = ? AND is_active = 1`,
+          `SELECT branch_db_name FROM ${escapedDbName}.branches WHERE branch_id = ? AND is_active = 1`,
           [user.branch_id]
         );
         if (branches.length > 0) {
-          branchSlug = branches[0].branch_slug;
+          branchDbName = branches[0].branch_db_name;
         }
       } catch (branchErr) {
         console.warn('Could not fetch branch info during refresh:', branchErr.message);
       }
     }
 
-    const { accessToken } = await generateTokens(user, tenant, branchSlug);
+    const { accessToken } = await generateTokens(user, tenant, branchDbName);
 
     console.log(' Token refreshed');
 

@@ -156,7 +156,13 @@ const registerHearse = asyncHandler(async (req, res) => {
         if (existingColumns.has('capacity')) { insertFields.push('capacity'); insertValues.push(capacity || null); }
         if (existingColumns.has('status')) { insertFields.push('status'); insertValues.push(status || 'available'); }
         if (existingColumns.has('branch_id')) { insertFields.push('branch_id'); insertValues.push(assigned_branch_id); }
-        if (existingColumns.has('branch_code')) { insertFields.push('branch_code'); insertValues.push(null); }
+        // Only insert branch_code if we have a valid value (column may be NOT NULL)
+        if (existingColumns.has('branch_code') && (branch_code || assigned_branch_id)) {
+            insertFields.push('branch_code');
+            // Use the provided branch_code, or look it up from branch_id
+            const branchCodeValue = branch_code || `BRANCH-${assigned_branch_id}`;
+            insertValues.push(branchCodeValue);
+        }
         if (existingColumns.has('driver_id')) { insertFields.push('driver_id'); insertValues.push(driver_id || null); }
         if (existingColumns.has('created_at')) { insertFields.push('created_at'); insertValues.push(now); }
         if (existingColumns.has('updated_at')) { insertFields.push('updated_at'); insertValues.push(now); }
