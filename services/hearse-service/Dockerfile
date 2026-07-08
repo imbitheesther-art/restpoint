@@ -70,7 +70,7 @@ RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-COPY services/hearse-services/ ./services/hearse-services/
+COPY services/hearse-service/ ./services/hearse-service/
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 
@@ -84,4 +84,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/hearse-services/server.js"]
+CMD ["node", "services/hearse-service/server.js"]
