@@ -23,7 +23,7 @@ import {
   Building2,
 } from 'lucide-react';
 import styled from 'styled-components';
-import { useTenantStore } from '../../store/useTenantStore';
+import { useTenantStore } from '../store/useTenantStore';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
