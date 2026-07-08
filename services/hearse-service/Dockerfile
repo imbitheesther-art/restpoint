@@ -1,5 +1,5 @@
 # RestPoint Hearse Service — Clean Dockerfile
-FROM node:22-alpine
+FROM node:20-alpine
 
 RUN apk add --no-cache dumb-init python3 make g++ wget
 
@@ -8,28 +8,23 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /usr/src/app
 
+# Copy package files
 COPY package.json tsconfig.base.json ./
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-services/package.json ./packages/shared-services/
-COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/hearse-service/package.json ./services/hearse-service/
 
+# Install dependencies
 RUN npm install --no-audit --no-fund
 
-COPY configurations/ ./configurations/
-COPY packages/ ./packages/
-COPY shared/ ./shared/
-COPY global/ ./global/
-COPY services/hearse-service/ ./services/hearse-service/
+# Copy application code
+COPY . .
 
-# Build shared packages in dependency order
-RUN cd packages/shared-config && npm run build
-RUN cd packages/shared-logger && npm run build
-RUN cd packages/shared-utils && npm run build
-RUN cd packages/shared-services && npm run build
+# Build shared packages
+RUN cd packages/shared-config && npm run build && \
+  cd packages/shared-logger && npm run build && \
+  cd packages/shared-utils && npm run build && \
+  cd packages/shared-services && npm run build
 
-# Install tsx for running JavaScript directly (server.js entry point)
+# Install tsx for running JavaScript
 RUN npm install -g tsx
 
 RUN mkdir -p /usr/src/app/services/hearse-service/uploads && chown -R nodejs:nodejs /usr/src/app

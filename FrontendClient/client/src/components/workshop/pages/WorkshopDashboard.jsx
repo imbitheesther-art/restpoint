@@ -41,16 +41,20 @@ const WorkshopDashboard = () => {
     const [showMaterialIntake, setShowMaterialIntake] = useState(false);
     const [showJobCardModal, setShowJobCardModal] = useState(false);
     const [showMaterialUsageModal, setShowMaterialUsageModal] = useState(false);
+    const [showEditMaterialModal, setShowEditMaterialModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [editingMaterial, setEditingMaterial] = useState(null);
     const [materialUsageForm, setMaterialUsageForm] = useState({ material_id: '', quantity_used: '', notes: '' });
     const [pendingMaterials, setPendingMaterials] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [orderForm, setOrderForm] = useState({
-        customer_name: '', deceased_name: '', coffin_type: 'standard',
+        customer_name: '', customer_phone: '', customer_email: '',
+        deceased_name: '', coffin_type: 'standard',
         selling_price: '', color: 'walnut', interior: 'satin_gold',
-        delivery_date: '', dimensions: { length: '', width: '', height: '' },
-        notes: ''
+        delivery_date: '', due_date: '', priority: 'normal',
+        dimensions: { length: '', width: '', height: '' },
+        notes: '', instructions: '', branch_id: 1
     });
     const [materialForm, setMaterialForm] = useState({
         name: '', quantity: '', unit: 'pcs', min_stock_level: 10,
@@ -176,50 +180,273 @@ const WorkshopDashboard = () => {
     };
 
     const generateSimpleJobCard = (order) => {
-        const win = window.open('', '_blank', 'width=800,height=600');
+        const win = window.open('', '_blank', 'width=800,height=1000');
         if (!win) return;
+
+        const barcode = `|||${order.order_number || order.id}|||`;
+        const timestamp = new Date().toLocaleString('en-US', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        });
+
         win.document.write(`
             <html>
-            <head><title>Job Card - ${order.order_number || order.id}</title>
-            <style>
-                body { font-family: Arial; padding: 40px; }
-                h1 { color: #2c3e50; border-bottom: 2px solid #15171A; padding-bottom: 10px; }
-                .info { margin: 20px 0; }
-                .info div { margin: 8px 0; }
-                .label { font-weight: bold; color: #7f8c8d; }
-                .value { color: #2c3e50; }
-                .stages { margin-top: 30px; }
-                .stage { display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 20px; font-size: 12px; }
-                .pending { background: #f1c40f20; color: #f1c40f; border: 1px solid #f1c40f40; }
-                .completed { background: #27ae6020; color: #27ae60; border: 1px solid #27ae6040; }
-                .in_progress { background: #3498db20; color: #3498db; border: 1px solid #3498db40; }
-                @media print { body { padding: 20px; } }
-            </style>
+            <head>
+                <title>Job Card - ${order.order_number || order.id}</title>
+                <style>
+                    @page { size: A4; margin: 15mm; }
+                    body { 
+                        font-family: 'Courier New', monospace; 
+                        padding: 30px; 
+                        background: #fff;
+                        color: #000;
+                    }
+                    .header { 
+                        text-align: center; 
+                        border-bottom: 3px solid #000; 
+                        padding-bottom: 15px; 
+                        margin-bottom: 20px;
+                    }
+                    .company-name {
+                        font-size: 24px;
+                        font-weight: bold;
+                        letter-spacing: 2px;
+                        margin-bottom: 5px;
+                    }
+                    .document-title {
+                        font-size: 18px;
+                        font-weight: bold;
+                        margin-top: 10px;
+                        text-decoration: underline;
+                    }
+                    .section {
+                        margin: 20px 0;
+                        border: 2px solid #000;
+                        padding: 12px;
+                        page-break-inside: avoid;
+                    }
+                    .section-title {
+                        font-weight: bold;
+                        font-size: 14px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        margin-bottom: 10px;
+                        background: #000;
+                        color: #fff;
+                        padding: 4px 8px;
+                    }
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 8px;
+                    }
+                    .info-row {
+                        margin: 6px 0;
+                        font-size: 13px;
+                    }
+                    .label {
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    .value {
+                        margin-left: 5px;
+                    }
+                    .highlight {
+                        background: #ffff00;
+                        padding: 2px 4px;
+                        font-weight: bold;
+                    }
+                    .stages-grid {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 8px;
+                        margin-top: 10px;
+                    }
+                    .stage-box {
+                        border: 2px solid #000;
+                        padding: 8px;
+                        text-align: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    .stage-pending {
+                        background: #fff;
+                    }
+                    .signature-section {
+                        margin-top: 40px;
+                        page-break-inside: avoid;
+                    }
+                    .signature-line {
+                        border-top: 2px solid #000;
+                        width: 250px;
+                        padding-top: 5px;
+                        margin-top: 40px;
+                        font-size: 11px;
+                        text-align: center;
+                    }
+                    .barcode {
+                        text-align: center;
+                        font-family: 'Libre Barcode 39', cursive;
+                        font-size: 48px;
+                        letter-spacing: 3px;
+                        margin: 20px 0;
+                        padding: 10px;
+                        border: 2px solid #000;
+                    }
+                    .footer {
+                        margin-top: 30px;
+                        border-top: 2px solid #000;
+                        padding-top: 10px;
+                        font-size: 10px;
+                        text-align: center;
+                    }
+                    .priority-urgent {
+                        background: #ff0000;
+                        color: #fff;
+                        padding: 4px 8px;
+                        font-weight: bold;
+                        display: inline-block;
+                    }
+                    .priority-high {
+                        background: #ff9900;
+                        color: #000;
+                        padding: 4px 8px;
+                        font-weight: bold;
+                        display: inline-block;
+                    }
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
             </head>
             <body>
-                <h1>JOB CARD</h1>
-                <div style="display:flex;justify-content:space-between;">
-                    <div>
-                        <div><span class="label">Order #:</span> <span class="value">${order.order_number || order.id}</span></div>
-                        <div><span class="label">Customer:</span> <span class="value">${order.customer_name || 'N/A'}</span></div>
-                        <div><span class="label">Deceased:</span> <span class="value">${order.deceased_name || 'N/A'}</span></div>
-                        <div><span class="label">Coffin Type:</span> <span class="value">${order.coffin_type || 'Standard'}</span></div>
+                <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+                    <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                        🖨️ Print Job Card
+                    </button>
+                </div>
+
+                <div class="header">
+                    <div class="company-name">RESTPOINT FUNERAL HOME</div>
+                    <div style="font-size: 12px; letter-spacing: 1px;">WORKSHOP PRODUCTION CONTROL</div>
+                    <div class="document-title">JOB CARD</div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Order Information</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <span class="label">Order #:</span>
+                            <span class="value highlight">${order.order_number || order.id}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Priority:</span>
+                            <span class="value ${order.priority === 'urgent' ? 'priority-urgent' : order.priority === 'high' ? 'priority-high' : ''}">${(order.priority || 'NORMAL').toUpperCase()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Customer:</span>
+                            <span class="value">${order.customer_name || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Deceased:</span>
+                            <span class="value">${order.deceased_name || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Coffin Type:</span>
+                            <span class="value">${order.coffin_type || 'Standard'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Status:</span>
+                            <span class="value">${(order.status || 'PENDING').toUpperCase()}</span>
+                        </div>
                     </div>
-                    <div>
-                        <div><span class="label">Status:</span> <span class="value">${order.status || 'Pending'}</span></div>
-                        <div><span class="label">Created:</span> <span class="value">${new Date(order.created_at || Date.now()).toLocaleDateString()}</span></div>
-                        <div><span class="label">Delivery:</span> <span class="value">${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}</span></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Specifications</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <span class="label">Color/Finish:</span>
+                            <span class="value">${order.color || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Interior:</span>
+                            <span class="value">${order.interior_fabric || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Dimensions:</span>
+                            <span class="value">${order.dimensions || 'Standard'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Selling Price:</span>
+                            <span class="value">KES ${order.selling_price ? Number(order.selling_price).toLocaleString() : '0'}</span>
+                        </div>
+                    </div>
+                    ${order.instructions ? `
+                    <div style="margin-top: 10px; padding: 8px; background: #ffff00; border: 2px solid #000;">
+                        <span class="label">Special Instructions:</span>
+                        <div style="margin-top: 5px; font-weight: bold;">${order.instructions}</div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Schedule</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <span class="label">Created:</span>
+                            <span class="value">${order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Due Date:</span>
+                            <span class="value">${order.due_date ? new Date(order.due_date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Delivery Date:</span>
+                            <span class="value">${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Branch:</span>
+                            <span class="value">${order.branch_id || 1}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="stages">
-                    <h3>Production Stages</h3>
-                    ${['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(s => `
-                        <span class="stage pending">${s}</span>
-                    `).join('')}
+
+                <div class="section">
+                    <div class="section-title">Production Stages</div>
+                    <div class="stages-grid">
+                        ${['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(stage => `
+                            <div class="stage-box stage-pending">${stage}</div>
+                        `).join('')}
+                    </div>
                 </div>
-                <div style="margin-top:40px;border-top:1px dashed #ccc;padding-top:20px;font-size:12px;color:#95a5a6;">
-                    Generated: ${new Date().toLocaleString()} | Workshop Management System
+
+                <div class="barcode">
+                    ${barcode}
                 </div>
+
+                <div class="signature-section">
+                    <div class="info-grid">
+                        <div>
+                            <div class="label">Prepared By:</div>
+                            <div class="signature-line">Signature & Date</div>
+                        </div>
+                        <div>
+                            <div class="label">Approved By:</div>
+                            <div class="signature-line">Signature & Date</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div><strong>RESTPOINT FUNERAL HOME</strong></div>
+                    <div>Workshop Management System</div>
+                    <div>Generated: ${timestamp}</div>
+                    <div style="margin-top: 5px; font-size: 9px;">This is a computer-generated document. No signature required.</div>
+                </div>
+
                 <script>
                     window.print();
                 </script>
@@ -316,6 +543,56 @@ const WorkshopDashboard = () => {
             console.error('Failed to upload design:', error);
             alert('Design saved locally (API not available)');
             setShowDesignModal(false);
+        }
+    };
+
+    // --- Edit Material ---
+    const handleEditMaterial = (material) => {
+        setEditingMaterial(material);
+        setMaterialForm({
+            name: material.name,
+            quantity: material.quantity.toString(),
+            unit: material.unit || 'pcs',
+            min_stock_level: (material.min_stock_level || 10).toString(),
+            category: material.category || 'wood',
+            supplier: material.supplier || '',
+            cost_per_unit: (material.unit_price || 0).toString()
+        });
+        setShowEditMaterialModal(true);
+    };
+
+    const handleUpdateMaterial = async () => {
+        if (!editingMaterial || !materialForm.name || !materialForm.quantity) {
+            alert('Please fill in material name and quantity');
+            return;
+        }
+        try {
+            const res = await workshopService.updateMaterial(editingMaterial.id, {
+                name: materialForm.name,
+                quantity: parseFloat(materialForm.quantity),
+                unit: materialForm.unit,
+                min_stock_level: parseFloat(materialForm.min_stock_level),
+                category: materialForm.category,
+                supplier: materialForm.supplier,
+                cost_per_unit: parseFloat(materialForm.cost_per_unit) || 0
+            });
+            if (res.success) {
+                alert('Material updated successfully!');
+                setShowEditMaterialModal(false);
+                setEditingMaterial(null);
+                setMaterialForm({
+                    name: '', quantity: '', unit: 'pcs', min_stock_level: 10,
+                    category: 'wood', supplier: '', cost_per_unit: ''
+                });
+                loadDashboardData();
+            } else {
+                alert('Failed to update material: ' + res.error);
+            }
+        } catch (error) {
+            console.error('Failed to update material:', error);
+            alert('Material updated locally');
+            setShowEditMaterialModal(false);
+            loadDashboardData();
         }
     };
 
@@ -562,7 +839,7 @@ const WorkshopDashboard = () => {
                                 <div><span className="text-muted">Deceased:</span> <strong>{order.deceased_name || 'N/A'}</strong></div>
                                 <div><span className="text-muted">Type:</span> <strong>{order.coffin_type || 'Standard'}</strong></div>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                 <button className="btn btn-outline text-xs" onClick={() => handlePrintJobCard(order.id)}>
                                     <Printer size={12} /> Print
                                 </button>
@@ -572,6 +849,9 @@ const WorkshopDashboard = () => {
                                 <button className="btn btn-outline text-xs" onClick={() => handleAssignWorker(order.id)}>
                                     <Users size={12} /> Assign
                                 </button>
+                                <span className={`badge ${order.priority === 'urgent' ? 'badge-red' : order.priority === 'high' ? 'badge-orange' : 'badge-blue'}`} style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>
+                                    {order.priority || 'Normal'}
+                                </span>
                                 <select
                                     value={order.status || 'pending'}
                                     onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
@@ -676,12 +956,39 @@ const WorkshopDashboard = () => {
                         borderLeft: `4px solid ${material.quantity <= (material.min_stock_level || 10) ? '#e74c3c' : '#27ae60'}`
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: 700 }}>{material.name}</span>
-                            <span className="text-muted text-xs">{material.category || 'General'}</span>
+                            <div>
+                                <span style={{ fontWeight: 700, fontSize: '1rem' }}>{material.name}</span>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>ID: {material.id} • {material.category || 'General'}</div>
+                            </div>
+                            <button onClick={() => handleEditMaterial(material)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#3498db', padding: '4px' }}>
+                                <Edit3 size={14} />
+                            </button>
                         </div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: material.quantity <= (material.min_stock_level || 10) ? '#e74c3c' : '#2c3e50' }}>
-                            {material.quantity} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#94a3b8' }}>{material.unit}</span>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                            <div style={{ padding: '0.5rem', background: '#f8fafc', borderRadius: '6px' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px' }}>Unit Price</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2c3e50' }}>
+                                    KES {material.unit_price ? Number(material.unit_price).toLocaleString() : '0'}
+                                </div>
+                            </div>
+                            <div style={{ padding: '0.5rem', background: '#f8fafc', borderRadius: '6px' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px' }}>Total Value</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#16a34a' }}>
+                                    KES {((material.unit_price || 0) * (material.quantity || 0)).toLocaleString()}
+                                </div>
+                            </div>
                         </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: material.quantity <= (material.min_stock_level || 10) ? '#e74c3c' : '#2c3e50' }}>
+                                {material.quantity} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#94a3b8' }}>{material.unit}</span>
+                            </div>
+                            <span className={`badge ${material.quantity <= (material.min_stock_level || 10) ? 'badge-red' : 'badge-green'}`} style={{ fontSize: '0.7rem' }}>
+                                {material.quantity <= (material.min_stock_level || 10) ? 'Low Stock' : 'In Stock'}
+                            </span>
+                        </div>
+
                         <div style={{ marginTop: '0.5rem' }}>
                             <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
                                 <div style={{
@@ -692,7 +999,7 @@ const WorkshopDashboard = () => {
                                 }} />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
-                                <span className="text-muted text-xs">Min: {material.min_stock_level || 10}</span>
+                                <span className="text-muted text-xs">Min: {material.min_stock_level || 10} {material.unit}</span>
                                 {material.supplier && <span className="text-muted text-xs">{material.supplier}</span>}
                             </div>
                         </div>
@@ -1136,17 +1443,20 @@ const WorkshopDashboard = () => {
                                 <X size={20} />
                             </button>
                         </div>
-                        <div style={{
-                            border: '2px dashed #e2e8f0', borderRadius: '12px', padding: '2rem',
-                            textAlign: 'center', marginBottom: '1.5rem', cursor: 'pointer',
-                            background: designUpload ? '#f0fdf4' : '#f8fafc'
-                        }}
-                            onDragOver={(e) => e.preventDefault()}
+                        <div
+                            style={{
+                                border: '2px dashed #e2e8f0', borderRadius: '12px', padding: '2rem',
+                                textAlign: 'center', marginBottom: '1.5rem', cursor: 'pointer',
+                                background: designUpload ? '#f0fdf4' : '#f8fafc'
+                            }}
+                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                             onDrop={(e) => {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 const file = e.dataTransfer.files[0];
                                 if (file) setDesignUpload(file);
                             }}
+                            onClick={() => document.getElementById('design-upload')?.click()}
                         >
                             {designUpload ? (
                                 <div>
@@ -1157,15 +1467,16 @@ const WorkshopDashboard = () => {
                             ) : (
                                 <div>
                                     <Upload size={32} style={{ color: '#94a3b8', margin: '0 auto 0.5rem' }} />
-                                    <p>Drag & drop design file here</p>
-                                    <p className="text-muted text-xs">or click to browse</p>
+                                    <p style={{ fontWeight: 500, marginBottom: '0.25rem' }}>Click to upload or drag & drop</p>
+                                    <p className="text-muted text-xs">PNG, JPG, PDF, DWG, DXF (MAX. 10MB)</p>
                                 </div>
                             )}
                             <input
                                 type="file"
                                 accept="image/*,.pdf,.dwg,.dxf"
                                 onChange={(e) => {
-                                    if (e.target.files[0]) setDesignUpload(e.target.files[0]);
+                                    const file = e.target.files[0];
+                                    if (file) setDesignUpload(file);
                                 }}
                                 style={{ display: 'none' }}
                                 id="design-upload"
@@ -1177,6 +1488,120 @@ const WorkshopDashboard = () => {
                             </button>
                             <button className="btn btn-dark" onClick={handleDesignUpload} disabled={!designUpload}>
                                 <Upload size={14} /> Upload Design
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Material Modal */}
+            {showEditMaterialModal && editingMaterial && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white', borderRadius: '16px', maxWidth: '550px',
+                        width: '90%', padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                        maxHeight: '90vh', overflow: 'auto'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                                <Edit3 size={20} style={{ marginRight: '0.5rem' }} />
+                                Edit Material - {editingMaterial.name}
+                            </h3>
+                            <button onClick={() => { setShowEditMaterialModal(false); setEditingMaterial(null); }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#94a3b8' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Material Name *</label>
+                                <input
+                                    type="text"
+                                    value={materialForm.name}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Category</label>
+                                <select
+                                    value={materialForm.category}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, category: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                >
+                                    <option value="wood">Wood (Boards, Plywood)</option>
+                                    <option value="hardware">Hardware (Nails, Screws)</option>
+                                    <option value="fabric">Fabric (Satin, Velvet)</option>
+                                    <option value="paint">Paint & Finish</option>
+                                    <option value="foam">Foam & Padding</option>
+                                    <option value="metal">Metal (Handles, Hinges)</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Quantity *</label>
+                                <input
+                                    type="number"
+                                    value={materialForm.quantity}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, quantity: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Unit</label>
+                                <select
+                                    value={materialForm.unit}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, unit: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                >
+                                    <option value="pcs">Pieces (pcs)</option>
+                                    <option value="kg">Kilograms (kg)</option>
+                                    <option value="m">Meters (m)</option>
+                                    <option value="liters">Liters (L)</option>
+                                    <option value="sheets">Sheets</option>
+                                    <option value="boxes">Boxes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Min Stock Level</label>
+                                <input
+                                    type="number"
+                                    value={materialForm.min_stock_level}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, min_stock_level: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Cost per Unit (KES)</label>
+                                <input
+                                    type="number"
+                                    value={materialForm.cost_per_unit}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, cost_per_unit: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div style={{ gridColumn: '1/-1' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Supplier</label>
+                                <input
+                                    type="text"
+                                    value={materialForm.supplier}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, supplier: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                            <button className="btn btn-outline" onClick={() => { setShowEditMaterialModal(false); setEditingMaterial(null); }}>
+                                Cancel
+                            </button>
+                            <button className="btn btn-dark" onClick={handleUpdateMaterial} disabled={!materialForm.name || !materialForm.quantity}>
+                                <Save size={14} /> Update Material
                             </button>
                         </div>
                     </div>
@@ -1302,11 +1727,12 @@ const WorkshopDashboard = () => {
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', zIndex: 1000
+                    justifyContent: 'center', zIndex: 1000, padding: '2rem'
                 }}>
                     <div style={{
                         background: 'white', borderRadius: '16px', maxWidth: '600px',
-                        width: '90%', padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+                        width: '100%', maxHeight: '90vh', overflow: 'auto', padding: '2rem',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
@@ -1323,6 +1749,7 @@ const WorkshopDashboard = () => {
                             <div>
                                 <div className="text-muted text-xs">Customer</div>
                                 <div style={{ fontWeight: 600 }}>{selectedOrder.customer_name || 'N/A'}</div>
+                                {selectedOrder.customer_phone && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{selectedOrder.customer_phone}</div>}
                             </div>
                             <div>
                                 <div className="text-muted text-xs">Deceased</div>
@@ -1333,8 +1760,14 @@ const WorkshopDashboard = () => {
                                 <div style={{ fontWeight: 600 }}>{selectedOrder.coffin_type || 'Standard'}</div>
                             </div>
                             <div>
+                                <div className="text-muted text-xs">Priority</div>
+                                <span className={`badge ${selectedOrder.priority === 'urgent' ? 'badge-red' : 'badge-blue'}`}>
+                                    {selectedOrder.priority || 'Normal'}
+                                </span>
+                            </div>
+                            <div>
                                 <div className="text-muted text-xs">Status</div>
-                                <span className={`badge ${selectedOrder.status === 'completed' ? 'badge-green' : selectedOrder.status === 'in_progress' ? 'badge-blue' : 'badge-yellow'}`}>
+                                <span className={`badge ${selectedOrder.status === 'completed' ? 'badge-green' : selectedOrder.status === 'in_progress' ? 'badge-blue' : selectedOrder.status === 'on_hold' ? 'badge-red' : 'badge-yellow'}`}>
                                     {selectedOrder.status || 'Pending'}
                                 </span>
                             </div>
@@ -1342,11 +1775,48 @@ const WorkshopDashboard = () => {
                                 <div className="text-muted text-xs">Created</div>
                                 <div style={{ fontWeight: 600 }}>{selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleDateString() : 'N/A'}</div>
                             </div>
-                            <div>
-                                <div className="text-muted text-xs">Delivery</div>
-                                <div style={{ fontWeight: 600 }}>{selectedOrder.delivery_date ? new Date(selectedOrder.delivery_date).toLocaleDateString() : 'N/A'}</div>
-                            </div>
+                            {selectedOrder.due_date && (
+                                <div>
+                                    <div className="text-muted text-xs">Due Date</div>
+                                    <div style={{ fontWeight: 600, color: '#e74c3c' }}>{new Date(selectedOrder.due_date).toLocaleDateString()}</div>
+                                </div>
+                            )}
+                            {selectedOrder.delivery_date && (
+                                <div>
+                                    <div className="text-muted text-xs">Delivery Date</div>
+                                    <div style={{ fontWeight: 600 }}>{new Date(selectedOrder.delivery_date).toLocaleDateString()}</div>
+                                </div>
+                            )}
                         </div>
+
+                        {selectedOrder.dimensions && (
+                            <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px' }}>
+                                <h4 style={{ fontSize: '0.85rem', margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Settings size={14} /> Dimensions
+                                </h4>
+                                <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+                                    {typeof selectedOrder.dimensions === 'string' ? selectedOrder.dimensions :
+                                        selectedOrder.dimensions.length ? `${selectedOrder.dimensions.length} x ${selectedOrder.dimensions.width} x ${selectedOrder.dimensions.height}` :
+                                            'Not specified'}
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedOrder.instructions && (
+                            <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fbbf24' }}>
+                                <h4 style={{ fontSize: '0.85rem', margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <AlertTriangle size={14} color="#f59e0b" /> Special Instructions
+                                </h4>
+                                <div style={{ fontSize: '0.85rem', color: '#92400e' }}>{selectedOrder.instructions}</div>
+                            </div>
+                        )}
+
+                        {selectedOrder.hold_reason && (
+                            <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: '8px', border: '1px solid #ef4444' }}>
+                                <h4 style={{ fontSize: '0.85rem', margin: '0 0 0.5rem', color: '#dc2626' }}>Hold Reason</h4>
+                                <div style={{ fontSize: '0.85rem', color: '#991b1b' }}>{selectedOrder.hold_reason}</div>
+                            </div>
+                        )}
 
                         <div style={{ marginBottom: '1.5rem' }}>
                             <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.75rem' }}>Production Stages</h4>

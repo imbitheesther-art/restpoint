@@ -29,8 +29,12 @@ const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
                             <Input placeholder="e.g. Standard, Premium, Custom..." value={form.coffin_type} onChange={(e) => onChange({ ...form, coffin_type: e.target.value })} />
                         </FormGroup>
                         <FormGroup>
-                            <Label>Selling Price (KES)</Label>
-                            <Input type="number" placeholder="0" value={form.selling_price} onChange={(e) => onChange({ ...form, selling_price: e.target.value })} />
+                            <Label>Priority</Label>
+                            <select value={form.priority || 'normal'} onChange={(e) => onChange({ ...form, priority: e.target.value })} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem' }}>
+                                <option value="normal">Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
                         </FormGroup>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>

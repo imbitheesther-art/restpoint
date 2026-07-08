@@ -35,18 +35,36 @@ const CREATE_COFFIN_ORDERS = `CREATE TABLE IF NOT EXISTS coffin_orders (
   color VARCHAR(100),
   interior_fabric VARCHAR(100),
   notes TEXT,
+  instructions TEXT,
+  priority VARCHAR(20) DEFAULT 'normal',
+  due_date DATE,
+  branch_id INT DEFAULT 1,
   selling_price DECIMAL(10,2) DEFAULT 0,
   total_cost DECIMAL(10,2) DEFAULT 0,
   profit DECIMAL(10,2) DEFAULT 0,
   status VARCHAR(50) DEFAULT 'pending',
   hold_reason TEXT,
   delivery_date DATE,
+  created_by INT,
   order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_orders_status (status),
-  INDEX idx_orders_date (order_date)
+  INDEX idx_orders_date (order_date),
+  INDEX idx_orders_branch (branch_id),
+  INDEX idx_orders_priority (priority)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
+
+// Migration for existing tables
+const ALTER_COFFIN_ORDERS = `
+ALTER TABLE coffin_orders
+  ADD COLUMN IF NOT EXISTS instructions TEXT AFTER notes,
+  ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'normal' AFTER interior_fabric,
+  ADD COLUMN IF NOT EXISTS due_date DATE AFTER priority,
+  ADD COLUMN IF NOT EXISTS branch_id INT DEFAULT 1 AFTER due_date,
+  ADD COLUMN IF NOT EXISTS created_by INT AFTER delivery_date,
+  ADD COLUMN IF NOT EXISTS hold_reason TEXT AFTER status;
+`;
 
 const CREATE_MATERIALS = `CREATE TABLE IF NOT EXISTS materials (
   id INT AUTO_INCREMENT PRIMARY KEY,
