@@ -24,7 +24,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/workshop-service/package.json ./services/workshop-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN yarn install --no-lockfile && yarn cache clean
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/
@@ -54,4 +54,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/workshop-service/dist/server.js"]
+
 

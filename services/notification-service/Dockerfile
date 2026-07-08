@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/notification-service/package.json ./services/notification-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN yarn install --no-lockfile && yarn cache clean
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/
@@ -52,3 +52,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Start application with dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/notification-service/server.js"]
+

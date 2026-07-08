@@ -15,7 +15,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN yarn install --no-lockfile && yarn cache clean
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -41,3 +41,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["tsx", "services/deceased-service/server.ts"]
+

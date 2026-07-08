@@ -15,7 +15,7 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/documents-service/package.json ./services/documents-service/
 
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN yarn install --no-lockfile && yarn cache clean
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -38,3 +38,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/documents-service/server.js"]
+

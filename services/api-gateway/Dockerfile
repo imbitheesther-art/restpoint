@@ -24,7 +24,7 @@ COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Install dependencies
 RUN yarn config set network-timeout 600000 && \
-    yarn install --frozen-lockfile --production && \
+    yarn install --no-lockfile --production && \
     yarn cache clean
 
 # Copy source code

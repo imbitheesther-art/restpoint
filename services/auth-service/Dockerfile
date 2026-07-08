@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/auth-service/package.json ./services/auth-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN yarn install --no-lockfile && yarn cache clean
 
 # Copy source code
 COPY configurations/ ./configurations/
@@ -51,3 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/auth-service/server.js"]
+
