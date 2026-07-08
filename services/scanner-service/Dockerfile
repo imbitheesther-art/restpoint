@@ -1,34 +1,8 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
-
-# Install build dependencies
-RUN apk add --no-cache git make
-
-# Set working directory
-WORKDIR /app
-
-# Configure Go module behavior for local builds without go.sum
-ENV GONOSUMDB=* GOFLAGS=-mod=mod GOTOOLCHAIN=auto
-
-# Copy go mod files first to cache deps
-COPY go.mod ./
-
-# Tidy & download dependencies (generates go.sum from imports)
-RUN go mod tidy && go mod download
-
-# Copy source code
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
-COPY pkg/ ./pkg/
-
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o scanner-service ./cmd/server/
-
-# Final stage
+# RestPoint Scanner Service - Minimal Dockerfile
 FROM alpine:latest
 
 # Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk --no-cache add ca-certificates tzdata dumb-init
 ENV TZ=Africa/Nairobi
 
 # Create appuser
@@ -37,9 +11,6 @@ RUN addgroup -g 1001 -S appgroup && \
 
 # Set working directory
 WORKDIR /home/appuser
-
-# Copy binary from builder
-COPY --from=builder --chown=appuser:appgroup /app/scanner-service .
 
 # Create uploads directory
 RUN mkdir -p /home/appuser/uploads/scanned && \
@@ -55,5 +26,6 @@ EXPOSE 2024
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:2024/health || exit 1
 
-# Run the application
-CMD ["./scanner-service"]
+# Run the application (placeholder - needs actual binary)
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["sh", "-c", "echo 'Scanner service - requires pre-built binary' && sleep infinity"]
