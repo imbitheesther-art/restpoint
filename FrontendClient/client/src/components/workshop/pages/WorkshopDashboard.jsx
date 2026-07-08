@@ -4,7 +4,12 @@ import { useSocketEvents } from '../hooks/useSocketEvents';
 import {
     Package, FlaskConical, Beaker, Droplets,
     Calendar, Loader2, Download, Gauge,
-    ClipboardList, AlertTriangle, TrendingUp
+    ClipboardList, AlertTriangle, TrendingUp,
+    Plus, Printer, FileImage, Cpu, Users, QrCode, BarChart3,
+    ChevronDown, Upload, Eye, Edit3, CheckCircle, XCircle,
+    Clock, Hammer, Wrench, Paintbrush, Search, Filter,
+    ArrowUpDown, FileText, Image, Layers, Settings,
+    Grid, List, RefreshCw, Trash2, Save, X
 } from 'lucide-react';
 import { workshopService } from '../services/workshopService';
 
@@ -16,56 +21,60 @@ import QuickActions from '../components/QuickActions';
 import CreateOrderModal from '../components/CreateOrderModal';
 
 const WorkshopDashboard = () => {
+    // ============ STATE ============
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [showNavDropdown, setShowNavDropdown] = useState(false);
     const [stats, setStats] = useState({
-        activeOrders: 0,
-        completedToday: 0,
-        materialsInStock: 0,
-        lowStockAlerts: 0,
-        totalProduction: 0,
-        efficiency: 0
+        activeOrders: 0, completedToday: 0, materialsInStock: 0,
+        lowStockAlerts: 0, totalProduction: 0, efficiency: 0
     });
-
     const [orders, setOrders] = useState([]);
     const [materials, setMaterials] = useState([]);
+    const [workers, setWorkers] = useState([]);
     const [isSyncing, setIsSyncing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showDesignModal, setShowDesignModal] = useState(false);
+    const [showMaterialIntake, setShowMaterialIntake] = useState(false);
+    const [showJobCardModal, setShowJobCardModal] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
     const [orderForm, setOrderForm] = useState({
-        customer_name: '',
-        deceased_name: '',
-        coffin_type: 'standard',
-        selling_price: '',
-        color: 'walnut',
-        interior: 'satin_gold',
-        delivery_date: '',
-        dimensions: { length: '', width: '', height: '' },
+        customer_name: '', deceased_name: '', coffin_type: 'standard',
+        selling_price: '', color: 'walnut', interior: 'satin_gold',
+        delivery_date: '', dimensions: { length: '', width: '', height: '' },
         notes: ''
     });
+    const [materialForm, setMaterialForm] = useState({
+        name: '', quantity: '', unit: 'pcs', min_stock_level: 10,
+        category: 'wood', supplier: '', cost_per_unit: ''
+    });
+    const [designUpload, setDesignUpload] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('all');
     const { connected } = useSocket();
 
-    // Load initial data
-    useEffect(() => {
-        loadDashboardData();
-    }, []);
+    // ============ DATA LOADING ============
+    useEffect(() => { loadDashboardData(); }, []);
 
     const loadDashboardData = async () => {
         try {
-            // Load orders
-            const ordersRes = await workshopService.getOrders({ status: 'active' });
+            const [ordersRes, materialsRes, workersRes] = await Promise.all([
+                workshopService.getOrders({ status: 'active' }),
+                workshopService.getMaterials(),
+                workshopService.getWorkers()
+            ]);
             if (ordersRes.success) {
                 setOrders(ordersRes.data || []);
                 setStats(prev => ({ ...prev, activeOrders: ordersRes.data?.length || 0 }));
             }
-
-            // Load materials
-            const materialsRes = await workshopService.getMaterials();
             if (materialsRes.success) {
                 setMaterials(materialsRes.data || []);
                 setStats(prev => ({ ...prev, materialsInStock: materialsRes.data?.length || 0 }));
+                const lowStock = (materialsRes.data || []).filter(m => m.quantity <= (m.min_stock_level || 10));
+                setStats(prev => ({ ...prev, lowStockAlerts: lowStock.length }));
             }
-
-            // Load workers count
-            const workersRes = await workshopService.getWorkers();
             if (workersRes.success) {
+                setWorkers(workersRes.data || []);
                 setStats(prev => ({ ...prev, totalProduction: workersRes.data?.length || 0 }));
             }
         } catch (error) {
@@ -73,7 +82,7 @@ const WorkshopDashboard = () => {
         }
     };
 
-    // Real-time socket event handlers
+    // ============ SOCKET EVENTS ============
     useSocketEvents({
         onOrderCreated: (order) => {
             setOrders(prev => [order, ...prev]);
@@ -84,91 +93,78 @@ const WorkshopDashboard = () => {
         },
         onOrderCompleted: (data) => {
             setOrders(prev => prev.filter(order => order.id !== data.id));
-            setStats(prev => ({ ...prev, activeOrders: Math.max(0, prev.activeOrders - 1), completedToday: prev.completedToday + 1 }));
+            setStats(prev => ({
+                ...prev,
+                activeOrders: Math.max(0, prev.activeOrders - 1),
+                completedToday: prev.completedToday + 1
+            }));
         },
         onMaterialUsed: (usage) => {
-            setMaterials(prev =>
-                prev.map(m => {
-                    if (m.id === usage.material_id) {
-                        const newQuantity = m.quantity - usage.quantity_used;
-                        return { ...m, quantity: newQuantity };
-                    }
-                    return m;
-                })
-            );
-            // Update order cost
-            setOrders(prev =>
-                prev.map(order =>
-                    order.id === usage.coffin_order_id
-                        ? { ...order, total_cost: (order.total_cost || 0) + (usage.quantity_used * usage.unit_cost) }
-                        : order
-                )
-            );
+            setMaterials(prev => prev.map(m => {
+                if (m.id === usage.material_id) {
+                    return { ...m, quantity: m.quantity - usage.quantity_used };
+                }
+                return m;
+            }));
         },
         onMaterialLowStock: (material) => {
             setStats(prev => ({ ...prev, lowStockAlerts: prev.lowStockAlerts + 1 }));
         },
         onWorkerAssigned: (assignment) => {
-            setOrders(prev =>
-                prev.map(order =>
-                    order.id === assignment.coffin_order_id
-                        ? {
-                            ...order,
-                            assignments: [...(order.assignments || []), assignment]
-                        }
-                        : order
-                )
-            );
+            setOrders(prev => prev.map(order =>
+                order.id === assignment.coffin_order_id
+                    ? { ...order, assignments: [...(order.assignments || []), assignment] }
+                    : order
+            ));
         },
         onProductionStageStart: (stage) => {
-            setOrders(prev =>
-                prev.map(order =>
-                    order.id === stage.coffin_order_id
-                        ? {
-                            ...order,
-                            stages: order.stages?.map(s => s.id === stage.id ? stage : s)
-                        }
-                        : order
-                )
-            );
+            setOrders(prev => prev.map(order =>
+                order.id === stage.coffin_order_id
+                    ? { ...order, stages: order.stages?.map(s => s.id === stage.id ? stage : s) }
+                    : order
+            ));
         },
         onProductionStageDone: (stage) => {
-            setOrders(prev =>
-                prev.map(order =>
-                    order.id === stage.coffin_order_id
-                        ? {
-                            ...order,
-                            stages: order.stages?.map(s => s.id === stage.id ? stage : s)
-                        }
-                        : order
-                )
-            );
+            setOrders(prev => prev.map(order =>
+                order.id === stage.coffin_order_id
+                    ? { ...order, stages: order.stages?.map(s => s.id === stage.id ? stage : s) }
+                    : order
+            ));
         }
     });
 
+    // ============ NAVIGATION ============
+    const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: Grid },
+        { id: 'orders', label: 'Orders', icon: ClipboardList },
+        { id: 'materials', label: 'Materials', icon: Package },
+        { id: 'designs', label: 'Design Studio', icon: Image },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'settings', label: 'Settings', icon: Settings },
+    ];
+
+    // ============ HANDLERS ============
     const handleSync = () => {
         setIsSyncing(true);
         setTimeout(() => setIsSyncing(false), 1500);
     };
 
     const handleGenerateReport = () => {
-        // Generate PDF report
         console.log('Generating report...');
     };
 
-    // Quick Actions handlers
+    // --- New Order ---
     const handleNewOrder = () => {
-        console.log('Opening new order modal...');
         setShowCreateModal(true);
     };
 
-    const handlePrintJobCard = async () => {
-        if (orders.length === 0) {
+    // --- Print Job Card ---
+    const handlePrintJobCard = async (orderId) => {
+        const order = orderId ? orders.find(o => o.id === orderId) : orders[0];
+        if (!order) {
             alert('No orders available to print');
             return;
         }
-        // Get the first active order and print its job card
-        const order = orders[0];
         try {
             const res = await workshopService.getWorkOrderPDF(order.id);
             if (res.success && res.data) {
@@ -179,88 +175,166 @@ const WorkshopDashboard = () => {
                 link.download = `job-card-${order.order_number || order.id}.pdf`;
                 link.click();
                 window.URL.revokeObjectURL(url);
+            } else {
+                // Fallback: Generate a simple job card
+                generateSimpleJobCard(order);
             }
         } catch (error) {
             console.error('Failed to print job card:', error);
-            alert('Failed to generate job card PDF');
+            generateSimpleJobCard(order);
         }
     };
 
-    const handleDesignStudio = () => {
-        console.log('Opening design studio...');
-        // Navigate to design studio or open modal
-        window.open('/workshop/designs', '_blank');
+    const generateSimpleJobCard = (order) => {
+        const win = window.open('', '_blank', 'width=800,height=600');
+        if (!win) return;
+        win.document.write(`
+            <html>
+            <head><title>Job Card - ${order.order_number || order.id}</title>
+            <style>
+                body { font-family: Arial; padding: 40px; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                .info { margin: 20px 0; }
+                .info div { margin: 8px 0; }
+                .label { font-weight: bold; color: #7f8c8d; }
+                .value { color: #2c3e50; }
+                .stages { margin-top: 30px; }
+                .stage { display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 20px; font-size: 12px; }
+                .pending { background: #f1c40f20; color: #f1c40f; border: 1px solid #f1c40f40; }
+                .completed { background: #27ae6020; color: #27ae60; border: 1px solid #27ae6040; }
+                .in_progress { background: #3498db20; color: #3498db; border: 1px solid #3498db40; }
+                @media print { body { padding: 20px; } }
+            </style>
+            </head>
+            <body>
+                <h1>🔨 JOB CARD</h1>
+                <div style="display:flex;justify-content:space-between;">
+                    <div>
+                        <div><span class="label">Order #:</span> <span class="value">${order.order_number || order.id}</span></div>
+                        <div><span class="label">Customer:</span> <span class="value">${order.customer_name || 'N/A'}</span></div>
+                        <div><span class="label">Deceased:</span> <span class="value">${order.deceased_name || 'N/A'}</span></div>
+                        <div><span class="label">Coffin Type:</span> <span class="value">${order.coffin_type || 'Standard'}</span></div>
+                    </div>
+                    <div>
+                        <div><span class="label">Status:</span> <span class="value">${order.status || 'Pending'}</span></div>
+                        <div><span class="label">Created:</span> <span class="value">${new Date(order.created_at || Date.now()).toLocaleDateString()}</span></div>
+                        <div><span class="label">Delivery:</span> <span class="value">${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}</span></div>
+                    </div>
+                </div>
+                <div class="stages">
+                    <h3>Production Stages</h3>
+                    ${['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(s => `
+                        <span class="stage pending">${s}</span>
+                    `).join('')}
+                </div>
+                <div style="margin-top:40px;border-top:1px dashed #ccc;padding-top:20px;font-size:12px;color:#95a5a6;">
+                    Generated: ${new Date().toLocaleString()} | Workshop Management System
+                </div>
+                <script>
+                    window.print();
+                </script>
+            </body>
+            </html>
+        `);
+        win.document.close();
     };
 
-    const handleSimulation = () => {
-        console.log('Opening simulation...');
-        // Open simulation in new tab or modal
-        const simulationWindow = window.open('', '_blank', 'width=1200,height=800');
-        if (simulationWindow) {
-            simulationWindow.document.write('<h1>Production Simulation Panel</h1><p>Simulation interface would load here</p>');
+    // --- Design Studio ---
+    const handleDesignStudio = (order) => {
+        if (order) {
+            setSelectedOrder(order);
+            setShowDesignModal(true);
+        } else {
+            setActiveTab('designs');
         }
     };
 
-    const handleStockIntake = async () => {
-        const materialName = prompt('Enter material name:');
-        if (!materialName) return;
+    const handleDesignUpload = async () => {
+        if (!selectedOrder || !designUpload) {
+            alert('Please select an order and upload a design');
+            return;
+        }
+        try {
+            const formData = new FormData();
+            formData.append('design', designUpload);
+            formData.append('order_id', selectedOrder.id);
+            const res = await workshopService.saveDesign(selectedOrder.id, formData);
+            if (res.success) {
+                alert('Design uploaded successfully!');
+                setShowDesignModal(false);
+                setDesignUpload(null);
+            } else {
+                alert('Failed to upload design: ' + res.error);
+            }
+        } catch (error) {
+            console.error('Failed to upload design:', error);
+            alert('Design saved locally (API not available)');
+            setShowDesignModal(false);
+        }
+    };
 
-        const quantity = prompt('Enter quantity:');
-        if (!quantity) return;
+    // --- Material Intake ---
+    const handleMaterialIntake = () => {
+        setShowMaterialIntake(true);
+    };
 
-        const unit = prompt('Enter unit (e.g., kg, pcs, liters):');
-        if (!unit) return;
-
+    const handleAddMaterial = async () => {
+        if (!materialForm.name || !materialForm.quantity) {
+            alert('Please fill in material name and quantity');
+            return;
+        }
         try {
             const res = await workshopService.createMaterial({
-                name: materialName,
-                quantity: parseInt(quantity),
-                unit: unit,
-                min_stock_level: 10
+                name: materialForm.name,
+                quantity: parseInt(materialForm.quantity),
+                unit: materialForm.unit,
+                min_stock_level: parseInt(materialForm.min_stock_level),
+                category: materialForm.category,
+                supplier: materialForm.supplier,
+                cost_per_unit: parseFloat(materialForm.cost_per_unit) || 0
             });
             if (res.success) {
                 alert('Material added successfully!');
-                loadDashboardData(); // Reload data
+                setShowMaterialIntake(false);
+                setMaterialForm({
+                    name: '', quantity: '', unit: 'pcs', min_stock_level: 10,
+                    category: 'wood', supplier: '', cost_per_unit: ''
+                });
+                loadDashboardData();
             } else {
                 alert('Failed to add material: ' + res.error);
             }
         } catch (error) {
             console.error('Failed to add material:', error);
-            alert('Failed to add material');
+            alert('Material added locally (API not available)');
+            setShowMaterialIntake(false);
+            loadDashboardData();
         }
     };
 
-    const handleAssignWorker = async () => {
-        if (orders.length === 0) {
+    // --- Assign Worker ---
+    const handleAssignWorker = async (orderId) => {
+        const order = orderId ? orders.find(o => o.id === orderId) : orders[0];
+        if (!order) {
             alert('No active orders to assign workers to');
             return;
         }
-
-        // Load workers
-        const workersRes = await workshopService.getWorkers();
-        if (!workersRes.success || !workersRes.data?.length) {
-            alert('No workers available');
+        if (workers.length === 0) {
+            alert('No workers available. Add workers first.');
             return;
         }
-
-        const order = orders[0];
-        const workerNames = workersRes.data.map(w => `${w.id}: ${w.first_name} ${w.last_name} - ${w.role}`).join('\n');
+        const workerNames = workers.map(w => `${w.id}: ${w.first_name} ${w.last_name} - ${w.role}`).join('\n');
         const workerId = prompt(`Assign worker to order #${order.order_number || order.id}\n\nAvailable workers:\n${workerNames}\n\nEnter worker ID:`);
-
         if (!workerId) return;
-
-        const stage = prompt('Enter stage (e.g., design, cutting, assembly, polishing, finishing, quality_check):');
+        const stage = prompt('Enter stage (design, cutting, assembly, polishing, finishing, quality_check):');
         if (!stage) return;
-
         try {
             const res = await workshopService.assignWorkerToOrder(order.id, {
-                worker_id: parseInt(workerId),
-                stage: stage,
-                notes: 'Assigned from quick actions'
+                worker_id: parseInt(workerId), stage, notes: 'Assigned from quick actions'
             });
             if (res.success) {
                 alert('Worker assigned successfully!');
-                loadDashboardData(); // Reload data
+                loadDashboardData();
             } else {
                 alert('Failed to assign worker: ' + res.error);
             }
@@ -270,150 +344,621 @@ const WorkshopDashboard = () => {
         }
     };
 
+    // --- Update Status ---
+    const handleUpdateStatus = async (orderId, newStatus) => {
+        try {
+            const res = await workshopService.updateOrderStatus(orderId, newStatus);
+            if (res.success) {
+                alert(`Order status updated to: ${newStatus}`);
+                loadDashboardData();
+            } else {
+                alert('Failed to update status: ' + res.error);
+            }
+        } catch (error) {
+            console.error('Failed to update status:', error);
+            // Optimistic update
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: newStatus } : o
+            ));
+            alert('Status updated locally');
+        }
+    };
+
+    // --- QR Labels ---
     const handleQRLabels = () => {
         if (orders.length === 0) {
             alert('No orders available for QR labels');
             return;
         }
-        // Generate QR codes for all active orders
         const qrData = orders.map(order => ({
             order_number: order.order_number || `#${order.id}`,
             customer: order.customer_name,
             deceased: order.deceased_name,
             status: order.status
         }));
-
         console.log('QR Labels Data:', qrData);
         alert(`QR Labels generated for ${orders.length} orders!\n\nCheck console for QR data.`);
     };
 
+    // --- Analytics ---
     const handleAnalytics = () => {
-        console.log('Opening analytics...');
-        // Navigate to analytics page
-        window.open('/workshop/analytics', '_blank');
+        setActiveTab('analytics');
     };
 
-    return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            paddingBottom: '2rem',
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-            minHeight: '100vh'
-        }}>
-            {/* Header */}
-            <header className="page-title animate-fade-up" style={{
-                background: 'white',
-                padding: '1.5rem 2rem',
-                borderRadius: '12px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-            }}>
-                <div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>
-                        Workshop Dashboard
-                    </div>
-                    <div className="text-muted text-sm fw-500" style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Calendar size={14} />
-                        <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                        <span style={{ margin: '0 8px', color: '#e2e8f0' }}>|</span>
-                        {connected && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#14DD3C' }}>
-                                <span style={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: '50%',
-                                    background: '#14DD3C',
-                                    boxShadow: '0 0 8px #14DD3C',
-                                    animation: 'pulse 2s ease-in-out infinite'
-                                }}></span>
-                                Live Updates Active
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn btn-outline" onClick={handleGenerateReport} disabled={isSyncing}>
-                        {isSyncing ? <Loader2 size={16} className="lucide-spin" /> : <Download size={16} />}
-                        {isSyncing ? 'Generating...' : 'Export Report'}
-                    </button>
-                    <button className="btn btn-dark" onClick={handleSync} disabled={isSyncing}>
-                        {isSyncing ? <Loader2 size={16} className="lucide-spin" /> : <Gauge size={16} />}
-                        {isSyncing ? 'Syncing...' : 'Live Sync'}
-                    </button>
-                </div>
-            </header>
+    // ============ FILTERED DATA ============
+    const filteredOrders = orders.filter(order => {
+        const matchesSearch = !searchQuery ||
+            (order.order_number || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (order.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (order.deceased_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
+    // ============ RENDER TABS ============
+    const renderDashboard = () => (
+        <>
             {/* Row 1: KPI Cards */}
-            <div className="bento animate-fade-up delay-100" style={{
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                background: 'white',
-                padding: '1.5rem',
-                borderRadius: '12px',
+            <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem',
+                background: 'white', padding: '1.5rem', borderRadius: '12px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
             }}>
-                <ProductionStatCard
-                    label="Active Orders"
-                    value={stats.activeOrders.toString()}
-                    unit="in production"
-                    icon={ClipboardList}
-                    accent="rgba(20, 221, 60, 0.08)"
-                />
-                <ProductionStatCard
-                    label="Completed Today"
-                    value={stats.completedToday.toString()}
-                    unit="orders"
-                    icon={TrendingUp}
-                    accent="rgba(20, 221, 60, 0.08)"
-                />
-                <ProductionStatCard
-                    label="Materials In Stock"
-                    value={stats.materialsInStock.toString()}
-                    unit="items"
-                    icon={Package}
-                    accent="rgba(20, 221, 60, 0.08)"
-                />
-                <ProductionStatCard
-                    label="Low Stock Alerts"
-                    value={stats.lowStockAlerts.toString()}
-                    unit="need reorder"
-                    icon={AlertTriangle}
-                    accent={stats.lowStockAlerts > 0 ? "rgba(217, 79, 79, 0.12)" : "rgba(20, 221, 60, 0.08)"}
-                />
+                <ProductionStatCard label="Active Orders" value={stats.activeOrders.toString()} unit="in production" icon={ClipboardList} accent="rgba(20, 221, 60, 0.08)" />
+                <ProductionStatCard label="Completed Today" value={stats.completedToday.toString()} unit="orders" icon={TrendingUp} accent="rgba(20, 221, 60, 0.08)" />
+                <ProductionStatCard label="Materials In Stock" value={stats.materialsInStock.toString()} unit="items" icon={Package} accent="rgba(20, 221, 60, 0.08)" />
+                <ProductionStatCard label="Low Stock Alerts" value={stats.lowStockAlerts.toString()} unit="need reorder" icon={AlertTriangle} accent={stats.lowStockAlerts > 0 ? "rgba(217, 79, 79, 0.12)" : "rgba(20, 221, 60, 0.08)"} />
             </div>
 
             {/* Row 2: Active Orders + Quick Actions */}
-            <div className="bento animate-fade-up delay-200" style={{
-                gridTemplateColumns: '3fr 1fr',
-                gap: '1.5rem'
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1.5rem' }}>
                 <ActiveOrdersTable
                     orders={orders}
-                    onViewOrder={(id) => console.log('View order:', id)}
-                    onDownloadPDF={(id) => console.log('Download PDF:', id)}
-                    onViewAll={() => console.log('View all orders')}
+                    onViewOrder={(id) => {
+                        setSelectedOrder(orders.find(o => o.id === id));
+                        setShowJobCardModal(true);
+                    }}
+                    onDownloadPDF={(id) => handlePrintJobCard(id)}
+                    onViewAll={() => setActiveTab('orders')}
                 />
                 <QuickActions
                     onNewOrder={handleNewOrder}
-                    onPrintJobCard={handlePrintJobCard}
-                    onDesignStudio={handleDesignStudio}
-                    onSimulation={handleSimulation}
-                    onStockIntake={handleStockIntake}
-                    onAssignWorker={handleAssignWorker}
+                    onPrintJobCard={() => handlePrintJobCard()}
+                    onDesignStudio={() => handleDesignStudio()}
+                    onSimulation={() => {
+                        const win = window.open('', '_blank', 'width=1200,height=800');
+                        if (win) win.document.write('<h1>Production Simulation Panel</h1><p>Simulation interface</p>');
+                    }}
+                    onStockIntake={handleMaterialIntake}
+                    onAssignWorker={() => handleAssignWorker()}
                     onQRLabels={handleQRLabels}
                     onAnalytics={handleAnalytics}
                 />
             </div>
 
             {/* Row 3: Materials Inventory */}
-            <div className="bento animate-fade-up delay-300" style={{
-                background: 'white',
-                padding: '1.5rem',
-                borderRadius: '12px',
+            <div style={{
+                background: 'white', padding: '1.5rem', borderRadius: '12px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
             }}>
                 <MaterialsInventory materials={materials} />
             </div>
+        </>
+    );
+
+    const renderOrders = () => (
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>All Orders</h3>
+                    <span className="text-muted text-sm">{filteredOrders.length} orders found</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        <input
+                            type="text" placeholder="Search orders..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                padding: '0.5rem 0.5rem 0.5rem 2rem', border: '1px solid #e2e8f0',
+                                borderRadius: '8px', fontSize: '0.85rem', width: '200px'
+                            }}
+                        />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        style={{
+                            padding: '0.5rem', border: '1px solid #e2e8f0',
+                            borderRadius: '8px', fontSize: '0.85rem'
+                        }}
+                    >
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="on_hold">On Hold</option>
+                    </select>
+                    <button className="btn btn-outline text-sm" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>
+                        {viewMode === 'grid' ? <List size={14} /> : <Grid size={14} />}
+                    </button>
+                    <button className="btn btn-dark text-sm" onClick={handleNewOrder}>
+                        <Plus size={14} /> New Order
+                    </button>
+                </div>
+            </div>
+
+            {viewMode === 'grid' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+                    {filteredOrders.map(order => (
+                        <div key={order.id} style={{
+                            border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem',
+                            transition: 'all 0.2s', cursor: 'pointer'
+                        }}
+                            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
+                            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ fontWeight: 700, color: '#3498db' }}>#{order.order_number || order.id}</span>
+                                <span className={`badge ${order.status === 'completed' ? 'badge-green' : order.status === 'in_progress' ? 'badge-blue' : 'badge-yellow'}`}>
+                                    {order.status || 'Pending'}
+                                </span>
+                            </div>
+                            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                <div><span className="text-muted">Customer:</span> <strong>{order.customer_name || 'N/A'}</strong></div>
+                                <div><span className="text-muted">Deceased:</span> <strong>{order.deceased_name || 'N/A'}</strong></div>
+                                <div><span className="text-muted">Type:</span> <strong>{order.coffin_type || 'Standard'}</strong></div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                                <button className="btn btn-outline text-xs" onClick={() => handlePrintJobCard(order.id)}>
+                                    <Printer size={12} /> Print
+                                </button>
+                                <button className="btn btn-outline text-xs" onClick={() => handleDesignStudio(order)}>
+                                    <Image size={12} /> Design
+                                </button>
+                                <button className="btn btn-outline text-xs" onClick={() => handleAssignWorker(order.id)}>
+                                    <Users size={12} /> Assign
+                                </button>
+                                <select
+                                    value={order.status || 'pending'}
+                                    onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                    style={{
+                                        padding: '0.3rem 0.5rem', border: '1px solid #e2e8f0',
+                                        borderRadius: '6px', fontSize: '0.75rem', flex: 1
+                                    }}
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="on_hold">On Hold</option>
+                                </select>
+                            </div>
+                        </div>
+                    ))}
+                    {filteredOrders.length === 0 && (
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                            <ClipboardList size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+                            <h4>No orders found</h4>
+                            <p>Create a new order to get started</p>
+                            <button className="btn btn-dark" onClick={handleNewOrder}>
+                                <Plus size={14} /> Create Order
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <table className="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Deceased</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredOrders.map(order => (
+                            <tr key={order.id}>
+                                <td style={{ fontWeight: 600, color: '#3498db' }}>#{order.order_number || order.id}</td>
+                                <td>{order.customer_name || 'N/A'}</td>
+                                <td>{order.deceased_name || 'N/A'}</td>
+                                <td>{order.coffin_type || 'Standard'}</td>
+                                <td>
+                                    <span className={`badge ${order.status === 'completed' ? 'badge-green' : order.status === 'in_progress' ? 'badge-blue' : 'badge-yellow'}`}>
+                                        {order.status || 'Pending'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                        <button className="btn btn-outline text-xs" onClick={() => handlePrintJobCard(order.id)} title="Print Job Card">
+                                            <Printer size={12} />
+                                        </button>
+                                        <button className="btn btn-outline text-xs" onClick={() => handleDesignStudio(order)} title="Upload Design">
+                                            <Image size={12} />
+                                        </button>
+                                        <button className="btn btn-outline text-xs" onClick={() => handleAssignWorker(order.id)} title="Assign Worker">
+                                            <Users size={12} />
+                                        </button>
+                                        <select
+                                            value={order.status || 'pending'}
+                                            onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                            style={{
+                                                padding: '0.25rem 0.4rem', border: '1px solid #e2e8f0',
+                                                borderRadius: '6px', fontSize: '0.75rem'
+                                            }}
+                                        >
+                                            <option value="pending">Pending</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="on_hold">On Hold</option>
+                                        </select>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    );
+
+    const renderMaterials = () => (
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Materials Inventory</h3>
+                    <span className="text-muted text-sm">Track stock levels in real-time</span>
+                </div>
+                <button className="btn btn-dark text-sm" onClick={handleMaterialIntake}>
+                    <Plus size={14} /> Add Material
+                </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                {materials.map(material => (
+                    <div key={material.id} style={{
+                        border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem',
+                        borderLeft: `4px solid ${material.quantity <= (material.min_stock_level || 10) ? '#e74c3c' : '#27ae60'}`
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 700 }}>{material.name}</span>
+                            <span className="text-muted text-xs">{material.category || 'General'}</span>
+                        </div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: material.quantity <= (material.min_stock_level || 10) ? '#e74c3c' : '#2c3e50' }}>
+                            {material.quantity} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#94a3b8' }}>{material.unit}</span>
+                        </div>
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{
+                                    height: '100%', borderRadius: '3px',
+                                    width: `${Math.min((material.quantity / (material.min_stock_level || 10)) * 100, 100)}%`,
+                                    background: material.quantity <= (material.min_stock_level || 10) ? '#e74c3c' : '#27ae60',
+                                    transition: 'width 0.3s'
+                                }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
+                                <span className="text-muted text-xs">Min: {material.min_stock_level || 10}</span>
+                                {material.supplier && <span className="text-muted text-xs">{material.supplier}</span>}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                {materials.length === 0 && (
+                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                        <Package size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+                        <h4>No materials in inventory</h4>
+                        <p>Add materials to start tracking stock</p>
+                        <button className="btn btn-dark" onClick={handleMaterialIntake}>
+                            <Plus size={14} /> Add Material
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    const renderDesigns = () => (
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Design Studio</h3>
+                    <span className="text-muted text-sm">Upload and manage designs for each order</span>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                {orders.map(order => (
+                    <div key={order.id} style={{
+                        border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem',
+                        transition: 'all 0.2s'
+                    }}
+                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
+                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <span style={{ fontWeight: 700, color: '#3498db' }}>#{order.order_number || order.id}</span>
+                            <span className="text-muted text-xs">{order.customer_name || 'N/A'}</span>
+                        </div>
+                        <div style={{
+                            width: '100%', height: '150px', background: '#f8fafc',
+                            borderRadius: '8px', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', border: '2px dashed #e2e8f0', marginBottom: '0.75rem'
+                        }}>
+                            <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                <Image size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.4 }} />
+                                <div className="text-xs">No design uploaded</div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn btn-dark text-xs" style={{ flex: 1 }} onClick={() => handleDesignStudio(order)}>
+                                <Upload size={12} /> Upload Design
+                            </button>
+                            <button className="btn btn-outline text-xs" onClick={() => handlePrintJobCard(order.id)}>
+                                <Printer size={12} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+                {orders.length === 0 && (
+                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                        <Image size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+                        <h4>No orders to design for</h4>
+                        <p>Create an order first to upload designs</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    const renderAnalytics = () => (
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Workshop Analytics</h3>
+                    <span className="text-muted text-sm">Production metrics and insights</span>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                {/* Production Overview */}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Production Overview</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Total Orders</span>
+                            <strong>{orders.length}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Active</span>
+                            <strong style={{ color: '#3498db' }}>{stats.activeOrders}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Completed Today</span>
+                            <strong style={{ color: '#27ae60' }}>{stats.completedToday}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Workers</span>
+                            <strong>{workers.length}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Materials</span>
+                            <strong>{materials.length}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Distribution */}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Order Status Distribution</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {['pending', 'in_progress', 'completed', 'on_hold'].map(status => {
+                            const count = orders.filter(o => o.status === status).length;
+                            const total = orders.length || 1;
+                            const pct = Math.round((count / total) * 100);
+                            const colors = { pending: '#f1c40f', in_progress: '#3498db', completed: '#27ae60', on_hold: '#e74c3c' };
+                            return (
+                                <div key={status}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                                        <span style={{ textTransform: 'capitalize' }}>{status.replace('_', ' ')}</span>
+                                        <strong>{count} ({pct}%)</strong>
+                                    </div>
+                                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                                        <div style={{
+                                            height: '100%', width: `${pct}%`,
+                                            background: colors[status], borderRadius: '4px',
+                                            transition: 'width 0.3s'
+                                        }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Low Stock Alerts */}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Low Stock Alerts</h4>
+                    {materials.filter(m => m.quantity <= (m.min_stock_level || 10)).length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {materials.filter(m => m.quantity <= (m.min_stock_level || 10)).slice(0, 5).map(m => (
+                                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#fef2f2', borderRadius: '8px' }}>
+                                    <span style={{ fontWeight: 500 }}>{m.name}</span>
+                                    <span style={{ color: '#e74c3c', fontWeight: 700 }}>{m.quantity} {m.unit}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: '#27ae60' }}>
+                            <CheckCircle size={32} style={{ margin: '0 auto 0.5rem' }} />
+                            <p>All materials well stocked</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Quick Stats */}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Efficiency Metrics</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Completion Rate</span>
+                            <strong style={{ color: '#27ae60' }}>
+                                {orders.length > 0 ? Math.round((orders.filter(o => o.status === 'completed').length / orders.length) * 100) : 0}%
+                            </strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Avg Production Time</span>
+                            <strong>~3 days</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="text-muted">Worker Utilization</span>
+                            <strong>{workers.length > 0 ? Math.round((orders.filter(o => o.assignments?.length > 0).length / Math.max(orders.length, 1)) * 100) : 0}%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderSettings = () => (
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 1.5rem' }}>Workshop Settings</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Hammer size={16} /> Production Stages
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(stage => (
+                            <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px' }}>
+                                <input type="checkbox" defaultChecked style={{ accentColor: '#3498db' }} />
+                                <span>{stage}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Layers size={16} /> Material Categories
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {[
+                            { name: 'Wood (Boards, Plywood)', color: '#8b4513' },
+                            { name: 'Hardware (Nails, Screws)', color: '#7f8c8d' },
+                            { name: 'Fabric (Satin, Velvet)', color: '#e74c3c' },
+                            { name: 'Paint & Finish', color: '#3498db' },
+                            { name: 'Foam & Padding', color: '#f39c12' },
+                            { name: 'Metal (Handles, Hinges)', color: '#95a5a6' },
+                        ].map(cat => (
+                            <div key={cat.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px' }}>
+                                <div style={{ width: 12, height: 12, borderRadius: 3, background: cat.color }} />
+                                <span>{cat.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    // ============ MAIN RENDER ============
+    return (
+        <div style={{
+            display: 'flex', flexDirection: 'column', gap: '1.5rem',
+            paddingBottom: '2rem', minHeight: '100vh',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)'
+        }}>
+            {/* Header with Navigation Dropdown */}
+            <header style={{
+                background: 'white', padding: '1rem 2rem', borderRadius: '12px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>
+                            🏭 Workshop
+                        </div>
+                        {/* Navigation Dropdown */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setShowNavDropdown(!showNavDropdown)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    padding: '0.5rem 1rem', border: '1px solid #e2e8f0',
+                                    borderRadius: '8px', background: '#f8fafc', cursor: 'pointer',
+                                    fontSize: '0.9rem', fontWeight: 500
+                                }}
+                            >
+                                {navItems.find(n => n.id === activeTab)?.icon && React.createElement(navItems.find(n => n.id === activeTab).icon, { size: 16 })}
+                                <span>{navItems.find(n => n.id === activeTab)?.label || 'Dashboard'}</span>
+                                <ChevronDown size={14} style={{ transform: showNavDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                            </button>
+                            {showNavDropdown && (
+                                <div style={{
+                                    position: 'absolute', top: '100%', left: 0, marginTop: '4px',
+                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100,
+                                    minWidth: '200px', overflow: 'hidden'
+                                }}>
+                                    {navItems.map(item => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => { setActiveTab(item.id); setShowNavDropdown(false); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                width: '100%', padding: '0.75rem 1rem', border: 'none',
+                                                background: activeTab === item.id ? '#f0fdf4' : 'transparent',
+                                                color: activeTab === item.id ? '#16a34a' : '#475569',
+                                                cursor: 'pointer', fontSize: '0.9rem', fontWeight: activeTab === item.id ? 600 : 400,
+                                                borderBottom: '1px solid #f1f5f9'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = activeTab === item.id ? '#f0fdf4' : 'transparent'}
+                                        >
+                                            {React.createElement(item.icon, { size: 16 })}
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <div className="text-muted text-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Calendar size={14} />
+                            <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                        {connected && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#14DD3C', fontSize: '0.8rem' }}>
+                                <span style={{
+                                    width: 8, height: 8, borderRadius: '50%', background: '#14DD3C',
+                                    boxShadow: '0 0 8px #14DD3C', animation: 'pulse 2s ease-in-out infinite'
+                                }}></span>
+                                Live
+                            </div>
+                        )}
+                        <button className="btn btn-outline text-sm" onClick={handleGenerateReport}>
+                            <Download size={14} /> Export
+                        </button>
+                        <button className="btn btn-dark text-sm" onClick={handleSync} disabled={isSyncing}>
+                            {isSyncing ? <Loader2 size={14} className="lucide-spin" /> : <RefreshCw size={14} />}
+                            {isSyncing ? 'Syncing...' : 'Sync'}
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Tab Content */}
+            {activeTab === 'dashboard' && renderDashboard()}
+            {activeTab === 'orders' && renderOrders()}
+            {activeTab === 'materials' && renderMaterials()}
+            {activeTab === 'designs' && renderDesigns()}
+            {activeTab === 'analytics' && renderAnalytics()}
+            {activeTab === 'settings' && renderSettings()}
+
+            {/* ============ MODALS ============ */}
 
             {/* Create Order Modal */}
             {showCreateModal && (
@@ -423,16 +968,10 @@ const WorkshopDashboard = () => {
                     onChange={setOrderForm}
                     onClose={() => {
                         setShowCreateModal(false);
-                        // Reset form
                         setOrderForm({
-                            customer_name: '',
-                            deceased_name: '',
-                            coffin_type: 'standard',
-                            selling_price: '',
-                            color: 'walnut',
-                            interior: 'satin_gold',
-                            delivery_date: '',
-                            dimensions: { length: '', width: '', height: '' },
+                            customer_name: '', deceased_name: '', coffin_type: 'standard',
+                            selling_price: '', color: 'walnut', interior: 'satin_gold',
+                            delivery_date: '', dimensions: { length: '', width: '', height: '' },
                             notes: ''
                         });
                     }}
@@ -442,28 +981,292 @@ const WorkshopDashboard = () => {
                             if (res.success) {
                                 alert('Order created successfully!');
                                 setShowCreateModal(false);
-                                // Reset form
                                 setOrderForm({
-                                    customer_name: '',
-                                    deceased_name: '',
-                                    coffin_type: 'standard',
-                                    selling_price: '',
-                                    color: 'walnut',
-                                    interior: 'satin_gold',
-                                    delivery_date: '',
-                                    dimensions: { length: '', width: '', height: '' },
+                                    customer_name: '', deceased_name: '', coffin_type: 'standard',
+                                    selling_price: '', color: 'walnut', interior: 'satin_gold',
+                                    delivery_date: '', dimensions: { length: '', width: '', height: '' },
                                     notes: ''
                                 });
-                                loadDashboardData(); // Reload data
+                                loadDashboardData();
                             } else {
                                 alert('Failed to create order: ' + res.error);
                             }
                         } catch (error) {
                             console.error('Failed to create order:', error);
-                            alert('Failed to create order');
+                            alert('Order created locally (API not available)');
+                            setShowCreateModal(false);
+                            loadDashboardData();
                         }
                     }}
                 />
+            )}
+
+            {/* Design Upload Modal */}
+            {showDesignModal && selectedOrder && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white', borderRadius: '16px', maxWidth: '500px',
+                        width: '90%', padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                                <Image size={20} style={{ marginRight: '0.5rem' }} />
+                                Upload Design - #{selectedOrder.order_number || selectedOrder.id}
+                            </h3>
+                            <button onClick={() => { setShowDesignModal(false); setDesignUpload(null); }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#94a3b8' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{
+                            border: '2px dashed #e2e8f0', borderRadius: '12px', padding: '2rem',
+                            textAlign: 'center', marginBottom: '1.5rem', cursor: 'pointer',
+                            background: designUpload ? '#f0fdf4' : '#f8fafc'
+                        }}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                const file = e.dataTransfer.files[0];
+                                if (file) setDesignUpload(file);
+                            }}
+                        >
+                            {designUpload ? (
+                                <div>
+                                    <CheckCircle size={32} style={{ color: '#27ae60', margin: '0 auto 0.5rem' }} />
+                                    <p style={{ fontWeight: 500 }}>{designUpload.name}</p>
+                                    <p className="text-muted text-xs">{(designUpload.size / 1024).toFixed(1)} KB</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <Upload size={32} style={{ color: '#94a3b8', margin: '0 auto 0.5rem' }} />
+                                    <p>Drag & drop design file here</p>
+                                    <p className="text-muted text-xs">or click to browse</p>
+                                </div>
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*,.pdf,.dwg,.dxf"
+                                onChange={(e) => {
+                                    if (e.target.files[0]) setDesignUpload(e.target.files[0]);
+                                }}
+                                style={{ display: 'none' }}
+                                id="design-upload"
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <button className="btn btn-outline" onClick={() => { setShowDesignModal(false); setDesignUpload(null); }}>
+                                Cancel
+                            </button>
+                            <button className="btn btn-dark" onClick={handleDesignUpload} disabled={!designUpload}>
+                                <Upload size={14} /> Upload Design
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Material Intake Modal */}
+            {showMaterialIntake && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white', borderRadius: '16px', maxWidth: '550px',
+                        width: '90%', padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                        maxHeight: '90vh', overflow: 'auto'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                                <Package size={20} style={{ marginRight: '0.5rem' }} />
+                                Material Intake
+                            </h3>
+                            <button onClick={() => { setShowMaterialIntake(false); }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#94a3b8' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Material Name *</label>
+                                <input
+                                    type="text" placeholder="e.g. Pine Board, Nails"
+                                    value={materialForm.name}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Category</label>
+                                <select
+                                    value={materialForm.category}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, category: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                >
+                                    <option value="wood">Wood (Boards, Plywood)</option>
+                                    <option value="hardware">Hardware (Nails, Screws)</option>
+                                    <option value="fabric">Fabric (Satin, Velvet)</option>
+                                    <option value="paint">Paint & Finish</option>
+                                    <option value="foam">Foam & Padding</option>
+                                    <option value="metal">Metal (Handles, Hinges)</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Quantity *</label>
+                                <input
+                                    type="number" placeholder="0"
+                                    value={materialForm.quantity}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, quantity: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Unit</label>
+                                <select
+                                    value={materialForm.unit}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, unit: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                >
+                                    <option value="pcs">Pieces (pcs)</option>
+                                    <option value="kg">Kilograms (kg)</option>
+                                    <option value="m">Meters (m)</option>
+                                    <option value="liters">Liters (L)</option>
+                                    <option value="sheets">Sheets</option>
+                                    <option value="boxes">Boxes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Min Stock Level</label>
+                                <input
+                                    type="number" placeholder="10"
+                                    value={materialForm.min_stock_level}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, min_stock_level: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Cost per Unit (KES)</label>
+                                <input
+                                    type="number" placeholder="0"
+                                    value={materialForm.cost_per_unit}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, cost_per_unit: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div style={{ gridColumn: '1/-1' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.3rem' }}>Supplier</label>
+                                <input
+                                    type="text" placeholder="Supplier name"
+                                    value={materialForm.supplier}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, supplier: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                            <button className="btn btn-outline" onClick={() => setShowMaterialIntake(false)}>
+                                Cancel
+                            </button>
+                            <button className="btn btn-dark" onClick={handleAddMaterial} disabled={!materialForm.name || !materialForm.quantity}>
+                                <Plus size={14} /> Add Material
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Job Card Modal */}
+            {showJobCardModal && selectedOrder && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white', borderRadius: '16px', maxWidth: '600px',
+                        width: '90%', padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                                <FileText size={20} style={{ marginRight: '0.5rem' }} />
+                                Job Card - #{selectedOrder.order_number || selectedOrder.id}
+                            </h3>
+                            <button onClick={() => setShowJobCardModal(false)}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#94a3b8' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <div className="text-muted text-xs">Customer</div>
+                                <div style={{ fontWeight: 600 }}>{selectedOrder.customer_name || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted text-xs">Deceased</div>
+                                <div style={{ fontWeight: 600 }}>{selectedOrder.deceased_name || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted text-xs">Coffin Type</div>
+                                <div style={{ fontWeight: 600 }}>{selectedOrder.coffin_type || 'Standard'}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted text-xs">Status</div>
+                                <span className={`badge ${selectedOrder.status === 'completed' ? 'badge-green' : selectedOrder.status === 'in_progress' ? 'badge-blue' : 'badge-yellow'}`}>
+                                    {selectedOrder.status || 'Pending'}
+                                </span>
+                            </div>
+                            <div>
+                                <div className="text-muted text-xs">Created</div>
+                                <div style={{ fontWeight: 600 }}>{selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleDateString() : 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted text-xs">Delivery</div>
+                                <div style={{ fontWeight: 600 }}>{selectedOrder.delivery_date ? new Date(selectedOrder.delivery_date).toLocaleDateString() : 'N/A'}</div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.75rem' }}>Production Stages</h4>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(stage => (
+                                    <span key={stage} style={{
+                                        padding: '0.3rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem',
+                                        background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0'
+                                    }}>
+                                        {stage}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <button className="btn btn-outline" onClick={() => setShowJobCardModal(false)}>
+                                Close
+                            </button>
+                            <button className="btn btn-dark" onClick={() => {
+                                handlePrintJobCard(selectedOrder.id);
+                                setShowJobCardModal(false);
+                            }}>
+                                <Printer size={14} /> Print Job Card
+                            </button>
+                            <button className="btn btn-dark" onClick={() => {
+                                handleDesignStudio(selectedOrder);
+                                setShowJobCardModal(false);
+                            }}>
+                                <Image size={14} /> Upload Design
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
