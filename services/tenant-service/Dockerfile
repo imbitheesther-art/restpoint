@@ -1,18 +1,37 @@
-# Production Dockerfile for Tenant Service - Minimal
+# Production Dockerfile for Tenant Service
 FROM node:20-alpine
 
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
-# Copy package files
-COPY services/tenant-service/package.json ./
+# Copy root workspace files
+COPY package.json ./
+COPY packages/ packages/
 
-# Install dependencies (skip scripts to avoid TypeScript build errors)
-RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
+# Copy this service's package.json
+COPY services/tenant-service/package.json ./services/tenant-service/
 
-# Copy application code
-COPY services/tenant-service/ ./
+# Build shared packages
+RUN cd packages/shared-config && npm run build 2>/dev/null || true && \
+  cd ../shared-logger && npm run build 2>/dev/null || true && \
+  cd ../shared-services && npm run build 2>/dev/null || true && \
+  cd ../shared-utils && npm run build 2>/dev/null || true
+
+# Install dependencies - remove @montezuma packages temporarily to avoid npm registry lookup
+RUN cd services/tenant-service && \
+  cp package.json package.json.bak && \
+  node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" && \
+  npm install --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
+  mv package.json.bak package.json && \
+  mkdir -p node_modules/@montezuma && \
+  cp -r /app/packages/shared-config node_modules/@montezuma/shared-config && \
+  cp -r /app/packages/shared-logger node_modules/@montezuma/shared-logger && \
+  cp -r /app/packages/shared-services node_modules/@montezuma/shared-services && \
+  cp -r /app/packages/shared-utils node_modules/@montezuma/shared-utils
+
+# Copy service code
+COPY services/tenant-service/ ./services/tenant-service/
 COPY configurations/ ./configurations/
 
 EXPOSE 5000
@@ -20,7 +39,7 @@ ENV NODE_ENV=production
 ENV PORT=5000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node server.js & sleep 2 && kill %1 && exit 0 || exit 1
+  CMD node services/tenant-service/server.js & sleep 2 && kill %1 && exit 0 || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+CMD ["node", "services/tenant-service/server.js"]

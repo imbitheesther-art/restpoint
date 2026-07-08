@@ -129,11 +129,17 @@ const createOrder = async (req: Request, res: Response) => {
         // Convert empty delivery_date to null to avoid MySQL date error
         const processedDeliveryDate = delivery_date === '' ? null : delivery_date;
 
-        // Generate simple order number
+        // Convert dimensions object to JSON string for TEXT column
+        const processedDimensions = typeof dimensions === 'object' && dimensions !== null
+            ? JSON.stringify(dimensions)
+            : dimensions || '';
+
+        // Generate readable order number (shorter, memorable)
         const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-        const seq = Math.floor(Math.random() * 900) + 100;
-        const order_number = `CFN-${dateStr}-${seq}`;
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const seq = Math.floor(Math.random() * 90) + 10;
+        const order_number = `CFN-${day}${month}-${seq}`;
 
         const insertResult: any = await safeTenantExecute(tenantDb,
             `INSERT INTO coffin_orders 
@@ -142,7 +148,7 @@ const createOrder = async (req: Request, res: Response) => {
              selling_price, delivery_date, due_date, priority, branch_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [order_number, customer_name, customer_phone, customer_email, deceased_name,
-                coffin_type || 'standard', dimensions, color, interior_fabric, notes, instructions || '',
+                coffin_type || 'standard', processedDimensions, color, interior_fabric, notes, instructions || '',
                 selling_price || 0, processedDeliveryDate, due_date || null, priority || 'normal', branch_id || 1]
         );
 

@@ -30,7 +30,13 @@ const saveDesignSpec = async (req: Request, res: Response) => {
         const tenantDb = (req as any).tenant?.db_name;
         if (!tenantDb) return res.status(400).json({ error: 'Tenant database not resolved' });
 
-        const { coffin_order_id, design_name, description, specifications, design_files, status } = req.body;
+        // Use order ID from URL params (route: /orders/:id/design)
+        const coffin_order_id = req.params.id;
+        const { design_name, description, specifications, design_files, status } = req.body;
+
+        if (!coffin_order_id) {
+            return res.status(400).json({ error: 'Order ID is required' });
+        }
 
         const insertResult: any = await safeTenantExecute(tenantDb,
             `INSERT INTO design_specifications (coffin_order_id, design_name, description, specifications, design_files, status)

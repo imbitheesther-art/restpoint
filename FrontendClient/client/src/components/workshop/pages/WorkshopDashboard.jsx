@@ -183,7 +183,26 @@ const WorkshopDashboard = () => {
         const win = window.open('', '_blank', 'width=800,height=1000');
         if (!win) return;
 
-        const barcode = `|||${order.order_number || order.id}|||`;
+        // Parse dimensions if it's a JSON string
+        let dimsDisplay = 'Standard';
+        if (order.dimensions) {
+            try {
+                const dims = typeof order.dimensions === 'string' ? JSON.parse(order.dimensions) : order.dimensions;
+                if (dims && typeof dims === 'object') {
+                    dimsDisplay = `${dims.length || ''} x ${dims.width || ''} x ${dims.height || ''}`;
+                } else if (typeof order.dimensions === 'string') {
+                    dimsDisplay = order.dimensions;
+                }
+            } catch (e) {
+                dimsDisplay = order.dimensions;
+            }
+        }
+
+        // REAL scannable Code 39 barcode using Libre Barcode 39 font
+        // Libre Barcode 39 requires *asterisks* as start/stop characters
+        // Only uppercase letters, numbers, dash, dot, space are valid in Code 39
+        const barcodeText = (order.order_number || `ORD${order.id}`).toUpperCase().replace(/[^A-Z0-9-.\s]/g, '');
+        const barcode = `*${barcodeText}*`;
         const timestamp = new Date().toLocaleString('en-US', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
@@ -194,126 +213,141 @@ const WorkshopDashboard = () => {
             <head>
                 <title>Job Card - ${order.order_number || order.id}</title>
                 <style>
-                    @page { size: A4; margin: 15mm; }
+                    @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39&display=swap');
+                    @page { size: A4; margin: 10mm; }
                     body { 
                         font-family: 'Courier New', monospace; 
-                        padding: 30px; 
+                        padding: 15px; 
                         background: #fff;
                         color: #000;
+                        font-size: 11px;
                     }
                     .header { 
                         text-align: center; 
-                        border-bottom: 3px solid #000; 
-                        padding-bottom: 15px; 
-                        margin-bottom: 20px;
+                        border-bottom: 2px solid #000; 
+                        padding-bottom: 8px; 
+                        margin-bottom: 10px;
                     }
                     .company-name {
-                        font-size: 24px;
-                        font-weight: bold;
-                        letter-spacing: 2px;
-                        margin-bottom: 5px;
-                    }
-                    .document-title {
                         font-size: 18px;
                         font-weight: bold;
-                        margin-top: 10px;
+                        letter-spacing: 1px;
+                    }
+                    .document-title {
+                        font-size: 14px;
+                        font-weight: bold;
                         text-decoration: underline;
+                        margin-top: 4px;
                     }
                     .section {
-                        margin: 20px 0;
-                        border: 2px solid #000;
-                        padding: 12px;
+                        margin: 8px 0;
+                        border: 1.5px solid #000;
+                        padding: 8px;
                         page-break-inside: avoid;
                     }
                     .section-title {
                         font-weight: bold;
-                        font-size: 14px;
+                        font-size: 11px;
                         text-transform: uppercase;
                         letter-spacing: 1px;
-                        margin-bottom: 10px;
+                        margin-bottom: 6px;
                         background: #000;
                         color: #fff;
-                        padding: 4px 8px;
+                        padding: 3px 6px;
                     }
                     .info-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr;
-                        gap: 8px;
+                        gap: 4px;
                     }
                     .info-row {
-                        margin: 6px 0;
-                        font-size: 13px;
+                        margin: 3px 0;
+                        font-size: 11px;
                     }
                     .label {
                         font-weight: bold;
                         text-transform: uppercase;
-                        font-size: 11px;
+                        font-size: 9px;
                     }
                     .value {
-                        margin-left: 5px;
+                        margin-left: 3px;
                     }
                     .highlight {
                         background: #ffff00;
-                        padding: 2px 4px;
+                        padding: 1px 3px;
                         font-weight: bold;
                     }
                     .stages-grid {
                         display: grid;
-                        grid-template-columns: repeat(4, 1fr);
-                        gap: 8px;
-                        margin-top: 10px;
+                        grid-template-columns: repeat(7, 1fr);
+                        gap: 4px;
+                        margin-top: 6px;
                     }
                     .stage-box {
-                        border: 2px solid #000;
-                        padding: 8px;
+                        border: 1.5px solid #000;
+                        padding: 4px;
                         text-align: center;
-                        font-size: 12px;
+                        font-size: 9px;
                         font-weight: bold;
                     }
                     .stage-pending {
                         background: #fff;
                     }
-                    .signature-section {
-                        margin-top: 40px;
+                    .bottom-section {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-end;
+                        margin-top: 10px;
                         page-break-inside: avoid;
                     }
+                    .workshop-info {
+                        font-size: 9px;
+                        line-height: 1.4;
+                    }
                     .signature-line {
-                        border-top: 2px solid #000;
-                        width: 250px;
-                        padding-top: 5px;
-                        margin-top: 40px;
-                        font-size: 11px;
+                        border-top: 1.5px solid #000;
+                        width: 200px;
+                        padding-top: 3px;
+                        margin-top: 30px;
+                        font-size: 9px;
                         text-align: center;
                     }
                     .barcode {
                         text-align: center;
                         font-family: 'Libre Barcode 39', cursive;
-                        font-size: 48px;
-                        letter-spacing: 3px;
-                        margin: 20px 0;
-                        padding: 10px;
-                        border: 2px solid #000;
+                        font-size: 28px;
+                        letter-spacing: 2px;
+                        padding: 4px;
+                        border: 1.5px solid #000;
+                        display: inline-block;
+                        margin: 0 auto;
+                    }
+                    .barcode-wrap {
+                        text-align: center;
+                        margin: 6px 0;
                     }
                     .footer {
-                        margin-top: 30px;
-                        border-top: 2px solid #000;
-                        padding-top: 10px;
-                        font-size: 10px;
+                        margin-top: 10px;
+                        border-top: 1.5px solid #000;
+                        padding-top: 6px;
+                        font-size: 8px;
                         text-align: center;
                     }
                     .priority-urgent {
                         background: #ff0000;
                         color: #fff;
-                        padding: 4px 8px;
+                        padding: 2px 6px;
                         font-weight: bold;
                         display: inline-block;
+                        font-size: 10px;
                     }
                     .priority-high {
                         background: #ff9900;
                         color: #000;
-                        padding: 4px 8px;
+                        padding: 2px 6px;
                         font-weight: bold;
                         display: inline-block;
+                        font-size: 10px;
                     }
                     @media print {
                         body { padding: 0; }
@@ -322,15 +356,15 @@ const WorkshopDashboard = () => {
                 </style>
             </head>
             <body>
-                <div class="no-print" style="text-align: center; margin-bottom: 20px;">
-                    <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                <div class="no-print" style="text-align: center; margin-bottom: 10px;">
+                    <button onclick="window.print()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
                         🖨️ Print Job Card
                     </button>
                 </div>
 
                 <div class="header">
                     <div class="company-name">DONHOLM FUNERAL HOME</div>
-                    <div style="font-size: 12px; letter-spacing: 1px;">WORKSHOP PRODUCTION CONTROL</div>
+                    <div style="font-size: 10px; letter-spacing: 1px;">WORKSHOP PRODUCTION CONTROL</div>
                     <div class="document-title">JOB CARD</div>
                 </div>
 
@@ -377,13 +411,7 @@ const WorkshopDashboard = () => {
                         </div>
                         <div class="info-row">
                             <span class="label">Dimensions:</span>
-                            <span class="value">
-                                ${order.dimensions ?
-                (typeof order.dimensions === 'string' ? order.dimensions :
-                    order.dimensions.length ? `${order.dimensions.length} x ${order.dimensions.width} x ${order.dimensions.height}` :
-                        'Standard')
-                : 'Standard'}
-                            </span>
+                            <span class="value">${dimsDisplay}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Selling Price:</span>
@@ -391,9 +419,9 @@ const WorkshopDashboard = () => {
                         </div>
                     </div>
                     ${order.instructions ? `
-                    <div style="margin-top: 10px; padding: 8px; background: #ffff00; border: 2px solid #000;">
-                        <span class="label">Special Instructions:</span>
-                        <div style="margin-top: 5px; font-weight: bold;">${order.instructions}</div>
+                    <div style="margin-top: 6px; padding: 4px; background: #ffff00; border: 1.5px solid #000; font-size: 10px;">
+                        <span class="label">Instructions:</span>
+                        <div style="margin-top: 3px; font-weight: bold;">${order.instructions}</div>
                     </div>
                     ` : ''}
                 </div>
@@ -423,34 +451,43 @@ const WorkshopDashboard = () => {
                 <div class="section">
                     <div class="section-title">Production Stages</div>
                     <div class="stages-grid">
-                        ${['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(stage => `
-                            <div class="stage-box stage-pending">${stage}</div>
-                        `).join('')}
+                        ${['Design', 'Cutting', 'Assembly', 'Polishing', 'Finishing', 'Quality Check', 'Delivery'].map(stage => {
+            // Check stage status from order.stages array
+            const stageData = order.stages?.find(s => s.stage?.toLowerCase() === stage.toLowerCase());
+            const stageStatus = stageData?.status || 'pending';
+            const isCompleted = stageStatus === 'completed';
+            const isInProgress = stageStatus === 'in_progress';
+            return `
+                            <div class="stage-box ${isCompleted ? 'stage-completed' : isInProgress ? 'stage-in-progress' : 'stage-pending'}">
+                                ${stage}
+                                <div style="font-size:7px;margin-top:2px;text-transform:uppercase;color:${isCompleted ? '#16a34a' : isInProgress ? '#2563eb' : '#94a3b8'}">
+                                    ${isCompleted ? '✓ DONE' : isInProgress ? '● IN PROGRESS' : '○ PENDING'}
+                                </div>
+                            </div>`;
+        }).join('')}
                     </div>
                 </div>
 
-                <div class="barcode">
-                    ${barcode}
+                <div class="barcode-wrap">
+                    <div class="barcode">${barcode}</div>
                 </div>
 
-                <div class="signature-section">
-                    <div class="info-grid">
-                        <div>
-                            <div class="label">Prepared By:</div>
-                            <div class="signature-line">Signature & Date</div>
-                        </div>
-                        <div>
-                            <div class="label">Approved By:</div>
-                            <div class="signature-line">Signature & Date</div>
-                        </div>
+                <div class="bottom-section">
+                    <div class="workshop-info">
+                        <strong>Workshop Info:</strong><br>
+                        ${order.assigned_worker ? `Assigned: ${order.assigned_worker}<br>` : ''}
+                        ${order.created_at ? `Date: ${new Date(order.created_at).toLocaleDateString()}<br>` : ''}
+                        ${order.branch_id ? `Branch: ${order.branch_id}` : ''}
+                    </div>
+                    <div>
+                        <div class="label">Authorized By:</div>
+                        <div class="signature-line">Signature & Date</div>
                     </div>
                 </div>
 
                 <div class="footer">
-                    <div><strong>DONHOLM FUNERAL HOME</strong></div>
-                    <div>Workshop Management System</div>
-                    <div>Generated: ${timestamp}</div>
-                    <div style="margin-top: 5px; font-size: 9px;">This is a computer-generated document. No signature required.</div>
+                    <div><strong>DONHOLM FUNERAL HOME</strong> — Workshop Management System</div>
+                    <div>Printed: ${timestamp}</div>
                 </div>
 
                 <script>
@@ -1025,60 +1062,202 @@ const WorkshopDashboard = () => {
         </div>
     );
 
-    const renderDesigns = () => (
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Design Studio</h3>
-                    <span className="text-muted text-sm">Upload and manage designs for each order</span>
-                </div>
-            </div>
+    const renderDesigns = () => {
+        // Get all orders that have designs
+        const ordersWithDesigns = orders.filter(order => designs[order.id] && designs[order.id].length > 0);
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                {orders.map(order => (
-                    <div key={order.id} style={{
-                        border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem',
-                        transition: 'all 0.2s'
-                    }}
-                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
-                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                            <span style={{ fontWeight: 700, color: '#3498db' }}>#{order.order_number || order.id}</span>
-                            <span className="text-muted text-xs">{order.customer_name || 'N/A'}</span>
-                        </div>
-                        <div style={{
-                            width: '100%', height: '150px', background: '#f8fafc',
-                            borderRadius: '8px', display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', border: '2px dashed #e2e8f0', marginBottom: '0.75rem'
-                        }}>
-                            <div style={{ textAlign: 'center', color: '#94a3b8' }}>
-                                <Image size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.4 }} />
-                                <div className="text-xs">No design uploaded</div>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-dark text-xs" style={{ flex: 1 }} onClick={() => handleDesignStudio(order)}>
-                                <Upload size={12} /> Upload Design
-                            </button>
-                            <button className="btn btn-outline text-xs" onClick={() => handlePrintJobCard(order.id)}>
-                                <Printer size={12} />
-                            </button>
-                        </div>
+        // Flatten all designs with order info for gallery view
+        const allDesigns = [];
+        ordersWithDesigns.forEach(order => {
+            const orderDesigns = designs[order.id] || [];
+            orderDesigns.forEach((design, index) => {
+                allDesigns.push({
+                    ...design,
+                    orderId: order.id,
+                    orderNumber: order.order_number || `#${order.id}`,
+                    customerName: order.customer_name || 'N/A',
+                    deceasedName: order.deceased_name || 'N/A',
+                    isLatest: index === orderDesigns.length - 1
+                });
+            });
+        });
+
+        return (
+            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Design Studio</h3>
+                        <span className="text-muted text-sm">
+                            {allDesigns.length > 0
+                                ? `${allDesigns.length} design(s) across ${ordersWithDesigns.length} order(s)`
+                                : 'No designs uploaded yet'}
+                        </span>
                     </div>
-                ))}
-                {orders.length === 0 && (
-                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                </div>
+
+                {allDesigns.length > 0 ? (
+                    <>
+                        {/* Design Gallery - All designs in one view */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                            {allDesigns.map((design, idx) => (
+                                <div key={`${design.orderId}-${design.id || idx}`} style={{
+                                    border: design.isLatest ? '2px solid #16a34a' : '1px solid #e2e8f0',
+                                    borderRadius: '12px', padding: '1rem',
+                                    background: design.isLatest ? '#f0fdf4' : '#fff',
+                                    position: 'relative'
+                                }}>
+                                    {/* Latest badge */}
+                                    {design.isLatest && (
+                                        <div style={{
+                                            position: 'absolute', top: '-8px', right: '8px',
+                                            background: '#16a34a', color: '#fff', padding: '2px 8px',
+                                            borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600
+                                        }}>
+                                            LATEST
+                                        </div>
+                                    )}
+
+                                    {/* Design preview */}
+                                    <div style={{
+                                        width: '100%', height: '200px', background: '#f8fafc',
+                                        borderRadius: '8px', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', border: '1.5px solid #e2e8f0',
+                                        marginBottom: '0.75rem', overflow: 'hidden', cursor: 'pointer'
+                                    }}
+                                        onClick={() => {
+                                            // Open design in modal or new tab
+                                            if (design.design_files) {
+                                                window.open(design.design_files, '_blank');
+                                            }
+                                        }}>
+                                        {design.design_files ? (
+                                            <img
+                                                src={design.design_files}
+                                                alt="Design"
+                                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                            />
+                                        ) : design.design_name ? (
+                                            <div style={{ textAlign: 'center', padding: '1rem' }}>
+                                                <FileImage size={48} style={{ color: '#3498db', margin: '0 auto 0.5rem' }} />
+                                                <div style={{ fontWeight: 600, color: '#2c3e50', marginTop: '0.5rem' }}>{design.design_name}</div>
+                                                {design.description && (
+                                                    <div className="text-xs text-muted" style={{ marginTop: '0.25rem' }}>{design.description}</div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                                <CheckCircle size={32} style={{ margin: '0 auto 0.5rem' }} />
+                                                <div className="text-xs">Design saved</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Order info */}
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                        <div style={{ fontWeight: 700, color: '#3498db', fontSize: '0.95rem' }}>
+                                            #{design.orderNumber}
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                                            {design.customer_name || design.customerName || 'N/A'}
+                                        </div>
+                                        {design.deceased_name && (
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
+                                                Deceased: {design.deceased_name}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Design metadata */}
+                                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.5rem', padding: '0.4rem', background: '#f8fafc', borderRadius: '4px' }}>
+                                        {design.created_at && (
+                                            <div>Uploaded: {new Date(design.created_at).toLocaleString()}</div>
+                                        )}
+                                        {design.status && (
+                                            <div style={{ marginTop: '2px' }}>Status: <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{design.status}</span></div>
+                                        )}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button className="btn btn-dark text-xs" style={{ flex: 1 }} onClick={() => {
+                                            setSelectedOrder(orders.find(o => o.id === design.orderId));
+                                            setShowDesignModal(true);
+                                        }}>
+                                            <Upload size={12} /> Update
+                                        </button>
+                                        <button className="btn btn-outline text-xs" onClick={() => handlePrintJobCard(design.orderId)}>
+                                            <Printer size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Orders without designs */}
+                        {orders.filter(order => !designs[order.id] || designs[order.id].length === 0).length > 0 && (
+                            <>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginTop: '2rem', marginBottom: '1rem', color: '#94a3b8' }}>
+                                    ○ Orders Without Designs ({orders.filter(order => !designs[order.id] || designs[order.id].length === 0).length})
+                                </h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                                    {orders.filter(order => !designs[order.id] || designs[order.id].length === 0).map(order => (
+                                        <div key={order.id} style={{
+                                            border: '1px dashed #e2e8f0', borderRadius: '12px', padding: '1rem',
+                                            opacity: 0.7
+                                        }}>
+                                            <div style={{ fontWeight: 600, color: '#3498db', marginBottom: '0.5rem' }}>
+                                                #{order.order_number || order.id}
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                                                {order.customer_name || 'N/A'}
+                                            </div>
+                                            <button className="btn btn-outline text-xs" style={{ width: '100%' }} onClick={() => {
+                                                setSelectedOrder(order);
+                                                setShowDesignModal(true);
+                                            }}>
+                                                <Upload size={12} /> Upload Design
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
                         <Image size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-                        <h4>No orders to design for</h4>
-                        <p>Create an order first to upload designs</p>
+                        <h4>No designs uploaded yet</h4>
+                        <p>Upload designs for your orders to see them here</p>
                     </div>
                 )}
             </div>
-        </div>
-    );
+        );
+    };
 
+    const [designs, setDesigns] = useState({}); // { orderId: [designs] }
     const [analyticsData, setAnalyticsData] = useState(null);
+
+    // Load designs when Design Studio tab is active
+    useEffect(() => {
+        if (activeTab === 'designs') {
+            loadAllDesigns();
+        }
+    }, [activeTab, orders]);
+
+    const loadAllDesigns = async () => {
+        const designsMap = {};
+        for (const order of orders) {
+            try {
+                const res = await workshopService.getDesign(order.id);
+                if (res.success && res.data) {
+                    designsMap[order.id] = Array.isArray(res.data) ? res.data : [res.data];
+                }
+            } catch (e) {
+                // No designs for this order
+            }
+        }
+        setDesigns(designsMap);
+    };
 
     useEffect(() => {
         if (activeTab === 'analytics') {
