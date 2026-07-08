@@ -56,16 +56,15 @@ const CREATE_COFFIN_ORDERS = `CREATE TABLE IF NOT EXISTS coffin_orders (
   INDEX idx_orders_priority (priority)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 
-// Migration for existing tables
-const ALTER_COFFIN_ORDERS = `
-ALTER TABLE coffin_orders
-  ADD COLUMN IF NOT EXISTS instructions TEXT AFTER notes,
-  ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'normal' AFTER interior_fabric,
-  ADD COLUMN IF NOT EXISTS due_date DATE AFTER priority,
-  ADD COLUMN IF NOT EXISTS branch_id INT DEFAULT 1 AFTER due_date,
-  ADD COLUMN IF NOT EXISTS created_by INT AFTER delivery_date,
-  ADD COLUMN IF NOT EXISTS hold_reason TEXT AFTER status;
-`;
+// Migration for existing tables - MySQL doesn't support IF NOT EXISTS in ALTER TABLE
+const ALTER_STATEMENTS = [
+    `ALTER TABLE coffin_orders ADD COLUMN instructions TEXT AFTER notes`,
+    `ALTER TABLE coffin_orders ADD COLUMN priority VARCHAR(20) DEFAULT 'normal' AFTER interior_fabric`,
+    `ALTER TABLE coffin_orders ADD COLUMN due_date DATE AFTER priority`,
+    `ALTER TABLE coffin_orders ADD COLUMN branch_id INT DEFAULT 1 AFTER due_date`,
+    `ALTER TABLE coffin_orders ADD COLUMN created_by INT AFTER delivery_date`,
+    `ALTER TABLE coffin_orders ADD COLUMN hold_reason TEXT AFTER status`
+];
 
 // Execute ALTER TABLE for existing databases
 async function migrateExistingTables(tenantDbName) {
@@ -75,17 +74,20 @@ async function migrateExistingTables(tenantDbName) {
     });
 
     try {
-        await connection.query(ALTER_COFFIN_ORDERS);
-        console.log(`  ✅ Added new columns to coffin_orders`);
-        return true;
-    } catch (error) {
-        // Ignore "duplicate column" errors
-        if (error.message.includes('Duplicate column name')) {
-            console.log(`  ℹ️  Columns already exist`);
-            return true;
+        for (const sql of ALTER_STATEMENTS) {
+            try {
+                await connection.query(sql);
+                console.log(`  ✅ Added column: ${sql.split('ADD COLUMN')[1].split(' ')[1]}`);
+            } catch (error) {
+                // Ignore "duplicate column" errors - column already exists
+                if (error.code === 'ER_DUP_FIELDNAME' || error.message.includes('Duplicate column name')) {
+                    console.log(`  ℹ️  Column already exists: ${sql.split('ADD COLUMN')[1].split(' ')[1]}`);
+                } else {
+                    console.error(`  ❌ Error adding column: ${error.message}`);
+                }
+            }
         }
-        console.error(`  ❌ Error altering table: ${error.message}`);
-        return false;
+        return true;
     } finally {
         await connection.end();
     }

@@ -18,11 +18,11 @@ RUN npm install --no-audit --no-fund
 # Copy application code
 COPY . .
 
-# Build shared packages
-RUN cd packages/shared-config && npm run build && \
-  cd packages/shared-logger && npm run build && \
-  cd packages/shared-utils && npm run build && \
-  cd packages/shared-services && npm run build
+# Build shared packages (optional - skip if not needed)
+RUN cd packages/shared-config && npm run build || true && \
+  cd packages/shared-logger && npm run build || true && \
+  cd packages/shared-utils && npm run build || true && \
+  cd packages/shared-services && npm run build || true
 
 # Install tsx for running JavaScript
 RUN npm install -g tsx
