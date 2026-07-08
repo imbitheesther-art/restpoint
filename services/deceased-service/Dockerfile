@@ -19,16 +19,15 @@ RUN cd packages/shared-config && npm run build 2>/dev/null || true && \
   cd ../shared-utils && npm run build 2>/dev/null || true
 
 # Install dependencies - remove @montezuma packages temporarily to avoid npm registry lookup
-RUN cd services/deceased-service && \
-  cp package.json package.json.bak && \
-  node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));" && \
-  npm install --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
-  mv package.json.bak package.json && \
-  mkdir -p node_modules/@montezuma && \
-  cp -r ../packages/shared-config node_modules/@montezuma/shared-config && \
-  cp -r ../packages/shared-logger node_modules/@montezuma/shared-logger && \
-  cp -r ../packages/shared-services node_modules/@montezuma/shared-services && \
-  cp -r ../packages/shared-utils node_modules/@montezuma/shared-utils
+RUN cp services/deceased-service/package.json services/deceased-service/package.json.bak && \
+  node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('services/deceased-service/package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('services/deceased-service/package.json', JSON.stringify(pkg, null, 2));" && \
+  cd services/deceased-service && npm install --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
+  mv services/deceased-service/package.json.bak services/deceased-service/package.json && \
+  mkdir -p services/deceased-service/node_modules/@montezuma && \
+  cp -r packages/shared-config services/deceased-service/node_modules/@montezuma/shared-config && \
+  cp -r packages/shared-logger services/deceased-service/node_modules/@montezuma/shared-logger && \
+  cp -r packages/shared-services services/deceased-service/node_modules/@montezuma/shared-services && \
+  cp -r packages/shared-utils services/deceased-service/node_modules/@montezuma/shared-utils
 
 # Copy application code
 COPY services/deceased-service/ ./services/deceased-service/
