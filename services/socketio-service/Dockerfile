@@ -12,7 +12,7 @@ COPY services/socketio-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional || npm install --no-audit --no-fund
 
 # Copy application code
-COPY services/socketio-service/server.js ./
+COPY services/socketio-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000

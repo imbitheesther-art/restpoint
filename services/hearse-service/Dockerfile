@@ -16,13 +16,8 @@ COPY services/hearse-service/package.json ./services/hearse-service/
 RUN npm install --no-audit --no-fund
 
 # Copy application code
-COPY . .
-
-# Build shared packages (optional - skip if not needed)
-RUN cd packages/shared-config && npm run build || true && \
-  cd packages/shared-logger && npm run build || true && \
-  cd packages/shared-utils && npm run build || true && \
-  cd packages/shared-services && npm run build || true
+COPY services/hearse-service/ ./
+COPY configurations/ ./configurations/
 
 # Install tsx for running JavaScript
 RUN npm install -g tsx

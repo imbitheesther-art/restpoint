@@ -12,9 +12,7 @@ COPY services/chemical-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional || npm install --no-audit --no-fund
 
 # Copy application code
-COPY services/chemical-service/server.js ./
-COPY services/chemical-service/controllers/ ./controllers/
-COPY services/chemical-service/routes/ ./routes/
+COPY services/chemical-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000
