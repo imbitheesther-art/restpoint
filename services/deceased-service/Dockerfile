@@ -12,9 +12,7 @@ COPY services/deceased-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
 
 # Copy application code
-COPY services/deceased-service/server.js ./
-COPY services/deceased-service/controllers/ ./controllers/
-COPY services/deceased-service/routes/ ./routes/
+COPY services/deceased-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000

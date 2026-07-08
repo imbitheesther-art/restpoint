@@ -12,9 +12,7 @@ COPY services/billing-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
 
 # Copy application code
-COPY services/billing-service/server.js ./
-COPY services/billing-service/controllers/ ./controllers/
-COPY services/billing-service/routes/ ./routes/
+COPY services/billing-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000

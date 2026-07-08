@@ -12,9 +12,7 @@ COPY services/notification-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
 
 # Copy application code
-COPY services/notification-service/server.js ./
-COPY services/notification-service/controllers/ ./controllers/
-COPY services/notification-service/routes/ ./routes/
+COPY services/notification-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000

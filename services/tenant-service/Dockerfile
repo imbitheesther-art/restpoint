@@ -12,9 +12,7 @@ COPY services/tenant-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
 
 # Copy application code
-COPY services/tenant-service/server.js ./
-COPY services/tenant-service/controllers/ ./controllers/
-COPY services/tenant-service/routes/ ./routes/
+COPY services/tenant-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000

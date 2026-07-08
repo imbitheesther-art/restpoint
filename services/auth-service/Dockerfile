@@ -12,9 +12,7 @@ COPY services/auth-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
 
 # Copy application code
-COPY services/auth-service/server.js ./
-COPY services/auth-service/controllers/ ./controllers/
-COPY services/auth-service/routes/ ./routes/
+COPY services/auth-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000

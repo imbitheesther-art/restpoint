@@ -12,9 +12,7 @@ COPY services/support-service/package.json ./
 RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
 
 # Copy application code
-COPY services/support-service/server.js ./
-COPY services/support-service/controllers/ ./controllers/
-COPY services/support-service/routes/ ./routes/
+COPY services/support-service/ ./
 COPY configurations/ ./configurations/
 
 EXPOSE 5000
