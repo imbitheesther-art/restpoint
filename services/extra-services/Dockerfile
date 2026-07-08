@@ -1,7 +1,7 @@
 # RestPoint Extra Services — Minimal Dockerfile
 FROM node:20-alpine
 
-RUN npm install -g dumb-init
+RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
