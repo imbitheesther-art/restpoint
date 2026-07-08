@@ -24,8 +24,8 @@ RUN cd packages/shared-config && npm run build 2>/dev/null || true && \
 # Install dependencies - remove @montezuma packages temporarily to avoid npm registry lookup
 RUN cp services/bodycheckout-service/package.json services/bodycheckout-service/package.json.bak && \
   node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('services/bodycheckout-service/package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('services/bodycheckout-service/package.json', JSON.stringify(pkg, null, 2));" && \
-  cd services/bodycheckout-service && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
-  mv services/bodycheckout-service/package.json.bak services/bodycheckout-service/package.json && \
+  npm install --prefix services/bodycheckout-service --legacy-peer-deps --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
+  cp services/bodycheckout-service/package.json.bak services/bodycheckout-service/package.json && \
   mkdir -p services/bodycheckout-service/node_modules/@montezuma && \
   cp -r packages/shared-config services/bodycheckout-service/node_modules/@montezuma/shared-config && \
   cp -r packages/shared-logger services/bodycheckout-service/node_modules/@montezuma/shared-logger && \
