@@ -4,7 +4,7 @@ FROM node:22-alpine
 RUN apk add --no-cache dumb-init python3 make g++ wget
 
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
@@ -15,7 +15,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/

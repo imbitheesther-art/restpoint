@@ -20,6 +20,7 @@ const DB_CONFIG = {
     port: parseInt(process.env.DB_PORT || '3306', 10),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
+    multipleStatements: true
 };
 
 // Individual CREATE TABLE statements
@@ -65,6 +66,30 @@ ALTER TABLE coffin_orders
   ADD COLUMN IF NOT EXISTS created_by INT AFTER delivery_date,
   ADD COLUMN IF NOT EXISTS hold_reason TEXT AFTER status;
 `;
+
+// Execute ALTER TABLE for existing databases
+async function migrateExistingTables(tenantDbName) {
+    const connection = await mysql.createConnection({
+        ...DB_CONFIG,
+        database: tenantDbName,
+    });
+
+    try {
+        await connection.query(ALTER_COFFIN_ORDERS);
+        console.log(`  ✅ Added new columns to coffin_orders`);
+        return true;
+    } catch (error) {
+        // Ignore "duplicate column" errors
+        if (error.message.includes('Duplicate column name')) {
+            console.log(`  ℹ️  Columns already exist`);
+            return true;
+        }
+        console.error(`  ❌ Error altering table: ${error.message}`);
+        return false;
+    } finally {
+        await connection.end();
+    }
+}
 
 const CREATE_MATERIALS = `CREATE TABLE IF NOT EXISTS materials (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -154,6 +179,7 @@ async function migrateTenantDatabase(tenantDbName) {
     });
 
     try {
+        // Create tables
         for (const stmt of ALL_STATEMENTS) {
             try {
                 await connection.query(stmt.sql);
@@ -162,6 +188,9 @@ async function migrateTenantDatabase(tenantDbName) {
                 console.error(`  ❌ Error creating table '${stmt.name}': ${err.message}`);
             }
         }
+
+        // Migrate existing tables with new columns
+        await migrateExistingTables(tenantDbName);
 
         console.log(`✅ Migration complete for: ${tenantDbName}`);
         return { success: true, database: tenantDbName };

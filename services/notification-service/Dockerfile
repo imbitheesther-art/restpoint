@@ -6,7 +6,7 @@ RUN apk add --no-cache dumb-init
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/notification-service/package.json ./services/notification-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/

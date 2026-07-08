@@ -6,7 +6,7 @@ RUN apk add --no-cache dumb-init python3 make g++
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
@@ -23,7 +23,7 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/tenant-service/package.json ./services/tenant-service/
 
 # Install ALL dependencies (including dev for building)
-RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY configurations/ ./configurations/

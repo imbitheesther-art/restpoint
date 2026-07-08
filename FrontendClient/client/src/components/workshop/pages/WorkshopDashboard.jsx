@@ -329,7 +329,7 @@ const WorkshopDashboard = () => {
                 </div>
 
                 <div class="header">
-                    <div class="company-name">RESTPOINT FUNERAL HOME</div>
+                    <div class="company-name">DONHOLM FUNERAL HOME</div>
                     <div style="font-size: 12px; letter-spacing: 1px;">WORKSHOP PRODUCTION CONTROL</div>
                     <div class="document-title">JOB CARD</div>
                 </div>
@@ -369,15 +369,21 @@ const WorkshopDashboard = () => {
                     <div class="info-grid">
                         <div class="info-row">
                             <span class="label">Color/Finish:</span>
-                            <span class="value">${order.color || 'N/A'}</span>
+                            <span class="value">${order.color || order.color_finish || 'N/A'}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Interior:</span>
-                            <span class="value">${order.interior_fabric || 'N/A'}</span>
+                            <span class="value">${order.interior_fabric || order.interior || 'N/A'}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Dimensions:</span>
-                            <span class="value">${order.dimensions || 'Standard'}</span>
+                            <span class="value">
+                                ${order.dimensions ?
+                (typeof order.dimensions === 'string' ? order.dimensions :
+                    order.dimensions.length ? `${order.dimensions.length} x ${order.dimensions.width} x ${order.dimensions.height}` :
+                        'Standard')
+                : 'Standard'}
+                            </span>
                         </div>
                         <div class="info-row">
                             <span class="label">Selling Price:</span>
@@ -441,7 +447,7 @@ const WorkshopDashboard = () => {
                 </div>
 
                 <div class="footer">
-                    <div><strong>RESTPOINT FUNERAL HOME</strong></div>
+                    <div><strong>DONHOLM FUNERAL HOME</strong></div>
                     <div>Workshop Management System</div>
                     <div>Generated: ${timestamp}</div>
                     <div style="margin-top: 5px; font-size: 9px;">This is a computer-generated document. No signature required.</div>

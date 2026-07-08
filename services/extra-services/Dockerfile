@@ -4,7 +4,7 @@ FROM node:22-alpine
 RUN apk add --no-cache dumb-init
 
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
@@ -22,7 +22,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/extra-services/package.json ./services/extra-services/
 
 # Install ALL dependencies (including dev for building)
-RUN npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY configurations/ ./configurations/
