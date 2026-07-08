@@ -43,6 +43,18 @@ export const SocketProvider = ({ children }) => {
         socketInstance.on('connect', () => {
             console.log('🔌 Socket connected:', socketInstance.id);
             setConnected(true);
+
+            // Join tenant room
+            const tenantSlug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
+            socketInstance.emit('join_tenant', tenantSlug);
+            console.log('[Socket] Joined tenant room:', tenantSlug);
+
+            // Join branch room if available
+            const branchId = localStorage.getItem('branchId') || localStorage.getItem('branch_id');
+            if (branchId) {
+                socketInstance.emit('join_branch', branchId);
+                console.log('[Socket] Joined branch room:', branchId);
+            }
         });
 
         socketInstance.on('disconnect', (reason) => {

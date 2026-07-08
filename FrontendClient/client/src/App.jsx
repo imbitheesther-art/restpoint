@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { HelmetProvider } from 'react-helmet-async';
 import AppRouter from './routes/AppRouter';
 import { initManifest } from './services/manifestService';
 import { SocketProvider } from './context/socketContext';
@@ -34,10 +35,10 @@ const AppContent = () => {
     );
   }
   return (
-    <>
+    <HelmetProvider>
       {routeElement}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-    </>
+    </HelmetProvider>
   );
 };
 

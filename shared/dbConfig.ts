@@ -82,6 +82,23 @@ export const resolveDatabase = async (slug: string): Promise<string | null> => {
 
   console.log(`🔍 Resolving database for slug: ${slug}`);
 
+  // ✅ NEW: First check if the slug IS the database name (direct database access)
+  try {
+    const rootPool = await getRootPool();
+    const [dbRows] = await rootPool.query(
+      `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ? LIMIT 1`,
+      [slug]
+    );
+    const dbResult = dbRows as any[];
+    if (dbResult.length > 0) {
+      console.log(`✅ Direct database access: ${slug}`);
+      branchDbCache.set(slug, slug);
+      return slug;
+    }
+  } catch (err: any) {
+    console.warn(`⚠️ Direct DB check failed for "${slug}": ${err.message}`);
+  }
+
   // Step 1: Try as a main tenant slug (single-branch mode)
   const mainDbName = await lookupTenantDatabase(slug);
   if (mainDbName) {

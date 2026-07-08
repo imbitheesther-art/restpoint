@@ -3,24 +3,24 @@
  * @file shared/dbConfig.ts
  * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function (o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
     if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+        desc = { enumerable: true, get: function () { return m[k]; } };
     }
     Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
+}) : (function (o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function (o, v) {
     Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
+}) : function (o, v) {
     o["default"] = v;
 });
 var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
+    var ownKeys = function (o) {
         ownKeys = Object.getOwnPropertyNames || function (o) {
             var ar = [];
             for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
@@ -138,6 +138,23 @@ const resolveDatabase = async (slug) => {
             console.warn(`⚠️ Branch "${branchName}" not found, using main DB fallback: ${tenantDbName}`);
             return tenantDbName;
         }
+    }
+    // Step 3: Fallback - try using the slug itself as the database name
+    try {
+        const fallbackPool = await (0, exports.getRootPool)();
+        const [fallbackRows] = await fallbackPool.query(
+            `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ? LIMIT 1`,
+            [slug]
+        );
+        const fallbackResult = fallbackRows;
+        if (fallbackResult.length > 0) {
+            console.log(`📁 Direct slug-as-DB fallback: using database: ${slug}`);
+            branchDbCache.set(slug, slug);
+            return slug;
+        }
+    }
+    catch (err) {
+        console.warn(`⚠️ Fallback DB check failed for slug "${slug}": ${err.message}`);
     }
     console.error(`❌ Could not resolve database for slug: ${slug}`);
     return null;

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from 'styled-components';
 import styled from 'styled-components';
 import { X } from 'lucide-react';
 import DeceasedInfoSection from '../deceasedinfo/deceasedInfoSection';
@@ -112,37 +111,37 @@ const CloseModalButton = styled.button`
 `;
 
 const DeceasedInfoModal = ({ isOpen, onClose, deceased }) => {
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <ModalOverlay onClick={onClose}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-                <ModalHeader>
-                    <h3>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Deceased Information
-                    </h3>
-                    <CloseButton onClick={onClose}>
-                        <X size={20} />
-                    </CloseButton>
-                </ModalHeader>
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Deceased Information
+          </h3>
+          <CloseButton onClick={onClose}>
+            <X size={20} />
+          </CloseButton>
+        </ModalHeader>
 
-                <ModalBody>
-                    <DeceasedInfoSection deceased={deceased} />
-                </ModalBody>
+        <ModalBody>
+          <DeceasedInfoSection deceased={deceased} />
+        </ModalBody>
 
-                <ModalFooter>
-                    <CloseModalButton onClick={onClose}>
-                        <X size={16} />
-                        Close
-                    </CloseModalButton>
-                </ModalFooter>
-            </ModalContent>
-        </ModalOverlay>
-    );
+        <ModalFooter>
+          <CloseModalButton onClick={onClose}>
+            <X size={16} />
+            Close
+          </CloseModalButton>
+        </ModalFooter>
+      </ModalContent>
+    </ModalOverlay>
+  );
 };
 
 export default DeceasedInfoModal;

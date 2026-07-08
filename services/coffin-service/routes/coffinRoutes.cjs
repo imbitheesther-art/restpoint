@@ -16,11 +16,18 @@ const inlineHandlers = {
 // Load the JavaScript controller bridge (works with CommonJS)
 let coffinController = { ...inlineHandlers };
 try {
+  console.log('[COFFIN] Loading controller...');
   const loaded = require('../controllers/coffinController.cjs');
+  console.log('[COFFIN] Controller loaded:', typeof loaded);
   if (loaded && typeof loaded.createCoffin === 'function') {
     coffinController = loaded;
+    console.log('[COFFIN] Using controller functions');
+  } else {
+    console.log('[COFFIN] Controller missing functions, using fallback');
   }
 } catch (e) {
+  console.error('[COFFIN] Failed to load controller:', e.message);
+  console.error('[COFFIN] Stack:', e.stack);
   // Fallback already set
 }
 

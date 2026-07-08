@@ -39,11 +39,85 @@ app.use(helmet({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Tenant middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-    const tenantSlug = req.headers['x-tenant-slug'] as string | undefined;
-    (req as any).tenantSlug = tenantSlug;
-    next();
+// Tenant Middleware - supports both tenant slugs and branch database name slugs
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const tenantSlug = req.headers['x-tenant-slug'] as string | undefined;
+        const branchId = req.headers['x-branch-id'] as string | undefined;
+
+        (req as any).tenantSlug = tenantSlug;
+        (req as any).branchId = branchId;
+
+        console.log(`[DECEASED] ${req.method} ${req.path} - Tenant: ${tenantSlug}`);
+
+        if (!tenantSlug || tenantSlug === 'system_shared') {
+            (req as any).tenant = {
+                db_name: process.env.DB_NAME || 'restpoint_db',
+                tenant_id: 1,
+                name: 'System Shared'
+            };
+            return next();
+        }
+
+        // Step 1: Try direct database connection (slug IS the database name)
+        let resolvedDbName = null;
+
+        console.log(`[DECEASED] Trying direct database connection for: ${tenantSlug}`);
+        try {
+            const testPool = require('mysql2/promise').createPool({
+                host: process.env.DB_HOST || '127.0.0.1',
+                port: parseInt(process.env.DB_PORT || '3306'),
+                user: process.env.DB_USER || 'restpoint_user',
+                password: process.env.DB_PASSWORD || 'RestPointUser2024',
+                database: tenantSlug,
+                waitForConnections: true,
+                connectionLimit: 2,
+                queueLimit: 0,
+            });
+            const [result] = await testPool.query('SELECT 1');
+            if (result) {
+                resolvedDbName = tenantSlug;
+                console.log(`[DECEASED] Direct database connection successful: ${resolvedDbName}`);
+            }
+            await testPool.end().catch(() => { });
+        } catch (dbErr) {
+            console.log(`[DECEASED] Direct database connection failed: ${dbErr.message}`);
+        }
+
+        // Step 2: If direct connection failed, try resolveDatabase
+        if (!resolvedDbName) {
+            try {
+                const { resolveDatabase } = require('../../shared/dbConfig');
+                resolvedDbName = await resolveDatabase(tenantSlug);
+            } catch (e) {
+                console.log(`[DECEASED] resolveDatabase failed: ${e.message}`);
+            }
+        }
+
+        if (!resolvedDbName) {
+            return res.status(403).json({
+                success: false,
+                message: 'Tenant not found or not active'
+            });
+        }
+
+        (req as any).tenant = {
+            db_name: resolvedDbName,
+            tenant_id: 0,
+            name: tenantSlug,
+            tenant_slug: tenantSlug
+        };
+        console.log(`[DECEASED] Tenant resolved: ${resolvedDbName}`);
+
+        next();
+    } catch (error) {
+        console.error('[DECEASED] Tenant middleware error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to initialize tenant database',
+            error: error.message
+        });
+    }
 });
 
 // ============================================

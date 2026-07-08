@@ -14,7 +14,10 @@ CREATE TABLE IF NOT EXISTS deceased (
     phone_number VARCHAR(20),
     date_of_death TIMESTAMP NULL,
     date_admitted TIMESTAMP NULL,
-    cause_of_death TEXT,
+    cause_of_death TEXT NULL,
+    county VARCHAR(100) NULL,
+    location TEXT NULL,
+    portal_slug VARCHAR(255) UNIQUE NULL,
     status ENUM('active', 'pending', 'completed', 'archived') DEFAULT 'active',
     total_mortuary_charge DECIMAL(10, 2) DEFAULT 0,
     coffin_status VARCHAR(50),
@@ -45,103 +48,7 @@ CREATE TABLE IF NOT EXISTS next_of_kin (
     INDEX idx_relationship (relationship)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- 003: PORTAL SESSIONS TABLE
--- =====================================================
-CREATE TABLE IF NOT EXISTS portal_sessions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    deceased_id VARCHAR(50) NOT NULL,
-    session_token VARCHAR(500),
-    logged_in_at TIMESTAMP NULL,
-    last_activity TIMESTAMP NULL,
-    ip_address VARCHAR(50),
-    user_agent VARCHAR(500),
-    active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-    INDEX idx_deceased_id (deceased_id),
-    INDEX idx_session_token (session_token(255)),
-    INDEX idx_active (active)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- 004: MARKETPLACE PRODUCTS TABLE
--- =====================================================
-CREATE TABLE IF NOT EXISTS marketplace_products (
-    product_id INT AUTO_INCREMENT PRIMARY KEY,
-    deceased_id VARCHAR(50) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    category ENUM('caskets', 'flowers', 'services', 'urns', 'other') DEFAULT 'other',
-    price DECIMAL(10, 2) NOT NULL,
-    quantity_available INT DEFAULT 0,
-    image_url VARCHAR(500),
-    status ENUM('available', 'unavailable', 'discontinued') DEFAULT 'available',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-    INDEX idx_deceased_id (deceased_id),
-    INDEX idx_category (category),
-    INDEX idx_status (status),
-    INDEX idx_price (price)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =====================================================
--- 005: SHOPPING CART TABLE
--- =====================================================
-CREATE TABLE IF NOT EXISTS shopping_cart (
-    cart_id INT AUTO_INCREMENT PRIMARY KEY,
-    deceased_id VARCHAR(50) NOT NULL,
-    product_id INT NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES marketplace_products(product_id) ON DELETE CASCADE,
-    INDEX idx_deceased_id (deceased_id),
-    INDEX idx_product_id (product_id),
-    UNIQUE KEY uk_deceased_product (deceased_id, product_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =====================================================
--- 006: ORDERS TABLE
--- =====================================================
-CREATE TABLE IF NOT EXISTS orders (
-    order_id INT AUTO_INCREMENT PRIMARY KEY,
-    deceased_id VARCHAR(50) NOT NULL,
-    order_number VARCHAR(50) UNIQUE,
-    total_amount DECIMAL(10, 2) NOT NULL,
-    status ENUM('pending', 'confirmed', 'processing', 'completed', 'cancelled') DEFAULT 'pending',
-    payment_status ENUM('unpaid', 'partial', 'paid', 'refunded') DEFAULT 'unpaid',
-    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completion_date TIMESTAMP NULL,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-    INDEX idx_deceased_id (deceased_id),
-    INDEX idx_order_number (order_number),
-    INDEX idx_status (status),
-    INDEX idx_order_date (order_date),
-    INDEX idx_payment_status (payment_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =====================================================
--- 007: ORDER ITEMS TABLE
--- =====================================================
-CREATE TABLE IF NOT EXISTS order_items (
-    item_id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT NOT NULL,
-    product_id INT NOT NULL,
-    product_name VARCHAR(255),
-    quantity INT NOT NULL,
-    unit_price DECIMAL(10, 2) NOT NULL,
-    subtotal DECIMAL(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES marketplace_products(product_id),
-    INDEX idx_order_id (order_id),
-    INDEX idx_product_id (product_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- 008: INVOICES TABLE
@@ -214,21 +121,6 @@ CREATE TABLE IF NOT EXISTS documents (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
--- 011: PORTAL TRACKING TABLE
--- =====================================================
-CREATE TABLE IF NOT EXISTS portal_tracking (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    deceased_id VARCHAR(50) NOT NULL,
-    status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
-    remarks TEXT,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-    UNIQUE KEY uk_deceased_id (deceased_id),
-    INDEX idx_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =====================================================
 -- 012: MIGRATIONS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS migrations (
@@ -246,7 +138,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
-    role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'user',
+    role ENUM('admin', 'manager', 'staff', 'user', 'driver', 'workshop_manager', 'hr', 'accounts', 'mortician', 'supervisor', 'technician') DEFAULT 'user',
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
     last_login_at TIMESTAMP NULL,

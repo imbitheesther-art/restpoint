@@ -13,9 +13,34 @@ import SingleTenantLayout from '../components/layout/SingleTenantLayout';
 
 
 const LandingPage = lazy(() => import('../modules/landing/LandingPage'));
+const ChurchFuneralWelfare = lazy(() => import('../modules/landing/ChurchFuneralWelfare'));
+const SACCOFuneralInsurance = lazy(() => import('../modules/landing/SACCOFuneralInsurance'));
+const ChamaWelfareManagement = lazy(() => import('../modules/landing/ChamaWelfareManagement'));
+const FuneralHomeSoftware = lazy(() => import('../modules/landing/FuneralHomeSoftware'));
 const OnboardingFlow = lazy(() => import('../modules/onboarding/OnboardingFlow'));
 const InsurancePage = lazy(() => import('../modules/insurance/insurance'));
 const MemorialPage = lazy(() => import('../modules/memorial/MemorialPage'));
+
+// Blog and Resource Pages
+const FuneralWelfareGuide = lazy(() => import('../modules/blog/FuneralWelfareGuide'));
+const BereavementManagementGuide = lazy(() => import('../modules/blog/BereavementManagementGuide'));
+const MemberContributionsGuide = lazy(() => import('../modules/blog/MemberContributionsGuide'));
+
+// Comparison Pages
+const RestPointVsExcel = lazy(() => import('../modules/compare/RestPointVsExcel'));
+const ManualVsDigital = lazy(() => import('../modules/compare/ManualVsDigital'));
+const BestChurchSoftwareKenya = lazy(() => import('../modules/compare/BestChurchSoftwareKenya'));
+const BestSACCOWelfareSoftware = lazy(() => import('../modules/compare/BestSACCOWelfareSoftware'));
+
+// Tools and Resources
+const CalculatorsPage = lazy(() => import('../modules/resources/CalculatorsPage'));
+const TemplatesPage = lazy(() => import('../modules/resources/TemplatesPage'));
+const GlossaryPage = lazy(() => import('../modules/resources/GlossaryPage'));
+const LogsPage = lazy(() => import('../modules/resources/LogsPage'));
+
+// Location Pages
+const LocationPage = lazy(() => import('../modules/locations/LocationPage'));
+const NairobiFuneralWelfare = lazy(() => import('../modules/locations/NairobiFuneralWelfare'));
 
 const PrivacyPolicy = lazy(() => import('../components/pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('../components/pages/TermsOfService'));
@@ -51,7 +76,8 @@ const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemor
 
 
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
-const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopProductionFloor'));
+const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
+
 const HearseBookings = lazy(() => import('../components/hearse/hearseBookings'));
 const DriverPortal = lazy(() => import('../components/hearse/DriverPortal'));
 const LeaveDashboard = lazy(() => import('../components/leave/Dashboard'));
@@ -417,6 +443,10 @@ const AppRouter = () => (
   <Suspense fallback={<RouteLoadingFallback />}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/solutions/churches" element={<ChurchFuneralWelfare />} />
+      <Route path="/solutions/saccos" element={<SACCOFuneralInsurance />} />
+      <Route path="/solutions/chamas" element={<ChamaWelfareManagement />} />
+      <Route path="/solutions/funeral-homes" element={<FuneralHomeSoftware />} />
       <Route path="/register" element={<OnboardingFlow />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -438,6 +468,27 @@ const AppRouter = () => (
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/support" element={<TicketPage />} />
       <Route path="/support/:slug" element={<TicketPage />} />
+
+      // Blog and Resource Routes
+      <Route path="/blog/funeral-welfare-management" element={<FuneralWelfareGuide />} />
+      <Route path="/blog/bereavement-management" element={<BereavementManagementGuide />} />
+      <Route path="/blog/member-contributions" element={<MemberContributionsGuide />} />
+
+      // Comparison Routes
+      <Route path="/compare/restpoint-vs-excel" element={<RestPointVsExcel />} />
+      <Route path="/compare/manual-vs-digital" element={<ManualVsDigital />} />
+      <Route path="/compare/best-church-software-kenya" element={<BestChurchSoftwareKenya />} />
+      <Route path="/compare/best-sacco-welfare-software" element={<BestSACCOWelfareSoftware />} />
+
+      // Tools and Resources Routes
+      <Route path="/calculators" element={<CalculatorsPage />} />
+      <Route path="/templates" element={<TemplatesPage />} />
+      <Route path="/glossary" element={<GlossaryPage />} />
+      <Route path="/resources/logs" element={<LogsPage />} />
+
+      // Location Routes
+      <Route path="/locations/nairobi" element={<NairobiFuneralWelfare />} />
+      <Route path="/locations/:city" element={<LocationPage />} />
       <Route path="/dashboard/*" element={<ProtectedRoute><DashboardRedirect /></ProtectedRoute>} />
       <Route path="/tenant/:slug/*" element={<ProtectedRoute><TenantResolver /></ProtectedRoute>} />
       <Route path="*" element={<LandingPage />} />

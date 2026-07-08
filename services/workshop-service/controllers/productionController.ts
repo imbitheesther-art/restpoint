@@ -131,6 +131,9 @@ const updateAssignment = async (req: Request, res: Response) => {
             [req.params.id]
         );
 
+        const io = getIO();
+        io.emit('worker:assignment:updated', rows[0]);
+
         res.json(rows[0]);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

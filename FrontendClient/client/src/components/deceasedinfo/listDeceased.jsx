@@ -1086,12 +1086,6 @@ const AllDeceasedPage = () => {
             {record.has_kin ? <CheckCircle size={16} /> : <XCircle size={16} />}
           </StatusIcon>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>Autopsy:</span>
-          <StatusIcon type="autopsy" status={record.has_autopsy ? 'success' : 'danger'}>
-            {record.has_autopsy ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          </StatusIcon>
-        </div>
       </MobileStatusRow>
       <ViewDetailsButton onClick={() => handleViewDetailsClick(record)}>
         <Eye size={16} /> View Details
@@ -1109,11 +1103,6 @@ const AllDeceasedPage = () => {
       <td data-label="Next of Kin" className="text-center">
         <StatusIcon type="kin" status={record.has_kin ? 'success' : 'danger'}>
           {record.has_kin ? <CheckCircle size={18} /> : <XCircle size={18} />}
-        </StatusIcon>
-      </td>
-      <td data-label="Autopsy" className="text-center">
-        <StatusIcon type="autopsy" status={record.has_autopsy ? 'success' : 'danger'}>
-          {record.has_autopsy ? <CheckCircle size={18} /> : <XCircle size={18} />}
         </StatusIcon>
       </td>
       <td data-label="Actions" className="text-center">
@@ -1193,14 +1182,6 @@ const AllDeceasedPage = () => {
 
         <FilterContainer showFilters={showFilters}>
           <FilterGroup>
-            <FilterLabel><Microscope size={16} />Autopsy:</FilterLabel>
-            <FilterSelect value={autopsyFilter} onChange={(e) => setAutopsyFilter(e.target.value)}>
-              <option value="all">All</option>
-              <option value="performed">Performed</option>
-              <option value="notPerformed">Not Performed</option>
-            </FilterSelect>
-          </FilterGroup>
-          <FilterGroup>
             <FilterLabel><Calendar size={16} />Year:</FilterLabel>
             <YearFilterInput>
               <div className="year-select-container">
@@ -1263,7 +1244,7 @@ const AllDeceasedPage = () => {
                       <tr>
                         <th>Full Name</th><th>Admission No</th><th>Date of Death</th><th>Created</th>
                         <th className="text-center">Status</th><th className="text-center">Next of Kin</th>
-                        <th className="text-center">Autopsy</th><th className="text-center">Actions</th>
+                        <th className="text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>{currentRecords.map(renderTableRow)}</tbody>

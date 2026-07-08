@@ -119,4 +119,197 @@ export const theme = {
   },
 };
 
+// Styled Components
+export const COLORS = theme.colors;
+
+export const Section = ({ children, style }) => (
+  <div style={{
+    background: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    border: `1px solid ${theme.colors.border}`,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const SectionHeader = ({ children, style }) => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const SectionTitle = ({ children, style }) => (
+  <h3 style={{
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: theme.colors.text,
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    margin: 0,
+    ...style
+  }}>
+    {children}
+  </h3>
+);
+
+export const Table = ({ children, style }) => (
+  <table style={{
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.875rem',
+    ...style
+  }}>
+    {children}
+  </table>
+);
+
+export const Th = ({ children, style }) => (
+  <th style={{
+    padding: theme.spacing.sm,
+    textAlign: 'left',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    borderBottom: `2px solid ${theme.colors.border}`,
+    ...style
+  }}>
+    {children}
+  </th>
+);
+
+export const Td = ({ children, style }) => (
+  <td style={{
+    padding: theme.spacing.sm,
+    borderBottom: `1px solid ${theme.colors.border}`,
+    color: theme.colors.text,
+    ...style
+  }}>
+    {children}
+  </td>
+);
+
+export const Tr = ({ children, style, onClick }) => (
+  <tr style={{
+    cursor: onClick ? 'pointer' : 'default',
+    transition: 'background 0.2s',
+    ...style
+  }}
+    onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = theme.colors.surfaceLight; }}
+    onMouseLeave={(e) => { if (onClick) e.currentTarget.style.background = 'transparent'; }}
+    onClick={onClick}
+  >
+    {children}
+  </tr>
+);
+
+export const Badge = ({ children, $status, style }) => {
+  const statusColors = {
+    pending: theme.colors.status.pending,
+    in_progress: theme.colors.status.inProgress,
+    inProgress: theme.colors.status.inProgress,
+    completed: theme.colors.status.completed,
+    on_hold: theme.colors.status.onHold,
+    onHold: theme.colors.status.onHold,
+    cancelled: theme.colors.status.cancelled,
+    design: theme.colors.stages.design,
+    cutting: theme.colors.stages.cutting,
+    assembly: theme.colors.stages.assembly,
+    polishing: theme.colors.stages.polishing,
+    finishing: theme.colors.stages.finishing,
+    quality_check: theme.colors.stages.quality,
+    quality: theme.colors.stages.quality,
+    delivery: theme.colors.stages.delivery,
+  };
+
+  const color = statusColors[$status] || theme.colors.status.pending;
+
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '0.25rem 0.75rem',
+      borderRadius: '100px',
+      fontSize: '0.75rem',
+      fontWeight: 500,
+      background: `${color}20`,
+      color: color,
+      border: `1px solid ${color}40`,
+      ...style
+    }}>
+      {children}
+    </span>
+  );
+};
+
+export const MiniProgress = ({ $percent, children, style }) => (
+  <div style={{
+    width: '100%',
+    height: '6px',
+    background: theme.colors.border,
+    borderRadius: '3px',
+    overflow: 'hidden',
+    position: 'relative',
+    ...style
+  }}>
+    <div style={{
+      width: `${$percent}%`,
+      height: '100%',
+      background: `linear-gradient(90deg, ${theme.colors.accent}, ${theme.colors.status.completed})`,
+      borderRadius: '3px',
+      transition: 'width 0.3s ease'
+    }} />
+    {children}
+  </div>
+);
+
+export const EmptyState = ({ children, style }) => (
+  <div style={{
+    textAlign: 'center',
+    padding: theme.spacing.xl,
+    color: theme.colors.textSecondary,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const Button = ({ children, onClick, disabled, style, ...props }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      padding: '0.5rem 1rem',
+      background: theme.colors.accent,
+      color: 'white',
+      border: 'none',
+      borderRadius: theme.borderRadius.md,
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.6 : 1,
+      transition: 'all 0.2s',
+      ...style
+    }}
+    onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.opacity = '0.9'; }}
+    onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.opacity = '1'; }}
+    {...props}
+  >
+    {children}
+  </button>
+);
+
 export default theme;

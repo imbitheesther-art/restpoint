@@ -78,6 +78,10 @@ const updateMaterial = async (req: Request, res: Response) => {
         if (!updateResult.affectedRows) return res.status(404).json({ error: 'Material not found' });
 
         const rows: any = await safeTenantQuery(tenantDb, 'SELECT * FROM materials WHERE id = ?', [req.params.id]);
+
+        const io = getIO();
+        io.emit('material:updated', rows[0]);
+
         res.json(rows[0]);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -91,6 +95,9 @@ const deleteMaterial = async (req: Request, res: Response) => {
 
         const deleteResult: any = await safeTenantExecute(tenantDb, 'DELETE FROM materials WHERE id = ?', [req.params.id]);
         if (!deleteResult.affectedRows) return res.status(404).json({ error: 'Material not found' });
+
+        const io = getIO();
+        io.emit('material:deleted', { id: Number(req.params.id) });
 
         res.json({ message: 'Material deleted successfully' });
     } catch (error: any) {

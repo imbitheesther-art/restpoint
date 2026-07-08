@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import { safeTenantQuery, safeTenantExecute } from '../database/db'
+import { getIO } from '../socket'
 import bcrypt from 'bcryptjs'
 
 /* 
@@ -48,6 +49,9 @@ const createWorker = async (req: Request, res: Response) => {
             "SELECT id, first_name, last_name, email, role, phone, created_at FROM users WHERE id = ?",
             [insertResult.insertId]
         );
+
+        const io = getIO();
+        io.emit('worker:created', newWorker[0]);
 
         res.status(201).json(newWorker[0]);
     } catch (error: any) {
@@ -106,6 +110,9 @@ const updateWorker = async (req: Request, res: Response) => {
             [req.params.id]
         );
 
+        const io = getIO();
+        io.emit('worker:updated', updated[0]);
+
         res.json(updated[0]);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -127,6 +134,10 @@ const deleteWorker = async (req: Request, res: Response) => {
         if (!deleteResult.affectedRows) {
             return res.status(404).json({ error: 'Worker not found' });
         }
+
+        const io = getIO();
+        io.emit('worker:deleted', { id: Number(req.params.id) });
+
         res.json({ message: 'Worker deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ error: error.message });

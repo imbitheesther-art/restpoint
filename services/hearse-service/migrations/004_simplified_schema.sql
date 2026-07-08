@@ -54,7 +54,7 @@ CREATE TABLE hearse_bookings (
     event_date DATE,
     event_time TIME,
     service_type ENUM('funeral', 'transfer', 'other') DEFAULT 'funeral',
-    status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'booked') DEFAULT 'pending', -- ✅ Added 'booked' to ENUM
+    status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'booked', 'in_transit', 'postponed', 'maintenance') DEFAULT 'pending', -- ✅ Added all status values
     driver_id INT,
     branch_id INT DEFAULT 1,
     special_requests TEXT,

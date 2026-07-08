@@ -1,3 +1,4 @@
+
 import { Router } from 'express';
 import {
     registerDeceased,
@@ -16,6 +17,7 @@ const router = Router();
 
 // POST - Register a new deceased
 router.post('/register-deceased', registerDeceased);
+router.post('/deceased/register-deceased', registerDeceased);
 router.post('/register', registerDeceased);
 router.post('/', registerDeceased);
 
@@ -23,6 +25,8 @@ router.post('/', registerDeceased);
 router.get('/', getAllDeceased);
 router.get('/all', getAllDeceased);
 router.get('/deceased-all', getAllDeceased);
+router.get('/deceased/deceased-all', getAllDeceased);  // Support nested path
+router.get('/deceased/all', getAllDeceased);           // Support nested path
 
 // GET - By ID - SUPPORT ALL PATTERN TYPES
 router.get('/deceased-id/:id', getDeceasedById);  // /deceased/deceased-id/:id

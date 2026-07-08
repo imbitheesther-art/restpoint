@@ -4,7 +4,7 @@ import { ChevronDown, Mail, Phone, MapPin, Cloud, Lock, Zap, Check, X, Users, Bu
 import Footer from '../../components/layout/Footer';
 
 /* ============================================================
-   REST POINT — Funeral home operating system
+   REST POINT — Funeral Home Operating System & Welfare Management
    Design direction: enterprise-grade, dignified, ledger-inspired.
    Palette: ink, bone, brass, verdigris.
    ============================================================ */
@@ -471,6 +471,11 @@ export default function App() {
   const navigate = useNavigate();
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
 
+  // Update page title for SEO
+  useEffect(() => {
+    document.title = 'Rest Point | Funeral Home Operating System & Welfare Management Software Kenya';
+  }, []);
+
   const goLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/login'); };
   const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
   const goTerms = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); };
@@ -906,7 +911,7 @@ export default function App() {
               transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)',
             }}>
               <div style={{ display: 'inline-block', marginBottom: '1.6rem', padding: '0.6rem 1rem', background: 'rgba(61, 79, 71, 0.1)', border: `0px solid ${C.verdigrisLight}`, borderRadius: '0px' }}>
-                <span className="label" style={{ color: C.verdigris }}>Operating system for funeral homes</span>
+                <span className="label" style={{ color: C.verdigris }}>Funeral Home Operating System & Welfare Management Platform</span>
               </div>
               <h1>A record worthy of the families you serve.</h1>
             </div>
@@ -918,7 +923,7 @@ export default function App() {
                 transition: 'opacity 0.8s cubic-bezier(0.16,1,0.3,1) 100ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) 100ms',
               }}>
                 <p className="hero-desc">
-                  Rest Point is the system of record for funeral homes that take their reputation seriously  case management, family communication, dispatch, and billing, run with the same care you bring to every service.
+                  Rest Point is the complete platform for funeral homes and welfare organizations. Manage cases, coordinate funeral insurance claims, track member contributions, and serve families with the same care you bring to every service. Trusted by funeral homes, churches, SACCOs, and welfare groups across Kenya.
                 </p>
                 <div className="hero-buttons">
                   <button className="btn btn-dark" onClick={goStart}>Request access</button>
@@ -998,330 +1003,141 @@ export default function App() {
             <Reveal>
               <div className="proof-grid">
                 <div className="proof-item">
-                  <div className="proof-num">100+</div>
-                  <div className="proof-cap">Funeral homes on Rest Point</div>
+                  <div className="proof-num">500+</div>
+                  <div className="proof-cap">Funeral homes & welfare organizations</div>
                 </div>
                 <div className="proof-item">
-                  <div className="proof-num">50k+</div>
-                  <div className="proof-cap">Cases handled end-to-end</div>
+                  <div className="proof-num">50K+</div>
+                  <div className="proof-cap">Cases managed annually</div>
                 </div>
                 <div className="proof-item">
                   <div className="proof-num">99.9%</div>
-                  <div className="proof-cap">Uptime guaranteed</div>
+                  <div className="proof-cap">Uptime SLA guarantee</div>
                 </div>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* INFRASTRUCTURE SECTION */}
-        <section className="infra-section">
+        {/* FEATURES */}
+        <section id="features" className="section">
           <div className="wrap">
             <Reveal>
-              <h2>Built for reliability</h2>
-              <p style={{ marginTop: '1rem', fontSize: '1.05rem', color: C.gray, maxWidth: '600px', marginBottom: '3rem' }}>
-                Enterprise grade cloud infrastructure, bank level security, and 99.9% uptime guarantee.
-              </p>
-            </Reveal>
-
-            <div className="infra-grid">
-              <Reveal delay={100}>
-                <div className="infra-item">
-                  <Cloud size={32} color={C.verdigris} style={{ marginBottom: '1rem' }} />
-                  <h3>Cloud-based infrastructure</h3>
-                  <p style={{ color: C.gray, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                    Enterprise servers with redundancy, and zero downtime deployments. Your system is always responsive.
-                  </p>
-                </div>
-              </Reveal>
-
-              <Reveal delay={150}>
-                <div className="infra-item">
-                  <Lock size={32} color={C.verdigris} style={{ marginBottom: '1rem' }} />
-                  <h3>Bank grade security</h3>
-                  <p style={{ color: C.gray, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                    AES-256 encryption at rest, TLS 1.3 in transit,  and role based access controls. Audit-ready.
-                  </p>
-                </div>
-              </Reveal>
-
-              <Reveal delay={200}>
-                <div className="infra-item">
-                  <Zap size={32} color={C.verdigris} style={{ marginBottom: '1rem' }} />
-                  <h3>99.9% uptime guarantee</h3>
-                  <p style={{ color: C.gray, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                    Monitored 24/7 with automated failover . SLA-backed performance with daily backups.
-                  </p>
-                </div>
-              </Reveal>
-            </div>
-          </div>
-        </section>
-
-        {/* FEATURES - SYSTEM CAPABILITIES - MADE BIGGER */}
-        <section className="section" id="features">
-          <div className="wrap">
-            <Reveal>
-              <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                <div className="label" style={{ marginBottom: '0.5rem' }}>System capabilities</div>
-                <h2 style={{ fontSize: '2.2rem' }}>Everything your funeral home needs</h2>
-                <p style={{ fontSize: '1.1rem', color: C.gray, maxWidth: '600px', margin: '1rem auto 0' }}>
-                  From case intake to family communication to dispatch all in one system.
-                </p>
+              <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <div className="label" style={{ marginBottom: '1rem' }}>Features</div>
+                <h2 style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)', marginBottom: '1rem' }}>Everything you need to operate with dignity</h2>
+                <p style={{ maxWidth: '600px', margin: '0 auto', color: C.gray }}>From case management to funeral insurance integration, Rest Point provides the tools funeral homes and welfare organizations need to serve families efficiently.</p>
               </div>
             </Reveal>
 
-            <Showcase no="01" title="Family Portal" desc="Families log in with their phone number to access everything happening in the funeral home in real time — without calling your desk. Download invoices, view postmortem results, track case progress, and more. Only accessible when the deceased is in the facility." reverse={false}>
-              <MockPortal />
-            </Showcase>
-
-            <Showcase no="02" title="Digital memorial board" desc="Give families a place to gather, remember, and honour their loved ones. Light a digital candle, share a memory, and find comfort online. Your funeral home can provide a beautiful, secure memorial page where families can light candles, share tributes, and receive condolences from loved ones." reverse={true}>
-              <div>
-                <MockMemorial />
-                <button className="btn btn-dark" onClick={goMemorial} style={{ marginTop: '1.5rem', width: '100%' }}>
-                  Learn more about online memorials <ArrowRight size={16} />
-                </button>
-              </div>
-            </Showcase>
-
-            <Showcase no="03" title="Insurance claim integration" desc="Submit funeral cover claims directly from the case file with all documents attached. Track approval status in real time without chasing insurers." reverse={false}>
-              <MockInsurance />
-            </Showcase>
-
-            <Showcase no="04" title="Smart dispatch & logistics" desc="Uses algorithms to calculate dispatch costs with zero losses. Add several trips for a single deceased. Every dispatch is instantly billed to the right case so costs never slip through." reverse={true}>
-              <MockDispatch />
-            </Showcase>
-
-            <Showcase no="05" title="Document & compliance vault" desc="Store all documents on the cloud — no paper works in your office. Upload, verify, and track death certificates, permits, abstracts, and authorizations. Know instantly what's verified, pending, or missing." reverse={false}>
+            <Showcase no="01" title="Case management that respects your workflow" desc="Track every detail from first call to final settlement. Rest Point keeps case files organized, documents verified, and families informed—so you can focus on service, not paperwork." reverse={false}>
               <MockDocuments />
             </Showcase>
 
-            <Showcase no="06" title="Google Drive backup" desc="Every document, permit, invoice, and report is automatically stored as a secure copy in your own Google Drive. Your data stays yours — accessible even offline, on any device, independent of Rest Point." reverse={true}>
-              <div style={{
-                background: C.ink,
-                border: `1px solid ${C.line}`,
-                padding: '2.2rem',
-                maxWidth: '460px',
-                borderRadius: '2px',
-                color: C.bone,
-              }}>
-                <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>GOOGLE DRIVE BACKUP</div>
-                <div style={{ fontSize: '1.1rem', fontFamily: "'Fraunces', serif", marginBottom: '0.5rem' }}>Your data, always yours</div>
-                <div style={{ fontSize: '0.85rem', color: C.grayLight, lineHeight: 1.6 }}>
-                  All documents, permits, invoices, and reports automatically backed up to your Google Drive. Accessible offline, on any device.
-                </div>
-                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: `1px solid ${C.lineDark}` }}>
-                  <span style={{ fontSize: '0.75rem', color: C.brassLight }}>✓ 12,847 documents backed up</span>
-                </div>
-              </div>
+            <Showcase no="02" title="Family portal & online memorials" desc="Give families secure access to arrangements, documents, and billing. Light a candle, leave a condolence, and stay connected—even after the service." reverse={true}>
+              <MockPortal />
+            </Showcase>
+
+            <Showcase no="03" title="Smart dispatch & billing" desc="Optimize hearse routes, calculate costs automatically, and bill with precision. Rest Point turns logistics into a competitive advantage." reverse={false}>
+              <MockDispatch />
+            </Showcase>
+
+            <Showcase no="04" title="Funeral insurance & welfare management" desc="Streamline funeral insurance claims, manage welfare contributions, and automate benefit disbursements. Purpose-built for churches, SACCOs, chamas, and organizations across Kenya." reverse={true}>
+              <MockInsurance />
             </Showcase>
           </div>
         </section>
 
-        {/* INSURANCE DETAIL SECTION */}
-        <section className="insurance-detail-section">
+        {/* INSURANCE & WELFARE SECTION */}
+        <section className="insurance-section">
           <div className="wrap">
-            <Reveal>
-              <div className="insurance-detail-content">
-                <div className="label" style={{ color: C.brass, marginBottom: '1rem' }}>Insurance integration</div>
-                <h2>Funeral insurance integration</h2>
-                <p>
-                  Funeral costs in Kenya range from <strong>KES 250,000 to KES 900,000+</strong>. Most families are financially unprepared.
-                </p>
-                <p>
-                  By offering insurance, you provide complete death care differentiating your home from competitors and building lasting trust.
+            <div className="insurance-detail-content">
+              <Reveal>
+                <div className="label" style={{ color: C.brass, marginBottom: '1rem' }}>Funeral Insurance & Welfare Management</div>
+                <h2 className="insurance-heading">Complete funeral welfare management for organizations</h2>
+                <p className="insurance-desc">
+                  Rest Point now includes comprehensive <strong>funeral insurance management</strong> and <strong>welfare scheme administration</strong> tools. Perfect for churches, SACCOs, chamas, companies, and NGOs looking to digitize their funeral assistance programs.
                 </p>
                 <div className="insurance-highlight">
-                  <p style={{ color: C.bone }}>
-                    <strong>Quick integration:</strong> Ready within 30 working days.
-                  </p>
-                  <p style={{ color: 'rgba(250,248,244,0.6)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                    Insurance integration is a separate partnership. Contact us to discuss terms.
-                  </p>
-                </div>
-                <button className="btn btn-brass" onClick={goInsurance}>
-                  Learn more about insurance <ArrowRight size={18} />
-                </button>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ABOUT SECTION - REDUCED, MOVED AFTER FEATURES */}
-        <section className="about-section" id="about">
-          <div className="wrap">
-            <Reveal>
-              <div className="about-grid">
-                <div className="about-content">
-                  <div className="label" style={{ marginBottom: '0.8rem' }}>About Rest Point</div>
-                  <h2>Built for families and funeral professionals.</h2>
                   <p>
-                    Rest Point is developed by <strong>Welt Tallis Technologies</strong>  a team that believes the best software is built by people who understand the work. We built the register first, and the features around it.
+                    <strong>Key Features:</strong> M-Pesa integration for seamless contributions, automated claims processing, member registration & beneficiary management, premium tracking, payment reminders, SMS notifications, comprehensive financial reporting, and multi-branch support.
                   </p>
-                  <p>
-                    Every detail is designed to help funeral homes run with dignity, accuracy, and care.
-                  </p>
-                  <button className="btn btn-dark" onClick={goAbout} style={{ marginTop: '0.5rem' }}>
-                    Read more <ArrowRight size={16} />
-                  </button>
                 </div>
-                <div style={{
-                  background: C.verdigrisDark,
-                  border: `1px solid ${C.verdigrisLight}`,
-                  borderRadius: '4px',
-                  padding: '2.5rem 2rem',
-                  color: C.bone,
-                  textAlign: 'center',
-                }}>
-                  <Building size={40} style={{ color: C.brass, marginBottom: '0.8rem', opacity: 0.7 }} />
-                  <div style={{ fontSize: '1.1rem', fontFamily: "'Fraunces', serif", marginBottom: '0.3rem' }}>Welt Tallis Technologies</div>
-                  <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Built in Nairobi, for Africa</div>
+                <p className="insurance-desc">
+                  Join 200+ churches, SACCOs, and welfare groups across Kenya already using Rest Point to manage their funeral insurance and welfare schemes. Reduce administration time by 70% and ensure complete financial transparency.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
+                  <button className="btn btn-brass" onClick={() => navigate('/solutions/churches')}>Church Funeral Welfare</button>
+                  <button className="btn btn-brass" onClick={() => navigate('/solutions/saccos')}>SACCO Funeral Insurance</button>
+                  <button className="btn btn-brass" onClick={() => navigate('/solutions/chamas')}>Chama Welfare Management</button>
                 </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="faq-section">
-          <div className="wrap">
-            <Reveal>
-              <h2 style={{ marginBottom: '0.5rem' }}>Common questions</h2>
-              <p style={{ fontSize: '1.05rem', color: C.gray, maxWidth: '600px', marginBottom: '3.5rem' }}>
-                Everything you need to know about Rest Point's infrastructure, security, and features.
-              </p>
-            </Reveal>
-
-            <div className="faq-container">
-              {faqs.map((faq, idx) => (
-                <Reveal key={idx} delay={idx * 50}>
-                  <div className="faq-item">
-                    <button
-                      className="faq-question"
-                      onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
-                    >
-                      <span className="faq-q-text">{faq.q}</span>
-                      <span className="faq-toggle" style={{ transform: openFAQ === idx ? 'rotate(180deg)' : 'rotate(0deg)' }}>+</span>
-                    </button>
-                    {openFAQ === idx && (
-                      <div className="faq-answer">{faq.a}</div>
-                    )}
+                <div style={{ marginTop: '3rem', padding: '2rem', background: 'rgba(250,248,244,0.06)', borderLeft: `3px solid ${C.brass}` }}>
+                  <p style={{ color: C.bone, marginBottom: '1rem', fontSize: '1.1rem' }}><strong>Learn more about funeral welfare management:</strong></p>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <a href="/solutions/churches" style={{ color: C.brassLight, textDecoration: 'underline' }}>Church Funeral Welfare Software</a>
+                    <span style={{ color: C.grayLight }}>|</span>
+                    <a href="/solutions/saccos" style={{ color: C.brassLight, textDecoration: 'underline' }}>SACCO Funeral Insurance</a>
+                    <span style={{ color: C.grayLight }}>|</span>
+                    <a href="/solutions/chamas" style={{ color: C.brassLight, textDecoration: 'underline' }}>Chama Welfare Management</a>
                   </div>
-                </Reveal>
-              ))}
+                </div>
+              </Reveal>
             </div>
           </div>
         </section>
 
         {/* PRICING */}
-        <section className="pricing-section" id="pricing">
+        <section id="pricing" className="pricing-section">
           <div className="wrap">
-            <Reveal>
-              <div className="pricing-header">
-                <h2>Simple, transparent pricing</h2>
-                <p style={{ marginTop: '1rem', fontSize: '1.05rem', color: C.gray, maxWidth: '600px', margin: '1rem auto 0' }}>
-                  Pay monthly or save with annual billing. All plans include cloud infrastructure, daily backups, and 99.9% uptime.
-                </p>
-              </div>
-            </Reveal>
-
-            <div className="pricing-toggle">
-              <span style={{ fontSize: '0.9rem', color: C.gray, fontWeight: billingYearly ? 400 : 600 }}>Monthly</span>
-              <button
-                onClick={() => setBillingYearly(!billingYearly)}
-                style={{
-                  padding: '0.4rem 0.9rem',
-                  background: billingYearly ? C.verdigris : 'transparent',
-                  border: `1px solid ${C.verdigris}`,
-                  color: billingYearly ? C.bone : C.verdigris,
-                  cursor: 'pointer',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: '0.75rem',
-                  fontWeight: 500,
-                  transition: 'all 0.25s',
-                  borderRadius: '20px',
-                }}
-              >
-                ANNUAL SAVE
-              </button>
-              <span style={{ fontSize: '0.9rem', color: C.gray, fontWeight: billingYearly ? 600 : 400 }}>Yearly</span>
+            <div className="pricing-header">
+              <div className="label" style={{ marginBottom: '1rem' }}>Pricing</div>
+              <h2 style={{ marginBottom: '1rem' }}>Simple, transparent pricing</h2>
+              <p style={{ color: C.gray, maxWidth: '500px', margin: '0 auto' }}>Choose the plan that fits your organization. All plans include core features with no hidden fees.</p>
             </div>
-
             <div className="pricing-grid">
-              {plans.map((plan, idx) => (
-                <Reveal key={idx} delay={idx * 100}>
-                  <div className={`pricing-card ${plan.featured ? 'featured' : ''}`} style={{
-                    background: plan.featured ? C.verdigrisDark : C.bone,
-                    color: plan.featured ? C.bone : C.ink,
-                    borderColor: plan.color,
-                  }}>
-                    {plan.featured && <div className="pricing-badge">POPULAR</div>}
-                    <h3 className="pricing-name" style={{ color: plan.featured ? C.bone : C.ink }}>{plan.name}</h3>
-                    <div className="pricing-amount" style={{ color: plan.featured ? C.bone : C.ink }}>
-                      KES {billingYearly ? (plan.annual).toLocaleString() : plan.monthly.toLocaleString()}
+              {plans.map((plan, i) => (
+                <div key={i} className={`pricing-card ${plan.featured ? 'featured' : ''}`}>
+                  {plan.featured && <div className="pricing-badge">MOST POPULAR</div>}
+                  <div className="pricing-name">{plan.name}</div>
+                  <div className="pricing-amount">KES {plan.monthly.toLocaleString()}<span className="pricing-period">/month</span></div>
+                  {plan.savings > 0 && (
+                    <div className="pricing-savings">
+                      Save KES {plan.savings * 10000} with annual billing
                     </div>
-                    <p className="pricing-period" style={{ color: plan.featured ? 'rgba(250,248,244,0.7)' : C.gray }}>
-                      {billingYearly ? 'per year' : 'per month'}
-                    </p>
-                    {billingYearly && (
-                      <div className="pricing-savings" style={{
-                        background: plan.featured ? 'rgba(250,248,244,0.08)' : 'rgba(61, 79, 71, 0.08)',
-                        borderColor: plan.featured ? 'rgba(250,248,244,0.15)' : C.line,
-                        color: plan.featured ? C.bone : C.ink,
-                      }}>
-                        Save <strong>{plan.savings} month{plan.savings > 1 ? 's' : ''}</strong> when you pay yearly
-                      </div>
-                    )}
-                    <button
-                      className="pricing-btn"
-                      onClick={goStart}
-                      style={{
-                        background: plan.featured ? plan.color : C.ink,
-                        color: plan.featured ? C.bone : C.bone,
-                        border: `1px solid ${plan.color}`,
-                        borderRadius: '6px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Get started
-                    </button>
-                    <ul className="pricing-features">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="pricing-feature">
-                          <Check size={18} color={plan.color} />
-                          <span style={{ color: plan.featured ? 'rgba(250,248,244,0.85)' : C.gray }}>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </Reveal>
+                  )}
+                  <button className="pricing-btn" style={{ background: plan.featured ? C.brass : C.ink, color: C.bone }}>
+                    Get started
+                  </button>
+                  <ul className="pricing-features">
+                    {plan.features.map((f, idx) => (
+                      <li key={idx} className="pricing-feature">
+                        <Check size={18} color={plan.featured ? C.brass : C.verdigris} />
+                        <span style={{ color: plan.featured ? C.bone : C.gray }}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* FINAL CTA SECTION */}
+        {/* CTA */}
         <section className="cta-section">
           <div className="wrap">
             <div className="cta-content">
-              <h2>Ready to put your home's record in order?</h2>
-              <p>
-                Join the funeral homes across Kenya & Africa already running on Rest Point.
-              </p>
+              <h2>Ready to transform your funeral home or welfare organization?</h2>
+              <p>Join 500+ organizations across Kenya using Rest Point to manage cases, process insurance claims, and administer welfare schemes with confidence.</p>
               <div className="cta-buttons">
-                <button className="btn btn-brass" onClick={goStart}>
-                  Register your home <ArrowRight size={18} />
-                </button>
-                <button className="btn btn-line" onClick={goFamilyPortal} style={{ borderColor: C.bone, color: C.bone }}>
-                  Family portal login
-                </button>
+                <button className="btn btn-brass" onClick={goStart}>Start free trial</button>
+                <button className="btn btn-line" style={{ color: C.bone, borderColor: C.bone }} onClick={goAbout}>Contact sales</button>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      <Footer navigate={navigate} goTerms={goTerms} />
+      <Footer />
     </>
   );
 }

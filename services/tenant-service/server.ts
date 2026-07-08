@@ -12,6 +12,7 @@ import { errorHandler, notFoundHandler, asyncHandler } from '../../global/middle
 
 dotenv.config();
 
+
 // ============================================
 // EXPRESS APP SETUP
 // ============================================

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
-    role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'user',
+    role ENUM('admin', 'manager', 'staff', 'user', 'driver', 'workshop_manager', 'HR',  'accounts', 'mortician', 'supervisor', 'technician') DEFAULT 'user',
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
     last_login_at TIMESTAMP NULL,

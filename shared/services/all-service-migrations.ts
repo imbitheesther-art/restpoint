@@ -199,6 +199,18 @@ const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
     sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS image VARCHAR(500) NULL AFTER id, ADD COLUMN IF NOT EXISTS description TEXT NULL AFTER status, ADD COLUMN IF NOT EXISTS features JSON NULL AFTER description, ADD COLUMN IF NOT EXISTS make VARCHAR(100) NULL AFTER model, ADD COLUMN IF NOT EXISTS year INT NULL AFTER make, ADD COLUMN IF NOT EXISTS chassis_number VARCHAR(50) NULL AFTER year, ADD COLUMN IF NOT EXISTS engine_number VARCHAR(50) NULL AFTER chassis_number, ADD COLUMN IF NOT EXISTS insurance_expiry DATE NULL AFTER engine_number, ADD COLUMN IF NOT EXISTS service_due_date DATE NULL AFTER insurance_expiry, ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE NULL AFTER service_due_date, ADD COLUMN IF NOT EXISTS branch_code VARCHAR(50) NULL AFTER branch_id`,
   },
   {
+    name: '150c_hearses_ensure_hearse_code_column',
+    sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS hearse_code VARCHAR(20) NULL AFTER id, ADD INDEX IF NOT EXISTS idx_hearse_code (hearse_code)`,
+  },
+  {
+    name: '150d_ensure_branch_code_in_branches',
+    sql: `ALTER TABLE branches ADD COLUMN IF NOT EXISTS branch_code VARCHAR(50) NULL AFTER branch_slug, ADD INDEX IF NOT EXISTS idx_branch_code (branch_code)`,
+  },
+  {
+    name: '150e_hearses_ensure_status_column',
+    sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'available' AFTER branch_id, ADD INDEX IF NOT EXISTS idx_status (status)`,
+  },
+  {
     name: '151_create_hearse_bookings_table',
     sql: `CREATE TABLE IF NOT EXISTS hearse_bookings (id INT AUTO_INCREMENT PRIMARY KEY, booking_code VARCHAR(50) UNIQUE, booking_reference VARCHAR(100) UNIQUE, hearse_id INT, deceased_id VARCHAR(50), tenant_db_name VARCHAR(255), client_name VARCHAR(255) NOT NULL, client_phone VARCHAR(20) NOT NULL, client_email VARCHAR(255), pickup_location VARCHAR(255), dropoff_location VARCHAR(255), destination VARCHAR(255), booking_date DATETIME, from_timestamp DATETIME, to_timestamp DATETIME, from_location VARCHAR(255), to_location VARCHAR(255), event_date DATE, event_time TIME, service_type ENUM('funeral', 'transfer', 'other') DEFAULT 'funeral', status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'booked') DEFAULT 'pending', driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), special_requests TEXT, total_charge DECIMAL(10,2), paid_amount DECIMAL(10,2), payment_status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid', created_by INT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_hearse_id (hearse_id), INDEX idx_driver_id (driver_id), INDEX idx_status (status), INDEX idx_booking_date (booking_date), INDEX idx_client_phone (client_phone), INDEX idx_branch_code (branch_code)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },

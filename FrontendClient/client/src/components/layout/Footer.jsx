@@ -19,7 +19,8 @@ const C = {
     accent: '#C77B5E',
 };
 
-const PolicyDropdown = ({ navigate, goTerms }) => {
+const PolicyDropdown = ({ goTerms }) => {
+    const navigate = useNavigate();
     const [open, setOpen] = useState(false);
 
     const policies = [
@@ -114,7 +115,8 @@ const PolicyDropdown = ({ navigate, goTerms }) => {
     );
 };
 
-const Footer = ({ navigate, goTerms }) => {
+const Footer = ({ goTerms }) => {
+    const navigate = useNavigate();
     const currentYear = new Date().getFullYear();
 
     return (
@@ -195,49 +197,30 @@ const Footer = ({ navigate, goTerms }) => {
                             fontWeight: 600,
                             opacity: 0.7,
                         }}>
-                            Platform
+                            Software Solutions
                         </h4>
-                        <a href="#features" style={{
-                            display: 'block',
-                            fontSize: '0.85rem',
-                            color: C.grayLight,
-                            textDecoration: 'none',
-                            marginBottom: '0.6rem',
-                            transition: 'color 0.2s, transform 0.2s',
-                        }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Capabilities
-                        </a>
-                        <a href="#pricing" style={{
-                            display: 'block',
-                            fontSize: '0.85rem',
-                            color: C.grayLight,
-                            textDecoration: 'none',
-                            marginBottom: '0.6rem',
-                            transition: 'color 0.2s, transform 0.2s',
-                        }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Pricing
-                        </a>
-                        <a href="#faq" style={{
-                            display: 'block',
-                            fontSize: '0.85rem',
-                            color: C.grayLight,
-                            textDecoration: 'none',
-                            marginBottom: '0.6rem',
-                            transition: 'color 0.2s, transform 0.2s',
-                        }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            FAQ
-                        </a>
                         <button
-                            onClick={() => navigate('/family-portal')}
+                            onClick={() => navigate('/')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.bone,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                                fontWeight: 600,
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.bone; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            RestPoint Complete Software
+                        </button>
+                        <button
+                            onClick={() => navigate('/solutions/churches')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -253,7 +236,64 @@ const Footer = ({ navigate, goTerms }) => {
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            Family portal
+                            Church Welfare Software
+                        </button>
+                        <button
+                            onClick={() => navigate('/solutions/saccos')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            SACCO Funeral Software
+                        </button>
+                        <button
+                            onClick={() => navigate('/solutions/chamas')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Chama Digital Management
+                        </button>
+                        <button
+                            onClick={() => navigate('/solutions/funeral-homes')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Funeral Home Software
                         </button>
                     </div>
 
@@ -268,10 +308,10 @@ const Footer = ({ navigate, goTerms }) => {
                             fontWeight: 600,
                             opacity: 0.7,
                         }}>
-                            Company
+                            Resources
                         </h4>
                         <button
-                            onClick={goTerms}
+                            onClick={() => navigate('/blog/funeral-welfare-management')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -287,10 +327,10 @@ const Footer = ({ navigate, goTerms }) => {
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            About
+                            Funeral Welfare Guide
                         </button>
                         <button
-                            onClick={() => navigate('/contact')}
+                            onClick={() => navigate('/blog/bereavement-management')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -306,10 +346,10 @@ const Footer = ({ navigate, goTerms }) => {
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            Contact
+                            Bereavement Management
                         </button>
                         <button
-                            onClick={() => navigate('/register')}
+                            onClick={() => navigate('/blog/member-contributions')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -325,7 +365,45 @@ const Footer = ({ navigate, goTerms }) => {
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            Request access
+                            Member Contributions
+                        </button>
+                        <button
+                            onClick={() => navigate('/templates')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Free Templates
+                        </button>
+                        <button
+                            onClick={() => navigate('/calculators')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Calculators
                         </button>
                     </div>
 
@@ -340,11 +418,10 @@ const Footer = ({ navigate, goTerms }) => {
                             fontWeight: 600,
                             opacity: 0.7,
                         }}>
-                            Legal
+                            Compare
                         </h4>
-                        <PolicyDropdown navigate={navigate} goTerms={goTerms} />
                         <button
-                            onClick={() => navigate('/privacy')}
+                            onClick={() => navigate('/compare/restpoint-vs-excel')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -356,15 +433,14 @@ const Footer = ({ navigate, goTerms }) => {
                                 textAlign: 'left',
                                 padding: 0,
                                 marginBottom: '0.6rem',
-                                marginTop: '0.6rem',
                             }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            Privacy Policy
+                            RestPoint vs Excel
                         </button>
                         <button
-                            onClick={() => navigate('/terms')}
+                            onClick={() => navigate('/compare/manual-vs-digital')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -380,10 +456,10 @@ const Footer = ({ navigate, goTerms }) => {
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            Terms of Service
+                            Manual vs Digital
                         </button>
                         <button
-                            onClick={() => navigate('/account-deletion')}
+                            onClick={() => navigate('/compare/best-church-software-kenya')}
                             style={{
                                 display: 'block',
                                 fontSize: '0.85rem',
@@ -399,7 +475,98 @@ const Footer = ({ navigate, goTerms }) => {
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
                             onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
                         >
-                            Account Deletion
+                            Best Church Software Kenya
+                        </button>
+                        <button
+                            onClick={() => navigate('/compare/best-sacco-welfare-software')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Best SACCO Welfare Software
+                        </button>
+                    </div>
+
+                    <div className="footer-col">
+                        <h4 style={{
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: '0.7rem',
+                            letterSpacing: '0.12em',
+                            textTransform: 'uppercase',
+                            color: C.verdigrisTint,
+                            marginBottom: '1.2rem',
+                            fontWeight: 600,
+                            opacity: 0.7,
+                        }}>
+                            Resources
+                        </h4>
+                        <button
+                            onClick={() => navigate('/resources/logs')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Logs
+                        </button>
+                        <button
+                            onClick={() => navigate('/glossary')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Glossary
+                        </button>
+                        <button
+                            onClick={() => navigate('/locations/nairobi')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            Nairobi
                         </button>
                     </div>
                 </div>
@@ -433,6 +600,9 @@ const Footer = ({ navigate, goTerms }) => {
           0% { opacity: 1; }
           50% { opacity: 0.4; }
           100% { opacity: 1; }
+        }
+        @media (max-width: 1200px) {
+          .footer-content { grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 2rem !important; }
         }
         @media (max-width: 1000px) {
           .footer-content { grid-template-columns: 2fr 1fr 1fr !important; gap: 2.5rem !important; }
