@@ -33,10 +33,6 @@ COPY shared/ ./shared/
 COPY global/ ./global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
-RUN cd packages/shared-config && npm run build || true
-RUN cd packages/shared-logger && npm run build || true
-RUN cd packages/shared-utils && npm run build || true
-RUN cd packages/shared-services && npm run build || true
 
 # Copy service source code
 COPY services/workshop-service/ ./services/workshop-service/
@@ -58,3 +54,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/workshop-service/dist/server.js"]
+

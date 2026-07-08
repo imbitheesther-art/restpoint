@@ -33,10 +33,6 @@ COPY global/ ./global/
 COPY services/support-service/ ./services/support-service/
 
 # Build shared packages (critical for TypeScript imports)
-RUN cd packages/shared-config && npm run build || true
-RUN cd packages/shared-logger && npm run build || true
-RUN cd packages/shared-utils && npm run build || true
-RUN cd packages/shared-services && npm run build || true
 
 # Install tsx for running TypeScript directly
 RUN yarn global add tsx

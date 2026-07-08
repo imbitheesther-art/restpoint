@@ -32,10 +32,6 @@ COPY shared/ ./shared/
 COPY global/ ./global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
-RUN cd packages/shared-config && npm run build || true
-RUN cd packages/shared-logger && npm run build || true
-RUN cd packages/shared-utils && npm run build || true
-RUN cd packages/shared-services && npm run build || true
 
 # Copy service source code
 COPY services/analytics-service/ ./services/analytics-service/

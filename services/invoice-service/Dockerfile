@@ -22,10 +22,6 @@ COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
 
-RUN cd packages/shared-config && npm run build || true
-RUN cd packages/shared-logger && npm run build || true
-RUN cd packages/shared-utils && npm run build || true
-RUN cd packages/shared-services && npm run build || true
 
 COPY services/invoice-service/ ./services/invoice-service/
 
@@ -42,3 +38,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["npx", "tsx", "services/invoice-service/server.ts"]
+
