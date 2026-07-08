@@ -25,10 +25,10 @@ RUN cd services/deceased-service && \
   npm install --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
   mv package.json.bak package.json && \
   mkdir -p node_modules/@montezuma && \
-  cp -r packages/shared-config node_modules/@montezuma/shared-config && \
-  cp -r packages/shared-logger node_modules/@montezuma/shared-logger && \
-  cp -r packages/shared-services node_modules/@montezuma/shared-services && \
-  cp -r packages/shared-utils node_modules/@montezuma/shared-utils
+  cp -r ../packages/shared-config node_modules/@montezuma/shared-config && \
+  cp -r ../packages/shared-logger node_modules/@montezuma/shared-logger && \
+  cp -r ../packages/shared-services node_modules/@montezuma/shared-services && \
+  cp -r ../packages/shared-utils node_modules/@montezuma/shared-utils
 
 # Copy application code
 COPY services/deceased-service/ ./services/deceased-service/
