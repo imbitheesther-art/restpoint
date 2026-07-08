@@ -1,44 +1,60 @@
-# Production Dockerfile for Tenant Service
-FROM node:20-alpine
+# RestPoint Tenant Service — Clean Dockerfile (SIASA-HUB pattern)
+FROM node:22-alpine
 
-RUN apk add --no-cache dumb-init
+# Install build dependencies for TypeScript/tsx
+RUN apk add --no-cache dumb-init python3 make g++
 
-WORKDIR /app
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+  adduser -S nodejs -u 1001
 
-# Copy root workspace files
-COPY package.json ./
-COPY packages/ packages/
+WORKDIR /usr/src/app
 
-# Copy this service's package.json
+# Copy root workspace config
+COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+
+# Copy service package.json
 COPY services/tenant-service/package.json ./services/tenant-service/
 
-# Build shared packages
-RUN cd packages/shared-config && npm run build 2>/dev/null || true && \
-  cd ../shared-logger && npm run build 2>/dev/null || true && \
-  cd ../shared-services && npm run build 2>/dev/null || true && \
-  cd ../shared-utils && npm run build 2>/dev/null || true
+# Install ALL dependencies (including dev for building)
+RUN yarn install --frozen-lockfile && yarn cache clean
 
-# Install dependencies - remove @montezuma packages temporarily to avoid npm registry lookup
-RUN cp services/tenant-service/package.json services/tenant-service/package.json.bak && \
-  node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('services/tenant-service/package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('services/tenant-service/package.json', JSON.stringify(pkg, null, 2));" && \
-  cd services/tenant-service && npm install --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
-  mv services/tenant-service/package.json.bak services/tenant-service/package.json && \
-  mkdir -p services/tenant-service/node_modules/@montezuma && \
-  cp -r packages/shared-config services/tenant-service/node_modules/@montezuma/shared-config && \
-  cp -r packages/shared-logger services/tenant-service/node_modules/@montezuma/shared-logger && \
-  cp -r packages/shared-services services/tenant-service/node_modules/@montezuma/shared-services && \
-  cp -r packages/shared-utils services/tenant-service/node_modules/@montezuma/shared-utils
-
-# Copy service code
-COPY services/tenant-service/ ./services/tenant-service/
+# Copy source code
 COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+COPY services/tenant-service/ ./services/tenant-service/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && npm run build || true
+RUN cd packages/shared-logger && npm run build || true
+RUN cd packages/shared-utils && npm run build || true
+RUN cd packages/shared-services && npm run build || true
+
+# Install tsx for running TypeScript directly
+RUN yarn global add tsx
+
+# Create uploads directory
+RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
+
+# Switch to non-root user
+USER nodejs
 
 EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node services/tenant-service/server.js & sleep 2 && kill %1 && exit 0 || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
+# Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/tenant-service/server.js"]
+CMD ["tsx", "services/tenant-service/server.ts"]

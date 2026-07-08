@@ -1,26 +1,60 @@
-# Production Dockerfile for Support Service - Minimal
-FROM node:20-alpine
+# RestPoint Tenant Service — Clean Dockerfile (SIASA-HUB pattern)
+FROM node:22-alpine
 
-RUN apk add --no-cache dumb-init
+# Install build dependencies for TypeScript/tsx
+RUN apk add --no-cache dumb-init python3 make g++
 
-WORKDIR /app
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Copy package files
-COPY services/support-service/package.json ./
+WORKDIR /usr/src/app
 
-# Install dependencies (skip scripts to avoid TypeScript build errors)
-RUN npm install --no-audit --no-fund --omit=optional --ignore-scripts || npm install --no-audit --no-fund --ignore-scripts
+# Copy root workspace config
+COPY package.json tsconfig.base.json ./
 
-# Copy application code
-COPY services/support-service/ ./
+# Copy shared package.json files
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+
+# Copy service package.json
+COPY services/support-service/package.json ./services/support-service/
+
+# Install ALL dependencies (including dev for building)
+RUN yarn install --frozen-lockfile && yarn cache clean
+
+# Copy source code
 COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+COPY services/support-service/ ./services/support-service/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && npm run build || true
+RUN cd packages/shared-logger && npm run build || true
+RUN cd packages/shared-utils && npm run build || true
+RUN cd packages/shared-services && npm run build || true
+
+# Install tsx for running TypeScript directly
+RUN yarn global add tsx
+
+# Create uploads directory
+RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
+
+# Switch to non-root user
+USER nodejs
 
 EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD node server.js & sleep 2 && kill %1 && exit 0 || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
+# Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+CMD ["tsx", "services/support-service/server.ts"]

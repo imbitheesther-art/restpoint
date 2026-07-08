@@ -1,28 +1,44 @@
-# Production Dockerfile for Documents Service - Minimal
-FROM node:20-alpine
+# RestPoint Documents Service — Clean Dockerfile
+FROM node:22-alpine
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
-WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && \
+  adduser -S nodejs -u 1001
 
-# Copy package files
-COPY services/documents-service/package.json ./
+WORKDIR /usr/src/app
 
-# Install dependencies with fallback
-RUN npm install --no-audit --no-fund --omit=optional || npm install --no-audit --no-fund
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY services/documents-service/package.json ./services/documents-service/
 
-# Copy application code
-COPY services/documents-service/server.js ./
-COPY services/documents-service/controllers/ ./controllers/
-COPY services/documents-service/routes/ ./routes/
+RUN yarn install --frozen-lockfile && yarn cache clean
+
 COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+
+RUN cd packages/shared-config && npm run build || true
+RUN cd packages/shared-logger && npm run build || true
+RUN cd packages/shared-utils && npm run build || true
+RUN cd packages/shared-services && npm run build || true
+
+COPY services/documents-service/ ./services/documents-service/
+
+RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
+
+USER nodejs
 
 EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node server.js & sleep 2 && kill %1 && exit 0 || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+CMD ["node", "services/documents-service/server.js"]

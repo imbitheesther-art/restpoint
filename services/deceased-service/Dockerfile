@@ -1,44 +1,47 @@
-# Production Dockerfile for Deceased Service
-FROM node:20-alpine
+# RestPoint Deceased Service — Clean Dockerfile
+FROM node:22-alpine
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
-WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && \
+  adduser -S nodejs -u 1001
 
-# Copy root workspace files
-COPY package.json ./
-COPY packages/ packages/
+WORKDIR /usr/src/app
 
-# Copy this service's package.json
+COPY package.json tsconfig.base.json ./
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-# Build shared packages
-RUN cd packages/shared-config && npm run build 2>/dev/null || true && \
-  cd ../shared-logger && npm run build 2>/dev/null || true && \
-  cd ../shared-services && npm run build 2>/dev/null || true && \
-  cd ../shared-utils && npm run build 2>/dev/null || true
+RUN yarn install --frozen-lockfile && yarn cache clean
 
-# Install dependencies - remove @montezuma packages temporarily to avoid npm registry lookup
-RUN cp services/deceased-service/package.json services/deceased-service/package.json.bak && \
-  node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('services/deceased-service/package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('services/deceased-service/package.json', JSON.stringify(pkg, null, 2));" && \
-  cd services/deceased-service && npm install --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
-  mv services/deceased-service/package.json.bak services/deceased-service/package.json && \
-  mkdir -p services/deceased-service/node_modules/@montezuma && \
-  cp -r packages/shared-config services/deceased-service/node_modules/@montezuma/shared-config && \
-  cp -r packages/shared-logger services/deceased-service/node_modules/@montezuma/shared-logger && \
-  cp -r packages/shared-services services/deceased-service/node_modules/@montezuma/shared-services && \
-  cp -r packages/shared-utils services/deceased-service/node_modules/@montezuma/shared-utils
-
-# Copy application code
-COPY services/deceased-service/ ./services/deceased-service/
 COPY configurations/ ./configurations/
+COPY packages/ ./packages/
+COPY shared/ ./shared/
+COPY global/ ./global/
+COPY services/deceased-service/ ./services/deceased-service/
+
+# Build shared packages in dependency order (shared-config → shared-logger → shared-utils → shared-services)
+RUN cd packages/shared-config && npm run build
+RUN cd packages/shared-logger && npm run build
+RUN cd packages/shared-utils && npm run build
+RUN cd packages/shared-services && npm run build
+
+# Install tsx for running TypeScript directly (server.ts entry point)
+RUN yarn global add tsx
+
+RUN mkdir -p /usr/src/app/services/deceased-service/uploads && chown -R nodejs:nodejs /usr/src/app
+
+USER nodejs
 
 EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node server.js & sleep 2 && kill %1 && exit 0 || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+CMD ["tsx", "services/deceased-service/server.ts"]

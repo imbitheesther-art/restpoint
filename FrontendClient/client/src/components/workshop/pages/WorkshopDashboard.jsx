@@ -222,23 +222,27 @@ const WorkshopDashboard = () => {
                         color: #000;
                         font-size: 11px;
                     }
+
                     .header { 
                         text-align: center; 
                         border-bottom: 2px solid #000; 
                         padding-bottom: 8px; 
                         margin-bottom: 10px;
                     }
+
                     .company-name {
                         font-size: 18px;
                         font-weight: bold;
                         letter-spacing: 1px;
                     }
+
                     .document-title {
                         font-size: 14px;
                         font-weight: bold;
                         text-decoration: underline;
                         margin-top: 4px;
                     }
+
                     .section {
                         margin: 8px 0;
                         border: 1.5px solid #000;
@@ -255,11 +259,13 @@ const WorkshopDashboard = () => {
                         color: #fff;
                         padding: 3px 6px;
                     }
+
                     .info-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr;
                         gap: 4px;
                     }
+
                     .info-row {
                         margin: 3px 0;
                         font-size: 11px;
@@ -272,6 +278,7 @@ const WorkshopDashboard = () => {
                     .value {
                         margin-left: 3px;
                     }
+
                     .highlight {
                         background: #ffff00;
                         padding: 1px 3px;
@@ -283,6 +290,7 @@ const WorkshopDashboard = () => {
                         gap: 4px;
                         margin-top: 6px;
                     }
+
                     .stage-box {
                         border: 1.5px solid #000;
                         padding: 4px;
@@ -290,9 +298,11 @@ const WorkshopDashboard = () => {
                         font-size: 9px;
                         font-weight: bold;
                     }
+
                     .stage-pending {
                         background: #fff;
                     }
+                        
                     .bottom-section {
                         display: flex;
                         justify-content: space-between;

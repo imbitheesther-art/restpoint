@@ -8,34 +8,26 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /usr/src/app
 
-# Copy root workspace files
 COPY package.json tsconfig.base.json ./
-COPY packages/ packages/
-
-# Copy this service's package.json
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY packages/shared-config/package.json ./packages/shared-config/
+COPY packages/shared-logger/package.json ./packages/shared-logger/
+COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/bodycheckout-service/package.json ./services/bodycheckout-service/
 
-# Build shared packages
-RUN cd packages/shared-config && npm run build 2>/dev/null || true && \
-  cd ../shared-logger && npm run build 2>/dev/null || true && \
-  cd ../shared-services && npm run build 2>/dev/null || true && \
-  cd ../shared-utils && npm run build 2>/dev/null || true
-
-# Install dependencies - remove @montezuma packages temporarily to avoid npm registry lookup
-RUN cp services/bodycheckout-service/package.json services/bodycheckout-service/package.json.bak && \
-  node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('services/bodycheckout-service/package.json','utf8')); delete pkg.dependencies['@montezuma/shared-config']; delete pkg.dependencies['@montezuma/shared-logger']; delete pkg.dependencies['@montezuma/shared-services']; delete pkg.dependencies['@montezuma/shared-utils']; fs.writeFileSync('services/bodycheckout-service/package.json', JSON.stringify(pkg, null, 2));" && \
-  npm install --prefix services/bodycheckout-service --legacy-peer-deps --no-audit --no-fund --ignore-scripts --omit=optional 2>/dev/null || true && \
-  cp services/bodycheckout-service/package.json.bak services/bodycheckout-service/package.json && \
-  mkdir -p services/bodycheckout-service/node_modules/@montezuma && \
-  cp -r packages/shared-config services/bodycheckout-service/node_modules/@montezuma/shared-config && \
-  cp -r packages/shared-logger services/bodycheckout-service/node_modules/@montezuma/shared-logger && \
-  cp -r packages/shared-services services/bodycheckout-service/node_modules/@montezuma/shared-services && \
-  cp -r packages/shared-utils services/bodycheckout-service/node_modules/@montezuma/shared-utils
+RUN npm install --legacy-peer-deps && npm cache clean --force
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
+
+RUN cd packages/shared-config && npm run build || true
+RUN cd packages/shared-logger && npm run build || true
+RUN cd packages/shared-utils && npm run build || true
+RUN cd packages/shared-services && npm run build || true
+
+COPY services/bodycheckout-service/ ./services/bodycheckout-service/
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 

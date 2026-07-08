@@ -6,12 +6,12 @@ RUN apk add --no-cache dumb-init
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
 # Copy root workspace config first
-COPY package.json ./
+COPY package.json tsconfig.base.json ./
 
 # Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/

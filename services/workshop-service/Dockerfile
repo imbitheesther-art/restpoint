@@ -1,44 +1,51 @@
-# Production Dockerfile for Workshop Service
+
+# Production Dockerfile for Notification Service
 FROM node:22-alpine
 
+# Install runtime dependencies
 RUN apk add --no-cache dumb-init
 
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
-# Copy package files
+# Copy root workspace config first
 COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
+
+# Copy service package.json
 COPY services/workshop-service/package.json ./services/workshop-service/
 
-# Install dependencies
-RUN npm install --legacy-peer-deps && npm cache clean --force
+# Install ALL dependencies (including dev for building shared packages)
+RUN yarn install --frozen-lockfile && yarn cache clean
 
-# Copy source code
+# Copy shared source modules first
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
 
-# Build shared packages
+# Build shared packages first (CRITICAL for TypeScript imports!)
 RUN cd packages/shared-config && npm run build || true
 RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
 
-# Copy workshop service code
+# Copy service source code
 COPY services/workshop-service/ ./services/workshop-service/
 
-# Build TypeScript
-RUN cd services/workshop-service && npm run build || true
 
-# Create data directory and set permissions
+
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
+
+# Switch to non-root user
 
 USER nodejs
 

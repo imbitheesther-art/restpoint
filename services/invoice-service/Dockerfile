@@ -4,7 +4,7 @@ FROM node:22-alpine
 RUN apk add --no-cache dumb-init
 
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 

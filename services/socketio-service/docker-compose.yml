@@ -29,5 +29,5 @@ volumes:
 
 networks:
   default:
-    name: siasa-network
+    name: restpoint-network
     external: true
