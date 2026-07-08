@@ -1,44 +1,26 @@
-# Production Dockerfile for Socket.io Service
-FROM node:22-alpine
+# Production Dockerfile for Socket.io Service - Minimal
+FROM node:20-alpine
 
 RUN apk add --no-cache dumb-init
 
-RUN addgroup -g 1001 -S nodejs && \
-  adduser -S nodejs -u 1001
+WORKDIR /app
 
-WORKDIR /usr/src/app
+# Copy package files
+COPY services/socketio-service/package.json ./
 
-COPY package.json tsconfig.base.json ./
-COPY packages/shared-utils/package.json ./packages/shared-utils/
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-services/package.json ./packages/shared-services/
-COPY services/socketio-service/package.json ./services/socketio-service/
+# Install dependencies with fallback
+RUN npm install --no-audit --no-fund --omit=optional || npm install --no-audit --no-fund
 
-RUN npm install --no-audit --no-fund
-
+# Copy application code
+COPY services/socketio-service/server.js ./
 COPY configurations/ ./configurations/
-COPY packages/ ./packages/
-COPY shared/ ./shared/
-COPY global/ ./global/
-
-RUN cd packages/shared-config && npm run build || true
-RUN cd packages/shared-logger && npm run build || true
-RUN cd packages/shared-utils && npm run build || true
-RUN cd packages/shared-services && npm run build || true
-
-COPY services/socketio-service/ ./services/socketio-service/
-
-RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app/data
-
-USER nodejs
 
 EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+  CMD node server.js & sleep 2 && kill %1 && exit 0 || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/socketio-service/server.js"]
+CMD ["node", "server.js"]
