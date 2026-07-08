@@ -238,6 +238,9 @@ export const ENDPOINTS = {
       TIMELINE: (orderId) => `/workshop/orders/${orderId}/timeline`,
       COMPLETE_STAGE: (orderId, stageId) => `/workshop/orders/${orderId}/complete-stage/${stageId}`,
     },
+    ANALYTICS: {
+      MONTHLY: '/workshop/analytics/monthly',
+    },
   },
   LEAVE: {
     BASE: '/leaves',

@@ -26,7 +26,8 @@ import {
     getWeeklyReport,
     getInventoryReport,
     getProductionReport,
-    getCostingReport
+    getCostingReport,
+    getMonthlyAnalytics
 } from '../reportController'
 import {
     getWorkers,
@@ -82,12 +83,13 @@ workshopRouter.post('/workers', createWorker)
 workshopRouter.patch('/workers/:id', updateWorker)
 workshopRouter.delete('/workers/:id', deleteWorker)
 
-// ============ REPORTS ============
+// ============ REPORTS & ANALYTICS ============
 workshopRouter.get('/reports/daily', getDailyReport)
 workshopRouter.get('/reports/weekly', getWeeklyReport)
 workshopRouter.get('/reports/inventory', getInventoryReport)
 workshopRouter.get('/reports/production', getProductionReport)
 workshopRouter.get('/reports/costing', getCostingReport)
+workshopRouter.get('/analytics/monthly', getMonthlyAnalytics)
 
 // ============ WORK ORDERS & DESIGNS ============
 workshopRouter.get('/orders/:id/work-order/pdf', generateWorkOrderPDF)

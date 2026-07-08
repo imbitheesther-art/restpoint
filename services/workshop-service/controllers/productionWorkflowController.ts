@@ -18,7 +18,7 @@ const assignWorkerToOrder = async (req: Request, res: Response) => {
 
         const rows: any = await safeTenantQuery(tenantDb,
             `SELECT wa.*, u.first_name, u.last_name FROM worker_assignments wa 
-             JOIN users u ON wa.user_id = u.id WHERE wa.id = ?`,
+             JOIN users u ON wa.user_id = u.user_id WHERE wa.id = ?`,
             [insertResult.insertId]
         );
 

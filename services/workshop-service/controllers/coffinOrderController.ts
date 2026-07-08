@@ -76,7 +76,7 @@ const getOrder = async (req: Request, res: Response) => {
         const assignments: any = await safeTenantQuery(tenantDb,
             `SELECT wa.*, u.first_name, u.last_name 
              FROM worker_assignments wa 
-             JOIN users u ON wa.user_id = u.id 
+             JOIN users u ON wa.user_id = u.user_id 
              WHERE wa.coffin_order_id = ?`,
             [req.params.id]
         );
@@ -126,12 +126,14 @@ const createOrder = async (req: Request, res: Response) => {
             delivery_date
         } = req.body;
 
-        // Generate unique order number using timestamp + random suffix
+        // Convert empty delivery_date to null to avoid MySQL date error
+        const processedDeliveryDate = delivery_date === '' ? null : delivery_date;
+
+        // Generate simple order number
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-        const timeStr = now.getTime().toString(36).toUpperCase().slice(-4);
-        const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
-        const order_number = `CFN-${dateStr}-${timeStr}${rand}`;
+        const seq = Math.floor(Math.random() * 900) + 100;
+        const order_number = `CFN-${dateStr}-${seq}`;
 
         const insertResult: any = await safeTenantExecute(tenantDb,
             `INSERT INTO coffin_orders 
@@ -139,7 +141,7 @@ const createOrder = async (req: Request, res: Response) => {
              coffin_type, dimensions, color, interior_fabric, notes, selling_price, delivery_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [order_number, customer_name, customer_phone, customer_email, deceased_name,
-                coffin_type || 'standard', dimensions, color, interior_fabric, notes, selling_price || 0, delivery_date]
+                coffin_type || 'standard', dimensions, color, interior_fabric, notes, selling_price || 0, processedDeliveryDate]
         );
 
         const orderId = insertResult.insertId;
@@ -184,7 +186,7 @@ const updateOrder = async (req: Request, res: Response) => {
         const allowedFields = [
             'customer_name', 'customer_phone', 'customer_email', 'deceased_name',
             'coffin_type', 'dimensions', 'color', 'interior_fabric', 'notes',
-            'status', 'selling_price', 'delivery_date'
+            'status', 'selling_price', 'delivery_date', 'hold_reason'
         ];
 
         const updates: string[] = [];
@@ -192,8 +194,14 @@ const updateOrder = async (req: Request, res: Response) => {
 
         for (const field of allowedFields) {
             if (req.body[field] !== undefined) {
-                updates.push(`${field} = ?`);
-                values.push(req.body[field]);
+                // Convert empty delivery_date to null to avoid MySQL date error
+                if (field === 'delivery_date' && req.body[field] === '') {
+                    updates.push(`${field} = ?`);
+                    values.push(null);
+                } else {
+                    updates.push(`${field} = ?`);
+                    values.push(req.body[field]);
+                }
             }
         }
 

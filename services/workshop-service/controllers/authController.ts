@@ -17,7 +17,7 @@ const registerUser = async (req: Request, res: Response) => {
 
         // Check if user exists
         const [existing]: any = await pool.query(
-            'SELECT id FROM users WHERE email = ?',
+            'SELECT user_id FROM users WHERE email = ?',
             [email]
         )
 
@@ -32,7 +32,7 @@ const registerUser = async (req: Request, res: Response) => {
         )
 
         const [newUser]: any = await pool.query(
-            'SELECT id, first_name, last_name, email, role, created_at FROM users WHERE id = ?',
+            'SELECT user_id, first_name, last_name, email, role, created_at FROM users WHERE user_id = ?',
             [result.insertId]
         )
 
@@ -67,7 +67,7 @@ const loginUser = async (req: Request, res: Response) => {
         }
 
         const token = 'Bearer ' + jwt.sign(
-            { sub: user.id, role: user.role },
+            { sub: user.user_id, role: user.role },
             String(process.env.JWT_SECRET),
             { expiresIn: '7d' }
         )
@@ -75,7 +75,7 @@ const loginUser = async (req: Request, res: Response) => {
         res.status(200).json({
             token,
             user: {
-                id: user.id,
+                id: user.user_id,
                 first_name: user.first_name,
                 last_name: user.last_name,
                 email: user.email,

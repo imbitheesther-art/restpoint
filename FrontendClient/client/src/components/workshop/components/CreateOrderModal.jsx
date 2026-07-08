@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { ModalOverlay, Modal, ModalHeader, ModalTitle, CloseBtn, ModalBody, ModalFooter, FormGroup, Label, Input, Select, TextArea, Button } from '../styles/theme.jsx';
+import { ModalOverlay, Modal, ModalHeader, ModalTitle, CloseBtn, ModalBody, ModalFooter, FormGroup, Label, Input, TextArea, Button } from '../styles/theme.jsx';
 
 const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
     if (!show) return null;
@@ -9,8 +9,8 @@ const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
         <ModalOverlay>
             <Modal>
                 <ModalHeader>
-                    <ModalTitle>📋 New Coffin Order</ModalTitle>
-                    <CloseBtn onClick={onClose}>✕</CloseBtn>
+                    <ModalTitle>New Coffin Order</ModalTitle>
+                    <CloseBtn onClick={onClose}>X</CloseBtn>
                 </ModalHeader>
                 <ModalBody>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -19,19 +19,14 @@ const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
                             <Input placeholder="e.g. Peter Mumo" value={form.customer_name} onChange={(e) => onChange({ ...form, customer_name: e.target.value })} />
                         </FormGroup>
                         <FormGroup>
-                            <Label>Deceased Name *</Label>
-                            <Input placeholder="e.g. Mumo" value={form.deceased_name} onChange={(e) => onChange({ ...form, deceased_name: e.target.value })} />
+                            <Label>Deceased Name (optional)</Label>
+                            <Input placeholder="e.g. Late Mumo" value={form.deceased_name} onChange={(e) => onChange({ ...form, deceased_name: e.target.value })} />
                         </FormGroup>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <FormGroup>
                             <Label>Coffin Type</Label>
-                            <Select value={form.coffin_type} onChange={(e) => onChange({ ...form, coffin_type: e.target.value })}>
-                                <option value="standard">Standard</option>
-                                <option value="premium">Premium</option>
-                                <option value="deluxe">Deluxe</option>
-                                <option value="custom">Custom</option>
-                            </Select>
+                            <Input placeholder="e.g. Standard, Premium, Custom..." value={form.coffin_type} onChange={(e) => onChange({ ...form, coffin_type: e.target.value })} />
                         </FormGroup>
                         <FormGroup>
                             <Label>Selling Price (KES)</Label>
@@ -40,23 +35,12 @@ const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                         <FormGroup>
-                            <Label>Color</Label>
-                            <Select value={form.color} onChange={(e) => onChange({ ...form, color: e.target.value })}>
-                                <option value="walnut">Walnut Brown</option>
-                                <option value="mahogany">Mahogany Red</option>
-                                <option value="oak">Oak Natural</option>
-                                <option value="black">Ebony Black</option>
-                                <option value="white">White</option>
-                            </Select>
+                            <Label>Color / Finish</Label>
+                            <Input placeholder="e.g. Walnut, Mahogany, White..." value={form.color} onChange={(e) => onChange({ ...form, color: e.target.value })} />
                         </FormGroup>
                         <FormGroup>
-                            <Label>Interior</Label>
-                            <Select value={form.interior} onChange={(e) => onChange({ ...form, interior: e.target.value })}>
-                                <option value="satin_gold">Satin Gold</option>
-                                <option value="satin_white">Satin White</option>
-                                <option value="velvet_red">Velvet Red</option>
-                                <option value="velvet_blue">Velvet Blue</option>
-                            </Select>
+                            <Label>Interior Fabric / Finish</Label>
+                            <Input placeholder="e.g. Satin Gold, Velvet Red..." value={form.interior} onChange={(e) => onChange({ ...form, interior: e.target.value })} />
                         </FormGroup>
                         <FormGroup>
                             <Label>Delivery Date</Label>
@@ -64,11 +48,11 @@ const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
                         </FormGroup>
                     </div>
                     <FormGroup>
-                        <Label>Dimensions (m)</Label>
+                        <Label>Dimensions (mm, cm, or m - specify unit)</Label>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                            <Input type="number" placeholder="Length" value={form.dimensions.length} onChange={(e) => onChange({ ...form, dimensions: { ...form.dimensions, length: e.target.value } })} />
-                            <Input type="number" placeholder="Width" value={form.dimensions.width} onChange={(e) => onChange({ ...form, dimensions: { ...form.dimensions, width: e.target.value } })} />
-                            <Input type="number" placeholder="Height" value={form.dimensions.height} onChange={(e) => onChange({ ...form, dimensions: { ...form.dimensions, height: e.target.value } })} />
+                            <Input placeholder="e.g. 2000mm or 2m (Length)" value={form.dimensions.length} onChange={(e) => onChange({ ...form, dimensions: { ...form.dimensions, length: e.target.value } })} />
+                            <Input placeholder="e.g. 800mm or 0.8m (Width)" value={form.dimensions.width} onChange={(e) => onChange({ ...form, dimensions: { ...form.dimensions, width: e.target.value } })} />
+                            <Input placeholder="e.g. 600mm or 0.6m (Height)" value={form.dimensions.height} onChange={(e) => onChange({ ...form, dimensions: { ...form.dimensions, height: e.target.value } })} />
                         </div>
                     </FormGroup>
                     <FormGroup>
@@ -78,7 +62,7 @@ const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
                 </ModalBody>
                 <ModalFooter>
                     <Button onClick={onClose}>Cancel</Button>
-                    <Button $variant="accent" onClick={onSubmit} disabled={!form.customer_name || !form.deceased_name}>
+                    <Button $variant="accent" onClick={onSubmit} disabled={!form.customer_name}>
                         <Plus size={16} /> Create Order
                     </Button>
                 </ModalFooter>

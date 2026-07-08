@@ -124,6 +124,10 @@ export const workshopService = {
             responseType: 'blob'
         })),
 
+    // --- Analytics ---
+    getMonthlyAnalytics: (year) =>
+        handleResponse(workshopApi.get(ENDPOINTS.WORKSHOP.ANALYTICS.MONTHLY, { params: { year } })),
+
     // --- Design ---
     saveDesign: (id, data) =>
         handleResponse(workshopApi.post(ENDPOINTS.WORKSHOP.DESIGN.SAVE(id), data)),

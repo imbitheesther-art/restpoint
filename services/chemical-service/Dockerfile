@@ -4,10 +4,11 @@ FROM node:22-alpine
 RUN apk add --no-cache dumb-init
 
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
+# Copy all package.json files first for better layer caching
 COPY package.json tsconfig.base.json ./
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
@@ -15,19 +16,21 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/chemical-service/package.json ./services/chemical-service/
 
-RUN npm install --legacy-peer-deps && npm cache clean --force
-
-COPY configurations/ ./configurations/
+# Copy package source files before installing dependencies
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY global/ ./global/
+COPY configurations/ ./configurations/
+COPY services/chemical-service/ ./services/chemical-service/
 
+# Install dependencies
+RUN npm install --legacy-peer-deps && npm cache clean --force
+
+# Build shared packages if they have build scripts
 RUN cd packages/shared-config && npm run build || true
 RUN cd packages/shared-logger && npm run build || true
 RUN cd packages/shared-utils && npm run build || true
 RUN cd packages/shared-services && npm run build || true
-
-COPY services/chemical-service/ ./services/chemical-service/
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 

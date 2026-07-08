@@ -187,14 +187,14 @@ const getProductionReport = async (req: Request, res: Response) => {
 
         const [workerPerformance]: any = await safeTenantQuery(tenantDb,
             `SELECT 
-                u.id, u.first_name, u.last_name,
+                u.user_id, u.first_name, u.last_name,
                 COUNT(wa.id) as total_assignments,
                 COALESCE(SUM(wa.hours_worked), 0) as total_hours,
                 COALESCE(AVG(wa.hours_worked), 0) as avg_hours_per_task
              FROM users u
-             LEFT JOIN worker_assignments wa ON u.id = wa.user_id
+             LEFT JOIN worker_assignments wa ON u.user_id = wa.user_id
              WHERE u.role IN ('worker', 'manager')
-             GROUP BY u.id, u.first_name, u.last_name
+             GROUP BY u.user_id, u.first_name, u.last_name
              ORDER BY total_hours DESC`
         );
 
@@ -262,10 +262,108 @@ const getCostingReport = async (req: Request, res: Response) => {
     }
 };
 
+/* 
+    @route  GET /api/workshop/reports/monthly
+    @desc   Get monthly analytics - orders, revenue, materials breakdown by month
+*/
+const getMonthlyAnalytics = async (req: Request, res: Response) => {
+    try {
+        const tenantDb = (req as any).tenant?.db_name;
+        if (!tenantDb) {
+            return res.status(400).json({ error: 'Tenant database not resolved' });
+        }
+
+        const year = req.query.year || new Date().getFullYear();
+
+        // Monthly order breakdown
+        const [monthlyOrders]: any = await safeTenantQuery(tenantDb,
+            `SELECT 
+                MONTH(order_date) as month,
+                COUNT(*) as total_orders,
+                SUM(CASE WHEN status IN ('completed','delivered') THEN 1 ELSE 0 END) as completed,
+                COALESCE(SUM(selling_price), 0) as revenue,
+                COALESCE(SUM(profit), 0) as profit
+             FROM coffin_orders
+             WHERE YEAR(order_date) = ?
+             GROUP BY MONTH(order_date)
+             ORDER BY month ASC`,
+            [year]
+        );
+
+        // Coffin type breakdown
+        const [coffinTypes]: any = await safeTenantQuery(tenantDb,
+            `SELECT 
+                coffin_type,
+                COUNT(*) as count,
+                COALESCE(AVG(selling_price), 0) as avg_price,
+                COALESCE(SUM(selling_price), 0) as total_revenue
+             FROM coffin_orders
+             WHERE YEAR(order_date) = ?
+             GROUP BY coffin_type
+             ORDER BY count DESC`,
+            [year]
+        );
+
+        // Materials usage by month
+        const [monthlyMaterials]: any = await safeTenantQuery(tenantDb,
+            `SELECT 
+                MONTH(mu.used_at) as month,
+                m.category,
+                COUNT(DISTINCT mu.coffin_order_id) as order_count,
+                COALESCE(SUM(mu.quantity_used), 0) as total_used
+             FROM material_usage mu
+             JOIN materials m ON mu.material_id = m.id
+             WHERE YEAR(mu.used_at) = ?
+             GROUP BY MONTH(mu.used_at), m.category
+             ORDER BY month ASC, total_used DESC`,
+            [year]
+        );
+
+        // Stage completion statistics
+        const [stageStats]: any = await safeTenantQuery(tenantDb,
+            `SELECT 
+                stage,
+                COUNT(*) as total,
+                AVG(TIMESTAMPDIFF(HOUR, started_at, completed_at)) as avg_hours
+             FROM production_stages
+             WHERE completed_at IS NOT NULL
+             GROUP BY stage`
+        );
+
+        // Top materials used
+        const [topMaterials]: any = await safeTenantQuery(tenantDb,
+            `SELECT 
+                m.name, m.category,
+                SUM(mu.quantity_used) as total_used,
+                m.unit,
+                COUNT(DISTINCT mu.coffin_order_id) as used_in_orders
+             FROM material_usage mu
+             JOIN materials m ON mu.material_id = m.id
+             WHERE YEAR(mu.used_at) = ?
+             GROUP BY m.id, m.name, m.category, m.unit
+             ORDER BY total_used DESC
+             LIMIT 10`,
+            [year]
+        );
+
+        res.json({
+            year: Number(year),
+            monthly_orders: monthlyOrders,
+            coffin_types: coffinTypes,
+            monthly_materials: monthlyMaterials,
+            stage_completion: stageStats,
+            top_materials: topMaterials
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
     getDailyReport,
     getWeeklyReport,
     getInventoryReport,
     getProductionReport,
-    getCostingReport
+    getCostingReport,
+    getMonthlyAnalytics
 };

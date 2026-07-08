@@ -15,7 +15,7 @@ const getWorkers = async (req: Request, res: Response) => {
         }
 
         const [rows] = await safeTenantQuery(tenantDb,
-            "SELECT id, first_name, last_name, email, role, phone, created_at FROM users WHERE role IN ('worker', 'manager') ORDER BY first_name ASC"
+            "SELECT user_id, first_name, last_name, email, role, phone, created_at FROM users WHERE role IN ('worker', 'manager') ORDER BY first_name ASC"
         );
         res.json(rows);
     } catch (error: any) {
@@ -46,7 +46,7 @@ const createWorker = async (req: Request, res: Response) => {
         );
 
         const newWorker: any = await safeTenantQuery(tenantDb,
-            "SELECT id, first_name, last_name, email, role, phone, created_at FROM users WHERE id = ?",
+            "SELECT user_id, first_name, last_name, email, role, phone, created_at FROM users WHERE user_id = ?",
             [insertResult.insertId]
         );
 
@@ -106,7 +106,7 @@ const updateWorker = async (req: Request, res: Response) => {
         }
 
         const [updated] = await safeTenantQuery(tenantDb,
-            "SELECT id, first_name, last_name, email, role, phone, created_at FROM users WHERE id = ?",
+            "SELECT user_id, first_name, last_name, email, role, phone, created_at FROM users WHERE user_id = ?",
             [req.params.id]
         );
 
@@ -130,7 +130,7 @@ const deleteWorker = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Tenant database not resolved' });
         }
 
-        const deleteResult: any = await safeTenantExecute(tenantDb, 'DELETE FROM users WHERE id = ? AND role IN ("worker", "manager")', [req.params.id]);
+        const deleteResult: any = await safeTenantExecute(tenantDb, 'DELETE FROM users WHERE user_id = ? AND role IN ("worker", "manager")', [req.params.id]);
         if (!deleteResult.affectedRows) {
             return res.status(404).json({ error: 'Worker not found' });
         }

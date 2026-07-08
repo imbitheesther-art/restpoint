@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../../../context/socketContext';
 import { useSocketEvents } from '../hooks/useSocketEvents';
 import {
     Package, FlaskConical, Beaker, Droplets,
     Calendar, Loader2, Download, Gauge,
     ClipboardList, AlertTriangle, TrendingUp,
-    Plus, Printer, FileImage, Cpu, Users, QrCode, BarChart3,
+    Plus, Printer, FileImage, Cpu, Users, BarChart3,
     ChevronDown, Upload, Eye, Edit3, CheckCircle, XCircle,
     Clock, Hammer, Wrench, Paintbrush, Search, Filter,
     ArrowUpDown, FileText, Image, Layers, Settings,
-    Grid, List, RefreshCw, Trash2, Save, X
+    Grid, List, RefreshCw, Trash2, Save, X, BarChart, PieChart
 } from 'lucide-react';
 import { workshopService } from '../services/workshopService';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+import { Bar, Doughnut, Line, Pie } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 // Sub-components
 import ProductionStatCard from '../components/ProductionStatCard';
@@ -36,7 +40,9 @@ const WorkshopDashboard = () => {
     const [showDesignModal, setShowDesignModal] = useState(false);
     const [showMaterialIntake, setShowMaterialIntake] = useState(false);
     const [showJobCardModal, setShowJobCardModal] = useState(false);
+    const [showMaterialUsageModal, setShowMaterialUsageModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [materialUsageForm, setMaterialUsageForm] = useState({ material_id: '', quantity_used: '', notes: '' });
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [orderForm, setOrderForm] = useState({
@@ -59,7 +65,7 @@ const WorkshopDashboard = () => {
     const loadDashboardData = async () => {
         try {
             const [ordersRes, materialsRes, workersRes] = await Promise.all([
-                workshopService.getOrders({ status: 'active' }),
+                workshopService.getOrders({}), // Get all orders, not just 'active'
                 workshopService.getMaterials(),
                 workshopService.getWorkers()
             ]);
@@ -165,24 +171,7 @@ const WorkshopDashboard = () => {
             alert('No orders available to print');
             return;
         }
-        try {
-            const res = await workshopService.getWorkOrderPDF(order.id);
-            if (res.success && res.data) {
-                const blob = new Blob([res.data], { type: 'application/pdf' });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `job-card-${order.order_number || order.id}.pdf`;
-                link.click();
-                window.URL.revokeObjectURL(url);
-            } else {
-                // Fallback: Generate a simple job card
-                generateSimpleJobCard(order);
-            }
-        } catch (error) {
-            console.error('Failed to print job card:', error);
-            generateSimpleJobCard(order);
-        }
+        generateSimpleJobCard(order);
     };
 
     const generateSimpleJobCard = (order) => {
@@ -193,7 +182,7 @@ const WorkshopDashboard = () => {
             <head><title>Job Card - ${order.order_number || order.id}</title>
             <style>
                 body { font-family: Arial; padding: 40px; }
-                h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #15171A; padding-bottom: 10px; }
                 .info { margin: 20px 0; }
                 .info div { margin: 8px 0; }
                 .label { font-weight: bold; color: #7f8c8d; }
@@ -207,7 +196,7 @@ const WorkshopDashboard = () => {
             </style>
             </head>
             <body>
-                <h1>🔨 JOB CARD</h1>
+                <h1>JOB CARD</h1>
                 <div style="display:flex;justify-content:space-between;">
                     <div>
                         <div><span class="label">Order #:</span> <span class="value">${order.order_number || order.id}</span></div>
@@ -237,6 +226,44 @@ const WorkshopDashboard = () => {
             </html>
         `);
         win.document.close();
+    };
+
+    // --- Record Material Usage ---
+    const handleRecordMaterialUsage = async () => {
+        if (!selectedOrder || !materialUsageForm.material_id || !materialUsageForm.quantity_used) {
+            alert('Please select a material and enter quantity');
+            return;
+        }
+        try {
+            const res = await workshopService.useMaterial({
+                coffin_order_id: selectedOrder.id,
+                material_id: parseInt(materialUsageForm.material_id),
+                quantity_used: parseFloat(materialUsageForm.quantity_used),
+                notes: materialUsageForm.notes
+            });
+            if (res.success) {
+                alert('Material recorded successfully!');
+                setMaterialUsageForm({ material_id: '', quantity_used: '', notes: '' });
+                // Refresh data to show updated stock
+                const orderRes = await workshopService.getOrder(selectedOrder.id);
+                if (orderRes.success) setSelectedOrder(orderRes.data);
+                loadDashboardData();
+            } else {
+                alert('Failed to record material: ' + res.error);
+            }
+        } catch (error) {
+            console.error('Failed to record material:', error);
+            alert('Material recorded locally');
+        }
+    };
+
+    const handleOpenMaterialUsage = (order) => {
+        setSelectedOrder(order);
+        // Fetch latest order details including materials used
+        workshopService.getOrder(order.id).then(res => {
+            if (res.success) setSelectedOrder(res.data);
+        });
+        setShowMaterialUsageModal(true);
     };
 
     // --- Design Studio ---
@@ -346,8 +373,14 @@ const WorkshopDashboard = () => {
 
     // --- Update Status ---
     const handleUpdateStatus = async (orderId, newStatus) => {
+        let updateData = { status: newStatus };
+        if (newStatus === 'on_hold') {
+            const reason = prompt('Reason for holding this order:');
+            if (!reason) return;
+            updateData.hold_reason = reason;
+        }
         try {
-            const res = await workshopService.updateOrderStatus(orderId, newStatus);
+            const res = await workshopService.updateOrder(orderId, updateData);
             if (res.success) {
                 alert(`Order status updated to: ${newStatus}`);
                 loadDashboardData();
@@ -356,9 +389,8 @@ const WorkshopDashboard = () => {
             }
         } catch (error) {
             console.error('Failed to update status:', error);
-            // Optimistic update
             setOrders(prev => prev.map(o =>
-                o.id === orderId ? { ...o, status: newStatus } : o
+                o.id === orderId ? { ...o, status: newStatus, hold_reason: updateData.hold_reason } : o
             ));
             alert('Status updated locally');
         }
@@ -425,13 +457,14 @@ const WorkshopDashboard = () => {
                     onNewOrder={handleNewOrder}
                     onPrintJobCard={() => handlePrintJobCard()}
                     onDesignStudio={() => handleDesignStudio()}
-                    onSimulation={() => {
-                        const win = window.open('', '_blank', 'width=1200,height=800');
-                        if (win) win.document.write('<h1>Production Simulation Panel</h1><p>Simulation interface</p>');
-                    }}
                     onStockIntake={handleMaterialIntake}
                     onAssignWorker={() => handleAssignWorker()}
-                    onQRLabels={handleQRLabels}
+                    onViewDetails={() => {
+                        if (orders.length > 0) {
+                            setSelectedOrder(orders[0]);
+                            setShowJobCardModal(true);
+                        }
+                    }}
                     onAnalytics={handleAnalytics}
                 />
             </div>
@@ -539,8 +572,8 @@ const WorkshopDashboard = () => {
                     {filteredOrders.length === 0 && (
                         <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
                             <ClipboardList size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-                            <h4>No orders found</h4>
-                            <p>Create a new order to get started</p>
+                            <h4>Active Production Queue</h4>
+                            <p>No orders yet. Create your first coffin order to start production.</p>
                             <button className="btn btn-dark" onClick={handleNewOrder}>
                                 <Plus size={14} /> Create Order
                             </button>
@@ -713,109 +746,171 @@ const WorkshopDashboard = () => {
         </div>
     );
 
+    const [analyticsData, setAnalyticsData] = useState(null);
+
+    useEffect(() => {
+        if (activeTab === 'analytics') {
+            loadAnalyticsData();
+        }
+    }, [activeTab]);
+
+    const loadAnalyticsData = async () => {
+        try {
+            const res = await workshopService.getMonthlyAnalytics();
+            if (res.success && res.data && typeof res.data === 'object') {
+                setAnalyticsData({
+                    monthly_orders: Array.isArray(res.data.monthly_orders) ? res.data.monthly_orders : [],
+                    coffin_types: Array.isArray(res.data.coffin_types) ? res.data.coffin_types : [],
+                    top_materials: Array.isArray(res.data.top_materials) ? res.data.top_materials : [],
+                    monthly_materials: Array.isArray(res.data.monthly_materials) ? res.data.monthly_materials : [],
+                    stage_completion: Array.isArray(res.data.stage_completion) ? res.data.stage_completion : []
+                });
+            }
+        } catch (e) {
+            console.warn('Analytics data not available:', e);
+            setAnalyticsData({
+                monthly_orders: [], coffin_types: [], top_materials: [],
+                monthly_materials: [], stage_completion: []
+            });
+        }
+    };
+
+    const statusChartData = {
+        labels: ['Pending', 'In Progress', 'Completed', 'On Hold'],
+        datasets: [{
+            data: ['pending', 'in_progress', 'completed', 'on_hold'].map(s => orders.filter(o => o.status === s).length),
+            backgroundColor: ['#f1c40f', '#3498db', '#27ae60', '#e74c3c'],
+            borderWidth: 0
+        }]
+    };
+
+    const monthlyOrders = analyticsData?.monthly_orders || [];
+    const monthlyLabels = monthlyOrders.map(m => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return months[m.month - 1] || 'N/A';
+    });
+
+    const monthlyOrdersChart = {
+        labels: monthlyLabels,
+        datasets: [
+            { label: 'Total Orders', data: monthlyOrders.map(m => m.total_orders || 0), backgroundColor: '#3498db', borderRadius: 6 },
+            { label: 'Completed', data: monthlyOrders.map(m => m.completed || 0), backgroundColor: '#27ae60', borderRadius: 6 }
+        ]
+    };
+
+    const monthlyRevenueChart = {
+        labels: monthlyLabels,
+        datasets: [{
+            label: 'Revenue (KES)',
+            data: monthlyOrders.map(m => m.revenue || 0),
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22,163,74,0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    };
+
+    const coffinTypes = analyticsData?.coffin_types || [];
+    const coffinTypeChart = {
+        labels: coffinTypes.map(c => c.coffin_type || 'Unknown'),
+        datasets: [{
+            data: coffinTypes.map(c => c.count || 0),
+            backgroundColor: ['#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#2c3e50'],
+            borderWidth: 0
+        }]
+    };
+
+    const topMaterials = analyticsData?.top_materials || [];
+    const topMaterialsChart = {
+        labels: topMaterials.map(m => m.name || 'Unknown'),
+        datasets: [{
+            label: 'Quantity Used',
+            data: topMaterials.map(m => m.total_used || 0),
+            backgroundColor: '#e67e22',
+            borderRadius: 6
+        }]
+    };
+
     const renderAnalytics = () => (
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Workshop Analytics</h3>
-                    <span className="text-muted text-sm">Production metrics and insights</span>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>Workshop Analytics</h3>
+                    <span className="text-muted text-sm">Real-time production metrics and insights</span>
                 </div>
             </div>
 
+            {/* KPI Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                {[
+                    { label: 'Total Orders', value: orders.length, color: '#2c3e50' },
+                    { label: 'In Progress', value: orders.filter(o => o.status === 'in_progress').length, color: '#3498db' },
+                    { label: 'Completed', value: orders.filter(o => o.status === 'completed').length, color: '#27ae60' },
+                    { label: 'Pending', value: orders.filter(o => o.status === 'pending').length, color: '#f1c40f' },
+                    { label: 'On Hold', value: orders.filter(o => o.status === 'on_hold').length, color: '#e74c3c' },
+                ].map((kpi, i) => (
+                    <div key={i} style={{ textAlign: 'center', padding: '1rem', background: `${kpi.color}08`, borderRadius: '12px', border: `1px solid ${kpi.color}20` }}>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>{kpi.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Charts Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
-                {/* Production Overview */}
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Production Overview</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Total Orders</span>
-                            <strong>{orders.length}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Active</span>
-                            <strong style={{ color: '#3498db' }}>{stats.activeOrders}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Completed Today</span>
-                            <strong style={{ color: '#27ae60' }}>{stats.completedToday}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Workers</span>
-                            <strong>{workers.length}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Materials</span>
-                            <strong>{materials.length}</strong>
-                        </div>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PieChart size={18} /> Order Status Distribution</h4>
+                    <div style={{ maxHeight: '220px', display: 'flex', justifyContent: 'center' }}>
+                        <Doughnut data={statusChartData} options={{ cutout: '60%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } }, maintainAspectRatio: true }} />
                     </div>
                 </div>
 
-                {/* Status Distribution */}
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Order Status Distribution</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {['pending', 'in_progress', 'completed', 'on_hold'].map(status => {
-                            const count = orders.filter(o => o.status === status).length;
-                            const total = orders.length || 1;
-                            const pct = Math.round((count / total) * 100);
-                            const colors = { pending: '#f1c40f', in_progress: '#3498db', completed: '#27ae60', on_hold: '#e74c3c' };
-                            return (
-                                <div key={status}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                                        <span style={{ textTransform: 'capitalize' }}>{status.replace('_', ' ')}</span>
-                                        <strong>{count} ({pct}%)</strong>
-                                    </div>
-                                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                                        <div style={{
-                                            height: '100%', width: `${pct}%`,
-                                            background: colors[status], borderRadius: '4px',
-                                            transition: 'width 0.3s'
-                                        }} />
-                                    </div>
-                                </div>
-                            );
-                        })}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BarChart size={18} /> Coffin Types Produced</h4>
+                    <div style={{ maxHeight: '220px' }}>
+                        <Pie data={coffinTypeChart} options={{ plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 10 } } } }, maintainAspectRatio: true }} />
                     </div>
                 </div>
 
-                {/* Low Stock Alerts */}
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Low Stock Alerts</h4>
-                    {materials.filter(m => m.quantity <= (m.min_stock_level || 10)).length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {materials.filter(m => m.quantity <= (m.min_stock_level || 10)).slice(0, 5).map(m => (
-                                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: '#fef2f2', borderRadius: '8px' }}>
-                                    <span style={{ fontWeight: 500 }}>{m.name}</span>
-                                    <span style={{ color: '#e74c3c', fontWeight: 700 }}>{m.quantity} {m.unit}</span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div style={{ textAlign: 'center', padding: '2rem', color: '#27ae60' }}>
-                            <CheckCircle size={32} style={{ margin: '0 auto 0.5rem' }} />
-                            <p>All materials well stocked</p>
-                        </div>
-                    )}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', gridColumn: 'span 2' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BarChart size={18} /> Monthly Orders Overview</h4>
+                    <div style={{ height: '250px' }}>
+                        <Bar data={monthlyOrdersChart} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }} />
+                    </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Efficiency Metrics</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Completion Rate</span>
-                            <strong style={{ color: '#27ae60' }}>
-                                {orders.length > 0 ? Math.round((orders.filter(o => o.status === 'completed').length / orders.length) * 100) : 0}%
-                            </strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Avg Production Time</span>
-                            <strong>~3 days</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="text-muted">Worker Utilization</span>
-                            <strong>{workers.length > 0 ? Math.round((orders.filter(o => o.assignments?.length > 0).length / Math.max(orders.length, 1)) * 100) : 0}%</strong>
-                        </div>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><TrendingUp size={18} /> Monthly Revenue Trend</h4>
+                    <div style={{ height: '200px' }}>
+                        <Line data={monthlyRevenueChart} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: (v) => 'KES ' + v.toLocaleString() } } } }} />
+                    </div>
+                </div>
+
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Top Materials Used</h4>
+                    <div style={{ height: '200px' }}>
+                        <Bar data={topMaterialsChart} options={{ indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }} />
+                    </div>
+                </div>
+
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', gridColumn: 'span 2' }}>
+                    <h4 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Efficiency & Performance</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                        {[
+                            { label: 'Completion Rate', value: `${orders.length > 0 ? Math.round((orders.filter(o => o.status === 'completed').length / orders.length) * 100) : 0}%`, color: '#27ae60' },
+                            { label: 'Active Now', value: stats.activeOrders.toString(), color: '#3498db' },
+                            { label: 'Completed Today', value: stats.completedToday.toString(), color: '#16a34a' },
+                            { label: 'Materials Used', value: materials.reduce((s, m) => s + Number(m.quantity || 0), 0).toFixed(0), color: '#e67e22' },
+                            { label: 'Worker Count', value: workers.length.toString(), color: '#8b5cf6' },
+                            { label: 'Avg Production', value: '~3 days', color: '#64748b' },
+                            { label: 'Worker Utilization', value: `${workers.length > 0 ? Math.round((orders.filter(o => o.assignments?.length > 0).length / Math.max(orders.length, 1)) * 100) : 0}%`, color: '#f59e0b' },
+                            { label: 'Low Stock Alerts', value: stats.lowStockAlerts.toString(), color: stats.lowStockAlerts > 0 ? '#e74c3c' : '#27ae60' },
+                        ].map((item, i) => (
+                            <div key={i} style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '10px' }}>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: item.color }}>{item.value}</div>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.label}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -1245,6 +1340,59 @@ const WorkshopDashboard = () => {
                                         {stage}
                                     </span>
                                 ))}
+                            </div>
+                        </div>
+
+                        {/* Materials Used Section */}
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Package size={16} /> Materials Used
+                            </h4>
+                            {selectedOrder.materials_used && selectedOrder.materials_used.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {selectedOrder.materials_used.map((usage, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px', fontSize: '0.85rem' }}>
+                                            <span>{usage.material_name || `Material #${usage.material_id}`}</span>
+                                            <span style={{ fontWeight: 600 }}>{usage.quantity_used} {usage.unit || 'units'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No materials recorded yet</p>
+                            )}
+
+                            {/* Add Material Form */}
+                            <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                                <h5 style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>Record Material Usage</h5>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <select
+                                        value={materialUsageForm.material_id}
+                                        onChange={(e) => setMaterialUsageForm({ ...materialUsageForm, material_id: e.target.value })}
+                                        style={{ padding: '0.4rem', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.8rem' }}
+                                    >
+                                        <option value="">Select Material</option>
+                                        {materials.map(m => (
+                                            <option key={m.id} value={m.id}>{m.name} (Stock: {m.quantity} {m.unit})</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="number"
+                                        placeholder="Quantity Used"
+                                        value={materialUsageForm.quantity_used}
+                                        onChange={(e) => setMaterialUsageForm({ ...materialUsageForm, quantity_used: e.target.value })}
+                                        style={{ padding: '0.4rem', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.8rem' }}
+                                    />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Notes (optional)"
+                                    value={materialUsageForm.notes}
+                                    onChange={(e) => setMaterialUsageForm({ ...materialUsageForm, notes: e.target.value })}
+                                    style={{ width: '100%', padding: '0.4rem', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.5rem' }}
+                                />
+                                <button className="btn btn-dark text-xs" onClick={handleRecordMaterialUsage} style={{ marginTop: '0.5rem' }} disabled={!materialUsageForm.material_id || !materialUsageForm.quantity_used}>
+                                    <Save size={12} /> Update Materials
+                                </button>
                             </div>
                         </div>
 
