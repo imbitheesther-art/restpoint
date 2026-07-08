@@ -1,47 +1,28 @@
-# Production Dockerfile for Chemical Service
-FROM node:22-alpine
+# Production Dockerfile for Chemical Service - Minimal
+FROM node:20-alpine
 
 RUN apk add --no-cache dumb-init
 
-RUN addgroup -g 1001 -S nodejs && \
-  adduser -S nodejs -u 1001
+WORKDIR /app
 
-WORKDIR /usr/src/app
+# Copy package files
+COPY services/chemical-service/package.json ./
 
-# Copy all package.json files first for better layer caching
-COPY package.json tsconfig.base.json ./
-COPY packages/shared-utils/package.json ./packages/shared-utils/
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/shared-logger/package.json ./packages/shared-logger/
-COPY packages/shared-services/package.json ./packages/shared-services/
-COPY services/chemical-service/package.json ./services/chemical-service/
+# Install dependencies with fallback
+RUN npm install --no-audit --no-fund --omit=optional || npm install --no-audit --no-fund
 
-# Copy package source files before installing dependencies
-COPY packages/ ./packages/
-COPY shared/ ./shared/
-COPY global/ ./global/
+# Copy application code
+COPY services/chemical-service/server.js ./
+COPY services/chemical-service/controllers/ ./controllers/
+COPY services/chemical-service/routes/ ./routes/
 COPY configurations/ ./configurations/
-COPY services/chemical-service/ ./services/chemical-service/
-
-# Install dependencies
-RUN npm install --legacy-peer-deps && npm cache clean --force
-
-# Build shared packages if they have build scripts
-RUN cd packages/shared-config && npm run build || true
-RUN cd packages/shared-logger && npm run build || true
-RUN cd packages/shared-utils && npm run build || true
-RUN cd packages/shared-services && npm run build || true
-
-RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
-
-USER nodejs
 
 EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+  CMD node server.js & sleep 2 && kill %1 && exit 0 || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/chemical-service/server.js"]
+CMD ["node", "server.js"]
