@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { ClipboardList, Hammer, DollarSign, Clock, Package, Users } from 'lucide-react';
-import { COLORS } from '../styles/theme';
+import { COLORS } from '../styles/theme.jsx';
 
 // ============================================================
 // STATS ROW - Dashboard statistics cards from real data
@@ -85,31 +85,31 @@ const StatSub = styled.div`
 `;
 
 const StatsRow = ({ stats }) => {
-    const statConfigs = [
-        { label: 'Total Orders', value: stats?.totalOrders || 0, sub: `${stats?.todayCompleted || 0} completed today`, icon: ClipboardList, color: COLORS.primary },
-        { label: 'In Production', value: stats?.inProductionOrders || 0, sub: `${stats?.completedOrders || 0} total completed`, icon: Hammer, color: COLORS.accent },
-        { label: 'Revenue', value: `KES ${((stats?.totalRevenue || 0) / 1000).toFixed(1)}K`, sub: 'From all orders', icon: DollarSign, color: COLORS.success },
-        { label: 'Active Orders', value: stats?.activeOrders || 0, sub: 'Currently in progress', icon: Clock, color: COLORS.stationDesign },
-        { label: 'Materials', value: stats?.totalMaterials || 0, sub: `${stats?.lowStockMaterials || 0} low stock`, icon: Package, color: COLORS.info },
-        { label: 'Workers', value: stats?.totalWorkers || 0, sub: 'Available workforce', icon: Users, color: COLORS.stationPolishing },
-    ];
+  const statConfigs = [
+    { label: 'Total Orders', value: stats?.totalOrders || 0, sub: `${stats?.todayCompleted || 0} completed today`, icon: ClipboardList, color: COLORS.primary },
+    { label: 'In Production', value: stats?.inProductionOrders || 0, sub: `${stats?.completedOrders || 0} total completed`, icon: Hammer, color: COLORS.accent },
+    { label: 'Revenue', value: `KES ${((stats?.totalRevenue || 0) / 1000).toFixed(1)}K`, sub: 'From all orders', icon: DollarSign, color: COLORS.success },
+    { label: 'Active Orders', value: stats?.activeOrders || 0, sub: 'Currently in progress', icon: Clock, color: COLORS.stationDesign },
+    { label: 'Materials', value: stats?.totalMaterials || 0, sub: `${stats?.lowStockMaterials || 0} low stock`, icon: Package, color: COLORS.info },
+    { label: 'Workers', value: stats?.totalWorkers || 0, sub: 'Available workforce', icon: Users, color: COLORS.stationPolishing },
+  ];
 
-    return (
-        <StatsRowContainer>
-            {statConfigs.map((stat, i) => (
-                <StatCard key={i} $color={stat.color}>
-                    <StatIcon $color={stat.color}>
-                        <stat.icon size={24} />
-                    </StatIcon>
-                    <StatInfo>
-                        <StatLabel>{stat.label}</StatLabel>
-                        <StatValue>{stat.value}</StatValue>
-                        <StatSub>{stat.sub}</StatSub>
-                    </StatInfo>
-                </StatCard>
-            ))}
-        </StatsRowContainer>
-    );
+  return (
+    <StatsRowContainer>
+      {statConfigs.map((stat, i) => (
+        <StatCard key={i} $color={stat.color}>
+          <StatIcon $color={stat.color}>
+            <stat.icon size={24} />
+          </StatIcon>
+          <StatInfo>
+            <StatLabel>{stat.label}</StatLabel>
+            <StatValue>{stat.value}</StatValue>
+            <StatSub>{stat.sub}</StatSub>
+          </StatInfo>
+        </StatCard>
+      ))}
+    </StatsRowContainer>
+  );
 };
 
 export default StatsRow;

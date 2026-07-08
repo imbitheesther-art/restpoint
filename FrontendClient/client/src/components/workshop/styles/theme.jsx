@@ -312,4 +312,197 @@ export const Button = ({ children, onClick, disabled, style, ...props }) => (
   </button>
 );
 
+export const CloseBtn = ({ onClick, children, style }) => (
+  <button
+    onClick={onClick}
+    style={{
+      width: '32px',
+      height: '32px',
+      borderRadius: '50%',
+      border: 'none',
+      background: theme.colors.border,
+      color: theme.colors.text,
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '1.2rem',
+      fontWeight: 'bold',
+      transition: 'all 0.2s',
+      ...style
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = theme.colors.urgent;
+      e.currentTarget.style.color = 'white';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = theme.colors.border;
+      e.currentTarget.style.color = theme.colors.text;
+    }}
+  >
+    {children || '✕'}
+  </button>
+);
+
+// Modal Components
+export const ModalOverlay = ({ children, style }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const Modal = ({ children, style }) => (
+  <div style={{
+    background: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    boxShadow: theme.shadows.lg,
+    maxWidth: '600px',
+    width: '90%',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const ModalHeader = ({ children, style }) => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    borderBottom: `1px solid ${theme.colors.border}`,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const ModalTitle = ({ children, style }) => (
+  <h2 style={{
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    color: theme.colors.text,
+    margin: 0,
+    ...style
+  }}>
+    {children}
+  </h2>
+);
+
+export const ModalBody = ({ children, style }) => (
+  <div style={{
+    padding: theme.spacing.lg,
+    overflowY: 'auto',
+    maxHeight: 'calc(90vh - 140px)',
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const ModalFooter = ({ children, style }) => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.lg,
+    borderTop: `1px solid ${theme.colors.border}`,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+// Form Components
+export const FormGroup = ({ children, style }) => (
+  <div style={{
+    marginBottom: theme.spacing.md,
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const Label = ({ children, style }) => (
+  <label style={{
+    display: 'block',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xs,
+    ...style
+  }}>
+    {children}
+  </label>
+);
+
+export const Input = ({ style, ...props }) => (
+  <input
+    style={{
+      width: '100%',
+      padding: theme.spacing.sm,
+      border: `1px solid ${theme.colors.border}`,
+      borderRadius: theme.borderRadius.sm,
+      fontSize: '0.875rem',
+      color: theme.colors.text,
+      background: theme.colors.surfaceLight,
+      boxSizing: 'border-box',
+      ...style
+    }}
+    {...props}
+  />
+);
+
+export const Select = ({ children, style, ...props }) => (
+  <select
+    style={{
+      width: '100%',
+      padding: theme.spacing.sm,
+      border: `1px solid ${theme.colors.border}`,
+      borderRadius: theme.borderRadius.sm,
+      fontSize: '0.875rem',
+      color: theme.colors.text,
+      background: theme.colors.surfaceLight,
+      boxSizing: 'border-box',
+      ...style
+    }}
+    {...props}
+  >
+    {children}
+  </select>
+);
+
+export const TextArea = ({ style, ...props }) => (
+  <textarea
+    style={{
+      width: '100%',
+      padding: theme.spacing.sm,
+      border: `1px solid ${theme.colors.border}`,
+      borderRadius: theme.borderRadius.sm,
+      fontSize: '0.875rem',
+      color: theme.colors.text,
+      background: theme.colors.surfaceLight,
+      boxSizing: 'border-box',
+      minHeight: '100px',
+      resize: 'vertical',
+      ...style
+    }}
+    {...props}
+  />
+);
+
 export default theme;

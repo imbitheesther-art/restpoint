@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { ModalOverlay, Modal, ModalHeader, ModalTitle, CloseBtn, ModalBody, ModalFooter, FormGroup, Label, Input, Select, TextArea, Button } from '../styles/theme';
+import { ModalOverlay, Modal, ModalHeader, ModalTitle, CloseBtn, ModalBody, ModalFooter, FormGroup, Label, Input, Select, TextArea, Button } from '../styles/theme.jsx';
 
 const CreateOrderModal = ({ show, onClose, form, onChange, onSubmit }) => {
     if (!show) return null;

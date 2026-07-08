@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { theme } from '../styles/theme';
+import { theme } from '../styles/theme.jsx';
 import { useSocketEvents } from '../hooks/useSocketEvents';
 
 // Real-time Production Workflow System

@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { FileImage, Grid, Upload, ZoomIn } from 'lucide-react';
-import { COLORS, Section, SectionHeader, SectionTitle, Button, EmptyState } from '../styles/theme';
+import { COLORS, Section, SectionHeader, SectionTitle, Button, EmptyState } from '../styles/theme.jsx';
 
 const DesignGrid = styled.div`
   display: grid;

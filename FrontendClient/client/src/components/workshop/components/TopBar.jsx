@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Bell, Settings, Activity } from 'lucide-react';
-import { COLORS, LiveDot } from '../styles/theme';
+import { COLORS, LiveDot } from '../styles/theme.jsx';
 
 // ============================================================
 // TOP BAR - Workshop header with branding and status
@@ -100,32 +100,32 @@ const TopButton = styled.button`
 `;
 
 const TopBar = ({ connected, onRefresh, onSettings }) => {
-    return (
-        <TopBarContainer>
-            <BrandSection>
-                <LogoIcon>🔨</LogoIcon>
-                <BrandText>
-                    <h1>Workshop Production Floor</h1>
-                    <p>Coffin Manufacturing & Custom Design Facility</p>
-                </BrandText>
-            </BrandSection>
-            <TopActions>
-                {!connected && (
-                    <TopButton style={{ borderColor: COLORS.warning, color: COLORS.warning }}>
-                        <Activity size={14} /> Offline
-                    </TopButton>
-                )}
-                {connected && (
-                    <TopButton style={{ borderColor: COLORS.successBg, color: COLORS.successBg }}>
-                        <LiveDot $active /> Live
-                    </TopButton>
-                )}
-                <TopButton onClick={onRefresh}><Activity size={14} /></TopButton>
-                <TopButton onClick={onSettings}><Bell size={14} /></TopButton>
-                <TopButton onClick={onSettings}><Settings size={14} /></TopButton>
-            </TopActions>
-        </TopBarContainer>
-    );
+  return (
+    <TopBarContainer>
+      <BrandSection>
+        <LogoIcon>🔨</LogoIcon>
+        <BrandText>
+          <h1>Workshop Production Floor</h1>
+          <p>Coffin Manufacturing & Custom Design Facility</p>
+        </BrandText>
+      </BrandSection>
+      <TopActions>
+        {!connected && (
+          <TopButton style={{ borderColor: COLORS.warning, color: COLORS.warning }}>
+            <Activity size={14} /> Offline
+          </TopButton>
+        )}
+        {connected && (
+          <TopButton style={{ borderColor: COLORS.successBg, color: COLORS.successBg }}>
+            <LiveDot $active /> Live
+          </TopButton>
+        )}
+        <TopButton onClick={onRefresh}><Activity size={14} /></TopButton>
+        <TopButton onClick={onSettings}><Bell size={14} /></TopButton>
+        <TopButton onClick={onSettings}><Settings size={14} /></TopButton>
+      </TopActions>
+    </TopBarContainer>
+  );
 };
 
 export default TopBar;

@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Plus, Printer, FileImage, Cpu, Package, Users, QrCode, BarChart3 } from 'lucide-react';
-import { COLORS } from '../styles/theme';
+import { COLORS } from '../styles/theme.jsx';
 
 const Section = styled.div`
   background: ${COLORS.cardBg};
@@ -60,31 +60,31 @@ const Label = styled.span`
 `;
 
 const QuickActions = ({ onNewOrder, onPrintJobCard, onDesignStudio, onSimulation, onStockIntake, onAssignWorker, onQRLabels, onAnalytics }) => {
-    const actions = [
-        { icon: Plus, label: 'New Order', onClick: onNewOrder },
-        { icon: Printer, label: 'Print Job Card', onClick: onPrintJobCard },
-        { icon: FileImage, label: 'Design Studio', onClick: onDesignStudio },
-        { icon: Cpu, label: 'Simulation', onClick: onSimulation },
-        { icon: Package, label: 'Stock Intake', onClick: onStockIntake },
-        { icon: Users, label: 'Assign Worker', onClick: onAssignWorker },
-        { icon: QrCode, label: 'QR Labels', onClick: onQRLabels },
-        { icon: BarChart3, label: 'Analytics', onClick: onAnalytics },
-    ];
-    return (
-        <Section>
-            <SectionHeader>
-                <SectionTitle><Cpu size={18} /> Quick Actions</SectionTitle>
-            </SectionHeader>
-            <Grid>
-                {actions.map((a, i) => (
-                    <ActionBtn key={i} onClick={a.onClick}>
-                        <a.icon size={24} />
-                        <Label>{a.label}</Label>
-                    </ActionBtn>
-                ))}
-            </Grid>
-        </Section>
-    );
+  const actions = [
+    { icon: Plus, label: 'New Order', onClick: onNewOrder },
+    { icon: Printer, label: 'Print Job Card', onClick: onPrintJobCard },
+    { icon: FileImage, label: 'Design Studio', onClick: onDesignStudio },
+    { icon: Cpu, label: 'Simulation', onClick: onSimulation },
+    { icon: Package, label: 'Stock Intake', onClick: onStockIntake },
+    { icon: Users, label: 'Assign Worker', onClick: onAssignWorker },
+    { icon: QrCode, label: 'QR Labels', onClick: onQRLabels },
+    { icon: BarChart3, label: 'Analytics', onClick: onAnalytics },
+  ];
+  return (
+    <Section>
+      <SectionHeader>
+        <SectionTitle><Cpu size={18} /> Quick Actions</SectionTitle>
+      </SectionHeader>
+      <Grid>
+        {actions.map((a, i) => (
+          <ActionBtn key={i} onClick={a.onClick}>
+            <a.icon size={24} />
+            <Label>{a.label}</Label>
+          </ActionBtn>
+        ))}
+      </Grid>
+    </Section>
+  );
 };
 
 export default QuickActions;

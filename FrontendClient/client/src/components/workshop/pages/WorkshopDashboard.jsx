@@ -6,12 +6,14 @@ import {
     Calendar, Loader2, Download, Gauge,
     ClipboardList, AlertTriangle, TrendingUp
 } from 'lucide-react';
+import { workshopService } from '../services/workshopService';
 
 // Sub-components
 import ProductionStatCard from '../components/ProductionStatCard';
 import ActiveOrdersTable from '../components/ActiveOrdersTable';
 import MaterialsInventory from '../components/MaterialsInventory';
 import QuickActions from '../components/QuickActions';
+import CreateOrderModal from '../components/CreateOrderModal';
 
 const WorkshopDashboard = () => {
     const [stats, setStats] = useState({
@@ -26,7 +28,50 @@ const WorkshopDashboard = () => {
     const [orders, setOrders] = useState([]);
     const [materials, setMaterials] = useState([]);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [orderForm, setOrderForm] = useState({
+        customer_name: '',
+        deceased_name: '',
+        coffin_type: 'standard',
+        selling_price: '',
+        color: 'walnut',
+        interior: 'satin_gold',
+        delivery_date: '',
+        dimensions: { length: '', width: '', height: '' },
+        notes: ''
+    });
     const { connected } = useSocket();
+
+    // Load initial data
+    useEffect(() => {
+        loadDashboardData();
+    }, []);
+
+    const loadDashboardData = async () => {
+        try {
+            // Load orders
+            const ordersRes = await workshopService.getOrders({ status: 'active' });
+            if (ordersRes.success) {
+                setOrders(ordersRes.data || []);
+                setStats(prev => ({ ...prev, activeOrders: ordersRes.data?.length || 0 }));
+            }
+
+            // Load materials
+            const materialsRes = await workshopService.getMaterials();
+            if (materialsRes.success) {
+                setMaterials(materialsRes.data || []);
+                setStats(prev => ({ ...prev, materialsInStock: materialsRes.data?.length || 0 }));
+            }
+
+            // Load workers count
+            const workersRes = await workshopService.getWorkers();
+            if (workersRes.success) {
+                setStats(prev => ({ ...prev, totalProduction: workersRes.data?.length || 0 }));
+            }
+        } catch (error) {
+            console.error('Failed to load dashboard data:', error);
+        }
+    };
 
     // Real-time socket event handlers
     useSocketEvents({
@@ -109,6 +154,143 @@ const WorkshopDashboard = () => {
     const handleGenerateReport = () => {
         // Generate PDF report
         console.log('Generating report...');
+    };
+
+    // Quick Actions handlers
+    const handleNewOrder = () => {
+        console.log('Opening new order modal...');
+        setShowCreateModal(true);
+    };
+
+    const handlePrintJobCard = async () => {
+        if (orders.length === 0) {
+            alert('No orders available to print');
+            return;
+        }
+        // Get the first active order and print its job card
+        const order = orders[0];
+        try {
+            const res = await workshopService.getWorkOrderPDF(order.id);
+            if (res.success && res.data) {
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `job-card-${order.order_number || order.id}.pdf`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            }
+        } catch (error) {
+            console.error('Failed to print job card:', error);
+            alert('Failed to generate job card PDF');
+        }
+    };
+
+    const handleDesignStudio = () => {
+        console.log('Opening design studio...');
+        // Navigate to design studio or open modal
+        window.open('/workshop/designs', '_blank');
+    };
+
+    const handleSimulation = () => {
+        console.log('Opening simulation...');
+        // Open simulation in new tab or modal
+        const simulationWindow = window.open('', '_blank', 'width=1200,height=800');
+        if (simulationWindow) {
+            simulationWindow.document.write('<h1>Production Simulation Panel</h1><p>Simulation interface would load here</p>');
+        }
+    };
+
+    const handleStockIntake = async () => {
+        const materialName = prompt('Enter material name:');
+        if (!materialName) return;
+
+        const quantity = prompt('Enter quantity:');
+        if (!quantity) return;
+
+        const unit = prompt('Enter unit (e.g., kg, pcs, liters):');
+        if (!unit) return;
+
+        try {
+            const res = await workshopService.createMaterial({
+                name: materialName,
+                quantity: parseInt(quantity),
+                unit: unit,
+                min_stock_level: 10
+            });
+            if (res.success) {
+                alert('Material added successfully!');
+                loadDashboardData(); // Reload data
+            } else {
+                alert('Failed to add material: ' + res.error);
+            }
+        } catch (error) {
+            console.error('Failed to add material:', error);
+            alert('Failed to add material');
+        }
+    };
+
+    const handleAssignWorker = async () => {
+        if (orders.length === 0) {
+            alert('No active orders to assign workers to');
+            return;
+        }
+
+        // Load workers
+        const workersRes = await workshopService.getWorkers();
+        if (!workersRes.success || !workersRes.data?.length) {
+            alert('No workers available');
+            return;
+        }
+
+        const order = orders[0];
+        const workerNames = workersRes.data.map(w => `${w.id}: ${w.first_name} ${w.last_name} - ${w.role}`).join('\n');
+        const workerId = prompt(`Assign worker to order #${order.order_number || order.id}\n\nAvailable workers:\n${workerNames}\n\nEnter worker ID:`);
+
+        if (!workerId) return;
+
+        const stage = prompt('Enter stage (e.g., design, cutting, assembly, polishing, finishing, quality_check):');
+        if (!stage) return;
+
+        try {
+            const res = await workshopService.assignWorkerToOrder(order.id, {
+                worker_id: parseInt(workerId),
+                stage: stage,
+                notes: 'Assigned from quick actions'
+            });
+            if (res.success) {
+                alert('Worker assigned successfully!');
+                loadDashboardData(); // Reload data
+            } else {
+                alert('Failed to assign worker: ' + res.error);
+            }
+        } catch (error) {
+            console.error('Failed to assign worker:', error);
+            alert('Failed to assign worker');
+        }
+    };
+
+    const handleQRLabels = () => {
+        if (orders.length === 0) {
+            alert('No orders available for QR labels');
+            return;
+        }
+        // Generate QR codes for all active orders
+        const qrData = orders.map(order => ({
+            order_number: order.order_number || `#${order.id}`,
+            customer: order.customer_name,
+            deceased: order.deceased_name,
+            status: order.status
+        }));
+
+        console.log('QR Labels Data:', qrData);
+        alert(`QR Labels generated for ${orders.length} orders!\n\nCheck console for QR data.`);
+    };
+
+    const handleAnalytics = () => {
+        console.log('Opening analytics...');
+        // Navigate to analytics page
+        window.open('/workshop/analytics', '_blank');
     };
 
     return (
@@ -211,7 +393,16 @@ const WorkshopDashboard = () => {
                     onDownloadPDF={(id) => console.log('Download PDF:', id)}
                     onViewAll={() => console.log('View all orders')}
                 />
-                <QuickActions />
+                <QuickActions
+                    onNewOrder={handleNewOrder}
+                    onPrintJobCard={handlePrintJobCard}
+                    onDesignStudio={handleDesignStudio}
+                    onSimulation={handleSimulation}
+                    onStockIntake={handleStockIntake}
+                    onAssignWorker={handleAssignWorker}
+                    onQRLabels={handleQRLabels}
+                    onAnalytics={handleAnalytics}
+                />
             </div>
 
             {/* Row 3: Materials Inventory */}
@@ -223,6 +414,57 @@ const WorkshopDashboard = () => {
             }}>
                 <MaterialsInventory materials={materials} />
             </div>
+
+            {/* Create Order Modal */}
+            {showCreateModal && (
+                <CreateOrderModal
+                    show={showCreateModal}
+                    form={orderForm}
+                    onChange={setOrderForm}
+                    onClose={() => {
+                        setShowCreateModal(false);
+                        // Reset form
+                        setOrderForm({
+                            customer_name: '',
+                            deceased_name: '',
+                            coffin_type: 'standard',
+                            selling_price: '',
+                            color: 'walnut',
+                            interior: 'satin_gold',
+                            delivery_date: '',
+                            dimensions: { length: '', width: '', height: '' },
+                            notes: ''
+                        });
+                    }}
+                    onSubmit={async () => {
+                        try {
+                            const res = await workshopService.createOrder(orderForm);
+                            if (res.success) {
+                                alert('Order created successfully!');
+                                setShowCreateModal(false);
+                                // Reset form
+                                setOrderForm({
+                                    customer_name: '',
+                                    deceased_name: '',
+                                    coffin_type: 'standard',
+                                    selling_price: '',
+                                    color: 'walnut',
+                                    interior: 'satin_gold',
+                                    delivery_date: '',
+                                    dimensions: { length: '', width: '', height: '' },
+                                    notes: ''
+                                });
+                                loadDashboardData(); // Reload data
+                            } else {
+                                alert('Failed to create order: ' + res.error);
+                            }
+                        } catch (error) {
+                            console.error('Failed to create order:', error);
+                            alert('Failed to create order');
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 };

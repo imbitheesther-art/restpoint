@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClipboardList, Eye, Download, Plus } from 'lucide-react';
-import { Section, SectionHeader, SectionTitle, Table, Th, Td, Tr, Badge, EmptyState, Button } from '../styles/theme';
+import { Section, SectionHeader, SectionTitle, Table, Th, Td, Tr, Badge, EmptyState, Button } from '../styles/theme.jsx';
 
 const AllOrdersTable = ({ orders, onViewOrder, onDownloadPDF, onCreateOrder }) => {
     const getStatusBadge = (s) => {
