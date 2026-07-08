@@ -43,6 +43,7 @@ const WorkshopDashboard = () => {
     const [showMaterialUsageModal, setShowMaterialUsageModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [materialUsageForm, setMaterialUsageForm] = useState({ material_id: '', quantity_used: '', notes: '' });
+    const [pendingMaterials, setPendingMaterials] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [orderForm, setOrderForm] = useState({
@@ -229,31 +230,49 @@ const WorkshopDashboard = () => {
     };
 
     // --- Record Material Usage ---
-    const handleRecordMaterialUsage = async () => {
-        if (!selectedOrder || !materialUsageForm.material_id || !materialUsageForm.quantity_used) {
+    const handleAddToPendingMaterials = () => {
+        if (!materialUsageForm.material_id || !materialUsageForm.quantity_used) {
             alert('Please select a material and enter quantity');
             return;
         }
+        const material = materials.find(m => m.id === parseInt(materialUsageForm.material_id));
+        setPendingMaterials(prev => [...prev, {
+            material_id: parseInt(materialUsageForm.material_id),
+            material_name: material?.name || `Material #${materialUsageForm.material_id}`,
+            quantity_used: parseFloat(materialUsageForm.quantity_used),
+            unit: material?.unit || 'units',
+            notes: materialUsageForm.notes
+        }]);
+        setMaterialUsageForm({ material_id: '', quantity_used: '', notes: '' });
+    };
+
+    const handleRemovePendingMaterial = (index) => {
+        setPendingMaterials(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSaveAllPendingMaterials = async () => {
+        if (pendingMaterials.length === 0) {
+            alert('No materials to save');
+            return;
+        }
         try {
-            const res = await workshopService.useMaterial({
-                coffin_order_id: selectedOrder.id,
-                material_id: parseInt(materialUsageForm.material_id),
-                quantity_used: parseFloat(materialUsageForm.quantity_used),
-                notes: materialUsageForm.notes
-            });
-            if (res.success) {
-                alert('Material recorded successfully!');
-                setMaterialUsageForm({ material_id: '', quantity_used: '', notes: '' });
-                // Refresh data to show updated stock
-                const orderRes = await workshopService.getOrder(selectedOrder.id);
-                if (orderRes.success) setSelectedOrder(orderRes.data);
-                loadDashboardData();
-            } else {
-                alert('Failed to record material: ' + res.error);
+            for (const mat of pendingMaterials) {
+                await workshopService.useMaterial({
+                    coffin_order_id: selectedOrder.id,
+                    material_id: mat.material_id,
+                    quantity_used: mat.quantity_used,
+                    notes: mat.notes
+                });
             }
+            alert(`${pendingMaterials.length} material(s) recorded successfully!`);
+            setPendingMaterials([]);
+            setMaterialUsageForm({ material_id: '', quantity_used: '', notes: '' });
+            const orderRes = await workshopService.getOrder(selectedOrder.id);
+            if (orderRes.success) setSelectedOrder(orderRes.data);
+            loadDashboardData();
         } catch (error) {
-            console.error('Failed to record material:', error);
-            alert('Material recorded locally');
+            console.error('Failed to record materials:', error);
+            alert('Some materials may not have been saved');
         }
     };
 
@@ -1390,9 +1409,27 @@ const WorkshopDashboard = () => {
                                     onChange={(e) => setMaterialUsageForm({ ...materialUsageForm, notes: e.target.value })}
                                     style={{ width: '100%', padding: '0.4rem', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.5rem' }}
                                 />
-                                <button className="btn btn-dark text-xs" onClick={handleRecordMaterialUsage} style={{ marginTop: '0.5rem' }} disabled={!materialUsageForm.material_id || !materialUsageForm.quantity_used}>
-                                    <Save size={12} /> Update Materials
+                                <button className="btn btn-outline text-xs" onClick={handleAddToPendingMaterials} style={{ marginTop: '0.5rem', marginRight: '0.5rem' }} disabled={!materialUsageForm.material_id || !materialUsageForm.quantity_used}>
+                                    <Plus size={12} /> Add Another
                                 </button>
+
+                                {/* Pending Materials List */}
+                                {pendingMaterials.length > 0 && (
+                                    <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                        <h6 style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>Pending Materials ({pendingMaterials.length})</h6>
+                                        {pendingMaterials.map((mat, idx) => (
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                                                <span style={{ fontSize: '0.8rem' }}>{mat.material_name} - {mat.quantity_used} {mat.unit}</span>
+                                                <button onClick={() => handleRemovePendingMaterial(idx)} style={{ border: 'none', background: 'none', color: '#e74c3c', cursor: 'pointer', padding: '2px' }}>
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button className="btn btn-dark text-xs" onClick={handleSaveAllPendingMaterials} style={{ marginTop: '0.75rem', width: '100%' }}>
+                                            <Save size={12} /> Save All Materials ({pendingMaterials.length})
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
