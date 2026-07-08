@@ -44,7 +44,7 @@ const SERVICE_URLS = {
   bodycheckout: process.env.BODYCHECKOUT_SERVICE_URL || 'http://127.0.0.1:5013',
   edocuments: process.env.EDOCUMENTS_SERVICE_URL || 'http://127.0.0.1:5014',
   calendar: process.env.CALENDAR_SERVICE_URL || 'http://127.0.0.1:5015',
-  chemicals: process.env.CHEMICALS_SERVICE_URL || 'http://127.0.0.1:5016',
+  chemicals: process.env.CHEMICALS_SERVICE_URL || 'http://127.0.0.1:5019',
   billing: process.env.BILLING_SERVICE_URL || 'http://127.0.0.1:5017',
   socketio: process.env.SOCKETIO_SERVICE_URL || 'http://127.0.0.1:5018',
   workshop: process.env.WORKSHOP_SERVICE_URL || 'http://127.0.0.1:6969',
@@ -129,7 +129,7 @@ const SERVICE_ROUTES = {
   // Coffin service (port 8108)
   'coffins': SERVICE_URLS.coffin,
 
-  // Chemical service (port 5016)
+  // Chemical service (port 5019 for local dev, 5105 in Docker)
   'chemicals': SERVICE_URLS.chemicals,
 
   // Support service (port 8111)

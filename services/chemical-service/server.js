@@ -156,10 +156,11 @@ app.get('/api/v1/restpoint/chemicals/test', (req, res) => {
 });
 
 // ============================================
-// ROUTES - Mount chemical routes at root
+// ROUTES - Mount chemical routes at /chemicals
 // ============================================
 // The API Gateway strips /api/v1/restpoint/chemicals prefix and forwards clean paths
-app.use('/', chemicalRoutes);
+// So we need to mount at /chemicals to handle the full path
+app.use('/chemicals', chemicalRoutes);
 
 // ============================================
 // 404 HANDLER
