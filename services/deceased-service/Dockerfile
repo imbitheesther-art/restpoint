@@ -15,7 +15,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN yarn install --no-lockfile && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/

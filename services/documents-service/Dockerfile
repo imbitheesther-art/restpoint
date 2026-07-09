@@ -15,7 +15,7 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/documents-service/package.json ./services/documents-service/
 
-RUN yarn install --no-lockfile && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/

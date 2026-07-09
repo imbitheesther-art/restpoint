@@ -23,7 +23,7 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/tenant-service/package.json ./services/tenant-service/
 
 # Install ALL dependencies (including dev for building)
-RUN yarn install --no-lockfile && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
 COPY configurations/ ./configurations/

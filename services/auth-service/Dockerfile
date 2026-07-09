@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/auth-service/package.json ./services/auth-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --no-lockfile && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
 COPY configurations/ ./configurations/

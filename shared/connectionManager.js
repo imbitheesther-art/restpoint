@@ -71,7 +71,7 @@ class ConnectionManager {
         this.config = { ...DEFAULT_CONFIG, ...config };
         this.poolCache = new Map();
         this.lruOrder = [];
-        console.log(`[ConnectionManager] 🔐 Initialized singleton. Config:
+        console.log(`[ConnectionManager]  Initialized singleton. Config:
       ├─ Max connections per tenant: ${this.config.maxConnectionsPerTenant}
       ├─ Max queue per tenant:       ${this.config.maxQueuePerTenant}
       ├─ Queue timeout:              ${this.config.queueTimeoutMs}ms
@@ -99,10 +99,10 @@ class ConnectionManager {
     static getInstance(config) {
         if (!ConnectionManager.instance) {
             ConnectionManager.instance = new ConnectionManager(config);
-            console.log('[ConnectionManager] 🆕 Singleton instance created');
+            console.log('[ConnectionManager]  Singleton instance created');
         }
         else if (config) {
-            console.warn('[ConnectionManager] ⚠️ Instance already exists; config ignored');
+            console.warn('[ConnectionManager]  Instance already exists; config ignored');
         }
         return ConnectionManager.instance;
     }
@@ -117,7 +117,7 @@ class ConnectionManager {
         if (ConnectionManager.instance) {
             await ConnectionManager.instance.shutdown();
             ConnectionManager.instance = null;
-            console.log('[ConnectionManager] 🔄 Singleton instance reset');
+            console.log('[ConnectionManager]  Singleton instance reset');
         }
     }
     // ────────────────────────────────────────────────────────────────────────────
@@ -146,10 +146,10 @@ class ConnectionManager {
      */
     async query(tenantDbName, sql, params = []) {
         if (this.isShuttingDown) {
-            throw new Error('[ConnectionManager] 🔴 System is shutting down; rejecting query');
+            throw new Error('[ConnectionManager]  System is shutting down; rejecting query');
         }
         if (!tenantDbName || typeof tenantDbName !== 'string') {
-            throw new Error(`[ConnectionManager] ❌ Invalid tenantDbName: ${tenantDbName}`);
+            throw new Error(`[ConnectionManager]  Invalid tenantDbName: ${tenantDbName}`);
         }
         let connection = null;
         const queryStartTime = Date.now();
@@ -169,7 +169,7 @@ class ConnectionManager {
             const duration = Date.now() - queryStartTime;
             // Log slow queries (> 1 second) for performance monitoring
             if (duration > 1000) {
-                console.warn(`[ConnectionManager] 🐢 Slow query on "${tenantDbName}" (${duration}ms): ${sql.substring(0, 100)}`);
+                console.warn(`[ConnectionManager]  Slow query on "${tenantDbName}" (${duration}ms): ${sql.substring(0, 100)}`);
             }
             return rows;
         }

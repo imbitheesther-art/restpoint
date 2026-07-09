@@ -7,6 +7,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 const { safeTenantQuery, safeTenantExecute, resolveDatabase, getTenantDB } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
+const Logger = require('../../global/middlewares/serviceDiscovery').Logger;
 
 const restpointRoutes = require('./routes/hearseRoutes');
 
@@ -31,17 +32,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-    console.log(`🔌 Client connected: ${socket.id}`);
+    Logger.info(`Socket connected: ${socket.id}`);
+
     socket.on('join_branch', (branchId) => {
         socket.join(`branch_${branchId}`);
-        console.log(`Socket ${socket.id} joined branch_${branchId}`);
+        Logger.info(`Socket ${socket.id} joined branch ${branchId}`);
     });
     socket.on('join_admin', () => {
         socket.join('admin');
-        console.log(`Socket ${socket.id} joined admin room`);
+        Logger.info(`Socket ${socket.id} joined admin room`);
     });
     socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
+        Logger.info(`Socket disconnected: ${socket.id}`);
     });
 });
 
@@ -54,7 +56,7 @@ app.use(async (req, res, next) => {
         req.tenantSlug = tenantSlug;
         req.branchId = branchId;
 
-        console.log(`[HEARSE] ${req.method} ${req.path} - Tenant: ${tenantSlug}`);
+        Logger.info(`[HEARSE] ${req.method} ${req.path} - Tenant: ${tenantSlug}`);
 
         if (tenantSlug === 'system_shared') {
             req.tenant = {
@@ -69,15 +71,11 @@ app.use(async (req, res, next) => {
         let tenantStatus = await validateTenantActive(tenantSlug);
         let resolvedDbName = null;
 
-        // Step 2: If not found as tenant, try to resolve the database
-        // IMPORTANT: For hearse data that should be shared across all branches,
-        // we MUST use the MAIN tenant database, NOT a branch-specific database.
+        //  If not found as tenant, try to resolve the database
         // The main tenant DB has the branches table and hearses shared by all branches.
         if (!tenantStatus.active) {
-            console.log(`[HEARSE] Not a direct tenant slug, trying database resolution for: ${tenantSlug}`);
 
-            // FIRST TRY: Check tenant_tracking.branch_tracking to find the MAIN tenant DB
-            // This is the most reliable way - branch_slug may match the slug sent from frontend
+
             try {
                 const rootPool = await require('../../shared/dbConfig').getRootPool();
                 const [branchRows] = await rootPool.query(
@@ -91,10 +89,10 @@ app.use(async (req, res, next) => {
 
                 if (branchRows && branchRows.length > 0) {
                     resolvedDbName = branchRows[0].tenant_db_name;
-                    console.log(`[HEARSE] Found branch in branch_tracking: ${tenantSlug} → main tenant DB: ${resolvedDbName}`);
+                    Logger.info(`[HEARSE] Found branch in branch_tracking: ${tenantSlug} → main tenant DB: ${resolvedDbName}`);
                 }
             } catch (e) {
-                console.log(`[HEARSE] branch_tracking lookup failed: ${e.message}`);
+                Logger.error(`[HEARSE] branch_tracking lookup failed: ${e.message}`);
             }
 
             // SECOND TRY: resolveDatabase() which supports branch slug patterns
@@ -104,7 +102,7 @@ app.use(async (req, res, next) => {
 
             // THIRD TRY: The slug itself IS a database name (main tenant DB or branch DB)
             if (!resolvedDbName) {
-                console.log(`[HEARSE] Trying slug "${tenantSlug}" directly as database name...`);
+                Logger.info(`[HEARSE] Trying slug "${tenantSlug}" directly as database name...`);
                 try {
                     const testPool = require('mysql2/promise').createPool({
                         host: process.env.DB_HOST || '127.0.0.1',
@@ -119,11 +117,11 @@ app.use(async (req, res, next) => {
                     const [result] = await testPool.query('SELECT 1');
                     if (result) {
                         resolvedDbName = tenantSlug;
-                        console.log(`[HEARSE] Direct database connection successful: ${resolvedDbName}`);
+                        Logger.info(`[HEARSE] Direct database connection successful: ${resolvedDbName}`);
                     }
                     await testPool.end().catch(() => { });
                 } catch (dbErr) {
-                    console.log(`[HEARSE] Direct database connection failed: ${dbErr.message}`);
+
                 }
             }
 
@@ -144,7 +142,7 @@ app.use(async (req, res, next) => {
                             );
                             if (branchRows && branchRows.length > 0) {
                                 resolvedDbName = t.db_name;
-                                console.log(`[HEARSE] Found branch "${tenantSlug}" in tenant "${t.tenant_slug}" → main DB: ${resolvedDbName}`);
+                                Logger.info(`[HEARSE] Found branch "${tenantSlug}" in tenant "${t.tenant_slug}" → main DB: ${resolvedDbName}`);
                                 break;
                             }
                         } catch (tenantErr) {
@@ -152,7 +150,7 @@ app.use(async (req, res, next) => {
                         }
                     }
                 } catch (e) {
-                    console.log(`[HEARSE] Cross-tenant branch search failed: ${e.message}`);
+
                 }
             }
 
@@ -166,7 +164,7 @@ app.use(async (req, res, next) => {
 
                 if (tenants && tenants.length > 0) {
                     tenantStatus = { active: true, tenant: tenants[0] };
-                    console.log(`[HEARSE] Resolved "${tenantSlug}" → tenant: ${tenantStatus.tenant.tenant_name} (db: ${tenantStatus.tenant.db_name})`);
+                    Logger.info(`[HEARSE] Resolved "${tenantSlug}" → tenant: ${tenantStatus.tenant.tenant_name} (db: ${tenantStatus.tenant.db_name})`);
                 } else {
                     // Fallback: use resolved DB name directly as tenant
                     tenantStatus = {
@@ -178,7 +176,7 @@ app.use(async (req, res, next) => {
                             tenant_slug: tenantSlug
                         }
                     };
-                    console.log(`[HEARSE] Using resolved database directly: ${resolvedDbName}`);
+
                 }
             }
         }
@@ -191,7 +189,7 @@ app.use(async (req, res, next) => {
         }
 
         req.tenant = tenantStatus.tenant;
-        console.log(`[HEARSE] Tenant validated: ${req.tenant.db_name}`);
+
 
         // Resolve branch if not provided
         if (!req.branchId && req.tenant?.db_name) {
@@ -202,16 +200,16 @@ app.use(async (req, res, next) => {
                 );
                 if (branches.length > 0) {
                     req.branchId = branches[0].branch_id.toString();
-                    console.log(`[HEARSE] Branch resolved: ${req.branchId}`);
+                    Logger.info(`[HEARSE] Branch resolved: ${req.branchId}`);
                 }
             } catch (e) {
-                console.log('[HEARSE] Branch resolution skipped:', e.message);
+                Logger.error(`[HEARSE] Branch resolution failed: ${e.message}`);
             }
         }
 
         next();
     } catch (error) {
-        console.error('[HEARSE] Error:', error);
+
         res.status(500).json({
             status: 'error',
             message: 'Failed to initialize tenant database',
@@ -256,26 +254,25 @@ app.get('/', (req, res) => {
 // ============================================================
 // Debug: Print all registered routes
 // ============================================================
-console.log('\n Registered Routes:');
+Logger.info('Registered Routes:');
 app._router.stack.forEach((layer) => {
     if (layer.route) {
         const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-        console.log(`   ${methods}  ${layer.route.path}`);
+        Logger.info(`  ${methods}  ${layer.route.path}`);
     }
     if (layer.name === 'router' && layer.handle.stack) {
         layer.handle.stack.forEach((l) => {
             if (l.route) {
                 const methods = Object.keys(l.route.methods).join(', ').toUpperCase();
-                console.log(`   ${methods}  ${l.route.path}`);
+                Logger.info(`  ${methods}  ${l.route.path}`);
             }
         });
     }
 });
-console.log('');
 
 // 404 handler
 app.use((req, res) => {
-    console.log(` Route not found: ${req.method} ${req.originalUrl}`);
+    Logger.warn(`Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
         status: 'error',
         message: `Route ${req.originalUrl} not found.`,
@@ -292,7 +289,7 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-    console.error(' Unhandled Error:', err);
+    Logger.error('Unhandled Error:', err);
     res.status(500).json({
         status: 'error',
         message: 'Internal server error.',

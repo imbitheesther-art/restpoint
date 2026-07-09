@@ -23,8 +23,9 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 # Copy service package.json
 COPY services/workshop-service/package.json ./services/workshop-service/
 
-# Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --no-lockfile && yarn cache clean
+# Install ALL dependencies 
+# Increase network timeout to handle slow connections
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/

@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/notification-service/package.json ./services/notification-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn install --no-lockfile && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/
