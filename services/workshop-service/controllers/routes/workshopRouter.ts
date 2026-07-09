@@ -1,4 +1,6 @@
 import express from 'express'
+// @ts-ignore - authMiddleware is JavaScript, not TypeScript
+const { protect, authorizeAny } = require('../../../../global/middlewares/authMiddleware')
 import {
     getOrders,
     getOrder,
@@ -6,6 +8,7 @@ import {
     updateOrder,
     deleteOrder
 } from '../coffinOrderController'
+
 import {
     getMaterials,
     getMaterial,
@@ -52,6 +55,10 @@ import {
 } from '../productionWorkflowController'
 
 const workshopRouter = express.Router()
+
+// Apply authentication to all routes
+workshopRouter.use(protect)
+workshopRouter.use(authorizeAny as any)
 
 // ============ COFFIN ORDERS ============
 workshopRouter.get('/orders', getOrders)

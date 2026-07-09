@@ -1,11 +1,13 @@
 
-
-
 const express = require('express');
 const router = express.Router();
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
 
 const hearseBookingController = require('../controllers/bookHerse');
 const hearseController = require('../controllers/restpoint/hearseController');
+// Apply authentication to all routes
+router.use(protect);
+router.use(authorizeAny);
 
 // ============================================================
 // HEARSE MANAGEMENT
@@ -33,9 +35,6 @@ router.get('/hearses/available/cross-branch', hearseController.getAvailableHears
 // HEARSE BOOKINGS
 // ============================================================
 
-// ⚠️ IMPORTANT: static/specific routes must come BEFORE '/hearse-bookings/:booking_id...'
-// style dynamic routes, otherwise Express will try to match "availability"
-// as a booking_id param and break this endpoint.
 router.get('/hearse-bookings/availability', hearseBookingController.getAvailabilityAcrossBranches);
 router.get('/hearse-bookings/check-date', hearseBookingController.checkAvailabilityByDate);
 

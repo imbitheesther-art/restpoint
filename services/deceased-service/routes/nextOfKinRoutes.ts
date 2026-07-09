@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { protect, authorizeAny } from '../../../global/middlewares/authMiddleware';
+import {
+  protect,
+  authorizeAny
+} from '../../../global/middlewares/authMiddleware';
+
 import {
   nextOfKinRegister,
   getNextOfKinByDeceasedId,
