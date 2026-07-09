@@ -1,5 +1,6 @@
 
 import { Router } from 'express';
+import { protect, authorizeAny } from '../../../global/middlewares/authMiddleware';
 import {
     registerDeceased,
     getAllDeceased,
@@ -10,6 +11,10 @@ import {
 } from '../controllers/deceasedControl';
 
 const router = Router();
+
+// Apply authentication to all routes
+router.use(protect);
+router.use(authorizeAny);
 
 // ============================================
 // ✅ ALL ROUTES - FULL PATH COMPATIBILITY

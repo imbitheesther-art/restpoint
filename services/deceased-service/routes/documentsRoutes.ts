@@ -1,20 +1,17 @@
 import { Router, Request, Response } from 'express';
+// @ts-ignore - authMiddleware is JavaScript, not TypeScript
+const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
 
 const router = Router();
 
-// Simple authentication middleware stub
-const authenticate = (req: Request, res: Response, next: Function) => {
-    // TODO: Implement proper authentication
-    (req as any).user = { userId: 'system', role: 'admin' };
-    next();
-};
-
-router.use(authenticate);
+// Apply authentication to all routes
+router.use(protect);
+router.use(authorizeAny);
 
 // Documents routes
 // GET /deceased/:deceased_id/documents - Get all documents for a deceased person
 router.get('/:deceased_id/documents', (req: Request, res: Response) => {
-    const { deceased_id } = req.params;
+    const { deceased_id } = (req as any).params;
 
     return res.status(200).json({
         success: true,
@@ -26,7 +23,7 @@ router.get('/:deceased_id/documents', (req: Request, res: Response) => {
 
 // POST /deceased/:deceased_id/documents - Upload a document for a deceased person
 router.post('/:deceased_id/documents', (req: Request, res: Response) => {
-    const { deceased_id } = req.params;
+    const { deceased_id } = (req as any).params;
     const documentData = req.body;
 
     return res.status(201).json({
@@ -42,7 +39,7 @@ router.post('/:deceased_id/documents', (req: Request, res: Response) => {
 
 // DELETE /deceased/:deceased_id/documents/:document_id - Delete a document
 router.delete('/:deceased_id/documents/:document_id', (req: Request, res: Response) => {
-    const { deceased_id, document_id } = req.params;
+    const { deceased_id, document_id } = (req as any).params;
 
     return res.status(200).json({
         success: true,
@@ -53,7 +50,7 @@ router.delete('/:deceased_id/documents/:document_id', (req: Request, res: Respon
 
 // GET /deceased/:deceased_id/documents/:document_id - Get a specific document
 router.get('/:deceased_id/documents/:document_id', (req: Request, res: Response) => {
-    const { deceased_id, document_id } = req.params;
+    const { deceased_id, document_id } = (req as any).params;
 
     return res.status(200).json({
         success: true,

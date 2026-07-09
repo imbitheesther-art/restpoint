@@ -1,15 +1,11 @@
 import { Router, Request, Response } from 'express';
+import { protect, authorizeAny } from '../../../global/middlewares/authMiddleware';
 
 const router = Router();
 
-// Simple authentication middleware stub
-const authenticate = (req: Request, res: Response, next: Function) => {
-    // TODO: Implement proper authentication
-    (req as any).user = { userId: 'system', role: 'admin' };
-    next();
-};
-
-router.use(authenticate);
+// Apply authentication to all routes
+router.use(protect);
+router.use(authorizeAny);
 
 // Hearse routes
 router.post('/hearse/create', (req: Request, res: Response) => {
@@ -32,7 +28,7 @@ router.get('/hearse/:id', (req: Request, res: Response) => {
     return res.status(200).json({
         success: true,
         message: 'Hearse details fetched',
-        data: { id: req.params.id }
+        data: { id: (req as any).params.id }
     });
 });
 

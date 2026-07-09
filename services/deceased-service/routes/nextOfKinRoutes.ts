@@ -1,4 +1,5 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
+import { protect, authorizeAny } from '../../../global/middlewares/authMiddleware';
 import {
   nextOfKinRegister,
   getNextOfKinByDeceasedId,
@@ -9,16 +10,9 @@ import {
 
 const router = Router();
 
-// Simple authentication middleware stub
-const authenticate = (req: Request, res: Response, next: NextFunction) => {
-  // TODO: Implement proper authentication
-  // For now, attach a mock user to the request
-  (req as any).user = { userId: 'system', role: 'admin' };
-  next();
-};
-
-// All routes use authentication middleware
-router.use(authenticate);
+// Apply authentication to all routes
+router.use(protect);
+router.use(authorizeAny);
 
 // Next of Kin routes - Support both patterns
 // Pattern 1: /deceased/:deceased_id/next-of-kin (frontend uses this)

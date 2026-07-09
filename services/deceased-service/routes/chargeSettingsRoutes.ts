@@ -9,10 +9,12 @@ import {
 const router = Router();
 
 // Import authentication middleware
-const { protect } = require('../../../global/middlewares/authMiddleware');
+// @ts-ignore - authMiddleware is JavaScript, not TypeScript
+const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
 
 // All routes are protected with JWT authentication
 router.use(protect);
+router.use(authorizeAny as any);
 
 // Charge Settings routes
 router.get('/', getChargeSettings);
