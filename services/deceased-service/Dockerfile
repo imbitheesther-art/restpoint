@@ -1,5 +1,5 @@
 # RestPoint Deceased Service — Clean Dockerfile
-FROM node:22-alpine
+FROM node:24-alpine
 
 RUN apk add --no-cache dumb-init python3 make g++ wget
 

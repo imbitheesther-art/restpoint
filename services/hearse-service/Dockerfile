@@ -42,7 +42,7 @@ CMD ["node", "services/hearse-service/server.js"]
 
 
 # Production Dockerfile for Extra Services
-FROM node:22-alpine
+FROM node:24-alpine
 
 RUN apk add --no-cache dumb-init
 

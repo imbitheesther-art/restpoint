@@ -1,5 +1,5 @@
 # RestPoint API Gateway — Clean Dockerfile (SIASA-HUB pattern)
-FROM node:22-alpine
+FROM node:24-alpine
 
 # Install runtime dependencies
 RUN apk add --no-cache dumb-init wget

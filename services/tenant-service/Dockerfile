@@ -1,5 +1,5 @@
 # RestPoint Tenant Service — Clean Dockerfile (SIASA-HUB pattern)
-FROM node:22-alpine
+FROM node:24-alpine
 
 # Install build dependencies for TypeScript/tsx
 RUN apk add --no-cache dumb-init python3 make g++
