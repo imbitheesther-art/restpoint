@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  base: './',
 
   resolve: {
     alias: {
@@ -79,10 +80,10 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
+      'lucide-react',
     ],
     exclude: [
       'jquery',
-      'lucide-react',
     ],
   },
 

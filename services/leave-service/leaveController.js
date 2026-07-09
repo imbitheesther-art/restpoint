@@ -85,7 +85,7 @@ const applyForLeave = async (req, res) => {
                 [userId]
             );
 
-            const currentBalance = balanceRows[0]?.annual_leave_balance || 0;
+            const currentBalance = balanceRows[0]?.annual_leave_balance ?? 21.00;
             if (currentBalance < days) {
                 return res.status(400).json({
                     status: 'error',
