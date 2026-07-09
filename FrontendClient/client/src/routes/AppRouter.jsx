@@ -53,6 +53,7 @@ const TicketPage = lazy(() => import('../components/support/TicketPage'));
 const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
 const AboutPage = lazy(() => import('../components/pages/AboutPage'));
 const ContactPage = lazy(() => import('../components/pages/ContactPage'));
+const WeltTallisAbout = lazy(() => import('../modules/about/WeltTallisAbout'));
 const LoginPage = lazy(() => import('../components/auth/login'));
 const PortalLoginPage = lazy(() => import('../components/auth/PortalLogin'));
 const ForgotPassword = lazy(() => import('../components/auth/ForgotPassword'));
@@ -282,6 +283,9 @@ const TenantDashboardRoutes = ({ tenantData }) => {
     <Routes>
       <Route path="/" element={<Navigate to="all-deceased" replace />} />
 
+      {/* Dashboard - Available to all authenticated users */}
+      <Route path="dashboard" element={<Layout tenantData={tenantData}><DashboardPage /></Layout>} />
+
       {/* Analytics - Available to all authenticated users */}
       <Route path="analytics" element={<Layout tenantData={tenantData}><DashboardPage /></Layout>} />
 
@@ -465,6 +469,7 @@ const AppRouter = () => (
       <Route path="/releases" element={<ReleasePolicy />} />
       <Route path="/why-us" element={<WhyUsPage />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/about-welt-tallis" element={<WeltTallisAbout />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/support" element={<TicketPage />} />
       <Route path="/support/:slug" element={<TicketPage />} />

@@ -1,20 +1,12 @@
 {
-  "id": "/",
-  "name": "MONTEZUMA FH",
-  "short_name": "Monalisa",
-  "description": "Mortuary and funeral home management software",
-  "version": "1.0.4",
-  "start_url": "/?source=pwa",
+  "name": "Rest Point - Funeral Home Management Software",
+  "short_name": "Rest Point",
+  "description": "The operating system for funeral homes that take their reputation seriously",
+  "start_url": "/",
   "display": "standalone",
-  "lang": "en-KE",
-  "dir": "ltr",
-  "scope": "/",
-  "background_color": "#005A59",
-  "display_override": ["standalone", "minimal-ui", "browser"],
-  "theme_color": "#05668D",
+  "background_color": "#15171A",
+  "theme_color": "#3D4F47",
   "orientation": "portrait-primary",
-  "prefer_related_applications": false,
-  "categories": ["business", "health", "management", "utility"],
   "icons": [
     {
       "src": "/logo.png",
@@ -27,37 +19,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/logo.png",
-      "sizes": "640x480",
-      "type": "image/png"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "640x480",
-      "type": "image/png"
-    }
+  "categories": [
+    "business",
+    "productivity"
   ],
-  "shortcuts": [
-    {
-      "name": "New Funeral Entry",
-      "short_name": "New Entry",
-      "url": "/funerals/new",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96", "type": "image/png" }]
-    },
-    {
-      "name": "View Dashboard",
-      "short_name": "Dashboard",
-      "url": "/dashboard",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96", "type": "image/png" }]
-    }
-  ]
+  "screenshots": [],
+  "prefer_related_applications": false
 }

@@ -27,9 +27,9 @@ app.get('/health', (req, res) => {
     res.json({ success: true, service: 'support-service', status: 'ok', port: PORT });
 });
 
-// Routes - Mount at root for clean path forwarding from gateway
-// The API Gateway strips /api/v1/restpoint/support prefix and forwards clean paths
-app.use('/', supportRoutes);
+// Routes - Mount at /support to match the gateway routing
+// The API Gateway strips /api/v1/restpoint and forwards /support/tickets
+app.use('/support', supportRoutes);
 
 // 404 handler
 app.use((req, res) => {

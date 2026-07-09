@@ -186,6 +186,7 @@ const Footer = ({ goTerms }) => {
                         </div>
                     </div>
 
+
                     <div className="footer-col">
                         <h4 style={{
                             fontFamily: "'JetBrains Mono', monospace",
@@ -418,6 +419,40 @@ const Footer = ({ goTerms }) => {
                             fontWeight: 600,
                             opacity: 0.7,
                         }}>
+                            Company
+                        </h4>
+                        <button
+                            onClick={() => navigate('/about-welt-tallis')}
+                            style={{
+                                display: 'block',
+                                fontSize: '0.85rem',
+                                color: C.grayLight,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s, transform 0.2s',
+                                textAlign: 'left',
+                                padding: 0,
+                                marginBottom: '0.6rem',
+                            }}
+                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
+                        >
+                            About Welt Tallis
+                        </button>
+                    </div>
+
+                    <div className="footer-col">
+                        <h4 style={{
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: '0.7rem',
+                            letterSpacing: '0.12em',
+                            textTransform: 'uppercase',
+                            color: C.verdigrisTint,
+                            marginBottom: '1.2rem',
+                            fontWeight: 600,
+                            opacity: 0.7,
+                        }}>
                             Compare
                         </h4>
                         <button
@@ -497,78 +532,6 @@ const Footer = ({ goTerms }) => {
                             Best SACCO Welfare Software
                         </button>
                     </div>
-
-                    <div className="footer-col">
-                        <h4 style={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: '0.7rem',
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: C.verdigrisTint,
-                            marginBottom: '1.2rem',
-                            fontWeight: 600,
-                            opacity: 0.7,
-                        }}>
-                            Resources
-                        </h4>
-                        <button
-                            onClick={() => navigate('/resources/logs')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Logs
-                        </button>
-                        <button
-                            onClick={() => navigate('/glossary')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Glossary
-                        </button>
-                        <button
-                            onClick={() => navigate('/locations/nairobi')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Nairobi
-                        </button>
-                    </div>
                 </div>
 
                 <div style={{
@@ -606,6 +569,9 @@ const Footer = ({ goTerms }) => {
         }
         @media (max-width: 1000px) {
           .footer-content { grid-template-columns: 2fr 1fr 1fr !important; gap: 2.5rem !important; }
+        }
+        @media (max-width: 900px) {
+          .footer-content { grid-template-columns: 1fr 1fr !important; gap: 2rem !important; }
         }
         @media (max-width: 700px) {
           .footer-content { grid-template-columns: 1fr !important; gap: 2rem !important; }

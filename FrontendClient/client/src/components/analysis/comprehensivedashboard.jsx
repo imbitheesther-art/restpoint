@@ -1042,20 +1042,6 @@ const BeautifulMortuaryDashboard = () => {
                 </ChartCard>
               </Col>
 
-              {/* Monthly Revenue */}
-              <Col xl={6}>
-                <ChartCard title="Monthly Revenue" icon={DollarSign} color={COLORS.success} height="300px">
-                  <Line
-                    data={getMonthlyRevenueData()}
-                    options={{
-                      ...chartOptions,
-                      plugins: { ...chartOptions.plugins, tooltip: { ...chartOptions.plugins.tooltip, callbacks: { label: (ctx) => `Revenue: KES ${ctx.parsed.y.toLocaleString()}` } } },
-                      onClick: (e, elements) => { if (elements?.length) handleChartClick(elements, e.chart, 'revenue'); }
-                    }}
-                  />
-                </ChartCard>
-              </Col>
-
               {/* Case Status Distribution */}
               <Col xl={3} lg={6}>
                 <ChartCard title="Case Status" icon={ClipboardList} color={COLORS.info} height="280px">
@@ -1094,75 +1080,6 @@ const BeautifulMortuaryDashboard = () => {
           </Card.Body>
         </Card>
 
-        {/* REVENUE SECTION */}
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '12px' }}>
-          <Card.Body className="p-4">
-            <SectionHeader
-              title="Revenue Analytics"
-              icon={DollarSign}
-              color={COLORS.success}
-            />
-            <Row className="g-4">
-              {/* Revenue by Category */}
-              <Col xl={8}>
-                <ChartCard title="Revenue by Category" icon={LineChart} color={COLORS.success} height="350px">
-                  <Line data={getRevenueByCategoryData()} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, tooltip: { ...chartOptions.plugins.tooltip, callbacks: { label: (ctx) => `${ctx.dataset.label}: KES ${ctx.parsed.y.toLocaleString()}` } } } }} />
-                  <Row className="mt-3 text-center pt-3 border-top">
-                    <Col xs={3}><h6 className="text-primary mb-0">KES {mockData.revenueByCategory.transport.monthly.reduce((a, b) => a + b, 0).toLocaleString()}</h6><small className="text-muted">Transport</small></Col>
-                    <Col xs={3}><h6 className="text-info mb-0">KES {mockData.revenueByCategory.storage.monthly.reduce((a, b) => a + b, 0).toLocaleString()}</h6><small className="text-muted">Storage</small></Col>
-                    <Col xs={3}><h6 className="text-success mb-0">KES {mockData.revenueByCategory.supplies.monthly.reduce((a, b) => a + b, 0).toLocaleString()}</h6><small className="text-muted">Supplies</small></Col>
-                    <Col xs={3}><h6 className="text-warning mb-0">KES {mockData.revenueByCategory.embalming.monthly.reduce((a, b) => a + b, 0).toLocaleString()}</h6><small className="text-muted">Embalming</small></Col>
-                  </Row>
-                </ChartCard>
-              </Col>
-
-              {/* Payment Methods Distribution */}
-              <Col xl={4} lg={6}>
-                <ChartCard title="Payment Methods" icon={PieChart} color={COLORS.info} height="350px">
-                  <Bar data={getPaymentMethodsData()} options={{ ...chartOptions, indexAxis: 'y', plugins: { ...chartOptions.plugins, tooltip: { ...chartOptions.plugins.tooltip, callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed.x} payments` } } } }} />
-                </ChartCard>
-              </Col>
-
-              {/* Extra Services Revenue */}
-              <Col xl={4} lg={6}>
-                <ChartCard title="Extra Services" icon={PieChart} color={COLORS.warning} height="300px">
-                  {revenueExtraServicesData && Object.keys(revenueExtraServicesData).length > 0 ? (
-                    <Doughnut data={{ labels: Object.keys(revenueExtraServicesData), datasets: [{ data: Object.values(revenueExtraServicesData).map(s => s.revenue || 0), backgroundColor: [COLORS.chart1, COLORS.chart2, COLORS.chart3, COLORS.chart4, COLORS.chart5], borderWidth: 2, borderColor: COLORS.white }] }} options={{ ...chartOptions, onClick: (e, elements) => { if (elements?.length) handleChartClick(elements, e.chart, 'doughnut'); } }} />
-                  ) : (
-                    <Doughnut data={{ labels: ['Washing', 'Dressing', 'Viewing', 'Cremation', 'Burial'], datasets: [{ data: [25, 20, 30, 15, 10], backgroundColor: [COLORS.chart1, COLORS.chart2, COLORS.chart3, COLORS.chart4, COLORS.chart5], borderWidth: 2, borderColor: COLORS.white }] }} options={chartOptions} />
-                  )}
-                </ChartCard>
-              </Col>
-
-              {/* Service Type Distribution */}
-              <Col xl={4} lg={6}>
-                <ChartCard title="Service Types" icon={Users} color={COLORS.primary} height="300px">
-                  {Object.keys(serviceTypesData).length > 0 ? (
-                    <Bar data={{ labels: Object.keys(serviceTypesData), datasets: [{ label: 'Cases', data: Object.values(serviceTypesData), backgroundColor: [COLORS.chart1, COLORS.chart2, COLORS.chart3], borderWidth: 0, borderRadius: 8 }] }} options={{ ...chartOptions, onClick: (e, elements) => { if (elements?.length) handleChartClick(elements, e.chart, 'bar'); } }} />
-                  ) : (
-                    <Bar data={{ labels: ['Burial', 'Cremation', 'Memorial'], datasets: [{ label: 'Cases', data: [180, 95, 65], backgroundColor: [COLORS.chart1, COLORS.chart2, COLORS.chart3], borderWidth: 0, borderRadius: 8 }] }} options={chartOptions} />
-                  )}
-                </ChartCard>
-              </Col>
-
-              {/* Insurance Analytics */}
-              <Col xl={4} lg={6}>
-                <ChartCard title="Insurance Analytics" icon={Shield} color={COLORS.purple} height="300px">
-                  <Row className="mb-3 g-2">
-                    <Col xs={6}><div className="p-2 rounded-3 border text-center"><h5 className="text-primary mb-0">{mockData.insurance.activePolicies}</h5><small className="text-muted">Active Policies</small></div></Col>
-                    <Col xs={6}><div className="p-2 rounded-3 border text-center"><h5 className="text-success mb-0">KES {(mockData.insurance.monthlyPremium / 1000000).toFixed(1)}M</h5><small className="text-muted">Monthly Premium</small></div></Col>
-                    <Col xs={6}><div className="p-2 rounded-3 border text-center"><h5 className="text-warning mb-0">{mockData.insurance.claimsThisMonth}</h5><small className="text-muted">Claims/Month</small></div></Col>
-                    <Col xs={6}><div className="p-2 rounded-3 border text-center"><h5 className="text-info mb-0">KES {(mockData.insurance.totalCoverage / 1000000).toFixed(0)}M</h5><small className="text-muted">Total Coverage</small></div></Col>
-                  </Row>
-                  <div style={{ height: '180px' }}>
-                    <Line data={getInsuranceTrendsData()} options={{ ...chartOptionsDualAxis, plugins: { ...chartOptions.plugins, legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 10 } } } } }} />
-                  </div>
-                </ChartCard>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-
         {/* OPERATIONS SECTION */}
         <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '12px' }}>
           <Card.Body className="p-4">
@@ -1173,7 +1090,7 @@ const BeautifulMortuaryDashboard = () => {
             />
             <Row className="g-4">
               {/* Chemicals Usage */}
-              <Col xl={8}>
+              <Col xl={12}>
                 <ChartCard title="Chemicals Usage Trends" icon={FlaskConical} color={COLORS.danger} height="300px">
                   <Line data={getChemicalsUsageData()} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, tooltip: { ...chartOptions.plugins.tooltip, callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} ${['liters', 'liters', 'kg', 'liters'][ctx.datasetIndex]}` } } } }} />
                   <Row className="mt-3 text-center pt-3 border-top">
@@ -1183,77 +1100,6 @@ const BeautifulMortuaryDashboard = () => {
                     <Col xs={3}><h6 className="text-warning mb-0">{mockData.chemicals.embalming.monthly.reduce((a, b) => a + b, 0)}L</h6><small className="text-muted">Embalming</small></Col>
                   </Row>
                 </ChartCard>
-              </Col>
-
-              {/* Operational Gauges */}
-              <Col xl={4} lg={6}>
-                <ChartCard title="Operational Metrics" icon={Activity} color={COLORS.warning} height="300px">
-                  <div className="text-center mb-4">
-                    <GaugeChart id="today-visitors-gauge" nrOfLevels={20} colors={[COLORS.chart1, COLORS.chart3, COLORS.chart2]} arcWidth={0.3} percent={todayVisitors / 100 || 0.45} textColor={COLORS.dark} needleColor={COLORS.dark} formatTextValue={() => `${todayVisitors || 45}`} style={{ width: '100%', height: '130px' }} />
-                    <h6 className="mt-2 mb-0 fw-semibold">Today's Visitors</h6>
-                    <small className="text-muted">Real-time visitor count</small>
-                  </div>
-                  <div className="text-center">
-                    <GaugeChart id="monthly-visitors-gauge" nrOfLevels={20} colors={[COLORS.chart1, COLORS.chart3, COLORS.chart2]} arcWidth={0.3} percent={monthlyVisitors / 500 || 0.52} textColor={COLORS.dark} needleColor={COLORS.dark} formatTextValue={() => `${monthlyVisitors || 260}`} style={{ width: '100%', height: '130px' }} />
-                    <h6 className="mt-2 mb-0 fw-semibold">Monthly Visitors</h6>
-                    <small className="text-muted">Current month total</small>
-                  </div>
-                </ChartCard>
-              </Col>
-
-              {/* Average Stay Duration */}
-              <Col xl={4} lg={6}>
-                <ChartCard title="Average Stay Duration" icon={Clock} color={COLORS.primary} height="300px">
-                  <div style={{ height: '300px' }}>
-                    {Object.keys(averageStayDurationData).length > 0 ? (
-                      <Bar data={{ labels: Object.keys(averageStayDurationData), datasets: [{ label: 'Days', data: Object.values(averageStayDurationData), backgroundColor: COLORS.chart2, borderWidth: 0, borderRadius: 8 }] }} options={chartOptions} />
-                    ) : (
-                      <Bar data={{ labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], datasets: [{ label: 'Days', data: [4.2, 3.8, 4.5, 5.1, 4.0, 3.9], backgroundColor: COLORS.chart2, borderWidth: 0, borderRadius: 8 }] }} options={chartOptions} />
-                    )}
-                  </div>
-                </ChartCard>
-              </Col>
-
-              {/* Dispatch Full Schedule */}
-              <Col xl={8} lg={12}>
-                <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-                  <Card.Body className="p-4">
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <div className="d-flex align-items-center gap-2">
-                        <Truck size={20} style={{ color: COLORS.warning }} />
-                        <h5 className="mb-0 fw-semibold">Full Dispatch Schedule</h5>
-                      </div>
-                      <Badge bg="warning" className="px-3 py-2">{mockData.dispatchSchedule.length} Scheduled</Badge>
-                    </div>
-                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                      <Table hover responsive>
-                        <thead style={{ backgroundColor: COLORS.light }}>
-                          <tr>
-                            <th>Name</th>
-                            <th>Age</th>
-                            <th>Cause</th>
-                            <th>Location</th>
-                            <th>Scheduled</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockData.dispatchSchedule.map(item => (
-                            <tr key={item.id}>
-                              <td><strong>{item.name}</strong></td>
-                              <td>{item.age}</td>
-                              <td><Badge bg={item.cause === 'Natural Causes' ? 'success' : item.cause === 'Illness' ? 'warning' : 'danger'} className="rounded-pill">{item.cause}</Badge></td>
-                              <td>{item.location}</td>
-                              <td><small>{item.scheduled}</small></td>
-                              <td><Badge bg={item.status === 'confirmed' ? 'success' : 'warning'} className="rounded-pill">{item.status === 'confirmed' ? '✓ Confirmed' : '⏳ Pending'}</Badge></td>
-                            </tr>
-                          ))}
-                          {mockData.dispatchSchedule.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-3">No dispatches scheduled</td></tr>}
-                        </tbody>
-                      </Table>
-                    </div>
-                  </Card.Body>
-                </Card>
               </Col>
             </Row>
           </Card.Body>

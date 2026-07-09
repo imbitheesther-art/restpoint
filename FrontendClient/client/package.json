@@ -11,9 +11,6 @@
   "dependencies": {
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@fortawesome/fontawesome-svg-core": "^7.2.0",
-    "@fortawesome/free-solid-svg-icons": "^6.5.1",
-    "@fortawesome/react-fontawesome": "^0.2.0",
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
@@ -30,7 +27,6 @@
     "date-fns": "^4.4.0",
     "fabric": "^7.4.0",
     "framer-motion": "^11.0.0",
-    "jquery": "^3.7.1",
     "lucide-react": "^0.344.0",
     "moment": "^2.29.4",
     "pdfjs-dist": "^4.0.0",

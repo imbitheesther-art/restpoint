@@ -124,51 +124,73 @@ const MobileMenu = ({ navigate, goTerms, goLogin, goStart }) => {
 };
 
 const MockDocuments = () => (
-  <div style={{ background: C.bone2, border: `1px solid ${C.line}`, padding: '2.2rem', maxWidth: '460px', borderRadius: '2px' }}>
-    <div style={{ marginBottom: '1.2rem' }}>
-      <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.verdigris, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>CASE FILE</div>
-      <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.ink }}>Otieno, J.</div>
-      <div style={{ fontSize: '0.78rem', color: C.gray }}>4 documents</div>
+  <div style={{ background: C.bone2, border: `1px solid ${C.line}`, padding: '3rem', maxWidth: '100%', width: '100%', borderRadius: '2px' }}>
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.verdigris, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>CASE FILE</div>
+      <div style={{ fontSize: '1.6rem', fontFamily: "'Fraunces', serif", color: C.ink }}>Otieno, J.</div>
+      <div style={{ fontSize: '0.9rem', color: C.gray }}>4 documents</div>
     </div>
-    <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: `1px solid ${C.line}`, fontSize: '0.84rem', color: C.gray }}>
+    <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: '1.2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: `1px solid ${C.line}`, fontSize: '0.95rem', color: C.gray }}>
         <span>Death certificate.pdf</span>
-        <span style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.verdigris }}>Verified</span>
+        <span style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.verdigris }}>Verified</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: `1px solid ${C.line}`, fontSize: '0.84rem', color: C.gray }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: `1px solid ${C.line}`, fontSize: '0.95rem', color: C.gray }}>
         <span>Burial permit.pdf</span>
-        <span style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass }}>Pending</span>
+        <span style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass }}>Pending</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', fontSize: '0.84rem', color: C.gray }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', fontSize: '0.95rem', color: C.gray }}>
         <span>Police abstract.pdf</span>
-        <span style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: '#C77B5E' }}>Missing</span>
+        <span style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: '#C77B5E' }}>Missing</span>
       </div>
     </div>
   </div>
 );
 
 const MockInsurance = () => (
-  <div style={{ background: C.verdigrisDark, border: `1px solid ${C.verdigrisLight}`, padding: '2.2rem', maxWidth: '460px', borderRadius: '2px' }}>
-    <div style={{ marginBottom: '1.2rem' }}>
-      <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>INSURANCE CLAIM</div>
-      <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone }}>Funeral Cover</div>
-      <div style={{ fontSize: '0.78rem', color: 'rgba(250,248,244,0.6)' }}>Automated claim submission</div>
+  <div style={{ background: C.verdigrisDark, border: `1px solid ${C.verdigrisLight}`, padding: '3rem', maxWidth: '100%', width: '100%', borderRadius: '2px' }}>
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.brass, letterSpacing: '0.1em', marginBottom: '1rem' }}>FUNERAL INSURANCE</div>
+      <div style={{ fontSize: '1.6rem', fontFamily: "'Fraunces', serif", color: C.bone, lineHeight: 1.3 }}>Last respect expenses covered</div>
     </div>
-    <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.84rem' }}>
-        <span style={{ color: 'rgba(250,248,244,0.6)' }}>Policyholder</span>
-        <span style={{ color: C.bone }}>J. Otieno</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.84rem' }}>
-        <span style={{ color: 'rgba(250,248,244,0.6)' }}>Policy</span>
-        <span style={{ color: C.bone, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.76rem' }}>OM-44821-FC</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', fontSize: '0.84rem' }}>
-        <span style={{ color: 'rgba(250,248,244,0.6)' }}>Claim amount</span>
-        <span style={{ color: C.bone, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.76rem' }}>KES 84,000</span>
+    <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1.2rem' }}>
+      <p style={{ color: 'rgba(250,248,244,0.75)', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: '1.2rem' }}>
+        Rest Point streamlines funeral insurance claims — from member contributions to automated benefit disbursements. Purpose-built for churches, SACCOs, chamas, and organizations across Kenya.
+      </p>
+    </div>
+    <button onClick={() => window.location.href = '/insurance'} style={{ width: '100%', marginTop: '0.5rem', padding: '0.85rem', background: C.brass, border: 'none', color: C.bone, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif", letterSpacing: '0.02em' }}>Learn about funeral insurance</button>
+  </div>
+);
+
+const MockHearse = () => (
+  <div style={{ background: C.ink, border: `1px solid ${C.line}`, padding: '3rem', maxWidth: '100%', width: '100%', borderRadius: '2px' }}>
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>HEARSE MANAGEMENT</div>
+      <div style={{ fontSize: '1.6rem', fontFamily: "'Fraunces', serif", color: C.bone, lineHeight: 1.3 }}>Reliable fleet & dispatch</div>
+    </div>
+    <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1.2rem' }}>
+      <p style={{ color: 'rgba(250,248,244,0.75)', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: '1.2rem' }}>
+        Effective hearse management helps a funeral home provide reliable, professional, and respectful transportation services. Assign hearses to funerals efficiently.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.2rem' }}>
+        <div style={{ background: 'rgba(250,248,244,0.06)', padding: '0.8rem', borderRadius: '4px' }}>
+          <div style={{ fontSize: '0.72rem', color: C.brassLight, marginBottom: '0.3rem' }}>SCHEDULING</div>
+          <div style={{ fontSize: '0.85rem', color: C.bone }}>Avoid conflicts</div>
+        </div>
+        <div style={{ background: 'rgba(250,248,244,0.06)', padding: '0.8rem', borderRadius: '4px' }}>
+          <div style={{ fontSize: '0.72rem', color: C.brassLight, marginBottom: '0.3rem' }}>TRACKING</div>
+          <div style={{ fontSize: '0.85rem', color: C.bone }}>Daily, weekly, monthly</div>
+        </div>
+        <div style={{ background: 'rgba(250,248,244,0.06)', padding: '0.8rem', borderRadius: '4px' }}>
+          <div style={{ fontSize: '0.72rem', color: C.brassLight, marginBottom: '0.3rem' }}>INSURANCE</div>
+          <div style={{ fontSize: '0.85rem', color: C.bone }}>Track renewal dates</div>
+        </div>
+        <div style={{ background: 'rgba(250,248,244,0.06)', padding: '0.8rem', borderRadius: '4px' }}>
+          <div style={{ fontSize: '0.72rem', color: C.brassLight, marginBottom: '0.3rem' }}>AVAILABILITY</div>
+          <div style={{ fontSize: '0.85rem', color: C.bone }}>View hearse status</div>
+        </div>
       </div>
     </div>
-    <button style={{ width: '100%', marginTop: '1rem', padding: '0.65rem', background: C.brass, border: 'none', color: C.bone, fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace" }}>Submit claim</button>
   </div>
 );
 
@@ -177,7 +199,7 @@ const MockDispatch = () => {
   const [rate, setRate] = useState(195);
   const cost = Math.round(distance * 0.12 * rate);
   return (
-    <div style={{ background: C.ink, border: `1px solid ${C.line}`, padding: '2.2rem', maxWidth: '460px', borderRadius: '2px' }}>
+    <div style={{ background: C.ink, border: `1px solid ${C.line}`, padding: '2.8rem', maxWidth: '520px', borderRadius: '2px' }}>
       <div style={{ marginBottom: '1.2rem' }}>
         <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>SMART DISPATCH</div>
         <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone }}>Hearse 02 Karen to Lang'ata</div>
@@ -207,42 +229,42 @@ const MockDispatch = () => {
 };
 
 const MockPortal = () => (
-  <div style={{ background: C.ink, border: `1px solid ${C.line}`, padding: '2.5rem', maxWidth: '520px', borderRadius: '2px' }}>
-    <div style={{ marginBottom: '1.2rem' }}>
-      <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>MWANGI FAMILY</div>
-      <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>Arrangements confirmed</div>
+  <div style={{ background: C.ink, border: `1px solid ${C.line}`, padding: '3rem', maxWidth: '100%', width: '100%', borderRadius: '2px' }}>
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.brassLight, letterSpacing: '0.1em', marginBottom: '0.8rem' }}>MWANGI FAMILY</div>
+      <div style={{ fontSize: '1.6rem', fontFamily: "'Fraunces', serif", color: C.bone, marginBottom: '0.4rem' }}>Arrangements confirmed</div>
     </div>
-    <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.7rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.84rem', color: C.grayLight }}>
+    <div style={{ borderTop: `1px solid rgba(250,248,244,0.14)`, paddingTop: '1.2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.95rem', color: C.grayLight }}>
         <span>Burial permit.pdf</span>
-        <span style={{ fontSize: '0.76rem', color: C.brassLight }}>Download</span>
+        <span style={{ fontSize: '0.85rem', color: C.brassLight }}>Download</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.7rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.84rem', color: C.grayLight }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: `1px solid rgba(250,248,244,0.14)`, fontSize: '0.95rem', color: C.grayLight }}>
         <span>Service invoice</span>
-        <span style={{ fontSize: '0.76rem', fontFamily: "'JetBrains Mono', monospace", color: C.bone }}>KES 84,000</span>
+        <span style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.bone }}>KES 84,000</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.7rem 0', fontSize: '0.84rem', color: C.grayLight }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', fontSize: '0.95rem', color: C.grayLight }}>
         <span>Outstanding balance</span>
-        <button style={{ padding: '0.3rem 0.7rem', background: C.verdigris, border: `1px solid ${C.verdigrisLight}`, color: C.bone, fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>Pay now</button>
+        <button style={{ padding: '0.4rem 0.9rem', background: C.verdigris, border: `1px solid ${C.verdigrisLight}`, color: C.bone, fontSize: '0.82rem', cursor: 'pointer', fontWeight: 500 }}>Pay now</button>
       </div>
     </div>
   </div>
 );
 
 const Showcase = ({ no, title, desc, reverse, children }) => (
-  <Reveal style={{
+  <Reveal className="showcase-mobile" style={{
     display: 'grid',
-    gridTemplateColumns: reverse ? '1fr 0.85fr' : '0.85fr 1fr',
+    gridTemplateColumns: reverse ? '1fr 1.2fr' : '1.2fr 1fr',
     gap: '3.5rem',
     alignItems: 'center',
     marginBottom: '5rem',
   }}>
-    <div style={{ order: reverse ? 2 : 1 }}>
+    <div className="showcase-text" style={{ order: reverse ? 2 : 1 }}>
       <div style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: C.verdigris, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '1rem', fontWeight: 600 }}>Module {no}</div>
       <h2 style={{ fontSize: '2rem', fontFamily: "'Fraunces', serif", color: C.ink, marginBottom: '1rem', lineHeight: 1.2 }}>{title}</h2>
       <p style={{ fontSize: '1.05rem', maxWidth: '480px', color: C.gray, lineHeight: 1.8 }}>{desc}</p>
     </div>
-    <div style={{ order: reverse ? 1 : 2, display: 'flex', justifyContent: reverse ? 'flex-start' : 'flex-end' }}>
+    <div className="showcase-visual" style={{ order: reverse ? 1 : 2, display: 'flex', justifyContent: reverse ? 'flex-start' : 'flex-end' }}>
       {children}
     </div>
   </Reveal>
@@ -252,7 +274,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
-  useEffect(() => { document.title = 'Rest Point | Funeral Home OS & Welfare Management'; }, []);
+  useEffect(() => { document.title = 'Rest Point | Funeral Home Management   System & Welfare Management System'; }, []);
 
   const goLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/login'); };
   const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
@@ -359,7 +381,7 @@ export default function App() {
         .footer-desc{font-size:0.85rem;color:${C.grayLight};line-height:1.7;max-width:100%;opacity:0.8}
         .footer-bottom{display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:${C.grayLight};padding-top:1.2rem;border-top:1px solid ${C.lineDark}}
         @media(max-width:600px){.footer-bottom{flex-direction:column;gap:0.75rem;text-align:center}}
-        /* Mobile fixes */
+        /* Mobile fixes: single column, better stacking */
         @media(max-width:768px){
           .hero{padding-top:100px}
           .hero-desc{font-size:0.95rem}
@@ -374,6 +396,12 @@ export default function App() {
           .cta-buttons .btn{width:100%;justify-content:center}
           .nav-wrap{padding:0.5rem 0}
           .logo{font-size:1.1rem}
+          .showcase-mobile{grid-template-columns:1fr!important;gap:1.5rem!important;margin-bottom:3rem!important}
+          .showcase-mobile .showcase-text{order:2!important}
+          .showcase-mobile .showcase-visual{order:1!important;justify-content:center!important}
+          .showcase-mobile h2{font-size:1.5rem!important}
+          .showcase-mobile p{font-size:0.95rem!important;max-width:100%!important}
+          .mock-card{max-width:100%!important;padding:1.5rem!important;width:100%!important}
         }
         @media(max-width:480px){
           .hero{padding-top:90px}
@@ -381,6 +409,9 @@ export default function App() {
           h2{font-size:1.4rem!important}
           .hero-desc{font-size:0.9rem}
           .btn{padding:0.7rem 1.2rem!important;font-size:0.8rem!important}
+          .pricing-card{padding:1.2rem!important}
+          .pricing-feature{font-size:0.8rem!important}
+          .footer-content{gap:1rem!important}
         }
       `}</style>
 
@@ -450,18 +481,6 @@ export default function App() {
           </div>
         </section>
 
-        <section className="proof">
-          <div className="wrap">
-            <Reveal>
-              <div className="proof-grid">
-                <div className="proof-item"><div className="proof-num">500+</div><div className="proof-cap">Funeral homes & welfare organizations</div></div>
-                <div className="proof-item"><div className="proof-num">50K+</div><div className="proof-cap">Cases managed annually</div></div>
-                <div className="proof-item"><div className="proof-num">99.9%</div><div className="proof-cap">Uptime SLA guarantee</div></div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
         <section id="features" className="section">
           <div className="wrap">
             <Reveal>
@@ -474,7 +493,7 @@ export default function App() {
             <Showcase no="01" title="Case management that respects your workflow" desc="Track every detail from first call to final settlement. Rest Point keeps case files organized, documents verified, and families informed." reverse={false}><MockDocuments /></Showcase>
             <Showcase no="02" title="Family portal & online memorials" desc="Give families secure access to arrangements, documents, and billing. Light a candle, leave a condolence, and stay connected." reverse={true}><MockPortal /></Showcase>
             <Showcase no="03" title="Smart dispatch & billing" desc="Optimize hearse routes, calculate costs automatically, and bill with precision. Rest Point turns logistics into a competitive advantage." reverse={false}><MockDispatch /></Showcase>
-            <Showcase no="04" title="Funeral insurance & welfare management" desc="Streamline funeral insurance claims, manage welfare contributions, and automate benefit disbursements. Purpose-built for churches, SACCOs, chamas, and organizations across Kenya." reverse={true}><MockInsurance /></Showcase>
+            <Showcase no="04" title="Hearse management module" desc="Effective hearse management helps a funeral home provide reliable, professional, and respectful transportation services. Assign hearses to funerals efficiently. Avoid scheduling conflicts." reverse={true}><MockHearse /></Showcase>
           </div>
         </section>
 
@@ -482,17 +501,17 @@ export default function App() {
           <div className="wrap">
             <div style={{ maxWidth: '700px' }}>
               <Reveal>
-                <div className="label" style={{ color: C.brass, marginBottom: '1rem', color: C.brass }}>Funeral Insurance & Welfare Management</div>
-                <h2 style={{ color: C.bone, marginBottom: '1.2rem' }}>Complete funeral welfare management for organizations</h2>
-                <p style={{ color: 'rgba(250,248,244,0.75)', lineHeight: 1.8, marginBottom: '2rem' }}>Rest Point now includes comprehensive funeral insurance management and welfare scheme administration tools. Perfect for churches, SACCOs, chamas, companies, and NGOs.</p>
-                <div style={{ background: 'rgba(250,248,244,0.06)', borderLeft: `3px solid ${C.brass}`, padding: '1.2rem 1.8rem', margin: '1.2rem 0' }}>
-                  <p style={{ margin: 0, fontSize: '0.95rem', color: 'rgba(250,248,244,0.75)' }}><strong>Key Features:</strong> M-Pesa integration, automated claims, member registration, premium tracking, SMS notifications, and multi-branch support.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
-                  <button className="btn btn-brass" onClick={() => navigate('/solutions/churches')}>Church Funeral Welfare</button>
-                  <button className="btn btn-brass" onClick={() => navigate('/solutions/saccos')}>SACCO Funeral Insurance</button>
-                  <button className="btn btn-brass" onClick={() => navigate('/solutions/chamas')}>Chama Welfare Management</button>
-                </div>
+                <div className="label" style={{ color: C.brass, marginBottom: '1rem' }}>Funeral Insurance & Welfare Management</div>
+                <h2 style={{ color: C.bone, marginBottom: '1.5rem', fontSize: 'clamp(1.8rem, 4vw, 2.4rem)', lineHeight: 1.3 }}>We understand the pain and financial burden families face</h2>
+                <p style={{ color: 'rgba(250,248,244,0.75)', lineHeight: 1.8, marginBottom: '1.5rem', fontSize: '1.05rem' }}>
+                  Families go through immense pain when they lose a loved one, only to be burdened with huge hospital bills and funeral expenses. We break down these barriers by bringing comprehensive funeral insurance solutions directly to your funeral home, chama, SACCO, or church.
+                </p>
+                <p style={{ color: 'rgba(250,248,244,0.75)', lineHeight: 1.8, marginBottom: '2.5rem', fontSize: '1.05rem' }}>
+                  Rest Point now includes comprehensive funeral insurance management and welfare scheme administration tools. Perfect for churches, SACCOs, chamas, companies, and NGOs.
+                </p>
+                <button className="btn btn-brass" onClick={() => window.location.href = '/insurance'} style={{ fontSize: '1rem', padding: '1rem 2.5rem' }}>
+                  Learn about funeral insurance
+                </button>
               </Reveal>
             </div>
           </div>

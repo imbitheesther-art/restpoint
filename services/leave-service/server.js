@@ -88,7 +88,7 @@ app.use(async (req, res, next) => {
 
 // Routes
 const leaveRoutes = require('./leaveRoutes');
-app.use('/api/v1/restpoint/leaves', leaveRoutes);
+app.use('/leaves', leaveRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

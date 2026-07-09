@@ -19,7 +19,7 @@ COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 
-# Copy service package.json
+# Copy service packsllyle  age.json
 COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Install dependencies
