@@ -8,6 +8,7 @@ import AppRouter from './routes/AppRouter';
 import { initManifest } from './services/manifestService';
 import { SocketProvider } from './context/socketContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
+import InstallPrompt from './components/pwa/InstallPrompt';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,12 +39,29 @@ const AppContent = () => {
     <HelmetProvider>
       {routeElement}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <InstallPrompt />
     </HelmetProvider>
   );
 };
 
 const App = () => {
   useEffect(() => { initManifest(); }, []);
+
+  // Register service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service_worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <AppContent />

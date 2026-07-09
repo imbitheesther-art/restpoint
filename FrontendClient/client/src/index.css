@@ -33,3 +33,54 @@ html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;
 }
+
+/* Edge-specific fixes */
+@supports (-ms-ime-align: auto) {
+  html {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Better font rendering for Edge */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Fix for Edge flexbox issues */
+* {
+  -ms-flex-negative: 0;
+  flex-shrink: 0;
+}
+
+/* Ensure proper viewport in Edge */
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Fix for Edge button styling */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Fix for Edge input styling */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+}
