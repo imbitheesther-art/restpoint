@@ -39,7 +39,7 @@ const SERVICE_URLS = {
   invoices: process.env.INVOICES_SERVICE_URL || 'http://127.0.0.1:5008',
   visitors: process.env.VISITORS_SERVICE_URL || 'http://127.0.0.1:5009',
   notification: process.env.NOTIFICATION_SERVICE_URL || 'http://127.0.0.1:8111',
-  documents: process.env.DOCUMENTS_SERVICE_URL || 'http://127.0.0.1:5011',
+  documents: process.env.DOCUMENTS_SERVICE_URL || 'http://127.0.0.1:8112',
   analytics: process.env.ANALYTICS_SERVICE_URL || 'http://127.0.0.1:5012',
   bodycheckout: process.env.BODYCHECKOUT_SERVICE_URL || 'http://127.0.0.1:5013',
   edocuments: process.env.EDOCUMENTS_SERVICE_URL || 'http://127.0.0.1:5014',

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '../layout/Footer';
 
 /* ============================================================
    REST POINT — Data Migration Policy
@@ -343,16 +344,9 @@ export default function DataMigrationPolicy() {
             </div>
           </Reveal>
 
-          {/* Footer */}
-          <footer>
-            <span>© {new Date().getFullYear()} Rest Point. All rights reserved.</span>
-            <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <a href="/terms">Terms of Service</a>
-              <a href="/privacy">Privacy Policy</a>
-            </div>
-          </footer>
         </div>
       </main>
+      <Footer />
     </>
   );
 }

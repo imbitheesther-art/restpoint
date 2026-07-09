@@ -125,7 +125,8 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
             });
             const data = await r.json();
             const hearses = data.hearses || data || [];
-            const available = hearses.filter(h => h.status === 'available');
+            // Filter by is_active (1 = active/available) since status field may not exist
+            const available = hearses.filter(h => h.is_active === 1 || h.is_active === true || h.status === 'available');
             setHearses(available);
         } catch (e) {
             console.error('Failed to load hearses:', e);

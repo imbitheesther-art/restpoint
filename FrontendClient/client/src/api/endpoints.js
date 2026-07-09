@@ -184,6 +184,11 @@ export const ENDPOINTS = {
   },
   SUPPORT: {
     TICKETS: '/support/tickets',
+    CREATE_TICKET: '/support/tickets',
+    ALL_TICKETS: '/support/tickets/all',
+    TICKET_DETAIL: (id) => `/support/tickets/${id}`,
+    REPLY: (id) => `/support/tickets/${id}/reply`,
+    UPDATE_STATUS: (id) => `/support/tickets/${id}/status`,
   },
   EMBALMING: {
     LIST: '/embalming',

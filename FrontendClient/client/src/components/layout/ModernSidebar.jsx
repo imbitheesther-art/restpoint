@@ -429,7 +429,8 @@ const ModernSidebar = ({
       section: 'Extra',
       items: [
         { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings` },
-        { icon: Calendar, label: 'Leave', path: `/tenant/${tenantSlug}/leaves` },
+        { icon: Calendar, label: 'Leaves Dashboard', path: `/tenant/${tenantSlug}/leaves` },
+        { icon: FileText, label: 'Apply Leave', path: `/tenant/${tenantSlug}/leaves/apply` },
         { icon: LifeBuoy, label: 'Support', path: `/tenant/${tenantSlug}/support` },
       ]
     }
@@ -456,7 +457,28 @@ const ModernSidebar = ({
     if (customActivePath) {
       return location.pathname === customActivePath || location.pathname.startsWith(customActivePath + '/');
     }
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    // Exact match
+    if (location.pathname === path) return true;
+
+    // Check if current path starts with this path
+    if (location.pathname.startsWith(path + '/')) {
+      // Special case: don't mark parent route as active when on a child route
+      // For example, /leaves/apply should not mark /leaves as active
+      const remainingPath = location.pathname.slice(path.length);
+      // List of child routes that should not activate parent
+      const excludedChildRoutes = ['/apply', '/my-leaves', '/all'];
+      const isExcludedChild = excludedChildRoutes.some(child => remainingPath === child || remainingPath.startsWith(child + '/'));
+
+      if (isExcludedChild) {
+        // Check if this path is the exact parent of the current route
+        // Only activate if there's no more specific menu item
+        return false;
+      }
+
+      return true;
+    }
+
+    return false;
   };
 
   const handleNavClick = (path) => {

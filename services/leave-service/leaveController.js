@@ -180,10 +180,13 @@ const getAllLeaves = async (req, res) => {
 
         const [rows] = await safeTenantQuery(dbName, query, params);
 
+        // Ensure rows is always an array
+        const leavesArray = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+
         return res.status(200).json({
             status: 'success',
-            count: rows.length,
-            data: rows
+            count: leavesArray.length,
+            data: leavesArray
         });
 
     } catch (error) {
@@ -523,6 +526,10 @@ const getLeaveStats = async (req, res) => {
             params
         );
 
+        // Ensure by_status and by_type are always arrays
+        const byStatus = Array.isArray(statusRows) ? statusRows : [];
+        const byType = Array.isArray(typeRows) ? typeRows : [];
+
         // Pending approvals
         const [pendingRows] = await safeTenantQuery(
             dbName,
@@ -546,8 +553,8 @@ const getLeaveStats = async (req, res) => {
                 total: totalRows[0]?.total || 0,
                 pending: pendingRows[0]?.pending || 0,
                 on_leave: onLeaveRows[0]?.on_leave || 0,
-                by_status: statusRows,
-                by_type: typeRows
+                by_status: byStatus,
+                by_type: byType
             }
         });
 
@@ -578,10 +585,13 @@ const getUsersOnLeave = async (req, res) => {
        ORDER BY lr.start_date ASC`
         );
 
+        // Ensure rows is always an array
+        const usersArray = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+
         return res.status(200).json({
             status: 'success',
-            count: rows.length,
-            data: rows
+            count: usersArray.length,
+            data: usersArray
         });
 
     } catch (error) {

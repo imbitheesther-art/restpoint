@@ -1,119 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Zap, MessageCircle, Mail, Globe } from 'lucide-react';
-import styled from 'styled-components';
+import { Shield, MessageCircle, Mail, Globe, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// ------------------- DATA -------------------
-const SUPPORT = { phone: '0740045355', email: 'infowelttallis@gmail.com' };
-
-const colors = {
-  dangerRed: '#C0392B',
-  kinSuccess: '#00A896',
-  kinDanger: '#E71D36',
-  autopsySuccess: '#6A0572',
-  autopsyDanger: '#37fc00',
+// Use the Rest Point design system colors
+const C = {
+  ink: '#15171A',
+  bone: '#FAF8F4',
+  bone2: '#F3EFE6',
+  brass: '#8B7355',
+  brassLight: '#A98F6E',
+  verdigris: '#3D4F47',
+  verdigrisDark: '#2E3F37',
+  verdigrisLight: '#4D6359',
+  verdigrisTint: '#EBEFEF',
+  line: '#E3DDD0',
+  lineDark: 'rgba(250,248,244,0.14)',
+  gray: '#6B6862',
+  grayLight: 'rgba(250,248,244,0.62)',
+  accent: '#C77B5E',
 };
 
-// ------------------- STYLED COMPONENTS -------------------
-const FooterBar = styled.footer`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.25rem;
-  background: #0f172a;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  color: #94a3b8;
-  font-size: 0.75rem;
-  gap: 1rem;
+const SUPPORT = { phone: '0740045355', email: 'infowelttallis@gmail.com' };
 
-  @media (max-width: 600px) {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 1.25rem;
-    padding: 1rem; /* taller padding on mobile */
-  }
-`;
-
-const Section = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-
-    &:first-child {
-      grid-column: span 2;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      padding-bottom: 0.75rem;
-      width: 100%;
-    }
-  }
-`;
-
-const Brand = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #fff;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-`;
-
-const NavLink = styled.a`
-  color: #94a3b8;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: 0.2s;
-
-  &:hover {
-    color: #60a5fa;
-  }
-`;
-
-const Status = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #10b981;
-  font-weight: 500;
-
-  span {
-    width: 6px;
-    height: 6px;
-    background: #10b981;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #10b981;
-  }
-`;
-
-const RedText = styled.span`
-  color: ${colors.autopsyDanger};
-  font-weight: 600;
-`;
-
-const ProductId = styled.span`
-  font-size: 0.7rem;
-  color: #64748b;
-`;
-
-const SystemMeta = styled.div`
-  display: flex;
-  gap: 10px;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 6px;
-  }
-`;
-
-// ------------------- COMPONENT -------------------
 const FooterComponent = () => {
+  const navigate = useNavigate();
   const [latency, setLatency] = useState('24ms');
   const [userName, setUserName] = useState('User');
   const currentYear = new Date().getFullYear();
@@ -131,13 +41,6 @@ const FooterComponent = () => {
     }
   }, []);
 
-  // Generate a random product ID
-  const generateProductId = () => {
-    const randomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
-    return `V2.0.1-WT-RSP-${currentYear}-${randomCode}`;
-  };
-  const [productId] = useState(generateProductId());
-
   useEffect(() => {
     const interval = setInterval(() => {
       setLatency(`${Math.floor(Math.random() * 10) + 21}ms`);
@@ -146,45 +49,114 @@ const FooterComponent = () => {
   }, []);
 
   return (
-    <FooterBar>
+    <footer style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0.75rem 1.25rem',
+      background: C.ink,
+      borderTop: `2px solid ${C.verdigrisLight}`,
+      color: C.grayLight,
+      fontSize: '0.75rem',
+      gap: '1rem',
+    }}>
       {/* BRAND & USER */}
-      <Section>
-        <Brand>
-          <Shield size={14} /> © {currentYear} WELT TALLIS Inc
-        </Brand>
-        <div style={{ opacity: 0.5 }}>|</div>
-        <span>
-          {' '}
-          - Logged in as : <RedText>{userName}</RedText>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        flexWrap: 'wrap',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          color: C.bone,
+          fontWeight: 700,
+          letterSpacing: '0.5px',
+        }}>
+          <Shield size={14} /> © {currentYear} WELT TALLIS
+        </div>
+        <span style={{ opacity: 0.6 }}>|</span>
+        <span style={{ color: C.grayLight, opacity: 0.8 }}>
+          Logged in as: <strong style={{ color: C.brassLight, fontWeight: 600 }}>{userName}</strong>
         </span>
-      </Section>
+      </div>
 
       {/* SUPPORT LINKS */}
-      <Section>
-        <NavLink href={`https://wa.me/${SUPPORT.phone}`} target="_blank">
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        flexWrap: 'wrap',
+      }}>
+        <a href={`https://wa.me/${SUPPORT.phone}`} target="_blank" rel="noopener noreferrer" style={{
+          color: C.grayLight,
+          textDecoration: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          transition: 'color 0.2s',
+        }}
+          onMouseEnter={(e) => e.target.style.color = C.verdigrisTint}
+          onMouseLeave={(e) => e.target.style.color = C.grayLight}
+        >
           <MessageCircle size={14} /> WhatsApp
-        </NavLink>
-        <NavLink href={`mailto:${SUPPORT.email}`}>
+        </a>
+        <a href={`mailto:${SUPPORT.email}`} style={{
+          color: C.grayLight,
+          textDecoration: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          transition: 'color 0.2s',
+        }}
+          onMouseEnter={(e) => e.target.style.color = C.verdigrisTint}
+          onMouseLeave={(e) => e.target.style.color = C.grayLight}
+        >
           <Mail size={14} /> Contact
-        </NavLink>
-      </Section>
+        </a>
+      </div>
 
       {/* SYSTEM STATUS */}
-      <Section style={{ alignItems: 'flex-end' }}>
-        <Status>
-          <span /> Operational
-        </Status>
-        <SystemMeta>
-          <div>
-            <Zap size={12} /> {latency}
-          </div>
-          <div>
-            <Globe size={12} /> v2.1
-          </div>
-          <ProductId>Product ID: {productId}</ProductId>
-        </SystemMeta>
-      </Section>
-    </FooterBar>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        flexWrap: 'wrap',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          color: '#4CAF50',
+          fontWeight: 500,
+        }}>
+          <span style={{
+            width: '6px',
+            height: '6px',
+            background: '#4CAF50',
+            borderRadius: '50%',
+            boxShadow: '0 0 8px #4CAF50',
+          }} />
+          Operational
+        </div>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', color: C.grayLight, opacity: 0.7 }}>
+          <span><Zap size={12} /> {latency}</span>
+          <span><Globe size={12} /> v2.1</span>
+          <span style={{ fontSize: '0.65rem', color: C.brassLight, opacity: 0.6 }}>
+            ID: {Math.random().toString(36).substring(2, 7).toUpperCase()}
+          </span>
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 600px) {
+          footer { flex-direction: column !important; align-items: flex-start !important; gap: 0.75rem !important; padding: 1rem !important; }
+        }
+      `}</style>
+    </footer>
   );
 };
 

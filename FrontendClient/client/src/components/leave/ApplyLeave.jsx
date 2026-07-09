@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, FileText, Upload, X } from 'lucide-react';
+import { Calendar, FileText, Upload, X, User, Mail, MapPin, Briefcase } from 'lucide-react';
 
 const COLORS = {
     primary: '#0A2463',
@@ -18,7 +18,7 @@ const COLORS = {
 };
 
 const Container = styled.div`
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 `;
 
@@ -45,6 +45,7 @@ const Card = styled.div`
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   border: 1px solid ${COLORS.border};
   padding: 2rem;
+  margin-bottom: 1.5rem;
 `;
 
 const FormGroup = styled.div`
@@ -202,18 +203,125 @@ const SuccessMessage = styled.div`
   margin-bottom: 1rem;
 `;
 
+const UserInfoCard = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1.25rem;
+  background: ${COLORS.bg};
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+`;
+
+const UserInfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const UserInfoIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: ${COLORS.primary};
+  color: ${COLORS.white};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const UserInfoContent = styled.div`
+  flex: 1;
+`;
+
+const UserInfoLabel = styled.div`
+  font-size: 0.75rem;
+  color: ${COLORS.textSecondary};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+`;
+
+const UserInfoValue = styled.div`
+  font-size: 0.9rem;
+  color: ${COLORS.text};
+  font-weight: 500;
+`;
+
+const DocumentsList = styled.div`
+  margin-top: 1rem;
+`;
+
+const DocumentItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: ${COLORS.bg};
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+`;
+
+const DocumentName = styled.div`
+  flex: 1;
+  font-size: 0.9rem;
+  color: ${COLORS.text};
+`;
+
+const RemoveButton = styled.button`
+  background: none;
+  border: none;
+  color: ${COLORS.danger};
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    opacity: 0.7;
+  }
+`;
+
 const ApplyLeave = () => {
     const [formData, setFormData] = useState({
         leave_type: 'annual',
+        priority: 'medium',
         start_date: '',
         end_date: '',
         reason: '',
-        is_half_day: false
+        is_half_day: false,
+        // User information fields
+        user_name: '',
+        user_email: '',
+        user_branch: '',
+        user_role: ''
     });
-    const [document, setDocument] = useState(null);
+    const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    useEffect(() => {
+        // Load user information from localStorage as default values
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const tenantData = JSON.parse(localStorage.getItem('tenantData') || '{}');
+
+            setFormData(prev => ({
+                ...prev,
+                user_name: user.name || user.first_name + ' ' + user.last_name || '',
+                user_email: user.email || '',
+                user_branch: tenantData.branch_name || tenantData.branchSlug || '',
+                user_role: user.role || user.roles?.[0] || ''
+            }));
+        } catch (e) {
+            console.error('Error loading user info:', e);
+        }
+    }, []);
 
     const getUserId = () => {
         try {
@@ -240,19 +348,25 @@ const ApplyLeave = () => {
 
             if (response?.data?.status === 'success') {
                 setSuccess('Leave request submitted successfully!');
-                setFormData({
+                setShowSuccess(true);
+
+                // Reset form but keep user information
+                setFormData(prev => ({
+                    ...prev,
                     leave_type: 'annual',
+                    priority: 'medium',
                     start_date: '',
                     end_date: '',
                     reason: '',
                     is_half_day: false
-                });
-                setDocument(null);
+                }));
+                setDocuments([]);
 
-                // Redirect to dashboard after 2 seconds
+                // Hide success message after 5 seconds
                 setTimeout(() => {
-                    window.location.href = '/leaves';
-                }, 2000);
+                    setShowSuccess(false);
+                    setSuccess('');
+                }, 5000);
             }
         } catch (err) {
             setError(err?.response?.data?.message || 'Failed to submit leave request');
@@ -262,10 +376,19 @@ const ApplyLeave = () => {
     };
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setDocument(file);
-        }
+        const files = Array.from(e.target.files || []);
+        const newDocuments = files.map(file => ({
+            file,
+            name: file.name,
+            size: file.size
+        }));
+        setDocuments([...documents, ...newDocuments]);
+        // Reset input
+        e.target.value = '';
+    };
+
+    const removeDocument = (index) => {
+        setDocuments(documents.filter((_, i) => i !== index));
     };
 
     const calculateDays = () => {
@@ -285,6 +408,60 @@ const ApplyLeave = () => {
                 <Subtitle>Submit a new leave request</Subtitle>
             </Header>
 
+            {/* User Information Card - All fields editable */}
+            <Card>
+                <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, color: COLORS.text }}>
+                    Your Information
+                </h3>
+                <UserInfoCard>
+                    <FormGroup>
+                        <Label htmlFor="user_name">Full Name <RequiredLabel>*</RequiredLabel></Label>
+                        <Input
+                            type="text"
+                            id="user_name"
+                            value={formData.user_name}
+                            onChange={(e) => setFormData({ ...formData, user_name: e.target.value })}
+                            placeholder="Enter your full name"
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="user_email">Email Address <RequiredLabel>*</RequiredLabel></Label>
+                        <Input
+                            type="email"
+                            id="user_email"
+                            value={formData.user_email}
+                            onChange={(e) => setFormData({ ...formData, user_email: e.target.value })}
+                            placeholder="Enter your email address"
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="user_branch">Branch <RequiredLabel>*</RequiredLabel></Label>
+                        <Input
+                            type="text"
+                            id="user_branch"
+                            value={formData.user_branch}
+                            onChange={(e) => setFormData({ ...formData, user_branch: e.target.value })}
+                            placeholder="Enter your branch"
+                            required
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label htmlFor="user_role">Role <RequiredLabel>*</RequiredLabel></Label>
+                        <Input
+                            type="text"
+                            id="user_role"
+                            value={formData.user_role}
+                            onChange={(e) => setFormData({ ...formData, user_role: e.target.value })}
+                            placeholder="Enter your role"
+                            required
+                        />
+                    </FormGroup>
+                </UserInfoCard>
+            </Card>
+
+            {/* Leave Application Form */}
             <Card>
                 {error && <ErrorMessage>{error}</ErrorMessage>}
                 {success && <SuccessMessage>{success}</SuccessMessage>}
@@ -307,6 +484,23 @@ const ApplyLeave = () => {
                             <option value="compassionate">Compassionate Leave</option>
                             <option value="study">Study Leave</option>
                             <option value="unpaid">Unpaid Leave</option>
+                        </Select>
+                    </FormGroup>
+
+                    <FormGroup>
+                        <Label htmlFor="priority">
+                            Priority <RequiredLabel>*</RequiredLabel>
+                        </Label>
+                        <Select
+                            id="priority"
+                            value={formData.priority}
+                            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                            required
+                        >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="emergency">Emergency</option>
                         </Select>
                     </FormGroup>
 
@@ -352,25 +546,28 @@ const ApplyLeave = () => {
                     )}
 
                     <FormGroup>
-                        <Label htmlFor="reason">Reason</Label>
+                        <Label htmlFor="reason">
+                            Reason <RequiredLabel>*</RequiredLabel>
+                        </Label>
                         <Textarea
                             id="reason"
                             value={formData.reason}
                             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                             placeholder="Please provide a reason for your leave request..."
+                            required
                         />
                     </FormGroup>
 
                     <FormGroup>
-                        <Label>Supporting Document (Optional)</Label>
+                        <Label>Supporting Documents (Optional)</Label>
                         <label htmlFor="document-upload">
                             <FileUpload>
                                 <Upload size={32} color={COLORS.textSecondary} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>
-                                    {document ? document.name : 'Click to upload a document'}
+                                    Click to upload documents
                                 </div>
-                                <div style={{ color: COLORS.textLight, fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                                    PDF, JPG, PNG (Max 5MB)
+                                <div style={{ color: COLORS.textSecondary, fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                    PDF, JPG, PNG (Max 5MB each) - You can upload multiple files
                                 </div>
                             </FileUpload>
                         </label>
@@ -378,26 +575,27 @@ const ApplyLeave = () => {
                             id="document-upload"
                             type="file"
                             accept=".pdf,.jpg,.jpeg,.png"
+                            multiple
                             onChange={handleFileChange}
                         />
-                        {document && (
-                            <FileInfo>
-                                <FileText size={16} color={COLORS.info} />
-                                <span style={{ flex: 1, fontSize: '0.9rem' }}>{document.name}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setDocument(null)}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: COLORS.danger,
-                                        cursor: 'pointer',
-                                        padding: 0
-                                    }}
-                                >
-                                    <X size={16} />
-                                </button>
-                            </FileInfo>
+                        {documents.length > 0 && (
+                            <DocumentsList>
+                                {documents.map((doc, index) => (
+                                    <DocumentItem key={index}>
+                                        <FileText size={16} color={COLORS.info} />
+                                        <DocumentName>{doc.name}</DocumentName>
+                                        <span style={{ fontSize: '0.8rem', color: COLORS.textSecondary }}>
+                                            {(doc.size / 1024).toFixed(1)} KB
+                                        </span>
+                                        <RemoveButton
+                                            type="button"
+                                            onClick={() => removeDocument(index)}
+                                        >
+                                            <X size={16} />
+                                        </RemoveButton>
+                                    </DocumentItem>
+                                ))}
+                            </DocumentsList>
                         )}
                     </FormGroup>
 
@@ -411,7 +609,7 @@ const ApplyLeave = () => {
                         <Button
                             type="submit"
                             $variant="primary"
-                            disabled={loading || !formData.leave_type || !formData.start_date || !formData.end_date}
+                            disabled={loading || !formData.leave_type || !formData.start_date || !formData.end_date || !formData.reason}
                         >
                             {loading ? 'Submitting...' : 'Submit Leave Request'}
                         </Button>

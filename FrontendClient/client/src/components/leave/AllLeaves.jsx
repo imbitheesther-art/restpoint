@@ -428,7 +428,7 @@ const AllLeaves = () => {
                 <Tr key={leave.id}>
                   <Td>
                     <div>
-                      <div style={{ fontWeight: 500 }}>{leave.first_name} {leave.last_name}</div>
+                      <div style={{ fontWeight: 500 }}>{leave.name || 'Unknown'}</div>
                       <div style={{ fontSize: '0.8rem', color: COLORS.textSecondary }}>{leave.email}</div>
                     </div>
                   </Td>

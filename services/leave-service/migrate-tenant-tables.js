@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   leave_type VARCHAR(50) NOT NULL,
+  priority ENUM('low', 'medium', 'high', 'emergency') DEFAULT 'medium',
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   days DECIMAL(5,2) NOT NULL,
@@ -51,8 +52,21 @@ async function migrateTenantTables(dbName) {
             }
         }
 
-        // Add annual_leave_balance column if it doesn't exist
+        // Add required columns to users table if they don't exist
         try {
+            // Add name column
+            await safeTenantQuery(dbName,
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255) DEFAULT NULL'
+            );
+            console.log(`[LEAVE] Added name column to users table`);
+
+            // Add email column
+            await safeTenantQuery(dbName,
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL'
+            );
+            console.log(`[LEAVE] Added email column to users table`);
+
+            // Add annual_leave_balance column
             await safeTenantQuery(dbName,
                 'ALTER TABLE users ADD COLUMN IF NOT EXISTS annual_leave_balance DECIMAL(5,2) DEFAULT 21.00'
             );
@@ -64,8 +78,8 @@ async function migrateTenantTables(dbName) {
             );
             console.log(`[LEAVE] Updated existing users with default leave balance`);
         } catch (err) {
-            // Column might already exist
-            console.log(`[LEAVE] annual_leave_balance column check: ${err.message}`);
+            // Columns might already exist
+            console.log(`[LEAVE] Users table columns check: ${err.message}`);
         }
 
         console.log(`[LEAVE] Migration completed for: ${dbName}`);

@@ -28,18 +28,21 @@ import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
 const Colors = {
-  primary: '#1e293b',
-  primaryGradient: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-  accent: '#3b82f6',
-  success: '#10b981',
-  danger: '#ef4444',
-  warning: '#f59e0b',
-  lightGray: '#f8fafc',
-  mediumGray: '#e2e8f0',
-  darkGray: '#1e293b',
-  textMuted: '#64748b',
-  cardBg: '#ffffff',
-  borderColor: '#e2e8f0',
+  primary: '#1a1a1a',
+  primaryGradient: 'linear-gradient(135deg, #3D4F47 0%, #2E3F37 100%)',
+  accent: '#8B7355',
+  accentHover: '#A98F6E',
+  success: '#475A43',
+  danger: '#9B4A3F',
+  warning: '#8B7355',
+  lightGray: '#FAF8F4',
+  mediumGray: '#E3DDD0',
+  darkGray: '#1a1a1a',
+  textMuted: '#6B6862',
+  cardBg: '#FFFFFF',
+  borderColor: '#E3DDD0',
+  inputBg: '#FFFFFF',
+  inputFocus: '#8B7355',
 };
 
 const Container = styled.div`

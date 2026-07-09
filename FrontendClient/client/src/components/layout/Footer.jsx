@@ -119,11 +119,19 @@ const Footer = ({ goTerms }) => {
     const navigate = useNavigate();
     const currentYear = new Date().getFullYear();
 
+    const handleNav = (path) => {
+        if (goTerms && path === '/terms') {
+            goTerms();
+        } else {
+            navigate(path);
+        }
+    };
+
     return (
         <footer style={{
             background: C.ink,
             color: C.grayLight,
-            padding: '5rem 0 2rem',
+            padding: 'clamp(3rem, 6vw, 5rem) 0 2rem',
             borderTop: `2px solid ${C.verdigrisLight}`,
             position: 'relative',
             overflow: 'hidden',
@@ -138,7 +146,7 @@ const Footer = ({ goTerms }) => {
                 pointerEvents: 'none',
             }} />
 
-            <div className="wrap" style={{ position: 'relative', zIndex: 1 }}>
+            <div className="wrap" style={{ position: 'relative', zIndex: 1, maxWidth: '1140px', margin: '0 auto', padding: '0 clamp(1.25rem, 5vw, 2.5rem)' }}>
                 <div className="footer-content" style={{
                     display: 'grid',
                     gridTemplateColumns: '2fr 1fr 1fr 1.2fr',
@@ -148,7 +156,7 @@ const Footer = ({ goTerms }) => {
                     <div>
                         <div className="footer-brand" style={{
                             fontFamily: "'Fraunces', serif",
-                            fontSize: '1.5rem',
+                            fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)',
                             color: C.bone,
                             fontWeight: 500,
                             marginBottom: '0.6rem',
@@ -186,7 +194,6 @@ const Footer = ({ goTerms }) => {
                         </div>
                     </div>
 
-
                     <div className="footer-col">
                         <h4 style={{
                             fontFamily: "'JetBrains Mono', monospace",
@@ -200,349 +207,67 @@ const Footer = ({ goTerms }) => {
                         }}>
                             Software Solutions
                         </h4>
-                        <button
-                            onClick={() => navigate('/')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.bone,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                                fontWeight: 600,
-                            }}
+                        <button onClick={() => handleNav('/')} style={{ display: 'block', fontSize: '0.85rem', color: C.bone, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem', fontWeight: 600 }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.bone; e.target.style.transform = 'translateX(0)'; }}
-                        >
+                            onMouseLeave={(e) => { e.target.style.color = C.bone; e.target.style.transform = 'translateX(0)'; }}>
                             RestPoint Complete Software
                         </button>
-                        <button
-                            onClick={() => navigate('/solutions/churches')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                        <button onClick={() => handleNav('/solutions/churches')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>
                             Church Welfare Software
                         </button>
-                        <button
-                            onClick={() => navigate('/solutions/saccos')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                        <button onClick={() => handleNav('/solutions/saccos')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>
                             SACCO Funeral Software
                         </button>
-                        <button
-                            onClick={() => navigate('/solutions/chamas')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                        <button onClick={() => handleNav('/solutions/chamas')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>
                             Chama Digital Management
                         </button>
-                        <button
-                            onClick={() => navigate('/solutions/funeral-homes')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                        <button onClick={() => handleNav('/solutions/funeral-homes')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>
                             Funeral Home Software
                         </button>
                     </div>
 
                     <div className="footer-col">
-                        <h4 style={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: '0.7rem',
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: C.verdigrisTint,
-                            marginBottom: '1.2rem',
-                            fontWeight: 600,
-                            opacity: 0.7,
-                        }}>
-                            Resources
-                        </h4>
-                        <button
-                            onClick={() => navigate('/blog/funeral-welfare-management')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                        <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: C.verdigrisTint, marginBottom: '1.2rem', fontWeight: 600, opacity: 0.7 }}>Resources</h4>
+                        <button onClick={() => handleNav('/blog/funeral-welfare-management')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Funeral Welfare Guide
-                        </button>
-                        <button
-                            onClick={() => navigate('/blog/bereavement-management')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>Funeral Welfare Guide</button>
+                        <button onClick={() => handleNav('/blog/bereavement-management')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Bereavement Management
-                        </button>
-                        <button
-                            onClick={() => navigate('/blog/member-contributions')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>Bereavement Management</button>
+                        <button onClick={() => handleNav('/blog/member-contributions')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Member Contributions
-                        </button>
-                        <button
-                            onClick={() => navigate('/templates')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>Member Contributions</button>
+                        <button onClick={() => handleNav('/templates')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Free Templates
-                        </button>
-                        <button
-                            onClick={() => navigate('/calculators')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>Free Templates</button>
+                        <button onClick={() => handleNav('/calculators')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Calculators
-                        </button>
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>Calculators</button>
                     </div>
 
                     <div className="footer-col">
-                        <h4 style={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: '0.7rem',
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: C.verdigrisTint,
-                            marginBottom: '1.2rem',
-                            fontWeight: 600,
-                            opacity: 0.7,
-                        }}>
-                            Company
-                        </h4>
-                        <button
-                            onClick={() => navigate('/about-welt-tallis')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                        <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: C.verdigrisTint, marginBottom: '1.2rem', fontWeight: 600, opacity: 0.7 }}>Company</h4>
+                        <button onClick={() => handleNav('/about-welt-tallis')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            About Welt Tallis
-                        </button>
-                    </div>
-
-                    <div className="footer-col">
-                        <h4 style={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: '0.7rem',
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: C.verdigrisTint,
-                            marginBottom: '1.2rem',
-                            fontWeight: 600,
-                            opacity: 0.7,
-                        }}>
-                            Compare
-                        </h4>
-                        <button
-                            onClick={() => navigate('/compare/restpoint-vs-excel')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>About Welt Tallis</button>
+                        <button onClick={() => handleNav('/contact')} style={{ display: 'block', fontSize: '0.85rem', color: C.grayLight, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s, transform 0.2s', textAlign: 'left', padding: 0, marginBottom: '0.6rem' }}
                             onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            RestPoint vs Excel
-                        </button>
-                        <button
-                            onClick={() => navigate('/compare/manual-vs-digital')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Manual vs Digital
-                        </button>
-                        <button
-                            onClick={() => navigate('/compare/best-church-software-kenya')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Best Church Software Kenya
-                        </button>
-                        <button
-                            onClick={() => navigate('/compare/best-sacco-welfare-software')}
-                            style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: C.grayLight,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s, transform 0.2s',
-                                textAlign: 'left',
-                                padding: 0,
-                                marginBottom: '0.6rem',
-                            }}
-                            onMouseEnter={(e) => { e.target.style.color = C.verdigrisTint; e.target.style.transform = 'translateX(4px)'; }}
-                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}
-                        >
-                            Best SACCO Welfare Software
-                        </button>
+                            onMouseLeave={(e) => { e.target.style.color = C.grayLight; e.target.style.transform = 'translateX(0)'; }}>Contact</button>
+                        <PolicyDropdown goTerms={goTerms} />
                     </div>
                 </div>
 
-                <div style={{
-                    height: '1px',
-                    background: C.lineDark,
-                    margin: '2.5rem 0',
-                    position: 'relative',
-                    zIndex: 1,
-                }} />
+                <div style={{ height: '1px', background: C.lineDark, margin: '2.5rem 0', position: 'relative', zIndex: 1 }} />
 
-                <div style={{
+                <div className="footer-bottom" style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -559,27 +284,27 @@ const Footer = ({ goTerms }) => {
             </div>
 
             <style>{`
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.4; }
-          100% { opacity: 1; }
-        }
-        @media (max-width: 1200px) {
-          .footer-content { grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 2rem !important; }
-        }
-        @media (max-width: 1000px) {
-          .footer-content { grid-template-columns: 2fr 1fr 1fr !important; gap: 2.5rem !important; }
-        }
-        @media (max-width: 900px) {
-          .footer-content { grid-template-columns: 1fr 1fr !important; gap: 2rem !important; }
-        }
-        @media (max-width: 700px) {
-          .footer-content { grid-template-columns: 1fr !important; gap: 2rem !important; }
-        }
-        @media (max-width: 600px) {
-          .footer-bottom { flex-direction: column !important; gap: 1rem !important; text-align: center !important; }
-        }
-      `}</style>
+                @keyframes pulse {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.4; }
+                    100% { opacity: 1; }
+                }
+                @media (max-width: 1200px) {
+                    .footer-content { grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 2rem !important; }
+                }
+                @media (max-width: 1000px) {
+                    .footer-content { grid-template-columns: 2fr 1fr 1fr !important; gap: 2.5rem !important; }
+                }
+                @media (max-width: 900px) {
+                    .footer-content { grid-template-columns: 1fr 1fr !important; gap: 2rem !important; }
+                }
+                @media (max-width: 700px) {
+                    .footer-content { grid-template-columns: 1fr !important; gap: 2rem !important; }
+                }
+                @media (max-width: 600px) {
+                    .footer-bottom { flex-direction: column !important; gap: 1rem !important; text-align: center !important; }
+                }
+            `}</style>
         </footer>
     );
 };

@@ -29,29 +29,17 @@ import 'react-toastify/dist/ReactToastify.css';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
-// Elegant Vintage Color Palette
+// Simple Clean Color Palette
 const THEME = {
   colors: {
-    ink: '#15171A',
-    bone: '#FAF8F4',
-    bone2: '#F3EFE6',
-    brass: '#8B7355',
-    brassHover: '#A98F6E',
-    verdigris: '#3D4F47',
-    verdigrisDark: '#2E3F37',
-    line: '#E3DDD0',
-    lineDark: '#2C2F33',
-    gray: '#6B6862',
-    grayLight: 'rgba(250,248,244,0.62)',
-    red: '#9B4A3F',
-    redBg: '#F7ECE9',
-    redLine: '#E8D2CC',
+    ink: '#1a1a1a',
     white: '#FFFFFF',
+    line: '#e5e5e5',
+    gray: '#666666',
+    verdigris: '#3D4F47',
+    brass: '#8B7355',
     success: '#475A43',
-    successBg: '#EEF3EC',
-    successLine: '#DCE6D9',
-    shadow: 'rgba(21,23,26,0.12)',
-    overlay: 'rgba(21,23,26,0.88)',
+    red: '#dc3545',
   }
 };
 
@@ -80,54 +68,46 @@ const slideRight = keyframes`
 
 // Styled Components
 const Container = styled.div`
-  background: ${THEME.colors.bone};
-  border-radius: 16px;
-  padding: 1.75rem;
+  background: ${THEME.colors.white};
+  border-radius: 6px;
+  padding: 0.75rem;
   border: 1px solid ${THEME.colors.line};
-  box-shadow: 0 4px 20px ${THEME.colors.shadow};
-  animation: ${fadeIn} 0.5s ease-out;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    box-shadow: 0 8px 32px ${THEME.colors.shadow};
-    border-color: ${THEME.colors.brass};
-  }
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid ${THEME.colors.line};
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid ${THEME.colors.line};
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
 `;
 
 const Title = styled.h3`
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
   color: ${THEME.colors.ink};
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.4rem;
 
   svg {
-    color: ${THEME.colors.brass};
+    color: ${THEME.colors.gray};
+    stroke-width: 2;
   }
 `;
 
 const Badge = styled.span`
-  background: ${THEME.colors.verdigris};
-  color: ${THEME.colors.bone};
-  padding: 0.3rem 0.8rem;
-  border-radius: 30px;
-  font-size: 0.8rem;
+  background: ${THEME.colors.line};
+  color: ${THEME.colors.gray};
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
   font-weight: 500;
-  letter-spacing: 0.3px;
+  display: inline-block;
 `;
 
 const Actions = styled.div`
@@ -141,37 +121,34 @@ const Button = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: none;
+  border: 1px solid ${THEME.colors.line};
   white-space: nowrap;
 
   &.primary {
     background: ${THEME.colors.verdigris};
-    color: ${THEME.colors.bone};
-    box-shadow: 0 2px 8px rgba(61, 79, 71, 0.2);
+    color: ${THEME.colors.white};
+    border-color: ${THEME.colors.verdigris};
 
     &:hover {
-      background: ${THEME.colors.verdigrisDark};
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(61, 79, 71, 0.3);
+      background: #2d3f37;
+      border-color: #2d3f37;
     }
 
     &:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
-      transform: none;
     }
   }
 
   &.secondary {
-    background: ${THEME.colors.bone2};
+    background: ${THEME.colors.white};
     color: ${THEME.colors.ink};
-    border: 1px solid ${THEME.colors.line};
 
     &:hover {
       background: ${THEME.colors.line};
@@ -180,13 +157,12 @@ const Button = styled.button`
 
   &.success {
     background: ${THEME.colors.success};
-    color: ${THEME.colors.bone};
-    box-shadow: 0 2px 8px rgba(71, 90, 67, 0.2);
+    color: ${THEME.colors.white};
+    border-color: ${THEME.colors.success};
 
     &:hover {
       background: #3d4a3a;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(71, 90, 67, 0.3);
+      border-color: #3d4a3a;
     }
   }
 `;
@@ -210,25 +186,11 @@ const DataGrid = styled.div`
 `;
 
 const DataGroup = styled.div`
-  background: linear-gradient(135deg, ${THEME.colors.bone} 0%, ${THEME.colors.bone2} 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid ${THEME.colors.line};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 200px;
-  animation: ${slideRight} 0.5s ease-out;
-  box-shadow: 0 2px 8px ${THEME.colors.shadow};
+  padding: 1.25rem 0;
+  border-bottom: 1px solid ${THEME.colors.line};
 
-  &:hover {
-    background: linear-gradient(135deg, ${THEME.colors.white} 0%, ${THEME.colors.bone} 100%);
-    box-shadow: 0 8px 24px ${THEME.colors.shadow};
-    border-color: ${THEME.colors.brass};
-    transform: translateY(-2px);
-  }
-
-  @media (max-width: 768px) {
-    padding: 1.25rem;
-    min-height: auto;
+  &:last-child {
+    border-bottom: none;
   }
 `;
 
@@ -236,18 +198,16 @@ const GroupTitle = styled.div`
   font-size: 0.8rem;
   font-weight: 600;
   color: ${THEME.colors.brass};
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid ${THEME.colors.line};
-  padding-bottom: 0.75rem;
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     stroke-width: 2;
   }
 `;
@@ -256,18 +216,9 @@ const DataRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0;
-  font-size: 0.95rem;
-  border-bottom: 1px dashed ${THEME.colors.line};
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  &:first-child {
-    padding-top: 0;
-  }
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  gap: 1rem;
 `;
 
 const Label = styled.span`
@@ -275,27 +226,32 @@ const Label = styled.span`
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   font-size: 0.9rem;
+  flex-shrink: 0;
+  min-width: fit-content;
 `;
 
 const Value = styled.span`
   color: ${THEME.colors.ink};
-  font-weight: ${(props) => (props.bold ? '600' : '500')};
+  font-weight: ${(props) => (props.bold ? '700' : '600')};
   text-align: right;
   word-break: break-word;
-  max-width: 200px;
+  flex: 1;
   font-size: 0.95rem;
+  line-height: 1.5;
 
   .status-badge {
     background: ${(props) => props.statusColor || THEME.colors.gray};
     color: ${THEME.colors.bone};
-    padding: 0.3rem 0.8rem;
-    border-radius: 30px;
+    padding: 0.35rem 0.9rem;
+    border-radius: 25px;
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
     display: inline-block;
     margin-left: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.3px;
   }
 `;
 
@@ -407,7 +363,6 @@ const fieldGroups = [
   {
     title: 'Personal Information',
     icon: User,
-    color: THEME.colors.verdigris,
     fields: [
       { key: 'full_name', label: 'Full Name', bold: true },
       { key: 'gender', label: 'Gender' },
@@ -418,29 +373,9 @@ const fieldGroups = [
   {
     title: 'Timeline',
     icon: CalendarDays,
-    color: THEME.colors.brass,
     fields: [
       { key: 'date_admitted', label: 'Admitted On' },
-      { key: 'date_registered', label: 'Registered On' },
       { key: 'dispatch_date', label: 'Dispatch Date' },
-    ],
-  },
-  {
-    title: 'Status & Registry',
-    icon: Activity,
-    color: THEME.colors.verdigrisDark,
-    fields: [
-      { key: 'status', label: 'Current Status', bold: true },
-      { key: 'created_by', label: 'Registered By' },
-    ],
-  },
-  {
-    title: 'Additional Info',
-    icon: Info,
-    color: THEME.colors.gray,
-    fields: [
-      { key: 'age', label: 'Age at Death', bold: true },
-      { key: 'deceased_id', label: 'Deceased ID' },
     ],
   },
 ];
@@ -455,18 +390,6 @@ const formFields = [
       { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'] },
       { name: 'date_of_birth', label: 'Date of Birth', type: 'date' },
       { name: 'date_of_death', label: 'Date of Death', type: 'date' },
-    ],
-  },
-  {
-    section: 'Status & Details',
-    icon: Activity,
-    fields: [
-      {
-        name: 'status',
-        label: 'Status',
-        type: 'select',
-        options: ['active', 'completed', 'pending', 'dispatched'],
-      },
     ],
   },
 ];
@@ -566,7 +489,7 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
 
     setIsLoading(true);
     try {
-      const updateEndpoint = `${ENDPOINTS.DECEASED.BASE}/update-deceased/${deceasedId}`;
+      const updateEndpoint = `${ENDPOINTS.DECEASED.BASE}/${deceasedId}`;
       const response = await api.put(updateEndpoint, formData);
 
       if (response.data.success) {
@@ -617,35 +540,6 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
       });
   };
 
-  const calculateAge = (dob, dod) => {
-    if (!dob || !dod) return '-';
-    const birth = new Date(dob);
-    const death = new Date(dod);
-    if (isNaN(birth.getTime()) || isNaN(death.getTime())) return '-';
-
-    let years = death.getFullYear() - birth.getFullYear();
-    const monthDiff = death.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) {
-      years--;
-    }
-    return `${years} years`;
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'active':
-        return THEME.colors.success;
-      case 'completed':
-        return THEME.colors.verdigris;
-      case 'pending':
-        return THEME.colors.brass;
-      case 'dispatched':
-        return THEME.colors.verdigrisDark;
-      default:
-        return THEME.colors.gray;
-    }
-  };
-
   const renderFieldValue = (field, data) => {
     let value = data[field.key];
 
@@ -653,25 +547,8 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
       return <Value>-</Value>;
     }
 
-    if (field.key.includes('date') || field.key === 'date_registered') {
-      value = field.key === 'date_registered' ? formatDateTime(value) : formatDate(value);
-    } else if (field.key === 'status') {
-      const color = getStatusColor(value);
-      return (
-        <Value bold>
-          <span className="status-badge" style={{ backgroundColor: color }}>
-            {value}
-          </span>
-        </Value>
-      );
-    } else if (field.key === 'created_by') {
-      return (
-        <Value bold style={{ color: value?.toLowerCase() === 'system' ? THEME.colors.red : THEME.colors.success }}>
-          {value || 'System'}
-        </Value>
-      );
-    } else if (field.key === 'age' && (!value || value === '-')) {
-      value = calculateAge(data.date_of_birth, data.date_of_death);
+    if (field.key.includes('date')) {
+      value = formatDate(value);
     }
 
     return <Value bold={field.bold}>{value}</Value>;
@@ -683,24 +560,12 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
         {React.createElement(section.icon, { size: 18 })}
         {section.title}
       </GroupTitle>
-      {section.fields.map((field, fieldIndex) => {
-        let displayValue = formData[field.key];
-
-        if (field.key === 'age' && (!displayValue || displayValue === '-')) {
-          displayValue = calculateAge(formData.date_of_birth, formData.date_of_death);
-        }
-
-        return (
-          <DataRow key={fieldIndex}>
-            <Label>{field.label}:</Label>
-            {field.key === 'age' ? (
-              <Value bold>{displayValue}</Value>
-            ) : (
-              renderFieldValue(field, formData)
-            )}
-          </DataRow>
-        );
-      })}
+      {section.fields.map((field, fieldIndex) => (
+        <DataRow key={fieldIndex}>
+          <Label>{field.label}:</Label>
+          {renderFieldValue(field, formData)}
+        </DataRow>
+      ))}
     </DataGroup>
   );
 
@@ -737,7 +602,6 @@ const DeceasedInfoSection = ({ deceasedId: propDeceasedId, deceased: propDecease
           <Title>
             <User size={22} />
             Deceased Information
-            <Badge>ID: {formData.deceased_id || formData.id || deceasedId}</Badge>
           </Title>
 
           <Actions>

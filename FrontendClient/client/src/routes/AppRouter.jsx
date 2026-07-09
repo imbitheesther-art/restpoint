@@ -49,7 +49,8 @@ const DataMigrationPolicy = lazy(() => import('../components/pages/DataMigration
 const SecurityPolicy = lazy(() => import('../components/pages/securityPolicy'));
 const SLAPolicy = lazy(() => import('../components/pages/slaPolicy'));
 const ReleasePolicy = lazy(() => import('../components/pages/releasePolicy'));
-const TicketPage = lazy(() => import('../components/support/TicketPage'));
+const SupportPage = lazy(() => import('../components/support/SupportPage'));
+const AdminSupportDashboard = lazy(() => import('../components/support/AdminSupportDashboard'));
 const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
 const AboutPage = lazy(() => import('../components/pages/AboutPage'));
 const ContactPage = lazy(() => import('../components/pages/ContactPage'));
@@ -69,7 +70,7 @@ const DeceasedDetails = lazy(() => import('../components/deceasedprofile/decease
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
 
-const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
+const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
 const UserManagement = lazy(() => import('../components/modals/users'));
 const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemorialPage'));
@@ -334,7 +335,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       } />
 
       {/* Documents - Available to admin, manager, staff, user */}
-      <Route path="documents" element={
+      <Route path="documents/:deceasedId" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
           <Layout tenantData={tenantData}><DocumentsPage /></Layout>
         </RoleBasedRoute>
@@ -413,7 +414,18 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       } />
 
       {/* Support - Available to all */}
-      <Route path="support" element={<Layout tenantData={tenantData}><TicketPage /></Layout>} />
+      <Route path="support" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><SupportPage /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Admin Support Dashboard - Available to admin and manager only */}
+      <Route path="support-dashboard" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager']} userRole={userRole}>
+          <Layout tenantData={tenantData}><AdminSupportDashboard /></Layout>
+        </RoleBasedRoute>
+      } />
 
       {/* 404 */}
       <Route path="*" element={<Layout tenantData={tenantData}><NotFound /></Layout>} />
@@ -471,8 +483,8 @@ const AppRouter = () => (
       <Route path="/about" element={<AboutPage />} />
       <Route path="/about-welt-tallis" element={<WeltTallisAbout />} />
       <Route path="/contact" element={<ContactPage />} />
-      <Route path="/support" element={<TicketPage />} />
-      <Route path="/support/:slug" element={<TicketPage />} />
+      <Route path="/support" element={<SupportPage />} />
+      <Route path="/support/:slug" element={<SupportPage />} />
 
       // Blog and Resource Routes
       <Route path="/blog/funeral-welfare-management" element={<FuneralWelfareGuide />} />

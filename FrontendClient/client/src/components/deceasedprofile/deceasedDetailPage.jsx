@@ -1,8 +1,9 @@
 import React, { useState, useEffect, lazy, Suspense, Component, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// Toast notifications disabled to prevent crashes
+// import { toast, ToastContainer } from 'react-toastify';
+// import 'react-toastify/dist/ReactToastify.css';
 import {
   QrCode,
   RefreshCw,
@@ -38,7 +39,7 @@ import ScannerComponent from '../scanner/ScannerComponent';
 
 // API Gateway URL - Centralized
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint/deceased`;
+const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
 
 // Colors - Elegant vintage palette
 const Colors = {
@@ -679,12 +680,12 @@ const DeceasedDetails = () => {
       if (deceasedData) {
         hideExternalLoader();
         const tenantSlug = getTenantSlug();
-        navigate(`/rptenant/${tenantSlug}/release-form/${currentDeceasedId}`, {
+        navigate(`/tenant/${tenantSlug}/release-form/${currentDeceasedId}`, {
           state: { deceasedData },
         });
       } else {
         hideExternalLoader();
-        toast.error('Unable to load deceased data');
+        console.error('Unable to load deceased data');
       }
     }, 500);
   };
@@ -694,13 +695,14 @@ const DeceasedDetails = () => {
   };
 
   const navigateToDocuments = () => {
-    navigate(`/documents/${currentDeceasedId}`);
+    const tenantSlug = getTenantSlug();
+    navigate(`/tenant/${tenantSlug}/documents/${currentDeceasedId}`);
   };
 
   const fetchDeceasedData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get(`/deceased-id/${id}`);
+      const response = await apiClient.get(`/deceased/${id}`);
       console.log('📦 API Response:', response.data);
 
       const apiData = response.data?.data || response.data || {};
@@ -720,11 +722,8 @@ const DeceasedDetails = () => {
       };
 
       setDeceasedData(normalizedData);
-      toast.success('Data loaded successfully');
     } catch (error) {
       console.error('Error fetching deceased details:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to load details';
-      toast.error(errorMessage);
       setDeceasedData(null);
     } finally {
       setIsLoading(false);
@@ -760,16 +759,13 @@ const DeceasedDetails = () => {
     fetchDeceasedData();
     fetchCoffins();
     setRefreshKey(prev => prev + 1);
-    toast.info('Refreshing data...');
   };
 
   const handleDocumentUploadSuccess = () => {
-    toast.success('Document uploaded');
     fetchDeceasedData();
   };
 
   const handleScanComplete = (scanData) => {
-    toast.success('Document scanned successfully');
     fetchDeceasedData();
   };
 
@@ -837,7 +833,7 @@ const DeceasedDetails = () => {
       {
         icon: <FileText size={14} />,
         label: 'Documents',
-        action: () => navigate(`/documents/${currentDeceasedId}`),
+        action: navigateToDocuments,
         badge: deceasedData?.documents?.length || 0,
       },
       {
@@ -926,20 +922,6 @@ const DeceasedDetails = () => {
 
   return (
     <AppContainer>
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        limit={3}
-      />
-
       {showLoader && (
         <Suspense fallback={null}>
           <Loader message="Loading..." />

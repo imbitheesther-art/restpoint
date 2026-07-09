@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '../layout/Footer';
 
 /* ============================================================
    REST POINT — Service Level Agreement (SLA)
@@ -543,17 +544,9 @@ export default function SLAPolicy() {
             </div>
           </Reveal>
 
-          {/* Footer */}
-          <footer>
-            <span>© 2026 Rest Point. All rights reserved.</span>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <a href="/privacy" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }}>Privacy Policy</a>
-              <a href="/terms" onClick={(e) => { e.preventDefault(); navigate('/terms'); }}>Terms of Service</a>
-              <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('/contact'); }}>Contact</a>
-            </div>
-          </footer>
         </div>
       </main>
+      <Footer />
     </>
   );
 }

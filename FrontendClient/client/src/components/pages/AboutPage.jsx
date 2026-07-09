@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '../layout/Footer';
 
 const C = {
   ink: '#15171A',
@@ -213,37 +214,7 @@ export default function AboutPage() {
       </main>
 
       {/* Footer */}
-      <footer style={{ background: C.ink, color: C.grayLight, padding: '3.5rem 0 2rem' }}>
-        <div className="wrap" style={{ maxWidth: '1080px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '3rem', paddingBottom: '2.6rem', borderBottom: `1px solid rgba(250,248,244,0.12)` }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-                <Mark size={20} color={C.bone} />
-                <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.1rem', color: C.bone }}>Rest Point</span>
-              </div>
-              <p style={{ maxWidth: '320px', fontSize: '0.88rem', color: C.grayLight }}>The operating system for funeral homes that take their reputation seriously. Built by Welt Tallis Technologies.</p>
-            </div>
-            <div>
-              <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.74rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: C.brassLight, marginBottom: '1.2rem', fontWeight: 400 }}>Platform</h4>
-              <a href="/#capabilities" className="footer-link" style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Capabilities</a>
-              <a href="/#pricing" className="footer-link" style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Pricing</a>
-              <a href="/#faq" className="footer-link" style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Questions</a>
-            </div>
-            <div>
-              <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.74rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: C.brassLight, marginBottom: '1.2rem', fontWeight: 400 }}>Company</h4>
-              <a onClick={() => navigate('/about')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>About</a>
-              <a onClick={() => navigate('/contact')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Contact</a>
-              <a onClick={() => navigate('/privacy')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Privacy policy</a>
-              <a onClick={() => navigate('/terms')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Terms</a>
-              <a onClick={() => navigate('/account-deletion')} style={{ display: 'block', fontSize: '0.88rem', color: C.grayLight, marginBottom: '0.7rem', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = C.grayLight}>Account deletion</a>
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(250,248,244,0.45)', paddingTop: '1.6rem', flexWrap: 'wrap', gap: '0.8rem' }}>
-            <div>© 2026 Rest Point. All rights reserved.</div>
-            <div>Built for African funeral professionals</div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

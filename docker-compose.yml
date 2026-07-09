@@ -855,11 +855,11 @@ services:
   # Frontend Client
   frontend:
     build:
-      context: ./FrontendClient/client
+      context: ./FrontendClient
       dockerfile: Dockerfile
     container_name: restpoint_frontend
     ports:
-      - "8082:80"
+      - "8080:80"
     depends_on:
       - api-gateway
     networks:

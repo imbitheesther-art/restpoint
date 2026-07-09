@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/socketContext';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
+import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp, X } from 'lucide-react';
 
 const COLORS = {
   primary: '#0A2463',
@@ -247,6 +247,117 @@ const EmptyState = styled.div`
   color: ${COLORS.textSecondary};
 `;
 
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: ${COLORS.white};
+  border-radius: 14px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: ${COLORS.text};
+  margin: 0;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: ${COLORS.textSecondary};
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: ${COLORS.text};
+  }
+`;
+
+const ModalTextarea = styled.textarea`
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: ${COLORS.text};
+  min-height: 150px;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 1.5rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${COLORS.primary};
+  }
+`;
+
+const ModalButtonGroup = styled.div`
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+`;
+
+const Button = styled.button`
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  ${props => props.$variant === 'primary' ? `
+    background: ${COLORS.primary};
+    color: ${COLORS.white};
+
+    &:hover:not(:disabled) {
+      background: ${COLORS.primaryLight};
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  ` : `
+    background: ${COLORS.white};
+    color: ${COLORS.text};
+    border: 1px solid ${COLORS.border};
+
+    &:hover {
+      background: ${COLORS.bg};
+    }
+  `}
+`;
+
 const LeaveDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
@@ -254,6 +365,9 @@ const LeaveDashboard = () => {
   const [usersOnLeave, setUsersOnLeave] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [rejectModal, setRejectModal] = useState({ show: false, leaveId: null, reason: '' });
+  const [approveModal, setApproveModal] = useState({ show: false, leaveId: null });
+  const [detailModal, setDetailModal] = useState({ show: false, leave: null });
   const { socket, connected } = useSocket();
   const tenantSlug = localStorage.getItem('tenantSlug') || 'default';
 
@@ -285,14 +399,32 @@ const LeaveDashboard = () => {
   const fetchData = async () => {
     try {
       const [statsRes, leavesRes, onLeaveRes] = await Promise.all([
-        api.get(ENDPOINTS.LEAVE.STATS).catch(() => ({ data: null })),
-        api.get(ENDPOINTS.LEAVE.ALL).catch(() => ({ data: [] })),
-        api.get(ENDPOINTS.LEAVE.USERS_ON_LEAVE).catch(() => ({ data: [] })),
+        api.get(ENDPOINTS.LEAVE.STATS).catch((err) => {
+          console.error('Stats API error:', err);
+          return { data: null };
+        }),
+        api.get(ENDPOINTS.LEAVE.ALL).catch((err) => {
+          console.error('All leaves API error:', err);
+          return { data: { data: [] } };
+        }),
+        api.get(ENDPOINTS.LEAVE.USERS_ON_LEAVE).catch((err) => {
+          console.error('Users on leave API error:', err);
+          return { data: { data: [] } };
+        }),
       ]);
 
-      setStats(statsRes?.data || null);
-      setLeaves(Array.isArray(leavesRes?.data) ? leavesRes.data : []);
-      setUsersOnLeave(Array.isArray(onLeaveRes?.data) ? onLeaveRes.data : []);
+      console.log('Stats response:', statsRes);
+      console.log('Leaves response:', leavesRes);
+      console.log('Users on leave response:', onLeaveRes);
+
+      // Extract data from nested response structure
+      const statsData = statsRes?.data?.data || statsRes?.data || null;
+      const leavesData = leavesRes?.data?.data || leavesRes?.data || [];
+      const usersOnLeaveData = onLeaveRes?.data?.data || onLeaveRes?.data || [];
+
+      setStats(statsData);
+      setLeaves(Array.isArray(leavesData) ? leavesData : []);
+      setUsersOnLeave(Array.isArray(usersOnLeaveData) ? usersOnLeaveData : []);
     } catch (error) {
       console.error('Error fetching leave data:', error);
     } finally {
@@ -300,29 +432,45 @@ const LeaveDashboard = () => {
     }
   };
 
-  const handleApprove = async (leaveId) => {
+  const handleApproveClick = (leaveId) => {
+    setApproveModal({ show: true, leaveId });
+  };
+
+  const handleApproveConfirm = async () => {
     try {
-      await api.patch(ENDPOINTS.LEAVE.UPDATE_STATUS(leaveId), {
+      await api.patch(ENDPOINTS.LEAVE.UPDATE_STATUS(approveModal.leaveId), {
         status: 'approved',
         approved_by: 1 // TODO: Get from auth context
       });
+      setApproveModal({ show: false, leaveId: null });
       fetchData();
     } catch (error) {
       console.error('Error approving leave:', error);
-      alert('Failed to approve leave');
+      alert('Failed to approve leave: ' + error.message);
     }
   };
 
-  const handleReject = async (leaveId) => {
-    try {
-      const reason = prompt('Enter rejection reason:');
-      if (!reason) return;
+  const handleViewDetails = (leave) => {
+    setDetailModal({ show: true, leave });
+  };
 
-      await api.patch(ENDPOINTS.LEAVE.UPDATE_STATUS(leaveId), {
+  const handleReject = async (leaveId) => {
+    setRejectModal({ show: true, leaveId, reason: '' });
+  };
+
+  const submitRejection = async () => {
+    if (!rejectModal.reason.trim()) {
+      alert('Please provide a rejection reason');
+      return;
+    }
+
+    try {
+      await api.patch(ENDPOINTS.LEAVE.UPDATE_STATUS(rejectModal.leaveId), {
         status: 'rejected',
-        rejection_reason: reason,
+        rejection_reason: rejectModal.reason,
         approved_by: 1
       });
+      setRejectModal({ show: false, leaveId: null, reason: '' });
       fetchData();
     } catch (error) {
       console.error('Error rejecting leave:', error);
@@ -366,13 +514,9 @@ const LeaveDashboard = () => {
     <Container>
       <Header>
         <div>
-          <Title>Leave Management</Title>
-          <Subtitle>Manage employee leave requests and approvals</Subtitle>
+          <Title>Leave Management Dashboard</Title>
+          <Subtitle>Admin dashboard for managing employee leave requests and approvals</Subtitle>
         </div>
-        <ActionButton onClick={() => navigate(`/tenant/${tenantSlug}/leaves/apply`)}>
-          <Calendar size={18} />
-          Apply for Leave
-        </ActionButton>
       </Header>
 
       {!connected && (
@@ -458,7 +602,7 @@ const LeaveDashboard = () => {
             <tbody>
               {usersOnLeave.map((leave) => (
                 <Tr key={leave.id}>
-                  <Td>{leave.first_name} {leave.last_name}</Td>
+                  <Td>{leave.name || 'Unknown'}</Td>
                   <Td>{leave.department || '-'}</Td>
                   <Td>
                     <LeaveTypeBadge $type={leave.leave_type}>
@@ -527,7 +671,7 @@ const LeaveDashboard = () => {
                   <Tr key={leave.id}>
                     <Td>
                       <div>
-                        <div style={{ fontWeight: 500 }}>{leave.first_name} {leave.last_name}</div>
+                        <div style={{ fontWeight: 500 }}>{leave.name || 'Unknown'}</div>
                         <div style={{ fontSize: '0.8rem', color: COLORS.textSecondary }}>{leave.email}</div>
                       </div>
                     </Td>
@@ -552,9 +696,12 @@ const LeaveDashboard = () => {
                     </Td>
                     <Td>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <ActionIcon title="View Details" onClick={() => handleViewDetails(leave)}>
+                          <FileText size={16} />
+                        </ActionIcon>
                         {leave.status === 'pending' && (
                           <>
-                            <ActionIcon title="Approve" onClick={() => handleApprove(leave.id)}>
+                            <ActionIcon title="Approve" onClick={() => handleApproveClick(leave.id)}>
                               <CheckCircle size={16} color={COLORS.success} />
                             </ActionIcon>
                             <ActionIcon title="Reject" $danger onClick={() => handleReject(leave.id)}>
@@ -570,6 +717,191 @@ const LeaveDashboard = () => {
           </Table>
         )}
       </Section>
+
+      {/* Rejection Modal */}
+      {rejectModal.show && (
+        <Modal>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Reject Leave Request</ModalTitle>
+              <CloseButton onClick={() => setRejectModal({ show: false, leaveId: null, reason: '' })}>
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
+            <p style={{ marginBottom: '1rem', color: COLORS.textSecondary }}>
+              Please provide a reason for rejecting this leave request:
+            </p>
+            <ModalTextarea
+              value={rejectModal.reason}
+              onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+              placeholder="Enter rejection reason..."
+              autoFocus
+            />
+            <ModalButtonGroup>
+              <Button
+                type="button"
+                onClick={() => setRejectModal({ show: false, leaveId: null, reason: '' })}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                $variant="primary"
+                onClick={submitRejection}
+                disabled={!rejectModal.reason.trim()}
+              >
+                Reject Leave
+              </Button>
+            </ModalButtonGroup>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Approve Confirmation Modal */}
+      {approveModal.show && (
+        <Modal>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Approve Leave Request</ModalTitle>
+              <CloseButton onClick={() => setApproveModal({ show: false, leaveId: null })}>
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
+            <p style={{ marginBottom: '1rem', color: COLORS.textSecondary }}>
+              Are you sure you want to approve this leave request?
+            </p>
+            <ModalButtonGroup>
+              <Button
+                type="button"
+                onClick={() => setApproveModal({ show: false, leaveId: null })}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                $variant="primary"
+                onClick={handleApproveConfirm}
+              >
+                Approve Leave
+              </Button>
+            </ModalButtonGroup>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Leave Details Modal */}
+      {detailModal.show && detailModal.leave && (
+        <Modal>
+          <ModalContent style={{ maxWidth: '600px' }}>
+            <ModalHeader>
+              <ModalTitle>Leave Request Details</ModalTitle>
+              <CloseButton onClick={() => setDetailModal({ show: false, leave: null })}>
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, color: COLORS.text }}>
+                Employee Information
+              </h3>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>Name:</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{detailModal.leave.name || 'Unknown'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>Email:</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{detailModal.leave.email || '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, color: COLORS.text }}>
+                Leave Details
+              </h3>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>Leave Type:</span>
+                  <LeaveTypeBadge $type={detailModal.leave.leave_type}>{detailModal.leave.leave_type}</LeaveTypeBadge>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>Start Date:</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{formatDate(detailModal.leave.start_date)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>End Date:</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{formatDate(detailModal.leave.end_date)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>Total Days:</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{detailModal.leave.days} days</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: COLORS.bg, borderRadius: '8px' }}>
+                  <span style={{ color: COLORS.textSecondary, fontSize: '0.9rem' }}>Status:</span>
+                  <Badge $status={detailModal.leave.status}>{detailModal.leave.status}</Badge>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, color: COLORS.text }}>
+                Reason
+              </h3>
+              <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '8px', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                {detailModal.leave.reason || 'No reason provided'}
+              </div>
+            </div>
+
+            {detailModal.leave.supporting_document && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, color: COLORS.text }}>
+                  Supporting Document
+                </h3>
+                <a
+                  href={detailModal.leave.supporting_document}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem',
+                    background: COLORS.bg,
+                    borderRadius: '8px',
+                    color: COLORS.primary,
+                    textDecoration: 'none',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <FileText size={16} />
+                  View Document
+                </a>
+              </div>
+            )}
+
+            {detailModal.leave.rejection_reason && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, color: COLORS.danger }}>
+                  Rejection Reason
+                </h3>
+                <div style={{ padding: '0.75rem', background: '#FEE2E2', borderRadius: '8px', fontSize: '0.9rem', lineHeight: '1.5', color: '#991B1B' }}>
+                  {detailModal.leave.rejection_reason}
+                </div>
+              </div>
+            )}
+
+            <ModalButtonGroup>
+              <Button
+                type="button"
+                onClick={() => setDetailModal({ show: false, leave: null })}
+              >
+                Close
+              </Button>
+            </ModalButtonGroup>
+          </ModalContent>
+        </Modal>
+      )}
     </Container>
   );
 };
