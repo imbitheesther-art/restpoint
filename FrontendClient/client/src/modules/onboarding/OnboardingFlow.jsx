@@ -1,68 +1,47 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  ChevronDown, Menu, X, ArrowRight, Eye, EyeOff,
+  Upload, Plus, Trash2, Check, AlertCircle
+} from 'lucide-react';
 import api from '../../api/axios';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import Footer from '../../components/layout/Footer';
 import env from '../../config/env';
 
-const THEME = {
-  colors: {
-    ink: '#15171A',
-    bone: '#FAF8F4',
-    bone2: '#F3EFE6',
-    brass: '#8B7355',
-    brassHover: '#A98F6E',
-    verdigris: '#3D4F47',
-    verdigrisDark: '#2E3F37',
-    line: '#E3DDD0',
-    lineDark: '#2C2F33',
-    gray: '#6B6862',
-    grayLight: 'rgba(250,248,244,0.62)',
-    red: '#9B4A3F',
-    redBg: '#F7ECE9',
-    redLine: '#E8D2CC',
-    white: '#FFFFFF',
-    success: '#475A43',
-    successBg: '#EEF3EC',
-    successLine: '#DCE6D9',
-    shadow: 'rgba(21,23,26,0.12)',
-    overlay: 'rgba(21,23,26,0.88)',
-  },
-  typography: {
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    displayFamily: "'Fraunces', serif",
-    monoFamily: "'JetBrains Mono', monospace",
-  },
-  spacing: {
-    xs: '0.3rem',
-    sm: '0.55rem',
-    md: '0.78rem',
-    lg: '1.1rem',
-    xl: '1.5rem',
-    xxl: '2rem',
-    xxxl: '2.5rem',
-  },
-  borderRadius: {
-    sm: '2px',
-    md: '4px',
-    lg: '8px',
-    xl: '12px',
-    full: '50%',
-  },
+const C = {
+  ink: '#15171A',
+  bone: '#FAF8F4',
+  bone2: '#F3EFE6',
+  brass: '#8B7355',
+  brassLight: '#A98F6E',
+  verdigris: '#3D4F47',
+  verdigrisDark: '#2E3F37',
+  verdigrisLight: '#4D6359',
+  verdigrisTint: '#EBEFEF',
+  line: '#E3DDD0',
+  lineDark: 'rgba(250,248,244,0.14)',
+  gray: '#6B6862',
+  grayLight: 'rgba(250,248,244,0.62)',
+  accent: '#C77B5E',
+  red: '#9B4A3F',
+  redBg: '#F7ECE9',
+  success: '#475A43',
+  successBg: '#EEF3EC',
 };
 
 const STEPS = [
-  { key: 'org', label: 'Organization', description: 'Basic details about your funeral home' },
-  { key: 'security', label: 'Security', description: 'Create a secure password' },
-  { key: 'review', label: 'Review', description: 'Verify your information' },
+  { key: 'org', label: 'Organization', description: 'Basic details' },
+  { key: 'security', label: 'Security', description: 'Create password' },
+  { key: 'review', label: 'Review', description: 'Verify info' },
 ];
 
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const validatePassword = (password) => {
   const errors = [];
-  if (password.length < 8) errors.push('At least 8 characters');
-  if (!/[A-Z]/.test(password)) errors.push('One uppercase letter');
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('One special character');
+  if (password.length < 8) errors.push('8+ characters');
+  if (!/[A-Z]/.test(password)) errors.push('1 uppercase');
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('1 special char');
   return errors;
 };
 
@@ -76,10 +55,10 @@ const getPasswordStrength = (password) => {
 };
 
 const getPasswordStrengthColor = (strength) => {
-  if (strength === 0) return THEME.colors.gray;
-  if (strength === 1) return THEME.colors.red;
-  if (strength === 2) return THEME.colors.brass;
-  return THEME.colors.verdigris;
+  if (strength === 0) return C.gray;
+  if (strength === 1) return C.red;
+  if (strength === 2) return C.brass;
+  return C.verdigris;
 };
 
 const getPasswordStrengthText = (strength) => {
@@ -87,74 +66,120 @@ const getPasswordStrengthText = (strength) => {
   return texts[strength] || 'Strong';
 };
 
-const Logo = ({ size = 20, color = THEME.colors.ink }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="14.5" stroke={color} strokeWidth="1" />
-    <path d="M16 8.5V23.5M9.5 16H22.5" stroke={color} strokeWidth="1" />
-    <circle cx="16" cy="16" r="2.5" fill={color} />
+const Mark = ({ size = 28, color = C.verdigris }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
+    <circle cx="16" cy="16" r="15" stroke={color} strokeWidth="1.5" />
+    <path d="M16 8V24M8 16H24" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="16" cy="16" r="3.5" fill={color} />
   </svg>
 );
 
+const useOutsideClick = (ref, callback) => {
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) callback();
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [ref, callback]);
+};
+
+const PolicyDropdown = ({ navigate, goTerms }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useOutsideClick(ref, () => setOpen(false));
+
+  const policies = [
+    { label: 'Terms of Service', onClick: goTerms },
+    { label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+    { label: 'Security Policy', onClick: () => navigate('/security') },
+    { label: 'Data Migration Policy', onClick: () => navigate('/data-migration') },
+    { label: 'SLA Policy', onClick: () => navigate('/sla') },
+    { label: 'Release Notes', onClick: () => navigate('/releases') },
+    { label: 'Account Deletion', onClick: () => navigate('/account-deletion') },
+  ];
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(!open)} className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        Policies<ChevronDown size={14} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }} />
+      </button>
+      {open && (
+        <div className="dropdown-menu">
+          {policies.map((p, i) => (
+            <button key={i} onClick={() => { p.onClick(); setOpen(false); }} className="dropdown-item">
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MobileMenu = ({ navigate, goTerms, goLogin, goStart }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useOutsideClick(ref, () => setOpen(false));
+
+  const policies = [
+    { label: 'Terms of Service', onClick: goTerms },
+    { label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+    { label: 'Data Migration Policy', onClick: () => navigate('/data-migration') },
+    { label: 'SLA Policy', onClick: () => navigate('/sla') },
+    { label: 'Release Notes', onClick: () => navigate('/releases') },
+    { label: 'Account Deletion', onClick: () => navigate('/account-deletion') },
+  ];
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }} className="mobile-nav">
+      <button onClick={() => setOpen(!open)} className="nav-link" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem' }}>
+        {open ? <X size={22} /> : <Menu size={22} />}
+      </button>
+      {open && (
+        <div className="mobile-menu-container">
+          <button onClick={() => { navigate('/'); setOpen(false); }} className="mobile-link">Home</button>
+          <button onClick={() => { navigate('/about-welt-tallis'); setOpen(false); }} className="mobile-link">About</button>
+          <div className="mobile-policies-header">
+            <div className="mono-label" style={{ color: C.brass, padding: '0.6rem 1.2rem' }}>Policies</div>
+            {policies.map((p, i) => (
+              <button key={i} onClick={() => { p.onClick(); setOpen(false); }} className="mobile-link" style={{ paddingLeft: '2rem', fontSize: '0.82rem' }}>{p.label}</button>
+            ))}
+          </div>
+          <button onClick={() => { goLogin(); setOpen(false); }} className="mobile-link">Log in</button>
+          <button onClick={() => { goStart(); setOpen(false); }} className="mobile-link" style={{ color: C.verdigris, fontWeight: 600 }}>Request access</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Spinner = () => (
-  <span style={{
-    width: '14px',
-    height: '14px',
-    border: '2px solid rgba(250,248,244,0.35)',
-    borderTopColor: THEME.colors.bone,
-    borderRadius: '50%',
-    animation: 'spin 0.65s linear infinite',
-    display: 'inline-block',
-  }} />
+  <span className="spinner" />
 );
 
 const AlertMessage = ({ type, text }) => {
   if (!text) return null;
   const config = {
-    error: { bg: THEME.colors.redBg, border: THEME.colors.redLine, color: THEME.colors.red },
-    success: { bg: THEME.colors.successBg, border: THEME.colors.successLine, color: THEME.colors.success },
+    error: { bg: C.redBg, border: C.red, color: C.red },
+    success: { bg: C.successBg, border: C.success, color: C.success },
   };
   const style = config[type] || config.error;
   return (
-    <div style={{
-      background: style.bg,
-      border: `1px solid ${style.border}`,
-      color: style.color,
-      padding: THEME.spacing.md,
-      borderRadius: THEME.borderRadius.md,
-      fontSize: '0.82rem',
-      fontWeight: 500,
-      marginBottom: THEME.spacing.lg,
-    }}>
-      {text}
+    <div className="alert-message" style={{ background: style.bg, borderColor: style.border, color: style.color }}>
+      <AlertCircle size={16} />
+      <span>{text}</span>
     </div>
   );
 };
 
 const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasError, errorMessage, disabled, placeholder }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div style={{ marginBottom: THEME.spacing.lg }}>
-      <label style={{
-        display: 'block',
-        fontFamily: THEME.typography.monoFamily,
-        fontSize: '0.7rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color: THEME.colors.gray,
-        marginBottom: THEME.spacing.sm,
-      }}>
-        {label} <span style={{ color: THEME.colors.red }}>*</span>
-      </label>
-      <div style={{
-        position: 'relative',
-        border: `1px solid ${hasError ? THEME.colors.red : isFocused ? THEME.colors.brass : THEME.colors.line}`,
-        borderRadius: THEME.borderRadius.md,
-        background: THEME.colors.white,
-        transition: 'all 0.2s',
-        boxShadow: isFocused ? `0 0 0 3px rgba(139,115,85,0.12)` : 'none',
-      }}>
+    <div className="form-group">
+      <label className="form-label">{label} <span style={{ color: C.red }}>*</span></label>
+      <div className="input-wrapper" style={{ border: `1px solid ${hasError ? C.red : isFocused ? C.brass : C.line}`, boxShadow: isFocused ? `0 0 0 3px rgba(139,115,85,0.12)` : 'none' }}>
         <input
           type={showPassword ? 'text' : 'password'}
           value={value}
@@ -163,58 +188,14 @@ const PasswordInput = ({ label, value, onChange, showPassword, onToggle, hasErro
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           disabled={disabled}
-          style={{
-            width: '100%',
-            padding: `${THEME.spacing.md} ${THEME.spacing.xxl} ${THEME.spacing.md} ${THEME.spacing.md}`,
-            background: 'transparent',
-            border: 'none',
-            borderRadius: THEME.borderRadius.md,
-            fontSize: '0.88rem',
-            color: THEME.colors.ink,
-            fontFamily: THEME.typography.fontFamily,
-            outline: 'none',
-          }}
+          className="form-input"
+          style={{ paddingRight: '2.5rem' }}
         />
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={disabled}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          style={{
-            position: 'absolute',
-            right: THEME.spacing.sm,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            color: isHovered && !disabled ? THEME.colors.ink : THEME.colors.gray,
-            padding: THEME.spacing.xs,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'color 0.2s',
-          }}
-        >
-          {showPassword ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-              <line x1="1" y1="1" x2="23" y2="23" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          )}
+        <button type="button" onClick={onToggle} disabled={disabled} className="input-icon-btn">
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
-      {errorMessage && (
-        <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>
-          {errorMessage}
-        </span>
-      )}
+      {errorMessage && <span className="form-error">{errorMessage}</span>}
     </div>
   );
 };
@@ -223,58 +204,23 @@ const StepIndicator = ({ currentStep, onStepClick }) => {
   const progressPercentage = (currentStep / (STEPS.length - 1)) * 100;
 
   return (
-    <div style={{ position: 'relative', padding: '2rem 0 2.5rem', marginBottom: '1.5rem' }}>
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '8%',
-        right: '8%',
-        height: '2px',
-        background: THEME.colors.line,
-        transform: 'translateY(-50%)',
-      }} />
+    <div className="step-indicator">
+      <div className="step-line-bg" />
+      <div className="step-line-fg" style={{ width: `${progressPercentage}%` }} />
 
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '8%',
-        height: '2px',
-        background: THEME.colors.brass,
-        width: `${progressPercentage}%`,
-        transform: 'translateY(-50%)',
-        transition: 'width 0.4s ease',
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+      <div className="step-circles">
         {STEPS.map((step, index) => {
           const isCompleted = index < currentStep;
           const isCurrent = index === currentStep;
 
           return (
-            <div key={step.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: isCompleted ? 'pointer' : 'default' }} onClick={() => isCompleted && onStepClick(index)}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: (isCompleted || isCurrent) ? THEME.colors.brass : THEME.colors.bone,
-                border: `2px solid ${(isCompleted || isCurrent) ? THEME.colors.brass : THEME.colors.line}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: (isCompleted || isCurrent) ? THEME.colors.white : THEME.colors.gray,
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                transition: 'all 0.3s ease',
-              }}>
-                {isCompleted ? '✓' : index + 1}
+            <div key={step.key} className="step-item" onClick={() => isCompleted && onStepClick(index)} style={{ cursor: isCompleted ? 'pointer' : 'default' }}>
+              <div className={`step-circle ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}`}>
+                {isCompleted ? <Check size={14} /> : index + 1}
               </div>
-              <div style={{ marginTop: '0.4rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.72rem', color: THEME.colors.ink, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {step.label}
-                </div>
-                <div style={{ fontSize: '0.68rem', color: THEME.colors.gray, marginTop: '0.15rem', maxWidth: '120px' }}>
-                  {step.description}
-                </div>
+              <div className="step-text">
+                <div className="step-label">{step.label}</div>
+                <div className="step-desc">{step.description}</div>
               </div>
             </div>
           );
@@ -288,65 +234,29 @@ const FileUpload = ({ label, preview, onUpload, error }) => {
   const handleClick = () => document.getElementById('file-upload').click();
 
   return (
-    <div style={{ marginBottom: THEME.spacing.lg }}>
-      <label style={{
-        display: 'block',
-        fontFamily: THEME.typography.monoFamily,
-        fontSize: '0.7rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color: THEME.colors.gray,
-        marginBottom: THEME.spacing.sm,
-      }}>
-        {label} <span style={{ color: THEME.colors.red }}>*</span>
-      </label>
-      <div onClick={handleClick} style={{
-        width: '80px',
-        height: '80px',
-        margin: '0 auto',
-        border: `2px dashed ${error ? THEME.colors.red : preview ? THEME.colors.brass : THEME.colors.line}`,
-        borderRadius: '50%',
-        background: THEME.colors.bone2,
-        cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        transition: 'all 0.25s',
-      }}>
+    <div className="form-group">
+      <label className="form-label">{label} <span style={{ color: C.red }}>*</span></label>
+      <div onClick={handleClick} className="file-upload-circle" style={{ border: `2px dashed ${error ? C.red : preview ? C.brass : C.line}` }}>
         {preview ? (
           <img src={preview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={THEME.colors.gray} strokeWidth="1.4">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <span style={{ fontSize: '0.7rem', color: THEME.colors.gray }}>Click</span>
+          <div className="file-upload-placeholder">
+            <Upload size={24} color={C.gray} />
+            <span>Click</span>
           </div>
         )}
       </div>
       <input id="file-upload" type="file" accept="image/jpeg,image/png,image/jpg,image/svg+xml" onChange={onUpload} style={{ display: 'none' }} />
-      {error && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{error}</span>}
-      <span style={{ display: 'block', textAlign: 'center', fontSize: '0.68rem', color: THEME.colors.gray, marginTop: THEME.spacing.sm }}>
-        PNG, JPG or SVG (max 10MB)
-      </span>
+      {error && <span className="form-error">{error}</span>}
+      <span className="file-upload-hint">PNG, JPG or SVG (max 10MB)</span>
     </div>
   );
 };
 
 const ReviewItem = ({ label, value }) => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: `${THEME.spacing.md} ${THEME.spacing.lg}`,
-    borderBottom: `1px solid ${THEME.colors.line}`,
-    fontSize: '0.82rem',
-  }}>
-    <span style={{ color: THEME.colors.gray }}>{label}</span>
-    <span style={{ color: THEME.colors.ink, fontWeight: 500 }}>{value || '—'}</span>
+  <div className="review-item">
+    <span className="review-label">{label}</span>
+    <span className="review-value">{value || '—'}</span>
   </div>
 );
 
@@ -362,7 +272,6 @@ export default function OnboardingFlow() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [apiError, setApiError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
-  const [isNavHovered, setIsNavHovered] = useState(false);
   const [socket, setSocket] = useState(null);
   const [progress, setProgress] = useState({ step: '', percent: 0, details: '' });
 
@@ -373,36 +282,31 @@ export default function OnboardingFlow() {
     password: '',
     verifyPassword: '',
     branchName: '',
-    deploymentType: 'multi', // 'single' or 'multi'
+    deploymentType: 'multi',
   });
 
-  const [branches, setBranches] = useState([
-    { name: '', location: '' }
-  ]);
-
+  const [branches, setBranches] = useState([{ name: '', location: '' }]);
   const [errors, setErrors] = useState({});
+
+  const goLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/login'); };
+  const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
+  const goTerms = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); };
 
   useEffect(() => {
     const timer = setTimeout(() => setLoaded(true), 60);
     return () => clearTimeout(timer);
   }, []);
 
-  // Setup WebSocket connection for progress updates
   useEffect(() => {
-    const socketUrl = env.SOCKET_URL;
-    const newSocket = io(socketUrl, {
+    if (!env.SOCKET_URL) return;
+    const newSocket = io(env.SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
     });
 
-    newSocket.on('connect', () => {
-      console.log('📡 Connected to progress socket');
-    });
-
     newSocket.on('onboarding-progress', (data) => {
-      console.log('📊 Progress update:', data);
       setProgress({
         step: data.step || '',
         percent: data.progress || 0,
@@ -410,15 +314,8 @@ export default function OnboardingFlow() {
       });
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('📡 Disconnected from progress socket');
-    });
-
     setSocket(newSocket);
-
-    return () => {
-      newSocket.close();
-    };
+    return () => newSocket.close();
   }, []);
 
   const handleChange = useCallback((e) => {
@@ -456,15 +353,10 @@ export default function OnboardingFlow() {
     else if (!validateEmail(formData.email)) newErrors.email = 'Valid email required';
     if (!formData.location.trim()) newErrors.location = 'Location required';
 
-    // Validate branches based on deployment type
     if (formData.deploymentType === 'multi') {
-      // For multi-tenant, validate that at least one branch has a name
       const validBranches = branches.filter(b => b.name.trim());
-      if (validBranches.length === 0) {
-        newErrors.branches = 'At least one branch with a name is required';
-      }
+      if (validBranches.length === 0) newErrors.branches = 'At least one branch with a name is required';
     } else {
-      // For single tenant, validate branchName
       if (!formData.branchName.trim()) newErrors.branchName = 'Primary branch name required';
     }
 
@@ -530,15 +422,12 @@ export default function OnboardingFlow() {
       submitData.append('termsAccepted', agreeTerms);
       if (logoFile) submitData.append('logo', logoFile);
 
-      // For multi-tenant, send all branches
       if (formData.deploymentType === 'multi') {
         submitData.append('branches', JSON.stringify(branches.filter(b => b.name.trim())));
       } else {
-        // For single tenant, send single branch
         submitData.append('branchName', formData.branchName);
       }
 
-      // Join tenant room for progress updates (use slug from organization name)
       const tenantSlug = formData.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       if (socket && socket.connected) {
         socket.emit('join-tenant', { tenantSlug, userId: 'temp', userRole: 'admin' });
@@ -546,7 +435,7 @@ export default function OnboardingFlow() {
 
       const response = await api.post('/onboarding/organization', submitData, {
         headers: { 'Content-Type': 'multipart/form-data', 'x-tenant-slug': '' },
-        timeout: 300000, // 5 minute timeout for onboarding
+        timeout: 300000,
       });
 
       if (response.data.success || response.status === 200 || response.status === 201) {
@@ -594,311 +483,317 @@ export default function OnboardingFlow() {
   }, [formData, logoFile, agreeTerms, navigate, logoPreview, currentStep, goNext, socket]);
 
   const passwordStrength = getPasswordStrength(formData.password);
-  const goToLogin = useCallback(() => navigate('/login'), [navigate]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: THEME.colors.bone }}>
+    <div className="page-container">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;color:${C.gray};background:${C.bone};-webkit-font-smoothing:antialiased}
+        h1,h2,h3,h4{font-family:'Fraunces',serif;font-weight:500;letter-spacing:-0.01em;color:${C.ink}}
+        p{line-height:1.75;font-size:1rem;color:${C.gray}}
+        
+        .mono-label{font-family:'JetBrains Mono',monospace;font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;color:${C.brass};font-weight:500;display:inline-flex;align-items:center;gap:0.5rem}
+        
+        .btn{display:inline-flex;align-items:center;gap:0.5rem;padding:1rem 1.9rem;font-size:0.9rem;font-weight:500;font-family:'Inter',sans-serif;border:1px solid transparent;border-radius:8px;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;letter-spacing:0.01em}
+        .btn-brass{background:${C.brass};color:${C.bone};border:none}
+        .btn-brass:hover{background:${C.brassLight};transform:translateY(-2px);box-shadow:0 10px 20px rgba(139,115,85,0.25)}
+        .btn-ghost{background:transparent;color:${C.bone};border:1px solid rgba(250,248,244,0.3)}
+        .btn-ghost:hover{background:rgba(250,248,244,0.1);border-color:${C.bone}}
+        
+        .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(1.25rem,5vw,2.5rem)}
+        
+        nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(250,248,244,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid ${C.line};padding:1.2rem 0}
+        .nav-wrap{display:flex;justify-content:space-between;align-items:center}
+        .logo{display:flex;align-items:center;gap:0.7rem;font-family:'Fraunces',serif;font-size:1.3rem;font-weight:500;color:${C.ink};cursor:pointer}
+        .nav-links{display:flex;gap:2.5rem;align-items:center}
+        .nav-link{font-size:0.85rem;color:${C.gray};text-decoration:none;cursor:pointer;transition:color 0.2s;background:transparent;border:none;font-family:'Inter',sans-serif;padding:0.5rem 0}
+        .nav-link:hover{color:${C.verdigris}}
+        .nav-cta{display:flex;gap:0.75rem;align-items:center}
+        .mobile-nav{display:none}
+        
+        .dropdown-menu{position:absolute;top:100%;left:0;background:${C.bone};border:1px solid ${C.line};border-radius:8px;min-width:260px;margin-top:0.75rem;z-index:1000;box-shadow:0 20px 40px rgba(21,23,26,0.08);overflow:hidden}
+        .dropdown-item{width:100%;padding:0.9rem 1.2rem;background:none;border:none;text-align:left;cursor:pointer;font-size:0.85rem;color:${C.gray};border-bottom:1px solid ${C.line};transition:all 0.2s;font-family:'Inter',sans-serif}
+        .dropdown-item:last-child{border-bottom:none}
+        .dropdown-item:hover{background:${C.bone2};color:${C.ink}}
+        
+        .mobile-menu-container{position:absolute;top:100%;right:0;background:${C.bone};border:1px solid ${C.line};border-radius:8px;min-width:280px;margin-top:0.75rem;z-index:1000;box-shadow:0 20px 40px rgba(21,23,26,0.08);overflow:hidden}
+        .mobile-link{display:block;width:100%;padding:0.9rem 1.2rem;background:none;border:none;text-align:left;cursor:pointer;font-size:0.88rem;color:${C.gray};text-decoration:none;border-bottom:1px solid ${C.line};font-family:'Inter',sans-serif;transition:background 0.2s}
+        .mobile-link:hover{background:${C.bone2}}
+        .mobile-policies-header{padding:0.5rem 0;border-bottom:1px solid ${C.line};background:${C.bone2}}
+
+        /* Main Layout */
+        .main-content { padding-top: 100px; padding-bottom: 4rem; flex: 1; display: flex; justify-content: center; }
+        .form-card { background: ${C.bone}; border: 1px solid ${C.line}; padding: clamp(1.5rem, 4vw, 2.5rem); box-shadow: 0 20px 40px -15px rgba(21,23,26,0.1); border-radius: 16px; width: 100%; max-width: 640px; }
+        
+        /* Step Indicator */
+        .step-indicator { position: relative; padding: 2rem 0 2.5rem; margin-bottom: 1.5rem; }
+        .step-line-bg { position: absolute; top: 20px; left: 20px; right: 20px; height: 2px; background: ${C.line}; z-index: 0; }
+        .step-line-fg { position: absolute; top: 20px; left: 20px; height: 2px; background: ${C.brass}; width: 0%; z-index: 1; transition: width 0.4s ease; }
+        .step-circles { display: flex; justify-content: space-between; position: relative; z-index: 2; }
+        .step-item { display: flex; flex-direction: column; align-items: center; width: 33.33%; }
+        .step-circle { width: 40px; height: 40px; border-radius: 50%; background: ${C.bone}; border: 2px solid ${C.line}; display: flex; align-items: center; justify-content: center; color: ${C.gray}; font-size: 0.8rem; font-weight: 600; transition: all 0.3s ease; }
+        .step-circle.completed { background: ${C.brass}; border-color: ${C.brass}; color: ${C.bone}; }
+        .step-circle.current { border-color: ${C.brass}; color: ${C.brass}; box-shadow: 0 0 0 4px rgba(139,115,85,0.1); }
+        .step-text { text-align: center; margin-top: 0.5rem; }
+        .step-label { font-size: 0.8rem; font-weight: 600; color: ${C.ink}; }
+        .step-desc { font-size: 0.7rem; color: ${C.gray}; }
+        
+        /* Form Elements */
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: ${C.gray}; margin-bottom: 0.5rem; }
+        .input-wrapper { position: relative; border: 1px solid ${C.line}; border-radius: 8px; background: ${C.bone}; transition: all 0.2s; }
+        .form-input { width: 100%; padding: 0.8rem 1rem; background: transparent; border: none; border-radius: 8px; font-size: 0.9rem; color: ${C.ink}; font-family: 'Inter', sans-serif; outline: none; }
+        .form-input::placeholder { color: ${C.gray}; }
+        .input-icon-btn { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: ${C.gray}; padding: 0.5rem; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+        .input-icon-btn:hover { color: ${C.ink}; }
+        .form-error { display: block; color: ${C.red}; font-size: 0.75rem; margin-top: 0.3rem; }
+        
+        .alert-message { display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid; font-size: 0.85rem; font-weight: 500; margin-bottom: 1.5rem; }
+        
+        /* File Upload */
+        .file-upload-circle { width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: ${C.bone2}; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; transition: all 0.25s; }
+        .file-upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+        .file-upload-hint { display: block; text-align: center; font-size: 0.7rem; color: ${C.gray}; margin-top: 0.5rem; }
+        
+        /* Radio Cards */
+        .radio-card { flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background: ${C.bone}; border: 2px solid ${C.line}; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .radio-card.active { border-color: ${C.brass}; }
+        
+        /* Branch Card */
+        .branch-card { padding: 1rem; background: ${C.bone}; border-radius: 8px; border: 1px solid ${C.line}; margin-bottom: 1rem; }
+        
+        .review-item { display: flex; justify-content: space-between; padding: 0.8rem 1rem; border-bottom: 1px solid ${C.line}; font-size: 0.85rem; }
+        .review-item:last-child { border-bottom: none; }
+        .review-label { color: ${C.gray}; }
+        .review-value { color: ${C.ink}; font-weight: 500; }
+        
+        .spinner { width: 14px; height: 14px; border: 2px solid rgba(250,248,244,0.35); border-top-color: ${C.bone}; border-radius: 50%; animation: spin 0.65s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
-        .wrap { max-width: 1140px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.5rem); }
-        .footer-content { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 3rem; margin-bottom: 4rem; }
-        @media (max-width: 1000px) { .footer-content { grid-template-columns: 2fr 1fr 1fr !important; gap: 2.5rem !important; } }
-        @media (max-width: 700px) { .footer-content { grid-template-columns: 1fr !important; gap: 2rem !important; } }
-        @media (max-width: 600px) { .footer-bottom { flex-direction: column !important; gap: 1rem !important; text-align: center !important; } }
+        
+        @media(max-width:800px){.nav-links{display:none}.nav-cta{display:none}.mobile-nav{display:flex;gap:0.5rem;align-items:center}}
+        @media(max-width:600px){
+          .step-descriptions { display: none; }
+          .radio-cards-container { flex-direction: column; }
+          .branch-inputs { flex-direction: column; }
+          .form-footer { flex-direction: column-reverse; gap: 1rem; }
+          .form-footer button { width: 100%; justify-content: center; }
+        }
       `}</style>
 
       {/* Navbar */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 300,
-        background: 'rgba(250,248,244,0.92)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: `1px solid ${THEME.colors.line}`,
-        padding: '1rem 0',
-      }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', background: 'none', border: 'none' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <Logo size={20} />
-            <span style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1rem', fontWeight: 500, color: THEME.colors.ink }}>Rest Point</span>
-          </button>
-          <button
-            onClick={goToLogin}
-            onMouseEnter={() => setIsNavHovered(true)}
-            onMouseLeave={() => setIsNavHovered(false)}
-            style={{
-              background: isNavHovered ? THEME.colors.ink : 'transparent',
-              color: isNavHovered ? THEME.colors.bone : THEME.colors.ink,
-              border: `1px solid ${THEME.colors.ink}`,
-              padding: '0.4rem 1rem',
-              fontSize: '0.78rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              borderRadius: THEME.borderRadius.sm,
-            }}
-          >
-            Log in
-          </button>
+      <nav>
+        <div className="wrap nav-wrap">
+          <div className="logo" onClick={() => navigate('/')}>
+            <Mark size={24} color={C.ink} />
+            Rest Point
+          </div>
+          <div className="nav-links">
+            <button onClick={() => navigate('/')} className="nav-link">Home</button>
+            <PolicyDropdown navigate={navigate} goTerms={goTerms} />
+          </div>
+          <div className="nav-cta">
+            <button onClick={goLogin} className="nav-link" style={{ paddingRight: '0.5rem' }}>Log in</button>
+          </div>
+          <MobileMenu navigate={navigate} goTerms={goTerms} goLogin={goLogin} goStart={goStart} />
         </div>
       </nav>
 
       {/* Main Container */}
-      <main style={{ paddingTop: '70px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <section style={{ padding: '2rem 0' }}>
-          <div style={{ maxWidth: '640px', margin: '0 auto', padding: '0 1.5rem' }}>
-
+      <main className="main-content">
+        <div className="wrap" style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="form-card">
             <div style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.6s ease' }}>
               <StepIndicator currentStep={currentStep} onStepClick={(index) => setCurrentStep(index)} />
             </div>
 
-            {/* Card Content wrapper */}
-            <div style={{
-              background: THEME.colors.white,
-              border: `1px solid ${THEME.colors.line}`,
-              padding: THEME.spacing.xxxl,
-              boxShadow: `0 20px 60px -16px ${THEME.colors.shadow}`,
-              borderRadius: THEME.borderRadius.lg,
-              opacity: loaded ? 1 : 0,
-              transform: loaded ? 'translateY(0)' : 'translateY(18px)',
-              transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)',
-            }}>
-              {/* Progress Bar */}
-              {isSubmitting && progress.percent > 0 && (
-                <div style={{
-                  marginBottom: THEME.spacing.xl,
-                  padding: THEME.spacing.md,
-                  background: THEME.colors.bone2,
-                  borderRadius: THEME.borderRadius.md,
-                  border: `1px solid ${THEME.colors.line}`,
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: THEME.spacing.sm,
-                  }}>
-                    <span style={{
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      color: THEME.colors.ink,
-                      fontFamily: THEME.typography.fontFamily,
-                    }}>
-                      {progress.step}
-                    </span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 500,
-                      color: THEME.colors.brass,
-                      fontFamily: THEME.typography.monoFamily,
-                    }}>
-                      {progress.percent}%
-                    </span>
+            {/* Progress Bar */}
+            {isSubmitting && progress.percent > 0 && (
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: C.bone2, borderRadius: '8px', border: `1px solid ${C.line}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: C.ink }}>{progress.step}</span>
+                  <span className="mono-label" style={{ color: C.brass }}>{progress.percent}%</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', background: C.line, borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ width: `${progress.percent}%`, height: '100%', background: `linear-gradient(90deg, ${C.brass}, ${C.verdigris})`, borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                </div>
+                {progress.details && <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: C.gray, fontStyle: 'italic' }}>{progress.details}</div>}
+              </div>
+            )}
+
+            <div style={{ marginBottom: '2rem' }}>
+              <h1 style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
+                {currentStep === 0 && <>Tell us about your <span style={{ color: C.brass, fontStyle: 'italic' }}>organization</span></>}
+                {currentStep === 1 && <>Secure your <span style={{ color: C.brass, fontStyle: 'italic' }}>account</span></>}
+                {currentStep === 2 && <>Review and <span style={{ color: C.brass, fontStyle: 'italic' }}>confirm</span></>}
+              </h1>
+              <p style={{ fontSize: '0.9rem' }}>
+                {currentStep === 0 && "Basic details so families and your team know who they're working with."}
+                {currentStep === 1 && 'A password only your team will use to sign in to Rest Point.'}
+                {currentStep === 2 && 'Check everything looks right, then create your account.'}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <AlertMessage type="success" text={apiSuccess} />
+              <AlertMessage type="error" text={apiError} />
+
+              {/* Step 0 Content */}
+              {currentStep === 0 && (
+                <div className="fade-in">
+                  <FileUpload label="Organization logo" preview={logoPreview} onUpload={handleLogoUpload} error={errors.logo} />
+
+                  <div className="form-group">
+                    <label className="form-label">Organization name <span style={{ color: C.red }}>*</span></label>
+                    <div className="input-wrapper" style={{ border: `1px solid ${errors.organizationName ? C.red : C.line}` }}>
+                      <input type="text" name="organizationName" value={formData.organizationName} onChange={handleChange} placeholder="e.g., Nairobi Funeral Home" className="form-input" disabled={isSubmitting} />
+                    </div>
+                    {errors.organizationName && <span className="form-error">{errors.organizationName}</span>}
                   </div>
-                  <div style={{
-                    width: '100%',
-                    height: '6px',
-                    background: THEME.colors.line,
-                    borderRadius: '3px',
-                    overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      width: `${progress.percent}%`,
-                      height: '100%',
-                      background: `linear-gradient(90deg, ${THEME.colors.brass}, ${THEME.colors.verdigris})`,
-                      borderRadius: '3px',
-                      transition: 'width 0.4s ease',
-                    }} />
+
+                  <div className="form-group">
+                    <label className="form-label">Email <span style={{ color: C.red }}>*</span></label>
+                    <div className="input-wrapper" style={{ border: `1px solid ${errors.email ? C.red : C.line}` }}>
+                      <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="info@funeralhome.co.ke" className="form-input" disabled={isSubmitting} />
+                    </div>
+                    {errors.email && <span className="form-error">{errors.email}</span>}
                   </div>
-                  {progress.details && (
-                    <div style={{
-                      marginTop: THEME.spacing.xs,
-                      fontSize: '0.68rem',
-                      color: THEME.colors.gray,
-                      fontStyle: 'italic',
-                    }}>
-                      {progress.details}
+
+                  <div className="form-group">
+                    <label className="form-label">Location <span style={{ color: C.red }}>*</span></label>
+                    <div className="input-wrapper" style={{ border: `1px solid ${errors.location ? C.red : C.line}` }}>
+                      <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g., Nairobi, Kenya" className="form-input" disabled={isSubmitting} />
+                    </div>
+                    {errors.location && <span className="form-error">{errors.location}</span>}
+                  </div>
+
+                  <div className="form-group" style={{ padding: '1rem', background: C.bone2, borderRadius: '8px', border: `1px solid ${C.line}` }}>
+                    <label className="form-label" style={{ marginBottom: '0.5rem' }}>Deployment Type <span style={{ color: C.red }}>*</span></label>
+                    <div className="radio-cards-container" style={{ display: 'flex', gap: '0.75rem' }}>
+                      <label className={`radio-card ${formData.deploymentType === 'single' ? 'active' : ''}`}>
+                        <input type="radio" name="deploymentType" value="single" checked={formData.deploymentType === 'single'} onChange={handleChange} style={{ accentColor: C.brass }} />
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>Single Tenant</div>
+                          <div style={{ fontSize: '0.7rem', color: C.gray, marginTop: '0.15rem' }}>One location</div>
+                        </div>
+                      </label>
+                      <label className={`radio-card ${formData.deploymentType === 'multi' ? 'active' : ''}`}>
+                        <input type="radio" name="deploymentType" value="multi" checked={formData.deploymentType === 'multi'} onChange={handleChange} style={{ accentColor: C.brass }} />
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>Multi Tenant</div>
+                          <div style={{ fontSize: '0.7rem', color: C.gray, marginTop: '0.15rem' }}>Multiple branches</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {formData.deploymentType === 'multi' ? (
+                    <div className="form-group" style={{ padding: '1rem', background: C.bone2, borderRadius: '8px', border: `1px solid ${C.line}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <label className="form-label" style={{ margin: 0 }}>Branches <span style={{ color: C.red }}>*</span></label>
+                        <button type="button" onClick={() => setBranches([...branches, { name: '', location: '' }])} className="btn-brass" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', borderRadius: '4px', color: C.bone, background: C.brass, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Plus size={14} /> Add Branch
+                        </button>
+                      </div>
+                      {errors.branches && <span className="form-error">{errors.branches}</span>}
+                      {branches.map((branch, index) => (
+                        <div key={index} className="branch-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.8rem', color: C.ink }}>Branch {index + 1}</span>
+                            {branches.length > 1 && (
+                              <button type="button" onClick={() => setBranches(branches.filter((_, i) => i !== index))} style={{ background: 'none', border: 'none', color: C.red, cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                <Trash2 size={12} /> Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="input-wrapper" style={{ marginBottom: '0.5rem' }}>
+                            <input type="text" placeholder="Branch name" value={branch.name} onChange={(e) => { const newBranches = [...branches]; newBranches[index].name = e.target.value; setBranches(newBranches); }} className="form-input" />
+                          </div>
+                          <div className="input-wrapper">
+                            <input type="text" placeholder="Branch location" value={branch.location} onChange={(e) => { const newBranches = [...branches]; newBranches[index].location = e.target.value; setBranches(newBranches); }} className="form-input" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">Branch Name <span style={{ color: C.red }}>*</span></label>
+                      <div className="input-wrapper" style={{ border: `1px solid ${errors.branchName ? C.red : C.line}` }}>
+                        <input type="text" name="branchName" value={formData.branchName} onChange={handleChange} placeholder="e.g., Main Branch" className="form-input" disabled={isSubmitting} />
+                      </div>
+                      {errors.branchName && <span className="form-error">{errors.branchName}</span>}
                     </div>
                   )}
                 </div>
               )}
 
-              <div style={{ marginBottom: THEME.spacing.xxl }}>
-                <h1 style={{ fontFamily: THEME.typography.displayFamily, fontSize: '1.6rem', fontWeight: 500, color: THEME.colors.ink, marginBottom: THEME.spacing.sm }}>
-                  {currentStep === 0 && <>Tell us about your <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>organization</span></>}
-                  {currentStep === 1 && <>Secure your <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>account</span></>}
-                  {currentStep === 2 && <>Review and <span style={{ color: THEME.colors.brass, fontStyle: 'italic' }}>confirm</span></>}
-                </h1>
-                <p style={{ fontSize: '0.88rem', color: THEME.colors.gray, lineHeight: 1.6 }}>
-                  {currentStep === 0 && "Basic details so families and your team know who they're working with."}
-                  {currentStep === 1 && 'A password only your team will use to sign in to Rest Point.'}
-                  {currentStep === 2 && 'Check everything looks right, then create your account.'}
-                </p>
-              </div>
+              {/* Step 1 Content */}
+              {currentStep === 1 && (
+                <div className="fade-in">
+                  <PasswordInput label="Password" value={formData.password} onChange={(e) => handleChange({ target: { name: 'password', value: e.target.value } })} showPassword={showPassword} onToggle={() => setShowPassword(!showPassword)} hasError={!!errors.password} errorMessage={errors.password} disabled={isSubmitting} placeholder="Create a strong password" />
 
-              <form onSubmit={handleSubmit}>
-                <AlertMessage type="success" text={apiSuccess} />
-                <AlertMessage type="error" text={apiError} />
-
-                {/* Step 0 Content */}
-                {currentStep === 0 && (
-                  <div className="fade-in">
-                    <FileUpload label="Organization logo" preview={logoPreview} onUpload={handleLogoUpload} error={errors.logo} />
-                    <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
-                        Organization name <span style={{ color: THEME.colors.red }}>*</span>
-                      </label>
-                      <input type="text" name="organizationName" value={formData.organizationName} onChange={handleChange} placeholder="e.g., Nairobi Funeral Home" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.organizationName ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
-                      {errors.organizationName && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.organizationName}</span>}
-                    </div>
-                    <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
-                        Email <span style={{ color: THEME.colors.red }}>*</span>
-                      </label>
-                      <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="info@funeralhome.co.ke" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.email ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
-                      {errors.email && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.email}</span>}
-                    </div>
-                    <div style={{ marginBottom: THEME.spacing.lg }}>
-                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
-                        Location <span style={{ color: THEME.colors.red }}>*</span>
-                      </label>
-                      <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g., Nairobi, Kenya" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.location ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
-                      {errors.location && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.location}</span>}
-                    </div>
-
-                    <div style={{ marginBottom: THEME.spacing.lg, padding: THEME.spacing.lg, background: THEME.colors.bone2, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
-                      <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm, fontWeight: 600 }}>
-                        Deployment Type <span style={{ color: THEME.colors.red }}>*</span>
-                      </label>
-                      <div style={{ display: 'flex', gap: THEME.spacing.md, marginTop: THEME.spacing.sm }}>
-                        <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: THEME.spacing.sm, padding: THEME.spacing.md, background: THEME.colors.white, border: `2px solid ${formData.deploymentType === 'single' ? THEME.colors.brass : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, cursor: 'pointer', transition: 'all 0.2s' }}>
-                          <input type="radio" name="deploymentType" value="single" checked={formData.deploymentType === 'single'} onChange={handleChange} style={{ accentColor: THEME.colors.brass }} />
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: THEME.colors.ink }}>Single Tenant</div>
-                            <div style={{ fontSize: '0.72rem', color: THEME.colors.gray, marginTop: '0.15rem' }}>One location, simple setup</div>
-                          </div>
-                        </label>
-                        <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: THEME.spacing.sm, padding: THEME.spacing.md, background: THEME.colors.white, border: `2px solid ${formData.deploymentType === 'multi' ? THEME.colors.brass : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, cursor: 'pointer', transition: 'all 0.2s' }}>
-                          <input type="radio" name="deploymentType" value="multi" checked={formData.deploymentType === 'multi'} onChange={handleChange} style={{ accentColor: THEME.colors.brass }} />
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: THEME.colors.ink }}>Multi Tenant</div>
-                            <div style={{ fontSize: '0.72rem', color: THEME.colors.gray, marginTop: '0.15rem' }}>Multiple branches, each with own database</div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-
-                    {formData.deploymentType === 'multi' ? (
-                      <div style={{ marginBottom: THEME.spacing.lg, padding: THEME.spacing.lg, background: THEME.colors.bone2, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.spacing.md }}>
-                          <label style={{ fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, fontWeight: 600 }}>
-                            Branches <span style={{ color: THEME.colors.red }}>*</span>
-                          </label>
-                          <button type="button" onClick={() => setBranches([...branches, { name: '', location: '' }])} style={{ padding: '0.4rem 0.8rem', background: THEME.colors.brass, color: THEME.colors.white, border: 'none', borderRadius: THEME.borderRadius.sm, fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' }}>
-                            + Add Branch
-                          </button>
-                        </div>
-                        {errors.branches && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginBottom: THEME.spacing.sm }}>{errors.branches}</span>}
-                        {branches.map((branch, index) => (
-                          <div key={index} style={{ marginBottom: THEME.spacing.md, padding: THEME.spacing.md, background: THEME.colors.white, borderRadius: THEME.borderRadius.md, border: `1px solid ${THEME.colors.line}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.spacing.sm }}>
-                              <span style={{ fontWeight: 600, fontSize: '0.82rem', color: THEME.colors.ink }}>Branch {index + 1}</span>
-                              {branches.length > 1 && (
-                                <button type="button" onClick={() => setBranches(branches.filter((_, i) => i !== index))} style={{ background: 'none', border: 'none', color: THEME.colors.red, cursor: 'pointer', fontSize: '0.75rem' }}>
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-                            <input type="text" placeholder="Branch name" value={branch.name} onChange={(e) => { const newBranches = [...branches]; newBranches[index].name = e.target.value; setBranches(newBranches); }} style={{ width: '100%', padding: THEME.spacing.sm, marginBottom: THEME.spacing.sm, border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.sm, fontSize: '0.85rem' }} />
-                            <input type="text" placeholder="Branch location" value={branch.location} onChange={(e) => { const newBranches = [...branches]; newBranches[index].location = e.target.value; setBranches(newBranches); }} style={{ width: '100%', padding: THEME.spacing.sm, border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.sm, fontSize: '0.85rem' }} />
-                          </div>
+                  {formData.password && (
+                    <div className="form-group">
+                      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                        {[1, 2, 3].map((level) => (
+                          <div key={level} style={{ flex: 1, height: '4px', background: level <= passwordStrength ? getPasswordStrengthColor(passwordStrength) : C.line, borderRadius: '2px', transition: 'background 0.3s' }} />
                         ))}
                       </div>
-                    ) : (
-                      <div style={{ marginBottom: THEME.spacing.lg }}>
-                        <label style={{ display: 'block', fontFamily: THEME.typography.monoFamily, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: THEME.colors.gray, marginBottom: THEME.spacing.sm }}>
-                          Branch Name <span style={{ color: THEME.colors.red }}>*</span>
-                        </label>
-                        <input type="text" name="branchName" value={formData.branchName} onChange={handleChange} placeholder="e.g., Main Branch" style={{ width: '100%', padding: THEME.spacing.md, fontSize: '0.88rem', fontFamily: THEME.typography.fontFamily, border: `1px solid ${errors.branchName ? THEME.colors.red : THEME.colors.line}`, borderRadius: THEME.borderRadius.md, background: THEME.colors.bone, color: THEME.colors.ink, outline: 'none' }} disabled={isSubmitting} />
-                        {errors.branchName && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginTop: THEME.spacing.xs }}>{errors.branchName}</span>}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Step 1 Content */}
-                {currentStep === 1 && (
-                  <div className="fade-in">
-                    <PasswordInput label="Password" value={formData.password} onChange={(e) => handleChange({ target: { name: 'password', value: e.target.value } })} showPassword={showPassword} onToggle={() => setShowPassword(!showPassword)} hasError={!!errors.password} errorMessage={errors.password} disabled={isSubmitting} placeholder="Create a strong password" />
-
-                    {formData.password && (
-                      <div style={{ marginBottom: THEME.spacing.lg }}>
-                        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                          {[1, 2, 3].map((level) => (
-                            <div key={level} style={{ flex: 1, height: '4px', background: level <= passwordStrength ? getPasswordStrengthColor(passwordStrength) : THEME.colors.line, borderRadius: '2px', transition: 'background 0.3s' }} />
-                          ))}
-                        </div>
-                        <span style={{ fontSize: '0.72rem', color: getPasswordStrengthColor(passwordStrength), fontWeight: 500 }}>
-                          Strength: {getPasswordStrengthText(passwordStrength)}
-                        </span>
-                      </div>
-                    )}
-
-                    <PasswordInput label="Verify Password" value={formData.verifyPassword} onChange={(e) => handleChange({ target: { name: 'verifyPassword', value: e.target.value } })} showPassword={showVerifyPassword} onToggle={() => setShowVerifyPassword(!showVerifyPassword)} hasError={!!errors.verifyPassword || !!errors.passwordMatch} errorMessage={errors.verifyPassword || errors.passwordMatch} disabled={isSubmitting} placeholder="Confirm your password" />
-                  </div>
-                )}
-
-                {/* Step 2 Content */}
-                {currentStep === 2 && (
-                  <div className="fade-in">
-                    <div style={{ border: `1px solid ${THEME.colors.line}`, borderRadius: THEME.borderRadius.md, overflow: 'hidden', marginBottom: THEME.spacing.xl }}>
-                      <ReviewItem label="Organization" value={formData.organizationName} />
-                      <ReviewItem label="Email Contact" value={formData.email} />
-                      <ReviewItem label="Location" value={formData.location} />
-                      <ReviewItem label="Primary Branch" value={formData.deploymentType === 'multi' ? (branches[0]?.name || '—') : formData.branchName} />
+                      <span style={{ fontSize: '0.75rem', color: getPasswordStrengthColor(passwordStrength), fontWeight: 500 }}>
+                        Strength: {getPasswordStrengthText(passwordStrength)}
+                      </span>
                     </div>
+                  )}
 
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: THEME.spacing.xl }}>
-                      <input type="checkbox" id="terms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} style={{ marginTop: '0.25rem', accentColor: THEME.colors.brass }} />
-                      <label htmlFor="terms" style={{ fontSize: '0.8rem', color: THEME.colors.gray, lineHeight: 1.5 }}>
-                        I agree to the <span style={{ color: THEME.colors.brass, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/terms')}>Terms of Service</span> and <span style={{ color: THEME.colors.brass, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/privacy')}>Privacy Policy</span>.
-                      </label>
-                    </div>
-                    {errors.terms && <span style={{ display: 'block', color: THEME.colors.red, fontSize: '0.7rem', marginBottom: THEME.spacing.md }}>{errors.terms}</span>}
-                  </div>
-                )}
-
-                {/* Footers Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: THEME.spacing.xxxl, paddingTop: THEME.spacing.xl, borderTop: `1px solid ${THEME.colors.line}` }}>
-                  {currentStep > 0 ? (
-                    <button type="button" onClick={goBack} disabled={isSubmitting} style={{ background: 'transparent', color: THEME.colors.gray, border: 'none', padding: '0.6rem 1.2rem', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer' }}>
-                      Back
-                    </button>
-                  ) : <div />}
-
-                  <button type="submit" disabled={isSubmitting} style={{ background: THEME.colors.brass, color: THEME.colors.white, border: 'none', padding: '0.6rem 1.6rem', fontSize: '0.82rem', fontWeight: 500, borderRadius: THEME.borderRadius.sm, cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {isSubmitting ? (
-                      <>
-                        <Spinner />
-                        <span>Setting up... {progress.percent}%</span>
-                      </>
-                    ) : currentStep === 2 ? 'Complete Setup' : 'Continue'}
-                  </button>
+                  <PasswordInput label="Verify Password" value={formData.verifyPassword} onChange={(e) => handleChange({ target: { name: 'verifyPassword', value: e.target.value } })} showPassword={showVerifyPassword} onToggle={() => setShowVerifyPassword(!showVerifyPassword)} hasError={!!errors.verifyPassword} errorMessage={errors.verifyPassword} disabled={isSubmitting} placeholder="Confirm your password" />
                 </div>
-              </form>
+              )}
 
-            </div>
+              {/* Step 2 Content */}
+              {currentStep === 2 && (
+                <div className="fade-in">
+                  <div style={{ border: `1px solid ${C.line}`, borderRadius: '8px', overflow: 'hidden', marginBottom: '1.5rem' }}>
+                    <ReviewItem label="Organization" value={formData.organizationName} />
+                    <ReviewItem label="Email Contact" value={formData.email} />
+                    <ReviewItem label="Location" value={formData.location} />
+                    <ReviewItem label="Primary Branch" value={formData.deploymentType === 'multi' ? (branches[0]?.name || '—') : formData.branchName} />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                    <input type="checkbox" id="terms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} style={{ marginTop: '0.25rem', accentColor: C.brass }} />
+                    <label htmlFor="terms" style={{ fontSize: '0.85rem', color: C.gray, lineHeight: 1.5 }}>
+                      I agree to the <span style={{ color: C.brass, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/terms')}>Terms of Service</span> and <span style={{ color: C.brass, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/privacy')}>Privacy Policy</span>.
+                    </label>
+                  </div>
+                  {errors.terms && <span className="form-error" style={{ marginBottom: '1rem' }}>{errors.terms}</span>}
+                </div>
+              )}
+
+              {/* Footer Buttons */}
+              <div className="form-footer" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.5rem', borderTop: `1px solid ${C.line}` }}>
+                {currentStep > 0 ? (
+                  <button type="button" onClick={goBack} disabled={isSubmitting} style={{ background: 'transparent', color: C.gray, border: 'none', padding: '0.6rem 1.2rem', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer' }}>
+                    Back
+                  </button>
+                ) : <div />}
+
+                <button type="submit" disabled={isSubmitting} className="btn btn-brass" style={{ padding: '0.7rem 1.5rem', fontSize: '0.85rem' }}>
+                  {isSubmitting ? (
+                    <>
+                      <Spinner />
+                      <span>Setting up... {progress.percent}%</span>
+                    </>
+                  ) : currentStep === 2 ? 'Complete Setup' : 'Continue'}
+                </button>
+              </div>
+            </form>
           </div>
-        </section>
+        </div>
       </main>
-      <Footer navigate={navigate} goTerms={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); }} />
+      <Footer goTerms={goTerms} />
     </div>
   );
 }

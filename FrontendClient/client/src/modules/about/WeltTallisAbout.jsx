@@ -1,15 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Menu, X, Target, Heart, Globe, Shield,
-    ArrowRight, Star, Users, Zap, CheckCircle
+    ChevronDown, Menu, X, ArrowRight, Target, Heart, Globe,
+    ShieldCheck, Users, Zap, CheckCircle, Star
 } from 'lucide-react';
 import Footer from '../../components/layout/Footer';
-
-/* ============================================================
-   REST POINT — About Welt Tallis
-   Styled to match DataMigrationPolicy: bone / ink / brass / verdigris
-   ============================================================ */
 
 const C = {
     ink: '#15171A',
@@ -19,13 +14,16 @@ const C = {
     brassLight: '#A98F6E',
     verdigris: '#3D4F47',
     verdigrisDark: '#2E3F37',
+    verdigrisLight: '#4D6359',
+    verdigrisTint: '#EBEFEF',
     line: '#E3DDD0',
-    lineDark: 'rgba(21,23,26,0.14)',
+    lineDark: 'rgba(250,248,244,0.14)',
     gray: '#6B6862',
-    grayLight: 'rgba(21,23,26,0.62)',
+    grayLight: 'rgba(250,248,244,0.62)',
+    accent: '#C77B5E',
 };
 
-/* ---------- Reveal-on-scroll ---------- */
+// Hook for scroll reveal animations
 function useReveal() {
     const ref = useRef(null);
     const [shown, setShown] = useState(false);
@@ -34,7 +32,7 @@ function useReveal() {
         if (!el) return;
         const obs = new IntersectionObserver(
             ([entry]) => { if (entry.isIntersecting) { setShown(true); obs.disconnect(); } },
-            { threshold: 0.15 }
+            { threshold: 0.1 }
         );
         obs.observe(el);
         return () => obs.disconnect();
@@ -47,8 +45,8 @@ const Reveal = ({ children, delay = 0, style = {}, className = '' }) => {
     return (
         <div ref={ref} className={className} style={{
             opacity: shown ? 1 : 0,
-            transform: shown ? 'translateY(0)' : 'translateY(18px)',
-            transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+            transform: shown ? 'translateY(0)' : 'translateY(30px)',
+            transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
             ...style
         }}>
             {children}
@@ -56,410 +54,397 @@ const Reveal = ({ children, delay = 0, style = {}, className = '' }) => {
     );
 };
 
+const Mark = ({ size = 28, color = C.verdigris }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="16" cy="16" r="15" stroke={color} strokeWidth="1.5" />
+        <path d="M16 8V24M8 16H24" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="16" cy="16" r="3.5" fill={color} />
+    </svg>
+);
+
+const useOutsideClick = (ref, callback) => {
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) callback();
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [ref, callback]);
+};
+
+const PolicyDropdown = ({ navigate, goTerms }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    useOutsideClick(ref, () => setOpen(false));
+
+    const policies = [
+        { label: 'Terms of Service', onClick: goTerms },
+        { label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+        { label: 'Security Policy', onClick: () => navigate('/security') },
+        { label: 'Data Migration Policy', onClick: () => navigate('/data-migration') },
+        { label: 'SLA Policy', onClick: () => navigate('/sla') },
+        { label: 'Release Notes', onClick: () => navigate('/releases') },
+        { label: 'Account Deletion', onClick: () => navigate('/account-deletion') },
+    ];
+
+    return (
+        <div ref={ref} style={{ position: 'relative' }}>
+            <button onClick={() => setOpen(!open)} className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                Policies<ChevronDown size={14} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }} />
+            </button>
+            {open && (
+                <div className="dropdown-menu">
+                    {policies.map((p, i) => (
+                        <button key={i} onClick={() => { p.onClick(); setOpen(false); }} className="dropdown-item">
+                            {p.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const MobileMenu = ({ navigate, goTerms, goLogin, goStart }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    useOutsideClick(ref, () => setOpen(false));
+
+    const policies = [
+        { label: 'Terms of Service', onClick: goTerms },
+        { label: 'Privacy Policy', onClick: () => navigate('/privacy') },
+        { label: 'Data Migration Policy', onClick: () => navigate('/data-migration') },
+        { label: 'SLA Policy', onClick: () => navigate('/sla') },
+        { label: 'Release Notes', onClick: () => navigate('/releases') },
+        { label: 'Account Deletion', onClick: () => navigate('/account-deletion') },
+    ];
+
+    return (
+        <div ref={ref} style={{ position: 'relative' }} className="mobile-nav">
+            <button onClick={() => setOpen(!open)} className="nav-link" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem' }}>
+                {open ? <X size={22} /> : <Menu size={22} />}
+            </button>
+            {open && (
+                <div className="mobile-menu-container">
+                    <button onClick={() => { navigate('/'); setOpen(false); }} className="mobile-link">Home</button>
+                    <button onClick={() => { navigate('/about-welt-tallis'); setOpen(false); }} className="mobile-link">About</button>
+                    <button onClick={() => { navigate('/insurance'); setOpen(false); }} className="mobile-link">Insurance Brokers</button>
+                    <div className="mobile-policies-header">
+                        <div className="mono-label" style={{ color: C.brass, padding: '0.6rem 1.2rem' }}>Policies</div>
+                        {policies.map((p, i) => (
+                            <button key={i} onClick={() => { p.onClick(); setOpen(false); }} className="mobile-link" style={{ paddingLeft: '2rem', fontSize: '0.82rem' }}>{p.label}</button>
+                        ))}
+                    </div>
+                    <button onClick={() => { goLogin(); setOpen(false); }} className="mobile-link">Log in</button>
+                    <button onClick={() => { goStart(); setOpen(false); }} className="mobile-link" style={{ color: C.verdigris, fontWeight: 600 }}>Request access</button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default function WeltTallisAbout() {
     const navigate = useNavigate();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const goHome = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/'); };
+
+    const goLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/login'); };
+    const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
+    const goTerms = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); };
 
     useEffect(() => { document.title = 'About Welt Tallis | Transforming Lives Through Technology — RestPoint'; }, []);
 
-    const TeamCard = ({ name, role, desc, index }) => (
-        <Reveal delay={index * 100}>
-            <div style={{
-                background: 'rgba(21,23,26,0.03)',
-                border: `1px solid ${C.lineDark}`,
-                borderRadius: '16px',
-                padding: 'clamp(1.5rem, 3vw, 2rem)',
-                textAlign: 'center',
-                transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)',
-                cursor: 'default',
-            }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.borderColor = C.verdigris; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = C.lineDark; e.currentTarget.style.boxShadow = ''; }}>
-                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`, margin: '0 auto 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: C.bone, fontWeight: 700 }}>{name[0]}</div>
-                <h3 style={{ color: C.ink, fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{name}</h3>
-                <p style={{ color: C.brass, fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.75rem' }}>{role}</p>
-                <p style={{ color: C.gray, fontSize: '0.9rem', lineHeight: 1.7, opacity: 0.85 }}>{desc}</p>
-            </div>
-        </Reveal>
-    );
+    const teamMembers = [
+        { name: "Esther Imbithe", role: "Lead Developer", desc: "Full-stack engineer passionate about building solutions that make a real difference." },
+        { name: "Peter Mumo", role: "CTO & Software Architect", desc: "Leads technical strategy and architecture, building robust and scalable solutions." },
+        { name: "Mary Wanjiku", role: "Operations Lead", desc: "Ensures seamless delivery and 24/7 support for all our clients." }
+    ];
 
     return (
-        <div style={{ minHeight: '100vh', background: C.bone, color: C.ink, fontFamily: "'Inter', sans-serif", overflowX: 'hidden' }}>
-
-            {/* ─── Nav like LandingPage ──────────────────────────────── */}
+        <div className="page-container">
             <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; overflow-x: hidden; }
-        img, svg { max-width: 100%; height: auto; }
-        ::selection { background: ${C.verdigris}; color: ${C.bone}; }
-        @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-        @keyframes pulse-glow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        .animate-glow { animation: pulse-glow 3s ease-in-out infinite; }
-        nav .nav-link { font-size: 0.85rem; color: ${C.gray}; text-decoration: none; cursor: pointer; transition: color 0.2s; background: transparent; border: none; font-family: 'Inter', sans-serif; }
-        nav .nav-link:hover { color: ${C.ink}; }
-        @media (max-width: 800px) { .nav-desktop { display: none !important; } .nav-mobile { display: flex !important; } }
-        @media (min-width: 801px) { .nav-desktop { display: flex !important; } .nav-mobile { display: none !important; } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;color:${C.gray};background:${C.bone};-webkit-font-smoothing:antialiased}
+        h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;letter-spacing:-0.01em;color:${C.ink}}
+        h1{font-size:clamp(2.5rem,6vw,4rem);line-height:1.1;margin-bottom:1.4rem}
+        h2{font-size:clamp(1.9rem,4vw,2.5rem);line-height:1.2}
+        h3{font-size:1.2rem;margin-bottom:0.6rem;color:${C.ink}}
+        p{line-height:1.75;font-size:1rem;color:${C.gray}}
+        a{color:inherit;text-decoration:none}
+        
+        .mono-label{font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:${C.brass};font-weight:500}
+        .label{font-family:'JetBrains Mono',monospace;font-size:0.74rem;letter-spacing:0.14em;text-transform:uppercase;color:${C.brass};font-weight:500}
+        
+        /* Buttons */
+        .btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.95rem 1.9rem;font-size:0.9rem;font-weight:500;font-family:'Inter',sans-serif;border:1px solid transparent;border-radius:8px;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;letter-spacing:0.01em}
+        .btn-dark{background:${C.ink};color:${C.bone}}
+        .btn-dark:hover{background:${C.verdigris};transform:translateY(-2px);box-shadow:0 10px 20px rgba(21,23,26,0.15)}
+        .btn-line{background:transparent;color:${C.ink};border-color:${C.line}}
+        .btn-line:hover{background:${C.ink};color:${C.bone};border-color:${C.ink}}
+        
+        .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(1.25rem,5vw,2.5rem)}
+        
+        /* Navigation */
+        nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(250,248,244,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid ${C.line};padding:1.2rem 0}
+        .nav-wrap{display:flex;justify-content:space-between;align-items:center}
+        .logo{display:flex;align-items:center;gap:0.7rem;font-family:'Fraunces',serif;font-size:1.3rem;font-weight:500;color:${C.ink};cursor:pointer}
+        .nav-links{display:flex;gap:2.5rem;align-items:center}
+        .nav-link{font-size:0.85rem;color:${C.gray};text-decoration:none;cursor:pointer;transition:color 0.2s;background:transparent;border:none;font-family:'Inter',sans-serif;padding:0.5rem 0}
+        .nav-link:hover{color:${C.verdigris}}
+        .nav-cta{display:flex;gap:0.75rem;align-items:center}
+        .mobile-nav{display:none}
+        
+        .dropdown-menu{position:absolute;top:100%;left:0;background:${C.bone};border:1px solid ${C.line};border-radius:8px;min-width:260px;margin-top:0.75rem;z-index:1000;box-shadow:0 20px 40px rgba(21,23,26,0.08);overflow:hidden}
+        .dropdown-item{width:100%;padding:0.9rem 1.2rem;background:none;border:none;text-align:left;cursor:pointer;font-size:0.85rem;color:${C.gray};border-bottom:1px solid ${C.line};transition:all 0.2s;font-family:'Inter',sans-serif}
+        .dropdown-item:last-child{border-bottom:none}
+        .dropdown-item:hover{background:${C.bone2};color:${C.ink}}
+        
+        .mobile-menu-container{position:absolute;top:100%;right:0;background:${C.bone};border:1px solid ${C.line};border-radius:8px;min-width:280px;margin-top:0.75rem;z-index:1000;box-shadow:0 20px 40px rgba(21,23,26,0.08);overflow:hidden}
+        .mobile-link{display:block;width:100%;padding:0.9rem 1.2rem;background:none;border:none;text-align:left;cursor:pointer;font-size:0.88rem;color:${C.gray};text-decoration:none;border-bottom:1px solid ${C.line};font-family:'Inter',sans-serif;transition:background 0.2s}
+        .mobile-link:hover{background:${C.bone2}}
+        .mobile-policies-header{padding:0.5rem 0;border-bottom:1px solid ${C.line};background:${C.bone2}}
+
+        /* Hero */
+        .hero{padding-top:140px;padding-bottom:clamp(4rem,8vw,6rem);position:relative;overflow:hidden;text-align:center;background:radial-gradient(circle at 50% 0%, rgba(61,79,71,0.05) 0%, transparent 60%)}
+        .hero-desc{font-size:1.1rem;max-width:640px;margin:0 auto 2.5rem;color:${C.gray};line-height:1.8}
+        .hero-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+        
+        /* Sections */
+        .section{padding:clamp(4rem,8vw,6rem)0}
+        .section-dark{background:${C.ink};color:${C.bone};padding:clamp(4rem,8vw,6rem)0;position:relative;overflow:hidden}
+        .section-dark h2, .section-dark h3{color:${C.bone}}
+        .section-dark p{color:rgba(250,248,244,0.7)}
+        
+        /* Feature Cards */
+        .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:2rem;margin-top:3rem}
+        .feature-card{background:${C.bone};border:1px solid ${C.line};padding:2rem;border-radius:8px;transition:all 0.3s ease}
+        .feature-card:hover{transform:translateY(-5px);box-shadow:0 15px 30px rgba(21,23,26,0.06);border-color:${C.verdigrisLight}}
+        .feature-icon{width:48px;height:48px;background:${C.verdigrisTint};border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:1.2rem;color:${C.verdigris}}
+        
+        .dark-card{background:rgba(250,248,244,0.04);border:1px solid ${C.lineDark};padding:2.5rem;border-radius:8px;transition:all 0.3s ease;height:100%}
+        .dark-card:hover{transform:translateY(-5px);background:rgba(250,248,244,0.06);border-color:${C.verdigrisLight}}
+        .dark-icon{width:48px;height:48px;background:rgba(61,79,71,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:1.2rem;color:${C.brass}}
+        
+        /* Team Cards */
+        .team-card{background:${C.bone};border:1px solid ${C.line};padding:2rem;border-radius:8px;text-align:center;transition:all 0.3s ease}
+        .team-card:hover{transform:translateY(-5px);box-shadow:0 15px 30px rgba(21,23,26,0.06);border-color:${C.verdigrisLight}}
+        .team-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark});margin:0 auto 1.2rem;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:2rem;color:${C.bone};font-weight:600}
+        
+        /* CTA Section */
+        .cta-wrapper { background: ${C.bone}; padding: clamp(4rem, 8vw, 7rem) 0; }
+        .cta-card { 
+          position: relative; 
+          background: linear-gradient(135deg, ${C.ink} 0%, ${C.verdigrisDark} 100%); 
+          border-radius: 24px; 
+          padding: clamp(3rem, 6vw, 5rem) 2rem; 
+          text-align: center; 
+          overflow: hidden; 
+          border: 1px solid ${C.lineDark}; 
+          box-shadow: 0 40px 80px -20px rgba(21,23,26,0.3);
+        }
+        .cta-card::before { 
+          content: ''; 
+          position: absolute; 
+          top: 0; left: 0; right: 0; bottom: 0; 
+          background-image: radial-gradient(circle at 50% 0%, rgba(139,115,85,0.15) 0%, transparent 50%), linear-gradient(rgba(250,248,244,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(250,248,244,0.03) 1px, transparent 1px); 
+          background-size: 100% 100%, 40px 40px, 40px 40px; 
+          pointer-events: none; 
+        }
+        .cta-content { position: relative; z-index: 2; max-width: 700px; margin: 0 auto; }
+        .cta-content h2 { color: ${C.bone}; margin-bottom: 1.5rem; font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.2; }
+        .cta-content p { color: rgba(250,248,244,0.8); font-size: 1.1rem; line-height: 1.8; margin-bottom: 2.5rem; }
+        .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .btn-brass{background:${C.brass};color:${C.bone};border:none}
+        .btn-brass:hover{background:${C.brassLight};transform:translateY(-2px);box-shadow:0 10px 20px rgba(139,115,85,0.25)}
+        .btn-ghost { background: transparent; color: ${C.bone}; border: 1px solid rgba(250,248,244,0.3); }
+        .btn-ghost:hover { background: rgba(250,248,244,0.1); border-color: ${C.bone}; }
+
+        @media(max-width:800px){.nav-links{display:none}.nav-cta{display:none}.mobile-nav{display:flex;gap:0.5rem;align-items:center}}
+        @media(max-width:768px){
+          .hero-buttons{flex-direction:column;width:100%}
+          .hero-buttons .btn{width:100%;justify-content:center}
+        }
       `}</style>
 
-            <nav style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-                background: `rgba(250,248,244,0.95)`, backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                borderBottom: `1px solid ${C.line}`,
-                padding: '1rem 0',
-            }}>
-                <div style={{
-                    maxWidth: '1140px', margin: '0 auto',
-                    padding: '0 clamp(1.25rem, 5vw, 2.5rem)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                    <div onClick={() => navigate('/')} style={{
-                        display: 'flex', alignItems: 'center', gap: '0.6rem',
-                        fontFamily: "'Fraunces', serif", fontSize: '1.15rem', fontWeight: 500,
-                        color: C.ink, cursor: 'pointer',
-                    }}>
-                        <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                            <circle cx="16" cy="16" r="14.5" stroke={C.ink} strokeWidth="1" />
-                            <path d="M16 8.5V23.5M9.5 16H22.5" stroke={C.ink} strokeWidth="1" />
-                            <circle cx="16" cy="16" r="2.5" fill={C.verdigris} />
-                        </svg>
-                        <span>Rest Point</span>
-                    </div>
-
-                    {/* Desktop nav - like LandingPage */}
-                    <div className="nav-desktop" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                        <button onClick={() => navigate('/')} className="nav-link">Home</button>
-                        <button onClick={() => navigate('/solutions/funeral-homes')} className="nav-link">Solutions</button>
-                        <button onClick={() => navigate('/contact')} className="nav-link">Contact</button>
-                        <button onClick={() => navigate('/register')} style={{
-                            padding: '0.55rem 1.3rem', fontSize: '0.8rem', fontWeight: 500,
-                            fontFamily: "'Inter', sans-serif", borderRadius: '6px', border: 'none',
-                            background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`,
-                            color: C.bone, cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                        }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = ''}
-                        >Get Started</button>
-                    </div>
-
-                    {/* Mobile hamburger - like LandingPage */}
-                    <div className="nav-mobile" style={{ display: 'none', gap: '0.5rem', alignItems: 'center' }}>
-                        <button onClick={() => navigate('/register')} style={{
-                            padding: '0.4rem 0.85rem', borderRadius: '6px', border: 'none',
-                            background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`,
-                            color: C.bone, fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
-                        }}>Start</button>
-                        <button onClick={() => setMenuOpen(!menuOpen)} style={{
-                            background: 'none', border: 'none', color: C.ink, cursor: 'pointer', padding: '0.4rem'
-                        }}>
-                            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-            {/* ─── Mobile Drawer ────────────────────────────────────── */}
-            <div style={{
-                position: 'fixed', top: 64, right: menuOpen ? 0 : '-100%', width: '280px', maxWidth: '85vw',
-                height: 'calc(100vh - 64px)', background: C.bone, zIndex: 999,
-                borderLeft: `1px solid ${C.line}`,
-                transition: 'right 0.4s cubic-bezier(0.16,1,0.3,1)',
-                padding: '1.5rem', overflowY: 'auto',
-            }}>
-                {[
-                    { label: 'Home', path: '/' },
-                    { label: 'Solutions', path: '/solutions/funeral-homes' },
-                    { label: 'About', path: '/about-welt-tallis' },
-                    { label: 'Contact', path: '/contact' },
-                    { label: 'Get Started', path: '/register', highlight: true },
-                ].map((item, idx) => (
-                    <button key={idx} onClick={() => { navigate(item.path); setMenuOpen(false); }}
-                        style={{
-                            display: 'block', width: '100%', padding: '0.85rem 1rem', marginBottom: '0.25rem',
-                            background: item.highlight ? `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})` : 'rgba(21,23,26,0.03)',
-                            border: item.highlight ? 'none' : `1px solid ${C.lineDark}`,
-                            borderRadius: '10px', color: item.highlight ? C.bone : C.ink, fontSize: '0.95rem', fontWeight: item.highlight ? 600 : 400,
-                            textAlign: 'left', cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={e => { if (!item.highlight) e.currentTarget.style.background = 'rgba(21,23,26,0.06)'; }}
-                        onMouseLeave={e => { if (!item.highlight) e.currentTarget.style.background = 'rgba(21,23,26,0.03)'; }}>
-                        {item.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* ─── Overlay ──────────────────────────────────────────── */}
-            {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 998, background: 'rgba(0,0,0,0.3)' }} />}
-
-            {/* ─── Hero ─────────────────────────────────────────────── */}
-            <section style={{
-                padding: 'clamp(5rem, 12vw, 8rem) clamp(1rem, 5vw, 2rem) clamp(3rem, 6vw, 5rem)',
-                background: `radial-gradient(ellipse at 20% 40%, ${C.verdigris}08 0%, transparent 60%), radial-gradient(ellipse at 80% 60%, ${C.brass}08 0%, transparent 50%)`,
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-            }}>
-                <div className="animate-float" style={{ position: 'absolute', top: '10%', right: '5%', width: '120px', height: '120px', borderRadius: '50%', border: `1px solid ${C.verdigris}15`, opacity: 0.5 }} />
-                <div className="animate-glow" style={{ position: 'absolute', bottom: '15%', left: '8%', width: '80px', height: '80px', borderRadius: '50%', border: `1px solid ${C.brass}12`, opacity: 0.4 }} />
-
-                <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
-                    <Reveal>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '2rem', background: `${C.verdigris}08`, border: `1px solid ${C.verdigris}20`, color: C.verdigris, fontSize: 'clamp(0.75rem, 1.2vw, 0.85rem)', fontWeight: 500, marginBottom: 'clamp(1.5rem, 3vw, 2.5rem)' }}>
-                            <Heart size={14} /> About Welt Tallis
+            <main>
+                {/* Navigation */}
+                <nav>
+                    <div className="wrap nav-wrap">
+                        <div className="logo" onClick={() => navigate('/')}>
+                            <Mark size={24} color={C.ink} />
+                            Rest Point
                         </div>
-                    </Reveal>
-
-                    <Reveal delay={100}>
-                        <h1 style={{
-                            fontSize: 'clamp(2.2rem, 6vw, 4rem)',
-                            fontWeight: 700,
-                            lineHeight: 1.12,
-                            letterSpacing: '-0.03em',
-                            marginBottom: 'clamp(1rem, 2vw, 1.5rem)',
-                            color: C.ink,
-                        }}>
-                            Transforming{' '}
-                            <span style={{ background: `linear-gradient(135deg, ${C.brass}, ${C.brassLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                Human Life
-                            </span>{' '}
-                            Through Technology
-                        </h1>
-                    </Reveal>
-
-                    <Reveal delay={200}>
-                        <p style={{
-                            fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-                            color: C.gray,
-                            lineHeight: 1.8,
-                            maxWidth: '600px',
-                            margin: '0 auto clamp(2rem, 3vw, 3rem)',
-                            opacity: 0.85,
-                        }}>
-                            We are a team of dedicated technologists building dignified digital solutions
-                            for funeral homes, welfare organizations, and communities across Kenya.
-                        </p>
-                    </Reveal>
-
-                    <Reveal delay={300}>
-                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <button onClick={() => navigate('/register')} style={{
-                                padding: '0.85rem 2rem', borderRadius: '12px', border: 'none',
-                                background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`,
-                                color: C.bone, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
-                                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                                transition: 'all 0.3s ease',
-                            }}
-                                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                onMouseLeave={e => e.currentTarget.style.transform = ''}>
-                                Get Started <ArrowRight size={18} />
-                            </button>
-                            <button onClick={() => navigate('/contact')} style={{
-                                padding: '0.85rem 2rem', borderRadius: '12px',
-                                border: `1px solid ${C.line}`, background: 'transparent',
-                                color: C.ink, fontSize: '0.95rem', fontWeight: 500, cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.background = C.ink; e.currentTarget.style.color = C.bone; e.currentTarget.style.borderColor = C.ink; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.ink; e.currentTarget.style.borderColor = C.line; }}>
-                                Contact Us
-                            </button>
+                        <div className="nav-links">
+                            <button onClick={() => navigate('/')} className="nav-link">Home</button>
+                            <button onClick={() => navigate('/about-welt-tallis')} className="nav-link" style={{ color: C.brass, fontWeight: 600 }}>About</button>
+                            <button onClick={() => navigate('/insurance')} className="nav-link">Insurance Brokers</button>
+                            <PolicyDropdown navigate={navigate} goTerms={goTerms} />
                         </div>
-                    </Reveal>
-                </div>
-            </section>
+                        <div className="nav-cta">
+                            <button onClick={goLogin} className="nav-link" style={{ paddingRight: '0.5rem' }}>Log in</button>
+                            <button onClick={goStart} className="btn btn-dark" style={{ padding: '0.7rem 1.2rem' }}>Request access</button>
+                        </div>
+                        <MobileMenu navigate={navigate} goTerms={goTerms} goLogin={goLogin} goStart={goStart} />
+                    </div>
+                </nav>
 
-            {/* ─── Mission ──────────────────────────────────────────── */}
-            <section style={{ padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)' }}>
-                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+                {/* Hero Section */}
+                <section className="hero">
+                    <div className="wrap">
                         <Reveal>
-                            <div style={{
-                                background: `linear-gradient(135deg, ${C.verdigris}08, ${C.verdigris}04)`,
-                                border: `1px solid ${C.verdigris}20`,
-                                borderRadius: '20px',
-                                padding: 'clamp(2rem, 3vw, 2.5rem)',
-                                height: '100%',
-                            }}>
-                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem', color: C.bone }}>
-                                    <Target size={24} />
-                                </div>
-                                <h2 style={{ fontSize: 'clamp(1.3rem, 2vw, 1.6rem)', fontWeight: 700, marginBottom: '1rem', color: C.ink }}>Our Mission</h2>
-                                <p style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1rem)', color: C.gray, lineHeight: 1.8, opacity: 0.85 }}>
-                                    We build technology that serves humanity. Our mission is to empower organizations
-                                    with powerful, affordable digital tools that simplify complex processes, so they can
-                                    focus on what truly matters — caring for their communities with dignity and compassion.
-                                </p>
-                            </div>
-                        </Reveal>
-
-                        <Reveal delay={150}>
-                            <div style={{
-                                background: `linear-gradient(135deg, ${C.brass}08, ${C.brass}04)`,
-                                border: `1px solid ${C.brass}20`,
-                                borderRadius: '20px',
-                                padding: 'clamp(2rem, 3vw, 2.5rem)',
-                                height: '100%',
-                            }}>
-                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `linear-gradient(135deg, ${C.brass}, ${C.brassLight})`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem', color: C.bone }}>
-                                    <Globe size={24} />
-                                </div>
-                                <h2 style={{ fontSize: 'clamp(1.3rem, 2vw, 1.6rem)', fontWeight: 700, marginBottom: '1rem', color: C.ink }}>Our Vision</h2>
-                                <p style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1rem)', color: C.gray, lineHeight: 1.8, opacity: 0.85 }}>
-                                    A world where every organization, regardless of size or budget, has access to
-                                    world-class technology that amplifies their impact and helps them serve their
-                                    communities with excellence and compassion.
-                                </p>
+                            <div className="mono-label" style={{ marginBottom: '1rem' }}>About Welt Tallis</div>
+                            <h1>Transforming <span style={{ color: C.brass }}>Human Life</span> Through Technology</h1>
+                            <p className="hero-desc">
+                                We are a team of dedicated technologists building dignified digital solutions for funeral homes, welfare organizations, and communities across Kenya.
+                            </p>
+                            <div className="hero-buttons">
+                                <button className="btn btn-dark" onClick={goStart}>Get Started <ArrowRight size={16} /></button>
+                                <button className="btn btn-line" onClick={() => navigate('/contact')}>Contact Us</button>
                             </div>
                         </Reveal>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* ─── Products ─────────────────────────────────────────── */}
-            <section style={{
-                padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)',
-                background: `radial-gradient(ellipse at 50% 0%, ${C.verdigris}06 0%, transparent 60%)`,
-            }}>
-                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <Reveal>
-                        <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 700, textAlign: 'center', marginBottom: '0.75rem', color: C.ink }}>What We Build</h2>
-                        <p style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1.05rem)', color: C.gray, textAlign: 'center', marginBottom: 'clamp(2rem, 4vw, 3rem)', opacity: 0.85 }}>Our suite of products designed to make a difference</p>
-                    </Reveal>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
-                        {[
-                            { icon: <Heart size={22} />, title: 'RestPoint', desc: 'Complete funeral home management system — from registration to dispatch, billing, and reporting.' },
-                            { icon: <Users size={22} />, title: 'Welfare Management', desc: 'Digital platform for churches, SACCOS, and chamas to manage member welfare contributions and payouts.' },
-                            { icon: <Shield size={22} />, title: 'Memorial Portal', desc: 'Beautiful online memorial spaces where families can honor loved ones and receive condolences.' },
-                            { icon: <Zap size={22} />, title: 'Automation Tools', desc: 'Smart workflow automation that reduces manual effort and eliminates errors in daily operations.' },
-                        ].map((product, idx) => (
-                            <Reveal key={idx} delay={idx * 80}>
-                                <div style={{
-                                    background: 'rgba(21,23,26,0.02)',
-                                    border: `1px solid ${C.lineDark}`,
-                                    borderRadius: '16px',
-                                    padding: 'clamp(1.5rem, 2.5vw, 2rem)',
-                                    transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)',
-                                    cursor: 'default',
-                                }}
-                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = C.verdigris; e.currentTarget.style.background = 'rgba(61,79,71,0.06)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = C.lineDark; e.currentTarget.style.background = 'rgba(21,23,26,0.02)'; }}>
-                                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', color: C.bone }}>{product.icon}</div>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem', color: C.ink }}>{product.title}</h3>
-                                    <p style={{ fontSize: '0.9rem', color: C.gray, lineHeight: 1.7, opacity: 0.85 }}>{product.desc}</p>
+                {/* Mission & Vision */}
+                <section className="section" style={{ paddingTop: '2rem' }}>
+                    <div className="wrap">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                            <Reveal>
+                                <div className="feature-card" style={{ height: '100%' }}>
+                                    <div className="feature-icon"><Target size={24} /></div>
+                                    <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Our Mission</h3>
+                                    <p style={{ fontSize: '1rem', lineHeight: 1.8 }}>
+                                        We build technology that serves humanity. Our mission is to empower organizations with powerful, affordable digital tools that simplify complex processes, so they can focus on what truly matters — caring for their communities with dignity and compassion.
+                                    </p>
                                 </div>
                             </Reveal>
-                        ))}
+                            <Reveal delay={150}>
+                                <div className="feature-card" style={{ height: '100%', background: C.bone2 }}>
+                                    <div className="feature-icon" style={{ background: 'rgba(139,115,85,0.1)', color: C.brass }}><Globe size={24} /></div>
+                                    <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Our Vision</h3>
+                                    <p style={{ fontSize: '1rem', lineHeight: 1.8 }}>
+                                        A world where every organization, regardless of size or budget, has access to world-class technology that amplifies their impact and helps them serve their communities with excellence and compassion.
+                                    </p>
+                                </div>
+                            </Reveal>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* ─── Impact ───────────────────────────────────────────── */}
-            <section style={{ padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)' }}>
-                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                    <Reveal>
-                        <div style={{
-                            background: `linear-gradient(135deg, ${C.verdigris}08, ${C.verdigris}04)`,
-                            border: `1px solid ${C.verdigris}20`,
-                            borderRadius: '20px',
-                            padding: 'clamp(2rem, 3vw, 3rem)',
-                            position: 'relative',
-                            overflow: 'hidden',
-                        }}>
-                            <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '100px', height: '100px', borderRadius: '50%', background: `${C.brass}06` }} />
-                            <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: `${C.verdigris}06` }} />
-
-                            <h2 style={{ fontSize: 'clamp(1.3rem, 2vw, 1.6rem)', fontWeight: 700, marginBottom: '1.5rem', color: C.ink, position: 'relative' }}>
-                                <CheckCircle size={20} style={{ display: 'inline', marginRight: '0.5rem', color: C.verdigris, verticalAlign: 'middle' }} />
-                                Our Impact
-                            </h2>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-                                {[
-                                    'Every product we create is designed with a single purpose: to make a positive difference in people\'s lives.',
-                                    'From funeral homes to welfare organizations, we provide the technological foundation that allows our clients to focus on what truly matters — caring for their communities.',
-                                    'We measure our success not by the complexity of our code, but by the simplicity and dignity we bring to the people we serve.',
-                                    'Our platform handles thousands of critical operations daily with 99.9% uptime, ensuring our clients never miss a beat.',
-                                ].map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                                        <Star size={16} style={{ color: C.brass, flexShrink: 0, marginTop: '4px' }} />
-                                        <p style={{ fontSize: 'clamp(0.9rem, 1.1vw, 0.95rem)', color: C.gray, lineHeight: 1.7, opacity: 0.85 }}>{item}</p>
+                {/* Products */}
+                <section className="section" style={{ background: C.bone2, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+                    <div className="wrap">
+                        <Reveal style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+                            <div className="label" style={{ marginBottom: '1rem' }}>What We Build</div>
+                            <h2>Our suite of products designed to make a difference</h2>
+                        </Reveal>
+                        <div className="feature-grid">
+                            {[
+                                { icon: Heart, title: 'RestPoint', desc: 'Complete funeral home management system — from registration to dispatch, billing, and reporting.' },
+                                { icon: Users, title: 'Welfare Management', desc: 'Digital platform for churches, SACCOS, and chamas to manage member welfare contributions and payouts.' },
+                                { icon: ShieldCheck, title: 'Memorial Portal', desc: 'Beautiful online memorial spaces where families can honor loved ones and receive condolences.' },
+                                { icon: Zap, title: 'Automation Tools', desc: 'Smart workflow automation that reduces manual effort and eliminates errors in daily operations.' },
+                            ].map((product, i) => (
+                                <Reveal key={i} delay={i * 100}>
+                                    <div className="feature-card">
+                                        <div className="feature-icon">
+                                            <product.icon size={24} />
+                                        </div>
+                                        <h3>{product.title}</h3>
+                                        <p style={{ fontSize: '0.92rem', lineHeight: 1.7 }}>{product.desc}</p>
                                     </div>
-                                ))}
-                            </div>
+                                </Reveal>
+                            ))}
                         </div>
-                    </Reveal>
-                </div>
-            </section>
-
-            {/* ─── Team ──────────────────────────────────────────────── */}
-            <section style={{ padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)' }}>
-                <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                    <Reveal>
-                        <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 700, textAlign: 'center', marginBottom: '0.75rem', color: C.ink }}>Meet the Team</h2>
-                        <p style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1rem)', color: C.gray, textAlign: 'center', marginBottom: 'clamp(2rem, 3vw, 2.5rem)', opacity: 0.85 }}>Passionate people building technology that matters</p>
-                    </Reveal>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-                        <TeamCard name="Esther Imbithe" role="Lead Developer" desc="Full-stack engineer passionate about building solutions that make a real difference." index={0} />
-                        <TeamCard name="Peter Mumo" role="CTO / Software Engineer / Software Solutions Architect" desc="Leads technical strategy and architecture, building robust and scalable solutions." index={1} />
-                        <TeamCard name="Mary Wanjiku" role="Operations Lead" desc="Ensures seamless delivery and 24/7 support for all our clients." index={2} />
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* ─── CTA ──────────────────────────────────────────────── */}
-            <section style={{
-                padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)',
-                background: `linear-gradient(180deg, ${C.bone} 0%, ${C.verdigris}08 100%)`,
-                textAlign: 'center',
-            }}>
-                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                    <Reveal>
-                        <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 700, marginBottom: '1rem', color: C.ink }}>Ready to Transform Your Operations?</h2>
-                        <p style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1.05rem)', color: C.gray, marginBottom: '2rem', opacity: 0.85, lineHeight: 1.7 }}>
-                            Join the growing community of organizations using RestPoint to serve their communities
-                            with dignity, efficiency, and compassion.
-                        </p>
-                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <button onClick={() => navigate('/register')}
-                                style={{
-                                    padding: '1rem 2.5rem', borderRadius: '12px', border: 'none',
-                                    background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`,
-                                    color: C.bone, fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
-                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                                    transition: 'all 0.3s ease',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                onMouseLeave={e => e.currentTarget.style.transform = ''}>
-                                Start Free <ArrowRight size={20} />
-                            </button>
-                            <button onClick={() => navigate('/solutions/funeral-homes')}
-                                style={{
-                                    padding: '1rem 2.5rem', borderRadius: '12px',
-                                    border: `1px solid ${C.line}`, background: 'transparent',
-                                    color: C.ink, fontSize: '1rem', fontWeight: 500, cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = C.ink; e.currentTarget.style.color = C.bone; e.currentTarget.style.borderColor = C.ink; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.ink; e.currentTarget.style.borderColor = C.line; }}>
-                                Learn More
-                            </button>
+                {/* Impact - Dark Section */}
+                <section className="section-dark">
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }}></div>
+                    <div className="wrap" style={{ position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center' }}>
+                            <Reveal>
+                                <div className="mono-label" style={{ color: C.brass, marginBottom: '1rem' }}>Our Impact</div>
+                                <h2 style={{ marginBottom: '1.5rem' }}>Technology that serves humanity</h2>
+                                <p style={{ marginBottom: '2rem', fontSize: '1.1rem' }}>
+                                    Every product we create is designed with a single purpose: to make a positive difference in people's lives. We measure our success not by the complexity of our code, but by the simplicity and dignity we bring to the people we serve.
+                                </p>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '2rem', fontFamily: "'Fraunces', serif", color: C.bone }}>99.9%</div>
+                                        <div className="mono-label" style={{ color: C.grayLight }}>Platform Uptime</div>
+                                    </div>
+                                    <div style={{ borderLeft: `1px solid ${C.lineDark}`, paddingLeft: '1rem' }}>
+                                        <div style={{ fontSize: '2rem', fontFamily: "'Fraunces', serif", color: C.bone }}>500+</div>
+                                        <div className="mono-label" style={{ color: C.grayLight }}>Organizations Served</div>
+                                    </div>
+                                </div>
+                            </Reveal>
+                            <Reveal delay={150} className="impact-list">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    {[
+                                        'From funeral homes to welfare organizations, we provide the technological foundation that allows our clients to focus on what truly matters.',
+                                        'Our platform handles thousands of critical operations daily, ensuring our clients never miss a beat.',
+                                        'We bring simplicity and dignity to the families and communities we ultimately serve.'
+                                    ].map((item, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                            <CheckCircle size={20} style={{ color: C.brass, flexShrink: 0, marginTop: '4px' }} />
+                                            <p style={{ color: 'rgba(250,248,244,0.8)', fontSize: '1rem' }}>{item}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Reveal>
                         </div>
-                    </Reveal>
-                </div>
-            </section>
+                    </div>
+                </section>
 
-            {/* ─── Footer ───────────────────────────────────────────── */}
-            <Footer goTerms={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); }} softwareVersion="v1.0.0" />
+                {/* Team */}
+                <section className="section">
+                    <div className="wrap">
+                        <Reveal style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 3rem' }}>
+                            <div className="label" style={{ marginBottom: '1rem' }}>Meet the Team</div>
+                            <h2>Passionate people building technology that matters</h2>
+                        </Reveal>
+                        <div className="feature-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+                            {teamMembers.map((member, i) => (
+                                <Reveal key={i} delay={i * 100}>
+                                    <div className="team-card">
+                                        <div className="team-avatar">{member.name[0]}</div>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{member.name}</h3>
+                                        <p style={{ color: C.brass, fontSize: '0.85rem', fontWeight: 500, marginBottom: '1rem' }}>{member.role}</p>
+                                        <p style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>{member.desc}</p>
+                                    </div>
+                                </Reveal>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA Section */}
+                <section className="cta-wrapper">
+                    <div className="wrap">
+                        <Reveal>
+                            <div className="cta-card">
+                                <div className="cta-content">
+                                    <div className="mono-label" style={{ color: C.brass, marginBottom: '1.5rem' }}>Get Started Today</div>
+                                    <h2>Ready to Transform Your Operations?</h2>
+                                    <p>Join the growing community of organizations using RestPoint to serve their communities with dignity, efficiency, and compassion.</p>
+                                    <div className="cta-buttons">
+                                        <button className="btn btn-brass" onClick={goStart} style={{ padding: '1.1rem 2.5rem', fontSize: '1rem' }}>
+                                            Start Free Trial <ArrowRight size={18} />
+                                        </button>
+                                        <button className="btn btn-ghost" onClick={() => navigate('/solutions/funeral-homes')} style={{ padding: '1.1rem 2.5rem', fontSize: '1rem' }}>
+                                            Learn More
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </Reveal>
+                    </div>
+                </section>
+            </main>
+            <Footer goTerms={goTerms} />
         </div>
     );
 }
