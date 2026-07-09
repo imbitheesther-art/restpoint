@@ -1,7 +1,7 @@
 # Production Dockerfile for Extra Services
 FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init python3 make g++
 
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001
@@ -15,7 +15,7 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/extra-services/package.json ./services/extra-services/
 
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -24,6 +24,12 @@ COPY global/ ./global/
 
 
 COPY services/extra-services/ ./services/extra-services/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 

@@ -1,8 +1,8 @@
 # Production Dockerfile for Analytics Service
 FROM node:24-alpine
 
-# Install runtime dependencies
-RUN apk add --no-cache dumb-init
+# Install build dependencies for TypeScript
+RUN apk add --no-cache dumb-init python3 make g++
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/analytics-service/package.json ./services/analytics-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy shared source modules first
 COPY configurations/ ./configurations/
@@ -32,6 +32,10 @@ COPY shared/ ./shared/
 COPY global/ ./global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Copy service source code
 COPY services/analytics-service/ ./services/analytics-service/

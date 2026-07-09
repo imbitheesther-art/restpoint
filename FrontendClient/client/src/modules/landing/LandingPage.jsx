@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, Menu, Check } from 'lucide-react';
 import Footer from '../../components/layout/Footer';
+import LandingPageSEO from '../../components/seo/LandingPageSEO';
 
 const C = {
   ink: '#15171A',
@@ -273,9 +274,6 @@ const Showcase = ({ no, title, desc, reverse, children }) => (
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
-  useEffect(() => { document.title = 'Rest Point | Funeral Home Management   System & Welfare Management System'; }, []);
-
   const goLogin = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/login'); };
   const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
   const goTerms = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); };
@@ -299,8 +297,12 @@ export default function App() {
     },
   ];
 
+  useEffect(() => { const t = setTimeout(() => setLoaded(true), 60); return () => clearTimeout(t); }, []);
+
   return (
     <>
+      <LandingPageSEO />
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@0,9..144,500;0,9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}

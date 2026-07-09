@@ -1,7 +1,7 @@
 # RestPoint Billing Service — Clean Dockerfile
 FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init wget
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001
@@ -24,6 +24,12 @@ COPY global/ ./global/
 
 
 COPY services/billing-service/ ./services/billing-service/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 RUN mkdir -p /usr/src/app/data /usr/src/app/invoices && chown -R nodejs:nodejs /usr/src/app
 

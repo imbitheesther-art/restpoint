@@ -34,6 +34,10 @@ COPY shared/ ./shared/
 COPY global/ ./global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Copy service source code
 COPY services/workshop-service/ ./services/workshop-service/

@@ -1,8 +1,8 @@
 # RestPoint API Gateway — Clean Dockerfile (SIASA-HUB pattern)
 FROM node:24-alpine
 
-# Install runtime dependencies
-RUN apk add --no-cache dumb-init wget
+# Install build dependencies for TypeScript/tsx
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -22,10 +22,8 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 # Copy service packsllyle  age.json
 COPY services/api-gateway/package.json ./services/api-gateway/
 
-# Install dependencies
-RUN yarn config set network-timeout 600000 && \
-    yarn install --no-lockfile --production && \
-    yarn cache clean
+# Install ALL dependencies (including dev for building shared packages)
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
 COPY packages/ ./packages/
@@ -33,6 +31,12 @@ COPY configurations/ ./configurations/
 COPY shared/ ./shared/
 COPY global/ ./global/
 COPY services/api-gateway/ ./services/api-gateway/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Set ownership
 RUN chown -R nodejs:nodejs /usr/src/app

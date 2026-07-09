@@ -33,6 +33,10 @@ COPY global/ ./global/
 COPY services/tenant-service/ ./services/tenant-service/
 
 # Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Install tsx for running TypeScript directly
 RUN yarn global add tsx

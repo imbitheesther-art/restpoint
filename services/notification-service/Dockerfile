@@ -1,8 +1,8 @@
 # Production Dockerfile for Notification Service
 FROM node:24-alpine
 
-# Install runtime dependencies
-RUN apk add --no-cache dumb-init
+# Install build dependencies for TypeScript
+RUN apk add --no-cache dumb-init python3 make g++
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -32,6 +32,10 @@ COPY shared/ ./shared/
 COPY global/ ./global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Copy service source code
 COPY services/notification-service/ ./services/notification-service/

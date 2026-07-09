@@ -24,6 +24,10 @@ COPY global/ ./global/
 COPY services/deceased-service/ ./services/deceased-service/
 
 # Build shared packages in dependency order (shared-config → shared-logger → shared-utils → shared-services)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Install tsx for running TypeScript directly (server.ts entry point)
 RUN yarn global add tsx

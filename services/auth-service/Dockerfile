@@ -33,6 +33,10 @@ COPY global/ ./global/
 COPY services/auth-service/ ./services/auth-service/
 
 # Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Create data directory
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
