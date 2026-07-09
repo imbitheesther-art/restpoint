@@ -97,6 +97,7 @@ export const ENDPOINTS = {
     SYSTEM_INVOICE: '/invoices/system-invoice',
     PAYMENT: '/invoices/payment',
     EXTRA_CHARGE: '/invoices/extra-charge',
+    EXTRA_CHARGE_DETAIL: (id) => `/invoices/extra-charge/${id}`,
     UPDATE: (id) => `/invoices/${id}`,
     DELETE: (id) => `/invoices/${id}`,
     PDF: (id) => `/invoices/${id}/download`,

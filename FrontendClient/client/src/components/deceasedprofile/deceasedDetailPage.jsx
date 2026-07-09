@@ -572,6 +572,13 @@ const DocumentUpload = lazy(() =>
   }))
 );
 
+// Extra Charges Modal
+const ExtraChargesModal = lazy(() =>
+  import('./ExtraChargesModal').catch(() => ({
+    default: () => null,
+  }))
+);
+
 // Modal Components
 const DeceasedInfoModal = lazy(() =>
   import('../modals/deceasedinfomodal').catch(() => ({
@@ -669,6 +676,7 @@ const DeceasedDetails = () => {
   const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false);
   const [showChargeSettingsModal, setShowChargeSettingsModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [showExtraChargesModal, setShowExtraChargesModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const showExternalLoader = () => setShowLoader(true);
@@ -700,9 +708,20 @@ const DeceasedDetails = () => {
   };
 
   const fetchDeceasedData = useCallback(async () => {
-    setIsLoading(true);
+    // Don't set loading state to true to avoid page flicker
     try {
-      const response = await apiClient.get(`/deceased/${id}`);
+      const tenantSlug = getTenantSlug();
+
+      // Ensure tenant slug is preserved in localStorage
+      if (tenantSlug && tenantSlug !== 'default') {
+        localStorage.setItem('tenantSlug', tenantSlug);
+      }
+
+      const response = await apiClient.get(`/deceased/${id}`, {
+        headers: {
+          'x-tenant-slug': tenantSlug,
+        },
+      });
       console.log('📦 API Response:', response.data);
 
       const apiData = response.data?.data || response.data || {};
@@ -724,9 +743,7 @@ const DeceasedDetails = () => {
       setDeceasedData(normalizedData);
     } catch (error) {
       console.error('Error fetching deceased details:', error);
-      setDeceasedData(null);
-    } finally {
-      setIsLoading(false);
+      // Don't set deceasedData to null on error to preserve current state
     }
   }, [id]);
 
@@ -872,6 +889,12 @@ const DeceasedDetails = () => {
       color: Colors.accentPurple,
       icon: <Users size={12} />,
       onClick: () => setShowNextOfKinModal(true),
+    },
+    {
+      text: 'Extra Charges',
+      color: Colors.dangerRed,
+      icon: <DollarSign size={12} />,
+      onClick: () => setShowExtraChargesModal(true),
     },
     {
       text: 'Charge Settings',
@@ -1127,6 +1150,14 @@ const DeceasedDetails = () => {
             deceasedId={currentDeceasedId}
             deceasedData={deceasedData}
             onUpdate={fetchDeceasedData}
+          />
+        )}
+        {showExtraChargesModal && (
+          <ExtraChargesModal
+            isOpen={showExtraChargesModal}
+            onClose={() => setShowExtraChargesModal(false)}
+            deceased={deceasedData}
+            onRefresh={fetchDeceasedData}
           />
         )}
         {showProgressModal && (

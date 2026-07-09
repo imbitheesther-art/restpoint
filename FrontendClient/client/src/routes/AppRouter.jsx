@@ -8,6 +8,7 @@ import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
 
 import SingleTenantLayout from '../components/layout/SingleTenantLayout';
+import Loader from '../components/loader/loader';
 
 
 
@@ -90,7 +91,7 @@ const RouteLoadingFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F7F9FB' }}>
     <div style={{ textAlign: 'center' }}>
       <div style={{ width: '40px', height: '40px', border: '3px solid #E5E7EB', borderTop: '3px solid #C9A84C', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
-      <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>Loading...</p>
+      <Loader text="Loading..." size="medium" color="primary" />
     </div>
   </div>
 );
