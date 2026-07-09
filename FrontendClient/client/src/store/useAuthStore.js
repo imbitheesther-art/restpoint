@@ -1,51 +1,56 @@
 // ============================================
 // AUTH STORE
-// Manages authentication state with branch awareness
-// For multi-tenant: stores branch_id and validates branch access
+// Uses sessionStorage for access token (cleared on tab close)
+// Uses httpOnly cookies for refresh token via withCredentials
+// Auto-refresh every 10 minutes
 // ============================================
 import { create } from 'zustand';
+import { startTokenRefresh, stopTokenRefresh, forceLogout } from '../api/axios';
 
 const useAuthStore = create((set, get) => ({
     user: null,
     token: null,
-    refreshToken: null,
     isAuthenticated: false,
     isLoading: true,
     error: null,
 
-    login: (userData, token, refreshToken) => {
-        // Persist to localStorage
-        localStorage.setItem('authToken', token);
-        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify(userData));
+    login: (userData, token) => {
+        // Store in sessionStorage only (cleared on tab close)
+        if (token) sessionStorage.setItem('authToken', token);
+        sessionStorage.setItem('user', JSON.stringify(userData));
         if (userData.tenantSlug) localStorage.setItem('tenantSlug', userData.tenantSlug);
-        if (userData.branchSlug) localStorage.setItem('branchSlug', userData.branchSlug);
         if (userData.branchId) localStorage.setItem('branchId', userData.branchId);
         if (userData.dbName) localStorage.setItem('dbName', userData.dbName);
 
         set({
             user: userData,
             token,
-            refreshToken: refreshToken || null,
             isAuthenticated: true,
             isLoading: false,
             error: null,
         });
+
+        // Start auto-refresh every 10 minutes
+        startTokenRefresh();
     },
 
     logout: () => {
-        // Clear all auth data
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        // Stop auto-refresh
+        stopTokenRefresh();
+
+        // Clear sessionStorage (access token, user data)
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('user');
+
+        // Clear localStorage (non-sensitive metadata only)
         localStorage.removeItem('tenantSlug');
         localStorage.removeItem('branchSlug');
-        localStorage.removeItem('branchDb');
+        localStorage.removeItem('branchId');
+        localStorage.removeItem('dbName');
 
         set({
             user: null,
             token: null,
-            refreshToken: null,
             isAuthenticated: false,
             isLoading: false,
             error: null,
@@ -55,11 +60,11 @@ const useAuthStore = create((set, get) => ({
     setLoading: (status) => set({ isLoading: status }),
     setError: (error) => set({ error, isLoading: false }),
 
-    // Initialize from localStorage (called on app startup)
+    // Initialize from sessionStorage (called on app startup)
     initialize: () => {
         try {
-            const token = localStorage.getItem('authToken');
-            const userStr = localStorage.getItem('user');
+            const token = sessionStorage.getItem('authToken');
+            const userStr = sessionStorage.getItem('user');
 
             if (token && userStr) {
                 const user = JSON.parse(userStr);
@@ -69,6 +74,9 @@ const useAuthStore = create((set, get) => ({
                     isAuthenticated: true,
                     isLoading: false,
                 });
+
+                // Start auto-refresh every 10 minutes
+                startTokenRefresh();
             } else {
                 set({ isLoading: false });
             }
@@ -78,16 +86,20 @@ const useAuthStore = create((set, get) => ({
         }
     },
 
+    // Force logout (used when token refresh fails)
+    forceLogout: () => {
+        stopTokenRefresh();
+        forceLogout(); // This redirects to /login
+    },
+
     // Check if user belongs to a specific branch
     belongsToBranch: (branchId) => {
         const { user } = get();
         if (!user) return false;
-        // Single tenant: no branch restriction
         if (!user.branchId) return true;
         return user.branchId === branchId;
     },
 
-    // Check if user can manage users (admin in primary branch)
     canManageUsers: () => {
         const { user } = get();
         if (!user) return false;

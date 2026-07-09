@@ -2,86 +2,124 @@ import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
 import env from '../config/env';
 
-// Workshop service axios instance (direct connection to port 6969)
+// Workshop service axios instance
 export const workshopApi = axios.create({
   baseURL: env.WORKSHOP_API_URL,
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
   timeout: env.API_TIMEOUT,
 });
 
-// Request interceptor for workshop API
 workshopApi.interceptors.request.use((config) => {
-  const slug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
-  const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
-
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
+  const slug = localStorage.getItem('tenantSlug');
+  const token = sessionStorage.getItem('authToken');
+  if (token) config.headers['Authorization'] = `Bearer ${token}`;
   if (slug) config.headers['x-tenant-slug'] = slug;
-
   return config;
 }, (error) => Promise.reject(error));
 
-// Cached session values to avoid repeated localStorage reads
+// ─── Shared Auth Token (single source of truth) ──────────────────────────
+// Uses sessionStorage for access token (cleared on tab close for security)
+// Uses httpOnly cookie for refresh token via withCredentials
+// Auto-refreshes every 10 minutes
+
 let cachedToken = null;
 let cachedSlug = null;
-let cachedTenantId = null;
+let refreshIntervalId = null;
 
-const refreshCache = () => {
-  cachedToken = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
-  cachedSlug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
-  cachedTenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
+const getToken = () => cachedToken || sessionStorage.getItem('authToken');
+const setToken = (token) => {
+  cachedToken = token;
+  if (token) sessionStorage.setItem('authToken', token);
+  else sessionStorage.removeItem('authToken');
+};
+const getSlug = () => cachedSlug || localStorage.getItem('tenantSlug');
+
+// ─── Token Refresh (every 10 minutes) ────────────────────────────────────
+export const startTokenRefresh = () => {
+  stopTokenRefresh();
+  refreshIntervalId = setInterval(async () => {
+    try {
+      const response = await axios.post(
+        env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
+        {},
+        { withCredentials: true } // sends httpOnly cookie automatically
+      );
+      const newToken = response.data?.token || response.data?.accessToken;
+      if (newToken) {
+        setToken(newToken);
+        console.log('[Auth] Token refreshed successfully');
+      }
+    } catch (error) {
+      console.error('[Auth] Token refresh failed:', error.message);
+      // If refresh fails, try once more in 30s then force logout
+      if (error.response?.status === 401) {
+        setTimeout(async () => {
+          try {
+            const retry = await axios.post(
+              env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
+              {},
+              { withCredentials: true }
+            );
+            if (retry.data?.token || retry.data?.accessToken) {
+              setToken(retry.data.token || retry.data.accessToken);
+              return;
+            }
+          } catch {
+            // Force logout
+            forceLogout();
+          }
+        }, 30000);
+      }
+    }
+  }, 600000); // Every 10 minutes (600,000ms)
 };
 
-// Initialize on module load
-refreshCache();
+export const stopTokenRefresh = () => {
+  if (refreshIntervalId) {
+    clearInterval(refreshIntervalId);
+    refreshIntervalId = null;
+  }
+};
 
-// Re-cache on storage changes (cross-tab sync)
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (['authToken', 'token', 'accessToken', 'tenantSlug', 'tenant_slug', 'tenantId', 'tenant_id'].includes(e.key)) {
-      refreshCache();
-    }
-  });
-}
+const forceLogout = () => {
+  setToken(null);
+  sessionStorage.removeItem('authToken');
+  localStorage.removeItem('tenantSlug');
+  localStorage.removeItem('tenantId');
+  try {
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    Object.keys(user).forEach(key => sessionStorage.removeItem(key));
+  } catch { }
+  sessionStorage.removeItem('user');
+  window.location.href = '/login';
+};
 
-// Create axios instance with FULL API URL (includes /api/v1/restpoint base path)
-// This ensures requests go through the API Gateway's registered routes
-// e.g. http://localhost:5000/api/v1/restpoint/auth/login instead of http://localhost:5000/auth/login
+// ─── Main Axios Instance ──────────────────────────────────────────────────
 const api = axios.create({
   baseURL: env.FULL_API_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  withCredentials: true, // CRITICAL: sends httpOnly refresh cookie
+  headers: { 'Content-Type': 'application/json' },
   timeout: env.API_TIMEOUT,
 });
 
-// Request interceptor - adds auth token, tenant headers, and user ID
+// Request interceptor
 api.interceptors.request.use((config) => {
-  // Always refresh from localStorage to get latest values
-  const token = localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('accessToken');
-  const slug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug');
-  const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
+  const token = getToken();
+  const slug = getSlug();
+  const tenantId = localStorage.getItem('tenantId');
 
-  // Get user ID from localStorage
+  // Get user ID
   let userId = null;
   try {
-    const userData = localStorage.getItem('user');
+    const userData = sessionStorage.getItem('user');
     if (userData) {
       const user = JSON.parse(userData);
       userId = user.id || user.userId;
     }
-  } catch (error) {
-    console.error('Error parsing user data:', error);
-  }
+  } catch { }
 
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
+  if (token) config.headers['Authorization'] = `Bearer ${token}`;
   if (slug) config.headers['x-tenant-slug'] = slug;
   if (tenantId) config.headers['x-tenant-id'] = tenantId;
   if (userId) config.headers['x-user-id'] = userId.toString();
@@ -89,7 +127,7 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// Response interceptor for token refresh
+// Response interceptor with auto-refresh on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -97,25 +135,21 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) return Promise.reject(error);
-
-        const response = await axios.post(env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
-          { token: refreshToken },
+        // Try refresh using httpOnly cookie
+        const response = await axios.post(
+          env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
+          {},
           { withCredentials: true }
         );
-
         const newToken = response.data?.token || response.data?.accessToken;
         if (newToken) {
-          localStorage.setItem('authToken', newToken);
+          setToken(newToken);
           originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('accessToken');
+        // Refresh failed - force logout
+        forceLogout();
         return Promise.reject(refreshError);
       }
     }
@@ -123,4 +157,6 @@ api.interceptors.response.use(
   }
 );
 
+// Export forceLogout for use in auth store
+export { forceLogout };
 export default api;

@@ -1192,8 +1192,18 @@ function CoffinInventory() {
   const [selectedCoffin, setSelectedCoffin] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showAssignmentsModal, setShowAssignmentsModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const [registerFormData, setRegisterFormData] = useState({
+    type: '', material: '', size: '', color: '', quantity: '',
+    exact_price: '', currency: 'KES', supplier: '', origin: '', category: 'locally_made'
+  });
+  const [registerImageFiles, setRegisterImageFiles] = useState([]);
+  const [registerImagePreviews, setRegisterImagePreviews] = useState([]);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerError, setRegisterError] = useState(null);
+  const fileInputRef = useRef(null);
   const [toast, setToast] = useState(null);
   const [hasPlayedSound, setHasPlayedSound] = useState(false);
   const [viewMode, setViewMode] = useState('table');
@@ -1398,8 +1408,74 @@ function CoffinInventory() {
   }, [coffins, checkLowStock]);
 
   const handleAddCoffin = () => {
-    const tenantSlug = getTenantSlug();
-    navigate(`/tenant/${tenantSlug}/coffins/register`);
+    setRegisterFormData({
+      type: '', material: '', size: '', color: '', quantity: '',
+      exact_price: '', currency: 'KES', supplier: '', origin: '', category: 'locally_made'
+    });
+    setRegisterImageFiles([]);
+    setRegisterImagePreviews([]);
+    setRegisterError(null);
+    setShowRegisterModal(true);
+  };
+
+  const handleRegisterChange = (e) => {
+    const { name, value } = e.target;
+    setRegisterFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRegisterFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    const newFiles = [...registerImageFiles, ...files];
+    const newPreviews = [...registerImagePreviews];
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result);
+        if (newPreviews.length === newFiles.length) {
+          setRegisterImagePreviews([...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    setRegisterImageFiles(newFiles);
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setRegisterLoading(true);
+    setRegisterError(null);
+    if (!registerFormData.type || !registerFormData.material || !registerFormData.exact_price) {
+      setRegisterError('Model, Material, and Price are required.');
+      setRegisterLoading(false);
+      return;
+    }
+    const formData = new FormData();
+    Object.keys(registerFormData).forEach(key => {
+      if (registerFormData[key] !== '') formData.append(key, registerFormData[key]);
+    });
+    try {
+      const username = (() => { try { const u = JSON.parse(localStorage.getItem('user') || '{}'); return u.username || u.name || 'Admin'; } catch { return 'Admin'; } })();
+      formData.append('created_by', username);
+      registerImageFiles.forEach(file => formData.append('images', file));
+      const env = await import('../../config/env');
+      const { ENDPOINTS } = await import('../../api/endpoints');
+      const { getTenantHeaders } = await import('../../api/endpoints');
+      const registerUrl = `${env.default.FULL_API_URL}${ENDPOINTS.COFFINS.BASE}/register`;
+      const response = await fetch(registerUrl, {
+        method: 'POST', headers: getTenantHeaders(), body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'Registration failed');
+      showToast('Coffin registered successfully!', 'success');
+      setShowRegisterModal(false);
+      fetchCoffins();
+    } catch (err) {
+      setRegisterError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setRegisterLoading(false);
+    }
   };
 
   const handleDelete = (coffin) => {
@@ -1937,6 +2013,105 @@ function CoffinInventory() {
                 <Button type="button" onClick={() => setShowEditModal(false)}>Cancel</Button>
                 <Button type="submit" className="primary">
                   <Save size={14} /> Update Coffin
+                </Button>
+              </ModalFooter>
+            </form>
+          </ModalBox>
+        </ModalOverlay>
+      )}
+
+      {/* Register Coffin Modal */}
+      {showRegisterModal && (
+        <ModalOverlay onClick={() => { if (!registerLoading) setShowRegisterModal(false); }}>
+          <ModalBox $size="lg" onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h5><Plus /> Register New Coffin</h5>
+              <ModalClose onClick={() => { if (!registerLoading) setShowRegisterModal(false); }}>
+                <XCircle size={20} />
+              </ModalClose>
+            </ModalHeader>
+            <form onSubmit={handleRegisterSubmit}>
+              <ModalBody>
+                {registerError && (
+                  <div style={{ background: Colors.redBg, color: Colors.red, padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={16} /> {registerError}
+                  </div>
+                )}
+                <FormRow>
+                  <FormGroup>
+                    <label>Model *</label>
+                    <FormInput name="type" value={registerFormData.type} onChange={handleRegisterChange} placeholder="e.g. Classic Mahogany" required />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Material *</label>
+                    <FormInput name="material" value={registerFormData.material} onChange={handleRegisterChange} placeholder="e.g. Mahogany Wood" required />
+                  </FormGroup>
+                </FormRow>
+                <FormRow>
+                  <FormGroup>
+                    <label>Size</label>
+                    <select name="size" value={registerFormData.size} onChange={handleRegisterChange} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '2px solid ' + Colors.mediumGray, fontSize: '0.875rem', background: Colors.white, color: Colors.ink, fontFamily: 'inherit' }}>
+                      <option value="">Select Size</option>
+                      <option value="Small">Small</option>
+                      <option value="Standard">Standard</option>
+                      <option value="Large">Large</option>
+                      <option value="Extra Large">Extra Large</option>
+                    </select>
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Color</label>
+                    <FormInput name="color" value={registerFormData.color} onChange={handleRegisterChange} placeholder="e.g. Dark Brown" />
+                  </FormGroup>
+                </FormRow>
+                <FormRow>
+                  <FormGroup>
+                    <label>Price *</label>
+                    <FormInput type="number" name="exact_price" value={registerFormData.exact_price} onChange={handleRegisterChange} placeholder="e.g. 25000" required min="0" step="0.01" />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Currency</label>
+                    <select name="currency" value={registerFormData.currency} onChange={handleRegisterChange} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '2px solid ' + Colors.mediumGray, fontSize: '0.875rem', background: Colors.white, color: Colors.ink, fontFamily: 'inherit' }}>
+                      <option value="KES">KES</option>
+                      <option value="USD">USD</option>
+                    </select>
+                  </FormGroup>
+                </FormRow>
+                <FormRow>
+                  <FormGroup>
+                    <label>Stock Quantity</label>
+                    <FormInput type="number" name="quantity" value={registerFormData.quantity} onChange={handleRegisterChange} placeholder="e.g. 5" min="0" />
+                  </FormGroup>
+                  <FormGroup>
+                    <label>Supplier</label>
+                    <FormInput name="supplier" value={registerFormData.supplier} onChange={handleRegisterChange} placeholder="e.g. Woodcraft Co." />
+                  </FormGroup>
+                </FormRow>
+                <FormGroup>
+                  <label>Origin Type</label>
+                  <select name="category" value={registerFormData.category} onChange={handleRegisterChange} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '2px solid ' + Colors.mediumGray, fontSize: '0.875rem', background: Colors.white, color: Colors.ink, fontFamily: 'inherit' }}>
+                    <option value="locally_made">Locally Made</option>
+                    <option value="imported">Imported</option>
+                  </select>
+                </FormGroup>
+                <FormGroup>
+                  <label>Images</label>
+                  <input type="file" ref={fileInputRef} onChange={handleRegisterFileChange} accept="image/*" multiple style={{ width: '100%', padding: '0.5rem', border: '2px dashed ' + Colors.mediumGray, borderRadius: '0.625rem', fontSize: '0.875rem', cursor: 'pointer' }} />
+                  {registerImagePreviews.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                      {registerImagePreviews.map((preview, i) => (
+                        <div key={i} style={{ width: '60px', height: '60px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid ' + Colors.mediumGray, position: 'relative' }}>
+                          <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </FormGroup>
+              </ModalBody>
+              <ModalFooter>
+                <Button type="button" onClick={() => setShowRegisterModal(false)} disabled={registerLoading}>Cancel</Button>
+                <Button type="submit" className="primary" disabled={registerLoading}>
+                  {registerLoading ? <Loader2 size={14} /> : <Save size={14} />}
+                  {registerLoading ? 'Registering...' : 'Register Coffin'}
                 </Button>
               </ModalFooter>
             </form>

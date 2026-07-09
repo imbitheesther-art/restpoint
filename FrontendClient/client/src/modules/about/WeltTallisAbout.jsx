@@ -84,26 +84,6 @@ export default function WeltTallisAbout() {
         </Reveal>
     );
 
-    const StatBox = ({ num, label, index }) => (
-        <Reveal delay={index * 80}>
-            <div style={{ textAlign: 'center', padding: 'clamp(1rem, 2vw, 1.5rem)' }}>
-                <div style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 800, color: C.verdigris, lineHeight: 1.1, marginBottom: '0.25rem' }}>{num}</div>
-                <div style={{ fontSize: 'clamp(0.8rem, 1.2vw, 0.95rem)', color: C.gray, fontWeight: 400 }}>{label}</div>
-            </div>
-        </Reveal>
-    );
-
-    const ValueItem = ({ icon, title, desc, index }) => (
-        <Reveal delay={index * 100}>
-            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', padding: 'clamp(1rem, 2vw, 1.5rem)', borderRadius: '12px', background: 'rgba(21,23,26,0.02)', border: `1px solid ${C.lineDark}`, transition: 'all 0.3s ease' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(61,79,71,0.08)'; e.currentTarget.style.borderColor = C.verdigris; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(21,23,26,0.02)'; e.currentTarget.style.borderColor = C.lineDark; }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: C.bone }}>{icon}</div>
-                <div><h4 style={{ color: C.ink, fontSize: '1rem', fontWeight: 600, marginBottom: '0.35rem' }}>{title}</h4><p style={{ color: C.gray, fontSize: '0.9rem', lineHeight: 1.7, opacity: 0.85 }}>{desc}</p></div>
-            </div>
-        </Reveal>
-    );
-
     return (
         <div style={{ minHeight: '100vh', background: C.bone, color: C.ink, fontFamily: "'Inter', sans-serif", overflowX: 'hidden' }}>
 
@@ -296,20 +276,6 @@ export default function WeltTallisAbout() {
                 </div>
             </section>
 
-            {/* ─── Stats ────────────────────────────────────────────── */}
-            <section style={{
-                padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)',
-                borderTop: `1px solid ${C.line}`,
-                borderBottom: `1px solid ${C.line}`,
-            }}>
-                <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
-                    <StatBox num="10+" label="Products Built" index={0} />
-                    <StatBox num="50+" label="Organizations Served" index={1} />
-                    <StatBox num="99.9%" label="Uptime" index={2} />
-                    <StatBox num="24/7" label="Support" index={3} />
-                </div>
-            </section>
-
             {/* ─── Mission ──────────────────────────────────────────── */}
             <section style={{ padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)' }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -434,28 +400,6 @@ export default function WeltTallisAbout() {
                 </div>
             </section>
 
-            {/* ─── Values ───────────────────────────────────────────── */}
-            <section style={{
-                padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)',
-                background: `radial-gradient(ellipse at 50% 100%, ${C.brass}05 0%, transparent 60%)`,
-            }}>
-                <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                    <Reveal>
-                        <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 700, textAlign: 'center', marginBottom: '0.75rem', color: C.ink }}>Our Values</h2>
-                        <p style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1rem)', color: C.gray, textAlign: 'center', marginBottom: 'clamp(2rem, 3vw, 2.5rem)', opacity: 0.85 }}>The principles that guide everything we build</p>
-                    </Reveal>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-                        {[
-                            { icon: <Heart size={20} />, title: 'Human-Centered Design', desc: 'Technology should serve humanity, not the other way around. Every feature starts with understanding people\'s needs.' },
-                            { icon: <Target size={20} />, title: 'Simplicity is Sophistication', desc: 'We believe the best solutions are simple, intuitive, and accessible to everyone regardless of technical skill.' },
-                            { icon: <Shield size={20} />, title: 'Dignity in Every Detail', desc: 'Compassion and respect are at the heart of everything we build, especially when serving families in their most vulnerable moments.' },
-                            { icon: <Zap size={20} />, title: 'Democratized Access', desc: 'Every organization deserves access to powerful, affordable tools. We break down barriers to technology.' },
-                        ].map((v, idx) => <ValueItem key={idx} icon={v.icon} title={v.title} desc={v.desc} index={idx} />)}
-                    </div>
-                </div>
-            </section>
-
             {/* ─── Team ──────────────────────────────────────────────── */}
             <section style={{ padding: 'clamp(3rem, 6vw, 5rem) clamp(1rem, 5vw, 2rem)' }}>
                 <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -466,7 +410,7 @@ export default function WeltTallisAbout() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
                         <TeamCard name="Esther Imbithe" role="Lead Developer" desc="Full-stack engineer passionate about building solutions that make a real difference." index={0} />
-                        <TeamCard name="Peter Mumo" role="Product Designer" desc="Crafts intuitive experiences that bring simplicity to complex workflows." index={1} />
+                        <TeamCard name="Peter Mumo" role="CTO / Software Engineer / Software Solutions Architect" desc="Leads technical strategy and architecture, building robust and scalable solutions." index={1} />
                         <TeamCard name="Mary Wanjiku" role="Operations Lead" desc="Ensures seamless delivery and 24/7 support for all our clients." index={2} />
                     </div>
                 </div>
@@ -515,7 +459,7 @@ export default function WeltTallisAbout() {
             </section>
 
             {/* ─── Footer ───────────────────────────────────────────── */}
-            <Footer goTerms={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); }} />
+            <Footer goTerms={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/terms'); }} softwareVersion="v1.0.0" />
         </div>
     );
 }
