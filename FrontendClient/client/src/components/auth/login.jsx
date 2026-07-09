@@ -666,7 +666,7 @@ export default function LoginPage() {
               onMouseEnter={(e) => e.target.style.color = THEME.colors.verdigrisDark}
               onMouseLeave={(e) => e.target.style.color = THEME.colors.verdigris}
             >
-              Start free trial
+              Register Account
             </button>
           </div>
 

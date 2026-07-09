@@ -81,7 +81,7 @@ const applyForLeave = async (req, res) => {
         if (leave_type === LEAVE_TYPES.ANNUAL) {
             const [balanceRows] = await safeTenantQuery(
                 dbName,
-                'SELECT annual_leave_balance FROM users WHERE id = ? LIMIT 1',
+                'SELECT annual_leave_balance FROM users WHERE user_id = ? LIMIT 1',
                 [userId]
             );
 
@@ -108,9 +108,9 @@ const applyForLeave = async (req, res) => {
         // Get the created leave request
         const [leaveRows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.id = ?`,
             [leaveId]
         );
@@ -145,9 +145,9 @@ const getAllLeaves = async (req, res) => {
     const { status, leave_type, start_date, end_date, user_id } = req.query;
 
     try {
-        let query = `SELECT lr.*, u.first_name, u.last_name, u.email, u.department 
+        let query = `SELECT lr.*, u.name, u.email 
                  FROM leave_requests lr 
-                 JOIN users u ON lr.user_id = u.id 
+                 JOIN users u ON lr.user_id = u.user_id 
                  WHERE 1=1`;
         const params = [];
 
@@ -207,9 +207,9 @@ const getMyLeaves = async (req, res) => {
     try {
         const [rows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.user_id = ? 
        ORDER BY lr.created_at DESC`,
             [userId]
@@ -241,9 +241,9 @@ const getLeaveById = async (req, res) => {
     try {
         const [rows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email, u.department 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.id = ?`,
             [leaveId]
         );
@@ -320,7 +320,7 @@ const updateLeaveStatus = async (req, res) => {
                     dbName,
                     `UPDATE users 
            SET annual_leave_balance = annual_leave_balance - ? 
-           WHERE id = ?`,
+           WHERE user_id = ?`,
                     [leave.days, leave.user_id]
                 );
             }
@@ -329,9 +329,9 @@ const updateLeaveStatus = async (req, res) => {
         // Get updated leave request
         const [updatedRows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.id = ?`,
             [leaveId]
         );
@@ -394,9 +394,9 @@ const cancelLeave = async (req, res) => {
         // Get updated leave request
         const [updatedRows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.id = ?`,
             [leaveId]
         );
@@ -452,9 +452,9 @@ const uploadDocument = async (req, res) => {
         // Get updated leave request
         const [rows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.id = ?`,
             [leaveId]
         );
@@ -570,9 +570,9 @@ const getUsersOnLeave = async (req, res) => {
     try {
         const [rows] = await safeTenantQuery(
             dbName,
-            `SELECT lr.*, u.first_name, u.last_name, u.email, u.department, u.phone 
+            `SELECT lr.*, u.name, u.email 
        FROM leave_requests lr 
-       JOIN users u ON lr.user_id = u.id 
+       JOIN users u ON lr.user_id = u.user_id 
        WHERE lr.status = 'approved' 
        AND CURDATE() BETWEEN lr.start_date AND lr.end_date
        ORDER BY lr.start_date ASC`

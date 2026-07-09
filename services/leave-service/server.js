@@ -4,6 +4,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const path = require('path');
+const mysql = require('mysql2/promise');
+const { migrateTenantTables } = require('./migrate-tenant-tables');
 
 // Load environment variables
 dotenv.config();
@@ -75,6 +77,14 @@ app.use(async (req, res, next) => {
     }
 
     req.tenant = tenantStatus.tenant;
+
+    // Auto-migrate: Ensure leave tables exist in this tenant's database
+    if (tenantStatus.tenant?.db_name) {
+      migrateTenantTables(tenantStatus.tenant.db_name).catch(err => {
+        console.warn(`[LEAVE] Auto-migration warning for ${tenantStatus.tenant.db_name}:`, err.message);
+      });
+    }
+
     next();
   } catch (error) {
     console.error('[LEAVE] Error:', error);
@@ -95,14 +105,50 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'leave-service', timestamp: new Date().toISOString() });
 });
 
-// Start server
-const PORT = process.env.PORT || 5017;
-server.listen(PORT, () => {
-  console.log('========================================');
-  console.log(`📅 Leave Management Service`);
-  console.log(`   Port: ${PORT}`);
-  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('========================================');
-});
+// ============================================
+// AUTO-MIGRATION: Ensure leave tables exist
+// ============================================
+async function ensureLeaveTables(dbName) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '3306', 10),
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: dbName,
+    });
+
+    await migrateTenantTables(dbName);
+    console.log(`✅ Leave tables ensured in database: ${dbName}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to ensure leave tables in ${dbName}:`, error.message);
+    return false;
+  } finally {
+    if (connection) await connection.end().catch(() => { });
+  }
+}
+
+// ============================================
+// START SERVER
+// ============================================
+async function startServer() {
+  // Run auto-migration on the main database
+  const mainDb = process.env.DB_NAME || 'restpoint_main';
+  console.log(`🔧 Running auto-migration for leave tables in: ${mainDb}`);
+  await ensureLeaveTables(mainDb);
+
+  const PORT = process.env.PORT || 5017;
+  server.listen(PORT, () => {
+    console.log('========================================');
+    console.log(`📅 Leave Management Service`);
+    console.log(`   Port: ${PORT}`);
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('========================================');
+  });
+}
+
+startServer();
 
 module.exports = { app, server, io };

@@ -4,26 +4,65 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
+
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['react-bootstrap', 'bootstrap'],
-          'chart-vendor': ['chart.js', 'react-chartjs-2', 'recharts'],
-          'query-vendor': ['@tanstack/react-query'],
-          'socket-vendor': ['socket.io-client'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return;
+          }
+
+          // React
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/react-router-dom/')
+          ) {
+            return 'react-vendor';
+          }
+
+          // Bootstrap
+          if (
+            id.includes('/react-bootstrap/') ||
+            id.includes('/bootstrap/')
+          ) {
+            return 'ui-vendor';
+          }
+
+          // Charts
+          if (
+            id.includes('/chart.js/') ||
+            id.includes('/react-chartjs-2/') ||
+            id.includes('/recharts/')
+          ) {
+            return 'chart-vendor';
+          }
+
+          // React Query
+          if (id.includes('/@tanstack/react-query/')) {
+            return 'query-vendor';
+          }
+
+          // Socket.io
+          if (id.includes('/socket.io-client/')) {
+            return 'socket-vendor';
+          }
+
+          // Everything else
+          return 'vendor';
         },
       },
     },
-    // Optimize bundle size
+
     minify: 'terser',
+
     terserOptions: {
       compress: {
         drop_console: true,
@@ -31,15 +70,22 @@ export default defineConfig({
         pure_funcs: ['console.log'],
       },
     },
-    // Increase chunk size warning limit
+
     chunkSizeWarningLimit: 1000,
   },
-  // Optimize dependencies
+
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: ['jquery', 'lucide-react'], // Exclude heavy unused dependencies
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+    ],
+    exclude: [
+      'jquery',
+      'lucide-react',
+    ],
   },
-  // Development server
+
   server: {
     port: 5173,
     proxy: {

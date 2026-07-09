@@ -1,3 +1,11 @@
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load .env from leave-service directory
+dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+// Also load global .env as fallback
+dotenv.config({ path: path.join(__dirname, '../../.env'), override: false });
+
 const { safeTenantQuery } = require('../../shared/dbConfig');
 
 const LEAVE_TABLES_SQL = `
@@ -17,7 +25,6 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   approved_at DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_leave_user (user_id),
   INDEX idx_leave_status (status),
   INDEX idx_leave_dates (start_date, end_date)
@@ -50,6 +57,12 @@ async function migrateTenantTables(dbName) {
                 'ALTER TABLE users ADD COLUMN IF NOT EXISTS annual_leave_balance DECIMAL(5,2) DEFAULT 21.00'
             );
             console.log(`[LEAVE] Added annual_leave_balance column to users table`);
+
+            // Update existing users to have the default balance
+            await safeTenantQuery(dbName,
+                'UPDATE users SET annual_leave_balance = 21.00 WHERE annual_leave_balance IS NULL'
+            );
+            console.log(`[LEAVE] Updated existing users with default leave balance`);
         } catch (err) {
             // Column might already exist
             console.log(`[LEAVE] annual_leave_balance column check: ${err.message}`);
