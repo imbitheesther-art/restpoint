@@ -576,11 +576,277 @@ export default function OnboardingFlow() {
         
         @media(max-width:800px){.nav-links{display:none}.nav-cta{display:none}.mobile-nav{display:flex;gap:0.5rem;align-items:center}}
         @media(max-width:600px){
-          .step-descriptions { display: none; }
-          .radio-cards-container { flex-direction: column; }
-          .branch-inputs { flex-direction: column; }
-          .form-footer { flex-direction: column-reverse; gap: 1rem; }
-          .form-footer button { width: 100%; justify-content: center; }
+          * { 
+            max-width: 100vw !important;
+            box-sizing: border-box !important;
+          }
+          
+          html, body {
+            overflow-x: hidden !important;
+            width: 100vw !important;
+            min-width: unset !important;
+          }
+          
+          .page-container {
+            overflow-x: hidden !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .main-content { 
+            padding-top: 65px !important; 
+            padding-bottom: 1.5rem !important; 
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .wrap {
+            width: 100% !important;
+            min-width: 0 !important;
+            padding: 0 0.5rem !important;
+            max-width: 100% !important;
+          }
+          
+          .form-card { 
+            padding: 0.85rem !important; 
+            margin: 0 !important;
+            border-radius: 10px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .step-indicator { 
+            padding: 0.75rem 0 1.25rem !important; 
+            margin-bottom: 0.75rem !important;
+          }
+          
+          .step-circle { 
+            width: 26px !important; 
+            height: 26px !important; 
+            font-size: 0.6rem !important;
+            flex-shrink: 0;
+          }
+          
+          .step-line-bg { 
+            left: 13px !important; 
+            right: 13px !important; 
+            top: 13px !important; 
+          }
+          
+          .step-line-fg { 
+            left: 13px !important; 
+            top: 13px !important; 
+          }
+          
+          .step-text { 
+            display: none !important; 
+          }
+          
+          .step-circles {
+            display: flex !important;
+            justify-content: space-between !important;
+            padding: 0 0.25rem !important;
+          }
+          
+          h1 { 
+            font-size: 1.15rem !important; 
+            line-height: 1.25 !important;
+            margin-bottom: 0.4rem !important;
+            word-wrap: break-word !important;
+          }
+          
+          p {
+            font-size: 0.8rem !important;
+            line-height: 1.5 !important;
+            word-wrap: break-word !important;
+          }
+          
+          .form-group { 
+            margin-bottom: 0.85rem !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .form-label { 
+            font-size: 0.6rem !important;
+            margin-bottom: 0.35rem !important;
+            word-wrap: break-word !important;
+          }
+          
+          .form-input { 
+            padding: 0.65rem 0.7rem !important;
+            font-size: 0.8rem !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .input-wrapper {
+            border-radius: 6px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .file-upload-circle { 
+            width: 45px !important; 
+            height: 45px !important; 
+          }
+          
+          .file-upload-placeholder {
+            transform: scale(0.85);
+          }
+          
+          .file-upload-placeholder span {
+            font-size: 0.6rem !important;
+          }
+          
+          .branch-card { 
+            padding: 0.5rem !important; 
+            margin-bottom: 0.6rem !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          
+          .review-item { 
+            padding: 0.5rem 0.6rem !important; 
+            font-size: 0.7rem !important; 
+            flex-direction: column !important;
+            gap: 0.2rem !important;
+            width: 100% !important;
+          }
+          
+          .btn {
+            padding: 0.7rem 1rem !important;
+            font-size: 0.75rem !important;
+            max-width: 100% !important;
+          }
+          
+          .radio-card {
+            padding: 0.65rem !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          
+          .radio-card div:nth-child(2) div:first-child {
+            font-size: 0.75rem !important;
+          }
+          
+          .radio-card div:nth-child(2) div:last-child {
+            font-size: 0.65rem !important;
+          }
+          
+          .alert-message {
+            font-size: 0.7rem !important;
+            padding: 0.5rem 0.7rem !important;
+            word-wrap: break-word !important;
+          }
+          
+          .form-footer {
+            margin-top: 1.25rem !important;
+            padding-top: 0.85rem !important;
+            flex-direction: column-reverse !important;
+            gap: 0.75rem !important;
+          }
+          
+          .form-footer button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          
+          .mono-label {
+            font-size: 0.6rem !important;
+          }
+          
+          nav {
+            padding: 0.7rem 0 !important;
+          }
+          
+          .logo {
+            font-size: 1rem !important;
+            gap: 0.4rem !important;
+          }
+          
+          .logo svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          
+          .nav-wrap {
+            padding: 0 0.5rem !important;
+          }
+          
+          .mobile-menu-container {
+            min-width: 250px !important;
+            right: -0.5rem !important;
+            max-width: 90vw !important;
+          }
+          
+          .dropdown-menu {
+            min-width: 220px !important;
+            max-width: 90vw !important;
+          }
+          
+          .radio-cards-container {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+          }
+          
+          .radio-cards-container > label {
+            width: 100% !important;
+          }
+          
+          .file-upload-hint {
+            font-size: 0.6rem !important;
+          }
+          
+          .review-label,
+          .review-value {
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+          }
+          
+          .input-icon-btn {
+            padding: 0.4rem !important;
+          }
+        }
+        
+        @media(max-width:380px){
+          .form-card {
+            padding: 0.75rem !important;
+          }
+          
+          h1 {
+            font-size: 1.05rem !important;
+          }
+          
+          .btn {
+            padding: 0.6rem 0.85rem !important;
+            font-size: 0.7rem !important;
+          }
+          
+          .step-circle {
+            width: 22px !important;
+            height: 22px !important;
+            font-size: 0.55rem !important;
+          }
+          
+          .step-line-bg,
+          .step-line-fg {
+            left: 11px !important;
+            right: 11px !important;
+            top: 11px !important;
+          }
+          
+          .form-input {
+            padding: 0.6rem 0.65rem !important;
+            font-size: 0.75rem !important;
+          }
+          
+          .form-label {
+            font-size: 0.55rem !important;
+          }
         }
       `}</style>
 

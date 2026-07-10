@@ -5,8 +5,13 @@ const validator = require('validator');
 const mysql = require('mysql2/promise');
 
 // Global fallback secrets
-const GLOBAL_JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
-const GLOBAL_REFRESH_SECRET = process.env.REFRESH_SECRET || 'supersecretrefreshkey';
+const GLOBAL_JWT_SECRET = process.env.JWT_SECRET;
+const GLOBAL_REFRESH_SECRET = process.env.REFRESH_SECRET;
+
+// Validate that secrets are configured
+if (!GLOBAL_JWT_SECRET || !GLOBAL_REFRESH_SECRET) {
+  throw new Error('JWT_SECRET and REFRESH_SECRET must be set in environment variables');
+}
 
 // ============================================
 // CONNECTION POOL (CRITICAL FOR PERFORMANCE)
@@ -37,12 +42,24 @@ const queryServer = async (sql, params = []) => {
 
 /**
  * Execute a query on a specific tenant database
+ * @param {string} dbName - Database name (will be validated)
+ * @param {string} sql - SQL query with ? placeholders
+ * @param {Array} params - Query parameters
  */
 const queryTenantDB = async (dbName, sql, params = []) => {
+  // Validate database name to prevent SQL injection
+  if (!dbName || typeof dbName !== 'string' || !/^[a-zA-Z0-9_]+$/.test(dbName)) {
+    throw new Error('Invalid database name');
+  }
+
   const escapedDbName = `\`${dbName}\``;
-  const qualifiedSQL = sql.replace(/FROM\s+users/gi, `FROM ${escapedDbName}.users`)
-    .replace(/INTO\s+users/gi, `INTO ${escapedDbName}.users`)
-    .replace(/UPDATE\s+users/gi, `UPDATE ${escapedDbName}.users`);
+
+  // Only replace exact table name matches with word boundaries
+  const qualifiedSQL = sql
+    .replace(/\bFROM\s+users\b/gi, `FROM ${escapedDbName}.users`)
+    .replace(/\bINTO\s+users\b/gi, `INTO ${escapedDbName}.users`)
+    .replace(/\bUPDATE\s+users\b/gi, `UPDATE ${escapedDbName}.users`);
+
   const [rows] = await pool.query(qualifiedSQL, params);
   return rows;
 };
@@ -210,11 +227,20 @@ exports.login = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!password || password.length < 6) {
+  if (!password || password.length < 8) {
     console.log('Invalid password length');
     return res.status(400).json({
       success: false,
-      message: 'Password is required and must be at least 6 characters'
+      message: 'Password is required and must be at least 8 characters'
+    });
+  }
+
+  // Password strength validation
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)'
     });
   }
 

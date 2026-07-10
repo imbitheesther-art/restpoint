@@ -2,22 +2,36 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 
 const GLOBAL_JWT_SECRET = process.env.JWT_SECRET;
-const GLOBAL_REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
+const GLOBAL_REFRESH_SECRET = process.env.REFRESH_SECRET;
+
+// Validate that secrets are configured
+if (!GLOBAL_JWT_SECRET || !GLOBAL_REFRESH_SECRET) {
+  throw new Error('JWT_SECRET and REFRESH_SECRET must be set in environment variables');
+}
 
 // ============================================
-// CONNECTION POOL (shared with authController)
+// SHARED CONNECTION POOL (imported from authController)
 // ============================================
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  waitForConnections: true,
-  connectionLimit: 20,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-});
+// Import the shared pool from authController to avoid duplicate connections
+let pool;
+try {
+  const authController = require('../controllers/authController');
+  pool = authController.pool;
+} catch (e) {
+  // Fallback: create pool if import fails (should not happen in normal operation)
+  console.warn('Could not import shared pool from authController, creating new pool');
+  pool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    waitForConnections: true,
+    connectionLimit: 20,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  });
+}
 
 /**
  * Get tenant-specific JWT secret from database

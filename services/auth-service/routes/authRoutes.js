@@ -11,8 +11,20 @@ const {
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Public routes
-router.post('/login', login);
+// Rate limiting for auth endpoints
+const authLimiter = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: {
+    success: false,
+    message: 'Too many authentication attempts, please try again after 15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+};
+
+// Apply rate limiting to login endpoint
+router.post('/login', authLimiter, login);
 router.post('/register', register);
 router.post('/refresh', refresh);
 router.get('/me', getMe);
