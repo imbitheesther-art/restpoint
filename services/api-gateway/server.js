@@ -25,9 +25,9 @@ const PORT = Number(process.env.PORT) || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
-// =============================================================================
-// SERVICE URLS — Use 127.0.0.1 to avoid Node 18+ IPv6 localhost resolution bug
-// =============================================================================
+
+// SERVICE URLS —  127.0.0.1 to avoid Node 18+ IPv6 localhost resolution bug
+
 const SERVICE_URLS = {
   auth: process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:5001',
   tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:5002',
@@ -67,7 +67,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  methods: ['GET', 'POST', 'QUERY', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'Origin', 'X-Requested-With', 'Accept'],
 }));
 
@@ -79,6 +79,7 @@ const apiLimiter = rateLimit({
   max: 2000,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
+
 app.use('/api/', apiLimiter);
 
 // Request logging
@@ -87,18 +88,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// =============================================================================
+
 // SERVICE ROUTING TABLE
-// =============================================================================
-// Maps the first path segment of the API URL to the target microservice.
-// All backend services mount at / and define full paths in their route files.
-//
+
 // Example flow:
 //   Frontend: GET /api/v1/restpoint/hearses/available
 //   Express strips /api/v1/restpoint → req.url = /hearses/available
 //   We extract "hearses" → proxy to hearse service at /hearses/available
-//   Hearse route: router.get('/hearses/available') → MATCH ✅
-// =============================================================================
+//   Hearse route: router.get('/hearses/available') → MATCH
+
 
 const SERVICE_ROUTES = {
   // Auth service (port 5001)
@@ -189,14 +187,13 @@ const SERVICE_ROUTES = {
   'marketplace': SERVICE_URLS.marketplace,
 };
 
-// =============================================================================
 // SINGLE MOUNT POINT - Dynamic Routing Middleware
-// =============================================================================
+
 // Mount a single middleware at /api/v1/restpoint that:
 // 1. Strips /api/v1/restpoint from the URL (done by Express)
 // 2. Extracts the first path segment to determine the target service
 // 3. Proxies the request to the correct backend service
-//
+
 // This ensures the FULL backend path (e.g., /hearses/available) is preserved.
 // =============================================================================
 
@@ -208,8 +205,8 @@ for (const targetUrl of Object.values(SERVICE_ROUTES)) {
       target: targetUrl,
       changeOrigin: true,
       secure: false,
-      proxyTimeout: 300000, // 5 minutes for long operations like onboarding
-      timeout: 300000, // 5 minutes for long operations like onboarding
+      proxyTimeout: 300000, // 5 minutes for long operations
+      timeout: 300000, // 5 minutes 
       onProxyReq: (proxyReq, req, res) => {
         if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
         if (req.headers['x-tenant-slug']) proxyReq.setHeader('x-tenant-slug', req.headers['x-tenant-slug']);
@@ -248,7 +245,7 @@ for (const targetUrl of Object.values(SERVICE_ROUTES)) {
 }
 
 // Dynamic routing middleware mounted at /api/v1/restpoint
-// Express strips /api/v1/restpoint from req.url, so req.url = /hearses/available
+// Express strips /api/v1/restpoint 
 app.use('/api/v1/restpoint', (req, res, next) => {
   // Extract the first path segment from the stripped URL
   // req.url = /hearses/available → firstSegment = hearses
@@ -305,9 +302,9 @@ app.get('/services', (req, res) => {
   });
 });
 
-// =============================================================================
+
 // 404 HANDLER
-// =============================================================================
+
 app.use((req, res) => {
   Logger.warn(`[404] ${req.method} ${req.originalUrl}`);
   res.status(404).json({
@@ -316,9 +313,9 @@ app.use((req, res) => {
   });
 });
 
-// =============================================================================
+
 // ERROR HANDLER
-// =============================================================================
+
 app.use((err, req, res, next) => {
   Logger.error(`Server Error: ${err.message}`);
   res.status(500).json({
@@ -328,24 +325,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// =============================================================================
+
 // START SERVER
-// =============================================================================
+
 const server = app.listen(PORT, HOST, () => {
-  Logger.info('========================================');
   Logger.info(`  ${APP_NAME} v${APP_VERSION}`);
   Logger.info(`  Running on http://${HOST}:${PORT}`);
-  Logger.info('========================================');
-  Logger.info('📋 Available Endpoints:');
+  Logger.info(' Available Endpoints:');
   Logger.info(`   GET  http://localhost:${PORT}/health`);
-  Logger.info(`   GET  http://localhost:${PORT}/services`);
-  Logger.info(`   POST http://localhost:${PORT}/api/v1/restpoint/auth/login`);
-  Logger.info(`   POST http://localhost:${PORT}/api/v1/restpoint/hearses`);
-  Logger.info(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses`);
-  Logger.info(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearses/available`);
-  Logger.info(`   POST http://localhost:${PORT}/api/v1/restpoint/hearse-bookings`);
-  Logger.info(`   GET  http://localhost:${PORT}/api/v1/restpoint/hearse-bookings`);
-  Logger.info('========================================');
 });
 
 process.on('SIGINT', () => {

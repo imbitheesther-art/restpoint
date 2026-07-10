@@ -18,7 +18,7 @@ router.get('/me', getMe);
 
 // Protected routes - require authentication
 router.post('/logout', protect, logout);
-router.post('/users', protect, createUser); // Create additional users
+router.post('/users', protect, createUser);
 
 // Health check
 router.get('/health', (req, res) => {

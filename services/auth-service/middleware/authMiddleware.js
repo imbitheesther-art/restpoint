@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 
-const GLOBAL_JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
-const GLOBAL_REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || 'supersecretrefreshkey';
+const GLOBAL_JWT_SECRET = process.env.JWT_SECRET;
+const GLOBAL_REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 // ============================================
 // CONNECTION POOL (shared with authController)

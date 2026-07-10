@@ -16,7 +16,7 @@ const getRedisClient = (): Redis => {
       maxRetriesPerRequest: 3,
       retryStrategy: (times: number) => {
         if (times > 3) {
-          console.error('Redis connection failed after 3 attempts');
+
           return null;
         }
         return Math.min(times * 100, 3000);
@@ -24,11 +24,11 @@ const getRedisClient = (): Redis => {
     });
 
     redisClient.on('connect', () => {
-      console.log('✅ Redis connected for rate limiting');
+
     });
 
     redisClient.on('error', (err) => {
-      console.error('❌ Redis error:', err.message);
+
     });
   }
   return redisClient;
@@ -85,7 +85,7 @@ export const createRateLimiter = ({
   requestWasSuccessful,
 }: IRateLimiterOptions): RateLimitRequestHandler => {
   const redis = getRedisClient();
-  
+
   const options: any = {
     store: new RedisStore({
       sendCommand: async (...args: string[]): Promise<any> => {
@@ -321,7 +321,7 @@ export const extractUserFromRequest = (req: Request): IUserPayload | null => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
-  
+
   const token = authHeader.substring(7);
   return verifyAccessToken(token);
 };
@@ -338,17 +338,17 @@ export const extractUserFromRequest = (req: Request): IUserPayload | null => {
 export const applyLimiters = (...limiters: RateLimitRequestHandler[]) => {
   return (req: any, res: any, next: any) => {
     let index = 0;
-    
+
     const runNext = () => {
       if (index >= limiters.length) {
         next();
         return;
       }
-      
+
       const limiter = limiters[index++];
       limiter(req, res, runNext);
     };
-    
+
     runNext();
   };
 };
