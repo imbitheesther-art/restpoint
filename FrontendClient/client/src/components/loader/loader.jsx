@@ -1,156 +1,147 @@
-// components/loader/loader.jsx - Beautiful Unified Loader
 import React from "react";
 
 const Loader = ({
   size = "medium",
-  color = "primary",
-  text = "",
+  color = "multicolor", // 'multicolor', 'brass', 'verdigris', 'accent', 'ink'
+  text = "Loading",
   overlay = true,
   fullScreen = true,
-  type = "spinner",
   className = "",
 }) => {
   const colorMap = {
-    primary: "#A67C52",
-    secondary: "#0A1F3D",
-    success: "#059669",
-    warning: "#F59E0B",
-    danger: "#DC2626",
-    dark: "#0A1F3D",
-    light: "#F9FAFB",
+    brass: "#A98F6E",
+    verdigris: "#4D6359",
+    accent: "#C77B5E",
+    ink: "#15171A",
+    bone: "#FAF8F4",
+    multicolor: "multicolor",
+    primary: "#A98F6E",
+    secondary: "#4D6359",
   };
+
+  // The different colors for the dots
+  const dotColors = ["#A98F6E", "#C77B5E", "#4D6359", "#15171A", "#A98F6E", "#C77B5E", "#4D6359", "#15171A"];
 
   const sizeMap = {
-    small: { width: "24px", height: "24px", fontSize: "0.75rem", borderWidth: "2px" },
-    medium: { width: "40px", height: "40px", fontSize: "0.875rem", borderWidth: "3px" },
-    large: { width: "56px", height: "56px", fontSize: "1rem", borderWidth: "4px" },
-    xlarge: { width: "72px", height: "72px", fontSize: "1.125rem", borderWidth: "4px" },
+    small: { dot: 5, radius: 14, fontSize: "0.7rem" },
+    medium: { dot: 8, radius: 22, fontSize: "0.8rem" },
+    large: { dot: 10, radius: 30, fontSize: "0.9rem" },
+    xlarge: { dot: 14, radius: 40, fontSize: "1rem" },
   };
 
-  const currentColor = colorMap[color] || colorMap.primary;
+  const activeColor = colorMap[color] || colorMap.brass;
   const currentSize = sizeMap[size] || sizeMap.medium;
 
-  const containerStyle = {
+  // Soft, light frosted glass background (no dark card!)
+  const wrapperStyle = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: "16px",
+    gap: "1.5rem",
     zIndex: 9999,
-    position: "fixed",
+    position: fullScreen ? "fixed" : "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: overlay ? "rgba(4,4,4,0.6)" : "transparent",
-    backdropFilter: overlay ? "blur(4px)" : "none",
-    padding: "2rem",
+    // Very subtle light tint and blur so it blends beautifully
+    backgroundColor: overlay ? "rgba(250, 248, 244, 0.6)" : "transparent",
+    backdropFilter: overlay ? "blur(6px)" : "none",
+    WebkitBackdropFilter: overlay ? "blur(6px)" : "none",
   };
 
-  const renderSpinner = () => (
-    <div style={{
-      width: currentSize.width,
-      height: currentSize.height,
-      borderRadius: "50%",
-      border: `${currentSize.borderWidth} solid ${currentColor}20`,
-      borderTopColor: currentColor,
-      animation: "loaderSpin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite",
-      boxShadow: `0 0 20px ${currentColor}30`,
-      willChange: "transform",
-    }} />
-  );
+  // Generate the spinning ring of dots
+  const renderDotsSpinner = () => {
+    const numDots = 8;
+    const dots = [];
 
-  const renderDots = () => (
-    <div style={{
-      display: "flex",
-      gap: "8px",
-      alignItems: "center",
-    }}>
-      {[0, 1, 2].map((index) => (
+    for (let i = 0; i < numDots; i++) {
+      const angle = (i * 360) / numDots;
+
+      // Determine the color for this specific dot
+      let dotColor = activeColor;
+      if (activeColor === "multicolor") {
+        dotColor = dotColors[i % dotColors.length];
+      }
+
+      // Calculate scale and opacity for the "chasing tail" effect
+      const scale = 0.6 + (i / numDots) * 0.6; // Grows from 0.6x to 1.2x
+      const opacity = 0.3 + (i / numDots) * 0.7; // Fades from 0.3 to 1.0
+
+      dots.push(
         <div
-          key={index}
+          key={i}
           style={{
-            width: parseInt(currentSize.width) / 3,
-            height: parseInt(currentSize.width) / 3,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: `${currentSize.dot * scale}px`,
+            height: `${currentSize.dot * scale}px`,
+            margin: `-${(currentSize.dot * scale) / 2}px 0 0 -${(currentSize.dot * scale) / 2}px`,
+            backgroundColor: dotColor,
             borderRadius: "50%",
-            backgroundColor: currentColor,
-            animation: `loaderBounce 1.4s ease-in-out infinite`,
-            animationDelay: `${index * 0.16}s`,
-            boxShadow: `0 0 10px ${currentColor}60`,
+            opacity: opacity,
+            // Place dot on the circle edge
+            transform: `rotate(${angle}deg) translateY(-${currentSize.radius}px)`,
+            transition: "background-color 0.3s ease",
           }}
         />
-      ))}
-    </div>
-  );
-
-  const renderPulse = () => (
-    <div style={{
-      width: currentSize.width,
-      height: currentSize.height,
-      borderRadius: "50%",
-      backgroundColor: currentColor,
-      animation: "loaderPulse 1.5s ease-in-out infinite",
-      boxShadow: `0 0 30px ${currentColor}50`,
-    }} />
-  );
-
-  const renderLoader = () => {
-    switch (type) {
-      case "dots":
-        return renderDots();
-      case "pulse":
-        return renderPulse();
-      case "spinner":
-      default:
-        return renderSpinner();
+      );
     }
+
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: `${currentSize.radius * 2}px`,
+          height: `${currentSize.radius * 2}px`,
+          // Spin the entire container continuously
+          animation: "spinDots 1s linear infinite",
+        }}
+      >
+        {dots}
+      </div>
+    );
   };
 
   return (
-    <div style={containerStyle} className={className}>
-      {renderLoader()}
+    <div style={wrapperStyle} className={className}>
+      {renderDotsSpinner()}
       {text && (
         <div style={{
           fontSize: currentSize.fontSize,
-          color: "#a0a0a0",
-          fontWeight: "400",
-          textAlign: "center",
-          letterSpacing: "0.05em",
+          color: "#15171A", // Dark text for the light background
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+          fontWeight: "500",
+          display: "flex",
+          alignItems: "center",
         }}>
           {text}
+          {/* Animated text dots */}
+          <span style={{ display: "inline-block", width: '1.5em', textAlign: 'left', animation: "loaderTextDots 1.5s steps(4, end) infinite" }}>. </span>
         </div>
       )}
     </div>
   );
 };
 
-// Global animations - Beautiful smooth animations
+// Global animations
 export const GlobalLoaderStyles = () => (
   <style>
     {`
-      @keyframes loaderSpin {
+      @keyframes spinDots {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
-      @keyframes loaderBounce {
-        0%, 80%, 100% { 
-          transform: scale(0.6);
-          opacity: 0.5;
-        }
-        40% { 
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-      @keyframes loaderPulse {
-        0%, 100% { 
-          transform: scale(0.95);
-          opacity: 0.7;
-        }
-        50% { 
-          transform: scale(1.05);
-          opacity: 1;
-        }
+      
+      @keyframes loaderTextDots {
+        0%, 20% { content: ""; opacity: 0; }
+        25% { content: "."; opacity: 1; }
+        50% { content: ".."; opacity: 1; }
+        75%, 100% { content: "..."; opacity: 1; }
       }
     `}
   </style>
