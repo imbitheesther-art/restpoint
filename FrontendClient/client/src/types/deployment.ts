@@ -1,6 +1,6 @@
-// ============================================
+
 // DEPLOYMENT & BRANCH TYPE DEFINITIONS
-// ============================================
+
 
 export type DeploymentType = 'single' | 'multi';
 
@@ -39,7 +39,7 @@ export interface AppUser {
     id: number;
     email: string;
     fullName: string;
-    role: 'admin' | 'manager' | 'staff' | 'user' | 'driver';
+    role: 'admin' | 'manager' | 'staff' | 'user' | 'mortician' | 'driver';
     branchId: number | null;
     branchSlug?: string;
     tenantSlug?: string;
