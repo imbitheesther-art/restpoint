@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef, Children } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import {
   ChevronDown, Menu, Check, ShieldCheck, Server, Zap, ArrowRight, X,
   FileText, Download, MapPin, Truck, Activity, Users, TrendingUp,
   Search, Newspaper, ExternalLink, LayoutDashboard, Lock, Globe, Layers
 } from 'lucide-react';
+
 import Footer from '../../components/layout/Footer';
 import LandingPageSEO from '../../components/seo/LandingPageSEO';
+
+
 
 const C = {
   ink: '#15171A', bone: '#FAF8F4', bone2: '#F3EFE6',
@@ -348,87 +352,15 @@ const QuickFindSection = () => {
   );
 };
 
-/* ═══════════════════════════════════════
-   UNIFIED PLATFORM — REDESIGNED
-   ═══════════════════════════════════════ */
-const UnifiedOfficeSection = () => {
-  const navigate = useNavigate();
-  const goStart = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/register'); };
-
-  const modules = [
-    { icon: FileText, title: 'Case Management', desc: 'Track every detail from first call through final settlement with full document verification.', span: 2, glow: 'rgba(77,155,127,0.35)', iconBg: 'rgba(77,155,127,0.15)', iconColor: '#4D9B7F' },
-    { icon: Users, title: 'Family Portal', desc: 'Secure self-service access for families.', span: 1, glow: 'rgba(139,115,85,0.35)', iconBg: 'rgba(139,115,85,0.15)', iconColor: '#8B7355' },
-    { icon: Truck, title: 'Smart Dispatch', desc: 'AI-powered route optimization.', span: 1, glow: 'rgba(199,123,94,0.35)', iconBg: 'rgba(199,123,94,0.15)', iconColor: '#C77B5E' },
-    { icon: ShieldCheck, title: 'Funeral Insurance', desc: 'End-to-end claims management, member contributions, welfare scheme administration, and automated payouts.', span: 2, glow: 'rgba(61,79,71,0.4)', iconBg: 'rgba(61,79,71,0.2)', iconColor: '#3D4F47' },
-    { icon: TrendingUp, title: 'Billing & Invoicing', desc: 'Automated billing, M-Pesa integration, payment tracking, and invoice generation.', span: 2, glow: 'rgba(107,91,78,0.35)', iconBg: 'rgba(107,91,78,0.15)', iconColor: '#6B5B4E' },
-    { icon: Activity, title: 'Analytics', desc: 'Real-time dashboards and reports.', span: 1, glow: 'rgba(74,107,93,0.35)', iconBg: 'rgba(74,107,93,0.15)', iconColor: '#4A6B5D' },
-  ];
-
-  return (
-    <section className="unified-section">
-      <div className="unified-bg-grid" />
-      <div className="unified-watermark">REST POINT</div>
-      <div className="unified-glow-1" />
-      <div className="unified-glow-2" />
-
-      <div className="wrap" style={{ position: 'relative', zIndex: 2 }}>
-        <Reveal style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <div className="mono-label" style={{ color: 'rgba(250,248,244,0.4)', marginBottom: '1.5rem', letterSpacing: '0.2em' }}>UNIFIED PLATFORM</div>
-          <h2 className="unified-heading">
-            Your entire office in<br />
-            <span className="unified-highlight">a single place</span>
-          </h2>
-          <p className="unified-desc">
-            No more juggling tools. Rest Point unifies every operation into one seamless, powerful workspace.
-          </p>
-        </Reveal>
-
-        <StaggerReveal stagger={90} className="unified-bento" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1rem',
-          marginBottom: '3.5rem',
-        }}>
-          {modules.map((m) => (
-            <div
-              key={m.title}
-              className="unified-bento-card"
-              style={{
-                gridColumn: `span ${m.span}`,
-                '--card-glow': m.glow,
-                '--card-icon-bg': m.iconBg,
-                '--card-icon-color': m.iconColor,
-              }}
-            >
-              <div className="unified-bento-glow-line" />
-              <div className="unified-bento-icon">
-                <m.icon size={22} color={m.iconColor} />
-              </div>
-              <h4 className="unified-bento-title">{m.title}</h4>
-              <p className="unified-bento-desc">{m.desc}</p>
-            </div>
-          ))}
-        </StaggerReveal>
-
-        <Reveal delay={600} style={{ textAlign: 'center' }}>
-          <button className="btn unified-cta-btn" onClick={goStart}>
-            Get started now <ArrowRight size={18} />
-          </button>
-          <div className="unified-micro">Free onboarding · No credit card required</div>
-        </Reveal>
-      </div>
-    </section>
-  );
-};
 
 /* ═══════════════════════════════════════
    NEWSROOM
    ═══════════════════════════════════════ */
 const NewsroomSection = () => {
   const articles = [
-    { featured: true, category: 'PARTNERSHIP', catColor: C.brass, title: 'Unlock a safer digital world with Zoho Vault!', excerpt: 'We\'ve integrated Zoho Vault to bring enterprise-grade password management and security directly into your Rest Point workflow. Protect sensitive family data with zero friction.', date: 'December 2024', cta: 'Let us help you' },
-    { category: 'PRODUCT', catColor: C.verdigris, title: 'Multi-Tenant Architecture Now Available', excerpt: 'Serve multiple funeral homes from a single instance with complete data isolation.', date: 'November 2024' },
-    { category: 'INTEGRATION', catColor: C.accent, title: 'M-Pesa Payments Now Live', excerpt: 'Families can pay directly through the portal via M-Pesa.', date: 'October 2024' },
+    { featured: true, category: 'COMING SOON', catColor: C.brass, title: 'RestPay: Unified Payment Processing', excerpt: 'We\'re introducing RestPay, our upcoming payment module that will integrate card payments alongside M-Pesa. Accept all major payment methods through a single, seamless platform. More payment options, less friction for families.', date: 'May 2026', cta: 'Get notified' },
+    { category: 'PRODUCT', catColor: C.verdigris, title: 'Multi-Tenant Architecture Now Available', excerpt: 'Serve multiple funeral homes from a single instance with complete data isolation.', date: 'May 2026' },
+    { category: 'COMING SOON', catColor: C.brass, title: 'M-Pesa Payments - Coming Soon', excerpt: 'Families will soon be able to pay directly through the portal via M-Pesa.', date: 'May 2026' },
   ];
   return (
     <section className="newsroom-section">
@@ -573,10 +505,10 @@ export default function App() {
         .sales-banner-content{position:absolute;bottom:clamp(1.5rem,4vw,3rem);left:clamp(1.5rem,4vw,3rem);z-index:2;max-width:480px}
 
         /* ── Marquee ── */
-        .marquee-strip{overflow:hidden;border-top:1px solid ${C.line};border-bottom:1px solid ${C.line};padding:0.9rem 0;background:${C.bone2}}
+        .marquee-strip{overflow:hidden;border-top:1px solid ${C.line};border-bottom:1px solid ${C.line};padding:0.9rem 0;background:#000000}
         .marquee-track{display:flex;width:max-content;animation:marquee 35s linear infinite}
-        .marquee-item{display:inline-flex;align-items:center;gap:0.6rem;padding:0 1.8rem;font-size:0.78rem;color:${C.gray};font-family:'JetBrains Mono',monospace;white-space:nowrap;text-transform:uppercase;letter-spacing:0.1em}
-        .marquee-dot{width:4px;height:4px;border-radius:50%;background:${C.verdigris};display:inline-block;flex-shrink:0}
+        .marquee-item{display:inline-flex;align-items:center;gap:0.6rem;padding:0 1.8rem;font-size:0.78rem;color:#FFFFFF;font-family:'JetBrains Mono',monospace;white-space:nowrap;text-transform:uppercase;letter-spacing:0.1em}
+        .marquee-dot{width:4px;height:4px;border-radius:50%;background:#FFFFFF;display:inline-block;flex-shrink:0}
 
         /* ── Quick Find ── */
         .quickfind-section{padding:clamp(4rem,8vw,6rem) 0;background:${C.bone}}
@@ -947,14 +879,14 @@ export default function App() {
               </div>
             </div>
             <div style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(30px)', transition: 'opacity 0.9s cubic-bezier(0.16,1,0.3,1) 350ms, transform 0.9s cubic-bezier(0.16,1,0.3,1) 350ms' }}>
-              <div className="sales-banner">
-                <img src="/sales-export-img.png" alt="Rest Point - Complete Software Solution" className="sales-banner-img" />
-                <div className="sales-banner-overlay" />
-                <div className="sales-banner-shine" />
-                <div className="sales-banner-content">
-                  <div className="label" style={{ color: C.brass, marginBottom: '0.8rem' }}>Software Solution</div>
-                  <h3 style={{ color: C.bone, fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', marginBottom: '0.8rem', maxWidth: '450px', lineHeight: 1.3 }}>Everything your funeral home needs, in one powerful platform</h3>
-                  <button className="btn btn-brass" onClick={goStart} style={{ padding: '0.8rem 1.8rem', fontSize: '0.85rem' }}>Explore the solution <ArrowRight size={16} /></button>
+              <div className="sales-banner" style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', marginTop: '3rem', boxShadow: '0 30px 60px -15px rgba(21,23,26,0.2)', border: `1px solid ${C.line}` }}>
+                <img src="/sales-export-img.png" alt="Rest Point - Complete Software Solution" style={{ width: '100%', height: 'clamp(250px,35vw,420px)', objectFit: 'cover', display: 'block', transition: 'transform 8s ease' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'transparent', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: 0, left: '-100%', width: '60%', height: '100%', background: 'linear-gradient(90deg, transparent, rgba(250,248,244,0.08), transparent)', animation: 'shine 5s ease-in-out infinite 3s', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', bottom: 'clamp(1.5rem,4vw,3rem)', left: 'clamp(1.5rem,4vw,3rem)', zIndex: 2, maxWidth: '550px' }}>
+                  <div className="label" style={{ color: C.brass, marginBottom: '0.8rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Software Solution</div>
+                  <h3 style={{ color: C.bone, fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', marginBottom: '0.8rem', maxWidth: '550px', lineHeight: 1.3, fontWeight: 600, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>Everything your funeral home needs, in one powerful platform</h3>
+                  <button className="btn btn-brass" onClick={goStart} style={{ padding: '0.9rem 2rem', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>Explore the solution <ArrowRight size={16} /></button>
                 </div>
               </div>
             </div>
@@ -997,11 +929,6 @@ export default function App() {
             </Showcase>
           </div>
         </section>
-
-        {/* ══════════════════════════════════
-            UNIFIED PLATFORM — REDESIGNED
-            ══════════════════════════════════ */}
-        <UnifiedOfficeSection />
 
         {/* ══════════════════════════════════
             INSURANCE — REDESIGNED (LIGHT)
@@ -1082,14 +1009,9 @@ export default function App() {
               <p style={{ color: C.gray, marginBottom: '2rem', lineHeight: 1.8 }}>Our platform streamlines the entire process so you can focus on what truly matters: providing compassionate care and supporting families with dignity and respect.</p>
               <button className="btn btn-line" onClick={goAbout}>Learn more about us</button>
             </Reveal>
-            <Reveal delay={100} style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ background: C.bone2, padding: '2.5rem', borderRadius: '12px', border: `1px solid ${C.line}`, maxWidth: '420px', width: '100%', boxShadow: '0 15px 30px rgba(21,23,26,0.04)' }}>
-                <div className="mono-label" style={{ marginBottom: '1.5rem' }}>WHY REST POINT</div>
-                {['Compassion-driven design', 'End-to-end workflow', 'Built for the African market', 'Data privacy first'].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.8rem 0', borderBottom: i < 3 ? `1px solid ${C.line}` : 'none' }}>
-                    <Check size={16} color={C.verdigris} /><span style={{ fontSize: '0.9rem', color: C.ink, fontWeight: 500 }}>{item}</span>
-                  </div>
-                ))}
+            <Reveal delay={100} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ maxWidth: '280px', width: '100%' }}>
+                <img src="/familyportal.png" alt="Rest Point Family Portal" style={{ width: '100%', height: 'auto', display: 'block' }} />
               </div>
             </Reveal>
           </div>
@@ -1105,7 +1027,10 @@ export default function App() {
               </Reveal>
               <div className="billing-toggle">
                 <button className={`billing-btn ${billing === 'monthly' ? 'active' : ''}`} onClick={() => setBilling('monthly')}>Monthly</button>
-                <button className={`billing-btn ${billing === 'annual' ? 'active' : ''}`} onClick={() => setBilling('annual')}>Annual <span style={{ fontSize: '0.72rem', color: billing === 'annual' ? 'rgba(250,248,244,0.7)' : C.brass, marginLeft: '0.3rem' }}>Save 14%</span></button>
+                <button className={`billing-btn ${billing === 'annual' ? 'active' : ''}`} onClick={() => setBilling('annual')}>
+                  Annual
+                  <span className="save-badge">Save 14%</span>
+                </button>
               </div>
             </div>
             <div className="pricing-grid">

@@ -132,6 +132,7 @@ export default function ChamaWelfareManagement() {
         .hero-content{display:grid;grid-template-columns:1.2fr 0.8fr;gap:4rem;align-items:center;position:relative;z-index:1}
         .hero-desc{font-size:1.1rem;max-width:540px;margin-bottom:2rem;color:rgba(255,255,255,0.8);line-height:1.8}
         .hero-buttons{display:flex;gap:1rem;flex-wrap:wrap}
+        .hero h1{color:${C.bone}}
         
         /* Hero Mockup */
         .hero-mockup{background:rgba(255,255,255,0.03);border:1px solid ${C.lineDark};border-radius:16px;padding:2rem;backdrop-filter:blur(10px);box-shadow:0 30px 60px rgba(0,0,0,0.3)}

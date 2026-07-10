@@ -87,6 +87,7 @@ const FuneralWelfareGuide = () => {
         .hero-content { max-width: 850px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.5rem); position: relative; z-index: 1; }
         .hero-meta { display: flex; gap: 2rem; font-size: 0.85rem; color: ${C.grayLight}; margin-top: 2rem; font-family: 'JetBrains Mono', monospace; align-items: center; }
         .hero-meta span { display: flex; align-items: center; gap: 0.4rem; }
+        .blog-hero h1 { color: ${C.bone}; }
         
         /* Content Layout */
         .blog-content { max-width: 850px; margin: 0 auto; padding: 5rem clamp(1.25rem, 5vw, 2.5rem); }

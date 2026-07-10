@@ -122,6 +122,7 @@ const MemberContributionsGuide = () => {
         .hero-content { max-width: 850px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.5rem); position: relative; z-index: 1; }
         .hero-meta { display: flex; gap: 2rem; font-size: 0.85rem; color: ${C.grayLight}; margin-top: 2rem; font-family: 'JetBrains Mono', monospace; align-items: center; flex-wrap: wrap; }
         .hero-meta span { display: flex; align-items: center; gap: 0.4rem; }
+        .blog-hero h1 { color: ${C.bone}; }
         
         /* Content Layout */
         .blog-content { max-width: 850px; margin: 0 auto; padding: 5rem clamp(1.25rem, 5vw, 2.5rem); }
@@ -262,26 +263,6 @@ const MemberContributionsGuide = () => {
                                     <p style={{ fontSize: '0.95rem', margin: 0 }}>{challenge.desc}</p>
                                 </div>
                             ))}
-                        </div>
-                    </section>
-
-                    {/* Section 4 */}
-                    <section className="blog-section">
-                        <h2>Best Practices for Contribution Management</h2>
-
-                        <div className="card">
-                            <h3>For Welfare Committee Members</h3>
-                            <div className="steps-list">
-                                {practices.map((practice, idx) => (
-                                    <div key={idx} className="step-card">
-                                        <div className="step-num">{idx + 1}</div>
-                                        <div>
-                                            <h4 style={{ marginBottom: '0.3rem' }}>{practice.title}</h4>
-                                            <p style={{ fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>{practice.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     </section>
 

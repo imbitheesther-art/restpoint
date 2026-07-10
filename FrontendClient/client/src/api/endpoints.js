@@ -47,6 +47,7 @@ export const ENDPOINTS = {
     FORGOT_PASSWORD: '/forgot-password',
     VERIFY_CODE: '/verify-code',
     RESET_PASSWORD: '/reset-password',
+    CHANGE_PASSWORD: '/change-password',
   },
   TENANT: {
     BASE: '/tenant',

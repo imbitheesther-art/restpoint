@@ -6,7 +6,8 @@ const {
   refresh,
   logout,
   createUser,
-  getMe
+  getMe,
+  changePassword
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -15,6 +16,7 @@ router.post('/login', login);
 router.post('/register', register);
 router.post('/refresh', refresh);
 router.get('/me', getMe);
+router.post('/change-password', changePassword);
 
 // Protected routes - require authentication
 router.post('/logout', protect, logout);

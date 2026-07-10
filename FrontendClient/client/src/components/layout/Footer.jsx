@@ -362,7 +362,6 @@ const Footer = ({ goTerms }) => {
                         <h4>Company</h4>
                         <FooterLink onClick={() => handleNav('/about-welt-tallis')}>About Welt Tallis</FooterLink>
                         <FooterLink onClick={() => handleNav('/contact')}>Contact Sales</FooterLink>
-                        <FooterLink onClick={() => handleNav('/careers')}>Careers</FooterLink>
                         <FooterLink onClick={() => handleNav('/partners')}>Partners</FooterLink>
                     </div>
 

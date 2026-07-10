@@ -586,3 +586,98 @@ exports.getMe = asyncHandler(async (req, res) => {
     });
   }
 });
+
+/**
+ * @route POST /change-password
+ * @desc Change user password - searches across all tenant databases
+ * @body { email, currentPassword, newPassword, confirmPassword }
+ */
+exports.changePassword = asyncHandler(async (req, res) => {
+  const { email, currentPassword, newPassword, confirmPassword } = req.body;
+
+  // Validation
+  if (!email || !currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'All fields are required'
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password must be at least 6 characters'
+    });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'New passwords do not match'
+    });
+  }
+
+  if (currentPassword === newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password must be different from current password'
+    });
+  }
+
+  try {
+    // Step 1: Find tenant by searching for user email across ALL tenant databases
+    let tenant = await findTenantByUserEmail(email);
+
+    if (!tenant) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Step 2: Find user in tenant database
+    const user = await findUserInTenantDB(tenant.db_name, email);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Step 3: Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Step 4: Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+    // Step 5: Update password in database
+    await queryTenantDB(tenant.db_name,
+      `UPDATE users SET password_hash = ?, updated_at = NOW() WHERE user_id = ?`,
+      [newPasswordHash, user.user_id]
+    );
+
+    console.log(`✅ Password changed for user: ${email} in tenant: ${tenant.tenant_name}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while changing password',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});

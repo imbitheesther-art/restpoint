@@ -341,8 +341,8 @@ export default function LoginPage() {
             <button onClick={() => navigate('/forgot-password')} className="text-link brass">
               Forgot password?
             </button>
-            <button onClick={() => navigate('/register')} className="text-link verdigris">
-              Register Account
+            <button onClick={() => navigate('/change-password')} className="text-link verdigris">
+              Change password
             </button>
           </div>
 

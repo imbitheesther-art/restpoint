@@ -50,6 +50,7 @@ const DataMigrationPolicy = lazy(() => import('../components/pages/DataMigration
 const SecurityPolicy = lazy(() => import('../components/pages/securityPolicy'));
 const SLAPolicy = lazy(() => import('../components/pages/slaPolicy'));
 const ReleasePolicy = lazy(() => import('../components/pages/releasePolicy'));
+const CookiesPolicy = lazy(() => import('../components/pages/CookiesPolicy'));
 const SupportPage = lazy(() => import('../components/support/SupportPage'));
 const AdminSupportDashboard = lazy(() => import('../components/support/AdminSupportDashboard'));
 const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
@@ -59,6 +60,7 @@ const WeltTallisAbout = lazy(() => import('../modules/about/WeltTallisAbout'));
 const LoginPage = lazy(() => import('../components/auth/login'));
 const PortalLoginPage = lazy(() => import('../components/auth/PortalLogin'));
 const ForgotPassword = lazy(() => import('../components/auth/ForgotPassword'));
+const ChangePassword = lazy(() => import('../components/auth/changePassword'));
 const InvoiceManager = lazy(() => import('../components/invoices/invoicemanager'));
 const DocumentsPage = lazy(() => import('../components/documents/documentspage'));
 const DeceasedRegistrationForm = lazy(() => import('../components/deceasedinfo/registerDeceased'));
@@ -467,6 +469,7 @@ const AppRouter = () => (
       <Route path="/register" element={<OnboardingFlow />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/change-password" element={<ChangePassword />} />
       <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
       <Route path="/insurance" element={<InsurancePage />} />
       <Route path="/memorial" element={<MemorialPage />} />
@@ -480,6 +483,7 @@ const AppRouter = () => (
       <Route path="/security" element={<SecurityPolicy />} />
       <Route path="/sla" element={<SLAPolicy />} />
       <Route path="/releases" element={<ReleasePolicy />} />
+      <Route path="/cookies" element={<CookiesPolicy />} />
       <Route path="/why-us" element={<WhyUsPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/about-welt-tallis" element={<WeltTallisAbout />} />
