@@ -20,7 +20,7 @@ RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --netwo
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY global/ ./global/
+COPY app-global/ ./global/
 
 
 COPY services/documents-service/ ./services/documents-service/
