@@ -6,6 +6,7 @@ import { useTenantStore } from '../components/store/useTenantStore';
 import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 import SingleTenantLayout from '../components/layout/SingleTenantLayout';
 import Loader from '../components/loader/loader';
@@ -148,6 +149,27 @@ const DashboardLayout = ({ children, tenantData }) => {
       <div style={{ display: 'flex', flex: 1 }}>
         <ModernSidebar tenantData={tenantData} userData={{ name: user?.full_name || user?.name, role: user?.role || 'Administrator' }} onLogout={handleLogout} onToggle={handleSidebarToggle} />
         <main style={{ flex: 1, marginLeft, padding: contentPadding, minHeight: 'calc(100vh - 60px)', background: '#F7F9FB', transition: 'margin-left 0.3s ease, padding 0.3s ease' }}>
+          {/* Top Bar with Notification Bell */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: '0 0 1rem 0',
+            gap: '1rem',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              background: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '10px',
+              border: '1px solid #E8ECF0',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            }}>
+              <NotificationBell />
+            </div>
+          </div>
           <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
         </main>
       </div>
