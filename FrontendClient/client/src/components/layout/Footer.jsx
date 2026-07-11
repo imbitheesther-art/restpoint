@@ -575,6 +575,7 @@ const Footer = ({ goTerms }) => {
                         <FooterLink onClick={() => handleNav('/funeral-home-management-software')}>Funeral Home ERP</FooterLink>
                         <FooterLink onClick={() => handleNav('/hearse-management')}>Hearse Management</FooterLink>
                         <FooterLink onClick={() => handleNav('/mortuary-billing')}>Mortuary Billing</FooterLink>
+                        <FooterLink onClick={() => handleNav('/memorial')} isPrimary>Online Memorial</FooterLink>
                         <FooterLink onClick={() => handleNav('/pricing')}>Pricing</FooterLink>
                     </div>
 
