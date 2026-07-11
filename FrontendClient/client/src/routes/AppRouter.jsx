@@ -22,6 +22,14 @@ const OnboardingFlow = lazy(() => import('../modules/onboarding/OnboardingFlow')
 const InsurancePage = lazy(() => import('../modules/insurance/insurance'));
 const MemorialPage = lazy(() => import('../modules/memorial/MemorialPage'));
 
+// SEO Pages - Topic Cluster
+const MortuaryManagementSoftware = lazy(() => import('../modules/seo/MortuaryManagementSoftware'));
+const FuneralHomeManagementSoftware = lazy(() => import('../modules/seo/FuneralHomeManagementSoftware'));
+const HospitalMortuarySoftware = lazy(() => import('../modules/seo/HospitalMortuarySoftware'));
+const HearseManagementSoftware = lazy(() => import('../modules/seo/HearseManagementSoftware'));
+const MortuaryBillingSoftware = lazy(() => import('../modules/seo/MortuaryBillingSoftware'));
+const PricingPage = lazy(() => import('../modules/seo/PricingPage'));
+
 // Blog and Resource Pages
 const FuneralWelfareGuide = lazy(() => import('../modules/blog/FuneralWelfareGuide'));
 const BereavementManagementGuide = lazy(() => import('../modules/blog/BereavementManagementGuide'));
@@ -490,6 +498,14 @@ const AppRouter = () => (
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/support" element={<SupportPage />} />
       <Route path="/support/:slug" element={<SupportPage />} />
+
+      // SEO Topic Cluster Routes
+      <Route path="/mortuary-management-software" element={<MortuaryManagementSoftware />} />
+      <Route path="/funeral-home-management-software" element={<FuneralHomeManagementSoftware />} />
+      <Route path="/hospital-mortuary-software" element={<HospitalMortuarySoftware />} />
+      <Route path="/hearse-management" element={<HearseManagementSoftware />} />
+      <Route path="/mortuary-billing" element={<MortuaryBillingSoftware />} />
+      <Route path="/pricing" element={<PricingPage />} />
 
       // Blog and Resource Routes
       <Route path="/blog/funeral-welfare-management" element={<FuneralWelfareGuide />} />

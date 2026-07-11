@@ -1,9 +1,25 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { compression } from 'vite-plugin-compression2';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Enable gzip/brotli compression for production builds
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024, // Only compress files > 1KB
+      minRatio: 0.8,
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      threshold: 1024,
+      minRatio: 0.8,
+    }),
+  ],
   base: './',
 
   resolve: {
@@ -13,14 +29,18 @@ export default defineConfig({
   },
 
   build: {
+    // Optimize chunk size warnings
+    chunkSizeWarningLimit: 500,
+
     rollupOptions: {
       output: {
+        // Improved code splitting strategy
         manualChunks(id) {
           if (!id.includes('node_modules')) {
             return;
           }
 
-          // React
+          // React core - always separate
           if (
             id.includes('/react/') ||
             id.includes('/react-dom/') ||
@@ -29,50 +49,110 @@ export default defineConfig({
             return 'react-vendor';
           }
 
-          // Bootstrap
+          // UI Framework (Bootstrap, MUI, styled-components)
           if (
             id.includes('/react-bootstrap/') ||
-            id.includes('/bootstrap/')
+            id.includes('/bootstrap/') ||
+            id.includes('/@mui/') ||
+            id.includes('/styled-components/') ||
+            id.includes('/@emotion/')
           ) {
             return 'ui-vendor';
           }
 
-          // Charts
+          // Charts - separate chunk
           if (
             id.includes('/chart.js/') ||
             id.includes('/react-chartjs-2/') ||
-            id.includes('/recharts/')
+            id.includes('/recharts/') ||
+            id.includes('/react-gauge-chart/')
           ) {
             return 'chart-vendor';
           }
 
-          // React Query
-          if (id.includes('/@tanstack/react-query/')) {
-            return 'query-vendor';
+          // State management and data fetching
+          if (
+            id.includes('/@tanstack/react-query/') ||
+            id.includes('/zustand/') ||
+            id.includes('/axios/')
+          ) {
+            return 'state-vendor';
           }
 
-          // Socket.io
+          // Socket.io - separate chunk
           if (id.includes('/socket.io-client/')) {
             return 'socket-vendor';
+          }
+
+          // Date/time libraries
+          if (
+            id.includes('/moment/') ||
+            id.includes('/date-fns/')
+          ) {
+            return 'date-vendor';
+          }
+
+          // PDF and document handling
+          if (
+            id.includes('/pdfjs-dist/') ||
+            id.includes('/react-pdf/') ||
+            id.includes('/react-to-print/')
+          ) {
+            return 'pdf-vendor';
+          }
+
+          // Heavy libraries that can be split
+          if (
+            id.includes('/fabric/') ||
+            id.includes('/framer-motion/') ||
+            id.includes('/react-webcam/') ||
+            id.includes('/react-big-calendar/') ||
+            id.includes('/@fullcalendar/')
+          ) {
+            return 'heavy-vendor';
           }
 
           // Everything else
           return 'vendor';
         },
+
+        // Optimize chunk naming for caching
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop().replace(/\.\w+$/, '') : 'chunk';
+          return `assets/${facadeModuleId}-[hash].js`;
+        },
+
+        // Keep entry point names clean
+        entryFileNames: 'assets/[name]-[hash].js',
+
+        // Asset file naming
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/images/[name]-[hash][extname]`;
+          } else if (/woff2?|eot|ttf|otf/i.test(ext)) {
+            return `assets/fonts/[name]-[hash][extname]`;
+          } else if (/css/i.test(ext)) {
+            return `assets/css/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
       },
     },
 
-    minify: 'terser',
+    // Use esbuild for faster minification (better than terser for most cases)
+    minify: 'esbuild',
 
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log'],
-      },
-    },
+    // Enable CSS code splitting
+    cssCodeSplit: true,
 
-    chunkSizeWarningLimit: 1000,
+    // Tree shaking is enabled by default in Vite
+    // Additional optimizations
+    reportCompressedSize: false, // Faster builds
+
+    // Source map for production debugging (optional, can be disabled)
+    sourcemap: false,
   },
 
   optimizeDeps: {

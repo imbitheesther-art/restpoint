@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { errorHandler, notFoundHandler } from '../../global/middlewares/errorHandler';
+import { errorHandler, notFoundHandler } from '../../app-global/middlewares/errorHandler';
 
 dotenv.config();
 

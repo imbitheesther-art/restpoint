@@ -347,6 +347,12 @@ const Footer = ({ goTerms }) => {
                         <FooterLink onClick={() => handleNav('/solutions/saccos')}>SACCO Funeral</FooterLink>
                         <FooterLink onClick={() => handleNav('/solutions/chamas')}>Chama Management</FooterLink>
                         <FooterLink onClick={() => handleNav('/solutions/funeral-homes')}>Funeral Home OS</FooterLink>
+                        <FooterLink onClick={() => handleNav('/mortuary-management-software')}>Mortuary Management</FooterLink>
+                        <FooterLink onClick={() => handleNav('/hospital-mortuary-software')}>Hospital Mortuary</FooterLink>
+                        <FooterLink onClick={() => handleNav('/funeral-home-management-software')}>Funeral Home ERP</FooterLink>
+                        <FooterLink onClick={() => handleNav('/hearse-management')}>Hearse Management</FooterLink>
+                        <FooterLink onClick={() => handleNav('/mortuary-billing')}>Mortuary Billing</FooterLink>
+                        <FooterLink onClick={() => handleNav('/pricing')}>Pricing</FooterLink>
                     </div>
 
                     <div className="footer-col">

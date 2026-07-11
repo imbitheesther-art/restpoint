@@ -181,6 +181,26 @@ export default function SACCOFuneralInsurance() {
         {
             q: 'Can we customize benefit calculations?',
             a: 'Yes, Rest Point allows you to configure benefit calculation rules based on contribution amount, membership duration, and other criteria. The system automatically calculates benefits when claims are approved.'
+        },
+        {
+            q: 'What is covered in the Farewell Plan Insurance?',
+            a: 'The Farewell Plan Insurance covers funeral expenses including coffin costs, transportation, mortuary fees, burial/cremation costs, and administrative expenses. The plan provides comprehensive coverage to ease the financial burden on families during their time of loss.'
+        },
+        {
+            q: 'Who can I include in my Farewell Insurance Plan?',
+            a: 'You can include your spouse, children, parents, and extended family members in your Farewell Insurance Plan. The plan is designed to cover your immediate family and dependents, ensuring comprehensive protection for all your loved ones.'
+        },
+        {
+            q: 'Who is an Extended Family member?',
+            a: 'Extended Family members include siblings, grandparents, grandchildren, in-laws, and other dependents who are financially reliant on you. The Farewell Plan allows you to cover these additional family members for comprehensive protection.'
+        },
+        {
+            q: 'How much does this cover cost?',
+            a: 'The Farewell Plan is affordable and flexible, with premiums starting from as little as KES 500 per month for basic coverage. We offer various tiers to suit different budgets and coverage needs. Contact our sales team for a personalized quote based on your family size and coverage requirements.'
+        },
+        {
+            q: 'Whom are we partnering with for Farewell Plan?',
+            a: 'Rest Point partners with leading insurance providers in Kenya to bring you the Farewell Plan. Our partners include reputable insurance companies regulated by the Insurance Regulatory Authority of Kenya (IRA), ensuring your coverage is secure and claims are paid promptly.'
         }
     ];
 
