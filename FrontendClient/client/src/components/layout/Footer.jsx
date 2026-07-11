@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Twitter, Linkedin, Github, Mail, ArrowRight } from 'lucide-react';
+import { ChevronDown, Twitter, Linkedin, Github, Mail, ArrowRight, Info, ExternalLink } from 'lucide-react';
 
 const C = {
-    ink: '#000000', // Pure Black
+    ink: '#000000',
     bone: '#FAF8F4',
     bone2: '#F3EFE6',
     brass: '#8B7355',
@@ -13,11 +13,24 @@ const C = {
     verdigrisLight: '#4D6359',
     verdigrisTint: '#EBEFEF',
     line: '#E3DDD0',
-    // Subtle white lines for pure black bg
     lineDark: 'rgba(255,255,255,0.08)',
+    lineDarkHover: 'rgba(255,255,255,0.15)',
     gray: '#8A8780',
     grayLight: 'rgba(255,255,255,0.6)',
     accent: '#C77B5E',
+};
+
+const SOFTWARE_VERSION = {
+    major: 3,
+    minor: 4,
+    patch: 1,
+    get full() { return `v${this.major}.${this.minor}.${this.patch}`; },
+    codename: 'Aether',
+    buildDate: '2025-06-19',
+    get buildLabel() {
+        const d = new Date(this.buildDate);
+        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    },
 };
 
 const Mark = ({ size = 24, color = C.bone }) => (
@@ -98,6 +111,72 @@ const FooterLink = ({ onClick, children, isPrimary = false }) => (
     </button>
 );
 
+const VersionBadge = ({ navigate }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
+    const tooltipRef = useRef(null);
+    useOutsideClick(tooltipRef, () => setShowTooltip(false));
+
+    return (
+        <div ref={tooltipRef} style={{ position: 'relative', display: 'inline-flex' }}>
+            <button
+                className="version-badge"
+                onClick={() => setShowTooltip(!showTooltip)}
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => {
+                    setTimeout(() => {
+                        if (tooltipRef.current && !tooltipRef.current.matches(':hover')) {
+                            setShowTooltip(false);
+                        }
+                    }, 300);
+                }}
+            >
+                <span className="version-dot" />
+                {SOFTWARE_VERSION.full}
+            </button>
+            {showTooltip && (
+                <div className="version-tooltip">
+                    <div className="version-tooltip-header">
+                        <div className="version-tooltip-icon">
+                            <Info size={14} />
+                        </div>
+                        <div>
+                            <div className="version-tooltip-title">RestPoint {SOFTWARE_VERSION.full}</div>
+                            <div className="version-tooltip-codename">Codename: {SOFTWARE_VERSION.codename}</div>
+                        </div>
+                    </div>
+                    <div className="version-tooltip-grid">
+                        <div className="version-tooltip-row">
+                            <span className="version-tooltip-label">Version</span>
+                            <span className="version-tooltip-value">{SOFTWARE_VERSION.full}</span>
+                        </div>
+                        <div className="version-tooltip-row">
+                            <span className="version-tooltip-label">Built</span>
+                            <span className="version-tooltip-value">{SOFTWARE_VERSION.buildLabel}</span>
+                        </div>
+                        <div className="version-tooltip-row">
+                            <span className="version-tooltip-label">Runtime</span>
+                            <span className="version-tooltip-value">Production</span>
+                        </div>
+                        <div className="version-tooltip-row">
+                            <span className="version-tooltip-label">Region</span>
+                            <span className="version-tooltip-value">EU-Central</span>
+                        </div>
+                    </div>
+                    <button
+                        className="version-tooltip-link"
+                        onClick={() => {
+                            navigate('/releases');
+                            setShowTooltip(false);
+                        }}
+                    >
+                        View release notes <ExternalLink size={12} />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const Footer = ({ goTerms }) => {
     const navigate = useNavigate();
     const currentYear = new Date().getFullYear();
@@ -118,12 +197,12 @@ const Footer = ({ goTerms }) => {
             <div className="wrap footer-wrap">
                 <style>{`
                     .footer-container {
-                        background: #000000; /* Completely Black */
+                        background: #000000;
                         color: ${C.grayLight};
-                        padding: clamp(4rem, 8vw, 6rem) 0 2rem;
+                        padding: clamp(4rem, 8vw, 6rem) 0 0;
                         border-top: 1px solid ${C.lineDark};
                         position: relative;
-                        overflow: hidden;
+                        overflow: visible;
                         font-family: 'Inter', sans-serif;
                     }
                     .footer-glow {
@@ -148,8 +227,8 @@ const Footer = ({ goTerms }) => {
                         margin: 0 auto;
                         padding: 0 clamp(1.25rem, 5vw, 2.5rem);
                     }
-                    
-                    /* Top Section: Brand & Newsletter */
+
+                    /* Top Section */
                     .footer-top {
                         display: flex;
                         justify-content: space-between;
@@ -194,7 +273,7 @@ const Footer = ({ goTerms }) => {
                         background: ${C.verdigris}; border-color: ${C.verdigrisLight};
                         color: ${C.bone}; transform: translateY(-2px);
                     }
-                    
+
                     .footer-newsletter { flex: 1; min-width: 300px; }
                     .newsletter-title {
                         font-family: 'Fraunces', serif; font-size: 1.6rem;
@@ -224,12 +303,13 @@ const Footer = ({ goTerms }) => {
                         padding: 0.75rem 1.5rem; border-radius: 6px; font-size: 0.85rem;
                         font-weight: 600; cursor: pointer; transition: all 0.2s ease;
                         display: flex; align-items: center; gap: 0.4rem;
+                        white-space: nowrap;
                     }
                     .newsletter-btn:hover {
                         background: ${C.brassLight}; transform: translateY(-1px);
                     }
-                    
-                    /* Middle Section: Link Columns */
+
+                    /* Middle Section */
                     .footer-content {
                         display: grid;
                         grid-template-columns: repeat(4, 1fr);
@@ -254,7 +334,7 @@ const Footer = ({ goTerms }) => {
                     .footer-link.primary {
                         color: ${C.bone}; font-weight: 500; margin-bottom: 1rem;
                     }
-                    
+
                     .footer-dropdown-menu {
                         position: absolute; bottom: 100%; left: 0; background: #050505;
                         border: 1px solid ${C.lineDark}; border-radius: 8px; min-width: 240px;
@@ -269,34 +349,177 @@ const Footer = ({ goTerms }) => {
                     }
                     .footer-dropdown-item:last-child { border-bottom: none; }
                     .footer-dropdown-item:hover { background: rgba(255,255,255,0.05); color: ${C.bone}; }
-                    
-                    /* Bottom Bar */
+
+                    /* Bottom Bar — original layout */
                     .footer-bottom {
-                        display: flex; justify-content: space-between; align-items: center;
-                        font-size: 0.78rem; color: ${C.grayLight}; opacity: 0.7;
-                        padding-top: 2rem; border-top: 1px solid ${C.lineDark};
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        font-size: 0.78rem;
+                        color: ${C.grayLight};
+                        opacity: 0.7;
+                        padding: 2rem 0;
+                        border-top: 1px solid ${C.lineDark};
                     }
-                    .footer-legal-links { display: flex; gap: 1.5rem; }
+                    .footer-legal-links { display: flex; gap: 1.5rem; align-items: center; }
                     .legal-link {
                         background: none; border: none; cursor: pointer; color: inherit;
                         font-size: inherit; font-family: inherit; transition: color 0.2s;
                     }
                     .legal-link:hover { color: ${C.bone}; }
-                    
+
+                    /* Version Badge */
+                    .version-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.45rem;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 0.68rem;
+                        letter-spacing: 0.04em;
+                        color: ${C.grayLight};
+                        background: rgba(255,255,255,0.04);
+                        border: 1px solid ${C.lineDark};
+                        border-radius: 6px;
+                        padding: 0.35rem 0.7rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        white-space: nowrap;
+                        opacity: 1;
+                    }
+                    .version-badge:hover {
+                        background: rgba(255,255,255,0.07);
+                        border-color: ${C.lineDarkHover};
+                    }
+                    .version-dot {
+                        width: 6px; height: 6px; border-radius: 50%;
+                        background: ${C.verdigrisLight};
+                        box-shadow: 0 0 6px rgba(77,99,89,0.6);
+                        flex-shrink: 0;
+                    }
+
+                    /* Version Tooltip */
+                    .version-tooltip {
+                        position: absolute;
+                        bottom: calc(100% + 10px);
+                        right: 0;
+                        width: 256px;
+                        background: #0c0c0c;
+                        border: 1px solid ${C.lineDarkHover};
+                        border-radius: 10px;
+                        padding: 1rem;
+                        z-index: 2000;
+                        box-shadow: 0 24px 48px rgba(0,0,0,0.9);
+                        animation: tooltipIn 0.2s ease;
+                    }
+                    .version-tooltip::after {
+                        content: '';
+                        position: absolute;
+                        bottom: -5px;
+                        right: 16px;
+                        width: 10px; height: 10px;
+                        background: #0c0c0c;
+                        border-right: 1px solid ${C.lineDarkHover};
+                        border-bottom: 1px solid ${C.lineDarkHover};
+                        transform: rotate(45deg);
+                    }
+                    .version-tooltip-header {
+                        display: flex;
+                        gap: 0.7rem;
+                        align-items: flex-start;
+                        margin-bottom: 0.85rem;
+                        padding-bottom: 0.85rem;
+                        border-bottom: 1px solid ${C.lineDark};
+                    }
+                    .version-tooltip-icon {
+                        width: 30px; height: 30px;
+                        border-radius: 7px;
+                        background: rgba(77,99,89,0.2);
+                        border: 1px solid rgba(77,99,89,0.3);
+                        display: flex; align-items: center; justify-content: center;
+                        color: ${C.verdigrisLight};
+                        flex-shrink: 0;
+                    }
+                    .version-tooltip-title {
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 0.8rem;
+                        color: ${C.bone};
+                        font-weight: 600;
+                        line-height: 1.3;
+                    }
+                    .version-tooltip-codename {
+                        font-size: 0.7rem;
+                        color: ${C.brassLight};
+                        margin-top: 2px;
+                        font-style: italic;
+                    }
+                    .version-tooltip-grid {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.4rem;
+                        margin-bottom: 0.85rem;
+                    }
+                    .version-tooltip-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    .version-tooltip-label {
+                        font-size: 0.72rem;
+                        color: ${C.grayLight};
+                        opacity: 0.7;
+                    }
+                    .version-tooltip-value {
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 0.72rem;
+                        color: ${C.bone};
+                        opacity: 0.9;
+                    }
+                    .version-tooltip-link {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.4rem;
+                        width: 100%;
+                        padding: 0.5rem;
+                        background: rgba(255,255,255,0.04);
+                        border: 1px solid ${C.lineDark};
+                        border-radius: 6px;
+                        color: ${C.grayLight};
+                        font-size: 0.72rem;
+                        font-family: 'Inter', sans-serif;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+                    .version-tooltip-link:hover {
+                        background: rgba(255,255,255,0.08);
+                        color: ${C.bone};
+                        border-color: ${C.lineDarkHover};
+                    }
+
+                    @keyframes tooltipIn {
+                        from { opacity: 0; transform: translateY(6px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
                     @keyframes pulse {
                         0% { opacity: 1; transform: scale(1); }
                         50% { opacity: 0.6; transform: scale(0.9); }
                         100% { opacity: 1; transform: scale(1); }
                     }
-                    
+
                     @media (max-width: 900px) {
                         .footer-content { grid-template-columns: repeat(2, 1fr) !important; gap: 2.5rem !important; }
                         .footer-top { flex-direction: column; gap: 3rem; }
                     }
                     @media (max-width: 600px) {
                         .footer-content { grid-template-columns: 1fr !important; gap: 2.5rem !important; }
-                        .footer-bottom { flex-direction: column !important; gap: 1rem !important; text-align: center !important; }
+                        .footer-bottom {
+                            flex-direction: column !important;
+                            gap: 1rem !important;
+                            text-align: center !important;
+                        }
                         .footer-legal-links { flex-wrap: wrap; justify-content: center; }
+                        .version-tooltip { right: 50%; transform: translateX(50%); }
+                        .version-tooltip::after { right: calc(50% - 5px); }
                     }
                 `}</style>
 
@@ -380,14 +603,17 @@ const Footer = ({ goTerms }) => {
                     </div>
                 </div>
 
-                {/* Bottom: Copyright & Micro Links */}
+                {/* Bottom: unchanged layout, version badge appended on the right */}
                 <div className="footer-bottom">
                     <span>&copy; {currentYear} Welt Tallis Technologies. All rights reserved.</span>
-                    <div className="footer-legal-links">
-                        <button className="legal-link" onClick={goTerms}>Terms</button>
-                        <button className="legal-link" onClick={() => navigate('/privacy')}>Privacy</button>
-                        <button className="legal-link" onClick={() => navigate('/security')}>Security</button>
-                        <button className="legal-link" onClick={() => navigate('/status')}>Status</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                        <div className="footer-legal-links">
+                            <button className="legal-link" onClick={goTerms}>Terms</button>
+                            <button className="legal-link" onClick={() => navigate('/privacy')}>Privacy</button>
+                            <button className="legal-link" onClick={() => navigate('/security')}>Security</button>
+                            <button className="legal-link" onClick={() => navigate('/status')}>Status</button>
+                        </div>
+                        <VersionBadge navigate={navigate} />
                     </div>
                 </div>
             </div>
