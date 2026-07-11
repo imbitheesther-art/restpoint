@@ -7,7 +7,7 @@ WORKDIR /app
 COPY client/package*.json ./
 
 # Install ALL dependencies (including devDependencies)
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY client/ .
