@@ -9,6 +9,9 @@ COPY client/package*.json ./
 # Install ALL dependencies (including devDependencies)
 RUN npm install --legacy-peer-deps
 
+# Install esbuild separately (required by Vite 8 for transpilation)
+RUN npm install esbuild --legacy-peer-deps
+
 # Copy source code
 COPY client/ .
 
