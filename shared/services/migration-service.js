@@ -17,7 +17,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MigrationService = void 0;
-const promise_1 = __importDefault(require("mysql2/promise"));
+const mysql2 = require("mysql2");
+const promise_1 = { default: mysql2.promise };
 // ─── Migration Service ───────────────────────────────────────────────────────
 class MigrationService {
     constructor() {

@@ -295,6 +295,90 @@ const MockInsurance = () => (
   </div>
 );
 
+const MockDocumentAutomation = () => {
+  const [selectedDoc, setSelectedDoc] = useState(0);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
+
+  const docs = [
+    { name: 'Release Form', version: 'v3.2', color: C.verdigris },
+    { name: 'Receipts', version: 'v2.1', color: C.brass },
+  ];
+
+  const handleGenerate = () => {
+    setGenerating(true);
+    setGenerated(false);
+    setTimeout(() => { setGenerating(false); setGenerated(true); }, 1800);
+  };
+
+  return (
+    <div className="mock-inner">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+        <div>
+          <div className="mono-label" style={{ color: C.verdigris }}>DOCUMENT ENGINE</div>
+          <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone, marginTop: '0.3rem' }}>Auto-Generate</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '1.3rem', fontFamily: "'Fraunces', serif", color: C.bone, fontWeight: 600 }}>1,247</div>
+          <div style={{ fontSize: '0.68rem', fontFamily: "'JetBrains Mono', monospace", color: C.grayLight }}>docs this month</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.2rem' }}>
+        {docs.map((d, i) => (
+          <button key={i} onClick={() => { setSelectedDoc(i); setGenerated(false); }}
+            className={`doc-template-btn ${selectedDoc === i ? 'active' : ''}`}
+            style={{ '--tpl-color': d.color }}>
+            <FileText size={14} />
+            <span>{d.name}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="doc-preview" style={{ marginBottom: '1.2rem' }}>
+        {generating ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.8rem 1rem', gap: '0.8rem' }}>
+            <div className="doc-gen-spinner" />
+            <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", color: C.grayLight }}>Generating...</span>
+          </div>
+        ) : generated ? (
+          <>
+            <div style={{ borderBottom: `1px solid ${C.lineDark}`, paddingBottom: '0.8rem', marginBottom: '0.8rem' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: C.bone }}>{docs[selectedDoc].name}</div>
+              <div style={{ fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", color: C.grayLight, marginTop: '0.2rem' }}>Template {docs[selectedDoc].version} · Auto-filled from case data</div>
+            </div>
+            <div style={{ fontSize: '0.82rem', color: C.grayLight, lineHeight: 1.8 }}>
+              <div className="doc-field"><span>Deceased:</span> <strong style={{ color: C.bone }}>Otieno, James M.</strong></div>
+              <div className="doc-field"><span>Date:</span> <strong style={{ color: C.bone }}>15 Jun 2025</strong></div>
+              <div className="doc-field"><span>Ref:</span> <strong style={{ color: C.bone }}>RP-2025-0847</strong></div>
+            </div>
+            <div className="doc-signature-area">
+              <div className="doc-sig-line" />
+              <svg width="110" height="32" viewBox="0 0 110 32" fill="none" style={{ position: 'absolute', bottom: '8px', right: '14px' }}>
+                <path d="M6 24 C10 10, 18 6, 26 18 S36 24, 44 14 S54 4, 64 16 S74 28, 84 12 S94 6, 104 20" stroke={C.verdigris} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.75" />
+                <path d="M104 20 L107 16.5 M104 20 L101 16.5" stroke={C.verdigris} strokeWidth="1.1" strokeLinecap="round" opacity="0.5" />
+              </svg>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'auto' }}>
+                <span className="doc-sig-verified"><Check size={10} style={{ marginRight: '0.3rem', verticalAlign: 'middle' }} />Digitally Signed</span>
+                <span style={{ fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace", color: C.grayLight }}>15 Jun 2025, 09:42</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', gap: '0.6rem' }}>
+            <FileText size={28} color={C.lineDark} />
+            <span style={{ fontSize: '0.82rem', color: C.grayLight }}>Select template & generate</span>
+          </div>
+        )}
+      </div>
+
+      <button onClick={handleGenerate} disabled={generating} className="doc-generate-btn">
+        {generating ? 'Generating...' : 'Generate Document'}
+      </button>
+    </div>
+  );
+};
+
 const Showcase = ({ no, title, desc, reverse, children }) => (
   <Reveal className="showcase-mobile" style={{ display: 'grid', gridTemplateColumns: reverse ? '1fr 1.1fr' : '1.1fr 1fr', gap: '4rem', alignItems: 'center', marginBottom: '6rem' }}>
     <div className="showcase-text" style={{ order: reverse ? 2 : 1 }}>
@@ -319,6 +403,7 @@ const QuickFindSection = () => {
     { icon: ShieldCheck, label: 'Funeral Insurance', desc: 'Manage claims, contributions, and payouts', color: C.verdigrisLight, href: '#insurance' },
     { icon: Activity, label: 'Analytics & Reports', desc: 'Real-time insights into your operations', color: C.brassLight, href: '#features' },
     { icon: Server, label: 'Enterprise Security', desc: 'Bank-grade encryption and access controls', color: C.grayDark, href: '#infra' },
+    { icon: FileText, label: 'Document Automation', desc: 'Auto-generate release forms, receipts, and certificates', color: C.verdigris, href: '#features' },
   ];
   const filtered = items.filter(it => it.label.toLowerCase().includes(query.toLowerCase()) || it.desc.toLowerCase().includes(query.toLowerCase()));
   return (
@@ -927,6 +1012,9 @@ export default function App() {
             </Showcase>
             <Showcase no="04" title="Hearse management module" desc="Effective hearse management helps a funeral home provide reliable, professional, and respectful transportation services." reverse={true}>
               <AppWindow title="restpoint.app/fleet" dark><MockHearse /></AppWindow>
+            </Showcase>
+            <Showcase no="05" title="Document automation engine" desc="Generate release forms, autopsy records, death certificates, and burial permits automatically. Digital signatures included." reverse={false}>
+              <AppWindow title="restpoint.app/documents" dark><MockDocumentAutomation /></AppWindow>
             </Showcase>
           </div>
         </section>

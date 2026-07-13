@@ -561,7 +561,7 @@ const Footer = ({ goTerms }) => {
                     </div>
                 </div>
 
-                {/* Middle: Links Grid */}
+                {/* Middle: Links Grid - All original links preserved */}
                 <div className="footer-content">
                     <div className="footer-col">
                         <h4>Software Solutions</h4>

@@ -31,7 +31,7 @@ RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --netwo
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY services/app-global/ ./app-global/
+COPY services/app-global/ ./services/app-global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
 RUN cd packages/shared-config && yarn build
@@ -58,6 +58,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:6969/api/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/workshop-service/dist/server.js"]
+CMD ["tsx", "services/workshop-service/server.ts"]
 
 

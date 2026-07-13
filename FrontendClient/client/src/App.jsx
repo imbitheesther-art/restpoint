@@ -7,7 +7,7 @@ import AppRouter from './routes/AppRouter';
 import { initManifest } from './services/manifestService';
 import { SocketProvider } from './context/socketContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
-import InstallPrompt from './components/pwa/InstallPrompt';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +38,7 @@ const AppContent = () => {
     <HelmetProvider>
       {routeElement}
 
-      <InstallPrompt />
+      <PWAInstallPrompt />
     </HelmetProvider>
   );
 };
@@ -50,7 +50,7 @@ const App = () => {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service_worker.js')
+        navigator.serviceWorker.register('/sw.js')
           .then((registration) => {
             console.log('Service Worker registered:', registration.scope);
           })

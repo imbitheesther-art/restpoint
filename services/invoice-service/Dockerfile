@@ -20,7 +20,7 @@ RUN npm install --legacy-peer-deps && npm cache clean --force
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY services/app-global/ ./app-global/
+COPY services/app-global/ ./services/app-global/
 COPY services/invoice-service/ ./services/invoice-service/
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app

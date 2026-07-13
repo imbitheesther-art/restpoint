@@ -39,7 +39,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.safeExecute = exports.safeQuery = exports.connectionManager = exports.ConnectionManager = void 0;
-const promise_1 = __importDefault(require("mysql2/promise"));
+const mysql2 = require("mysql2");
+const promise_1 = { default: mysql2.promise };
 const DEFAULT_CONFIG = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306', 10),
