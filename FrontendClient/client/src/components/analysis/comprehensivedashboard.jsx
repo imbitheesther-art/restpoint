@@ -50,8 +50,9 @@ const COLORS = {
   chart5: '#8b5cf6', chart6: '#06b6d4'
 };
 
-// API Base URL
-const API_BASE = 'http://localhost:5012/api/v1/restpoint';
+// API Base URL - use centralized config
+import env from '../../config/env';
+const API_BASE = `${env.FULL_API_URL}/dashboard/comprehensive`;
 
 // Error Boundary
 class ErrorBoundary extends React.Component {
@@ -191,7 +192,7 @@ const ComprehensiveDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       const headers = getTenantHeaders();
-      const url = `${API_BASE}/dashboard/comprehensive`;
+      const url = API_BASE;
       console.log('[Dashboard] Fetching from:', url);
 
       const response = await fetch(url, { headers });

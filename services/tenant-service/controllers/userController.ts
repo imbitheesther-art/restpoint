@@ -76,7 +76,7 @@ export class UserController {
 
                 // Validate branch_id if provided
                 let finalBranchId = null;
-                if (branch_id && role !== 'driver') {
+                if (branch_id) {
                     // Convert branch_id to number if it's a string
                     const branchIdNum = typeof branch_id === 'string' ? parseInt(branch_id) : branch_id;
 

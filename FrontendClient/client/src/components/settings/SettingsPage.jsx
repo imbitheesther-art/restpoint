@@ -94,7 +94,7 @@ export default function SettingsPage() {
 
             const payload = {
                 ...userForm,
-                branch_id: userForm.role === 'driver' ? null : (userForm.branch_id || null),
+                branch_id: userForm.branch_id || null,
             };
 
             await api.post(ENDPOINTS.TENANT.CREATE_USER(tenantSlug), payload);
@@ -547,7 +547,7 @@ export default function SettingsPage() {
                                 </label>
                                 <select
                                     value={userForm.role}
-                                    onChange={(e) => setUserForm({ ...userForm, role: e.target.value, branch_id: e.target.value === 'driver' ? '' : userForm.branch_id })}
+                                    onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
                                     style={{
                                         width: '100%',
                                         padding: '0.6rem',
@@ -566,7 +566,7 @@ export default function SettingsPage() {
                                 </select>
                             </div>
 
-                            {userForm.role !== 'driver' && isMultiTenant && (
+                            {isMultiTenant && (
                                 <div style={{ marginBottom: '1rem' }}>
                                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 500, color: THEME.colors.ink, marginBottom: '0.4rem' }}>
                                         Branch
