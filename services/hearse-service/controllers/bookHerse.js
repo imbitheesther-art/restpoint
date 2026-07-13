@@ -246,7 +246,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             req.tenant?.db_name || req.tenantSlug
         );
 
-        // ✅ Emit real-time updates via Socket.IO
+        //  Emit real-time updates via Socket.IO
         if (io && booking) {
             io.emit('new_booking', {
                 type: 'NEW_BOOKING',
