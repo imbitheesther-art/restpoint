@@ -36,7 +36,10 @@
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "prop-types": "^15.8.1",
-    "react-gauge-chart": "^0.5.1"
+    "react-gauge-chart": "^0.5.1",
+    "mysql2": "^3.6.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "@types/pino": "^7.0.4",
