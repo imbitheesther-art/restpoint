@@ -1,4 +1,4 @@
-const { safeQuery } = require('../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../shared/config/db');
 
 class AnalyticsModel {
   // Get monthly analytics summary

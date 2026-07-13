@@ -8,7 +8,8 @@
   },
   "workspaces": [
     "packages/*",
-    "services/*"
+    "services/*",
+    "shared"
   ],
   "scripts": {
     "dev": "concurrently -n gateway,services -c blue,green \"npm run dev --workspace=restpoint-gateway\" \"npm run dev --workspaces\"",
@@ -33,6 +34,7 @@
     "axios": "^1.18.1",
     "chart.js": "^4.5.1",
     "express-rate-limit": "^8.5.2",
+    "jsonwebtoken": "^9.0.3",
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "prop-types": "^15.8.1",

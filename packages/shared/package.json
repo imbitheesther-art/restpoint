@@ -1,0 +1,17 @@
+{
+    "name": "@montezuma/shared",
+    "version": "1.0.0",
+    "description": "Shared modules for RestPoint services - database, tenancy, utilities, configurations",
+    "private": true,
+    "main": "database.js",
+    "types": "dbConfig.d.ts",
+    "scripts": {
+        "build": "echo 'No build needed - JavaScript files used directly'",
+        "clean": "echo 'No clean needed'"
+    },
+    "dependencies": {
+        "mysql2": "^3.6.5",
+        "jsonwebtoken": "^9.0.0",
+        "dotenv": "^16.3.1"
+    }
+}

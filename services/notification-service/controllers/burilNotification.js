@@ -1,6 +1,6 @@
 // controllers/burialNotificationController.js
 const asyncHandler = require('express-async-handler');
-const { safeQuery } = require('../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../shared/config/db');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 
 // Generate unique notification number
@@ -34,12 +34,12 @@ const handleBurialNotification = asyncHandler(async (req, res) => {
   const mortuaryDetails = mortuariesRows.length
     ? mortuariesRows[0]
     : {
-        mortuary_id: 'UNKNOWN',
-        name: 'Unknown',
-        address: 'Unknown',
-        phone: 'Unknown',
-        hours: 'Unknown',
-      };
+      mortuary_id: 'UNKNOWN',
+      name: 'Unknown',
+      address: 'Unknown',
+      phone: 'Unknown',
+      hours: 'Unknown',
+    };
 
   // Check if burial notification already exists
   let notificationRows = await safeQuery(

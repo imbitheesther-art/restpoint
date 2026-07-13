@@ -13,17 +13,18 @@ WORKDIR /usr/src/app
 # Copy root workspace config
 COPY package.json tsconfig.base.json ./
 
-# Copy shared package.json files
+# Copy ALL workspace package.json files (including shared) before install
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY shared/package.json ./shared/
 
 # Copy service package.json
 COPY services/tenant-service/package.json ./services/tenant-service/
 
-# Install ALL dependencies (including dev for building)
-RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
+# Install ALL dependencies (respecting package-lock.json)
+RUN yarn config set network-timeout 600000 && yarn install --frozen-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
 COPY services/configurations/ ./configurations/
@@ -58,4 +59,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["tsx", "services/tenant-service/server.ts"]
-

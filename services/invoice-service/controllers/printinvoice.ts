@@ -1,6 +1,6 @@
 // controllers/printController.js
 const asyncHandler = require('express-async-handler');
-const { safeQuery } = require('../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../shared/config/db');
 const { AppError } = require('../../middlewares/errorHandler/errorHandler');
 const escpos = require('escpos');
 escpos.USB = require('escpos-usb');

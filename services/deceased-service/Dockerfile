@@ -13,9 +13,10 @@ COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
+COPY shared/package.json ./shared/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --frozen-lockfile --network-timeout 600000 && yarn cache clean
 
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -45,4 +46,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["tsx", "services/deceased-service/server.ts"]
-

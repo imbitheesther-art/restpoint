@@ -4,9 +4,13 @@
   "private": true,
   "description": "Shared modules for RestPoint services - database, tenancy, utilities",
   "main": "database.js",
+  "scripts": {
+    "build": "echo 'No build needed'",
+    "clean": "echo 'No clean needed'"
+  },
   "dependencies": {
-    "mysql2": "^3.6.0",
+    "mysql2": "^3.6.5",
     "jsonwebtoken": "^9.0.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.3.1"
   }
 }
