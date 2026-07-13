@@ -11,7 +11,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /usr/src/app
 
 # Copy root workspace config
-COPY package.json tsconfig.base.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 
 # Copy ALL workspace package.json files (including shared) before install
 # This ensures npm workspace resolution works correctly
@@ -25,7 +25,7 @@ COPY shared/package.json ./shared/
 COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Install ALL dependencies (respecting package-lock.json)
-RUN yarn config set network-timeout 600000 && yarn install --frozen-lockfile --network-timeout 600000 && yarn cache clean
+RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
 
 # Copy source code
 COPY services/configurations/ ./configurations/
@@ -35,10 +35,10 @@ COPY services/app-global/ ./services/app-global/
 COPY services/api-gateway/ ./services/api-gateway/
 
 # Build shared packages (critical for TypeScript imports)
-RUN cd packages/shared-config && yarn build
-RUN cd packages/shared-logger && yarn build
-RUN cd packages/shared-services && yarn build
-RUN cd packages/shared-utils && yarn build
+RUN cd packages/shared-config && npm run build
+RUN cd packages/shared-logger && npm run build
+RUN cd packages/shared-services && npm run build
+RUN cd packages/shared-utils && npm run build
 
 # Set ownership
 RUN chown -R nodejs:nodejs /usr/src/app

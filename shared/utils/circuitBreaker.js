@@ -11,6 +11,9 @@ exports.CircuitBreakerError = exports.CircuitBreaker = void 0;
 exports.getCircuitBreaker = getCircuitBreaker;
 const shared_logger_1 = __importDefault(require("@montezuma/shared-logger"));
 class CircuitBreaker {
+    options;
+    state;
+    name;
     constructor(nameOrOptions, maybeOptions) {
         if (typeof nameOrOptions === 'string') {
             this.name = nameOrOptions;

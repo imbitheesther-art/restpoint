@@ -11,7 +11,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /usr/src/app
 
 # Copy root workspace config first
-COPY package.json tsconfig.base.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 
 # Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/notification-service/package.json ./services/notification-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
+RUN yarn config set network-timeout 600000 && npm ci --omit=optional
 
 # Copy shared source modules first
 COPY services/configurations/ ./configurations/
@@ -32,10 +32,10 @@ COPY shared/ ./shared/
 COPY services/app-global/ ./services/app-global/
 
 # Build shared packages first (CRITICAL for TypeScript imports!)
-RUN cd packages/shared-config && yarn build
-RUN cd packages/shared-logger && yarn build
-RUN cd packages/shared-services && yarn build
-RUN cd packages/shared-utils && yarn build
+RUN cd packages/shared-config && npm run build
+RUN cd packages/shared-logger && npm run build
+RUN cd packages/shared-services && npm run build
+RUN cd packages/shared-utils && npm run build
 
 # Copy service source code
 COPY services/notification-service/ ./services/notification-service/

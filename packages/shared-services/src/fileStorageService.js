@@ -79,6 +79,7 @@ const EXTENSION_TO_TYPE = {
  * Centralized service for all file operations
  */
 class FileStorageService {
+    static instance;
     constructor() {
         this.initializeBaseDirectory();
     }

@@ -17,13 +17,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MigrationService = void 0;
-const mysql2 = require("mysql2");
-const promise_1 = { default: mysql2.promise };
+const promise_1 = __importDefault(require("mysql2/promise"));
 // ─── Migration Service ───────────────────────────────────────────────────────
 class MigrationService {
-    constructor() {
-        this.masterPool = null;
-    }
+    masterPool = null;
     /**
      * Initialize the master database connection pool.
      * Used to list tenants and orchestrate migrations.

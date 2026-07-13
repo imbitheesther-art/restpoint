@@ -11,7 +11,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /usr/src/app
 
 # Copy root workspace config
-COPY package.json tsconfig.base.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 
 # Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/email-service/package.json ./services/email-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
+RUN yarn config set network-timeout 600000 && npm ci --omit=optional
 
 # Copy source code
 COPY services/configurations/ ./configurations/
@@ -33,13 +33,13 @@ COPY services/app-global/ ./services/app-global/
 COPY services/email-service/ ./services/email-service/
 
 # Build shared packages (critical for TypeScript imports)
-RUN cd packages/shared-config && yarn build
-RUN cd packages/shared-logger && yarn build
-RUN cd packages/shared-services && yarn build
-RUN cd packages/shared-utils && yarn build
+RUN cd packages/shared-config && npm run build
+RUN cd packages/shared-logger && npm run build
+RUN cd packages/shared-services && npm run build
+RUN cd packages/shared-utils && npm run build
 
 # Install tsx for running TypeScript directly
-RUN yarn global add tsx
+RUN npm install -g tsx
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 

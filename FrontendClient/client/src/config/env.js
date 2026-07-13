@@ -4,13 +4,15 @@
 
 const env = {
   // API Gateway URL - all requests go through the gateway
+  // FIXED: Production now includes /api/v1/restpoint prefix so requests arrive
+  // with the correct path whether they go through nginx or directly to the gateway
   API_URL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint' : 'http://localhost:5000'),
 
   // API Gateway base path for all microservices
   API_GATEWAY_URL: import.meta.env.VITE_API_GATEWAY_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5000'),
 
   // Base path for all RestPoint API endpoints
-  API_BASE_PATH: '/api/v1/restpoint',
+  API_BASE_PATH: import.meta.env.PROD ? '/api/v1/restpoint' : '/api/v1/restpoint',
 
   // Full API base URL (gateway + base path)
   get FULL_API_URL() {

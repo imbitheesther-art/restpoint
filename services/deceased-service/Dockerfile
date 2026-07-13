@@ -8,7 +8,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /usr/src/app
 
-COPY package.json tsconfig.base.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
@@ -16,7 +16,7 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY shared/package.json ./shared/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN yarn config set network-timeout 600000 && yarn install --frozen-lockfile --network-timeout 600000 && yarn cache clean
+RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
 
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
@@ -25,13 +25,13 @@ COPY services/app-global/ ./services/app-global/
 COPY services/deceased-service/ ./services/deceased-service/
 
 # Build shared packages in dependency order (shared-config → shared-logger → shared-utils → shared-services)
-RUN cd packages/shared-config && yarn build
-RUN cd packages/shared-logger && yarn build
-RUN cd packages/shared-services && yarn build
-RUN cd packages/shared-utils && yarn build
+RUN cd packages/shared-config && npm run build
+RUN cd packages/shared-logger && npm run build
+RUN cd packages/shared-services && npm run build
+RUN cd packages/shared-utils && npm run build
 
 # Install tsx for running TypeScript directly (server.ts entry point)
-RUN yarn global add tsx
+RUN npm install -g tsx
 
 RUN mkdir -p /usr/src/app/services/deceased-service/uploads && chown -R nodejs:nodejs /usr/src/app
 

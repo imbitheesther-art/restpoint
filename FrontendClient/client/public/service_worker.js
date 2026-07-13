@@ -17,32 +17,26 @@ const STATIC_ASSETS = [
   '/landing.png',
   '/icons.svg',
   '/pdf.worker.min.js',
+  '/assets/',
+  '/css/',
 ];
 
-// Install event - cache static assets (with per-file error handling)
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(async (cache) => {
-        console.log('Caching static assets individually...');
-        const results = await Promise.allSettled(
-          STATIC_ASSETS.map((url) =>
-            cache.add(url).catch((err) => {
-              console.warn(`Failed to cache ${url}: ${err.message}`);
-            })
-          )
-        );
-        const failed = results.filter(r => r.status === 'rejected');
-        if (failed.length > 0) {
-          console.warn(`${failed.length} assets failed to cache (non-critical, continuing)`);
-        } else {
-          console.log('All static assets cached successfully');
+        console.log('Caching static assets...');
+        // Cache core assets
+        try {
+          await cache.addAll([
+            '/',
+            '/manifest.json',
+            '/favicon.ico'
+          ]);
+        } catch (error) {
+          console.warn('Failed to cache core assets:', error);
         }
-        return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('Fatal error during service worker install:', error);
-        // Still activate so the app works even without full caching
         return self.skipWaiting();
       })
   );
@@ -66,122 +60,70 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network, cache on success
+// Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip chrome-extension and other non-http requests
+  // Skip non-http requests
   if (!event.request.url.startsWith('http')) {
     return;
   }
 
   const url = new URL(event.request.url);
 
-  // Skip Vite dev server module requests (JSX, TSX, TS files and cache-busting query params)
-  // These are dynamically served by Vite and should not be intercepted by the service worker
-  if (
-    url.hostname === 'localhost' &&
-    (url.port === '5173' || url.port === '5174' || url.port === '5175')
-  ) {
-    return;
-  }
-
-  // Skip module script requests (Vite uses ?t= cache busting for HMR)
-  if (
-    url.pathname.endsWith('.jsx') ||
-    url.pathname.endsWith('.tsx') ||
-    url.pathname.endsWith('.ts') ||
-    url.searchParams.has('t')
-  ) {
-    return;
-  }
-
   // Skip API requests
   if (url.pathname.startsWith('/api/')) {
     return;
   }
 
+  // Handle tenant path requests - rewrite to root
+  let requestUrl = event.request.url;
+  if (url.pathname.startsWith('/tenant/')) {
+    // Extract the asset path after /tenant/[tenant-slug]/
+    const match = url.pathname.match(/^\/tenant\/[^\/]+\/(.+)$/);
+    if (match) {
+      // Rewrite to root path
+      const newUrl = new URL(event.request.url);
+      newUrl.pathname = '/' + match[1];
+      requestUrl = newUrl.toString();
+    }
+  }
+
+  // Skip manifest.json requests from tenant path
+  if (url.pathname.includes('manifest.json') && url.pathname.startsWith('/tenant/')) {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
+    fetch(requestUrl, { mode: 'cors' })
       .then((response) => {
-        // Don't cache non-successful responses
-        if (!response || response.status !== 200 || response.type !== 'basic') {
+        if (!response || response.status !== 200) {
           return response;
         }
 
-        // Clone the response
         const responseToCache = response.clone();
-
-        // Cache the fetched response
         caches.open(CACHE_NAME)
           .then((cache) => {
+            // Cache the original request URL
             cache.put(event.request, responseToCache);
           });
 
         return response;
       })
       .catch(() => {
-        // Fallback to cache when offline
         return caches.match(event.request)
           .then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
             }
-            // Return offline page for navigation requests
             if (event.request.mode === 'navigate') {
               return caches.match('/index.html');
             }
-            return new Response('Network error', { status: 503, statusText: 'Service Unavailable' });
+            return new Response('Network error', { status: 503 });
           });
       })
   );
-});
-
-// Handle background sync for offline actions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    event.waitUntil(
-      // Handle background sync logic here
-      console.log('Background sync triggered')
-    );
-  }
-});
-
-// Handle push notifications
-self.addEventListener('push', (event) => {
-  if (event.data) {
-    const data = event.data.json();
-    const options = {
-      body: data.body || 'New notification',
-      icon: '/logo.png',
-      badge: '/logo.png',
-      vibrate: [100, 50, 100],
-      data: {
-        dateOfArrival: Date.now(),
-        primaryKey: 1
-      },
-      actions: [
-        { action: 'explore', title: 'View' },
-        { action: 'close', title: 'Dismiss' }
-      ]
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(data.title || 'MONTEZUMA FH', options)
-    );
-  }
-});
-
-// Handle notification click
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  if (event.action === 'explore') {
-    event.waitUntil(
-      clients.openWindow('/')
-    );
-  }
 });

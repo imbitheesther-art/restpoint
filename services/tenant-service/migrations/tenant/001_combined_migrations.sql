@@ -67,7 +67,6 @@ CREATE TABLE IF NOT EXISTS invoices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
     INDEX idx_deceased_id (deceased_id),
     INDEX idx_invoice_number (invoice_number),
     INDEX idx_status (status),

@@ -39,8 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.safeExecute = exports.safeQuery = exports.connectionManager = exports.ConnectionManager = void 0;
-const mysql2 = require("mysql2");
-const promise_1 = { default: mysql2.promise };
+const promise_1 = __importDefault(require("mysql2/promise"));
 const DEFAULT_CONFIG = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306', 10),
@@ -48,31 +47,42 @@ const DEFAULT_CONFIG = {
     password: process.env.DB_PASSWORD || '',
     maxConnectionsPerTenant: 3, // STRICT: Only 3 concurrent connections per tenant DB
     maxQueuePerTenant: 5, // Only 5 queries can wait; rest get immediate timeout
-    queueTimeoutMs: 10000, // Wait max 10 seconds in queue
+    queueTimeoutMs: 10_000, // Wait max 10 seconds in queue
     idleTimeoutMinutes: 5, // Pool evicted after 5 min of inactivity
-    evictionCheckIntervalMs: 60000, // Check every 60 seconds
-    connectionTimeoutMs: 5000, // Connection must establish within 5 seconds
-    acquireTimeoutMs: 10000, // Must acquire from pool within 10 seconds
-    idleConnectionTimeoutMs: 30000, // Close idle TCP sockets after 30 seconds
+    evictionCheckIntervalMs: 60_000, // Check every 60 seconds
+    connectionTimeoutMs: 5_000, // Connection must establish within 5 seconds
+    acquireTimeoutMs: 10_000, // Must acquire from pool within 10 seconds
+    idleConnectionTimeoutMs: 30_000, // Close idle TCP sockets after 30 seconds
     validationQuery: 'SELECT 1',
 };
 // ─── Connection Manager Singleton ─────────────────────────────────────────────
 class ConnectionManager {
+    // ── Singleton instance ──────────────────────────────────────────────────────
+    static instance = null;
+    // ── Configuration ──────────────────────────────────────────────────────────
+    config;
+    // ── Pool Cache: Maps tenant database name → pool metadata ──────────────────
+    // Using a Map ensures O(1) lookups and avoids prototype pollution
+    poolCache;
+    // ── LRU Order Tracking: Array of keys in LRU order (index 0 = most recent) ─
+    // We maintain this separately so we can quickly identify eviction candidates
+    // without scanning all pools. This is critical for performance with many tenants.
+    lruOrder;
+    // ── Eviction Timer Handle ──────────────────────────────────────────────────
+    evictionTimer = null;
+    // ── Shutdown Flag ──────────────────────────────────────────────────────────
+    isShuttingDown = false;
+    // ── Connection Counter for Logging ─────────────────────────────────────────
+    totalConnectionsCreated = 0;
+    totalConnectionsDestroyed = 0;
     // ────────────────────────────────────────────────────────────────────────────
     //  CONSTRUCTOR (private — use ConnectionManager.getInstance())
     // ────────────────────────────────────────────────────────────────────────────
     constructor(config) {
-        // ── Eviction Timer Handle ──────────────────────────────────────────────────
-        this.evictionTimer = null;
-        // ── Shutdown Flag ──────────────────────────────────────────────────────────
-        this.isShuttingDown = false;
-        // ── Connection Counter for Logging ─────────────────────────────────────────
-        this.totalConnectionsCreated = 0;
-        this.totalConnectionsDestroyed = 0;
         this.config = { ...DEFAULT_CONFIG, ...config };
         this.poolCache = new Map();
         this.lruOrder = [];
-        console.log(`[ConnectionManager]  Initialized singleton. Config:
+        console.log(`[ConnectionManager] 🔐 Initialized singleton. Config:
       ├─ Max connections per tenant: ${this.config.maxConnectionsPerTenant}
       ├─ Max queue per tenant:       ${this.config.maxQueuePerTenant}
       ├─ Queue timeout:              ${this.config.queueTimeoutMs}ms
@@ -100,10 +110,10 @@ class ConnectionManager {
     static getInstance(config) {
         if (!ConnectionManager.instance) {
             ConnectionManager.instance = new ConnectionManager(config);
-            console.log('[ConnectionManager]  Singleton instance created');
+            console.log('[ConnectionManager] 🆕 Singleton instance created');
         }
         else if (config) {
-            console.warn('[ConnectionManager]  Instance already exists; config ignored');
+            console.warn('[ConnectionManager] ⚠️ Instance already exists; config ignored');
         }
         return ConnectionManager.instance;
     }
@@ -118,7 +128,7 @@ class ConnectionManager {
         if (ConnectionManager.instance) {
             await ConnectionManager.instance.shutdown();
             ConnectionManager.instance = null;
-            console.log('[ConnectionManager]  Singleton instance reset');
+            console.log('[ConnectionManager] 🔄 Singleton instance reset');
         }
     }
     // ────────────────────────────────────────────────────────────────────────────
@@ -147,10 +157,10 @@ class ConnectionManager {
      */
     async query(tenantDbName, sql, params = []) {
         if (this.isShuttingDown) {
-            throw new Error('[ConnectionManager]  System is shutting down; rejecting query');
+            throw new Error('[ConnectionManager] 🔴 System is shutting down; rejecting query');
         }
         if (!tenantDbName || typeof tenantDbName !== 'string') {
-            throw new Error(`[ConnectionManager]  Invalid tenantDbName: ${tenantDbName}`);
+            throw new Error(`[ConnectionManager] ❌ Invalid tenantDbName: ${tenantDbName}`);
         }
         let connection = null;
         const queryStartTime = Date.now();
@@ -170,7 +180,7 @@ class ConnectionManager {
             const duration = Date.now() - queryStartTime;
             // Log slow queries (> 1 second) for performance monitoring
             if (duration > 1000) {
-                console.warn(`[ConnectionManager]  Slow query on "${tenantDbName}" (${duration}ms): ${sql.substring(0, 100)}`);
+                console.warn(`[ConnectionManager] 🐢 Slow query on "${tenantDbName}" (${duration}ms): ${sql.substring(0, 100)}`);
             }
             return rows;
         }
@@ -299,7 +309,7 @@ class ConnectionManager {
             connectionLimit: this.config.maxConnectionsPerTenant,
             queueLimit: this.config.maxQueuePerTenant,
             enableKeepAlive: true,
-            keepAliveInitialDelay: 10000, // Start keepalive after 10s idle
+            keepAliveInitialDelay: 10_000, // Start keepalive after 10s idle
             connectTimeout: this.config.connectionTimeoutMs,
             idleTimeout: this.config.idleConnectionTimeoutMs,
             charset: 'UTF8MB4_GENERAL_CI',
@@ -524,7 +534,7 @@ class ConnectionManager {
         try {
             // Create a timeout promise so we don't hang forever
             const drainTimeout = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Drain timeout')), 10000);
+                setTimeout(() => reject(new Error('Drain timeout')), 10_000);
             });
             // Race between draining and timeout
             await Promise.race([
@@ -624,7 +634,7 @@ class ConnectionManager {
                     // Give active queries up to 10 seconds to finish
                     await Promise.race([
                         metadata.pool.end(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Drain timeout')), 10000)),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Drain timeout')), 10_000)),
                     ]);
                     console.log(`[ConnectionManager] ✅ Pool closed for "${tenantDbName}"`);
                 }
@@ -723,8 +733,6 @@ class ConnectionManager {
     }
 }
 exports.ConnectionManager = ConnectionManager;
-// ── Singleton instance ──────────────────────────────────────────────────────
-ConnectionManager.instance = null;
 // ──────────────────────────────────────────────────────────────────────────────
 //  FALLBACK / COMPATIBILITY EXPORTS
 // ──────────────────────────────────────────────────────────────────────────────

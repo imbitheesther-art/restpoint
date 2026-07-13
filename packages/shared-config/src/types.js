@@ -8,6 +8,9 @@ exports.ValidationError = exports.TenantIsolationError = exports.DatabaseError =
 // ERROR TYPES
 // ============================================================
 class AppError extends Error {
+    statusCode;
+    isOperational;
+    code;
     constructor(message, statusCode = 500, code = 'INTERNAL_ERROR', isOperational = true) {
         super(message);
         this.name = this.constructor.name;
@@ -20,6 +23,7 @@ class AppError extends Error {
 }
 exports.AppError = AppError;
 class DatabaseError extends AppError {
+    query;
     constructor(message = 'Database operation failed', query) {
         super(message, 500, 'DATABASE_ERROR', false);
         this.query = query;
@@ -27,6 +31,7 @@ class DatabaseError extends AppError {
 }
 exports.DatabaseError = DatabaseError;
 class TenantIsolationError extends AppError {
+    tenantSlug;
     constructor(message = 'Tenant access denied', tenantSlug) {
         super(message, 403, 'TENANT_ISOLATION_ERROR');
         this.tenantSlug = tenantSlug;
@@ -34,6 +39,7 @@ class TenantIsolationError extends AppError {
 }
 exports.TenantIsolationError = TenantIsolationError;
 class ValidationError extends AppError {
+    fields;
     constructor(message, fields) {
         super(message, 400, 'VALIDATION_ERROR');
         this.fields = fields;
