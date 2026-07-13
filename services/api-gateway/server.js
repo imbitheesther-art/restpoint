@@ -37,7 +37,6 @@ const SERVICE_URLS = {
   mpesa: process.env.MPESA_SERVICE_URL || 'http://127.0.0.1:5006',
   portal: process.env.PORTAL_SERVICE_URL || 'http://127.0.0.1:5007',
   invoices: process.env.INVOICES_SERVICE_URL || 'http://127.0.0.1:5008',
-  visitors: process.env.VISITORS_SERVICE_URL || 'http://127.0.0.1:5009',
   notification: process.env.NOTIFICATION_SERVICE_URL || 'http://127.0.0.1:8111',
   documents: process.env.DOCUMENTS_SERVICE_URL || 'http://127.0.0.1:8112',
   analytics: process.env.ANALYTICS_SERVICE_URL || 'http://127.0.0.1:5012',
@@ -161,9 +160,6 @@ const SERVICE_ROUTES = {
 
   // Leave service (port 5017)
   'leaves': SERVICE_URLS.leave,
-
-  // Visitors service (port 5009)
-  'visitors': SERVICE_URLS.visitors,
 
   // Analytics service (port 5012)
   'analytics': SERVICE_URLS.analytics,

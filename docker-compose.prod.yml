@@ -92,7 +92,6 @@ services:
       DECEASED_SERVICE_URL: http://restpoint_deceased_service:5000
       INVOICES_SERVICE_URL: http://restpoint_invoice_service:5000
       COFFIN_SERVICE_URL: http://restpoint_coffin_service:5000
-      VISITORS_SERVICE_URL: http://restpoint_visitors_service:5000
       NOTIFICATION_SERVICE_URL: http://restpoint_notification_service:5000
       DOCUMENTS_SERVICE_URL: http://restpoint_documents_service:5000
       ANALYTICS_SERVICE_URL: http://restpoint_analytics_service:5000
@@ -402,36 +401,6 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - socketio_service_data:/usr/src/app/data
-    networks:
-      - restpoint_network
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  visitors-service:
-    build:
-      context: .
-      dockerfile: services/visitors-service/Dockerfile
-    image: restpoint-visitors-service:latest
-    container_name: restpoint_visitors_service
-    restart: always
-    ports:
-      - "${VISITORS_SERVICE_EXTERNAL_PORT:-5014}:5000"
-    env_file:
-      - .env.production
-    environment:
-      NODE_ENV: production
-      PORT: 5000
-      SERVICE_NAME: visitors-service
-      DB_HOST: restpoint_mariadb
-      DB_PORT: 3306
-      REDIS_HOST: restpoint_redis
-      REDIS_PORT: 6379
-    volumes:
-      - visitors_service_data:/usr/src/app/data
     networks:
       - restpoint_network
     healthcheck:
@@ -784,8 +753,6 @@ volumes:
   notification_service_data:
     driver: local
   socketio_service_data:
-    driver: local
-  visitors_service_data:
     driver: local
   bodycheckout_service_data:
     driver: local
