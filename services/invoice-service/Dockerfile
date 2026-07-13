@@ -17,11 +17,9 @@ COPY services/invoice-service/package.json ./services/invoice-service/
 
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
-COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY app-global/ ./global/
-
+COPY services/app-global/ ./app-global/
 
 COPY services/invoice-service/ ./services/invoice-service/
 

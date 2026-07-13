@@ -316,7 +316,7 @@ app.post('/v1/restpoint/documents/share', async (req, res) => {
 });
 
 // ============ ERROR HANDLERS ============
-const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+const { notFoundHandler, errorHandler } = require('../../services/app-global/middlewares/errorHandler');
 app.use(notFoundHandler);
 app.use(errorHandler);
 

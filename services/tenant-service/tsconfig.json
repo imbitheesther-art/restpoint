@@ -10,7 +10,7 @@
     "strict": false,
     "noImplicitAny": false,
     "noUncheckedIndexedAccess": false,
-    "allowJs": true
+    "allowJs": true,
   },
   "include": [
     "server.ts",
@@ -24,7 +24,7 @@
     "types/**/*.ts",
     "migrations/**/*.ts",
     "../../shared/**/*.ts",
-    "../../global/**/*.js"
+    "../../app-global/**/*.js"
   ],
   "exclude": [
     "node_modules",

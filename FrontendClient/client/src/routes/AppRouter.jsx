@@ -2,7 +2,7 @@ import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 import { tenantApi } from '../api/tenant.api';
-import { useTenantStore } from '../components/store/useTenantStore';
+import { useTenantStore } from '../modules/seo/useTenantStore';
 import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
@@ -21,6 +21,14 @@ const FuneralHomeSoftware = lazy(() => import('../modules/landing/FuneralHomeSof
 const OnboardingFlow = lazy(() => import('../modules/onboarding/OnboardingFlow'));
 const InsurancePage = lazy(() => import('../modules/insurance/insurance'));
 const MemorialPage = lazy(() => import('../modules/memorial/MemorialPage'));
+
+// SEO Pages - Topic Cluster
+const MortuaryManagementSoftware = lazy(() => import('../modules/seo/MortuaryManagementSoftware'));
+const FuneralHomeManagementSoftware = lazy(() => import('../modules/seo/FuneralHomeManagementSoftware'));
+const HospitalMortuarySoftware = lazy(() => import('../modules/seo/HospitalMortuarySoftware'));
+const HearseManagementSoftware = lazy(() => import('../modules/seo/HearseManagementSoftware'));
+const MortuaryBillingSoftware = lazy(() => import('../modules/seo/MortuaryBillingSoftware'));
+const PricingPage = lazy(() => import('../modules/seo/PricingPage'));
 
 // Blog and Resource Pages
 const FuneralWelfareGuide = lazy(() => import('../modules/blog/FuneralWelfareGuide'));
@@ -43,19 +51,19 @@ const LogsPage = lazy(() => import('../modules/resources/LogsPage'));
 const LocationPage = lazy(() => import('../modules/locations/LocationPage'));
 const NairobiFuneralWelfare = lazy(() => import('../modules/locations/NairobiFuneralWelfare'));
 
-const PrivacyPolicy = lazy(() => import('../components/pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('../components/pages/TermsOfService'));
-const AccountDeletion = lazy(() => import('../components/pages/AccountDeletion'));
-const DataMigrationPolicy = lazy(() => import('../components/pages/DataMigrationPolicy'));
-const SecurityPolicy = lazy(() => import('../components/pages/securityPolicy'));
-const SLAPolicy = lazy(() => import('../components/pages/slaPolicy'));
-const ReleasePolicy = lazy(() => import('../components/pages/releasePolicy'));
-const CookiesPolicy = lazy(() => import('../components/pages/CookiesPolicy'));
+const PrivacyPolicy = lazy(() => import('../modules/pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('../modules/pages/TermsOfService'));
+const AccountDeletion = lazy(() => import('../modules/pages/AccountDeletion'));
+const DataMigrationPolicy = lazy(() => import('../modules/pages/DataMigrationPolicy'));
+const SecurityPolicy = lazy(() => import('../modules/pages/securityPolicy'));
+const SLAPolicy = lazy(() => import('../modules/pages/slaPolicy'));
+const ReleasePolicy = lazy(() => import('../modules/pages/releasePolicy'));
+const CookiesPolicy = lazy(() => import('../modules/pages/CookiesPolicy'));
 const SupportPage = lazy(() => import('../components/support/SupportPage'));
 const AdminSupportDashboard = lazy(() => import('../components/support/AdminSupportDashboard'));
-const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
-const AboutPage = lazy(() => import('../components/pages/AboutPage'));
-const ContactPage = lazy(() => import('../components/pages/ContactPage'));
+const WhyUsPage = lazy(() => import('../modules/pages/WhyUsPage'));
+const AboutPage = lazy(() => import('../modules/pages/AboutPage'));
+const ContactPage = lazy(() => import('../modules/pages/ContactPage'));
 const WeltTallisAbout = lazy(() => import('../modules/about/WeltTallisAbout'));
 const LoginPage = lazy(() => import('../components/auth/login'));
 const PortalLoginPage = lazy(() => import('../components/auth/PortalLogin'));
@@ -73,7 +81,7 @@ const DeceasedDetails = lazy(() => import('../components/deceasedprofile/decease
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
 
-const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
+const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
 const UserManagement = lazy(() => import('../components/modals/users'));
 const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemorialPage'));
@@ -140,6 +148,15 @@ const DashboardLayout = ({ children, tenantData }) => {
       <div style={{ display: 'flex', flex: 1 }}>
         <ModernSidebar tenantData={tenantData} userData={{ name: user?.full_name || user?.name, role: user?.role || 'Administrator' }} onLogout={handleLogout} onToggle={handleSidebarToggle} />
         <main style={{ flex: 1, marginLeft, padding: contentPadding, minHeight: 'calc(100vh - 60px)', background: '#F7F9FB', transition: 'margin-left 0.3s ease, padding 0.3s ease' }}>
+          {/* Top Bar with Notification Bell */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: '0 0 1rem 0',
+            gap: '1rem',
+          }}>
+          </div>
           <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
         </main>
       </div>
@@ -490,6 +507,14 @@ const AppRouter = () => (
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/support" element={<SupportPage />} />
       <Route path="/support/:slug" element={<SupportPage />} />
+
+      // SEO Topic Cluster Routes
+      <Route path="/mortuary-management-software" element={<MortuaryManagementSoftware />} />
+      <Route path="/funeral-home-management-software" element={<FuneralHomeManagementSoftware />} />
+      <Route path="/hospital-mortuary-software" element={<HospitalMortuarySoftware />} />
+      <Route path="/hearse-management" element={<HearseManagementSoftware />} />
+      <Route path="/mortuary-billing" element={<MortuaryBillingSoftware />} />
+      <Route path="/pricing" element={<PricingPage />} />
 
       // Blog and Resource Routes
       <Route path="/blog/funeral-welfare-management" element={<FuneralWelfareGuide />} />

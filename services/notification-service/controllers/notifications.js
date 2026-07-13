@@ -24,12 +24,12 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
 
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-    
-    const recentDeceased = await safeTenantQuery(tenantDbName, 
+
+    const recentDeceased = await safeTenantQuery(tenantDbName,
       `SELECT * FROM deceased WHERE created_at >= ? OR updated_at >= ?`,
       [oneHourAgo, oneHourAgo]
     );
-    
+
     console.log(`🧾 Found ${recentDeceased.length} recent deceased record(s) for ${tenantDbName}.`);
 
     for (const deceased of recentDeceased) {
@@ -41,7 +41,7 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
         total_mortuary_charge,
         created_at,
       } = deceased;
-      
+
       console.log(`⚰️ Processing deceased ID: ${deceased_id} - Name: ${full_name}`);
 
       const deceasedDetails = `Name: ${full_name}, DOB: ${date_of_birth || 'N/A'}, Status: ${status || 'N/A'}, Mortuary Charge: KES ${total_mortuary_charge || 0}`;
@@ -60,7 +60,7 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
         `SELECT * FROM notifications WHERE deceased_id = ? AND type = 'autopsy_done'`,
         [deceased_id],
       );
-      
+
       if (existingAutopsy.length === 0) {
         const autopsy = await safeTenantQuery(tenantDbName,
           `SELECT * FROM postmortem WHERE deceased_id = ?`,
@@ -81,7 +81,7 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
         `SELECT * FROM notifications WHERE deceased_id = ? AND type = 'dispatch_created'`,
         [deceased_id],
       );
-      
+
       if (existingDispatch.length === 0) {
         const dispatch = await safeTenantQuery(tenantDbName,
           `SELECT * FROM vehicle_dispatch WHERE deceased_id = ? ORDER BY created_at DESC LIMIT 1`,
@@ -161,7 +161,7 @@ async function handleDeceasedNotifications(tenantDbName, io = null) {
   }
 }
 
-async function insertNotification(tenantDbName, deceased_id, type, message, io = null) {
+async function insertNotification(tenantDbName, deceased_id, type, message, io = null, branch_id = null) {
   const existing = await safeTenantQuery(tenantDbName,
     `SELECT * FROM notifications WHERE deceased_id = ? AND type = ?`,
     [deceased_id, type],
@@ -175,16 +175,17 @@ async function insertNotification(tenantDbName, deceased_id, type, message, io =
   const formattedDate = getKenyaTimeISO();
 
   const result = await safeTenantQuery(tenantDbName,
-    `INSERT INTO notifications (deceased_id, type, message, created_at, is_read)
-     VALUES (?, ?, ?, ?, ?)`,
-    [deceased_id, type, message, formattedDate, 0],
+    `INSERT INTO notifications (deceased_id, branch_id, type, message, created_at, is_read)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [deceased_id, branch_id, type, message, formattedDate, 0],
   );
 
-  console.log(`✅ Registered: ${type} - ID: ${deceased_id}`);
+  console.log(`✅ Registered: ${type} - ID: ${deceased_id}${branch_id ? ` - Branch: ${branch_id}` : ''}`);
 
   const notification = {
     id: result.insertId,
     deceased_id,
+    branch_id,
     type,
     message,
     created_at: formattedDate,
@@ -203,33 +204,33 @@ async function insertNotification(tenantDbName, deceased_id, type, message, io =
 // ====================== CREATE NOTIFICATION (Real-time API) ======================
 async function createNotification(req, res) {
   try {
-    const { deceased_id, type, message } = req.body;
+    const { deceased_id, type, message, branch_id } = req.body;
     const tenantDb = req.tenantDbName || req.headers['x-tenant-db'];
-    
+
     if (!tenantDb) {
       return res.status(400).json({ success: false, message: 'Tenant DB not provided' });
     }
-    
+
     if (!deceased_id || !type || !message) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'deceased_id, type, and message are required' 
+      return res.status(400).json({
+        success: false,
+        message: 'deceased_id, type, and message are required'
       });
     }
 
-    const notification = await insertNotification(tenantDb, deceased_id, type, message, req.io);
-    
+    const notification = await insertNotification(tenantDb, deceased_id, type, message, req.io, branch_id);
+
     if (!notification) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Notification already exists (duplicate)' 
+      return res.status(409).json({
+        success: false,
+        message: 'Notification already exists (duplicate)'
       });
     }
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       message: 'Notification created successfully',
-      data: notification 
+      data: notification
     });
   } catch (error) {
     console.error('❌ Failed to create notification:', error.message);
@@ -246,10 +247,26 @@ async function getAllNotifications(req, res) {
     const tenantDb = req.tenantDbName || req.headers['x-tenant-db'];
     if (!tenantDb) return res.status(400).json({ success: false, message: 'Tenant DB not provided' });
 
-    const notifications = await safeTenantQuery(tenantDb, `
-      SELECT * FROM notifications
-      ORDER BY created_at DESC
-    `);
+    // Get branch_id from query params or headers - filter by branch if provided
+    const branchId = req.query.branch_id || req.headers['x-branch-id'] || null;
+
+    let notifications;
+    if (branchId) {
+      notifications = await safeTenantQuery(tenantDb, `
+        SELECT n.*, d.full_name as deceased_name
+        FROM notifications n
+        LEFT JOIN deceased d ON n.deceased_id = d.deceased_id
+        WHERE n.branch_id = ? OR n.branch_id IS NULL
+        ORDER BY n.created_at DESC
+      `, [branchId]);
+    } else {
+      notifications = await safeTenantQuery(tenantDb, `
+        SELECT n.*, d.full_name as deceased_name
+        FROM notifications n
+        LEFT JOIN deceased d ON n.deceased_id = d.deceased_id
+        ORDER BY n.created_at DESC
+      `);
+    }
 
     res.status(200).json({ success: true, count: notifications.length, data: notifications });
   } catch (error) {

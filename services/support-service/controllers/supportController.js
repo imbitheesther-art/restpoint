@@ -3,54 +3,8 @@ const axios = require('axios');
 const dotenv = require('dotenv');
 dotenv.config();
 
-// Auto-create tables on startup
-(async () => {
-    try {
-        const conn = await mysql.createConnection({
-            host: process.env.DB_HOST || '127.0.0.1',
-            port: process.env.DB_PORT || 3306,
-            user: process.env.DB_USER || 'restpoint_user',
-            password: process.env.DB_PASSWORD || 'RestPointUser2024!',
-            database: process.env.DB_NAME || 'support_db',
-        });
-        await conn.query(`
-            CREATE TABLE IF NOT EXISTS support_tickets (
-                ticket_id INT AUTO_INCREMENT PRIMARY KEY,
-                tenant_slug VARCHAR(100) NOT NULL,
-                tenant_name VARCHAR(255),
-                user_email VARCHAR(255),
-                user_name VARCHAR(255),
-                type VARCHAR(50) DEFAULT 'help',
-                subject VARCHAR(500) NOT NULL,
-                message TEXT NOT NULL,
-                status VARCHAR(50) DEFAULT 'open',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_tenant (tenant_slug),
-                INDEX idx_status (status),
-                INDEX idx_created (created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        await conn.query(`
-            CREATE TABLE IF NOT EXISTS ticket_replies (
-                reply_id INT AUTO_INCREMENT PRIMARY KEY,
-                ticket_id INT NOT NULL,
-                user_type VARCHAR(50) NOT NULL,
-                message TEXT NOT NULL,
-                tenant_slug VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (ticket_id) REFERENCES support_tickets(ticket_id) ON DELETE CASCADE,
-                INDEX idx_ticket (ticket_id),
-                INDEX idx_tenant (tenant_slug)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        await conn.release();
-        console.log('Support tables ready');
-    } catch (err) {
-        console.error(' Table init error:', err.message);
-    }
-})();
-
+// Database migrations are handled by services/support-service/init-db.js
+// using centralized migrations from services/tenant-service/migrations/support/
 const pool = mysql.createPool({
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,

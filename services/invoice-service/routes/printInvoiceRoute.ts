@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 // @ts-ignore - authMiddleware is JavaScript, not TypeScript
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
 // @ts-ignore - Controller is JavaScript, not TypeScript
 const printInvoiceCtrl = require('../controllers/printinvoice');
 

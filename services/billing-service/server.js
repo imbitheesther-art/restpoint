@@ -37,7 +37,7 @@ app.use(helmet());
 app.use(express.json());
 
 // Import auth middleware
-const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../services/app-global/middlewares/authMiddleware');
 
 // Rate limiting
 const limiter = rateLimit({
@@ -486,7 +486,7 @@ app.post('/api/v1/restpoint/billing/fallback-status', (req, res) => {
 // ============================================
 // ERROR HANDLERS
 // ============================================
-const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+const { notFoundHandler, errorHandler } = require('../../services/app-global/middlewares/errorHandler');
 app.use(notFoundHandler);
 app.use(errorHandler);
 

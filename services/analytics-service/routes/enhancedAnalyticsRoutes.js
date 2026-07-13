@@ -3,7 +3,7 @@ const router = express.Router();
 const enhancedAnalyticsController = require('../controllers/enhancedAnalytics');
 
 // Import authentication middleware
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
 
 // All enhanced analytics routes require authentication
 router.use(protect);

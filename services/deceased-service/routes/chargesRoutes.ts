@@ -9,7 +9,7 @@ import {
 const router = Router();
 
 // Import authentication middleware
-const { protect } = require('../../../global/middlewares/authMiddleware');
+const { protect } = require('../../../services/app-global/middlewares/authMiddleware');
 
 // All routes are protected with JWT authentication
 router.use(protect);

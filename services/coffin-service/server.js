@@ -1,10 +1,31 @@
+// Load service-specific .env first, then root .env for shared config (with override)
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'), override: true });
+
+// Debug: Check if DB credentials are loaded
+console.log('[COFFIN] DB_USER:', process.env.DB_USER);
+console.log('[COFFIN] DB_PASSWORD:', process.env.DB_PASSWORD ? '***' : 'NOT SET');
+console.log('[COFFIN] DB_HOST:', process.env.DB_HOST);
+console.log('[COFFIN] DB_NAME:', process.env.DB_NAME);
+
+// NOW load modules that depend on environment variables
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+
+// Load routes AFTER .env is loaded so dbConfig can read DB credentials
 const coffinRoutes = require('./routes/coffinRoutes.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 8108;
+
+// CORS configuration
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code']
+};
 
 // Simple logger
 const logger = {
@@ -34,33 +55,10 @@ process.on('exit', (code) => {
   logger.info(`Process exiting with code: ${code}`);
 });
 
-// Load routes with error handling
-let routes;
-try {
-  logger.info('Loading routes...');
-  routes = require('./routes/coffinRoutes.cjs');
-  logger.info('Routes loaded successfully');
-  logger.info('Routes type:', typeof routes);
-  logger.info('Routes has stack:', !!routes.stack);
-  if (routes.stack) {
-    logger.info('Number of layers:', routes.stack.length);
-    routes.stack.forEach((layer, i) => {
-      if (layer.route) {
-        const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase()).join(', ');
-        logger.info(`  Route ${i}: ${methods} ${layer.route.path}`);
-      } else if (layer.name === 'router') {
-        logger.info(`  Layer ${i}: Router middleware`);
-      }
-    });
-  }
-} catch (routeError) {
-  logger.error('Failed to load routes', routeError);
-  const { Router } = require('express');
-  routes = Router();
-  routes.get('/', (req, res) => res.status(503).json({ success: false, message: 'Routes loading error' }));
-}
+// Mount routes
+const routes = coffinRoutes;
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

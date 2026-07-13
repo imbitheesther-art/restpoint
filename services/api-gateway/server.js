@@ -32,7 +32,7 @@ const SERVICE_URLS = {
   auth: process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:5001',
   tenant: process.env.TENANT_SERVICE_URL || 'http://127.0.0.1:5002',
   deceased: process.env.DECEASED_SERVICE_URL || 'http://127.0.0.1:5003',
-  coffin: process.env.COFFIN_SERVICE_URL || 'http://127.0.0.1:8108',
+  coffin: process.env.COFFIN_SERVICE_URL || 'http://127.0.0.1:5008',
   marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://127.0.0.1:5005',
   mpesa: process.env.MPESA_SERVICE_URL || 'http://127.0.0.1:5006',
   portal: process.env.PORTAL_SERVICE_URL || 'http://127.0.0.1:5007',
@@ -68,7 +68,7 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'QUERY', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'Origin', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code', 'Origin', 'X-Requested-With', 'Accept'],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
@@ -103,7 +103,11 @@ const SERVICE_ROUTES = {
   'auth': SERVICE_URLS.auth,
   'login': SERVICE_URLS.auth,
   'register': SERVICE_URLS.auth,
+  'logout': SERVICE_URLS.auth,
+  'refresh': SERVICE_URLS.auth,
   'users': SERVICE_URLS.auth,
+  'change-password': SERVICE_URLS.auth,
+  'me': SERVICE_URLS.auth,
 
   // Tenant service (port 8002)
   'tenant': SERVICE_URLS.tenant,

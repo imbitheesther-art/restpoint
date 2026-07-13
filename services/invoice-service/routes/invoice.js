@@ -1,6 +1,6 @@
 import { Router } from 'express';
 // @ts-ignore - authMiddleware is JavaScript, not TypeScript
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
 import { getInvoicesByDeceased } from '../controllers/invoice';
 
 const router = Router();

@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Container, Row, Col, Alert, Spinner, Card, Badge, Modal, Button, Form, Table, Dropdown, InputGroup
+    Row, Col, Spinner, Modal, Button, Form, Table, Dropdown
 } from 'react-bootstrap';
 import './hearseBookings.css';
 import { useSocket } from '../../context/socketContext';
-import { Eye, RefreshCw, Clock, User, Car, CheckCircle, XCircle, AlertCircle, Calendar, Phone, Truck, Search, MoreVertical, MapPin, Activity } from 'lucide-react';
+import {
+    Eye, RefreshCw, User, Car, CheckCircle, XCircle, AlertCircle,
+    Calendar, Truck, Search, MoreVertical, MapPin, Plus, Wrench
+} from 'lucide-react';
 import env from '../../config/env';
 
 const API_BASE_URL = `${env.FULL_API_URL}`;
@@ -13,21 +16,30 @@ const getTenantSlug = () => {
     return localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
 };
 
+const getAuthHeaders = () => {
+    const token = sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    const headers = { 'x-tenant-slug': getTenantSlug() };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+};
+
 const bookingService = {
     getBookings: async () => {
-        const r = await fetch(`${API_BASE_URL}/hearse-bookings`, { headers: { 'x-tenant-slug': getTenantSlug() } });
+        const r = await fetch(`${API_BASE_URL}/hearse-bookings`, { headers: getAuthHeaders() });
         if (!r.ok) throw new Error('Failed');
         return (await r.json()).bookings || [];
     },
     getAllHearses: async () => {
-        const r = await fetch(`${API_BASE_URL}/hearses`, { headers: { 'x-tenant-slug': getTenantSlug() } });
+        const r = await fetch(`${API_BASE_URL}/hearses`, { headers: getAuthHeaders() });
         if (!r.ok) throw new Error('Failed');
         return (await r.json()).hearses || [];
     },
     createBooking: async (data) => {
+        const headers = getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
         const r = await fetch(`${API_BASE_URL}/hearse-bookings`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-tenant-slug': getTenantSlug() },
+            headers,
             body: JSON.stringify(data)
         });
         if (!r.ok) {
@@ -45,16 +57,18 @@ const bookingService = {
         fd.append('branch_code', data.branch_code || '');
         const r = await fetch(`${API_BASE_URL}/hearses`, {
             method: 'POST',
-            headers: { 'x-tenant-slug': getTenantSlug() },
+            headers: getAuthHeaders(),
             body: fd
         });
         if (!r.ok) throw new Error('Failed');
         return r.json();
     },
     updateBookingStatus: async (bookingId, status) => {
+        const headers = getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
         const r = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/status`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'x-tenant-slug': getTenantSlug() },
+            headers,
             body: JSON.stringify({ status })
         });
         if (!r.ok) {
@@ -64,9 +78,11 @@ const bookingService = {
         return await r.json();
     },
     postponeBooking: async (bookingId, data) => {
+        const headers = getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
         const r = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/postpone`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'x-tenant-slug': getTenantSlug() },
+            headers,
             body: JSON.stringify(data)
         });
         if (!r.ok) {
@@ -82,18 +98,39 @@ const genId = (id) => `BK-${String(id).padStart(4, '0')}`;
 
 const StatusBadge = ({ status }) => {
     const cfg = {
-        booked: { label: 'BOOKED', color: 'primary' },
-        in_transit: { label: 'IN TRANSIT', color: 'info' },
-        completed: { label: 'COMPLETED', color: 'success' },
-        cancelled: { label: 'CANCELLED', color: 'danger' },
-        postponed: { label: 'POSTPONED', color: 'warning' },
-        maintenance: { label: 'MAINTENANCE', color: 'warning' }
+        booked: 'BOOKED',
+        in_transit: 'IN TRANSIT',
+        completed: 'COMPLETED',
+        cancelled: 'CANCELLED',
+        postponed: 'POSTPONED',
+        maintenance: 'MAINTENANCE'
     };
-    const c = cfg[status] || { label: status?.toUpperCase() || 'UNKNOWN', color: 'secondary' };
-    return <Badge bg={c.color} className="fw-bold px-3 py-2" style={{ borderRadius: '20px', minWidth: '80px' }}>{c.label}</Badge>;
+    return (
+        <span className={`hb-status ${status || ''}`}>
+            <span className="hb-status-dot" />
+            {cfg[status] || status?.toUpperCase() || 'UNKNOWN'}
+        </span>
+    );
 };
 
-// Available Hearses Modal
+/* Toast Notification */
+const Toast = ({ message, type, onDone }) => {
+    useEffect(() => {
+        const t = setTimeout(() => {
+            onDone();
+        }, 3500);
+        return () => clearTimeout(t);
+    }, [onDone]);
+
+    return (
+        <div className={`hb-toast ${type}`}>
+            {type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+            {message}
+        </div>
+    );
+};
+
+/* Available Hearses Modal */
 const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     const [hearses, setHearses] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -120,14 +157,12 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     const loadHearses = async () => {
         setLoading(true);
         try {
-            const r = await fetch(`${API_BASE_URL}/hearses?t=${Date.now()}`, {
-                headers: { 'x-tenant-slug': getTenantSlug() }
+            const r = await fetch(`${API_BASE_URL}/hearses/available?t=${Date.now()}`, {
+                headers: getAuthHeaders()
             });
             const data = await r.json();
             const hearses = data.hearses || data || [];
-            // Filter by is_active (1 = active/available) since status field may not exist
-            const available = hearses.filter(h => h.is_active === 1 || h.is_active === true || h.status === 'available');
-            setHearses(available);
+            setHearses(hearses);
         } catch (e) {
             console.error('Failed to load hearses:', e);
         } finally {
@@ -142,13 +177,19 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
         }
         setSubmitting(true);
         try {
+            // Get logged-in user info
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : {};
+            const bookedByUser = user?.user_slug || user?.username || user?.full_name || 'unknown';
+
             const bookingData = {
                 hearse_id: selected.id,
                 client_name: clientName,
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
                 from_timestamp: bookingDate,
-                to_timestamp: bookingDate
+                to_timestamp: bookingDate,
+                booked_by: bookedByUser
             };
 
             const userId = localStorage.getItem('userId') || localStorage.getItem('user_id');
@@ -167,28 +208,34 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
-            <Modal.Header closeButton className="border-0" style={{ background: '#1a1a2e' }}>
-                <Modal.Title className="fw-bold text-white">
-                    <Truck size={20} className="me-2" />
+        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark">
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    <Truck size={18} />
                     Available Hearses
-                    <Badge bg="light" className="ms-2 text-dark">{hearses.length} vehicles</Badge>
+                    <span className="hb-count-badge accent">{hearses.length}</span>
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body className="p-4">
+            <Modal.Body>
                 {!selected ? (
                     <>
                         {loading ? (
-                            <div className="text-center py-4"><Spinner animation="border" variant="primary" /></div>
+                            <div className="text-center py-4">
+                                <div className="hb-loading-spinner" />
+                                <p className="text-muted small mt-2">Loading available vehicles...</p>
+                            </div>
                         ) : hearses.length === 0 ? (
-                            <div className="text-center py-5">
-                                <Car size={48} className="text-muted mb-3" />
-                                <h5 className="text-muted">No hearses available</h5>
+                            <div className="hb-modal-empty">
+                                <div className="hb-modal-empty-icon">
+                                    <Car size={28} />
+                                </div>
+                                <h5>No hearses available</h5>
+                                <p className="text-muted small mb-0">All vehicles are currently booked or in maintenance</p>
                             </div>
                         ) : (
                             <div className="table-responsive">
-                                <Table hover size="sm" className="mb-0">
-                                    <thead style={{ background: '#f8f9fa' }}>
+                                <Table hover size="sm" className="hb-modal-table mb-0">
+                                    <thead>
                                         <tr>
                                             <th>Name</th>
                                             <th>Plate</th>
@@ -201,18 +248,13 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                                         {hearses.map(h => (
                                             <tr key={h.id}>
                                                 <td><strong>{h.hearse_name || 'N/A'}</strong></td>
-                                                <td><Badge bg="primary">{h.plate_number || h.number_plate}</Badge></td>
-                                                <td className="d-none d-md-table-cell">{h.model || 'N/A'}</td>
-                                                <td className="d-none d-md-table-cell">{h.branch_code || h.branch_name || 'N/A'}</td>
+                                                <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
+                                                <td className="d-none d-md-table-cell text-muted">{h.model || 'N/A'}</td>
+                                                <td className="d-none d-md-table-cell text-muted">{h.branch_code || h.branch_name || 'N/A'}</td>
                                                 <td className="text-center">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="success"
-                                                        onClick={() => setSelected(h)}
-                                                        style={{ borderRadius: '20px', padding: '4px 16px' }}
-                                                    >
-                                                        <Car size={14} className="me-1" />Book
-                                                    </Button>
+                                                    <button className="hb-btn-book-sm" onClick={() => setSelected(h)}>
+                                                        <Car size={13} /> Book
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -223,55 +265,43 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                     </>
                 ) : (
                     <>
-                        <div className="alert alert-info border-0 shadow-sm mb-4">
-                            <div className="d-flex align-items-center">
-                                <Car size={24} className="me-3 text-primary" />
-                                <div>
-                                    <strong>{selected.hearse_name}</strong>
-                                    <Badge bg="primary" className="ms-2">{selected.plate_number || selected.number_plate}</Badge>
-                                    <div className="small text-muted">{selected.model} • {selected.capacity} seats</div>
-                                </div>
-                                <Button variant="outline-secondary" size="sm" className="ms-auto" onClick={() => setSelected(null)}>
-                                    ← Change
-                                </Button>
+                        <div className="hb-selected-info">
+                            <div className="hb-selected-icon">
+                                <Car size={22} />
                             </div>
+                            <div className="hb-selected-details">
+                                <strong>{selected.hearse_name}</strong>
+                                <span className="hb-plate-badge ms-2">{selected.plate_number || selected.number_plate}</span>
+                                <div className="sub">{selected.model} • {selected.capacity} seats</div>
+                            </div>
+                            <Button variant="link" className="text-muted p-0 ms-auto" onClick={() => setSelected(null)} style={{ fontSize: '0.82rem', textDecoration: 'none' }}>
+                                ← Change
+                            </Button>
                         </div>
 
-                        <h6 className="fw-bold mb-3">Booking Details</h6>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold">Booking Date & Time *</Form.Label>
-                            <Form.Control
-                                type="datetime-local"
-                                value={bookingDate}
-                                onChange={e => setBookingDate(e.target.value)}
-                                className="border-0 bg-light"
-                                style={{ borderRadius: '10px' }}
-                                required
-                            />
-                        </Form.Group>
+                        <div className="hb-section-label">Booking Details</div>
                         <Row>
                             <Col xs={12} md={6}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">Client Name *</Form.Label>
+                                    <Form.Label className="hb-form-label">Booking Date *</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        value={bookingDate}
+                                        onChange={e => setBookingDate(e.target.value)}
+                                        className="hb-form-control"
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col xs={12} md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="hb-form-label">Client Name *</Form.Label>
                                     <Form.Control
                                         value={clientName}
                                         onChange={e => setClientName(e.target.value)}
                                         placeholder="Full name"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
+                                        className="hb-form-control"
                                         required
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">Phone</Form.Label>
-                                    <Form.Control
-                                        value={clientPhone}
-                                        onChange={e => setClientPhone(e.target.value)}
-                                        placeholder="0712345678"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
                                     />
                                 </Form.Group>
                             </Col>
@@ -279,47 +309,58 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                         <Row>
                             <Col xs={12} md={6}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">From *</Form.Label>
+                                    <Form.Label className="hb-form-label">Phone</Form.Label>
+                                    <Form.Control
+                                        value={clientPhone}
+                                        onChange={e => setClientPhone(e.target.value)}
+                                        placeholder="0712345678"
+                                        className="hb-form-control"
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col xs={12} md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="hb-form-label">From *</Form.Label>
                                     <Form.Control
                                         value={fromLocation}
                                         onChange={e => setFromLocation(e.target.value)}
                                         placeholder="Pickup location"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
+                                        className="hb-form-control"
                                         required
                                     />
                                 </Form.Group>
                             </Col>
                             <Col xs={12} md={6}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold">To *</Form.Label>
+                                    <Form.Label className="hb-form-label">To *</Form.Label>
                                     <Form.Control
                                         value={toLocation}
                                         onChange={e => setToLocation(e.target.value)}
                                         placeholder="Destination"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
+                                        className="hb-form-control"
                                         required
                                     />
                                 </Form.Group>
                             </Col>
                         </Row>
-                        <div className="d-flex justify-content-between mt-3">
-                            <Button variant="outline-secondary" onClick={() => setSelected(null)}>
+                        <div className="d-flex justify-content-between mt-4">
+                            <button type="button" className="hb-btn hb-btn-ghost" onClick={() => setSelected(null)}>
                                 ← Back
-                            </Button>
-                            <Button
-                                variant="success"
+                            </button>
+                            <button
+                                type="button"
+                                className="hb-btn hb-btn-green"
                                 onClick={handleBook}
                                 disabled={!bookingDate || !clientName || !fromLocation || !toLocation || submitting}
-                                style={{ borderRadius: '20px', padding: '8px 30px' }}
                             >
                                 {submitting ? (
-                                    <><Spinner animation="border" size="sm" className="me-2" />Booking...</>
+                                    <><span className="hb-loading-spinner" style={{ width: 16, height: 16, borderWidth: 2, margin: 0, marginRight: 8, display: 'inline-block', verticalAlign: 'middle' }} />Booking...</>
                                 ) : (
-                                    <><CheckCircle size={16} className="me-2" />Confirm Booking</>
+                                    <><CheckCircle size={16} />Confirm Booking</>
                                 )}
-                            </Button>
+                            </button>
                         </div>
                     </>
                 )}
@@ -328,106 +369,243 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     );
 };
 
-// Postpone Modal
+/* Postpone Modal */
 const PostponeModal = ({ show, onHide, booking, onPostpone }) => {
     const [date, setDate] = useState('');
-    const [time, setTime] = useState('');
     const [reason, setReason] = useState('');
 
     useEffect(() => {
         if (booking) {
             const d = new Date(booking.booking_date || booking.estimated_departure_time || new Date());
             setDate(d.toISOString().split('T')[0]);
-            setTime(d.toTimeString().slice(0, 5));
             setReason('');
         }
     }, [booking]);
 
     const submit = async (e) => {
         e.preventDefault();
-        await onPostpone(booking.booking_id, { new_departure_time: `${date}T${time}`, reason });
+        await onPostpone(booking.booking_id, { new_departure_time: date, reason });
         onHide();
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered>
-            <Modal.Header closeButton className="border-0" style={{ background: '#ffc107' }}>
-                <Modal.Title className="fw-bold text-dark">
-                    <Calendar size={20} className="me-2" />
+        <Modal show={show} onHide={onHide} centered className="hb-modal hb-modal-amber">
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    <Calendar size={18} />
                     Postpone Booking
                 </Modal.Title>
             </Modal.Header>
             <form onSubmit={submit}>
-                <Modal.Body className="p-4">
-                    <div className="alert alert-warning border-0 shadow-sm">
-                        <AlertCircle size={16} className="me-2" />
-                        Postponing <strong>{genId(booking?.booking_id)}</strong> for {booking?.client_name}
+                <Modal.Body>
+                    <div className="hb-notice warning">
+                        <AlertCircle size={18} />
+                        <span>Postponing <strong>{genId(booking?.booking_id)}</strong> for {booking?.client_name}</span>
                     </div>
                     <Row>
-                        <Col xs={12} md={6}>
+                        <Col xs={12}>
                             <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold">New Date *</Form.Label>
+                                <Form.Label className="hb-form-label">New Date *</Form.Label>
                                 <Form.Control
                                     type="date"
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
-                                    className="border-0 bg-light"
-                                    style={{ borderRadius: '10px' }}
-                                    required
-                                />
-                            </Form.Group>
-                        </Col>
-                        <Col xs={12} md={6}>
-                            <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold">New Time *</Form.Label>
-                                <Form.Control
-                                    type="time"
-                                    value={time}
-                                    onChange={e => setTime(e.target.value)}
-                                    className="border-0 bg-light"
-                                    style={{ borderRadius: '10px' }}
+                                    className="hb-form-control"
                                     required
                                 />
                             </Form.Group>
                         </Col>
                     </Row>
                     <Form.Group>
-                        <Form.Label className="fw-semibold">Reason</Form.Label>
+                        <Form.Label className="hb-form-label">Reason</Form.Label>
                         <Form.Control
                             as="textarea"
                             rows={2}
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                             placeholder="Why is this booking being postponed?"
-                            className="border-0 bg-light"
-                            style={{ borderRadius: '10px' }}
+                            className="hb-form-control"
                         />
                     </Form.Group>
                 </Modal.Body>
-                <Modal.Footer className="border-0">
-                    <Button variant="outline-secondary" onClick={onHide}>Cancel</Button>
-                    <Button
-                        variant="warning"
-                        type="submit"
-                        style={{ borderRadius: '20px', padding: '8px 30px' }}
-                    >
-                        Confirm Postpone
-                    </Button>
+                <Modal.Footer>
+                    <button type="button" className="hb-btn hb-btn-ghost" onClick={onHide}>Cancel</button>
+                    <button type="submit" className="hb-btn hb-btn-amber">Confirm Postpone</button>
                 </Modal.Footer>
             </form>
         </Modal>
     );
 };
 
-// Main Component
+/* All Hearses Modal */
+const AllHearsesModal = ({ show, onHide, hearses }) => {
+    const bookedPlates = new Set();
+    return (
+        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark">
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    <Car size={18} />
+                    All Hearses
+                    <span className="hb-count-badge accent">{hearses.length}</span>
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {hearses.length === 0 ? (
+                    <div className="hb-modal-empty">
+                        <div className="hb-modal-empty-icon"><Car size={28} /></div>
+                        <h5>No hearses registered</h5>
+                        <p className="text-muted small mb-0">Register a new hearse to get started</p>
+                    </div>
+                ) : (
+                    <div className="table-responsive">
+                        <Table hover size="sm" className="hb-modal-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Plate</th>
+                                    <th className="d-none d-md-table-cell">Model</th>
+                                    <th>Capacity</th>
+                                    <th className="d-none d-md-table-cell">Branch</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {hearses.map(h => {
+                                    const isBooked = h.status === 'booked' || h.is_booked;
+                                    return (
+                                        <tr key={h.id}>
+                                            <td><strong>{h.hearse_name || 'N/A'}</strong></td>
+                                            <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
+                                            <td className="d-none d-md-table-cell text-muted">{h.model || 'N/A'}</td>
+                                            <td>{h.capacity || '-'}</td>
+                                            <td className="d-none d-md-table-cell text-muted">{h.branch_code || h.branch_name || 'N/A'}</td>
+                                            <td>
+                                                <span className={`hb-status ${isBooked ? 'booked' : 'completed'}`}>
+                                                    <span className="hb-status-dot" />
+                                                    {isBooked ? 'BOOKED' : 'AVAILABLE'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </Table>
+                    </div>
+                )}
+            </Modal.Body>
+        </Modal>
+    );
+};
+
+/* Register Hearse Modal */
+const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegistering, registerForm, setRegisterForm }) => {
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setRegistering(true);
+        try {
+            await bookingService.registerHearse(registerForm);
+            onRegistered();
+            onHide();
+        } catch (e) {
+            alert('Failed to register hearse: ' + e.message);
+        }
+        setRegistering(false);
+    };
+
+    return (
+        <Modal show={show} onHide={onHide} centered className="hb-modal hb-modal-dark">
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    <Plus size={18} />
+                    Register Hearse
+                </Modal.Title>
+            </Modal.Header>
+            <form onSubmit={handleRegister}>
+                <Modal.Body>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="hb-form-label">Hearse Name *</Form.Label>
+                        <Form.Control
+                            value={registerForm.hearse_name}
+                            onChange={e => setRegisterForm(p => ({ ...p, hearse_name: e.target.value }))}
+                            placeholder="e.g., Mercedes Sprinter"
+                            className="hb-form-control"
+                            required
+                        />
+                    </Form.Group>
+                    <Row className="g-3">
+                        <Col xs={12} md={6}>
+                            <Form.Group>
+                                <Form.Label className="hb-form-label">Plate Number *</Form.Label>
+                                <Form.Control
+                                    value={registerForm.plate_number}
+                                    onChange={e => setRegisterForm(p => ({ ...p, plate_number: e.target.value.toUpperCase() }))}
+                                    placeholder="KCA 1234"
+                                    className="hb-form-control"
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col xs={12} md={6}>
+                            <Form.Group>
+                                <Form.Label className="hb-form-label">Model</Form.Label>
+                                <Form.Control
+                                    value={registerForm.model}
+                                    onChange={e => setRegisterForm(p => ({ ...p, model: e.target.value }))}
+                                    placeholder="Toyota Hiace"
+                                    className="hb-form-control"
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col xs={12} md={6}>
+                            <Form.Group>
+                                <Form.Label className="hb-form-label">Capacity</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    value={registerForm.capacity}
+                                    onChange={e => setRegisterForm(p => ({ ...p, capacity: e.target.value }))}
+                                    placeholder="4"
+                                    min="1"
+                                    className="hb-form-control"
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col xs={12} md={6}>
+                            <Form.Group>
+                                <Form.Label className="hb-form-label">Branch Code *</Form.Label>
+                                <Form.Control
+                                    value={registerForm.branch_code}
+                                    onChange={e => setRegisterForm(p => ({ ...p, branch_code: e.target.value.toUpperCase() }))}
+                                    placeholder="e.g., NBI"
+                                    className="hb-form-control"
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+                </Modal.Body>
+                <Modal.Footer>
+                    <button type="button" className="hb-btn hb-btn-ghost" onClick={onHide}>Cancel</button>
+                    <button type="submit" className="hb-btn hb-btn-green" disabled={registering}>
+                        {registering ? (
+                            <><span className="hb-loading-spinner" style={{ width: 16, height: 16, borderWidth: 2, margin: 0, marginRight: 8, display: 'inline-block', verticalAlign: 'middle' }} />Saving...</>
+                        ) : (
+                            <><CheckCircle size={16} />Register Hearse</>
+                        )}
+                    </button>
+                </Modal.Footer>
+            </form>
+        </Modal>
+    );
+};
+
+/* Main Component */
 const BookingSystem = () => {
     const [bookings, setBookings] = useState([]);
     const [hearses, setHearses] = useState([]);
     const [filter, setFilter] = useState('booked');
     const [branchFilter, setBranchFilter] = useState('all');
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [toasts, setToasts] = useState([]);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
     const [showPostpone, setShowPostpone] = useState(false);
@@ -446,7 +624,15 @@ const BookingSystem = () => {
     const [branches, setBranches] = useState([]);
     const { socket } = useSocket();
 
-    // Extract unique branches from hearses (more reliable)
+    const addToast = useCallback((message, type = 'success') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+    }, []);
+
+    const removeToast = useCallback((id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, []);
+
     useEffect(() => {
         const branchesFromHearses = [...new Set(hearses.map(h => h.branch_code || h.branch_name).filter(Boolean))];
         const branchesFromBookings = [...new Set(bookings.map(b => b.branch_code).filter(Boolean))];
@@ -463,8 +649,7 @@ const BookingSystem = () => {
         if (!socket) return;
         socket.on('new_booking', (d) => {
             setBookings(p => [d.booking, ...p]);
-            setSuccess('🔄 New booking received!');
-            setTimeout(() => setSuccess(''), 3000);
+            addToast('New booking received!');
         });
         socket.on('booking_status_updated', (d) => {
             setBookings(p => p.map(b => b.booking_id === d.booking_id ? { ...b, status: d.status, ...d.booking } : b));
@@ -473,20 +658,19 @@ const BookingSystem = () => {
             socket.off('new_booking');
             socket.off('booking_status_updated');
         };
-    }, [socket]);
+    }, [socket, addToast]);
 
     const loadData = async () => {
         setLoading(true);
-        setError('');
         try {
             const r = await fetch(`${API_BASE_URL}/hearse-bookings?t=${Date.now()}`, {
-                headers: { 'x-tenant-slug': getTenantSlug() }
+                headers: getAuthHeaders()
             });
             const data = await r.json();
             const bookingsData = Array.isArray(data.bookings) ? data.bookings : (Array.isArray(data) ? data : []);
             setBookings(bookingsData);
         } catch (e) {
-            setError('Failed to load data.');
+            addToast('Failed to load data.', 'error');
             console.error(e);
         }
         setLoading(false);
@@ -504,11 +688,10 @@ const BookingSystem = () => {
     const handleStatus = async (id, s) => {
         try {
             await bookingService.updateBookingStatus(id, s);
-            setSuccess('Status updated successfully!');
-            setTimeout(() => setSuccess(''), 3000);
+            addToast('Status updated successfully!');
             await loadData();
         } catch (e) {
-            setError('Failed to update status.');
+            addToast('Failed to update status.', 'error');
             console.error(e);
         }
     };
@@ -516,44 +699,31 @@ const BookingSystem = () => {
     const handlePostpone = async (id, d) => {
         try {
             await bookingService.postponeBooking(id, d);
-            setSuccess('Booking postponed!');
-            setTimeout(() => setSuccess(''), 3000);
+            addToast('Booking postponed!');
             await loadData();
         } catch (e) {
-            setError('Failed to postpone booking.');
+            addToast('Failed to postpone booking.', 'error');
             console.error(e);
         }
     };
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setRegistering(true);
-        try {
-            await bookingService.registerHearse(registerForm);
-            setSuccess('Hearse registered successfully!');
-            setTimeout(() => setSuccess(''), 3000);
-            setShowRegister(false);
-            setRegisterForm({ plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '' });
-            await loadHearses();
-        } catch (e) {
-            setError('Failed to register hearse.');
-            console.error(e);
-        }
-        setRegistering(false);
+    const handleRegistered = async () => {
+        addToast('Hearse registered successfully!');
+        setRegisterForm({ plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '' });
+        await loadHearses();
     };
 
     const checkAvailability = async () => {
         const date = document.getElementById('availabilityDate')?.value;
         if (!date) {
-            setError('Please select a date');
-            setTimeout(() => setError(''), 3000);
+            addToast('Please select a date', 'error');
             return;
         }
 
         try {
             setAvailabilityResult(null);
             const r = await fetch(`${API_BASE_URL}/hearse-bookings/availability?date=${date}`, {
-                headers: { 'x-tenant-slug': getTenantSlug() }
+                headers: getAuthHeaders()
             });
             const data = await r.json();
 
@@ -564,17 +734,14 @@ const BookingSystem = () => {
                     date: date
                 });
             } else {
-                setError(data.message || 'No availability data returned');
-                setTimeout(() => setError(''), 5000);
+                addToast(data.message || 'No availability data returned', 'error');
             }
         } catch (e) {
-            setError('Failed to check availability: ' + e.message);
-            setTimeout(() => setError(''), 5000);
+            addToast('Failed to check availability: ' + e.message, 'error');
         }
     };
 
     const getStatusCount = (status) => bookings.filter(b => b.status === status).length;
-
     const getBranchCount = (branch) => bookings.filter(b => b.branch_code === branch).length;
 
     const filtered = bookings.filter(b => {
@@ -583,81 +750,100 @@ const BookingSystem = () => {
         return statusMatch && branchMatch;
     });
 
+    const statusPills = [
+        { key: 'all', label: 'ALL', color: 'navy', count: bookings.length },
+        { key: 'booked', label: 'BOOKED', color: 'blue', count: getStatusCount('booked') },
+        { key: 'in_transit', label: 'IN TRANSIT', color: 'cyan', count: getStatusCount('in_transit') },
+        { key: 'completed', label: 'COMPLETED', color: 'green', count: getStatusCount('completed') },
+        { key: 'cancelled', label: 'CANCELLED', color: 'red', count: getStatusCount('cancelled') },
+        { key: 'postponed', label: 'POSTPONED', color: 'amber', count: getStatusCount('postponed') }
+    ];
+
     if (loading) return (
-        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
-            <div className="text-center">
-                <Spinner animation="border" variant="primary" className="mb-3" style={{ width: 48, height: 48 }} />
-                <h5 className="text-muted">Loading bookings...</h5>
+        <div className="hb-loading">
+            <div className="hb-loading-inner">
+                <div className="hb-loading-spinner" />
+                <h5>Loading bookings...</h5>
             </div>
-        </Container>
+        </div>
     );
 
     return (
-        <Container fluid className="py-3" style={{ background: '#f4f6f9', minHeight: '100vh' }}>
+        <>
+            {/* Toast Container */}
+            <div className="hb-toast-container">
+                {toasts.map(t => (
+                    <Toast key={t.id} message={t.message} type={t.type} onDone={() => removeToast(t.id)} />
+                ))}
+            </div>
 
-            {/* Header */}
-            <div className="bg-white  shadow-sm mb-3 overflow-hidden">
-                <div className="d-flex flex-wrap justify-content-between align-items-center p-3" style={{ background: '#1a1a2e' }}>
-                    <div>
-                        <h4 className="mb-0 text-white fw-bold">
-                            <Car size={24} className="me-2" />
-                            Hearse Management
-                        </h4>
-                        <div className="mt-2">
-                            <div className={`badge ${socket?.connected ? 'bg-success' : 'bg-danger'} fs-6 px-3 py-2`} style={{
-                                animation: socket?.connected ? 'pulse 2s infinite' : 'none',
-                                fontSize: '0.9rem',
-                                fontWeight: 'bold'
-                            }}>
-                                {socket?.connected ? '● ONLINE' : '● OFFLINE'}
+            <div className="hb-page">
+                {/* Header */}
+                <div className="hb-header">
+                    <div className="hb-header-top">
+                        <div>
+                            <h4 className="hb-header-title">
+                                <span className="icon-wrap"><Car size={20} /></span>
+                                Hearse Management
+                            </h4>
+                            <div className="hb-header-meta">
+                                <span className={`hb-live-badge ${socket?.connected ? 'online' : 'offline'}`}>
+                                    <span className="hb-live-dot" />
+                                    {socket?.connected ? 'LIVE' : 'OFFLINE'}
+                                </span>
+                                <span className="hb-active-count">
+                                    {bookings.filter(b => !['completed', 'cancelled'].includes(b.status)).length} active bookings
+                                </span>
                             </div>
-                            <span className="text-white-50 small ms-2">
-                                {bookings.filter(b => !['completed', 'cancelled'].includes(b.status)).length} active
-                            </span>
+                        </div>
+                        <div className="hb-header-actions">
+                            <button className="hb-btn-header ghost" onClick={loadData}>
+                                <RefreshCw size={14} />Refresh
+                            </button>
+                            <button className="hb-btn-header primary" onClick={() => setShowAvailable(true)}>
+                                <Truck size={14} />New Booking
+                            </button>
+                            <button className="hb-btn-header success" onClick={() => setShowRegister(true)}>
+                                <Plus size={14} />Register
+                            </button>
                         </div>
                     </div>
-                    <div className="d-flex gap-2 mt-2 mt-md-0">
-                        <Button variant="outline-light" size="sm" onClick={loadData}>
-                            <RefreshCw size={14} className="me-1" />Refresh
-                        </Button>
-                        <Button variant="light" size="sm" onClick={() => setShowAvailable(true)} >
-                            <Truck size={14} className="me-1" />Book
-                        </Button>
-                        <Button variant="light" size="sm" onClick={() => setShowRegister(true)} >
-                            <Car size={14} className="me-1" />Register
-                        </Button>
-                    </div>
-                </div>
 
-                {/* Filters */}
-                <div className="p-3 bg-light">
-                    <div className="d-flex flex-column gap-2">
-                        {/* Row 1: Date picker and branch filter */}
-                        <div className="d-flex flex-wrap gap-2 align-items-center justify-content-between">
-                            <div className="d-flex gap-2">
-                                <Form.Control type="date" id="availabilityDate" size="sm" />
-                                <Button variant="dark" size="sm" onClick={checkAvailability} >
-                                    <Search size={14} className="me-1" />Check
-                                </Button>
-                                <Button variant="outline-secondary" size="sm" onClick={async () => { await loadHearses(); setShowHearses(true); }} style={{ borderRadius: '20px' }}>
-                                    All
-                                </Button>
+                    {/* Filters */}
+                    <div className="hb-filter-bar">
+                        <div className="hb-filter-row">
+                            <div className="hb-filter-left">
+                                <Form.Control
+                                    type="date"
+                                    id="availabilityDate"
+                                    size="sm"
+                                    className="hb-input-sm"
+                                    style={{ width: 'auto' }}
+                                />
+                                <button className="hb-btn-filter dark" onClick={checkAvailability}>
+                                    <Search size={13} />Check
+                                </button>
+                                <button className="hb-btn-filter" onClick={async () => { await loadHearses(); setShowHearses(true); }}>
+                                    <Car size={13} />All Hearses
+                                </button>
+                                {availabilityResult && (
+                                    <div className="hb-avail-badges">
+                                        <span className="hb-avail-badge green">{availabilityResult.available} Available</span>
+                                        <span className="hb-avail-badge red">{availabilityResult.booked} Booked</span>
+                                    </div>
+                                )}
                             </div>
-                            {availabilityResult && (
-                                <div>
-                                    <Badge bg="success" className="me-1">{availabilityResult.available} Available</Badge>
-                                    <Badge bg="danger">{availabilityResult.booked} Booked</Badge>
-                                </div>
-                            )}
-                            <Dropdown className="ms-auto">
-                                <Dropdown.Toggle variant="outline-dark" size="sm">
-                                    <MapPin size={14} className="me-1" />
-                                    {branchFilter === 'all' ? 'All Branches' : branchFilter}
+                            <Dropdown className="hb-branch-dropdown">
+                                <Dropdown.Toggle as="div" style={{ cursor: 'pointer' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.85rem', fontSize: '0.8rem', fontWeight: 600, border: '1.5px solid #e2e8f0', borderRadius: '10px', background: '#fff', color: '#0f172a' }}>
+                                        <MapPin size={13} />
+                                        {branchFilter === 'all' ? 'All Branches' : branchFilter}
+                                    </span>
                                 </Dropdown.Toggle>
-                                <Dropdown.Menu align="end" style={{ borderRadius: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                                <Dropdown.Menu align="end">
                                     <Dropdown.Item onClick={() => setBranchFilter('all')} active={branchFilter === 'all'}>
                                         <strong>All Branches</strong>
-                                        <Badge bg="secondary" className="ms-2">{bookings.length}</Badge>
+                                        <span className="hb-count-badge dark">{bookings.length}</span>
                                     </Dropdown.Item>
                                     <Dropdown.Divider />
                                     {branches.map(branch => (
@@ -666,173 +852,198 @@ const BookingSystem = () => {
                                             onClick={() => setBranchFilter(branch)}
                                             active={branchFilter === branch}
                                         >
-                                            <MapPin size={12} className="me-1" />
+                                            <MapPin size={12} style={{ marginRight: '0.35rem', opacity: 0.5 }} />
                                             <strong>{branch}</strong>
-                                            <Badge bg="primary" className="ms-2">{getBranchCount(branch)}</Badge>
+                                            <span className="hb-count-badge accent">{getBranchCount(branch)}</span>
                                         </Dropdown.Item>
                                     ))}
                                 </Dropdown.Menu>
                             </Dropdown>
                         </div>
-                        {/* Row 2: Status filter buttons with different colors */}
-                        <div className="d-flex gap-2 overflow-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-                            {[
-                                { key: 'all', label: 'ALL', bgColor: '#10375a', textColor: '#fff', count: bookings.length },
-                                { key: 'booked', label: 'BOOKED', bgColor: '#0d6efd', textColor: '#fff', count: getStatusCount('booked') },
-                                { key: 'in_transit', label: 'IN TRANSIT', bgColor: '#0dcaf0', textColor: '#000', count: getStatusCount('in_transit') },
-                                { key: 'completed', label: 'COMPLETED', bgColor: '#198754', textColor: '#fff', count: getStatusCount('completed') },
-                                { key: 'cancelled', label: 'CANCELLED', bgColor: '#dc3545', textColor: '#fff', count: getStatusCount('cancelled') },
-                                { key: 'postponed', label: 'POSTPONED', bgColor: '#ffc107', textColor: '#000', count: getStatusCount('postponed') }
-                            ].map(btn => {
-                                const isActive = filter === btn.key;
-                                return (
-                                    <Button
-                                        key={btn.key}
-                                        size="sm"
-                                        className="px-3 fw-bold flex-shrink-0 border-0"
-                                        style={{
-                                            borderRadius: '0px',
-                                            fontSize: '0.75rem',
-                                            background: isActive ? btn.bgColor : `${btn.bgColor}50`,
-                                            color: isActive ? btn.textColor : btn.bgColor,
-                                            border: `2px solid ${btn.bgColor}`,
-                                            minWidth: '100px'
-                                        }}
-                                        onClick={() => setFilter(btn.key)}
-                                    >
-                                        {btn.label} ({btn.count})
-                                    </Button>
-                                );
-                            })}
+                        <div className="hb-filter-pills">
+                            {statusPills.map(btn => (
+                                <button
+                                    key={btn.key}
+                                    className={`hb-pill ${filter === btn.key ? 'active' : ''}`}
+                                    data-color={btn.color}
+                                    onClick={() => setFilter(btn.key)}
+                                >
+                                    {btn.label}
+                                    <span className="pill-count">{btn.count}</span>
+                                </button>
+                            ))}
                         </div>
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="hb-table-card" style={{ marginTop: '1rem' }}>
+                    <div className="table-responsive">
+                        <Table hover className="hb-table">
+                            <thead>
+                                <tr>
+                                    <th className="d-none d-md-table-cell">ID</th>
+                                    <th>Client</th>
+                                    <th className="d-none d-md-table-cell">Destination</th>
+                                    <th>Hearse</th>
+                                    <th className="d-none d-md-table-cell">Date</th>
+                                    <th>Status</th>
+                                    <th className="text-center" style={{ width: '60px' }}></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7">
+                                            <div className="hb-empty">
+                                                <div className="hb-empty-icon"><Car size={32} /></div>
+                                                <h5>No bookings found</h5>
+                                                <p>Try adjusting your filters</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : filtered.map(b => (
+                                    <tr key={b.booking_id}>
+                                        <td className="d-none d-md-table-cell">
+                                            <div className="booking-id">{genId(b.booking_id)}</div>
+                                            <div className="booking-date-sub">{fmtDate(b.created_at)}</div>
+                                        </td>
+                                        <td>
+                                            <div className="client-name">{b.client_name}</div>
+                                            <div className="text-muted small d-md-none" style={{ fontSize: '0.72rem' }}>
+                                                {genId(b.booking_id)} • {fmtDate(b.booking_date || b.estimated_departure_time)}
+                                            </div>
+                                        </td>
+                                        <td className="d-none d-md-table-cell">
+                                            <div className="dest-text" title={b.destination}>{b.destination}</div>
+                                        </td>
+                                        <td>
+                                            <span className="hearse-plate">{b.plate_number || b.number_plate || 'N/A'}</span>
+                                            <div className="hearse-sub">{b.hearse_name || ''}</div>
+                                        </td>
+                                        <td className="d-none d-md-table-cell text-muted" style={{ fontSize: '0.84rem' }}>
+                                            {fmtDate(b.booking_date || b.estimated_departure_time)}
+                                        </td>
+                                        <td><StatusBadge status={b.status} /></td>
+                                        <td className="text-center">
+                                            <Dropdown align="end">
+                                                <Dropdown.Toggle as="div">
+                                                    <button className="hb-action-btn">
+                                                        <MoreVertical size={15} />
+                                                    </button>
+                                                </Dropdown.Toggle>
+                                                <Dropdown.Menu className="hb-action-menu">
+                                                    <Dropdown.Item onClick={() => { setSelectedBooking(b); setShowDetails(true); }}>
+                                                        <Eye size={14} />View Details
+                                                    </Dropdown.Item>
+                                                    <Dropdown.Divider />
+                                                    {b.status === 'booked' && (
+                                                        <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'in_transit')}>
+                                                            <Truck size={14} style={{ color: '#0891b2' }} />Mark In Transit
+                                                        </Dropdown.Item>
+                                                    )}
+                                                    {b.status === 'in_transit' && (
+                                                        <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'completed')}>
+                                                            <CheckCircle size={14} style={{ color: '#16a34a' }} />Mark Completed
+                                                        </Dropdown.Item>
+                                                    )}
+                                                    <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'maintenance')}>
+                                                        <Wrench size={14} style={{ color: '#9333ea' }} />Mark Maintenance
+                                                    </Dropdown.Item>
+                                                    <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'cancelled')}>
+                                                        <XCircle size={14} style={{ color: '#dc2626' }} />Cancel
+                                                    </Dropdown.Item>
+                                                    <Dropdown.Divider />
+                                                    <Dropdown.Item onClick={() => { setSelectedBooking(b); setShowPostpone(true); }}>
+                                                        <Calendar size={14} style={{ color: '#d97706' }} />Postpone
+                                                    </Dropdown.Item>
+                                                </Dropdown.Menu>
+                                            </Dropdown>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
                     </div>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-3 shadow-sm overflow-hidden">
-                <div className="table-responsive">
-                    <Table hover className="mb-0">
-                        <thead style={{ background: '#f8f9fa' }}>
-                            <tr>
-                                <th className="d-none d-md-table-cell">ID</th>
-                                <th>Client</th>
-                                <th className="d-none d-md-table-cell">Destination</th>
-                                <th>Hearse</th>
-                                <th className="d-none d-md-table-cell">Date</th>
-                                <th>Status</th>
-                                <th className="text-center" style={{ width: '60px' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.length === 0 ? (
-                                <tr>
-                                    <td colSpan="7" className="text-center py-5">
-                                        <Car size={48} className="text-muted mb-3" />
-                                        <h5 className="text-muted">No bookings found</h5>
-                                        <p className="text-muted small">Try adjusting your filters</p>
-                                    </td>
-                                </tr>
-                            ) : filtered.map(b => (
-                                <tr key={b.booking_id}>
-                                    <td className="d-none d-md-table-cell">
-                                        <strong className="text-primary">{genId(b.booking_id)}</strong>
-                                        <div className="small text-muted">{fmtDate(b.created_at)}</div>
-                                    </td>
-                                    <td>
-                                        <strong>{b.client_name}</strong>
-                                        <div className="small text-muted d-md-none">{genId(b.booking_id)}</div>
-                                        <div className="small text-muted d-md-none">{fmtDate(b.booking_date || b.estimated_departure_time)}</div>
-                                    </td>
-                                    <td className="d-none d-md-table-cell">{b.destination}</td>
-                                    <td>
-                                        <Badge bg="dark" className="px-2 py-1">
-                                            {b.plate_number || b.number_plate || 'N/A'}
-                                        </Badge>
-                                        <div className="small text-muted">{b.hearse_name || ''}</div>
-                                    </td>
-                                    <td className="d-none d-md-table-cell">{fmtDate(b.booking_date || b.estimated_departure_time)}</td>
-                                    <td><StatusBadge status={b.status} /></td>
-                                    <td>
-                                        <Dropdown>
-                                            <Dropdown.Toggle
-                                                variant="outline-secondary"
-                                                size="sm"
-                                                className="border-0 p-1"
-                                                style={{ borderRadius: '0px', width: '32px', height: '32px', padding: '0' }}
-                                            >
-                                                <MoreVertical size={16} />
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu align="end" className="shadow-sm border-0" style={{ borderRadius: '0px' }}>
-                                                <Dropdown.Item onClick={() => { setSelectedBooking(b); setShowDetails(true); }}>
-                                                    <Eye size={14} className="me-2" />View Details
-                                                </Dropdown.Item>
-                                                <Dropdown.Divider />
-                                                {b.status === 'booked' && (
-                                                    <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'in_transit')}>
-                                                        <Truck size={14} className="me-2 text-info" />Mark In Transit
-                                                    </Dropdown.Item>
-                                                )}
-                                                {b.status === 'in_transit' && (
-                                                    <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'completed')}>
-                                                        <CheckCircle size={14} className="me-2 text-success" />Mark Completed
-                                                    </Dropdown.Item>
-                                                )}
-                                                <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'maintenance')}>
-                                                    <AlertCircle size={14} className="me-2 text-warning" />Mark Maintenance
-                                                </Dropdown.Item>
-                                                <Dropdown.Item onClick={() => handleStatus(b.booking_id, 'cancelled')}>
-                                                    <XCircle size={14} className="me-2 text-danger" />Cancel
-                                                </Dropdown.Item>
-                                                <Dropdown.Divider />
-                                                <Dropdown.Item onClick={() => { setSelectedBooking(b); setShowPostpone(true); }}>
-                                                    <Calendar size={14} className="me-2 text-warning" />Postpone
-                                                </Dropdown.Item>
-                                            </Dropdown.Menu>
-                                        </Dropdown>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                </div>
-            </div>
-
-            {/* Modals */}
-            <Modal show={showDetails} onHide={() => setShowDetails(false)} size="lg" centered>
-                <Modal.Header closeButton className="border-0" style={{ background: '#1a1a2e' }}>
-                    <Modal.Title className="fw-bold text-white">
-                        <Eye size={20} className="me-2" />
+            {/* View Details Modal */}
+            <Modal show={showDetails} onHide={() => setShowDetails(false)} size="lg" centered className="hb-modal hb-modal-dark">
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <Eye size={18} />
                         Booking {genId(selectedBooking?.booking_id)}
                     </Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="p-4">
+                <Modal.Body>
                     <Row className="g-3">
                         <Col md={6}>
-                            <Card className="border-0 shadow-sm h-100">
-                                <Card.Header className="bg-light fw-bold">
-                                    <User size={16} className="me-2" />Client Information
-                                </Card.Header>
-                                <Card.Body>
-                                    <div><strong>Name:</strong> {selectedBooking?.client_name}</div>
-                                    <div><strong>Phone:</strong> {selectedBooking?.client_phone || 'N/A'}</div>
-                                    <div><strong>Email:</strong> {selectedBooking?.client_email || 'N/A'}</div>
-                                    <div><strong>Booked By:</strong> {selectedBooking?.created_by ? `Staff ID: ${selectedBooking.created_by}` : 'N/A'}</div>
-                                </Card.Body>
-                            </Card>
+                            <div className="hb-detail-card">
+                                <div className="hb-detail-card-header">
+                                    <User size={14} />Client Information
+                                </div>
+                                <div className="hb-detail-card-body">
+                                    <div className="hb-detail-row">
+                                        <span className="label">Name</span>
+                                        <span className="value">{selectedBooking?.client_name}</span>
+                                    </div>
+                                    <div className="hb-detail-row">
+                                        <span className="label">Phone</span>
+                                        <span className="value">{selectedBooking?.client_phone || 'N/A'}</span>
+                                    </div>
+                                    <div className="hb-detail-row">
+                                        <span className="label">Email</span>
+                                        <span className="value">{selectedBooking?.client_email || 'N/A'}</span>
+                                    </div>
+                                    <div className="hb-detail-row">
+                                        <span className="label">Booked By</span>
+                                        <span className="value">{selectedBooking?.created_by ? `Staff ID: ${selectedBooking.created_by}` : 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </Col>
                         <Col md={6}>
-                            <Card className="border-0 shadow-sm h-100">
-                                <Card.Header className="bg-light fw-bold">
-                                    <Car size={16} className="me-2" />Service Details
-                                </Card.Header>
-                                <Card.Body>
-                                    <div><strong>Destination:</strong> {selectedBooking?.destination}</div>
-                                    <div><strong>Hearse:</strong> {selectedBooking?.hearse_name || selectedBooking?.plate_number || 'N/A'}</div>
-                                    <div><strong>Date:</strong> {fmtDate(selectedBooking?.booking_date || selectedBooking?.estimated_departure_time)}</div>
-                                    <div><strong>Status:</strong> <StatusBadge status={selectedBooking?.status} /></div>
-                                </Card.Body>
-                            </Card>
+                            <div className="hb-detail-card">
+                                <div className="hb-detail-card-header">
+                                    <Car size={14} />Service Details
+                                </div>
+                                <div className="hb-detail-card-body">
+                                    <div className="hb-detail-row">
+                                        <span className="label">Destination</span>
+                                        <span className="value">{selectedBooking?.destination}</span>
+                                    </div>
+                                    <div className="hb-detail-row">
+                                        <span className="label">Hearse</span>
+                                        <span className="value">{selectedBooking?.hearse_name || selectedBooking?.plate_number || 'N/A'}</span>
+                                    </div>
+                                    <div className="hb-detail-row">
+                                        <span className="label">Date</span>
+                                        <span className="value">{fmtDate(selectedBooking?.booking_date || selectedBooking?.estimated_departure_time)}</span>
+                                    </div>
+                                    <div className="hb-detail-row">
+                                        <span className="label">Status</span>
+                                        <span className="value">
+                                            <Form.Select
+                                                size="sm"
+                                                value={selectedBooking?.status || 'pending'}
+                                                onChange={(e) => handleStatus(selectedBooking?.booking_id, e.target.value)}
+                                                className="hb-form-control"
+                                                style={{ width: 'auto', display: 'inline-block' }}
+                                            >
+                                                <option value="pending">Pending</option>
+                                                <option value="confirmed">Confirmed</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="in_transit">In Transit</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="cancelled">Cancelled</option>
+                                                <option value="postponed">Postponed</option>
+                                                <option value="maintenance">Maintenance</option>
+                                            </Form.Select>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </Col>
                     </Row>
                 </Modal.Body>
@@ -851,150 +1062,22 @@ const BookingSystem = () => {
                 onBookingCreated={loadData}
             />
 
-            {/* Register Hearse Modal */}
-            <Modal show={showRegister} onHide={() => setShowRegister(false)} centered>
-                <Modal.Header closeButton className="border-0" style={{ background: '#1a1a2e' }}>
-                    <Modal.Title className="fw-bold text-white">
-                        <Car size={20} className="me-2" />
-                        Register Hearse
-                    </Modal.Title>
-                </Modal.Header>
-                <form onSubmit={handleRegister}>
-                    <Modal.Body className="p-4">
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold">Hearse Name *</Form.Label>
-                            <Form.Control
-                                value={registerForm.hearse_name}
-                                onChange={e => setRegisterForm(p => ({ ...p, hearse_name: e.target.value }))}
-                                placeholder="e.g., Mercedes Sprinter"
-                                className="border-0 bg-light"
-                                style={{ borderRadius: '10px' }}
-                                required
-                            />
-                        </Form.Group>
-                        <Row className="g-3">
-                            <Col xs={12} md={6}>
-                                <Form.Group>
-                                    <Form.Label className="fw-semibold">Plate Number *</Form.Label>
-                                    <Form.Control
-                                        value={registerForm.plate_number}
-                                        onChange={e => setRegisterForm(p => ({ ...p, plate_number: e.target.value.toUpperCase() }))}
-                                        placeholder="KCA 1234"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
-                                        required
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col xs={12} md={6}>
-                                <Form.Group>
-                                    <Form.Label className="fw-semibold">Model</Form.Label>
-                                    <Form.Control
-                                        value={registerForm.model}
-                                        onChange={e => setRegisterForm(p => ({ ...p, model: e.target.value }))}
-                                        placeholder="Toyota Hiace"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col xs={12} md={6}>
-                                <Form.Group>
-                                    <Form.Label className="fw-semibold">Capacity</Form.Label>
-                                    <Form.Control
-                                        type="number"
-                                        value={registerForm.capacity}
-                                        onChange={e => setRegisterForm(p => ({ ...p, capacity: e.target.value }))}
-                                        placeholder="4"
-                                        min="1"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col xs={12} md={6}>
-                                <Form.Group>
-                                    <Form.Label className="fw-semibold">Branch Code *</Form.Label>
-                                    <Form.Control
-                                        value={registerForm.branch_code}
-                                        onChange={e => setRegisterForm(p => ({ ...p, branch_code: e.target.value.toUpperCase() }))}
-                                        placeholder="e.g., NBI"
-                                        className="border-0 bg-light"
-                                        style={{ borderRadius: '10px' }}
-                                        required
-                                    />
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                    </Modal.Body>
-                    <Modal.Footer className="border-0">
-                        <Button variant="outline-secondary" onClick={() => setShowRegister(false)}>
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="success"
-                            type="submit"
-                            disabled={registering}
-                            style={{ borderRadius: '20px', padding: '8px 30px' }}
-                        >
-                            {registering ? (
-                                <><Spinner animation="border" size="sm" className="me-2" />Saving...</>
-                            ) : (
-                                'Register Hearse'
-                            )}
-                        </Button>
-                    </Modal.Footer>
-                </form>
-            </Modal>
+            <AllHearsesModal
+                show={showHearses}
+                onHide={() => setShowHearses(false)}
+                hearses={hearses}
+            />
 
-            {/* All Hearses Modal */}
-            <Modal show={showHearses} onHide={() => setShowHearses(false)} size="lg" centered>
-                <Modal.Header closeButton className="border-0" style={{ background: '#1a1a2e' }}>
-                    <Modal.Title className="fw-bold text-white">
-                        <Eye size={20} className="me-2" />
-                        All Hearses
-                        <Badge bg="light" className="ms-2 text-dark">{hearses.length} vehicles</Badge>
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="p-4">
-                    {hearses.length === 0 ? (
-                        <div className="text-center py-5">
-                            <Car size={48} className="text-muted mb-3" />
-                            <h5 className="text-muted">No hearses registered</h5>
-                        </div>
-                    ) : (
-                        <div className="table-responsive">
-                            <Table hover size="sm" className="mb-0">
-                                <thead style={{ background: '#f8f9fa' }}>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Plate</th>
-                                        <th className="d-none d-md-table-cell">Model</th>
-                                        <th>Status</th>
-                                        <th className="d-none d-md-table-cell">Branch</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {hearses.map(h => (
-                                        <tr key={h.id}>
-                                            <td><strong>{h.hearse_name || 'N/A'}</strong></td>
-                                            <td><Badge bg="primary">{h.plate_number || h.number_plate}</Badge></td>
-                                            <td className="d-none d-md-table-cell">{h.model || 'N/A'}</td>
-                                            <td>
-                                                <Badge bg={h.status === 'available' ? 'success' : 'warning'}>
-                                                    {h.status || 'N/A'}
-                                                </Badge>
-                                            </td>
-                                            <td className="d-none d-md-table-cell">{h.branch_code || h.branch_name || 'N/A'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </div>
-                    )}
-                </Modal.Body>
-            </Modal>
-        </Container>
+            <RegisterHearseModal
+                show={showRegister}
+                onHide={() => setShowRegister(false)}
+                onRegistered={handleRegistered}
+                registering={registering}
+                setRegistering={setRegistering}
+                registerForm={registerForm}
+                setRegisterForm={setRegisterForm}
+            />
+        </>
     );
 };
 

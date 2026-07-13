@@ -4,8 +4,8 @@
  * when loaded via ts-node (which handles .ts requires from .ts files)
  */
 
-const { query, getTenantDB, getRootPool } = require('../../shared/dbConfig');
-const { validateTenantActive } = require('../../shared/tenancy');
+const { query, getTenantDB, getRootPool } = require('../../../shared/dbConfig');
+const { validateTenantActive } = require('../../../shared/tenancy');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs/promises');
@@ -103,14 +103,14 @@ const createCoffin = async (req, res) => {
         // Insert coffin
         const insertSql = `
       INSERT INTO coffins (
-        custom_id, tenant_id, type, material, exact_price, currency, 
+        coffin_id, custom_id, tenant_id, type, material, exact_price, currency, 
         price_usd, exchange_rate, quantity, supplier, origin, color, 
         size, category, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
         const result = await query(req, insertSql, [
-            finalCoffinId, tenantSlug, type.trim(), material.trim(), priceKES, finalCurrency,
+            finalCoffinId, finalCoffinId, tenantSlug, type.trim(), material.trim(), priceKES, finalCurrency,
             priceUSD, EXCHANGE_RATES.USD, parseInt(quantity) || 1,
             supplier?.trim() || null, origin?.trim() || null, color?.trim() || null,
             size?.trim() || null, category || 'locally_made', created_by || null
@@ -177,10 +177,10 @@ const getAllCoffins = async (req, res) => {
             const sql = `
         SELECT 
           c.*, 
-          u.name as created_by_name,
+          u.full_name as created_by_name,
           GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
         FROM coffins c
-        LEFT JOIN users u ON c.created_by = u.id
+        LEFT JOIN users u ON c.created_by = u.user_id
         LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_id = ci.tenant_id
         WHERE c.tenant_id = ? AND c.is_deleted = FALSE
         GROUP BY c.coffin_id
@@ -235,10 +235,10 @@ const getCoffinById = async (req, res) => {
             const sql = `
         SELECT 
           c.*, 
-          u.name as created_by_name,
+          u.full_name as created_by_name,
           GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
         FROM coffins c
-        LEFT JOIN users u ON c.created_by = u.id
+        LEFT JOIN users u ON c.created_by = u.user_id
         LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_id = ci.tenant_id
         WHERE (c.coffin_id = ? OR c.custom_id = ?) AND c.tenant_id = ? AND c.is_deleted = FALSE
         GROUP BY c.coffin_id

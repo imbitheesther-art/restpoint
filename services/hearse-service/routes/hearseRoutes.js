@@ -1,7 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
 
 const hearseBookingController = require('../controllers/bookHerse');
 const hearseController = require('../controllers/restpoint/hearseController');

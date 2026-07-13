@@ -5,8 +5,8 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm ci --no-audit --no-fund || \
-  npm install --no-audit --no-fund
+# Use npm install instead of ci for more flexibility
+RUN npm install --legacy-peer-deps
 
 
 # Stage 2: Builder
@@ -14,14 +14,20 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/package-lock.json ./package-lock.json
+# Copy everything from deps
+COPY --from=deps /app ./
 
+# Copy source code
 COPY . .
 
-RUN npm run build
+# Explicitly install esbuild and all needed deps
+RUN npm install --legacy-peer-deps && \
+  npm install esbuild@0.21.5 --save-dev && \
+  npm install vite@5.4.0 --save-dev
 
+# Build the app
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+RUN npm run build
 
 # Stage 3: Production
 FROM nginx:alpine AS production

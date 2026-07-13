@@ -15,7 +15,7 @@ app.use(helmet());
 app.use(express.json({ limit: '10mb' }));
 
 // Import auth middleware after env is loaded
-const { protect, authorizeAny } = require('../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../services/app-global/middlewares/authMiddleware');
 
 // Health check (no auth)
 app.get('/health', (req, res) => {

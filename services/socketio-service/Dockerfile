@@ -15,12 +15,12 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/socketio-service/package.json ./services/socketio-service/
 
-RUN yarn install --no-lockfile && yarn cache clean
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY app-global/ ./global/
+COPY services/app-global/ ./app-global/
 
 
 COPY services/socketio-service/ ./services/socketio-service/

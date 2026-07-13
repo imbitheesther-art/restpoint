@@ -11,7 +11,10 @@
     "noImplicitAny": false,
     "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "server.ts",
@@ -26,7 +29,8 @@
     "../../packages/shared-logger/src/**/*.ts",
     "../../packages/shared-utils/src/**/*.ts",
     "../../packages/shared-services/src/**/*.ts",
-    "../../global/**/*.ts",
+    "../../app-global/**/*.ts",
+    "../../app-global/**/*.js",
     "../../configurations/**/*.ts"
   ],
   "exclude": [

@@ -1,4 +1,6 @@
+// Load service-specific .env first (has PORT=5023), then root .env for shared config
 require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 const express = require('express');
 const http = require('http');
@@ -7,7 +9,8 @@ const path = require('path');
 const { Server } = require('socket.io');
 const { safeTenantQuery, safeTenantExecute, resolveDatabase, getTenantDB } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
-const Logger = require('../../global/middlewares/serviceDiscovery').Logger;
+const Logger = require('../../services/app-global/middlewares/serviceDiscovery').Logger;
+const asyncHandler = require('express-async-handler');
 
 const restpointRoutes = require('./routes/hearseRoutes');
 
@@ -25,7 +28,14 @@ const io = new Server(server, {
 app.set('io', io);
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code']
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -217,6 +227,164 @@ app.use(async (req, res, next) => {
         });
     }
 });
+
+// ============================================================
+// TENANT CONFIG/SETTINGS/BRANCHES ROUTES
+// These are served directly here because the frontend app (useAppInitialization)
+// calls /tenants/:slug/config, /tenant/:slug/settings, /tenant/:slug/branches
+// to determine single vs multi-tenant mode BEFORE other API calls.
+// The API gateway routes 'tenants' and 'tenant' prefixes here.
+// ============================================================
+
+// GET /tenants/:tenantSlug/config - Tenant configuration (deployment type, etc.)
+app.get('/tenants/:tenantSlug/config', asyncHandler(async (req, res) => {
+    const { tenantSlug } = req.params;
+
+    try {
+        // Resolve tenant from slug
+        const rootPool = await require('../../shared/dbConfig').getRootPool();
+        const [tenantRows] = await rootPool.query(
+            'SELECT * FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
+            [tenantSlug]
+        );
+
+        if (!tenantRows || tenantRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Tenant not found' });
+        }
+
+        const tenant = tenantRows[0];
+
+        // Get branch count
+        let branchCount = 0;
+        try {
+            const pool = await require('../../shared/dbConfig').getTenantDB(tenant.db_name);
+            const [branches] = await pool.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
+            branchCount = branches[0]?.count || 0;
+        } catch (e) {
+            // Branch table may not exist
+        }
+
+        // Get deployment type
+        let deploymentType = branchCount > 1 ? 'multi' : 'single';
+
+        res.json({
+            success: true,
+            data: {
+                deploymentType,
+                branchCount,
+                tenantName: tenant.tenant_name,
+                tenantSlug: tenant.tenant_slug,
+                country: tenant.country,
+                location: tenant.location,
+                email: tenant.email
+            }
+        });
+    } catch (error) {
+        Logger.error(`[HEARSE] /tenants/:slug/config error: ${error.message}`);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}));
+
+// GET /tenant/:tenantSlug/settings - Tenant settings (simplified, for frontend)
+app.get('/tenant/:tenantSlug/settings', asyncHandler(async (req, res) => {
+    const { tenantSlug } = req.params;
+
+    try {
+        // Use the already-set req.tenant from middleware if available
+        if (req.tenant && req.tenant.tenant_slug === tenantSlug) {
+            let branchCount = 0;
+            try {
+                const branches = await safeTenantQuery(
+                    req.tenant.db_name,
+                    'SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE'
+                );
+                branchCount = branches[0]?.count || 0;
+            } catch (e) { }
+
+            return res.json({
+                success: true,
+                data: {
+                    deploymentType: branchCount > 1 ? 'multi' : 'single',
+                    branchCount,
+                    tenantName: req.tenant.tenant_name || req.tenant.name,
+                    tenantSlug: req.tenant.tenant_slug || tenantSlug,
+                    country: req.tenant.country || 'Kenya',
+                    location: req.tenant.location || '',
+                    email: req.tenant.email || ''
+                }
+            });
+        }
+
+        // Fallback: look up via root pool
+        const rootPool = await require('../../shared/dbConfig').getRootPool();
+        const [tenantRows] = await rootPool.query(
+            'SELECT * FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
+            [tenantSlug]
+        );
+
+        if (!tenantRows || tenantRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Tenant not found' });
+        }
+
+        const tenant = tenantRows[0];
+        let branchCount = 0;
+        try {
+            const pool = await require('../../shared/dbConfig').getTenantDB(tenant.db_name);
+            const [branches] = await pool.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
+            branchCount = branches[0]?.count || 0;
+        } catch (e) { }
+
+        res.json({
+            success: true,
+            data: {
+                deploymentType: branchCount > 1 ? 'multi' : 'single',
+                branchCount,
+                tenantName: tenant.tenant_name,
+                tenantSlug: tenant.tenant_slug,
+                country: tenant.country,
+                location: tenant.location,
+                email: tenant.email
+            }
+        });
+    } catch (error) {
+        Logger.error(`[HEARSE] /tenant/:slug/settings error: ${error.message}`);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}));
+
+// GET /tenant/:tenantSlug/branches - Get branches for a tenant
+app.get('/tenant/:tenantSlug/branches', asyncHandler(async (req, res) => {
+    const { tenantSlug } = req.params;
+
+    try {
+        let dbName = req.tenant?.db_name;
+
+        if (!dbName) {
+            const rootPool = await require('../../shared/dbConfig').getRootPool();
+            const [tenantRows] = await rootPool.query(
+                'SELECT db_name FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
+                [tenantSlug]
+            );
+            if (!tenantRows || tenantRows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Tenant not found' });
+            }
+            dbName = tenantRows[0].db_name;
+        }
+
+        const branches = await safeTenantQuery(
+            dbName,
+            'SELECT branch_id, branch_name, branch_location, branch_slug, branch_phone, branch_email, is_active FROM branches ORDER BY branch_name ASC'
+        );
+
+        res.json({
+            success: true,
+            data: branches || []
+        });
+    } catch (error) {
+        Logger.error(`[HEARSE] /tenant/:slug/branches error: ${error.message}`);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}));
 
 // ============================================================
 // Routes - Mount at root for clean path forwarding from gateway

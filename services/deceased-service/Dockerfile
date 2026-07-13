@@ -20,7 +20,7 @@ RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --netwo
 COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY app-global/ ./app-global/
+COPY services/app-global/ ./app-global/
 COPY services/deceased-service/ ./services/deceased-service/
 
 # Build shared packages in dependency order (shared-config → shared-logger → shared-utils → shared-services)

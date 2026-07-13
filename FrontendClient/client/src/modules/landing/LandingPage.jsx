@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 import Footer from '../../components/layout/Footer';
-import LandingPageSEO from '../../components/seo/LandingPageSEO';
+import LandingPageSEO from '../seo/LandingPageSEO';
 
 
 

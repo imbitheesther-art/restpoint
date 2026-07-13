@@ -29,7 +29,7 @@ RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --netwo
 COPY packages/ ./packages/
 COPY configurations/ ./configurations/
 COPY shared/ ./shared/
-COPY app-global/ ./global/
+COPY services/app-global/ ./app-global/
 COPY services/api-gateway/ ./services/api-gateway/
 
 # Build shared packages (critical for TypeScript imports)

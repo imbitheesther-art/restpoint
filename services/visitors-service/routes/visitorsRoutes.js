@@ -8,7 +8,7 @@ const {
 } = require('../controllers/visitorsControl');
 
 // Import authentication middleware
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
 
 // Public route - visitors can register themselves
 router.post('/register-visitor', registerVisitor);

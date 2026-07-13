@@ -64,8 +64,8 @@ router.get('/all-coffins', (req, res) => coffinController.getAllCoffins(req, res
 router.get('/list', (req, res) => coffinController.getAllCoffins(req, res));
 router.get('/coffins-list', (req, res) => coffinController.getAllCoffins(req, res));
 
-router.get('/:id', (req, res) => coffinController.getCoffinById(req, res));
 router.get('/detail/:id', (req, res) => coffinController.getCoffinById(req, res));
+router.get('/:id', (req, res) => coffinController.getCoffinById(req, res));
 
 router.put('/:id', upload.array('images', 10), (req, res) => coffinController.updateCoffin(req, res));
 router.put('/update/:id', upload.array('images', 10), (req, res) => coffinController.updateCoffin(req, res));

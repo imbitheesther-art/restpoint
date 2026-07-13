@@ -7,7 +7,7 @@ import PDFDocument from 'pdfkit';
 import { AppError } from '../middlewares/errorHandler';
 
 // Standardized to ES Imports
-import { safeQuery } from '../../../configurations/sqlConfig/db';
+import { safeQuery } from '../../configurations/sqlConfig/db';
 import { getKenyaTimeISO, getKenyaTimeFormatted } from '../../../packages/shared-utils/dist/timestamps';
 import { loadTenantBranding } from './tenantBranding';
 

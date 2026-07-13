@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../../store/useAuthstore';
-import { useTenantStore } from '../../store/useTenantStore';
+import { useAuthStore } from '../../../modules/seo/useAuthstore';
+import { useTenantStore } from '../../../modules/seo/useTenantStore';
 
 // Production System - Simple and Working
 const ProductionSystem = () => {

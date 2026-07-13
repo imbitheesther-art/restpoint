@@ -19,30 +19,30 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   // Attach tenant slug from active tenant store if available
   // Check multiple possible keys for tenant slug
-  let tenantSlug = 
-    localStorage.getItem('tenant_slug') || 
+  let tenantSlug =
+    localStorage.getItem('tenant_slug') ||
     localStorage.getItem('tenantSlug');
-  
+
   // If not found, try to extract from stored user data
   if (!tenantSlug) {
     try {
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       // Check various possible fields in user data
-      tenantSlug = userData.tenantSlug || 
-                   userData.tenant_slug || 
-                   userData.tenant?.slug ||
-                   null;
+      tenantSlug = userData.tenantSlug ||
+        userData.tenant_slug ||
+        userData.tenant?.slug ||
+        null;
     } catch (e) {
       // Ignore parsing errors
     }
   }
-  
+
   // Default to system_shared if still not found
   config.headers['x-tenant-slug'] = tenantSlug || 'system_shared';
-  
+
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -57,17 +57,17 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const refreshUrl = env.API_URL + ENDPOINTS.AUTH.REFRESH;
-        // Include refreshToken if expected in body, or rely on cookies
+        // Include refreshToken in request body
         const refreshToken = localStorage.getItem('refreshToken');
-        
-        const response = await axios.post(refreshUrl, { token: refreshToken }, { withCredentials: true });
-        
+
+        const response = await axios.post(refreshUrl, { refreshToken }, { withCredentials: true });
+
         if (response.data?.token || response.data?.accessToken) {
           const newToken = response.data.token || response.data.accessToken;
           localStorage.setItem('authToken', newToken);
           originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
         }
-        
+
         return api(originalRequest);
       } catch (refreshError) {
         // Clear auth details on failure
@@ -75,7 +75,7 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        
+
         // Optionally redirect to login here, but better handled by hooks/components
         // window.location.href = '/login';
         return Promise.reject(refreshError);

@@ -14,9 +14,10 @@ import {
   ArrowUp, ArrowDown, SearchX, SlidersHorizontal, Maximize2,
   Diamond, CheckSquare, XSquare, Loader2
 } from 'lucide-react';
+import env from '../../config/env';
 
-// ─── Color Palette (Elegant Vintage) ───────────────────────────────────────
-const Colors = {
+// ─── Color Palette ─────────────────────────────────────────────────────────
+const C = {
   ink: '#15171A',
   bone: '#FAF8F4',
   bone2: '#F3EFE6',
@@ -36,1141 +37,703 @@ const Colors = {
   success: '#475A43',
   successBg: '#EEF3EC',
   successLine: '#DCE6D9',
-  shadow: 'rgba(21,23,26,0.12)',
+  shadow: 'rgba(21,23,26,0.08)',
   overlay: 'rgba(21,23,26,0.88)',
-  textMuted: '#8B8882',
+  muted: '#8B8882',
   darkGray: '#2C2F33',
-  primaryDark: '#15171A',
-  accentTeal: '#3D4F47',
   infoBlue: '#5B7B8A',
-  dangerRed: '#9B4A3F',
-  mediumGray: '#E3DDD0',
-  lightGray: '#F3EFE6',
-  successGreen: '#475A43',
   warningAmber: '#A68B5B',
   warningBg: '#F8F3E8',
   warningLine: '#EDE4D0',
+  medGray: '#E3DDD0',
+  lightGray: '#F3EFE6',
 };
 
 // ─── Animations ────────────────────────────────────────────────────────────
 const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 `;
-
-const slideIn = keyframes`
-  from { transform: translateX(-10px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-`;
-
-const slideInFromTop = keyframes`
+const slideInTop = keyframes`
   from { transform: translateY(-100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 `;
-
-const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-`;
-
 const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 `;
 
-const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-`;
-
-// ─── Styled Components ─────────────────────────────────────────────────────
-
-const PageContainer = styled.div`
-  background: ${Colors.bone};
+// ─── Page ─────────────────────────────────────────────────────────────────
+const Page = styled.div`
+  background: ${C.bone};
   min-height: 100vh;
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-
-  @media (max-width: 768px) {
-    padding: 0.75rem;
-  }
+  @media (max-width: 768px) { padding: 0.625rem; }
 `;
 
-const BreadcrumbNav = styled.div`
+const Crumb = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
-  color: ${Colors.gray};
-  flex-wrap: wrap;
-
+  gap: 0.4rem;
+  margin-bottom: 0.875rem;
+  font-size: 0.78rem;
+  color: ${C.muted};
   a {
-    color: ${Colors.brass};
+    color: ${C.brass};
     text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    transition: color 0.2s;
-
-    &:hover {
-      color: ${Colors.brassHover};
-    }
+    gap: 0.2rem;
+    &:hover { color: ${C.brassHover}; }
+    svg { width: 12px; height: 12px; }
   }
-
-  span {
-    color: ${Colors.textMuted};
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .separator {
-    color: ${Colors.mediumGray};
-  }
+  .sep { color: ${C.medGray}; margin: 0 0.1rem; }
 `;
 
+// ─── Card Shell ────────────────────────────────────────────────────────────
 const Card = styled.div`
-  background: ${Colors.white};
-  border-radius: 1.25rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid ${Colors.mediumGray};
+  background: ${C.white};
+  border-radius: 8px;
+  box-shadow: 0 1px 4px ${C.shadow};
+  border: 1px solid ${C.medGray};
   overflow: hidden;
-  animation: ${fadeIn} 0.6s ease-out;
-  margin-bottom: 1.5rem;
+  animation: ${fadeIn} 0.4s ease-out;
 `;
 
-const CardHeader = styled.div`
-  background: linear-gradient(135deg, ${Colors.ink} 0%, ${Colors.verdigrisDark} 100%);
-  color: ${Colors.bone};
-  padding: 1.25rem 1.5rem;
+const Head = styled.div`
+  background: ${C.ink};
+  color: ${C.bone};
+  padding: 0.7rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
-  border-bottom: 1px solid ${Colors.lineDark};
-
+  gap: 0.6rem;
   @media (max-width: 768px) {
-    padding: 1rem;
+    padding: 0.6rem 0.75rem;
     flex-direction: column;
     align-items: stretch;
   }
 `;
 
-const HeaderTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-
-  h4 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0;
-    letter-spacing: 0.5px;
-  }
-
-  svg {
-    color: ${Colors.brassLight};
-    width: 24px;
-    height: 24px;
-  }
-
-  @media (max-width: 576px) {
-    h4 { font-size: 1.125rem; }
-  }
-`;
-
-const HeaderActions = styled.div`
+const HeadLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  svg { color: ${C.brassLight}; width: 18px; height: 18px; }
+`;
+
+const HeadRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   flex-wrap: wrap;
 `;
 
 const ViewToggle = styled.div`
   display: flex;
-  gap: 0.25rem;
-  background: rgba(255,255,255,0.1);
-  padding: 0.25rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255,255,255,0.15);
+  gap: 2px;
+  background: rgba(255,255,255,0.08);
+  padding: 2px;
+  border-radius: 6px;
 `;
 
-const ViewToggleButton = styled.button`
-  padding: 0.5rem;
-  border-radius: 0.5rem;
+const VTBtn = styled.button`
+  padding: 0.3rem;
+  border-radius: 4px;
   border: none;
-  background: ${props => props.$active ? Colors.bone : 'transparent'};
-  color: ${props => props.$active ? Colors.ink : Colors.bone};
-  transition: all 0.2s ease;
+  background: ${p => p.$on ? C.bone : 'transparent'};
+  color: ${p => p.$on ? C.ink : 'rgba(255,255,255,0.5)'};
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: ${props => props.$active ? Colors.bone : 'rgba(255,255,255,0.15)'};
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
+  transition: all 0.15s;
+  &:hover { background: ${p => p.$on ? C.bone : 'rgba(255,255,255,0.12)'}; }
+  svg { width: 14px; height: 14px; }
 `;
 
-const Button = styled.button`
+const Btn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
   font-weight: 600;
-  border: 2px solid ${Colors.mediumGray};
-  background: ${Colors.white};
-  color: ${Colors.darkGray};
+  border: 1px solid ${C.medGray};
+  background: ${C.white};
+  color: ${C.darkGray};
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 38px;
+  transition: all 0.15s;
   white-space: nowrap;
-
+  line-height: 1.4;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: ${Colors.brass};
+    border-color: ${C.brass};
+    box-shadow: 0 1px 4px ${C.shadow};
   }
-
-  &:active { transform: translateY(0); }
-  &:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
-
-  svg { width: 16px; height: 16px; }
+  &:active { transform: scale(0.98); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+  svg { width: 13px; height: 13px; }
 
   &.primary {
-    background: linear-gradient(135deg, ${Colors.brass} 0%, ${Colors.brassHover} 100%);
-    color: ${Colors.white};
+    background: ${C.brass};
+    color: ${C.white};
     border-color: transparent;
-    box-shadow: 0 4px 6px -1px rgba(139, 115, 85, 0.3);
-
-    &:hover {
-      box-shadow: 0 10px 20px -5px rgba(139, 115, 85, 0.4);
-      border-color: transparent;
-    }
+    &:hover { background: ${C.brassHover}; border-color: transparent; box-shadow: 0 2px 8px rgba(139,115,85,0.25); }
   }
-
   &.danger {
-    background: linear-gradient(135deg, ${Colors.red} 0%, #7A3A30 100%);
+    background: ${C.red};
     color: white;
     border-color: transparent;
-
-    &:hover {
-      box-shadow: 0 10px 20px -5px rgba(155, 74, 63, 0.3);
-      border-color: transparent;
-    }
+    &:hover { border-color: transparent; }
   }
-
   &.ghost {
     background: transparent;
-    border-color: transparent;
-    color: ${Colors.bone};
-
-    &:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: transparent;
-      transform: none;
-      box-shadow: none;
-    }
+    border-color: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    &:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); box-shadow: none; transform: none; }
   }
-
-  &.sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8125rem;
-    min-height: 32px;
-
-    svg { width: 14px; height: 14px; }
-  }
-
-  &.icon-only {
-    padding: 0.5rem;
-    min-height: 36px;
-    min-width: 36px;
-    justify-content: center;
-  }
-
-  @media (max-width: 576px) {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8125rem;
-    min-height: 34px;
-    svg { width: 14px; height: 14px; }
-  }
+  @media (max-width: 576px) { font-size: 0.7rem; padding: 0.25rem 0.5rem; svg { width: 12px; height: 12px; } }
 `;
 
-const CardBody = styled.div`
-  padding: 1.5rem;
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-  }
-
-  @media (max-width: 576px) {
-    padding: 0.75rem;
-  }
+const Body = styled.div`
+  padding: 0.875rem 1rem;
+  @media (max-width: 768px) { padding: 0.625rem 0.75rem; }
+  @media (max-width: 576px) { padding: 0.5rem 0.625rem; }
 `;
 
-// ─── Stats Cards ───────────────────────────────────────────────────────────
-
-const StatsRow = styled.div`
+// ─── Stats ─────────────────────────────────────────────────────────────────
+const Stats = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-
-  @media (max-width: 992px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 576px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
+  gap: 0.6rem;
+  margin-bottom: 0.875rem;
+  @media (max-width: 992px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 576px) { gap: 0.4rem; }
 `;
 
-const StatCard = styled.div`
-  background: ${props => props.$bg || `linear-gradient(135deg, ${Colors.verdigris} 0%, ${Colors.verdigrisDark} 100%)`};
-  border-radius: 1rem;
-  padding: 1.25rem;
-  color: ${Colors.bone};
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+const Stat = styled.div`
+  background: ${p => p.$bg};
+  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+  color: ${C.bone};
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.1);
-
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: box-shadow 0.2s;
+  &:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 100%);
     pointer-events: none;
   }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  }
-
-  @media (max-width: 576px) {
-    padding: 0.875rem;
-  }
+  @media (max-width: 576px) { padding: 0.5rem 0.6rem; }
 `;
 
 const StatIcon = styled.div`
-  background: rgba(255,255,255,0.2);
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 5px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.75rem;
-  backdrop-filter: blur(10px);
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  @media (max-width: 576px) {
-    width: 36px;
-    height: 36px;
-    svg { width: 16px; height: 16px; }
-  }
+  margin-bottom: 0.4rem;
+  svg { width: 14px; height: 14px; }
 `;
 
-const StatValue = styled.h2`
-  font-size: 1.75rem;
+const StatVal = styled.div`
+  font-size: 1.1rem;
   font-weight: 800;
-  margin: 0.5rem 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
   line-height: 1.2;
-
-  @media (max-width: 576px) {
-    font-size: 1.25rem;
-  }
+  margin-bottom: 0.1rem;
+  @media (max-width: 576px) { font-size: 0.9rem; }
 `;
 
-const StatLabel = styled.small`
-  font-size: 0.8125rem;
-  opacity: 0.9;
+const StatLbl = styled.small`
+  font-size: 0.65rem;
+  opacity: 0.8;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  display: block;
 `;
 
 // ─── Alert ─────────────────────────────────────────────────────────────────
-
-const AlertBox = styled.div`
+const Alert = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-radius: 0.875rem;
-  margin-bottom: 1.5rem;
-  animation: ${fadeIn} 0.5s ease-out;
-  border-left: 4px solid ${Colors.red};
-  background: ${Colors.redBg};
-  color: ${Colors.red};
-
-  svg {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-  }
-
-  .alert-content {
-    flex: 1;
-    strong {
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-    small {
-      opacity: 0.85;
-    }
-  }
-
-  .alert-close {
-    background: none;
-    border: none;
-    color: ${Colors.red};
-    cursor: pointer;
-    padding: 0.25rem;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-
-    &:hover { opacity: 1; }
-  }
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 5px;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid ${C.red};
+  background: ${C.redBg};
+  color: ${C.red};
+  font-size: 0.78rem;
+  animation: ${fadeIn} 0.3s ease-out;
+  svg { flex-shrink: 0; width: 15px; height: 15px; }
+  .msg { flex: 1; strong { display: block; font-size: 0.75rem; margin-bottom: 0.1rem; } small { opacity: 0.8; font-size: 0.72rem; } }
+  .close { background: none; border: none; color: ${C.red}; cursor: pointer; padding: 2px; opacity: 0.5; &:hover { opacity: 1; } svg { width: 14px; height: 14px; } }
 `;
 
-// ─── Search & Filters ──────────────────────────────────────────────────────
-
-const FilterRow = styled.div`
+// ─── Filters ───────────────────────────────────────────────────────────────
+const Filters = styled.div`
   display: grid;
-  grid-template-columns: 1fr 200px 200px;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
+  grid-template-columns: 1fr 160px 160px;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  @media (max-width: 768px) { grid-template-columns: 1fr; gap: 0.375rem; }
 `;
 
-const SearchWrapper = styled.div`
+const SearchWrap = styled.div`
   position: relative;
-
   svg {
     position: absolute;
-    left: 1rem;
+    left: 0.65rem;
     top: 50%;
     transform: translateY(-50%);
-    color: ${Colors.textMuted};
-    width: 16px;
-    height: 16px;
+    color: ${C.muted};
+    width: 14px;
+    height: 14px;
     pointer-events: none;
   }
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.625rem 1rem 0.625rem 2.75rem;
-  border-radius: 0.75rem;
-  border: 2px solid ${Colors.mediumGray};
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  background: ${Colors.white};
-  color: ${Colors.ink};
+  padding: 0.4rem 0.65rem 0.4rem 2rem;
+  border-radius: 5px;
+  border: 1px solid ${C.medGray};
+  font-size: 0.78rem;
+  background: ${C.white};
+  color: ${C.ink};
   font-family: inherit;
-
-  &:focus {
-    border-color: ${Colors.brass};
-    box-shadow: 0 0 0 4px rgba(139, 115, 85, 0.1);
-    outline: none;
-    transform: translateY(-1px);
-  }
-
-  &::placeholder {
-    color: ${Colors.textMuted};
-  }
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus { border-color: ${C.brass}; box-shadow: 0 0 0 2px rgba(139,115,85,0.08); outline: none; }
+  &::placeholder { color: ${C.muted}; }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.625rem 1rem;
-  border-radius: 0.75rem;
-  border: 2px solid ${Colors.mediumGray};
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  background: ${Colors.white};
-  color: ${Colors.ink};
+  padding: 0.4rem 1.75rem 0.4rem 0.65rem;
+  border-radius: 5px;
+  border: 1px solid ${C.medGray};
+  font-size: 0.78rem;
+  background: ${C.white};
+  color: ${C.ink};
   font-family: inherit;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6862' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236B6862' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 1rem center;
-  padding-right: 2.5rem;
-
-  &:focus {
-    border-color: ${Colors.brass};
-    box-shadow: 0 0 0 4px rgba(139, 115, 85, 0.1);
-    outline: none;
-  }
+  background-position: right 0.6rem center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus { border-color: ${C.brass}; box-shadow: 0 0 0 2px rgba(139,115,85,0.08); outline: none; }
 `;
 
-// ─── Table ─────────────────────────────────────────────────────────────────
-
-const TableWrapper = styled.div`
+// ─── Table ────────────────────────────────────────────────────────────────
+const TblWrap = styled.div`
   overflow-x: auto;
-  border-radius: 0.875rem;
-  border: 1px solid ${Colors.mediumGray};
+  border: 1px solid ${C.medGray};
+  border-radius: 6px;
 `;
 
-const Table = styled.table`
+const Tbl = styled.table`
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.875rem;
+  border-collapse: collapse;
+  font-size: 0.78rem;
 
   thead th {
-    background: ${Colors.bone2};
-    border-bottom: 2px solid ${Colors.mediumGray};
-    padding: 0.875rem 1rem;
+    background: ${C.bone2};
+    border-bottom: 1px solid ${C.medGray};
+    padding: 0.5rem 0.65rem;
     font-weight: 700;
-    color: ${Colors.ink};
-    font-size: 0.75rem;
+    color: ${C.ink};
+    font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: left;
     white-space: nowrap;
-    position: sticky;
-    top: 0;
-    z-index: 1;
   }
 
   tbody td {
-    padding: 0.875rem 1rem;
-    border-bottom: 1px solid ${Colors.mediumGray};
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid ${C.medGray};
     vertical-align: middle;
-    color: ${Colors.darkGray};
-    transition: background 0.2s ease;
+    color: ${C.darkGray};
   }
 
-  tbody tr {
-    transition: all 0.2s ease;
-    cursor: pointer;
+  tbody tr { transition: background 0.1s; cursor: pointer; &:hover { background: ${C.bone}; } &:last-child td { border-bottom: none; } }
 
-    &:hover {
-      background: ${Colors.bone};
-    }
-
-    &:last-child td {
-      border-bottom: none;
-    }
-  }
-
-  @media (max-width: 768px) {
-    font-size: 0.8125rem;
-    thead th, tbody td { padding: 0.75rem; }
-  }
+  @media (max-width: 768px) { font-size: 0.72rem; thead th, tbody td { padding: 0.4rem 0.5rem; } }
 `;
 
-const ProductCell = styled.div`
+const ProdCell = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  min-width: 200px;
+  gap: 0.5rem;
+  min-width: 180px;
 `;
 
-const ProductImage = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 0.625rem;
+const ProdImg = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
   overflow: hidden;
-  border: 2px solid ${Colors.mediumGray};
-  background: ${Colors.bone2};
+  border: 1px solid ${C.medGray};
+  background: ${C.bone2};
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  svg {
-    color: ${Colors.textMuted};
-    width: 20px;
-    height: 20px;
-  }
+  img { width: 100%; height: 100%; object-fit: cover; }
+  svg { color: ${C.muted}; width: 14px; height: 14px; }
 `;
 
-const ProductInfo = styled.div`
-  h6 {
-    font-size: 0.9375rem;
-    font-weight: 700;
-    margin: 0 0 0.25rem 0;
-    color: ${Colors.ink};
-    line-height: 1.3;
-  }
-
-  p {
-    font-size: 0.75rem;
-    color: ${Colors.textMuted};
-    margin: 0;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+const ProdInfo = styled.div`
+  h6 { font-size: 0.8rem; font-weight: 600; margin: 0; color: ${C.ink}; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+  p { font-size: 0.68rem; color: ${C.muted}; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
 `;
 
-const PriceBox = styled.div`
-  white-space: nowrap;
-
-  .old {
-    font-size: 0.75rem;
-    color: ${Colors.textMuted};
-    text-decoration: line-through;
-    display: block;
-  }
-
-  .new {
-    font-weight: 700;
-    color: ${Colors.red};
-    font-size: 0.9375rem;
-  }
+const Price = styled.div`
+  .new { font-weight: 700; color: ${C.red}; font-size: 0.8rem; white-space: nowrap; }
 `;
 
 const StockBar = styled.div`
-  width: 100px;
-  height: 6px;
-  background: ${Colors.mediumGray};
-  border-radius: 3px;
+  width: 60px;
+  height: 4px;
+  background: ${C.medGray};
+  border-radius: 2px;
   overflow: hidden;
-  margin-top: 0.375rem;
+  margin-top: 0.2rem;
 `;
 
 const StockFill = styled.div`
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  background: ${props =>
-    props.$percentage > 50
-      ? `linear-gradient(90deg, ${Colors.success}, #5A6E55)`
-      : props.$percentage > 20
-        ? `linear-gradient(90deg, ${Colors.warningAmber}, #C4A86A)`
-        : `linear-gradient(90deg, ${Colors.red}, #B85A4F)`};
+  border-radius: 2px;
+  background: ${p => p.$pct > 50 ? C.success : p.$pct > 20 ? C.warningAmber : C.red};
 `;
 
 const Badge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   white-space: nowrap;
-
-  background: ${props =>
-    props.$variant === 'danger' ? Colors.redBg :
-      props.$variant === 'warning' ? Colors.warningBg :
-        Colors.successBg};
-  color: ${props =>
-    props.$variant === 'danger' ? Colors.red :
-      props.$variant === 'warning' ? Colors.warningAmber :
-        Colors.success};
-
-  border: 1px solid ${props =>
-    props.$variant === 'danger' ? Colors.redLine :
-      props.$variant === 'warning' ? Colors.warningLine :
-        Colors.successLine};
+  background: ${p => p.$v === 'danger' ? C.redBg : p.$v === 'warning' ? C.warningBg : C.successBg};
+  color: ${p => p.$v === 'danger' ? C.red : p.$v === 'warning' ? C.warningAmber : C.success};
+  border: 1px solid ${p => p.$v === 'danger' ? C.redLine : p.$v === 'warning' ? C.warningLine : C.successLine};
 `;
 
-const ActionsCell = styled.div`
+const Acts = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.2rem;
 `;
 
-const ActionButton = styled.button`
+const ActBtn = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 0.5rem;
-  border: 1px solid ${Colors.mediumGray};
-  background: ${Colors.white};
-  color: ${Colors.darkGray};
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid ${C.medGray};
+  background: ${C.white};
+  color: ${C.darkGray};
   cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  }
-
-  svg { width: 16px; height: 16px; }
-
-  &.view { &:hover { border-color: ${Colors.verdigris}; color: ${Colors.verdigris}; } }
-  &.edit { &:hover { border-color: ${Colors.brass}; color: ${Colors.brass}; } }
-  &.delete { &:hover { border-color: ${Colors.red}; color: ${Colors.red}; } }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none !important;
-  }
+  transition: all 0.15s;
+  svg { width: 12px; height: 12px; }
+  &.view:hover { border-color: ${C.verdigris}; color: ${C.verdigris}; }
+  &.edit:hover { border-color: ${C.brass}; color: ${C.brass}; }
+  &.del:hover { border-color: ${C.red}; color: ${C.red}; }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
 `;
 
 // ─── Grid View ─────────────────────────────────────────────────────────────
-
-const GridContainer = styled.div`
+const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
-
-  @media (max-width: 576px) {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.6rem;
+  @media (max-width: 576px) { grid-template-columns: 1fr; }
 `;
 
-const CoffinCard = styled.div`
-  background: ${Colors.white};
-  border-radius: 1rem;
+const GCard = styled.div`
+  background: ${C.white};
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid ${Colors.mediumGray};
+  box-shadow: 0 1px 3px ${C.shadow};
+  border: 1px solid ${C.medGray};
   display: flex;
   flex-direction: column;
-  animation: ${fadeIn} 0.5s ease-out;
-
-  &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    border-color: ${Colors.brass};
-  }
+  transition: box-shadow 0.2s, border-color 0.2s;
+  animation: ${fadeIn} 0.3s ease-out;
+  &:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); border-color: ${C.brassLight}; }
 `;
 
-const CoffinCardImage = styled.div`
+const GImg = styled.div`
   width: 100%;
-  height: 180px;
+  height: 120px;
   overflow: hidden;
-  border-bottom: 1px solid ${Colors.mediumGray};
-  background: ${Colors.bone2};
+  border-bottom: 1px solid ${C.medGray};
+  background: ${C.bone2};
   display: flex;
   align-items: center;
   justify-content: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-
-  ${CoffinCard}:hover & img {
-    transform: scale(1.05);
-  }
-
-  svg {
-    color: ${Colors.textMuted};
-    width: 48px;
-    height: 48px;
-  }
+  img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  ${GCard}:hover & img { transform: scale(1.03); }
+  svg { color: ${C.muted}; width: 32px; height: 32px; }
 `;
 
-const CoffinCardBody = styled.div`
-  padding: 1.25rem;
+const GBody = styled.div`
+  padding: 0.65rem 0.75rem;
   flex: 1;
   display: flex;
   flex-direction: column;
 `;
 
-const CoffinCardTitle = styled.h5`
-  font-size: 1.125rem;
+const GTitle = styled.h5`
+  font-size: 0.85rem;
   font-weight: 700;
-  margin: 0 0 0.75rem 0;
-  color: ${Colors.ink};
+  margin: 0 0 0.4rem;
+  color: ${C.ink};
   line-height: 1.3;
 `;
 
-const CoffinCardText = styled.p`
-  font-size: 0.8125rem;
-  color: ${Colors.textMuted};
-  margin: 0 0 0.375rem 0;
+const GText = styled.p`
+  font-size: 0.7rem;
+  color: ${C.muted};
+  margin: 0 0 0.2rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-
-  svg {
-    flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    color: ${Colors.brass};
-  }
+  gap: 0.3rem;
+  svg { flex-shrink: 0; width: 11px; height: 11px; color: ${C.brass}; }
 `;
 
-const CoffinCardFooter = styled.div`
+const GFooter = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid ${Colors.mediumGray};
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid ${C.medGray};
 `;
 
 // ─── Pagination ────────────────────────────────────────────────────────────
-
-const PaginationRow = styled.div`
+const PagRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 0 0;
-  margin-top: 1rem;
-  border-top: 1px solid ${Colors.mediumGray};
+  padding: 0.6rem 0 0;
+  margin-top: 0.6rem;
+  border-top: 1px solid ${C.medGray};
   flex-wrap: wrap;
-  gap: 1rem;
-
-  @media (max-width: 576px) {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-  }
+  gap: 0.5rem;
+  @media (max-width: 576px) { flex-direction: column; align-items: stretch; text-align: center; }
 `;
 
-const PageInfo = styled.div`
-  font-size: 0.875rem;
-  color: ${Colors.textMuted};
+const PagInfo = styled.div`
+  font-size: 0.72rem;
+  color: ${C.muted};
 `;
 
-const PageButtons = styled.div`
+const PagBtns = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 `;
 
-const PageButton = styled.button`
+const PagBtn = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  border-radius: 0.5rem;
-  border: 1px solid ${props => props.$active ? Colors.brass : Colors.mediumGray};
-  background: ${props => props.$active ? Colors.brass : Colors.white};
-  color: ${props => props.$active ? Colors.white : Colors.darkGray};
-  font-weight: ${props => props.$active ? '700' : '500'};
-  font-size: 0.875rem;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid ${p => p.$on ? C.brass : C.medGray};
+  background: ${p => p.$on ? C.brass : C.white};
+  color: ${p => p.$on ? C.white : C.darkGray};
+  font-weight: ${p => p.$on ? '700' : '500'};
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    border-color: ${Colors.brass};
-    background: ${props => props.$active ? Colors.brassHover : Colors.bone};
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  svg { width: 16px; height: 16px; }
+  transition: all 0.15s;
+  &:hover:not(:disabled) { border-color: ${C.brass}; background: ${p => p.$on ? C.brassHover : C.bone}; }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
+  svg { width: 13px; height: 13px; }
 `;
 
-// ─── Loading & Empty States ────────────────────────────────────────────────
-
-const LoadingState = styled.div`
+// ─── States ────────────────────────────────────────────────────────────────
+const Loading = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
-  color: ${Colors.brass};
-
-  svg {
-    animation: ${spin} 1s linear infinite;
-    width: 32px;
-    height: 32px;
-  }
-
-  p {
-    margin-top: 1rem;
-    font-size: 0.9375rem;
-    color: ${Colors.textMuted};
-  }
+  padding: 3rem 1.5rem;
+  color: ${C.brass};
+  svg { animation: ${spin} 0.8s linear infinite; width: 24px; height: 24px; }
+  p { margin-top: 0.6rem; font-size: 0.8rem; color: ${C.muted}; }
 `;
 
-const EmptyState = styled.div`
+const Empty = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3rem 1.5rem;
   text-align: center;
-
-  svg {
-    width: 64px;
-    height: 64px;
-    color: ${Colors.mediumGray};
-    margin-bottom: 1rem;
-  }
-
-  h5 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: ${Colors.ink};
-    margin: 0 0 0.5rem 0;
-  }
-
-  p {
-    font-size: 0.875rem;
-    color: ${Colors.textMuted};
-    margin: 0 0 1.5rem 0;
-  }
+  svg { width: 40px; height: 40px; color: ${C.medGray}; margin-bottom: 0.6rem; }
+  h5 { font-size: 0.9rem; font-weight: 700; color: ${C.ink}; margin: 0 0 0.25rem; }
+  p { font-size: 0.78rem; color: ${C.muted}; margin: 0 0 0.875rem; }
 `;
 
 // ─── Toast ─────────────────────────────────────────────────────────────────
-
-const ToastContainer = styled.div`
+const ToastWrap = styled.div`
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: 1rem;
+  right: 1rem;
   z-index: 1050;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-
-  @media (max-width: 576px) {
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
-  }
+  gap: 0.35rem;
+  @media (max-width: 576px) { left: 0.75rem; right: 0.75rem; bottom: 0.75rem; }
 `;
 
 const ToastItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1.125rem;
-  border-radius: 0.75rem;
-  background: ${props => props.$type === 'success' ? Colors.success : Colors.red};
-  color: ${Colors.white};
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-  animation: ${slideInFromTop} 0.3s ease-out;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 5px;
+  background: ${p => p.$t === 'success' ? C.success : C.red};
+  color: ${C.white};
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  animation: ${slideInTop} 0.2s ease-out;
+  font-size: 0.78rem;
   font-weight: 500;
-  max-width: 360px;
-
-  svg { width: 18px; height: 18px; flex-shrink: 0; }
-
-  .toast-close {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.8);
-    cursor: pointer;
-    padding: 0.125rem;
-    margin-left: auto;
-    transition: color 0.2s;
-    &:hover { color: white; }
-  }
-
-  @media (max-width: 576px) {
-    max-width: 100%;
-    font-size: 0.8125rem;
-  }
+  max-width: 300px;
+  svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .x { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 1px; margin-left: auto; &:hover { color: white; } svg { width: 14px; height: 14px; } }
+  @media (max-width: 576px) { max-width: 100%; font-size: 0.72rem; }
 `;
 
-// ─── Modal ─────────────────────────────────────────────────────────────────
-
-const ModalOverlay = styled.div`
+// ─── Modal ────────────────────────────────────────────────────────────────
+const Overlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${Colors.overlay};
+  inset: 0;
+  background: ${C.overlay};
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
-  animation: ${fadeIn} 0.2s ease-out;
-  backdrop-filter: blur(4px);
+  padding: 0.75rem;
+  animation: ${fadeIn} 0.15s ease-out;
+  backdrop-filter: blur(3px);
 `;
 
-const ModalBox = styled.div`
-  background: ${Colors.white};
-  border-radius: 1.25rem;
+const MBox = styled.div`
+  background: ${C.white};
+  border-radius: 8px;
   width: 100%;
-  max-width: ${props => props.$size === 'lg' ? '800px' : '500px'};
-  max-height: 90vh;
+  max-width: ${p => p.$lg ? '640px' : '420px'};
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-  animation: ${fadeIn} 0.3s ease-out;
-
-  &::-webkit-scrollbar { width: 6px; }
+  box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+  animation: ${fadeIn} 0.2s ease-out;
+  &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: ${Colors.mediumGray}; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb { background: ${C.medGray}; border-radius: 2px; }
 `;
 
-const ModalHeader = styled.div`
+const MHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid ${Colors.mediumGray};
-
-  h5 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  svg { width: 20px; height: 20px; color: ${Colors.brass}; }
+  padding: 0.65rem 0.875rem;
+  border-bottom: 1px solid ${C.medGray};
+  h5 { font-size: 0.85rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.35rem; }
+  svg { width: 16px; height: 16px; color: ${C.brass}; }
 `;
 
-const ModalClose = styled.button`
+const MClose = styled.button`
   background: none;
   border: none;
-  color: ${Colors.textMuted};
+  color: ${C.muted};
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-
-  &:hover {
-    background: ${Colors.bone2};
-    color: ${Colors.ink};
-  }
-
-  svg { width: 20px; height: 20px; }
+  padding: 2px;
+  border-radius: 3px;
+  transition: all 0.15s;
+  &:hover { background: ${C.bone2}; color: ${C.ink}; }
+  svg { width: 16px; height: 16px; }
 `;
 
-const ModalBody = styled.div`
-  padding: 1.5rem;
-`;
+const MBody = styled.div`padding: 0.875rem;`;
 
-const ModalFooter = styled.div`
+const MFooter = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid ${Colors.mediumGray};
+  gap: 0.5rem;
+  padding: 0.6rem 0.875rem;
+  border-top: 1px solid ${C.medGray};
 `;
 
 // ─── Form ──────────────────────────────────────────────────────────────────
-
-const FormGroup = styled.div`
-  margin-bottom: 1rem;
-
-  label {
-    display: block;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: ${Colors.darkGray};
-    margin-bottom: 0.375rem;
-  }
+const FGroup = styled.div`
+  margin-bottom: 0.65rem;
+  label { display: block; font-size: 0.72rem; font-weight: 600; color: ${C.darkGray}; margin-bottom: 0.2rem; }
 `;
 
-const FormInput = styled.input`
+const FInput = styled.input`
   width: 100%;
-  padding: 0.625rem 0.875rem;
-  border-radius: 0.625rem;
-  border: 2px solid ${Colors.mediumGray};
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  background: ${Colors.white};
-  color: ${Colors.ink};
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid ${C.medGray};
+  font-size: 0.78rem;
+  background: ${C.white};
+  color: ${C.ink};
   font-family: inherit;
-
-  &:focus {
-    border-color: ${Colors.brass};
-    box-shadow: 0 0 0 4px rgba(139, 115, 85, 0.1);
-    outline: none;
-  }
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus { border-color: ${C.brass}; box-shadow: 0 0 0 2px rgba(139,115,85,0.08); outline: none; }
 `;
 
-const FormRow = styled.div`
+const FRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-
-  @media (max-width: 576px) {
-    grid-template-columns: 1fr;
-  }
+  gap: 0.6rem;
+  @media (max-width: 576px) { grid-template-columns: 1fr; }
 `;
 
-// ─── Assignments List ──────────────────────────────────────────────────────
-
-const AssignmentList = styled.div`
+// ─── Assignments ───────────────────────────────────────────────────────────
+const AssignList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
 `;
 
-const AssignmentItem = styled.div`
+const AssignItem = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: ${Colors.bone};
-  border-radius: 0.75rem;
-  border: 1px solid ${Colors.mediumGray};
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: ${Colors.brassLight};
-    background: ${Colors.white};
-  }
-
-  @media (max-width: 576px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-`;
-
-const AssignmentInfo = styled.div`
-  h6 {
-    font-size: 0.9375rem;
-    font-weight: 700;
-    margin: 0 0 0.25rem 0;
-    color: ${Colors.ink};
-  }
-
-  small {
-    font-size: 0.8125rem;
-    color: ${Colors.textMuted};
-  }
+  padding: 0.5rem 0.65rem;
+  background: ${C.bone};
+  border-radius: 5px;
+  border: 1px solid ${C.medGray};
+  font-size: 0.78rem;
+  transition: border-color 0.15s;
+  &:hover { border-color: ${C.brassLight}; }
+  h6 { font-size: 0.78rem; font-weight: 600; margin: 0 0 0.1rem; color: ${C.ink}; }
+  small { font-size: 0.7rem; color: ${C.muted}; }
+  @media (max-width: 576px) { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
 `;
 
 // ─── Main Component ────────────────────────────────────────────────────────
@@ -1242,34 +805,10 @@ function CoffinInventory() {
   ), [coffins]);
 
   const stats = useMemo(() => [
-    {
-      title: "Total Models",
-      value: totalCoffins,
-      icon: <Box size={20} />,
-      bg: `linear-gradient(135deg, ${Colors.verdigris} 0%, ${Colors.verdigrisDark} 100%)`,
-      description: "Unique coffin models"
-    },
-    {
-      title: "Total Valuation",
-      value: `Ksh ${totalInventoryValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-      icon: <Trophy size={20} />,
-      bg: `linear-gradient(135deg, ${Colors.brass} 0%, ${Colors.brassHover} 100%)`,
-      description: "Inventory value"
-    },
-    {
-      title: "Total Stock",
-      value: totalStock,
-      icon: <Database size={20} />,
-      bg: `linear-gradient(135deg, ${Colors.success} 0%, #5A6E55 100%)`,
-      description: "Units in inventory"
-    },
-    {
-      title: "Out of Stock",
-      value: outOfStockCoffins.length,
-      icon: <XCircle size={20} />,
-      bg: `linear-gradient(135deg, ${Colors.red} 0%, #7A3A30 100%)`,
-      description: "Need restocking"
-    }
+    { title: "Total Models", value: totalCoffins, icon: <Box size={14} />, bg: `linear-gradient(135deg, ${C.verdigris}, ${C.verdigrisDark})` },
+    { title: "Total Valuation", value: `Ksh ${totalInventoryValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: <Trophy size={14} />, bg: `linear-gradient(135deg, ${C.brass}, ${C.brassHover})` },
+    { title: "Total Stock", value: totalStock, icon: <Database size={14} />, bg: `linear-gradient(135deg, ${C.success}, #5A6E55)` },
+    { title: "Out of Stock", value: outOfStockCoffins.length, icon: <XCircle size={14} />, bg: `linear-gradient(135deg, ${C.red}, #7A3A30)` }
   ], [totalCoffins, totalInventoryValue, totalStock, outOfStockCoffins.length]);
 
   const filteredCoffins = useMemo(() => {
@@ -1300,16 +839,11 @@ function CoffinInventory() {
   const totalPages = Math.ceil(filteredCoffins.length / itemsPerPage);
 
   const playAlertSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => { });
-    }
+    if (audioRef.current) audioRef.current.play().catch(() => { });
   }, []);
 
   const checkLowStock = useCallback(() => {
-    const alerts = coffins.filter(c => {
-      const stock = c.quantity || 0;
-      return stock > 0 && stock <= 5;
-    });
+    const alerts = coffins.filter(c => { const s = c.quantity || 0; return s > 0 && s <= 5; });
     setLowStockCoffins(alerts);
     if (alerts.length > 0 && !hasPlayedSound) {
       playAlertSound();
@@ -1355,9 +889,7 @@ function CoffinInventory() {
       const api = (await import('../../api/axios')).default;
       const { ENDPOINTS } = await import('../../api/endpoints');
       const response = await api.get(ENDPOINTS.COFFINS.ASSIGNMENTS);
-      if (response.data.success) {
-        setRecentAssignments(response.data.data || []);
-      }
+      if (response.data.success) setRecentAssignments(response.data.data || []);
     } catch (error) {
       console.error('Failed to load recent assignments:', error);
       setRecentAssignments([]);
@@ -1381,10 +913,10 @@ function CoffinInventory() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      showToast('Excel report downloaded successfully!', 'success');
+      showToast('Excel report downloaded!', 'success');
     } catch (error) {
       console.error('Export failed:', error);
-      showToast('Failed to export Excel report', 'error');
+      showToast('Failed to export', 'error');
     } finally {
       setExporting(false);
     }
@@ -1398,20 +930,11 @@ function CoffinInventory() {
     await fetchRecentAssignments();
   }, [fetchCoffins, fetchRecentAssignments]);
 
-  useEffect(() => {
-    fetchCoffins();
-    fetchRecentAssignments();
-  }, [fetchCoffins, fetchRecentAssignments]);
-
-  useEffect(() => {
-    if (coffins.length > 0) checkLowStock();
-  }, [coffins, checkLowStock]);
+  useEffect(() => { fetchCoffins(); fetchRecentAssignments(); }, [fetchCoffins, fetchRecentAssignments]);
+  useEffect(() => { if (coffins.length > 0) checkLowStock(); }, [coffins, checkLowStock]);
 
   const handleAddCoffin = () => {
-    setRegisterFormData({
-      type: '', material: '', size: '', color: '', quantity: '',
-      exact_price: '', currency: 'KES', supplier: '', origin: '', category: 'locally_made'
-    });
+    setRegisterFormData({ type: '', material: '', size: '', color: '', quantity: '', exact_price: '', currency: 'KES', supplier: '', origin: '', category: 'locally_made' });
     setRegisterImageFiles([]);
     setRegisterImagePreviews([]);
     setRegisterError(null);
@@ -1433,9 +956,7 @@ function CoffinInventory() {
       const reader = new FileReader();
       reader.onloadend = () => {
         newPreviews.push(reader.result);
-        if (newPreviews.length === newFiles.length) {
-          setRegisterImagePreviews([...newPreviews]);
-        }
+        if (newPreviews.length === newFiles.length) setRegisterImagePreviews([...newPreviews]);
       };
       reader.readAsDataURL(file);
     });
@@ -1452,9 +973,7 @@ function CoffinInventory() {
       return;
     }
     const formData = new FormData();
-    Object.keys(registerFormData).forEach(key => {
-      if (registerFormData[key] !== '') formData.append(key, registerFormData[key]);
-    });
+    Object.keys(registerFormData).forEach(key => { if (registerFormData[key] !== '') formData.append(key, registerFormData[key]); });
     try {
       const username = (() => { try { const u = JSON.parse(localStorage.getItem('user') || '{}'); return u.username || u.name || 'Admin'; } catch { return 'Admin'; } })();
       formData.append('created_by', username);
@@ -1463,12 +982,10 @@ function CoffinInventory() {
       const { ENDPOINTS } = await import('../../api/endpoints');
       const { getTenantHeaders } = await import('../../api/endpoints');
       const registerUrl = `${env.default.FULL_API_URL}${ENDPOINTS.COFFINS.BASE}/register`;
-      const response = await fetch(registerUrl, {
-        method: 'POST', headers: getTenantHeaders(), body: formData,
-      });
+      const response = await fetch(registerUrl, { method: 'POST', headers: getTenantHeaders(), body: formData });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || 'Registration failed');
-      showToast('Coffin registered successfully!', 'success');
+      showToast('Coffin registered!', 'success');
       setShowRegisterModal(false);
       fetchCoffins();
     } catch (err) {
@@ -1478,10 +995,7 @@ function CoffinInventory() {
     }
   };
 
-  const handleDelete = (coffin) => {
-    setSelectedCoffin(coffin);
-    setShowDeleteModal(true);
-  };
+  const handleDelete = (coffin) => { setSelectedCoffin(coffin); setShowDeleteModal(true); };
 
   const confirmDelete = async () => {
     try {
@@ -1490,10 +1004,8 @@ function CoffinInventory() {
       const response = await api.delete(ENDPOINTS.COFFINS.DELETE(selectedCoffin.coffin_id));
       if (response.data.success) {
         setCoffins(coffins.filter(c => c.coffin_id !== selectedCoffin.coffin_id));
-        showToast('Coffin deleted successfully!', 'success');
-      } else {
-        throw new Error(response.data.message);
-      }
+        showToast('Deleted successfully!', 'success');
+      } else throw new Error(response.data.message);
     } catch (error) {
       showToast(error.response?.data?.message || 'Delete failed', 'error');
     }
@@ -1503,15 +1015,7 @@ function CoffinInventory() {
 
   const handleEdit = (coffin) => {
     setSelectedCoffin(coffin);
-    setEditFormData({
-      type: coffin.type || '',
-      material: coffin.material || '',
-      exact_price: coffin.exact_price || '',
-      quantity: coffin.quantity || '',
-      supplier: coffin.supplier || '',
-      color: coffin.color || '',
-      size: coffin.size || ''
-    });
+    setEditFormData({ type: coffin.type || '', material: coffin.material || '', exact_price: coffin.exact_price || '', quantity: coffin.quantity || '', supplier: coffin.supplier || '', color: coffin.color || '', size: coffin.size || '' });
     setShowEditModal(true);
   };
 
@@ -1522,15 +1026,11 @@ function CoffinInventory() {
       const { ENDPOINTS } = await import('../../api/endpoints');
       const response = await api.put(ENDPOINTS.COFFINS.UPDATE(selectedCoffin.coffin_id), editFormData);
       if (response.data.success) {
-        setCoffins(coffins.map(c =>
-          c.coffin_id === selectedCoffin.coffin_id ? { ...c, ...editFormData } : c
-        ));
-        showToast('Coffin updated successfully!', 'success');
+        setCoffins(coffins.map(c => c.coffin_id === selectedCoffin.coffin_id ? { ...c, ...editFormData } : c));
+        showToast('Updated successfully!', 'success');
         setShowEditModal(false);
         setSelectedCoffin(null);
-      } else {
-        throw new Error(response.data.message);
-      }
+      } else throw new Error(response.data.message);
     } catch (error) {
       showToast('Update failed', 'error');
     }
@@ -1542,30 +1042,7 @@ function CoffinInventory() {
   };
 
   const getStockPercentage = (stock) => Math.min((stock / 20) * 100, 100);
-  const getStockVariant = (stock) => {
-    if (stock === 0) return 'danger';
-    if (stock <= 5) return 'warning';
-    return 'success';
-  };
-
-  const renderCoffinImage = (coffin) => {
-    let images = [];
-    if (Array.isArray(coffin.image_urls)) images = coffin.image_urls;
-    else if (typeof coffin.image_urls === 'string') images = coffin.image_urls.split(',').map(u => u.trim());
-    if (coffin.images && Array.isArray(coffin.images)) images = [...images, ...coffin.images];
-    images = [...new Set(images)].filter(u => u && u.trim() !== '');
-    const src = images[0];
-    if (src) {
-      return (
-        <img
-          src={src.startsWith('http') ? src : `http://localhost:4000${src}`}
-          alt={coffin.type}
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
-      );
-    }
-    return <Package size={20} />;
-  };
+  const getStockVariant = (stock) => { if (stock === 0) return 'danger'; if (stock <= 5) return 'warning'; return 'success'; };
 
   const renderCoffinImageUrl = (coffin) => {
     let images = [];
@@ -1577,561 +1054,332 @@ function CoffinInventory() {
   };
 
   return (
-    <PageContainer>
-      {/* Breadcrumb */}
-      <BreadcrumbNav>
-        <Link to="/dashboard"><Home size={14} /> Dashboard</Link>
-        <span className="separator">/</span>
+    <Page>
+      <Crumb>
+        <Link to="/dashboard"><Home size={12} /> Dashboard</Link>
+        <span className="sep">/</span>
         <span>Coffin Inventory</span>
-      </BreadcrumbNav>
+      </Crumb>
 
       <Card>
-        <CardHeader>
-          <HeaderTitle>
+        <Head>
+          <HeadLeft>
             <Package />
-            <h4>⚰️ Coffin Inventory</h4>
-          </HeaderTitle>
-          <HeaderActions>
+            <h4> Coffin Inventory</h4>
+          </HeadLeft>
+          <HeadRight>
             <ViewToggle>
-              <ViewToggleButton $active={viewMode === 'table'} onClick={() => setViewMode('table')}>
-                <List />
-              </ViewToggleButton>
-              <ViewToggleButton $active={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
-                <Grid3x3 />
-              </ViewToggleButton>
+              <VTBtn $on={viewMode === 'table'} onClick={() => setViewMode('table')}><List /></VTBtn>
+              <VTBtn $on={viewMode === 'grid'} onClick={() => setViewMode('grid')}><Grid3x3 /></VTBtn>
             </ViewToggle>
-            <Button className="ghost sm" onClick={forceRefresh}>
-              <RefreshCw size={14} /> Refresh
-            </Button>
-            <Button className="ghost sm" onClick={() => setShowAssignmentsModal(true)}>
-              <UsersIcon size={14} /> Assigned
-            </Button>
-            <Button className="primary sm" onClick={handleAddCoffin}>
-              <Plus size={14} /> Add Coffin
-            </Button>
-          </HeaderActions>
-        </CardHeader>
+            <Btn className="ghost" onClick={forceRefresh}><RefreshCw size={12} /> Refresh</Btn>
+            <Btn className="ghost" onClick={() => setShowAssignmentsModal(true)}><UsersIcon size={12} /> Assigned</Btn>
+            <Btn className="primary" onClick={handleAddCoffin}><Plus size={12} /> Add Coffin</Btn>
+          </HeadRight>
+        </Head>
 
-        <CardBody>
-          {/* Low Stock Alert */}
+        <Body>
           {lowStockCoffins.length > 0 && (
-            <AlertBox>
+            <Alert>
               <AlertTriangle />
-              <div className="alert-content">
+              <div className="msg">
                 <strong>Low Stock Alert</strong>
                 <small>{lowStockCoffins.length} coffin(s) need attention</small>
               </div>
-              <button className="alert-close" onClick={() => setLowStockCoffins([])}>
-                <XCircle size={16} />
-              </button>
-            </AlertBox>
+              <button className="close" onClick={() => setLowStockCoffins([])}><XCircle /></button>
+            </Alert>
           )}
 
-          {/* Statistics */}
-          <StatsRow>
-            {stats.map((stat, index) => (
-              <StatCard key={index} $bg={stat.bg}>
-                <StatIcon>{stat.icon}</StatIcon>
-                <StatValue>{stat.value}</StatValue>
-                <StatLabel>{stat.title}</StatLabel>
-              </StatCard>
+          <Stats>
+            {stats.map((s, i) => (
+              <Stat key={i} $bg={s.bg}>
+                <StatIcon>{s.icon}</StatIcon>
+                <StatVal>{s.value}</StatVal>
+                <StatLbl>{s.title}</StatLbl>
+              </Stat>
             ))}
-          </StatsRow>
+          </Stats>
 
-          {/* Search & Filters */}
-          <FilterRow>
-            <SearchWrapper>
+          <Filters>
+            <SearchWrap>
               <Search />
-              <Input
-                type="text"
-                placeholder="Search coffins by name, ID, material..."
-                value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              />
-            </SearchWrapper>
+              <Input type="text" placeholder="Search by name, ID, material..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
+            </SearchWrap>
             <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
               <option value="all">All Stock</option>
               <option value="in-stock">In Stock</option>
               <option value="low">Low Stock</option>
               <option value="out">Out of Stock</option>
             </Select>
-            <Button onClick={handleExportToExcel} disabled={exporting || coffins.length === 0}>
-              {exporting ? <Loader2 size={14} /> : <FileSpreadsheet size={14} />}
-              Export
-            </Button>
-          </FilterRow>
+            <Btn onClick={handleExportToExcel} disabled={exporting || coffins.length === 0}>
+              {exporting ? <Loader2 size={12} /> : <FileSpreadsheet size={12} />} Export
+            </Btn>
+          </Filters>
 
-          {/* Content */}
           {loading ? (
-            <LoadingState>
-              <Loader2 size={32} />
-              <p>Loading inventory...</p>
-            </LoadingState>
+            <Loading><Loader2 /><p>Loading inventory...</p></Loading>
           ) : filteredCoffins.length === 0 ? (
-            <EmptyState>
+            <Empty>
               <Package />
               <h5>No coffins found</h5>
               <p>Try adjusting your search or filters</p>
-              <Button className="primary" onClick={handleAddCoffin}>
-                <Plus size={14} /> Add First Coffin
-              </Button>
-            </EmptyState>
+              <Btn className="primary" onClick={handleAddCoffin}><Plus size={12} /> Add First Coffin</Btn>
+            </Empty>
           ) : viewMode === 'grid' ? (
-            /* Grid View */
-            <GridContainer>
+            <Grid>
               {currentCoffins.map((coffin) => {
                 const stock = coffin.quantity || 0;
-                const stockVariant = getStockVariant(stock);
                 const imgSrc = renderCoffinImageUrl(coffin);
                 return (
-                  <CoffinCard key={coffin.coffin_id}>
-                    <CoffinCardImage>
+                  <GCard key={coffin.coffin_id}>
+                    <GImg>
                       {imgSrc ? (
-                        <img
-                          src={imgSrc.startsWith('http') ? imgSrc : `http://localhost:4000${imgSrc}`}
-                          alt={coffin.type}
-                          onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24a1 1 0 0 0-1.1 0L2 6.5l11 6 11-6-4.45-2.26Z"/><path d="M2 12.5 13 18l11-5.5"/><path d="M13 18V8"/></svg>'; }}
-                        />
-                      ) : (
-                        <Package size={48} />
-                      )}
-                    </CoffinCardImage>
-                    <CoffinCardBody>
-                      <CoffinCardTitle>{coffin.type}</CoffinCardTitle>
-                      <CoffinCardText>
-                        <Tag size={14} />
-                        ID: {coffin.custom_id || `COFF-${coffin.coffin_id}`}
-                      </CoffinCardText>
-                      <CoffinCardText>
-                        <Layers size={14} />
-                        {coffin.material || 'N/A'}
-                      </CoffinCardText>
-                      <CoffinCardText>
-                        <DollarSign size={14} />
-                        Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}
-                      </CoffinCardText>
-                      <CoffinCardFooter>
-                        <Badge $variant={stockVariant}>
-                          {stock} units
-                        </Badge>
-                        <div style={{ display: 'flex', gap: '0.375rem' }}>
-                          <ActionButton className="view" onClick={() => handleViewDetails(coffin)}>
-                            <Eye size={14} />
-                          </ActionButton>
-                          <ActionButton className="edit" onClick={() => handleEdit(coffin)}>
-                            <Edit size={14} />
-                          </ActionButton>
+                        <img src={imgSrc.startsWith('http') ? imgSrc : `${env.FULL_API_URL}${imgSrc}`} alt={coffin.type} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24a1 1 0 0 0-1.1 0L2 6.5l11 6 11-6-4.45-2.26Z"/><path d="M2 12.5 13 18l11-5.5"/><path d="M13 18V8"/></svg>'; }} />
+                      ) : <Package size={32} />}
+                    </GImg>
+                    <GBody>
+                      <GTitle>{coffin.type}</GTitle>
+                      <GText><Tag size={11} />{coffin.custom_id || `COFF-${coffin.coffin_id}`}</GText>
+                      <GText><Layers size={11} />{coffin.material || 'N/A'}</GText>
+                      <GText><DollarSign size={11} />Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}</GText>
+                      <GFooter>
+                        <Badge $v={getStockVariant(stock)}>{stock} units</Badge>
+                        <div style={{ display: 'flex', gap: '0.2rem' }}>
+                          <ActBtn className="view" onClick={() => handleViewDetails(coffin)}><Eye size={12} /></ActBtn>
+                          <ActBtn className="edit" onClick={() => handleEdit(coffin)}><Edit size={12} /></ActBtn>
                         </div>
-                      </CoffinCardFooter>
-                    </CoffinCardBody>
-                  </CoffinCard>
+                      </GFooter>
+                    </GBody>
+                  </GCard>
                 );
               })}
-            </GridContainer>
+            </Grid>
           ) : (
-            /* Table View */
-            <>
-              <TableWrapper>
-                <Table>
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>ID</th>
-                      <th>Category</th>
-                      <th>Brand</th>
-                      <th>Price</th>
-                      <th>Stock</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentCoffins.map((coffin) => {
-                      const stock = coffin.quantity || 0;
-                      const stockPercentage = getStockPercentage(stock);
-                      const stockVariant = getStockVariant(stock);
-                      const imgSrc = renderCoffinImageUrl(coffin);
-                      return (
-                        <tr key={coffin.coffin_id} onClick={() => handleViewDetails(coffin)}>
-                          <td>
-                            <ProductCell>
-                              <ProductImage>
-                                {imgSrc ? (
-                                  <img
-                                    src={imgSrc.startsWith('http') ? imgSrc : `http://localhost:4000${imgSrc}`}
-                                    alt={coffin.type}
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                  />
-                                ) : (
-                                  <Package size={20} />
-                                )}
-                              </ProductImage>
-                              <ProductInfo>
-                                <h6>{coffin.type}</h6>
-                                <p>{coffin.material} coffin - {coffin.color || 'Standard'} color</p>
-                              </ProductInfo>
-                            </ProductCell>
-                          </td>
-                          <td><code style={{ color: Colors.textMuted, fontSize: '0.8125rem' }}>{coffin.custom_id || `COFF-${coffin.coffin_id}`}</code></td>
-                          <td>{coffin.material || 'N/A'}</td>
-                          <td>{coffin.supplier || 'N/A'}</td>
-                          <td>
-                            <PriceBox>
-                              <span className="new">Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}</span>
-                            </PriceBox>
-                          </td>
-                          <td>
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontWeight: 600 }}>{stock}</span>
-                                <small style={{ color: Colors.textMuted }}>{Math.round(stockPercentage)}%</small>
-                              </div>
-                              <StockBar>
-                                <StockFill $percentage={stockPercentage} style={{ width: `${stockPercentage}%` }} />
-                              </StockBar>
-                            </div>
-                          </td>
-                          <td>
-                            <Badge $variant={stockVariant}>
-                              {stockVariant === 'danger' ? <XCircle size={12} /> :
-                                stockVariant === 'warning' ? <AlertTriangle size={12} /> :
-                                  <CheckCircle size={12} />}
-                              {stockVariant === 'danger' ? 'Out' :
-                                stockVariant === 'warning' ? 'Low' : 'In Stock'}
-                            </Badge>
-                          </td>
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <ActionsCell>
-                              <ActionButton className="view" onClick={() => handleViewDetails(coffin)}>
-                                <Eye size={14} />
-                              </ActionButton>
-                              <ActionButton className="edit" onClick={() => handleEdit(coffin)}>
-                                <Edit size={14} />
-                              </ActionButton>
-                              <ActionButton
-                                className="delete"
-                                onClick={() => handleDelete(coffin)}
-                                disabled={stock > 0}
-                              >
-                                <Trash2 size={14} />
-                              </ActionButton>
-                            </ActionsCell>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
-              </TableWrapper>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <PaginationRow>
-                  <PageInfo>
-                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredCoffins.length)} of {filteredCoffins.length}
-                  </PageInfo>
-                  <PageButtons>
-                    <PageButton onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
-                      <ChevronLeft size={16} />
-                    </PageButton>
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      return (
-                        <PageButton
-                          key={pageNum}
-                          $active={currentPage === pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                        >
-                          {pageNum}
-                        </PageButton>
-                      );
-                    })}
-                    <PageButton onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
-                      <ChevronRight size={16} />
-                    </PageButton>
-                  </PageButtons>
-                </PaginationRow>
-              )}
-            </>
+            <TblWrap>
+              <Tbl>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>ID</th>
+                    <th>Category</th>
+                    <th>Brand</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentCoffins.map((coffin) => {
+                    const stock = coffin.quantity || 0;
+                    const imgSrc = renderCoffinImageUrl(coffin);
+                    return (
+                      <tr key={coffin.coffin_id} onClick={() => handleViewDetails(coffin)}>
+                        <td>
+                          <ProdCell>
+                            <ProdImg>
+                              {imgSrc ? (
+                                <img src={imgSrc.startsWith('http') ? imgSrc : `${env.FULL_API_URL}${imgSrc}`} alt={coffin.type} onError={(e) => { e.target.style.display = 'none'; }} />
+                              ) : <Package size={14} />}
+                            </ProdImg>
+                            <ProdInfo>
+                              <h6>{coffin.type}</h6>
+                              <p>{coffin.material || 'N/A'}</p>
+                            </ProdInfo>
+                          </ProdCell>
+                        </td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: C.brass }}>{coffin.custom_id || `COFF-${coffin.coffin_id}`}</td>
+                        <td style={{ textTransform: 'capitalize', fontSize: '0.72rem' }}>{coffin.category?.replace('_', ' ') || 'N/A'}</td>
+                        <td style={{ fontSize: '0.72rem' }}>{coffin.supplier || 'N/A'}</td>
+                        <td><Price><span className="new">Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}</span></Price></td>
+                        <td>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{stock}</div>
+                          <StockBar><StockFill $pct={getStockPercentage(stock)} style={{ width: `${getStockPercentage(stock)}%` }} /></StockBar>
+                        </td>
+                        <td><Badge $v={getStockVariant(stock)}>{stock === 0 ? 'Out' : stock <= 5 ? 'Low' : 'In Stock'}</Badge></td>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <Acts>
+                            <ActBtn className="view" onClick={() => handleViewDetails(coffin)}><Eye size={12} /></ActBtn>
+                            <ActBtn className="edit" onClick={() => handleEdit(coffin)}><Edit size={12} /></ActBtn>
+                            <ActBtn className="del" onClick={() => handleDelete(coffin)}><Trash2 size={12} /></ActBtn>
+                          </Acts>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Tbl>
+            </TblWrap>
           )}
-        </CardBody>
-      </Card>
 
-      {/* Assignments Modal */}
-      {showAssignmentsModal && (
-        <ModalOverlay onClick={() => setShowAssignmentsModal(false)}>
-          <ModalBox $size="lg" onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <h5><UsersIcon /> Recently Assigned Coffins</h5>
-              <ModalClose onClick={() => setShowAssignmentsModal(false)}>
-                <XCircle size={20} />
-              </ModalClose>
-            </ModalHeader>
-            <ModalBody>
-              {assignmentsLoading ? (
-                <LoadingState>
-                  <Loader2 size={24} />
-                  <p>Loading assignments...</p>
-                </LoadingState>
-              ) : recentAssignments.length === 0 ? (
-                <EmptyState style={{ padding: '2rem' }}>
-                  <Package size={48} />
-                  <h5>No recent assignments</h5>
-                  <p>No coffins have been assigned yet</p>
-                </EmptyState>
-              ) : (
-                <AssignmentList>
-                  {recentAssignments.map((assignment) => (
-                    <AssignmentItem key={assignment.assignment_id}>
-                      <AssignmentInfo>
-                        <h6>{assignment.deceased_name || 'Unknown'}</h6>
-                        <small>{assignment.coffin_type || 'N/A'} • {assignment.material || 'N/A'}</small>
-                      </AssignmentInfo>
-                      <Badge $variant="success">
-                        <CheckSquare size={12} /> Assigned
-                      </Badge>
-                    </AssignmentItem>
-                  ))}
-                </AssignmentList>
-              )}
-            </ModalBody>
-            <ModalFooter>
-              <Button onClick={() => setShowAssignmentsModal(false)}>Close</Button>
-            </ModalFooter>
-          </ModalBox>
-        </ModalOverlay>
-      )}
+          {filteredCoffins.length > 0 && (
+            <PagRow>
+              <PagInfo>Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredCoffins.length)} of {filteredCoffins.length}</PagInfo>
+              <PagBtns>
+                <PagBtn onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft /></PagBtn>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, currentPage - 2), currentPage + 1).map(page => (
+                  <PagBtn key={page} $on={currentPage === page} onClick={() => setCurrentPage(page)}>{page}</PagBtn>
+                ))}
+                <PagBtn onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight /></PagBtn>
+              </PagBtns>
+            </PagRow>
+          )}
+        </Body>
+      </Card>
 
       {/* Delete Modal */}
       {showDeleteModal && (
-        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
-          <ModalBox onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <h5><Trash2 /> Confirm Deletion</h5>
-              <ModalClose onClick={() => setShowDeleteModal(false)}>
-                <XCircle size={20} />
-              </ModalClose>
-            </ModalHeader>
-            <ModalBody>
-              <p>Delete <strong>{selectedCoffin?.type}</strong>? This action cannot be undone.</p>
-              {selectedCoffin?.quantity > 0 && (
-                <AlertBox style={{ marginBottom: 0 }}>
-                  <Info size={18} />
-                  <div className="alert-content">
-                    <small>Cannot delete - coffin still has stock remaining</small>
-                  </div>
-                </AlertBox>
-              )}
-            </ModalBody>
-            <ModalFooter>
-              <Button onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-              <Button className="danger" onClick={confirmDelete} disabled={selectedCoffin?.quantity > 0}>
-                <Trash2 size={14} /> Delete
-              </Button>
-            </ModalFooter>
-          </ModalBox>
-        </ModalOverlay>
+        <Overlay onClick={() => setShowDeleteModal(false)}>
+          <MBox onClick={(e) => e.stopPropagation()}>
+            <MHead>
+              <h5><Trash2 size={16} /> Delete Coffin</h5>
+              <MClose onClick={() => setShowDeleteModal(false)}><XCircle /></MClose>
+            </MHead>
+            <MBody>
+              <p style={{ fontSize: '0.8rem', color: C.gray, margin: '0 0 1rem' }}>
+                Are you sure you want to delete <strong>{selectedCoffin?.type}</strong>? This action cannot be undone.
+              </p>
+            </MBody>
+            <MFooter>
+              <Btn onClick={() => setShowDeleteModal(false)}>Cancel</Btn>
+              <Btn className="danger" onClick={confirmDelete}><Trash2 size={12} /> Delete</Btn>
+            </MFooter>
+          </MBox>
+        </Overlay>
       )}
 
       {/* Edit Modal */}
       {showEditModal && (
-        <ModalOverlay onClick={() => setShowEditModal(false)}>
-          <ModalBox $size="lg" onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <h5><Edit /> Edit Coffin</h5>
-              <ModalClose onClick={() => setShowEditModal(false)}>
-                <XCircle size={20} />
-              </ModalClose>
-            </ModalHeader>
+        <Overlay onClick={() => setShowEditModal(false)}>
+          <MBox onClick={(e) => e.stopPropagation()}>
+            <MHead>
+              <h5><Edit size={16} /> Edit Coffin</h5>
+              <MClose onClick={() => setShowEditModal(false)}><XCircle /></MClose>
+            </MHead>
             <form onSubmit={handleEditSubmit}>
-              <ModalBody>
-                <FormRow>
-                  <FormGroup>
-                    <label>Model Type</label>
-                    <FormInput
-                      value={editFormData.type}
-                      onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
-                      required
-                    />
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Material</label>
-                    <FormInput
-                      value={editFormData.material}
-                      onChange={(e) => setEditFormData({ ...editFormData, material: e.target.value })}
-                      required
-                    />
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <label>Price (Ksh)</label>
-                    <FormInput
-                      type="number"
-                      value={editFormData.exact_price}
-                      onChange={(e) => setEditFormData({ ...editFormData, exact_price: e.target.value })}
-                      required
-                    />
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Quantity</label>
-                    <FormInput
-                      type="number"
-                      value={editFormData.quantity}
-                      onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
-                      required
-                    />
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <label>Supplier</label>
-                    <FormInput
-                      value={editFormData.supplier}
-                      onChange={(e) => setEditFormData({ ...editFormData, supplier: e.target.value })}
-                    />
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Color</label>
-                    <FormInput
-                      value={editFormData.color}
-                      onChange={(e) => setEditFormData({ ...editFormData, color: e.target.value })}
-                    />
-                  </FormGroup>
-                </FormRow>
-              </ModalBody>
-              <ModalFooter>
-                <Button type="button" onClick={() => setShowEditModal(false)}>Cancel</Button>
-                <Button type="submit" className="primary">
-                  <Save size={14} /> Update Coffin
-                </Button>
-              </ModalFooter>
+              <MBody>
+                <FGroup><label>Model *</label><FInput name="type" value={editFormData.type} onChange={(e) => setEditFormData(p => ({ ...p, type: e.target.value }))} required /></FGroup>
+                <FRow>
+                  <FGroup><label>Material *</label><FInput name="material" value={editFormData.material} onChange={(e) => setEditFormData(p => ({ ...p, material: e.target.value }))} required /></FGroup>
+                  <FGroup><label>Price *</label><FInput name="exact_price" type="number" value={editFormData.exact_price} onChange={(e) => setEditFormData(p => ({ ...p, exact_price: e.target.value }))} required /></FGroup>
+                </FRow>
+                <FRow>
+                  <FGroup><label>Quantity</label><FInput name="quantity" type="number" value={editFormData.quantity} onChange={(e) => setEditFormData(p => ({ ...p, quantity: e.target.value }))} /></FGroup>
+                  <FGroup><label>Color</label><FInput name="color" value={editFormData.color} onChange={(e) => setEditFormData(p => ({ ...p, color: e.target.value }))} /></FGroup>
+                </FRow>
+                <FRow>
+                  <FGroup><label>Size</label><FInput name="size" value={editFormData.size} onChange={(e) => setEditFormData(p => ({ ...p, size: e.target.value }))} /></FGroup>
+                  <FGroup><label>Supplier</label><FInput name="supplier" value={editFormData.supplier} onChange={(e) => setEditFormData(p => ({ ...p, supplier: e.target.value }))} /></FGroup>
+                </FRow>
+              </MBody>
+              <MFooter>
+                <Btn onClick={() => setShowEditModal(false)}>Cancel</Btn>
+                <Btn className="primary" type="submit"><Save size={12} /> Save</Btn>
+              </MFooter>
             </form>
-          </ModalBox>
-        </ModalOverlay>
+          </MBox>
+        </Overlay>
       )}
 
-      {/* Register Coffin Modal */}
+      {/* Register Modal */}
       {showRegisterModal && (
-        <ModalOverlay onClick={() => { if (!registerLoading) setShowRegisterModal(false); }}>
-          <ModalBox $size="lg" onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <h5><Plus /> Register New Coffin</h5>
-              <ModalClose onClick={() => { if (!registerLoading) setShowRegisterModal(false); }}>
-                <XCircle size={20} />
-              </ModalClose>
-            </ModalHeader>
+        <Overlay onClick={() => setShowRegisterModal(false)}>
+          <MBox $lg onClick={(e) => e.stopPropagation()}>
+            <MHead>
+              <h5><Plus size={16} /> Register Coffin</h5>
+              <MClose onClick={() => setShowRegisterModal(false)}><XCircle /></MClose>
+            </MHead>
             <form onSubmit={handleRegisterSubmit}>
-              <ModalBody>
-                {registerError && (
-                  <div style={{ background: Colors.redBg, color: Colors.red, padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <AlertCircle size={16} /> {registerError}
+              <MBody>
+                {registerError && <Alert><AlertCircle /><div className="msg"><small>{registerError}</small></div></Alert>}
+                <FGroup><label>Model Name *</label><FInput name="type" value={registerFormData.type} onChange={handleRegisterChange} placeholder="e.g., Premium Oak" required /></FGroup>
+                <FRow>
+                  <FGroup><label>Material *</label><FInput name="material" value={registerFormData.material} onChange={handleRegisterChange} placeholder="e.g., Oak, Pine" required /></FGroup>
+                  <FGroup><label>Price (KES) *</label><FInput name="exact_price" type="number" value={registerFormData.exact_price} onChange={handleRegisterChange} placeholder="0" required /></FGroup>
+                </FRow>
+                <FRow>
+                  <FGroup><label>Size</label><FInput name="size" value={registerFormData.size} onChange={handleRegisterChange} placeholder="e.g., 6ft" /></FGroup>
+                  <FGroup><label>Color</label><FInput name="color" value={registerFormData.color} onChange={handleRegisterChange} placeholder="e.g., Dark Brown" /></FGroup>
+                </FRow>
+                <FRow>
+                  <FGroup><label>Quantity</label><FInput name="quantity" type="number" value={registerFormData.quantity} onChange={handleRegisterChange} placeholder="1" /></FGroup>
+                  <FGroup><label>Supplier</label><FInput name="supplier" value={registerFormData.supplier} onChange={handleRegisterChange} placeholder="Supplier name" /></FGroup>
+                </FRow>
+                <FRow>
+                  <FGroup>
+                    <label>Category</label>
+                    <Select name="category" value={registerFormData.category} onChange={handleRegisterChange}>
+                      <option value="locally_made">Locally Made</option>
+                      <option value="imported">Imported</option>
+                    </Select>
+                  </FGroup>
+                  <FGroup><label>Origin</label><FInput name="origin" value={registerFormData.origin} onChange={handleRegisterChange} placeholder="e.g., Nairobi" /></FGroup>
+                </FRow>
+                <FGroup>
+                  <label>Images</label>
+                  <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleRegisterFileChange} style={{ fontSize: '0.75rem' }} />
+                </FGroup>
+                {registerImagePreviews.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                    {registerImagePreviews.map((src, i) => (
+                      <img key={i} src={src} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, border: `1px solid ${C.medGray}` }} />
+                    ))}
                   </div>
                 )}
-                <FormRow>
-                  <FormGroup>
-                    <label>Model *</label>
-                    <FormInput name="type" value={registerFormData.type} onChange={handleRegisterChange} placeholder="e.g. Classic Mahogany" required />
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Material *</label>
-                    <FormInput name="material" value={registerFormData.material} onChange={handleRegisterChange} placeholder="e.g. Mahogany Wood" required />
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <label>Size</label>
-                    <select name="size" value={registerFormData.size} onChange={handleRegisterChange} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '2px solid ' + Colors.mediumGray, fontSize: '0.875rem', background: Colors.white, color: Colors.ink, fontFamily: 'inherit' }}>
-                      <option value="">Select Size</option>
-                      <option value="Small">Small</option>
-                      <option value="Standard">Standard</option>
-                      <option value="Large">Large</option>
-                      <option value="Extra Large">Extra Large</option>
-                    </select>
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Color</label>
-                    <FormInput name="color" value={registerFormData.color} onChange={handleRegisterChange} placeholder="e.g. Dark Brown" />
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <label>Price *</label>
-                    <FormInput type="number" name="exact_price" value={registerFormData.exact_price} onChange={handleRegisterChange} placeholder="e.g. 25000" required min="0" step="0.01" />
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Currency</label>
-                    <select name="currency" value={registerFormData.currency} onChange={handleRegisterChange} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '2px solid ' + Colors.mediumGray, fontSize: '0.875rem', background: Colors.white, color: Colors.ink, fontFamily: 'inherit' }}>
-                      <option value="KES">KES</option>
-                      <option value="USD">USD</option>
-                    </select>
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <label>Stock Quantity</label>
-                    <FormInput type="number" name="quantity" value={registerFormData.quantity} onChange={handleRegisterChange} placeholder="e.g. 5" min="0" />
-                  </FormGroup>
-                  <FormGroup>
-                    <label>Supplier</label>
-                    <FormInput name="supplier" value={registerFormData.supplier} onChange={handleRegisterChange} placeholder="e.g. Woodcraft Co." />
-                  </FormGroup>
-                </FormRow>
-                <FormGroup>
-                  <label>Origin Type</label>
-                  <select name="category" value={registerFormData.category} onChange={handleRegisterChange} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '2px solid ' + Colors.mediumGray, fontSize: '0.875rem', background: Colors.white, color: Colors.ink, fontFamily: 'inherit' }}>
-                    <option value="locally_made">Locally Made</option>
-                    <option value="imported">Imported</option>
-                  </select>
-                </FormGroup>
-                <FormGroup>
-                  <label>Images</label>
-                  <input type="file" ref={fileInputRef} onChange={handleRegisterFileChange} accept="image/*" multiple style={{ width: '100%', padding: '0.5rem', border: '2px dashed ' + Colors.mediumGray, borderRadius: '0.625rem', fontSize: '0.875rem', cursor: 'pointer' }} />
-                  {registerImagePreviews.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                      {registerImagePreviews.map((preview, i) => (
-                        <div key={i} style={{ width: '60px', height: '60px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid ' + Colors.mediumGray, position: 'relative' }}>
-                          <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </FormGroup>
-              </ModalBody>
-              <ModalFooter>
-                <Button type="button" onClick={() => setShowRegisterModal(false)} disabled={registerLoading}>Cancel</Button>
-                <Button type="submit" className="primary" disabled={registerLoading}>
-                  {registerLoading ? <Loader2 size={14} /> : <Save size={14} />}
-                  {registerLoading ? 'Registering...' : 'Register Coffin'}
-                </Button>
-              </ModalFooter>
+              </MBody>
+              <MFooter>
+                <Btn onClick={() => setShowRegisterModal(false)}>Cancel</Btn>
+                <Btn className="primary" type="submit" disabled={registerLoading}>
+                  {registerLoading ? <Loader2 size={12} /> : <Plus size={12} />} Register
+                </Btn>
+              </MFooter>
             </form>
-          </ModalBox>
-        </ModalOverlay>
+          </MBox>
+        </Overlay>
+      )}
+
+      {/* Assignments Modal */}
+      {showAssignmentsModal && (
+        <Overlay onClick={() => setShowAssignmentsModal(false)}>
+          <MBox $lg onClick={(e) => e.stopPropagation()}>
+            <MHead>
+              <h5><Users size={16} /> Recent Assignments</h5>
+              <MClose onClick={() => setShowAssignmentsModal(false)}><XCircle /></MClose>
+            </MHead>
+            <MBody>
+              {assignmentsLoading ? (
+                <Loading><Loader2 /><p>Loading assignments...</p></Loading>
+              ) : recentAssignments.length === 0 ? (
+                <Empty><Users /><h5>No assignments yet</h5><p>Assignments will appear here once coffins are allocated</p></Empty>
+              ) : (
+                <AssignList>
+                  {recentAssignments.slice(0, 20).map((a, i) => (
+                    <AssignItem key={i}>
+                      <div>
+                        <h6>{a.coffin_type || a.coffin_name || 'Coffin'}</h6>
+                        <small>Assigned to: {a.assigned_to || a.client_name || 'N/A'}</small>
+                      </div>
+                      <Badge $v="success">{a.status || 'Assigned'}</Badge>
+                    </AssignItem>
+                  ))}
+                </AssignList>
+              )}
+            </MBody>
+          </MBox>
+        </Overlay>
       )}
 
       {/* Toast */}
       {toast && (
-        <ToastContainer>
-          <ToastItem $type={toast.type}>
-            {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+        <ToastWrap>
+          <ToastItem $t={toast.type}>
+            {toast.type === 'success' ? <CheckCircle /> : <AlertCircle />}
             {toast.message}
-            <button className="toast-close" onClick={() => setToast(null)}>
-              <XCircle size={16} />
-            </button>
+            <button className="x" onClick={() => setToast(null)}><XCircle /></button>
           </ToastItem>
-        </ToastContainer>
+        </ToastWrap>
       )}
-    </PageContainer>
+    </Page>
   );
 }
 

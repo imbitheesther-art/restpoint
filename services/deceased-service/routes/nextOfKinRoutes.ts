@@ -2,7 +2,7 @@ import { Router } from 'express';
 import {
   protect,
   authorizeAny
-} from '../../../global/middlewares/authMiddleware';
+} from '../../../services/app-global/middlewares/authMiddleware';
 
 import {
   nextOfKinRegister,
@@ -18,12 +18,16 @@ const router = Router();
 router.use(protect);
 router.use(authorizeAny);
 
-// Next of Kin routes - Support both patterns
+// Next of Kin routes - Support multiple patterns
 // Pattern 1: /deceased/:deceased_id/next-of-kin (frontend uses this)
+router.post('/deceased/:deceased_id/next-of-kin', nextOfKinRegister);
+router.get('/deceased/:deceased_id/next-of-kin', getNextOfKinByDeceasedId);
+
+// Pattern 2: /:deceased_id/next-of-kin (without deceased prefix)
 router.post('/:deceased_id/next-of-kin', nextOfKinRegister);
 router.get('/:deceased_id/next-of-kin', getNextOfKinByDeceasedId);
 
-// Pattern 2: /next-of-kin (with deceased_id in query params)
+// Pattern 3: /next-of-kin (with deceased_id in query params)
 router.post('/next-of-kin', nextOfKinRegister);
 router.get('/next-of-kin', getNextOfKinByDeceasedId);
 

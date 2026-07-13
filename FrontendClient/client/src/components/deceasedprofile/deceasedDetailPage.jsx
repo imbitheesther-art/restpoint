@@ -1,9 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense, Component, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-// Toast notifications disabled to prevent crashes
-// import { toast, ToastContainer } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
 import {
   QrCode,
   RefreshCw,
@@ -13,6 +10,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Users,
+  TrendingUp,
   DollarSign,
   FileText,
   Box,
@@ -32,121 +30,100 @@ import {
   Heart,
   Building2,
 } from 'lucide-react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 
-// Import Scanner Component
 import ScannerComponent from '../scanner/ScannerComponent';
 
-// API Gateway URL - Centralized
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
 
-// Colors - Elegant vintage palette
-const Colors = {
-  ink: '#15171A',
-  bone: '#FAF8F4',
-  bone2: '#F3EFE6',
-  brass: '#8B7355',
-  brassLight: '#A98F6E',
-  verdigris: '#3D4F47',
-  verdigrisDark: '#2E3F37',
-  verdigrisLight: '#4D6359',
-  verdigrisTint: '#EBEFEF',
-  line: '#E3DDD0',
-  lineDark: 'rgba(250,248,244,0.14)',
-  gray: '#6B6862',
-  grayLight: 'rgba(250,248,244,0.62)',
-  accent: '#C77B5E',
-  primaryDark: '#15171A',
-  primaryGradient: 'linear-gradient(135deg, #3D4F47 0%, #2E3F37 100%)',
-  accentRed: '#C77B5E',
-  accentRedGradient: 'linear-gradient(135deg, #C77B5E 0%, #A66B52 100%)',
-  accentBlue: '#3D4F47',
-  accentBlueGradient: 'linear-gradient(135deg, #3D4F47 0%, #2E3F37 100%)',
-  accentPurple: '#8B7355',
-  accentPurpleGradient: 'linear-gradient(135deg, #8B7355 0%, #6B5A45 100%)',
-  lightGray: '#FAF8F4',
-  mediumGray: '#E3DDD0',
-  darkGray: '#15171A',
-  chargeSetting: '#8B7355',
-  chargeSettingGradient: 'linear-gradient(135deg, #8B7355 0%, #6B5A45 100%)',
-  successGreen: '#4D6359',
-  successGreenGradient: 'linear-gradient(135deg, #4D6359 0%, #3D4F47 100%)',
-  dangerRed: '#C77B5E',
-  warningYellow: '#8B7355',
-  warningYellowGradient: 'linear-gradient(135deg, #8B7355 0%, #6B5A45 100%)',
-  infoBlue: '#4D6359',
-  infoBluGradient: 'linear-gradient(135deg, #4D6359 0%, #3D4F47 100%)',
-  textMuted: '#6B6862',
-  cardBg: '#FAF8F4',
-  cardShadow: '0 4px 20px rgba(21, 23, 26, 0.08)',
-  cardShadowHover: '0 12px 35px rgba(21, 23, 26, 0.12)',
-  borderColor: '#E3DDD0',
-  borderColorLight: '#F3EFE6',
+// Clean, professional color scheme like leaves page
+const COLORS = {
+  primary: '#0A2463',
+  primaryLight: '#1A3A7A',
+  white: '#FFFFFF',
+  bg: '#F5F7FA',
+  border: '#E8ECF0',
+  text: '#1A1D24',
+  textSecondary: '#6B7280',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#E74C3C',
+  info: '#3B82F6',
 };
 
-// Keyframes animations for smooth transitions
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
-
-const slideInLeft = keyframes`
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-`;
-
-const pulse = keyframes`
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-`;
-
-const spin = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-// Styled Components
-const AppContainer = styled.div`
+const Container = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: ${COLORS.bg};
   min-height: 100vh;
-  background: linear-gradient(135deg, ${Colors.lightGray} 0%, #f1f5f9 100%);
-  padding: 0.75rem 0.5rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: ${Colors.darkGray};
-  animation: ${fadeIn} 0.5s ease-out;
+`;
 
-  @media (max-width: 768px) {
-    padding: 0.5rem 0.375rem;
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+const Title = styled.h1`
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: ${COLORS.text};
+  margin: 0;
+`;
+
+const Subtitle = styled.p`
+  color: ${COLORS.textSecondary};
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
+`;
+
+const ActionButton = styled.button`
+  background: ${COLORS.primary};
+  color: ${COLORS.white};
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+
+  &:hover {
+    background: ${COLORS.primaryLight};
+  }
+`;
+
+const BackButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: ${COLORS.white};
+  color: ${COLORS.primary};
+  border: 1px solid ${COLORS.border};
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${COLORS.bg};
+    border-color: ${COLORS.primary};
   }
 `;
 
 const ContentGrid = styled.div`
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.75rem;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 
   @media (min-width: 992px) {
     grid-template-columns: 65% 35%;
@@ -156,297 +133,124 @@ const ContentGrid = styled.div`
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.5rem;
 `;
 
 const SidebarContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-`;
-
-const HeaderCard = styled.div`
-  background: ${Colors.primaryGradient};
-  color: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
-  box-shadow: ${Colors.cardShadow};
-  animation: ${slideInLeft} 0.5s ease-out;
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: ${Colors.cardShadowHover};
-    transform: translateY(-2px);
-  }
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
-const BackButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  color: ${Colors.dangerRed};
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0.375rem;
-
-  &:hover {
-    color: ${Colors.infoBlue};
-  }
+  gap: 1.5rem;
 `;
 
 const Card = styled.div`
-  background: ${Colors.white};
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid ${Colors.line};
-  animation: ${fadeIn} 0.6s ease-out;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    border-color: ${Colors.brass};
-  }
+  background: ${COLORS.white};
+  padding: 1.5rem;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid ${COLORS.border};
 `;
 
-const CardTitle = styled.h4`
-  font-size: 0.5625rem;
-  font-weight: 700;
-  margin: 0 0 0.0625rem 0;
-  padding-bottom: 0.03125rem;
-  border-bottom: 1px solid ${Colors.accentBlue}05;
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  color: ${Colors.primaryDark};
-  letter-spacing: -0.2px;
-
-  svg {
-    stroke-width: 2;
-    width: 9px;
-    height: 9px;
-    color: ${Colors.accentBlue};
-  }
-`;
-
-const ClickableBadge = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.875rem;
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: white;
-  background: ${(props) => props.$bgColor};
-  border: none;
-  cursor: pointer;
-  flex: 1;
-  white-space: nowrap;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  text-transform: capitalize;
-  letter-spacing: 0.3px;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    filter: brightness(1.1);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  svg {
-    stroke-width: 2.5;
-    width: 12px;
-    height: 12px;
-  }
-
-  @media (max-width: 640px) {
-    padding: 0.5rem 0.625rem;
-    font-size: 0.7rem;
-  }
-`;
-
-const BadgesContainer = styled.div`
-  display: flex;
-  gap: 0.625rem;
-  flex-wrap: wrap;
-  width: 100%;
-  margin-top: 1rem;
-`;
-
-const BadgeRow = styled.div`
-  display: flex;
-  gap: 0.625rem;
-  width: 100%;
-  flex-wrap: wrap;
-
-  @media (max-width: 768px) {
-    gap: 0.5rem;
-  }
-`;
-
-const HeaderTopSection = styled.div`
+const CardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  gap: 0.5rem;
-`;
-
-const NameChargesContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-`;
-
-const MobileNavButton = styled.button`
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: ${Colors.accentBlue};
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  padding: 0.375rem;
-  cursor: pointer;
-
-  &:hover {
-    background: ${Colors.infoBlue};
-  }
-
-  @media (max-width: 768px) {
-    display: flex;
-  }
-`;
-
-const MobileNavOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, ${(props) => (props.$isOpen ? '0.5' : '0')});
-  z-index: 9998;
-  display: ${(props) => (props.$isOpen ? 'block' : 'none')};
-  transition: background 0.3s ease;
-`;
-
-const MobileNavContainer = styled.div`
-  position: fixed;
-  top: 0;
-  left: ${(props) => (props.$isOpen ? '0' : '-100%')};
-  width: 85%;
-  max-width: 300px;
-  height: 100vh;
-  background: ${Colors.primaryGradient};
-  z-index: 9999;
-  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow-y: auto;
-  padding: 1rem;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-`;
-
-const MobileNavHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid ${Colors.borderColor};
-  margin-bottom: 0.75rem;
-
-  h3 {
-    color: white;
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-  }
-`;
-
-const MobileNavSection = styled.div`
   margin-bottom: 1rem;
-
-  h4 {
-    color: ${Colors.infoBlue};
-    margin: 0 0 0.5rem 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid ${COLORS.border};
 `;
 
-const MobileNavItem = styled.button`
+const CardTitle = styled.h3`
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: ${COLORS.text};
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 0.5rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: none;
-  border-radius: 0.25rem;
-  color: white;
-  cursor: pointer;
-  margin-bottom: 0.25rem;
+`;
+
+const Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
   font-size: 0.875rem;
+  font-weight: 500;
+  background: ${props => props.$bgColor || COLORS.primary};
+  color: ${COLORS.white};
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.15);
+    opacity: 0.9;
+    transform: translateY(-1px);
   }
 
   svg {
     width: 14px;
     height: 14px;
   }
-
-  .badge {
-    margin-left: auto;
-    background: ${(props) => props.badgeColor || Colors.successGreen};
-    color: white;
-    padding: 0.125rem 0.375rem;
-    border-radius: 1rem;
-    font-size: 0.625rem;
-    font-weight: 600;
-  }
 `;
 
-// Modal Styles
+const BadgesContainer = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+`;
+
+const Section = styled.div`
+  background: ${COLORS.white};
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid ${COLORS.border};
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+`;
+
+const SectionHeader = styled.div`
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid ${COLORS.border};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: ${COLORS.text};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  backdrop-filter: blur(4px);
-  padding: 1rem;
+  padding: 1.5rem;
 `;
 
 const ModalContent = styled.div`
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
+  background: ${COLORS.white};
+  border-radius: 14px;
+  padding: 2rem;
   max-width: 600px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: ${fadeIn} 0.3s ease-out;
 `;
 
 const ModalHeader = styled.div`
@@ -455,12 +259,12 @@ const ModalHeader = styled.div`
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid ${Colors.borderColor};
+  border-bottom: 1px solid ${COLORS.border};
 
   h3 {
     margin: 0;
     font-size: 1.25rem;
-    color: ${Colors.primaryDark};
+    color: ${COLORS.text};
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -470,21 +274,20 @@ const ModalHeader = styled.div`
 const ModalButton = styled.button`
   background: none;
   border: none;
-  color: ${Colors.textMuted};
+  color: ${COLORS.textSecondary};
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 
   &:hover {
-    color: ${Colors.dangerRed};
+    color: ${COLORS.danger};
     transform: rotate(90deg);
   }
 `;
 
-// Helper function to get tenant slug
 const getTenantSlug = () => {
   return localStorage.getItem('tenantSlug') ||
     localStorage.getItem('tenant_slug') ||
@@ -498,7 +301,6 @@ const getTenantSlug = () => {
     })();
 };
 
-// Create axios instance with default headers
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -506,7 +308,6 @@ const apiClient = axios.create({
   },
 });
 
-// Add request interceptor to add tenant slug header
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -519,87 +320,93 @@ apiClient.interceptors.request.use(
       config.headers['x-tenant-slug'] = tenantSlug;
     }
 
-    console.log('📡 API Request:', config.method, config.url);
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ============================================================================
-// LAZY LOADED COMPONENTS - Organized by feature area
-// ============================================================================
-
-// Core UI Components
 const Loader = lazy(() =>
   import('../../components/loader/loader').catch(() => ({
     default: () => <div>Loading...</div>,
   }))
 );
 
-// Deceased Information Components
 const DeceasedInfoSection = lazy(() =>
   import('../deceasedinfo/deceasedInfoSection').catch(() => ({
     default: () => <div>Deceased Info component not available</div>,
   }))
 );
 
-// Next of Kin Components
 const NextOfKinSection = lazy(() =>
   import('../next-kin/nextOfKIn').catch(() => ({
     default: () => <div>Next of Kin component not available</div>,
   }))
 );
 
-// Mortuary Operations Components
 const MortuaryProgress = lazy(() =>
   import('../modals/mortuaryProgress').catch(() => ({
     default: () => <div>Progress component not available</div>,
   }))
 );
+
 const CoffinAssignment = lazy(() =>
   import('../coffins/coffinAssignment').catch(() => ({
     default: () => <div>Coffin Assignment component not available</div>,
   }))
 );
+
 const DispatchSection = lazy(() =>
   import('../dispatch/dispatchSection')
 );
 
-// Documents & Financial Components
 const DocumentUpload = lazy(() =>
   import('../documents/DocumentUpload').catch(() => ({
     default: () => <div>Document Upload component not available</div>,
   }))
 );
 
-// Extra Charges Modal
-const ExtraChargesModal = lazy(() =>
-  import('./ExtraChargesModal').catch(() => ({
+const DeceasedFinancialDetails = lazy(() =>
+  import('./deceasedFinancialDetails').catch(() => ({
+    default: () => <div>Financial Details component not available</div>,
+  }))
+);
+
+const ExtraChargeForm = lazy(() =>
+  import('./ExtraChargeForm').catch(() => ({
     default: () => null,
   }))
 );
 
-// Modal Components
+const PaymentForm = lazy(() =>
+  import('./PaymentForm').catch(() => ({
+    default: () => null,
+  }))
+);
+
 const DeceasedInfoModal = lazy(() =>
   import('../modals/deceasedinfomodal').catch(() => ({
     default: () => null,
   }))
 );
+
 const NextOfKinModal = lazy(() =>
   import('../modals/nextofKinModal').catch(() => ({
     default: () => null,
   }))
 );
+
 const FinancialDetailsModal = lazy(() =>
   import('../modals/financialdetailsmodal').catch(() => ({
     default: () => null,
   }))
 );
+
 const PaymentHistoryModal = lazy(() =>
   import('../modals/paymenthistoryModals').catch(() => ({
     default: () => null,
   }))
 );
+
 const ChargeSettingsModal = lazy(() =>
   import('./ChargeSettingsModal').catch(() => ({
     default: () => null,
@@ -607,20 +414,12 @@ const ChargeSettingsModal = lazy(() =>
 );
 
 const LoadingFallback = () => (
-  <div
-    style={{
-      padding: '0.75rem',
-      color: Colors.textMuted,
-      textAlign: 'center',
-      fontSize: '0.875rem',
-    }}
-  >
-    <RefreshCw size={16} className="animate-spin" style={{ marginRight: '0.25rem' }} />
+  <div style={{ padding: '1rem', textAlign: 'center', color: COLORS.textSecondary }}>
+    <RefreshCw size={20} className="animate-spin" style={{ marginRight: '0.5rem' }} />
     Loading...
   </div>
 );
 
-// Error Boundary Component
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -639,11 +438,11 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return this.props.fallback || (
         <div style={{
-          padding: '1rem',
+          padding: '1.5rem',
           background: 'rgba(239, 68, 68, 0.1)',
           border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '0.5rem',
-          color: Colors.dangerRed,
+          borderRadius: '14px',
+          color: COLORS.danger,
           textAlign: 'center'
         }}>
           <AlertTriangle size={24} style={{ marginBottom: '0.5rem' }} />
@@ -657,10 +456,6 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 const DeceasedDetails = () => {
   const { id, slug } = useParams();
@@ -677,7 +472,26 @@ const DeceasedDetails = () => {
   const [showChargeSettingsModal, setShowChargeSettingsModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showExtraChargesModal, setShowExtraChargesModal] = useState(false);
+  const [showExtraChargeForm, setShowExtraChargeForm] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [financialData, setFinancialData] = useState({
+    payments: [],
+    extraCharges: [],
+    invoices: [],
+    totals: {
+      total_charges: 0,
+      mortuary_charges: 0,
+      extra_charges: 0,
+      total_payments: 0,
+      balance: 0
+    }
+  });
+  const [isLoadingFinancial, setIsLoadingFinancial] = useState(false);
+
+  const getDeceasedId = () => deceasedData?.deceased_id || deceasedData?.id || id;
+  const currentDeceasedId = getDeceasedId();
 
   const showExternalLoader = () => setShowLoader(true);
   const hideExternalLoader = () => setShowLoader(false);
@@ -708,11 +522,9 @@ const DeceasedDetails = () => {
   };
 
   const fetchDeceasedData = useCallback(async () => {
-    // Don't set loading state to true to avoid page flicker
     try {
       const tenantSlug = getTenantSlug();
 
-      // Ensure tenant slug is preserved in localStorage
       if (tenantSlug && tenantSlug !== 'default') {
         localStorage.setItem('tenantSlug', tenantSlug);
       }
@@ -722,7 +534,6 @@ const DeceasedDetails = () => {
           'x-tenant-slug': tenantSlug,
         },
       });
-      console.log('📦 API Response:', response.data);
 
       const apiData = response.data?.data || response.data || {};
 
@@ -743,7 +554,20 @@ const DeceasedDetails = () => {
       setDeceasedData(normalizedData);
     } catch (error) {
       console.error('Error fetching deceased details:', error);
-      // Don't set deceasedData to null on error to preserve current state
+      setDeceasedData({
+        deceased_id: id,
+        full_name: 'Unknown',
+        total_mortuary_charge: 0,
+        currency: 'KES',
+        burial_type: 'Burial',
+        next_of_kin: [],
+        documents: [],
+        charges: [],
+        dispatch: null,
+        status: 'active',
+      });
+    } finally {
+      setIsLoading(false);
     }
   }, [id]);
 
@@ -765,12 +589,61 @@ const DeceasedDetails = () => {
     }
   }, []);
 
+  const fetchFinancialData = useCallback(async () => {
+    if (!currentDeceasedId) return;
+
+    setIsLoadingFinancial(true);
+    try {
+      const tenantSlug = getTenantSlug();
+
+      const [paymentsRes, chargesRes, invoicesRes] = await Promise.all([
+        apiClient.get(`/payments/${currentDeceasedId}`, {
+          headers: { 'x-tenant-slug': tenantSlug }
+        }).catch(err => ({ data: { data: [] } })),
+        apiClient.get(`/extra-charges/${currentDeceasedId}`, {
+          headers: { 'x-tenant-slug': tenantSlug }
+        }).catch(err => ({ data: { data: [] } })),
+        apiClient.get(`/invoices/${currentDeceasedId}`, {
+          headers: { 'x-tenant-slug': tenantSlug }
+        }).catch(err => ({ data: { data: [] } }))
+      ]);
+
+      const payments = paymentsRes.data?.data || [];
+      const extraCharges = chargesRes.data?.data || [];
+      const invoices = invoicesRes.data?.data || [];
+
+      const mortuaryCharges = deceasedData?.total_mortuary_charge || 0;
+      const extraChargesTotal = extraCharges.reduce((sum, charge) => sum + (parseFloat(charge.amount) || 0), 0);
+      const totalCharges = mortuaryCharges + extraChargesTotal;
+      const totalPayments = payments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+      const balance = totalCharges - totalPayments;
+
+      setFinancialData({
+        payments,
+        extraCharges,
+        invoices,
+        totals: {
+          total_charges: totalCharges,
+          mortuary_charges: mortuaryCharges,
+          extra_charges: extraChargesTotal,
+          total_payments: totalPayments,
+          balance
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching financial data:', error);
+    } finally {
+      setIsLoadingFinancial(false);
+    }
+  }, [currentDeceasedId, deceasedData]);
+
   useEffect(() => {
     if (id) {
       fetchDeceasedData();
       fetchCoffins();
+      fetchFinancialData();
     }
-  }, [id, fetchDeceasedData, fetchCoffins]);
+  }, [id, fetchDeceasedData, fetchCoffins, fetchFinancialData]);
 
   const handleRefresh = () => {
     fetchDeceasedData();
@@ -815,240 +688,99 @@ const DeceasedDetails = () => {
   };
 
   const daysInMortuary = getDaysInMortuary(deceasedData?.date_admitted);
-  const getDeceasedId = () => deceasedData?.deceased_id || deceasedData?.id || id;
-  const currentDeceasedId = getDeceasedId();
   const ageInfo = calculateAge(deceasedData?.date_of_birth, deceasedData?.date_of_death);
-
-  const mobileNavItems = {
-    information: [
-      {
-        icon: <Info size={14} />,
-        label: 'Deceased Info',
-        action: () => setShowDeceasedInfoModal(true),
-        badge: 'View',
-      },
-      {
-        icon: <Users size={14} />,
-        label: 'Next of Kin',
-        action: () => setShowNextOfKinModal(true),
-        badge: deceasedData?.next_of_kin?.length || 0,
-      },
-    ],
-    actions: [
-      {
-        icon: <QrCode size={14} />,
-        label: 'QR Code',
-        action: () => navigate(`/qr-code/${currentDeceasedId}`),
-        badge: 'View',
-      },
-      {
-        icon: <DollarSign size={14} />,
-        label: 'Financial',
-        action: () => setShowFinancialModal(true),
-        badge: 'View',
-      },
-      {
-        icon: <FileText size={14} />,
-        label: 'Documents',
-        action: navigateToDocuments,
-        badge: deceasedData?.documents?.length || 0,
-      },
-      {
-        icon: <LogOut size={14} />,
-        label: 'Release Form',
-        action: navigateToReleaseForm,
-        badge: 'New',
-      },
-    ],
-  };
-
-  const primaryBadges = [
-    {
-      text: `Status: ${deceasedData?.status || 'Active'}`,
-      color: daysInMortuary > 30 ? Colors.dangerRed : Colors.successGreen,
-      icon: daysInMortuary > 30 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />,
-      onClick: () => setShowDeceasedInfoModal(true),
-    },
-    {
-      text: `Days: ${daysInMortuary}`,
-      color: Colors.accentBlue,
-      icon: <Activity size={12} />,
-      onClick: () => setShowProgressModal(true),
-    },
-    {
-      text: `Charges: ${deceasedData?.total_mortuary_charge || 0} ${deceasedData?.currency || 'KES'}`,
-      color: Colors.accentBlue,
-      icon: <DollarSign size={12} />,
-      onClick: () => setShowFinancialModal(true),
-    },
-  ];
-
-  const secondaryBadges = [
-    {
-      text: 'Next of Kin',
-      color: Colors.accentPurple,
-      icon: <Users size={12} />,
-      onClick: () => setShowNextOfKinModal(true),
-    },
-    {
-      text: 'Extra Charges',
-      color: Colors.dangerRed,
-      icon: <DollarSign size={12} />,
-      onClick: () => setShowExtraChargesModal(true),
-    },
-    {
-      text: 'Charge Settings',
-      color: Colors.chargeSetting,
-      icon: <Settings size={12} />,
-      onClick: openChargeSettingsModal,
-    },
-    {
-      text: 'Documents',
-      color: Colors.warningYellow,
-      icon: <FileText size={12} />,
-      onClick: navigateToDocuments,
-    },
-    {
-      text: 'Release Form',
-      color: Colors.successGreen,
-      icon: <LogOut size={12} />,
-      onClick: navigateToReleaseForm,
-    },
-  ];
 
   if (isLoading && !showLoader) {
     return (
-      <AppContainer
-        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
-      >
-        <RefreshCw size={32} color={Colors.accentBlue} className="animate-spin" />
-      </AppContainer>
+      <Container style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <RefreshCw size={32} color={COLORS.primary} className="animate-spin" />
+      </Container>
     );
   }
 
   if (!deceasedData && !isLoading) {
     return (
-      <AppContainer style={{ padding: '1rem' }}>
-        <div style={{ textAlign: 'center' }}>
-          <AlertTriangle size={48} color={Colors.dangerRed} />
-          <h3 style={{ margin: '1rem 0 0.5rem' }}>Failed to load details</h3>
-          <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: Colors.textMuted }}>
+      <Container>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <AlertTriangle size={48} color={COLORS.danger} />
+          <h3 style={{ margin: '1rem 0 0.5rem', color: COLORS.text }}>Failed to load details</h3>
+          <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: COLORS.textSecondary }}>
             ID: {id}
           </p>
-          <BackButton onClick={() => navigate(-1)}>
-            <ArrowLeft size={14} /> Go Back
+          <BackButton onClick={() => navigate(-1)} style={{ marginTop: '1.5rem' }}>
+            <ArrowLeft size={16} /> Go Back
           </BackButton>
         </div>
-      </AppContainer>
+      </Container>
     );
   }
 
   return (
-    <AppContainer>
+    <Container>
       {showLoader && (
         <Suspense fallback={null}>
           <Loader message="Loading..." />
         </Suspense>
       )}
 
-      <MobileNavOverlay $isOpen={mobileNavOpen} onClick={() => setMobileNavOpen(false)} />
-      <MobileNavContainer $isOpen={mobileNavOpen}>
-        <MobileNavHeader>
-          <h3>Quick Actions</h3>
-          <MobileNavButton onClick={() => setMobileNavOpen(false)}>
-            <X size={18} />
-          </MobileNavButton>
-        </MobileNavHeader>
-        {Object.entries(mobileNavItems).map(([section, items]) => (
-          <MobileNavSection key={section}>
-            <h4>{section === 'information' ? 'Information' : 'Actions'}</h4>
-            {items.map((item, index) => (
-              <MobileNavItem
-                key={index}
-                onClick={() => {
-                  item.action();
-                  setMobileNavOpen(false);
-                }}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                {item.badge && <span className="badge">{item.badge}</span>}
-              </MobileNavItem>
-            ))}
-          </MobileNavSection>
-        ))}
-      </MobileNavContainer>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', gap: '0.25rem', marginBottom: '0.5rem' }}>
-        <BackButton onClick={() => navigate(-1)}>
-          <ArrowLeft size={14} /> Back
-        </BackButton>
-        <div style={{ display: 'flex', gap: '0.25rem' }}>
-          <BackButton onClick={handleRefresh}>
-            <RefreshCw size={14} /> Refresh
-          </BackButton>
-          <MobileNavButton onClick={() => setMobileNavOpen(true)}>
-            <Menu size={18} />
-          </MobileNavButton>
+      <Header>
+        <div>
+          <Title>{deceasedData?.full_name || 'Deceased Details'}</Title>
+          <Subtitle>Ref: {deceasedData?.deceased_id || id} • Total: {deceasedData?.total_mortuary_charge || 0} {deceasedData?.currency || 'KES'}</Subtitle>
         </div>
-      </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <ActionButton onClick={() => setShowScannerModal(true)}>
+            <QrCode size={16} /> Scan
+          </ActionButton>
+          <BackButton onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} /> Back
+          </BackButton>
+          <ActionButton onClick={handleRefresh}>
+            <RefreshCw size={16} /> Refresh
+          </ActionButton>
+        </div>
+      </Header>
 
-      <HeaderCard>
-        <HeaderTopSection>
-          <NameChargesContainer>
-            <h2 style={{ margin: 0, display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '1.1rem' }}>
-              <User size={16} /> {deceasedData?.full_name}
-            </h2>
-            <div style={{ fontSize: '0.875rem' }}>
-              Total: {deceasedData?.total_mortuary_charge || 0} {deceasedData?.currency || 'KES'}
-            </div>
-          </NameChargesContainer>
-        </HeaderTopSection>
-
-        <BadgesContainer>
-          <BadgeRow>
-            {primaryBadges.map((badge, index) => (
-              <ClickableBadge key={index} $bgColor={badge.color} onClick={badge.onClick}>
-                {badge.icon} {badge.text}
-              </ClickableBadge>
-            ))}
-          </BadgeRow>
-          <BadgeRow>
-            {secondaryBadges.map((badge, index) => (
-              <ClickableBadge key={index} $bgColor={badge.color} onClick={badge.onClick}>
-                {badge.icon} {badge.text}
-              </ClickableBadge>
-            ))}
-          </BadgeRow>
-        </BadgesContainer>
-      </HeaderCard>
+      {/* Primary Badges */}
+      <Card style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <Badge $bgColor={daysInMortuary > 30 ? COLORS.danger : COLORS.success} onClick={() => setShowDeceasedInfoModal(true)}>
+            {daysInMortuary > 30 ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
+            Status: {deceasedData?.status || 'Active'}
+          </Badge>
+          <Badge $bgColor={COLORS.info} onClick={() => setShowProgressModal(true)}>
+            <Activity size={14} />
+            Days: {daysInMortuary}
+          </Badge>
+          <Badge $bgColor={COLORS.primary} onClick={() => setShowFinancialModal(true)}>
+            <DollarSign size={14} />
+            Charges: {deceasedData?.total_mortuary_charge || 0} {deceasedData?.currency || 'KES'}
+          </Badge>
+          <Badge $bgColor="#8B7355" onClick={() => setShowNextOfKinModal(true)}>
+            <Users size={14} />
+            Next of Kin
+          </Badge>
+          <Badge $bgColor={COLORS.warning} onClick={() => setShowExtraChargesModal(true)}>
+            <TrendingUp size={14} />
+            Extra Charges
+          </Badge>
+          <Badge $bgColor="#6B7280" onClick={openChargeSettingsModal}>
+            <Settings size={14} />
+            Charge Settings
+          </Badge>
+          <Badge $bgColor={COLORS.info} onClick={navigateToDocuments}>
+            <FileText size={14} />
+            Documents
+          </Badge>
+          <Badge $bgColor={COLORS.success} onClick={navigateToReleaseForm}>
+            <LogOut size={14} />
+            Release Form
+          </Badge>
+        </div>
+      </Card>
 
       <ContentGrid>
         <MainContent>
-          <Card>
-            <Suspense fallback={<LoadingFallback />}>
-              <DeceasedInfoSection
-                key={`deceased-${refreshKey}`}
-                deceasedId={currentDeceasedId}
-                deceased={deceasedData}
-                ageInfo={ageInfo}
-                onUpdate={fetchDeceasedData}
-              />
-            </Suspense>
-          </Card>
-
-          <Card>
-            <Suspense fallback={<LoadingFallback />}>
-              <ScannerComponent
-                key={`scanner-${refreshKey}`}
-                deceasedId={currentDeceasedId}
-                deceasedData={deceasedData}
-                onScanComplete={handleScanComplete}
-                onUploadSuccess={handleDocumentUploadSuccess}
-              />
-            </Suspense>
-          </Card>
-
           <Card>
             <Suspense fallback={<LoadingFallback />}>
               <DocumentUpload
@@ -1056,42 +788,6 @@ const DeceasedDetails = () => {
                 deceasedId={currentDeceasedId}
                 deceasedData={deceasedData}
                 onUploadSuccess={handleDocumentUploadSuccess}
-              />
-            </Suspense>
-          </Card>
-        </MainContent>
-
-        <SidebarContent>
-          <Card>
-            <Suspense fallback={<LoadingFallback />}>
-              <MortuaryProgress
-                key={`progress-${refreshKey}`}
-                daysInMortuary={daysInMortuary}
-                dispatchDate={deceasedData?.dispatch_date}
-                isOverdue={daysInMortuary > 30}
-              />
-            </Suspense>
-          </Card>
-
-          <Card>
-            <Suspense fallback={<LoadingFallback />}>
-              <NextOfKinSection
-                key={`nextofkin-${refreshKey}`}
-                deceasedId={currentDeceasedId}
-                nextOfKin={deceasedData?.next_of_kin}
-                onUpdate={fetchDeceasedData}
-              />
-            </Suspense>
-          </Card>
-
-          <Card>
-            <Suspense fallback={<LoadingFallback />}>
-              <CoffinAssignment
-                key={`coffin-${refreshKey}`}
-                deceasedId={currentDeceasedId}
-                deceasedData={deceasedData}
-                coffins={coffins}
-                onUpdate={fetchDeceasedData}
               />
             </Suspense>
           </Card>
@@ -1108,57 +804,246 @@ const DeceasedDetails = () => {
               </ErrorBoundary>
             </Suspense>
           </Card>
+        </MainContent>
+
+        <SidebarContent>
+          <Card>
+            <Suspense fallback={<LoadingFallback />}>
+              <CoffinAssignment
+                key={`coffin-${refreshKey}`}
+                deceasedId={currentDeceasedId}
+                deceasedData={deceasedData}
+                coffins={coffins}
+                onUpdate={fetchDeceasedData}
+              />
+            </Suspense>
+          </Card>
+
+          <Card>
+            <Suspense fallback={<LoadingFallback />}>
+              <MortuaryProgress
+                key={`progress-${refreshKey}`}
+                daysInMortuary={daysInMortuary}
+                dispatchDate={deceasedData?.dispatch_date}
+                isOverdue={daysInMortuary > 30}
+              />
+            </Suspense>
+          </Card>
         </SidebarContent>
       </ContentGrid>
+
+      {/* Financial Details - Full Width */}
+      <Card>
+        <Suspense fallback={<LoadingFallback />}>
+          <DeceasedFinancialDetails
+            key={`financial-${refreshKey}`}
+            financialDetails={{
+              deceased: deceasedData,
+              payments: financialData.payments,
+              extraCharges: financialData.extraCharges,
+              invoices: financialData.invoices,
+              totals: financialData.totals
+            }}
+            selectedDeceased={deceasedData}
+            onBack={() => { }}
+            onCreatePayment={() => setShowPaymentForm(true)}
+            onAddCharge={() => setShowExtraChargeForm(true)}
+            onDownloadInvoice={() => { }}
+            onViewInvoice={() => { }}
+            onEditInvoice={() => { }}
+            onPrintInvoice={() => { }}
+            onEditExtraCharge={() => { }}
+            onDeleteExtraCharge={() => { }}
+          />
+        </Suspense>
+      </Card>
 
       {/* Modals */}
       <Suspense fallback={null}>
         {showDeceasedInfoModal && (
-          <DeceasedInfoModal
-            isOpen={showDeceasedInfoModal}
-            onClose={() => setShowDeceasedInfoModal(false)}
-            deceased={deceasedData}
-            ageInfo={ageInfo}
-          />
+          <ModalOverlay onClick={() => setShowDeceasedInfoModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><Info size={20} /> Personal Information</h3>
+                <ModalButton onClick={() => setShowDeceasedInfoModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <DeceasedInfoModal
+                  isOpen={showDeceasedInfoModal}
+                  onClose={() => setShowDeceasedInfoModal(false)}
+                  deceased={deceasedData}
+                  ageInfo={ageInfo}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
         {showNextOfKinModal && (
-          <NextOfKinModal
-            isOpen={showNextOfKinModal}
-            onClose={() => setShowNextOfKinModal(false)}
-            nextOfKin={deceasedData?.next_of_kin}
-          />
+          <ModalOverlay onClick={() => setShowNextOfKinModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><Users size={20} /> Next of Kin</h3>
+                <ModalButton onClick={() => setShowNextOfKinModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <NextOfKinModal
+                  isOpen={showNextOfKinModal}
+                  onClose={() => setShowNextOfKinModal(false)}
+                  nextOfKin={deceasedData?.next_of_kin}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
         {showFinancialModal && (
-          <FinancialDetailsModal
-            isOpen={showFinancialModal}
-            onClose={() => setShowFinancialModal(false)}
-            deceasedData={deceasedData}
-          />
+          <ModalOverlay onClick={() => setShowFinancialModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><DollarSign size={20} /> Financial Details</h3>
+                <ModalButton onClick={() => setShowFinancialModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <FinancialDetailsModal
+                  isOpen={showFinancialModal}
+                  onClose={() => setShowFinancialModal(false)}
+                  deceasedData={deceasedData}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
         {showPaymentHistoryModal && (
-          <PaymentHistoryModal
-            isOpen={showPaymentHistoryModal}
-            onClose={() => setShowPaymentHistoryModal(false)}
-            deceasedData={deceasedData}
-            deceasedId={currentDeceasedId}
-          />
+          <ModalOverlay onClick={() => setShowPaymentHistoryModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><FileText size={20} /> Payment History</h3>
+                <ModalButton onClick={() => setShowPaymentHistoryModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <PaymentHistoryModal
+                  isOpen={showPaymentHistoryModal}
+                  onClose={() => setShowPaymentHistoryModal(false)}
+                  deceasedData={deceasedData}
+                  deceasedId={currentDeceasedId}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
         {showChargeSettingsModal && (
-          <ChargeSettingsModal
-            isOpen={showChargeSettingsModal}
-            onClose={() => setShowChargeSettingsModal(false)}
-            deceasedId={currentDeceasedId}
-            deceasedData={deceasedData}
-            onUpdate={fetchDeceasedData}
-          />
+          <ModalOverlay onClick={() => setShowChargeSettingsModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><Settings size={20} /> Charge Settings</h3>
+                <ModalButton onClick={() => setShowChargeSettingsModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <ChargeSettingsModal
+                  isOpen={showChargeSettingsModal}
+                  onClose={() => setShowChargeSettingsModal(false)}
+                  deceasedId={currentDeceasedId}
+                  deceasedData={deceasedData}
+                  onUpdate={fetchDeceasedData}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
         {showExtraChargesModal && (
-          <ExtraChargesModal
-            isOpen={showExtraChargesModal}
-            onClose={() => setShowExtraChargesModal(false)}
-            deceased={deceasedData}
-            onRefresh={fetchDeceasedData}
-          />
+          <ModalOverlay onClick={() => setShowExtraChargesModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><TrendingUp size={20} /> Extra Charges</h3>
+                <ModalButton onClick={() => setShowExtraChargesModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <ExtraChargesModal
+                  isOpen={showExtraChargesModal}
+                  onClose={() => setShowExtraChargesModal(false)}
+                  deceased={deceasedData}
+                  onRefresh={fetchDeceasedData}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
+        )}
+        {showExtraChargeForm && (
+          <ModalOverlay onClick={() => setShowExtraChargeForm(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><DollarSign size={20} /> Add Extra Charge</h3>
+                <ModalButton onClick={() => setShowExtraChargeForm(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <ExtraChargeForm
+                  deceased={deceasedData}
+                  onClose={() => setShowExtraChargeForm(false)}
+                  onSubmit={async (formData) => {
+                    try {
+                      const tenantSlug = getTenantSlug();
+                      const response = await apiClient.post(`/extra-charges`, formData, {
+                        headers: { 'x-tenant-slug': tenantSlug }
+                      });
+                      if (response.data?.success) {
+                        setShowExtraChargeForm(false);
+                        fetchDeceasedData();
+                      }
+                    } catch (error) {
+                      console.error('Error adding extra charge:', error);
+                    }
+                  }}
+                  isLoading={isLoadingFinancial}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
+        )}
+        {showPaymentForm && (
+          <ModalOverlay onClick={() => setShowPaymentForm(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><Wallet size={20} /> Record Payment</h3>
+                <ModalButton onClick={() => setShowPaymentForm(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <PaymentForm
+                  deceased={deceasedData}
+                  onClose={() => setShowPaymentForm(false)}
+                  onSubmit={async (formData) => {
+                    try {
+                      const tenantSlug = getTenantSlug();
+                      const response = await apiClient.post(`/payments`, formData, {
+                        headers: { 'x-tenant-slug': tenantSlug }
+                      });
+                      if (response.data?.success) {
+                        setShowPaymentForm(false);
+                        fetchDeceasedData();
+                      }
+                    } catch (error) {
+                      console.error('Error recording payment:', error);
+                    }
+                  }}
+                  isLoading={isLoadingFinancial}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
         )}
         {showProgressModal && (
           <ModalOverlay onClick={() => setShowProgressModal(false)}>
@@ -1180,8 +1065,29 @@ const DeceasedDetails = () => {
             </ModalContent>
           </ModalOverlay>
         )}
+        {showScannerModal && (
+          <ModalOverlay onClick={() => setShowScannerModal(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <h3><QrCode size={20} /> Document Scanner</h3>
+                <ModalButton onClick={() => setShowScannerModal(false)}>
+                  <X size={24} />
+                </ModalButton>
+              </ModalHeader>
+              <Suspense fallback={<LoadingFallback />}>
+                <ScannerComponent
+                  key={`scanner-${refreshKey}`}
+                  deceasedId={currentDeceasedId}
+                  deceasedData={deceasedData}
+                  onScanComplete={handleScanComplete}
+                  onUploadSuccess={handleDocumentUploadSuccess}
+                />
+              </Suspense>
+            </ModalContent>
+          </ModalOverlay>
+        )}
       </Suspense>
-    </AppContainer>
+    </Container>
   );
 };
 

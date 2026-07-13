@@ -6,7 +6,7 @@ const mysql = require('mysql2/promise');
 
 // Global fallback secrets
 const GLOBAL_JWT_SECRET = process.env.JWT_SECRET;
-const GLOBAL_REFRESH_SECRET = process.env.REFRESH_SECRET;
+const GLOBAL_REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 // Validate that secrets are configured
 if (!GLOBAL_JWT_SECRET || !GLOBAL_REFRESH_SECRET) {
@@ -48,7 +48,7 @@ const queryServer = async (sql, params = []) => {
  */
 const queryTenantDB = async (dbName, sql, params = []) => {
   // Validate database name to prevent SQL injection
-  if (!dbName || typeof dbName !== 'string' || !/^[a-zA-Z0-9_]+$/.test(dbName)) {
+  if (!dbName || typeof dbName !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(dbName)) {
     throw new Error('Invalid database name');
   }
 

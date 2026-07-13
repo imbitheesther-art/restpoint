@@ -18,7 +18,7 @@ import Swal from "sweetalert2";
 const ExternalLoader = lazy(() => import('../loader/loader'));
 
 // --- Centralized Theme & Services ---
-import Colors from "../../theme/colors";
+import Colors from "../../styles/theme/colors";
 import { userService } from "../../services/userService";
 import { authService } from "../../services/authService";
 
@@ -47,7 +47,7 @@ class SoundManager {
 
   async playWarning() {
     if (!this.isEnabled) return;
-    
+
     try {
       await this.beepSound.play();
     } catch (error) {
@@ -516,7 +516,7 @@ const RoleBadge = styled.div`
   font-weight: 600;
   
   ${props => {
-    switch(props.role) {
+    switch (props.role) {
       case 'system-administrator':
       case 'database-administrator':
         return `
@@ -907,11 +907,11 @@ const MobileFilters = styled.div`
 // Format last login time
 const formatLastLogin = (timestamp) => {
   if (!timestamp) return "Never logged in";
-  
+
   const now = new Date();
   const loginTime = new Date(timestamp);
   const diffDays = Math.floor((now - loginTime) / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
   return `${diffDays} days ago`;
@@ -919,7 +919,7 @@ const formatLastLogin = (timestamp) => {
 
 // Get role icon
 const getRoleIcon = (role) => {
-  switch(role) {
+  switch (role) {
     case 'system-administrator':
     case 'database-administrator':
       return <Crown size={14} />;
@@ -957,7 +957,7 @@ const RegistrationForm = ({ isOpen, onClose, onUserRegistered }) => {
       };
 
       const data = await userService.registerUser(registrationData);
-      
+
       if (data.success) {
         Swal.fire({
           icon: 'success',
@@ -966,7 +966,7 @@ const RegistrationForm = ({ isOpen, onClose, onUserRegistered }) => {
           timer: 3000,
           showConfirmButton: false
         });
-        
+
         resetForm();
         onClose();
         if (onUserRegistered) {
@@ -1159,16 +1159,16 @@ const UsersDashboard = () => {
     try {
       setLoading(true);
       const data = await userService.getUsers();
-      
+
       if (data.success) {
-        const filteredData = data.data.filter(user => 
+        const filteredData = data.data.filter(user =>
           user.role !== 'database-administrator'
         ).map(user => ({
           ...user,
           lastLogin: formatLastLogin(user.last_login),
           status: user.is_active ? "active" : "inactive"
         }));
-        
+
         setUsers(filteredData);
         setFilteredUsers(filteredData);
       }
@@ -1210,7 +1210,7 @@ const UsersDashboard = () => {
     } else if (activeFilter === "inactive") {
       filtered = filtered.filter(user => !user.is_active);
     } else if (activeFilter === "admin") {
-      filtered = filtered.filter(user => 
+      filtered = filtered.filter(user =>
         ['system-administrator', 'admin', 'it-administrator'].includes(user.role)
       );
     }
@@ -1236,7 +1236,7 @@ const UsersDashboard = () => {
 
     const newStatus = !user.is_active;
     const action = newStatus ? 'activate' : 'deactivate';
-    
+
     const result = await Swal.fire({
       title: `Are you sure?`,
       text: `You are about to ${action} ${user.name}. This will ${newStatus ? 'grant' : 'revoke'} their system access.`,
@@ -1251,7 +1251,7 @@ const UsersDashboard = () => {
     if (result.isConfirmed) {
       try {
         const data = await userService.updateUserStatus(user.id, newStatus);
-        
+
         if (data.success) {
           Swal.fire({
             icon: 'success',
@@ -1316,7 +1316,7 @@ const UsersDashboard = () => {
     if (result.isConfirmed) {
       try {
         const data = await userService.deleteUser(user.id);
-        
+
         if (data.success) {
           Swal.fire({
             icon: 'success',
@@ -1378,7 +1378,7 @@ const UsersDashboard = () => {
     if (newPassword) {
       try {
         const data = await userService.updateUserPassword(user.id, newPassword);
-        
+
         if (data.success) {
           Swal.fire({
             icon: 'success',
@@ -1408,9 +1408,9 @@ const UsersDashboard = () => {
       if (action === 'deactivate') return false;
       if (action === 'password') return false;
     }
-    
+
     if (user.id === currentUser?.id && action === 'delete') return false;
-    
+
     return true;
   };
 
@@ -1419,7 +1419,7 @@ const UsersDashboard = () => {
     total: users.length,
     active: users.filter(w => w.is_active).length,
     inactive: users.filter(w => !w.is_active).length,
-    admins: users.filter(w => 
+    admins: users.filter(w =>
       ['system-administrator', 'admin', 'it-administrator'].includes(w.role)
     ).length
   };
@@ -1452,8 +1452,8 @@ const UsersDashboard = () => {
 
         {/* Mobile Filters */}
         <MobileFilters isOpen={isMobileMenuOpen}>
-          <Select 
-            value={activeFilter} 
+          <Select
+            value={activeFilter}
             onChange={(e) => setActiveFilter(e.target.value)}
           >
             <option value="all">All Users</option>
@@ -1477,7 +1477,7 @@ const UsersDashboard = () => {
             <HeaderSubtitle>
               Comprehensive user administration and access control
             </HeaderSubtitle>
-            
+
             <HeaderStats>
               <StatCard>
                 <StatNumber>{stats.total}</StatNumber>
@@ -1512,8 +1512,8 @@ const UsersDashboard = () => {
           </SearchContainer>
 
           <ActionButtons>
-            <Select 
-              value={activeFilter} 
+            <Select
+              value={activeFilter}
               onChange={(e) => setActiveFilter(e.target.value)}
               style={{ display: window.innerWidth <= 768 ? 'none' : 'block' }}
             >
@@ -1609,37 +1609,37 @@ const UsersDashboard = () => {
                     </TableCell>
                     <TableCell data-label="Actions">
                       <ActionButtonsCell>
-                        <IconButton 
+                        <IconButton
                           variant="status"
                           active={user.is_active}
                           onClick={() => handleToggleStatus(user)}
                           disabled={!isActionAllowed(user, 'deactivate')}
-                          title={!isActionAllowed(user, 'deactivate') ? 
-                            "Cannot modify IT Administrators" : 
+                          title={!isActionAllowed(user, 'deactivate') ?
+                            "Cannot modify IT Administrators" :
                             user.is_active ? "Deactivate user" : "Activate user"}
                         >
                           <UserCheck size={12} />
                           {user.is_active ? "Deactivate" : "Activate"}
                         </IconButton>
 
-                        <IconButton 
+                        <IconButton
                           variant="password"
                           onClick={() => handleChangePassword(user)}
                           disabled={!isActionAllowed(user, 'password')}
-                          title={!isActionAllowed(user, 'password') ? 
-                            "Cannot change IT Administrator passwords" : 
+                          title={!isActionAllowed(user, 'password') ?
+                            "Cannot change IT Administrator passwords" :
                             "Change password"}
                         >
                           <Key size={12} />
                           Password
                         </IconButton>
 
-                        <IconButton 
+                        <IconButton
                           variant="delete"
                           onClick={() => handleDeleteUser(user)}
                           disabled={!isActionAllowed(user, 'delete')}
-                          title={!isActionAllowed(user, 'delete') ? 
-                            "Cannot delete this user" : 
+                          title={!isActionAllowed(user, 'delete') ?
+                            "Cannot delete this user" :
                             "Delete user"}
                         >
                           <Trash2 size={12} />
@@ -1656,7 +1656,7 @@ const UsersDashboard = () => {
       </ManagementContainer>
 
       {/* Enhanced Registration Modal */}
-      <RegistrationForm 
+      <RegistrationForm
         isOpen={showRegistration}
         onClose={() => setShowRegistration(false)}
         onUserRegistered={fetchUsers}

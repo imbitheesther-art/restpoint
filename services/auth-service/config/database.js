@@ -7,12 +7,12 @@ let db;
 
 try {
   // Try requiring as .js (if compiled)
-  db = require('../../global/config/db');
+  db = require('../../services/app-global/config/db');
 } catch (e1) {
   try {
     // Try requiring as .ts with ts-node
     require('ts-node').register({ transpileOnly: true });
-    db = require('../../global/config/db.ts');
+    db = require('../../services/app-global/config/db.ts');
   } catch (e2) {
     console.error('Failed to load database config:', e2.message);
     throw new Error('Could not load database configuration. Please ensure ts-node is installed.');

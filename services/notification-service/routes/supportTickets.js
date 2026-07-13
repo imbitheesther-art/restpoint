@@ -5,7 +5,7 @@ const { safeMasterQuery } = require('../../../shared/dbConfig');
 const { sendTicketNotification } = require('../services/resendEmailService');
 
 // Import authentication middleware
-const { protect, authorizeAny } = require('../../../global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
 
 const SOCKETIO_URL = process.env.SOCKETIO_SERVICE_URL || 'http://restpoint_socketio_service:5000';
 
