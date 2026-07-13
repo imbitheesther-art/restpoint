@@ -4,18 +4,18 @@
 
 const env = {
   // API Gateway URL - all requests go through the gateway
-  API_URL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api' : 'http://localhost:5000'),
+  API_URL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint' : 'http://localhost:5000'),
 
   // API Gateway base path for all microservices
   API_GATEWAY_URL: import.meta.env.VITE_API_GATEWAY_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5000'),
 
   // Base path for all RestPoint API endpoints
-  API_BASE_PATH: import.meta.env.PROD ? '' : '/api/v1/restpoint',
+  API_BASE_PATH: '/api/v1/restpoint',
 
   // Full API base URL (gateway + base path)
   get FULL_API_URL() {
     if (import.meta.env.PROD) {
-      return 'https://restpoint.co.ke/api';
+      return 'https://restpoint.co.ke/api/v1/restpoint';
     }
     return `${this.API_GATEWAY_URL}${this.API_BASE_PATH}`;
   },
@@ -24,10 +24,10 @@ const env = {
   API_TIMEOUT: 30000,
 
   // Hearse service API URL (direct access for driver portal)
-  HEARSE_API_URL: import.meta.env.VITE_HEARSE_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/hearse' : 'http://localhost:5002'),
+  HEARSE_API_URL: import.meta.env.VITE_HEARSE_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint/hearse' : 'http://localhost:5002'),
 
   // Workshop service API URL (direct access for workshop dashboard)
-  WORKSHOP_API_URL: import.meta.env.VITE_WORKSHOP_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/workshop' : 'http://localhost:6969'),
+  WORKSHOP_API_URL: import.meta.env.VITE_WORKSHOP_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint/workshop' : 'http://localhost:6969'),
 
   // WebSocket URL for real-time features (socketio-service port 5018)
   SOCKET_URL: import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5018'),
