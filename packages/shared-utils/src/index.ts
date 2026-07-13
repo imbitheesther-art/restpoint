@@ -1,5 +1,5 @@
-export { 
-  getKenyaTimeISO, 
+export {
+  getKenyaTimeISO,
   getKenyaTimeFormatted,
   getKenyaDateTime,
   getKenyaTimeMs,
@@ -17,8 +17,8 @@ export {
   decryptFromString,
   serializeEncrypted,
   deserializeEncrypted,
-  EncryptedData,
 } from './encryption';
+export type { EncryptedData } from './encryption';
 export {
   storeDocument,
   generateTempDownloadLink,
