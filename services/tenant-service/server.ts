@@ -8,7 +8,7 @@ import { TenantModel } from './models/Tenant.model';
 import onboardingRoutes from './routes/onboardingRoutes';
 import systemAdminRoutes from './routes/systemAdminRoutes';
 import { UserController } from './controllers/userController';
-import { errorHandler, notFoundHandler, asyncHandler } from '../../global/middlewares/errorHandler';
+import { errorHandler, notFoundHandler, asyncHandler } from '../../app-global/middlewares/errorHandler';
 
 dotenv.config();
 
