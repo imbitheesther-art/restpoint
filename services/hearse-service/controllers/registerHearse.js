@@ -478,7 +478,12 @@ const getAvailableHearses = asyncHandler(async (req, res) => {
                 b.branch_location as location
             FROM hearses h
             LEFT JOIN branches b ON h.branch_id = b.branch_id
-            WHERE h.status = 'available' 
+            WHERE h.status = 'available'
+            AND h.id NOT IN (
+                SELECT hearse_id FROM hearse_bookings 
+                WHERE hearse_id IS NOT NULL 
+                AND status NOT IN ('completed', 'cancelled')
+            )
             ORDER BY h.created_at DESC`
             : `SELECT 
                 h.*,
@@ -486,7 +491,12 @@ const getAvailableHearses = asyncHandler(async (req, res) => {
                 b.branch_location as location
             FROM hearses h
             LEFT JOIN branches b ON h.branch_id = b.branch_id
-            WHERE h.status = 'available' 
+            WHERE h.status = 'available'
+            AND h.id NOT IN (
+                SELECT hearse_id FROM hearse_bookings 
+                WHERE hearse_id IS NOT NULL 
+                AND status NOT IN ('completed', 'cancelled')
+            )
             ORDER BY h.created_at DESC`;
 
         const hearses = await safeTenantQuery(dbName, sql, []);

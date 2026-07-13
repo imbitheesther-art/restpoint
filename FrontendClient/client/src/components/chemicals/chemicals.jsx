@@ -7,6 +7,7 @@ import {
   RefreshCw, Zap, Target, Syringe, Shield, Truck, FlaskConical
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import api from '../../api/axios';
 
 // Using your specified colors
 const COLORS = {
@@ -264,6 +265,15 @@ const ChemicalCard = styled.div`
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
   }
+`;
+
+const ChemicalName = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${COLORS.textPrimary};
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const ChemicalMeta = styled.div`
@@ -678,8 +688,6 @@ const ChemicalManagementDashboard = () => {
     notes: ''
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';
-
   // Fetch data
   useEffect(() => {
     fetchChemicals();
@@ -691,12 +699,11 @@ const ChemicalManagementDashboard = () => {
   const fetchChemicals = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/chemicals`);
-      const result = await response.json();
-      if (result.success) {
-        setChemicals(result.data || []);
+      const response = await api.get('/chemicals');
+      if (response.data.success) {
+        setChemicals(response.data.data || []);
       } else {
-        toast.error(result.message || 'Failed to fetch chemicals');
+        toast.error(response.data.message || 'Failed to fetch chemicals');
       }
     } catch (error) {
       console.error('Error fetching chemicals:', error);
@@ -709,10 +716,9 @@ const ChemicalManagementDashboard = () => {
   const fetchUsageData = async () => {
     try {
       const branchId = 1;
-      const response = await fetch(`${API_BASE_URL}/chemicals/usage/branch/${branchId}`);
-      const result = await response.json();
-      if (result.success) {
-        setUsageData(result.data || []);
+      const response = await api.get(`/chemicals/usage/branch/${branchId}`);
+      if (response.data.success) {
+        setUsageData(response.data.data || []);
       }
     } catch (error) {
       console.error('Error fetching usage data:', error);
@@ -722,10 +728,9 @@ const ChemicalManagementDashboard = () => {
   const fetchPPERequests = async () => {
     try {
       const branchId = 1;
-      const response = await fetch(`${API_BASE_URL}/chemicals/ppe-requests/branch/${branchId}`);
-      const result = await response.json();
-      if (result.success) {
-        setPPERequests(result.data || []);
+      const response = await api.get(`/chemicals/ppe-requests/branch/${branchId}`);
+      if (response.data.success) {
+        setPPERequests(response.data.data || []);
       }
     } catch (error) {
       console.error('Error fetching PPE requests:', error);
@@ -735,10 +740,9 @@ const ChemicalManagementDashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       const branchId = 1;
-      const response = await fetch(`${API_BASE_URL}/chemicals/dashboard/summary/${branchId}`);
-      const result = await response.json();
-      if (result.success) {
-        setDashboardStats(result.data);
+      const response = await api.get(`/chemicals/dashboard/summary/${branchId}`);
+      if (response.data.success) {
+        setDashboardStats(response.data.data);
       }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -769,12 +773,8 @@ const ChemicalManagementDashboard = () => {
         })
       };
 
-      const response = await fetch(`${API_BASE_URL}/chemicals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
+      const response = await api.post('/chemicals', payload);
+      const result = response.data;
       if (result.success) {
         toast.success('Chemical added successfully');
         setShowAddModal(false);
@@ -802,12 +802,8 @@ const ChemicalManagementDashboard = () => {
         deceased_id: usageFormData.deceased_id || null
       };
 
-      const response = await fetch(`${API_BASE_URL}/chemicals/usage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
+      const response = await api.post('/chemicals/usage', payload);
+      const result = response.data;
       if (result.success) {
         toast.success('Usage recorded successfully');
         setShowUsageModal(false);
@@ -836,12 +832,8 @@ const ChemicalManagementDashboard = () => {
         branch_id: 1
       };
 
-      const response = await fetch(`${API_BASE_URL}/chemicals/ppe-requests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
+      const response = await api.post('/chemicals/ppe-requests', payload);
+      const result = response.data;
       if (result.success) {
         toast.success('PPE request submitted successfully');
         setShowPPEModal(false);
@@ -1011,7 +1003,7 @@ const ChemicalManagementDashboard = () => {
           ) : (
             filteredChemicals.map(chemical => (
               <ChemicalCard key={chemical.chemical_id}>
-                <ChemicalHeader>
+                <Header>
                   <div>
                     <ChemicalName>
                       <Beaker size={18} />
@@ -1024,7 +1016,7 @@ const ChemicalManagementDashboard = () => {
                   <StatusBadge lowStock={chemical.is_low_stock === 1}>
                     {chemical.is_low_stock === 1 ? 'LOW STOCK' : 'IN STOCK'}
                   </StatusBadge>
-                </ChemicalHeader>
+                </Header>
 
                 <StockInfo>
                   <StockItem>

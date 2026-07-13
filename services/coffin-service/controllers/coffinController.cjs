@@ -92,7 +92,7 @@ const createCoffin = async (req, res) => {
         // Check for duplicate custom ID
         if (custom_id) {
             const existing = await query(req,
-                'SELECT coffin_id FROM coffins WHERE custom_id = ? AND tenant_id = ?',
+                'SELECT coffin_id FROM coffins WHERE custom_id = ? AND tenant_slug = ?',
                 [custom_id, tenantSlug]
             );
             if (existing.length > 0) {
@@ -103,7 +103,7 @@ const createCoffin = async (req, res) => {
         // Insert coffin
         const insertSql = `
       INSERT INTO coffins (
-        coffin_id, custom_id, tenant_id, type, material, exact_price, currency, 
+        coffin_id, custom_id, tenant_slug, type, material, exact_price, currency, 
         price_usd, exchange_rate, quantity, supplier, origin, color, 
         size, category, created_by, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
@@ -130,7 +130,7 @@ const createCoffin = async (req, res) => {
             }
 
             if (imageUrls.length > 0) {
-                const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_id, image_url, created_at) VALUES ?`;
+                const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_slug, image_url, created_at) VALUES ?`;
                 const imageValues = imageUrls.map(url => [coffinDbId, tenantSlug, url, new Date().toISOString()]);
                 await query(req, imageSql, [imageValues]);
             }
@@ -181,8 +181,8 @@ const getAllCoffins = async (req, res) => {
           GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
         FROM coffins c
         LEFT JOIN users u ON c.created_by = u.user_id
-        LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_id = ci.tenant_id
-        WHERE c.tenant_id = ? AND c.is_deleted = FALSE
+        LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
+        WHERE c.tenant_slug = ? AND c.is_deleted = FALSE
         GROUP BY c.coffin_id
         ORDER BY c.created_at DESC
       `;
@@ -239,8 +239,8 @@ const getCoffinById = async (req, res) => {
           GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
         FROM coffins c
         LEFT JOIN users u ON c.created_by = u.user_id
-        LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_id = ci.tenant_id
-        WHERE (c.coffin_id = ? OR c.custom_id = ?) AND c.tenant_id = ? AND c.is_deleted = FALSE
+        LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
+        WHERE (c.coffin_id = ? OR c.custom_id = ?) AND c.tenant_slug = ? AND c.is_deleted = FALSE
         GROUP BY c.coffin_id
       `;
 
@@ -282,7 +282,7 @@ const updateCoffin = async (req, res) => {
 
         // Check if coffin exists
         const existingCoffin = await query(req,
-            'SELECT * FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?',
+            'SELECT * FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?',
             [id, id, tenantSlug]
         );
 
@@ -321,7 +321,7 @@ const updateCoffin = async (req, res) => {
             const updateSql = `
         UPDATE coffins 
         SET ${updateFields.join(', ')} 
-        WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? AND is_deleted = FALSE
+        WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ? AND is_deleted = FALSE
       `;
             await query(req, updateSql, updateValues);
         }
@@ -353,7 +353,7 @@ const deleteCoffin = async (req, res) => {
         // Check if coffin has assignments
         const assignments = await query(req,
             `SELECT id FROM deceased_coffin 
-       WHERE coffin_id = (SELECT coffin_id FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?)`,
+       WHERE coffin_id = (SELECT coffin_id FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?)`,
             [id, id, tenantSlug]
         );
 
@@ -366,7 +366,7 @@ const deleteCoffin = async (req, res) => {
 
         // Soft delete
         await query(req,
-            'UPDATE coffins SET is_deleted = TRUE WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ?',
+            'UPDATE coffins SET is_deleted = TRUE WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?',
             [id, id, tenantSlug]
         );
 
@@ -404,7 +404,7 @@ const assignCoffin = async (req, res) => {
         // Check coffin availability
         const coffins = await query(req,
             `SELECT coffin_id, quantity, type, material FROM coffins 
-       WHERE (coffin_id = ? OR custom_id = ?) AND tenant_id = ? AND is_deleted = FALSE`,
+       WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ? AND is_deleted = FALSE`,
             [coffin_id, coffin_id, tenantSlug]
         );
 
@@ -422,14 +422,14 @@ const assignCoffin = async (req, res) => {
 
         // Insert assignment
         const insertResult = await query(req,
-            `INSERT INTO deceased_coffin (deceased_id, coffin_id, tenant_id, assigned_by_username, assigned_date, rfid, created_at)
+            `INSERT INTO deceased_coffin (deceased_id, coffin_id, tenant_slug, assigned_by_username, assigned_date, rfid, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
             [deceased_id, coffins[0].coffin_id, tenantSlug, assignedBy, finalAssignedDate, rfid]
         );
 
         // Update coffin stock
         await query(req,
-            'UPDATE coffins SET quantity = quantity - 1, updated_at = NOW() WHERE coffin_id = ? AND tenant_id = ?',
+            'UPDATE coffins SET quantity = quantity - 1, updated_at = NOW() WHERE coffin_id = ? AND tenant_slug = ?',
             [coffins[0].coffin_id, tenantSlug]
         );
 
@@ -475,7 +475,7 @@ const getCoffinAnalytics = async (req, res) => {
           COUNT(DISTINCT material) as unique_materials,
           SUM(exact_price * quantity) AS total_inventory_value
         FROM coffins
-        WHERE tenant_id = ? AND is_deleted = FALSE
+        WHERE tenant_slug = ? AND is_deleted = FALSE
       `, [tenantSlug]);
 
             analytics = {

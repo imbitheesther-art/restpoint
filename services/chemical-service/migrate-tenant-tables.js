@@ -25,7 +25,6 @@ const DB_CONFIG = {
 // Individual CREATE TABLE statements (no comments between them for reliable parsing)
 const CREATE_CHEMICALS = `CREATE TABLE IF NOT EXISTS chemicals (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  branch_id INT NOT NULL DEFAULT 1,
   name VARCHAR(255) NOT NULL,
   category VARCHAR(100) DEFAULT 'embalming',
   unit VARCHAR(50) NOT NULL DEFAULT 'liters',
@@ -42,7 +41,6 @@ const CREATE_CHEMICALS = `CREATE TABLE IF NOT EXISTS chemicals (
   created_by INT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_chemicals_branch (branch_id),
   INDEX idx_chemicals_category (category),
   INDEX idx_chemicals_active (is_active),
   INDEX idx_chemicals_hazard (hazard_level)
@@ -51,7 +49,6 @@ const CREATE_CHEMICALS = `CREATE TABLE IF NOT EXISTS chemicals (
 const CREATE_TRANSACTIONS = `CREATE TABLE IF NOT EXISTS chemical_transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   chemical_id INT NOT NULL,
-  branch_id INT NOT NULL DEFAULT 1,
   transaction_type ENUM('received', 'consumed', 'adjusted', 'wasted', 'transferred') NOT NULL,
   quantity DECIMAL(10,2) NOT NULL,
   unit VARCHAR(50) NOT NULL DEFAULT 'liters',
@@ -64,14 +61,12 @@ const CREATE_TRANSACTIONS = `CREATE TABLE IF NOT EXISTS chemical_transactions (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
   INDEX idx_transactions_chemical (chemical_id),
-  INDEX idx_transactions_branch (branch_id),
   INDEX idx_transactions_type (transaction_type),
   INDEX idx_transactions_date (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 
 const CREATE_USAGE = `CREATE TABLE IF NOT EXISTS deceased_chemical_usage (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  branch_id INT NOT NULL DEFAULT 1,
   deceased_id INT NOT NULL,
   chemical_id INT NOT NULL,
   quantity_used DECIMAL(10,2) NOT NULL,
@@ -84,13 +79,11 @@ const CREATE_USAGE = `CREATE TABLE IF NOT EXISTS deceased_chemical_usage (
   FOREIGN KEY (transaction_id) REFERENCES chemical_transactions(id) ON DELETE SET NULL,
   INDEX idx_usage_deceased (deceased_id),
   INDEX idx_usage_chemical (chemical_id),
-  INDEX idx_usage_branch (branch_id),
   INDEX idx_usage_date (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 
 const CREATE_ALERTS = `CREATE TABLE IF NOT EXISTS chemical_alerts (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  branch_id INT NOT NULL DEFAULT 1,
   chemical_id INT NOT NULL,
   alert_threshold DECIMAL(10,2) DEFAULT NULL,
   is_triggered TINYINT(1) DEFAULT 0,
@@ -98,12 +91,11 @@ const CREATE_ALERTS = `CREATE TABLE IF NOT EXISTS chemical_alerts (
   resolved_by INT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
-  UNIQUE KEY uk_chemical_alert (chemical_id, branch_id)
+  UNIQUE KEY uk_chemical_alert (chemical_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 
 const CREATE_PPE = `CREATE TABLE IF NOT EXISTS ppe_requests (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  branch_id INT NOT NULL DEFAULT 1,
   item_name VARCHAR(255) NOT NULL,
   quantity_requested INT NOT NULL DEFAULT 1,
   quantity_approved INT DEFAULT NULL,
@@ -113,14 +105,12 @@ const CREATE_PPE = `CREATE TABLE IF NOT EXISTS ppe_requests (
   notes TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_ppe_branch (branch_id),
   INDEX idx_ppe_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 
 const CREATE_TRANSFERS = `CREATE TABLE IF NOT EXISTS chemical_transfers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   chemical_id INT NOT NULL,
-  from_branch_id INT NOT NULL,
   to_branch_id INT NOT NULL,
   quantity DECIMAL(10,2) NOT NULL,
   unit VARCHAR(50) NOT NULL DEFAULT 'liters',
@@ -131,7 +121,6 @@ const CREATE_TRANSFERS = `CREATE TABLE IF NOT EXISTS chemical_transfers (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE,
-  INDEX idx_transfer_from (from_branch_id),
   INDEX idx_transfer_to (to_branch_id),
   INDEX idx_transfer_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;

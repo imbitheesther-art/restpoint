@@ -67,7 +67,7 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'QUERY', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code', 'Origin', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code', 'x-branch-slug', 'Origin', 'X-Requested-With', 'Accept'],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
@@ -111,7 +111,6 @@ const SERVICE_ROUTES = {
   // Tenant service (port 8002)
   'tenant': SERVICE_URLS.tenant,
   'tenants': SERVICE_URLS.tenant,
-  'onboarding': SERVICE_URLS.tenant,
   'system-admin': SERVICE_URLS.tenant,
 
   // Deceased service (port 5003)
@@ -175,6 +174,9 @@ const SERVICE_ROUTES = {
 
   // QR code service (port 5021)
   'qrcode': SERVICE_URLS.qrcode,
+
+  // Onboarding routes (direct to tenant service)
+  'onboarding': SERVICE_URLS.tenant,
 
   // Portal service (port 5007)
   'portal': SERVICE_URLS.portal,

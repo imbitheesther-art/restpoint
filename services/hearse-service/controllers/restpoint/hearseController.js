@@ -34,6 +34,11 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
                  AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
             FROM hearses h
             WHERE h.status = 'available'
+            AND h.id NOT IN (
+                SELECT hearse_id FROM hearse_bookings 
+                WHERE hearse_id IS NOT NULL 
+                AND status NOT IN ('completed', 'cancelled')
+            )
             ORDER BY h.branch_id ASC, h.created_at DESC`
         );
 

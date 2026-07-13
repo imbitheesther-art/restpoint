@@ -1,4 +1,4 @@
-const { safeQuery } = require('../../configurations/sqlConfig/db');
+const { safeQuery, getConnection } = require('../../configurations/sqlConfig/db');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 
@@ -20,7 +20,8 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             from_timestamp,
             to_timestamp,
             from_location,
-            to_location
+            to_location,
+            booked_by
         } = req.body;
 
         // ✅ Basic validation - only destination is required
@@ -59,15 +60,16 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         // ✅ Check if hearse is already booked (double-booking prevention)
         if (hearse_id) {
             // Use transaction with row locking to prevent race conditions
-            const connection = await safeQuery.getConnection(req.tenant?.db_name || req.tenantSlug);
+            const connection = await getConnection(req.tenant?.db_name || req.tenantSlug);
             try {
                 await connection.beginTransaction();
 
                 // Lock the hearse row for update
-                const [hearse] = await connection.query(
+                const [hearseRows] = await connection.query(
                     'SELECT id, status FROM hearses WHERE id = ? FOR UPDATE',
                     [hearse_id]
                 );
+                const hearse = hearseRows[0];
 
                 if (!hearse) {
                     await connection.rollback();
@@ -89,13 +91,14 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
                 }
 
                 // Additional check: Look for active bookings (not completed/cancelled)
-                const [activeBooking] = await connection.query(
+                const [activeBookingRows] = await connection.query(
                     `SELECT id FROM hearse_bookings 
                      WHERE hearse_id = ? 
                      AND status NOT IN ('completed', 'cancelled') 
                      LIMIT 1`,
                     [hearse_id]
                 );
+                const activeBooking = activeBookingRows[0];
 
                 if (activeBooking) {
                     await connection.rollback();
@@ -175,8 +178,8 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         const insertQuery = `
             INSERT INTO hearse_bookings
             (booking_code, hearse_id, tenant_db_name, client_name, client_phone, destination,
-             from_timestamp, to_timestamp, booking_date, status, booked_by, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             from_timestamp, to_timestamp, booking_date, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const insertParams = [
@@ -190,7 +193,6 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             to_timestamp || null,
             from_timestamp || now, // booking_date
             bookingStatus, // 'booked'
-            data.booked_by || null, // Store who created the booking
             now,
             now
         ];
@@ -226,7 +228,6 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
                 hb.to_location,
                 hb.status, 
                 hb.booking_date, 
-                hb.booked_by,
                 hb.created_at,
                 h.id AS hearse_id, 
                 h.plate_number, 

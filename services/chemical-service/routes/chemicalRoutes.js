@@ -113,7 +113,7 @@ router.put('/transfers/:id', chemicalController.approveTransfer);
 // WILDCARD ROUTES (must come AFTER all specific routes)
 // ============================================
 
-// Get single chemical
+// Get single chemical by ID
 router.get('/:id', chemicalController.getById);
 
 // Update chemical

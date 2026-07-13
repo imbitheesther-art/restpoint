@@ -38,8 +38,8 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.closeAllConnections = exports.closeTenantDB = exports.safeTenantExecute = exports.safeTenantQuery = exports.execute = exports.query = exports.getTenantDBBySlug = exports.getTenantDB = exports.resolveDatabase = exports.lookupTenantDatabase = exports.getRootPool = void 0;
-const mysql = require("mysql2");
-const mysql_promise = mysql.promise;
+const mysql = require("mysql2/promise");
+const mysql_promise = mysql;
 // ============================================
 // Database Configuration
 // ============================================

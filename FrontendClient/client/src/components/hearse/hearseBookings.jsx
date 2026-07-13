@@ -141,6 +141,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     const [fromLocation, setFromLocation] = useState('');
     const [toLocation, setToLocation] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         if (show) {
@@ -150,6 +151,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
             setClientPhone('');
             setFromLocation('');
             setToLocation('');
+            setErrorMessage('');
             loadHearses();
         }
     }, [show]);
@@ -172,10 +174,11 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
 
     const handleBook = async () => {
         if (!selected || !bookingDate || !clientName || !fromLocation || !toLocation) {
-            alert('Please fill in all required fields');
+            setErrorMessage('Please fill in all required fields');
             return;
         }
         setSubmitting(true);
+        setErrorMessage('');
         try {
             // Get logged-in user info
             const userStr = localStorage.getItem('user');
@@ -201,7 +204,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
             onBookingCreated();
             onHide();
         } catch (e) {
-            alert('Booking failed: ' + e.message);
+            setErrorMessage(e.message || 'Failed to create booking. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -265,6 +268,12 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
                     </>
                 ) : (
                     <>
+                        {errorMessage && (
+                            <div className="alert alert-danger d-flex align-items-center" role="alert" style={{ fontSize: '0.85rem', padding: '0.65rem 0.85rem', marginBottom: '1rem', borderRadius: '8px' }}>
+                                <XCircle size={16} className="me-2 flex-shrink-0" />
+                                <span>{errorMessage}</span>
+                            </div>
+                        )}
                         <div className="hb-selected-info">
                             <div className="hb-selected-icon">
                                 <Car size={22} />

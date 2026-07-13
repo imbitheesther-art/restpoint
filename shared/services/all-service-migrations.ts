@@ -51,6 +51,10 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
     name: '005_create_activity_logs_table',
     sql: `CREATE TABLE IF NOT EXISTS activity_logs (log_id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, action VARCHAR(255) NOT NULL, entity_type VARCHAR(100), entity_id VARCHAR(100), details TEXT, ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_user_id (user_id), INDEX idx_action (action), INDEX idx_entity (entity_type, entity_id), INDEX idx_created_at (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
+  {
+    name: '017_fix_role_column',
+    sql: `ALTER TABLE users MODIFY COLUMN role VARCHAR(50) DEFAULT 'user' COMMENT 'User role (admin, manager, staff, user, driver, workshop_manager, HR, accounts, mortician, supervisor, technician, system_administrator, receptionist, hearse_driver, etc.)'`,
+  },
 ];
 
 // ─── Deceased Service Migrations ─────────────────────────────────────────────
@@ -193,7 +197,15 @@ const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
   },
   {
     name: '151_create_hearse_bookings_table',
-    sql: `CREATE TABLE IF NOT EXISTS hearse_bookings (id INT AUTO_INCREMENT PRIMARY KEY, booking_code VARCHAR(50) UNIQUE, booking_reference VARCHAR(100) UNIQUE, hearse_id INT, deceased_id VARCHAR(50), tenant_db_name VARCHAR(255), client_name VARCHAR(255) NOT NULL, client_phone VARCHAR(20) NOT NULL, client_email VARCHAR(255), destination VARCHAR(255), booking_date DATETIME, from_timestamp DATETIME, to_timestamp DATETIME, from_location VARCHAR(255), to_location VARCHAR(255), event_date DATE, event_time TIME, service_type VARCHAR(50) DEFAULT 'funeral', status VARCHAR(50) DEFAULT 'pending', driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), special_requests TEXT, total_charge DECIMAL(10,2), paid_amount DECIMAL(10,2), payment_status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid', booked_by INT DEFAULT NULL COMMENT 'User who created the booking', booked_by_email VARCHAR(255) DEFAULT NULL COMMENT 'Email of user who created booking', accepted_by INT DEFAULT NULL COMMENT 'Driver who accepted the booking', accepted_by_email VARCHAR(255) DEFAULT NULL COMMENT 'Email of driver who accepted', created_by INT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_hearse_id (hearse_id), INDEX idx_driver_id (driver_id), INDEX idx_status (status), INDEX idx_booking_date (booking_date), INDEX idx_client_phone (client_phone), INDEX idx_branch_code (branch_code), INDEX idx_booking_code (booking_code), INDEX idx_tenant_db_name (tenant_db_name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS hearse_bookings (id INT AUTO_INCREMENT PRIMARY KEY, booking_code VARCHAR(50) UNIQUE, booking_reference VARCHAR(100) UNIQUE, hearse_id INT, deceased_id VARCHAR(50), tenant_db_name VARCHAR(255), client_name VARCHAR(255) NOT NULL, client_phone VARCHAR(20) NOT NULL, client_email VARCHAR(255), destination VARCHAR(255), booking_date DATETIME, from_timestamp DATETIME, to_timestamp DATETIME, from_location VARCHAR(255), to_location VARCHAR(255), event_date DATE, event_time TIME, service_type VARCHAR(50) DEFAULT 'funeral', status VARCHAR(50) DEFAULT 'pending', driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), special_requests TEXT, total_charge DECIMAL(10,2), paid_amount DECIMAL(10,2), payment_status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid', booked_by VARCHAR(255) DEFAULT NULL COMMENT 'User who created the booking (name or slug)', booked_by_email VARCHAR(255) DEFAULT NULL COMMENT 'Email of user who created booking', accepted_by INT DEFAULT NULL COMMENT 'Driver who accepted the booking', accepted_by_email VARCHAR(255) DEFAULT NULL COMMENT 'Email of driver who accepted', created_by INT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_hearse_id (hearse_id), INDEX idx_driver_id (driver_id), INDEX idx_status (status), INDEX idx_booking_date (booking_date), INDEX idx_client_phone (client_phone), INDEX idx_branch_code (branch_code), INDEX idx_booking_code (booking_code), INDEX idx_tenant_db_name (tenant_db_name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  },
+  {
+    name: '151a_alter_hearse_bookings_add_booked_by',
+    sql: `ALTER TABLE hearse_bookings ADD COLUMN IF NOT EXISTS booked_by VARCHAR(255) DEFAULT NULL COMMENT 'User who created the booking (name or slug)' AFTER booking_date`,
+  },
+  {
+    name: '151b_alter_hearse_bookings_fix_status_column',
+    sql: `ALTER TABLE hearse_bookings MODIFY COLUMN status VARCHAR(50) DEFAULT 'pending' COMMENT 'Booking status: pending, confirmed, booked, in_transit, completed, cancelled, postponed, maintenance, in_progress'`,
   },
 ];
 
