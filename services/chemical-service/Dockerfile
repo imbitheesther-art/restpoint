@@ -1,28 +1,35 @@
 # Production Dockerfile for Chemical Service
 FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init python3 make g++
+# Install build dependencies for TypeScript
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
+# Copy root workspace config
 COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
+
+# Copy service package.json
 COPY services/chemical-service/package.json ./services/chemical-service/
 
+# Install ALL dependencies (including dev for building shared packages)
 RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
-COPY configurations/ ./configurations/
+# Copy source code
+COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY services/app-global/ ./app-global/
-
-
 COPY services/chemical-service/ ./services/chemical-service/
 
 # Build shared packages (critical for TypeScript imports)

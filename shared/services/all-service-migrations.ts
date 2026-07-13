@@ -1,12 +1,17 @@
 /**
  * @file shared/services/all-service-migrations.ts
  * PRODUCTION-READY: All Service Migrations
- * 
- * Centralized registry of all database migrations for all services.
- * 
+ *
+ * Centralized registry of ALL database migrations for ALL services.
+ * Every tenant database receives ALL these migrations.
+ *
  * Usage:
- *   import { ALL_SERVICE_MIGRATIONS } from './all-service-migrations';
- *   const result = await migrationService.runTenantMigrations(dbName, ALL_SERVICE_MIGRATIONS, config);
+ *   import { ALL_TENANT_MIGRATIONS } from './all-service-migrations';
+ *   const result = await migrationService.runTenantMigrations(dbName, ALL_TENANT_MIGRATIONS, config);
+ *
+ * NOTE: Leave Management has its own migration system (leave-service).
+ * NOTE: EDocuments has been removed - unnecessary module.
+ * NOTE: JWT secrets managed in tenant_tracking DB by Tenant.model.ts.
  */
 
 import { Migration } from './migration-service';
@@ -32,7 +37,7 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
   },
   {
     name: '003_create_users_table',
-    sql: `CREATE TABLE IF NOT EXISTS users (user_id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, full_name VARCHAR(255) NOT NULL, phone VARCHAR(20), role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'user', branch_id INT NULL, is_active BOOLEAN DEFAULT TRUE, is_verified BOOLEAN DEFAULT FALSE, last_login_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_email (email), INDEX idx_role (role), INDEX idx_branch_id (branch_id), FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS users (user_id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, full_name VARCHAR(255) NOT NULL, phone VARCHAR(20), role VARCHAR(50) DEFAULT 'staff' NOT NULL, slug VARCHAR(255) NULL UNIQUE, branch_id INT NULL, is_active BOOLEAN DEFAULT TRUE, is_verified BOOLEAN DEFAULT FALSE, last_login_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_email (email), INDEX idx_role (role), INDEX idx_slug (slug), INDEX idx_branch_id (branch_id), FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
   {
     name: '003_create_refresh_tokens_table',
@@ -45,10 +50,6 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
   {
     name: '005_create_activity_logs_table',
     sql: `CREATE TABLE IF NOT EXISTS activity_logs (log_id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, action VARCHAR(255) NOT NULL, entity_type VARCHAR(100), entity_id VARCHAR(100), details TEXT, ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_user_id (user_id), INDEX idx_action (action), INDEX idx_entity (entity_type, entity_id), INDEX idx_created_at (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '006_add_jwt_secret_to_tenants',
-    sql: `ALTER TABLE tenant_tracking.tenants ADD COLUMN IF NOT EXISTS jwt_secret VARCHAR(255) NULL AFTER deployment_type, ADD COLUMN IF NOT EXISTS refresh_secret VARCHAR(255) NULL AFTER jwt_secret`,
   },
 ];
 
@@ -154,65 +155,45 @@ const COFFIN_SERVICE_MIGRATIONS: Migration[] = [
   },
 ];
 
-// ─── Chemicals Service Migrations ────────────────────────────────────────────
+// ─── Chemicals Service Migrations (UNIFIED - any unit type) ───────────────────
 
 const CHEMICALS_SERVICE_MIGRATIONS: Migration[] = [
   {
     name: '140_create_chemicals_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemicals (id INT AUTO_INCREMENT PRIMARY KEY, chemical_name VARCHAR(255) NOT NULL, chemical_code VARCHAR(100) UNIQUE, category VARCHAR(100), unit VARCHAR(50), current_stock DECIMAL(10, 2) DEFAULT 0, minimum_stock DECIMAL(10, 2) DEFAULT 0, unit_price DECIMAL(10, 2) DEFAULT 0, supplier VARCHAR(255), expiry_date DATE, storage_location VARCHAR(255), safety_data_sheet_url VARCHAR(500), is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_chemical_code (chemical_code), INDEX idx_category (category), INDEX idx_is_active (is_active)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS chemicals (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, name VARCHAR(255) NOT NULL, chemical_name VARCHAR(255) NULL, chemical_code VARCHAR(100) UNIQUE, category VARCHAR(100) DEFAULT 'embalming', unit VARCHAR(100) NOT NULL DEFAULT 'liters', current_stock DECIMAL(10,2) NOT NULL DEFAULT 0, min_stock_level DECIMAL(10,2) DEFAULT 0, reorder_level DECIMAL(10,2) DEFAULT 0, unit_cost DECIMAL(10,2) DEFAULT 0, unit_price DECIMAL(10,2) DEFAULT 0, hazard_level ENUM('low', 'medium', 'high') DEFAULT 'low', supplier VARCHAR(255) DEFAULT NULL, batch_number VARCHAR(100) DEFAULT NULL, storage_location VARCHAR(255), safety_data_sheet_url VARCHAR(500), notes TEXT DEFAULT NULL, is_active TINYINT(1) DEFAULT 1, created_by INT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_chemicals_branch (branch_id), INDEX idx_chemicals_category (category), INDEX idx_chemicals_active (is_active), INDEX idx_chemicals_hazard (hazard_level), INDEX idx_chemical_code (chemical_code)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
   {
     name: '141_create_chemical_transactions_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemical_transactions (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, transaction_type ENUM('received', 'used', 'disposed', 'transferred', 'adjusted') NOT NULL, quantity DECIMAL(10, 2) NOT NULL, unit_price DECIMAL(10, 2), total_amount DECIMAL(10, 2), reference_number VARCHAR(100), deceased_id VARCHAR(50), used_by INT, approved_by INT, notes TEXT, transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_chemical_id (chemical_id), INDEX idx_transaction_type (transaction_type), INDEX idx_deceased_id (deceased_id), INDEX idx_transaction_date (transaction_date), FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS chemical_transactions (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, branch_id INT NOT NULL DEFAULT 1, transaction_type ENUM('received', 'used', 'disposed', 'transferred', 'adjusted', 'consumed', 'wasted') NOT NULL, quantity DECIMAL(10,2) NOT NULL, unit VARCHAR(100) NOT NULL DEFAULT 'liters', previous_stock DECIMAL(10,2) NOT NULL, new_stock DECIMAL(10,2) NOT NULL, unit_price DECIMAL(10,2) NULL, total_amount DECIMAL(10,2) NULL, reference_number VARCHAR(100), reference_type VARCHAR(50) DEFAULT NULL, reference_id INT DEFAULT NULL, deceased_id VARCHAR(50), used_by INT, approved_by INT, performed_by INT DEFAULT NULL, notes TEXT DEFAULT NULL, transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, INDEX idx_transactions_chemical (chemical_id), INDEX idx_transactions_branch (branch_id), INDEX idx_transactions_type (transaction_type), INDEX idx_transactions_date (created_at), INDEX idx_deceased_id (deceased_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
   {
     name: '142_create_deceased_chemical_usage_table',
-    sql: `CREATE TABLE IF NOT EXISTS deceased_chemical_usage (id INT AUTO_INCREMENT PRIMARY KEY, deceased_id VARCHAR(50) NOT NULL, chemical_id INT NOT NULL, quantity_used DECIMAL(10, 2) NOT NULL, embalming_date TIMESTAMP NULL, embalmed_by INT, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_deceased_id (deceased_id), INDEX idx_chemical_id (chemical_id), INDEX idx_embalming_date (embalming_date), FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS deceased_chemical_usage (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, deceased_id INT NOT NULL, chemical_id INT NOT NULL, quantity_used DECIMAL(10,2) NOT NULL, unit VARCHAR(100) NOT NULL DEFAULT 'liters', embalming_date TIMESTAMP NULL, embalmed_by INT, transaction_id INT DEFAULT NULL, used_by INT DEFAULT NULL, usage_notes TEXT DEFAULT NULL, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, FOREIGN KEY (transaction_id) REFERENCES chemical_transactions(id) ON DELETE SET NULL, INDEX idx_usage_deceased (deceased_id), INDEX idx_usage_chemical (chemical_id), INDEX idx_usage_branch (branch_id), INDEX idx_usage_date (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
   {
     name: '143_create_chemical_alerts_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemical_alerts (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, alert_type ENUM('low_stock', 'expired', 'near_expiry') NOT NULL, severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium', message TEXT, is_resolved BOOLEAN DEFAULT FALSE, resolved_by INT, resolved_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_chemical_id (chemical_id), INDEX idx_alert_type (alert_type), INDEX idx_is_resolved (is_resolved), FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS chemical_alerts (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, chemical_id INT NOT NULL, alert_type ENUM('low_stock', 'expired', 'near_expiry') DEFAULT 'low_stock', alert_threshold DECIMAL(10,2) DEFAULT NULL, severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium', message TEXT, is_triggered TINYINT(1) DEFAULT 0, is_resolved BOOLEAN DEFAULT FALSE, resolved_by INT, resolved_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, UNIQUE KEY uk_chemical_alert (chemical_id, branch_id), INDEX idx_chemical_id (chemical_id), INDEX idx_alert_type (alert_type), INDEX idx_is_resolved (is_resolved)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
   {
     name: '144_create_ppe_requests_table',
-    sql: `CREATE TABLE IF NOT EXISTS ppe_requests (id INT AUTO_INCREMENT PRIMARY KEY, requester_id INT NOT NULL, ppe_items JSON NOT NULL, urgency ENUM('normal', 'urgent', 'emergency') DEFAULT 'normal', status ENUM('pending', 'approved', 'rejected', 'fulfilled') DEFAULT 'pending', approved_by INT, approved_at TIMESTAMP NULL, fulfilled_at TIMESTAMP NULL, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_requester_id (requester_id), INDEX idx_status (status), INDEX idx_urgency (urgency)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS ppe_requests (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, requester_id INT NOT NULL, item_name VARCHAR(255) NOT NULL, quantity_requested INT NOT NULL DEFAULT 1, quantity_approved INT DEFAULT NULL, urgency ENUM('normal', 'urgent', 'emergency') DEFAULT 'normal', status ENUM('pending', 'approved', 'rejected', 'fulfilled') DEFAULT 'pending', requested_by VARCHAR(255) NOT NULL, approved_by INT, approved_at TIMESTAMP NULL, fulfilled_at TIMESTAMP NULL, notes TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_ppe_branch (branch_id), INDEX idx_ppe_status (status), INDEX idx_requester_id (requester_id), INDEX idx_urgency (urgency)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
   {
     name: '145_create_chemical_transfers_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemical_transfers (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, from_branch_id INT, to_branch_id INT, quantity DECIMAL(10, 2) NOT NULL, transferred_by INT NOT NULL, approved_by INT, notes TEXT, transfer_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_chemical_id (chemical_id), INDEX idx_from_branch (from_branch_id), INDEX idx_to_branch (to_branch_id), INDEX idx_transfer_date (transfer_date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS chemical_transfers (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, from_branch_id INT NOT NULL, to_branch_id INT NOT NULL, quantity DECIMAL(10,2) NOT NULL, unit VARCHAR(100) NOT NULL DEFAULT 'liters', status ENUM('pending', 'approved', 'completed', 'cancelled') DEFAULT 'pending', transferred_by INT NOT NULL, requested_by INT DEFAULT NULL, approved_by INT, notes TEXT DEFAULT NULL, transfer_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, INDEX idx_transfer_from (from_branch_id), INDEX idx_transfer_to (to_branch_id), INDEX idx_transfer_status (status), INDEX idx_transfer_date (transfer_date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
 ];
 
-// ─── Hearse Service Migrations ───────────────────────────────────────────────
+// ─── Hearse Service Migrations (VARCHAR status, includes booked_by, accepted_by) ──
 
 const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
   {
     name: '150_create_hearses_table',
-    sql: `CREATE TABLE IF NOT EXISTS hearses (id INT AUTO_INCREMENT PRIMARY KEY, hearse_code VARCHAR(20) UNIQUE, hearse_name VARCHAR(255), plate_number VARCHAR(50) NOT NULL UNIQUE, capacity INT DEFAULT 1, min_charge_ksh DECIMAL(10,2) DEFAULT 0, max_charge_ksh DECIMAL(10,2) DEFAULT 0, driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), status ENUM('available', 'booked', 'cancelled', 'in_transit', 'maintenance', 'unavailable') DEFAULT 'available', image_url VARCHAR(500), image VARCHAR(500), description TEXT, features JSON, make VARCHAR(100), model VARCHAR(100), year INT, chassis_number VARCHAR(50), engine_number VARCHAR(50), insurance_expiry DATE, service_due_date DATE, is_active BOOLEAN DEFAULT TRUE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_branch_id (branch_id), INDEX idx_status (status), INDEX idx_driver_id (driver_id), INDEX idx_plate_number (plate_number)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '150a_hearses_add_missing_columns',
-    sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS hearse_code VARCHAR(20) NULL AFTER id, ADD INDEX IF NOT EXISTS idx_hearse_code (hearse_code)`,
-  },
-  {
-    name: '150b_hearses_add_extra_columns',
-    sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS image VARCHAR(500) NULL AFTER id, ADD COLUMN IF NOT EXISTS description TEXT NULL AFTER status, ADD COLUMN IF NOT EXISTS features JSON NULL AFTER description, ADD COLUMN IF NOT EXISTS make VARCHAR(100) NULL AFTER model, ADD COLUMN IF NOT EXISTS year INT NULL AFTER make, ADD COLUMN IF NOT EXISTS chassis_number VARCHAR(50) NULL AFTER year, ADD COLUMN IF NOT EXISTS engine_number VARCHAR(50) NULL AFTER chassis_number, ADD COLUMN IF NOT EXISTS insurance_expiry DATE NULL AFTER engine_number, ADD COLUMN IF NOT EXISTS service_due_date DATE NULL AFTER insurance_expiry, ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE NULL AFTER service_due_date, ADD COLUMN IF NOT EXISTS branch_code VARCHAR(50) NULL AFTER branch_id`,
-  },
-  {
-    name: '150c_hearses_ensure_hearse_code_column',
-    sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS hearse_code VARCHAR(20) NULL AFTER id, ADD INDEX IF NOT EXISTS idx_hearse_code (hearse_code)`,
-  },
-  {
-    name: '150d_ensure_branch_code_in_branches',
-    sql: `ALTER TABLE branches ADD COLUMN IF NOT EXISTS branch_code VARCHAR(50) NULL AFTER branch_slug, ADD INDEX IF NOT EXISTS idx_branch_code (branch_code)`,
-  },
-  {
-    name: '150e_hearses_ensure_status_column',
-    sql: `ALTER TABLE hearses ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'available' AFTER branch_id, ADD INDEX IF NOT EXISTS idx_status (status)`,
+    sql: `CREATE TABLE IF NOT EXISTS hearses (id INT AUTO_INCREMENT PRIMARY KEY, hearse_code VARCHAR(20) UNIQUE, hearse_name VARCHAR(255), plate_number VARCHAR(50) NOT NULL UNIQUE, capacity INT DEFAULT 1, min_charge_ksh DECIMAL(10,2) DEFAULT 0, max_charge_ksh DECIMAL(10,2) DEFAULT 0, driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), status VARCHAR(50) DEFAULT 'available', image_url VARCHAR(500), image VARCHAR(500), description TEXT, features JSON, make VARCHAR(100), model VARCHAR(100), year INT, chassis_number VARCHAR(50), engine_number VARCHAR(50), insurance_expiry DATE, service_due_date DATE, is_active BOOLEAN DEFAULT TRUE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_branch_id (branch_id), INDEX idx_status (status), INDEX idx_driver_id (driver_id), INDEX idx_plate_number (plate_number), INDEX idx_hearse_code (hearse_code)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
   {
     name: '151_create_hearse_bookings_table',
-    sql: `CREATE TABLE IF NOT EXISTS hearse_bookings (id INT AUTO_INCREMENT PRIMARY KEY, booking_code VARCHAR(50) UNIQUE, booking_reference VARCHAR(100) UNIQUE, hearse_id INT, deceased_id VARCHAR(50), tenant_db_name VARCHAR(255), client_name VARCHAR(255) NOT NULL, client_phone VARCHAR(20) NOT NULL, client_email VARCHAR(255), pickup_location VARCHAR(255), dropoff_location VARCHAR(255), destination VARCHAR(255), booking_date DATETIME, from_timestamp DATETIME, to_timestamp DATETIME, from_location VARCHAR(255), to_location VARCHAR(255), event_date DATE, event_time TIME, service_type ENUM('funeral', 'transfer', 'other') DEFAULT 'funeral', status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'booked') DEFAULT 'pending', driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), special_requests TEXT, total_charge DECIMAL(10,2), paid_amount DECIMAL(10,2), payment_status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid', created_by INT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_hearse_id (hearse_id), INDEX idx_driver_id (driver_id), INDEX idx_status (status), INDEX idx_booking_date (booking_date), INDEX idx_client_phone (client_phone), INDEX idx_branch_code (branch_code)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS hearse_bookings (id INT AUTO_INCREMENT PRIMARY KEY, booking_code VARCHAR(50) UNIQUE, booking_reference VARCHAR(100) UNIQUE, hearse_id INT, deceased_id VARCHAR(50), tenant_db_name VARCHAR(255), client_name VARCHAR(255) NOT NULL, client_phone VARCHAR(20) NOT NULL, client_email VARCHAR(255), destination VARCHAR(255), booking_date DATETIME, from_timestamp DATETIME, to_timestamp DATETIME, from_location VARCHAR(255), to_location VARCHAR(255), event_date DATE, event_time TIME, service_type VARCHAR(50) DEFAULT 'funeral', status VARCHAR(50) DEFAULT 'pending', driver_id INT, branch_id INT DEFAULT 1, branch_code VARCHAR(50), special_requests TEXT, total_charge DECIMAL(10,2), paid_amount DECIMAL(10,2), payment_status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid', booked_by INT DEFAULT NULL COMMENT 'User who created the booking', booked_by_email VARCHAR(255) DEFAULT NULL COMMENT 'Email of user who created booking', accepted_by INT DEFAULT NULL COMMENT 'Driver who accepted the booking', accepted_by_email VARCHAR(255) DEFAULT NULL COMMENT 'Email of driver who accepted', created_by INT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_hearse_id (hearse_id), INDEX idx_driver_id (driver_id), INDEX idx_status (status), INDEX idx_booking_date (booking_date), INDEX idx_client_phone (client_phone), INDEX idx_branch_code (branch_code), INDEX idx_booking_code (booking_code), INDEX idx_tenant_db_name (tenant_db_name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
 ];
 
@@ -221,7 +202,7 @@ const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
 const WORKSHOP_SERVICE_MIGRATIONS: Migration[] = [
   {
     name: '160_create_coffin_orders_table',
-    sql: `CREATE TABLE IF NOT EXISTS coffin_orders (id INT AUTO_INCREMENT PRIMARY KEY, order_number VARCHAR(50) UNIQUE, customer_name VARCHAR(255), customer_phone VARCHAR(20), customer_email VARCHAR(255), deceased_name VARCHAR(255) NOT NULL, coffin_type VARCHAR(50) DEFAULT 'standard', dimensions TEXT, color VARCHAR(100), interior_fabric VARCHAR(100), notes TEXT, selling_price DECIMAL(10,2) DEFAULT 0, total_cost DECIMAL(10,2) DEFAULT 0, profit DECIMAL(10,2) DEFAULT 0, status VARCHAR(50) DEFAULT 'pending', delivery_date DATE, order_date DATETIME DEFAULT CURRENT_TIMESTAMP, branch_code VARCHAR(50), created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_orders_status (status), INDEX idx_orders_date (order_date), INDEX idx_branch_code (branch_code)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS coffin_orders (id INT AUTO_INCREMENT PRIMARY KEY, order_number VARCHAR(50) UNIQUE, customer_name VARCHAR(255), customer_phone VARCHAR(20), customer_email VARCHAR(255), deceased_name VARCHAR(255) NOT NULL, coffin_type VARCHAR(50) DEFAULT 'standard', dimensions TEXT, color VARCHAR(100), interior_fabric VARCHAR(100), notes TEXT, instructions TEXT, priority VARCHAR(20) DEFAULT 'normal', due_date DATE, branch_id INT DEFAULT 1, selling_price DECIMAL(10,2) DEFAULT 0, total_cost DECIMAL(10,2) DEFAULT 0, profit DECIMAL(10,2) DEFAULT 0, status VARCHAR(50) DEFAULT 'pending', hold_reason TEXT, delivery_date DATE, order_date DATETIME DEFAULT CURRENT_TIMESTAMP, branch_code VARCHAR(50), created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_orders_status (status), INDEX idx_orders_date (order_date), INDEX idx_branch_code (branch_code), INDEX idx_orders_branch (branch_id), INDEX idx_orders_priority (priority)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
   {
     name: '161_create_materials_table',
@@ -270,56 +251,9 @@ const EXTRA_SERVICES_MIGRATIONS: Migration[] = [
   },
 ];
 
-// ─── Chemical Service Migrations ─────────────────────────────────────────────
+// ─── Combined Migration Lists ──────────────────────────────────────────────
 
-const CHEMICAL_V2_MIGRATIONS: Migration[] = [
-  {
-    name: '210_create_chemicals_v2_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemicals (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, name VARCHAR(255) NOT NULL, category VARCHAR(100) DEFAULT 'embalming', unit VARCHAR(50) NOT NULL DEFAULT 'liters', current_stock DECIMAL(10,2) NOT NULL DEFAULT 0, min_stock_level DECIMAL(10,2) DEFAULT 0, reorder_level DECIMAL(10,2) DEFAULT 0, unit_cost DECIMAL(10,2) DEFAULT 0, hazard_level ENUM('low', 'medium', 'high') DEFAULT 'low', supplier VARCHAR(255) DEFAULT NULL, batch_number VARCHAR(100) DEFAULT NULL, expiry_date DATE DEFAULT NULL, notes TEXT DEFAULT NULL, is_active TINYINT(1) DEFAULT 1, created_by INT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_chemicals_branch (branch_id), INDEX idx_chemicals_category (category), INDEX idx_chemicals_active (is_active), INDEX idx_chemicals_hazard (hazard_level)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  },
-  {
-    name: '211_create_chemical_transactions_v2_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemical_transactions (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, branch_id INT NOT NULL DEFAULT 1, transaction_type ENUM('received', 'consumed', 'adjusted', 'wasted', 'transferred') NOT NULL, quantity DECIMAL(10,2) NOT NULL, unit VARCHAR(50) NOT NULL DEFAULT 'liters', previous_stock DECIMAL(10,2) NOT NULL, new_stock DECIMAL(10,2) NOT NULL, reference_type VARCHAR(50) DEFAULT NULL, reference_id INT DEFAULT NULL, performed_by INT DEFAULT NULL, notes TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, INDEX idx_transactions_chemical (chemical_id), INDEX idx_transactions_branch (branch_id), INDEX idx_transactions_type (transaction_type), INDEX idx_transactions_date (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  },
-  {
-    name: '212_create_deceased_chemical_usage_v2_table',
-    sql: `CREATE TABLE IF NOT EXISTS deceased_chemical_usage (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, deceased_id INT NOT NULL, chemical_id INT NOT NULL, quantity_used DECIMAL(10,2) NOT NULL, unit VARCHAR(50) NOT NULL DEFAULT 'liters', transaction_id INT DEFAULT NULL, used_by INT DEFAULT NULL, usage_notes TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, FOREIGN KEY (transaction_id) REFERENCES chemical_transactions(id) ON DELETE SET NULL, INDEX idx_usage_deceased (deceased_id), INDEX idx_usage_chemical (chemical_id), INDEX idx_usage_branch (branch_id), INDEX idx_usage_date (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  },
-  {
-    name: '213_create_chemical_alerts_v2_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemical_alerts (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, chemical_id INT NOT NULL, alert_threshold DECIMAL(10,2) DEFAULT NULL, is_triggered TINYINT(1) DEFAULT 0, resolved_at TIMESTAMP NULL DEFAULT NULL, resolved_by INT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, UNIQUE KEY uk_chemical_alert (chemical_id, branch_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  },
-  {
-    name: '214_create_ppe_requests_v2_table',
-    sql: `CREATE TABLE IF NOT EXISTS ppe_requests (id INT AUTO_INCREMENT PRIMARY KEY, branch_id INT NOT NULL DEFAULT 1, item_name VARCHAR(255) NOT NULL, quantity_requested INT NOT NULL DEFAULT 1, quantity_approved INT DEFAULT NULL, status ENUM('pending', 'approved', 'rejected', 'fulfilled') DEFAULT 'pending', requested_by VARCHAR(255) NOT NULL, approved_by INT DEFAULT NULL, notes TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_ppe_branch (branch_id), INDEX idx_ppe_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  },
-  {
-    name: '215_create_chemical_transfers_v2_table',
-    sql: `CREATE TABLE IF NOT EXISTS chemical_transfers (id INT AUTO_INCREMENT PRIMARY KEY, chemical_id INT NOT NULL, from_branch_id INT NOT NULL, to_branch_id INT NOT NULL, quantity DECIMAL(10,2) NOT NULL, unit VARCHAR(50) NOT NULL DEFAULT 'liters', status ENUM('pending', 'approved', 'completed', 'cancelled') DEFAULT 'pending', requested_by INT DEFAULT NULL, approved_by INT DEFAULT NULL, notes TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (chemical_id) REFERENCES chemicals(id) ON DELETE CASCADE, INDEX idx_transfer_from (from_branch_id), INDEX idx_transfer_to (to_branch_id), INDEX idx_transfer_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  },
-];
-
-// ─── EDocuments Service Migrations ───────────────────────────────────────────
-
-const EDOCUMENTS_SERVICE_MIGRATIONS: Migration[] = [
-  {
-    name: '120_create_edocuments_table',
-    sql: `CREATE TABLE IF NOT EXISTS edocuments (id INT AUTO_INCREMENT PRIMARY KEY, deceased_id VARCHAR(50) NOT NULL, document_type VARCHAR(100) NOT NULL, title VARCHAR(255) NOT NULL, content LONGTEXT, file_path VARCHAR(500), file_format ENUM('pdf', 'docx', 'html', 'txt') DEFAULT 'pdf', status ENUM('draft', 'final', 'archived') DEFAULT 'draft', version INT DEFAULT 1, created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_deceased_id (deceased_id), INDEX idx_document_type (document_type), INDEX idx_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-];
-
-// ─── Visitors Service Migrations ─────────────────────────────────────────────
-
-const VISITORS_SERVICE_MIGRATIONS: Migration[] = [
-  {
-    name: '130_create_visitor_logs_table',
-    sql: `CREATE TABLE IF NOT EXISTS visitor_logs (id INT AUTO_INCREMENT PRIMARY KEY, visitor_name VARCHAR(255) NOT NULL, visitor_phone VARCHAR(20), visitor_email VARCHAR(255), visitor_id_number VARCHAR(50), purpose VARCHAR(255), deceased_id VARCHAR(50), branch_id INT, check_in_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, check_out_time TIMESTAMP NULL, is_approved BOOLEAN DEFAULT FALSE, approved_by INT, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_deceased_id (deceased_id), INDEX idx_branch_id (branch_id), INDEX idx_check_in_time (check_in_time), INDEX idx_visitor_phone (visitor_phone)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-];
-
-// ─── Export All Migrations ────────────────────────────────────────────────────
-
-export const ALL_SERVICE_MIGRATIONS: Migration[] = [
+export const ALL_TENANT_MIGRATIONS: Migration[] = [
   ...TENANT_SERVICE_MIGRATIONS,
   ...DECEASED_SERVICE_MIGRATIONS,
   ...INVOICE_SERVICE_MIGRATIONS,
@@ -329,9 +263,36 @@ export const ALL_SERVICE_MIGRATIONS: Migration[] = [
   ...CHEMICALS_SERVICE_MIGRATIONS,
   ...HEARSE_SERVICE_MIGRATIONS,
   ...WORKSHOP_SERVICE_MIGRATIONS,
-  ...VISITORS_SERVICE_MIGRATIONS,
+
   ...EXTRA_SERVICES_MIGRATIONS,
-  ...CHEMICAL_V2_MIGRATIONS,
+  ...BILLING_SERVICE_MIGRATIONS,
+];
+
+export const BRANCH_MIGRATIONS: Migration[] = [
+  ...TENANT_SERVICE_MIGRATIONS,
+  ...DECEASED_SERVICE_MIGRATIONS,
+  ...INVOICE_SERVICE_MIGRATIONS,
+  ...NOTIFICATIONS_SERVICE_MIGRATIONS,
+  ...BODY_CHECKOUT_SERVICE_MIGRATIONS,
+  ...COFFIN_SERVICE_MIGRATIONS,
+  ...CHEMICALS_SERVICE_MIGRATIONS,
+  ...HEARSE_SERVICE_MIGRATIONS,
+
+  ...EXTRA_SERVICES_MIGRATIONS,
+  ...BILLING_SERVICE_MIGRATIONS,
+];
+
+export const SINGLE_TENANT_MIGRATIONS: Migration[] = [
+  ...TENANT_SERVICE_MIGRATIONS,
+  ...DECEASED_SERVICE_MIGRATIONS,
+  ...INVOICE_SERVICE_MIGRATIONS,
+  ...NOTIFICATIONS_SERVICE_MIGRATIONS,
+  ...BODY_CHECKOUT_SERVICE_MIGRATIONS,
+  ...COFFIN_SERVICE_MIGRATIONS,
+  ...CHEMICALS_SERVICE_MIGRATIONS,
+  ...HEARSE_SERVICE_MIGRATIONS,
+
+  ...EXTRA_SERVICES_MIGRATIONS,
   ...BILLING_SERVICE_MIGRATIONS,
 ];
 
@@ -347,42 +308,25 @@ export {
   CHEMICALS_SERVICE_MIGRATIONS,
   HEARSE_SERVICE_MIGRATIONS,
   WORKSHOP_SERVICE_MIGRATIONS,
-  VISITORS_SERVICE_MIGRATIONS,
   EXTRA_SERVICES_MIGRATIONS,
-  CHEMICAL_V2_MIGRATIONS,
   BILLING_SERVICE_MIGRATIONS,
 };
 
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
 export function getMainTenantMigrations(): Migration[] {
-  return ALL_SERVICE_MIGRATIONS;
+  return ALL_TENANT_MIGRATIONS;
 }
 
 export function getBranchMigrations(): Migration[] {
-  return ALL_SERVICE_MIGRATIONS;
+  return BRANCH_MIGRATIONS;
 }
 
-export function getSoftDeleteMigrations(): Migration[] {
-  return [
-    { name: '001_add_soft_delete_to_users', sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '002_add_soft_delete_to_organizations', sql: `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '003_add_soft_delete_to_branches', sql: `ALTER TABLE branches ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '004_add_soft_delete_to_deceased', sql: `ALTER TABLE deceased ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '005_add_soft_delete_to_next_of_kin', sql: `ALTER TABLE next_of_kin ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(100) NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '006_add_soft_delete_to_postmortem', sql: `ALTER TABLE postmortem ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '007_add_soft_delete_to_charges', sql: `ALTER TABLE charges ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '008_add_soft_delete_to_marketplace_products', sql: `ALTER TABLE marketplace_products ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '009_add_soft_delete_to_orders', sql: `ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '010_add_soft_delete_to_order_items', sql: `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '011_add_soft_delete_to_invoices', sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '012_add_soft_delete_to_payments', sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '013_add_soft_delete_to_documents', sql: `ALTER TABLE documents ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER status, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '014_add_soft_delete_to_notifications', sql: `ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_read, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '015_add_soft_delete_to_coffins', sql: `ALTER TABLE coffins ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '016_add_soft_delete_to_coffin_images', sql: `ALTER TABLE coffin_images ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '017_add_soft_delete_to_activity_logs', sql: `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER created_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '018_add_soft_delete_to_refresh_tokens', sql: `ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER is_active, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-    { name: '019_add_soft_delete_to_mortuary_settings', sql: `ALTER TABLE mortuary_settings ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE AFTER updated_at, ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER is_deleted, ADD COLUMN IF NOT EXISTS deleted_by INT NULL AFTER deleted_at, ADD INDEX IF NOT EXISTS idx_is_deleted (is_deleted)` },
-  ];
+export function getSingleTenantMigrations(): Migration[] {
+  return SINGLE_TENANT_MIGRATIONS;
 }
+
+export function getAllTenantMigrations(): Migration[] {
+  return BRANCH_MIGRATIONS;
+}
+

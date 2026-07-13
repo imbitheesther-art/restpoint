@@ -120,13 +120,20 @@ export default function LoginPage() {
         setShowSuccess(true);
 
         setTimeout(() => {
-          const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug || 'default';
+          // Check if user is system admin - redirect to system admin dashboard
+          if (data.user?.role === 'systemadmin') {
+            localStorage.setItem('systemAdmin', 'true');
+            navigate('/system-admin', { replace: true });
+          } else {
+            // Normal tenant flow
+            const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug || 'default';
 
-          if (tenantSlug && tenantSlug !== 'default') {
-            localStorage.setItem('tenantSlug', tenantSlug);
+            if (tenantSlug && tenantSlug !== 'default') {
+              localStorage.setItem('tenantSlug', tenantSlug);
+            }
+
+            navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
           }
-
-          navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
         }, 1600);
       } else {
         setMessage({

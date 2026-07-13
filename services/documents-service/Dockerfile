@@ -1,29 +1,42 @@
 # RestPoint Documents Service — Clean Dockerfile
 FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init wget
+# Install build dependencies for TypeScript
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
+# Copy root workspace config
 COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
+
+# Copy service package.json
 COPY services/documents-service/package.json ./services/documents-service/
 
+# Install ALL dependencies (including dev for building shared packages)
 RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
-COPY configurations/ ./configurations/
+# Copy source code
+COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY services/app-global/ ./app-global/
-
-
 COPY services/documents-service/ ./services/documents-service/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 RUN mkdir -p /usr/src/app/uploads && chown -R nodejs:nodejs /usr/src/app
 
@@ -38,4 +51,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "services/documents-service/server.js"]
-

@@ -1,8 +1,8 @@
-# RestPoint Tenant Service — Clean Dockerfile (SIASA-HUB pattern)
+# RestPoint Support Service — Clean Dockerfile (SIASA-HUB pattern)
 FROM node:24-alpine
 
 # Install build dependencies for TypeScript/tsx
-RUN apk add --no-cache dumb-init python3 make g++
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -26,13 +26,17 @@ COPY services/support-service/package.json ./services/support-service/
 RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
-COPY configurations/ ./configurations/
+COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY services/app-global/ ./app-global/
 COPY services/support-service/ ./services/support-service/
 
 # Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 # Install tsx for running TypeScript directly
 RUN yarn global add tsx
@@ -54,4 +58,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["tsx", "services/support-service/server.ts"]
-

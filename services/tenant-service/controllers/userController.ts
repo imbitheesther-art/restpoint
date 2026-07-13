@@ -24,9 +24,28 @@ export class UserController {
                 return;
             }
 
-            const validRoles = ['admin', 'manager', 'staff', 'user', 'driver'];
+            const validRoles = [
+                'system_administrator',
+                'admin',
+                'manager',
+                'receptionist',
+                'mortician',
+                'driver',
+                'hearse_driver',
+                'workshop_manager',
+                'workshop_technician',
+                'inventory_manager',
+                'procurement_officer',
+                'funeral_director',
+                'hr',
+                'payroll',
+                'security',
+                'cleaner',
+                'staff',
+                'user'
+            ];
             if (!validRoles.includes(role)) {
-                res.status(400).json({ success: false, message: 'Invalid role. Must be one of: admin, manager, staff, user, driver' });
+                res.status(400).json({ success: false, message: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
                 return;
             }
 

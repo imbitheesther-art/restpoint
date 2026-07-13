@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
+const { autoInitSystemAdmin } = require('./scripts/auto-init-system-admin');
 
 const app = express();
 // FIX 1: Harmonized default port to match the Gateway's internal mapping
@@ -85,6 +86,19 @@ app.use((err, req, res, next) => {
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
 });
+
+// Auto-initialize system admin on startup
+autoInitSystemAdmin()
+    .then(result => {
+        if (result.success) {
+            console.log('✅ System admin auto-initialization complete');
+        } else {
+            console.warn('⚠️ System admin auto-initialization failed:', result.message);
+        }
+    })
+    .catch(error => {
+        console.error('❌ System admin auto-initialization error:', error.message);
+    });
 
 // Start Server
 app.listen(PORT, () => {

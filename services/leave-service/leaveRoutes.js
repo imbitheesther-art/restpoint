@@ -11,7 +11,7 @@ const {
   getUsersOnLeave
 } = require('./leaveController');
 
-const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
+const { protect, authorizeAny } = require('../../services/app-global/middlewares/authMiddleware');
 
 const router = express.Router();
 

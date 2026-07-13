@@ -1,28 +1,42 @@
 # Production Dockerfile for Coffin Service
-FROM node:20-alpine
+FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init
+# Install build dependencies for TypeScript
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001
 
 WORKDIR /usr/src/app
 
+# Copy root workspace config
 COPY package.json tsconfig.base.json ./
+
+# Copy shared package.json files
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
+
+# Copy service package.json
 COPY services/coffin-service/package.json ./services/coffin-service/
 
-RUN npm install --legacy-peer-deps && npm cache clean --force
+# Install ALL dependencies (including dev for building shared packages)
+RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
-COPY configurations/ ./configurations/
+# Copy source code
+COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-
-
+COPY services/app-global/ ./app-global/
 COPY services/coffin-service/ ./services/coffin-service/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && yarn build
+RUN cd packages/shared-logger && yarn build
+RUN cd packages/shared-services && yarn build
+RUN cd packages/shared-utils && yarn build
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 

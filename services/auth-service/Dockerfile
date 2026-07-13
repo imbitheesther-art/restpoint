@@ -26,7 +26,7 @@ COPY services/auth-service/package.json ./services/auth-service/
 RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
-COPY configurations/ ./configurations/
+COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY services/app-global/ ./app-global/

@@ -1,11 +1,12 @@
 import bcrypt from 'bcryptjs';
 import mysql from 'mysql2/promise';
 import slugify from 'slugify';
-import { getMainTenantMigrations, getBranchMigrations } from '../../../shared/services/all-service-migrations';
+import { getMainTenantMigrations, getBranchMigrations, getSingleTenantMigrations, getAllTenantMigrations } from '../../../shared/services/all-service-migrations';
 import { MigrationService } from '../../../shared/services/migration-service';
-import { getSoftDeleteMigrations } from '../../../shared/services/soft-delete-migrations';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -104,15 +105,15 @@ async function getServerPool(): Promise<mysql.Pool> {
             keepAliveInitialDelay: 0,
             authPlugins: AUTH_PLUGINS,
         } as any);
-        console.log('✅ Tenant service server pool created');
+
 
         try {
             const conn = await serverPool.getConnection();
-            console.log('✅ Database connection verified');
+
             conn.release();
         } catch (error: any) {
-            console.error('❌ Database connection failed:', error.message);
-            console.error('💡 Check your .env file for correct credentials');
+            console.error(' Database connection failed:', error.message);
+            console.error(' Check your .env file for correct credentials');
         }
     }
     return serverPool;
@@ -181,6 +182,48 @@ async function emitOnboardingProgress(tenantSlug: string, step: string, progress
 }
 
 // ============================================
+// UPLOAD DIRECTORY CREATION
+// ============================================
+
+const UPLOAD_SUBDIRS = [
+    'logos',
+    'employees',
+    'chemicals',
+    'documents',
+    'images',
+    'deceased',
+    'receipts',
+    'reports',
+    'contracts',
+    'signatures'
+];
+
+async function createTenantUploadDirectories(tenantSlug: string): Promise<void> {
+    const baseDir = path.join(process.cwd(), 'uploads', 'tenants', tenantSlug);
+
+    // Create base tenant directory
+    fs.mkdirSync(baseDir, { recursive: true });
+    console.log(`📂 Created base upload directory: ${baseDir}`);
+
+    // Create all subdirectories
+    for (const subdir of UPLOAD_SUBDIRS) {
+        const dirPath = path.join(baseDir, subdir);
+        fs.mkdirSync(dirPath, { recursive: true });
+        console.log(`   📁 Created: ${subdir}/`);
+    }
+
+    // Create .gitkeep files to ensure empty directories are tracked
+    for (const subdir of UPLOAD_SUBDIRS) {
+        const gitkeepPath = path.join(baseDir, subdir, '.gitkeep');
+        if (!fs.existsSync(gitkeepPath)) {
+            fs.writeFileSync(gitkeepPath, '');
+        }
+    }
+
+    console.log(`✅ All upload directories created for tenant: ${tenantSlug}`);
+}
+
+// ============================================
 // CREATE TENANT DATABASE
 // ============================================
 
@@ -193,7 +236,8 @@ async function createCompleteTenantDatabase(
     phone: string | null,
     country: string | null,
     location: string | null,
-    branches: Array<{ branch_name: string; branch_location: string; branch_phone: string; branch_email: string }> | undefined
+    branches: Array<{ branch_name: string; branch_location: string; branch_phone: string; branch_email: string }> | undefined,
+    deploymentType: 'single' | 'multi'
 ): Promise<{ dbName: string; branches: Array<{ branch_name: string; branch_slug: string; branch_db_name: string }> }> {
     const serverConn = await getServerPool();
     const migrationService = new MigrationService();
@@ -221,11 +265,35 @@ async function createCompleteTenantDatabase(
     await serverConn.query(`GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${dbUser}'@'%'`);
     await emitOnboardingProgress(subdomain, 'Database created', 10, `Primary database ${dbName} created`);
 
-    const allMigrations = getMainTenantMigrations();
-    const totalMigrations = allMigrations.length;
+    // ============================================================
+    // FIX: ALL migrations run on the PRIMARY database
+    // ============================================================
+    // For single-tenant: use getSingleTenantMigrations() (no Workshop)
+    // For multi-tenant MAIN branch: use getMainTenantMigrations() (includes Workshop)
+    // For multi-tenant sub-branches: use getBranchMigrations() (no Workshop)
+
+    const isMultiTenant = deploymentType === 'multi';
+    const isFirstBranch = true; // Primary DB is always the first/main branch
+
+    let primaryMigrations;
+    if (isMultiTenant && isFirstBranch) {
+        // MAIN branch in multi-tenant: ALL migrations including Workshop
+        primaryMigrations = getMainTenantMigrations();
+        console.log(`📋 Using MAIN branch migrations (includes Workshop) for: ${dbName}`);
+    } else if (isMultiTenant && !isFirstBranch) {
+        // Sub-branch in multi-tenant: ALL migrations EXCEPT Workshop
+        primaryMigrations = getBranchMigrations();
+        console.log(`📋 Using sub-branch migrations (no Workshop) for: ${dbName}`);
+    } else {
+        // Single tenant: ALL migrations EXCEPT Workshop
+        primaryMigrations = getSingleTenantMigrations();
+        console.log(`📋 Using single-tenant migrations (no Workshop) for: ${dbName}`);
+    }
+
+    const totalMigrations = primaryMigrations.length;
     let completedMigrations = 0;
 
-    const migrationResult = await migrationService.runTenantMigrations(dbName, allMigrations, dbConfig, (migrationName) => {
+    const migrationResult = await migrationService.runTenantMigrations(dbName, primaryMigrations, dbConfig, (migrationName) => {
         completedMigrations++;
         const progress = 15 + Math.floor((completedMigrations / totalMigrations) * 30);
         emitOnboardingProgress(subdomain, `Running migrations (${completedMigrations}/${totalMigrations})`, progress, migrationName);
@@ -235,15 +303,6 @@ async function createCompleteTenantDatabase(
         throw new Error(`Failed to create tenant database: ${migrationResult.errors.join(', ')}`);
     }
     console.log(`✅ Primary database ready: ${migrationResult.migrationsRun.length} migrations executed`);
-
-    const softDeleteMigrations = getSoftDeleteMigrations();
-    const softDeleteResult = await migrationService.runTenantMigrations(dbName, softDeleteMigrations, dbConfig, (migrationName) => {
-        completedMigrations++;
-        emitOnboardingProgress(subdomain, `Enabling features`, 50, migrationName);
-    });
-    if (!softDeleteResult.success) {
-        console.warn(`⚠️ Continuing without soft delete support`);
-    }
 
     await emitOnboardingProgress(subdomain, 'Setting up', 70, 'Creating branches and admin user');
 
@@ -262,8 +321,7 @@ async function createCompleteTenantDatabase(
         `, [tenantName, subdomain, country || 'Kenya']);
 
         // ─── FIRST BRANCH: points to primary DB ────────────────────────
-        // ✅ FIXED: Use database name as the slug (exactly matching)
-        const firstBranchSlugFull = dbName; // e.g., "itumo-feuneral-machakos"
+        const firstBranchSlugFull = dbName;
         await tenantConn.query(
             `INSERT INTO branches (branch_name, branch_slug, branch_db_name, branch_location, branch_phone, branch_email, is_active) 
              VALUES (?, ?, ?, ?, ?, ?, 1)`,
@@ -281,17 +339,38 @@ async function createCompleteTenantDatabase(
         // ─── ADDITIONAL BRANCHES: create separate DBs ─────────────────
         for (let i = 1; i < branchList.length; i++) {
             const branch = branchList[i];
-            // ✅ FIXED: Use database name as the slug (exactly matching)
             const branchDbName = `${generateSlug(tenantName)}-${generateSlug(branch.branch_name)}`;
-            const branchSlug = branchDbName; // Slug matches database name exactly
+            const branchSlug = branchDbName;
 
             await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${branchDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
             await serverConn.query(`GRANT ALL PRIVILEGES ON \`${branchDbName}\`.* TO '${dbUser}'@'%'`);
 
+            // ============================================================
+            // FIX: ALL migrations run on EVERY branch database
+            // Sub-branches get ALL migrations EXCEPT Workshop
+            // ============================================================
             const branchMigrations = getBranchMigrations();
-            await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig, (migrationName) => {
-                console.log(`   📦 Branch migration: ${migrationName}`);
+            console.log(`📋 Running ALL migrations (${branchMigrations.length} total) for branch DB: ${branchDbName}`);
+
+            let branchCompletedMigrations = 0;
+            const branchResult = await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig, (migrationName) => {
+                branchCompletedMigrations++;
+                console.log(`   📦 Branch migration ${branchCompletedMigrations}/${branchMigrations.length}: ${migrationName}`);
             });
+
+            if (!branchResult.success) {
+                const errorMsg = `Failed to run migrations for branch database ${branchDbName}: ${branchResult.errors.join(', ')}`;
+                console.error(`❌ ${errorMsg}`);
+                // Rollback - drop the database if migrations failed
+                try {
+                    await serverConn.query(`DROP DATABASE IF EXISTS \`${branchDbName}\``);
+                    console.log(`   🗑️ Rolled back: dropped database ${branchDbName}`);
+                } catch (rollbackErr) {
+                    console.error(`   ⚠️ Failed to rollback database ${branchDbName}:`, rollbackErr.message);
+                }
+                throw new Error(errorMsg);
+            }
+            console.log(`✅ Branch migrations completed: ${branchResult.migrationsRun.length} migrations executed for ${branchDbName}`);
 
             await tenantConn.query(
                 `INSERT INTO branches (branch_name, branch_slug, branch_db_name, branch_location, branch_phone, branch_email, is_active) 
@@ -418,14 +497,15 @@ export class TenantModel {
             throw new Error('Tenant slug already exists');
         }
 
+        const finalDeploymentType = deployment_type || ((branches && branches.length > 1) ? 'multi' : 'single');
+
         const { branches: branchData } = await createCompleteTenantDatabase(
             tenant_name, dbName, email, password_hash, full_name,
-            phone || null, country || null, location || null, branches
+            phone || null, country || null, location || null, branches,
+            finalDeploymentType
         );
 
         await emitOnboardingProgress(subdomain, 'Registering tenant', 98, 'Saving tenant record');
-
-        const finalDeploymentType = deployment_type || ((branches && branches.length > 1) ? 'multi' : 'single');
 
         const [columns] = await serverConn.query(`
             SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
@@ -487,13 +567,16 @@ export class TenantModel {
             updated_at: tenantRow.updated_at
         };
 
+        // ============================================================
+        // FIX: Create upload directories for the tenant
+        // ============================================================
         try {
-            const { createTenantFolders, initializeUploadsDirectory } = require('../../global/services/fileStorageService');
-            await initializeUploadsDirectory();
-            const folderResult = await createTenantFolders(tenant.tenant_slug);
-            if (folderResult.success) console.log(`📂 Tenant folders created`);
+            await createTenantUploadDirectories(tenant.tenant_slug);
+            console.log(`📂 Tenant upload directories created for: ${tenant.tenant_slug}`);
         } catch (folderError: any) {
-            console.warn(`⚠️ Could not create tenant folders: ${folderError.message}`);
+            console.error(`❌ Failed to create tenant upload directories: ${folderError.message}`);
+            // Abort tenant creation if folder creation fails
+            throw new Error(`Failed to create tenant upload directories: ${folderError.message}`);
         }
 
         const jwt = require('jsonwebtoken');
@@ -534,7 +617,7 @@ export class TenantModel {
                     password_hash VARCHAR(255) NOT NULL,
                     full_name VARCHAR(255) NOT NULL,
                     phone VARCHAR(20),
-                    role ENUM('admin', 'manager', 'staff', 'user') DEFAULT 'admin',
+                    role VARCHAR(50) DEFAULT 'admin',
                     tenant_id INT NOT NULL,
                     branch_id INT NULL,
                     is_active BOOLEAN DEFAULT TRUE,
@@ -624,12 +707,15 @@ export class TenantModel {
         const serverConn = await getServerPool();
         const migrationService = new MigrationService();
 
-        // ✅ FIXED: Use database name as the slug (exactly matching)
         const branchDbName = `${tenantDbName}-${generateSlug(branch.branch_name)}`;
-        const branchSlug = branchDbName; // Slug matches database name exactly
+        const branchSlug = branchDbName;
 
         await serverConn.query(`CREATE DATABASE IF NOT EXISTS \`${branchDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
 
+        // ============================================================
+        // FIX: ALL migrations run on EVERY new branch database
+        // Sub-branches get ALL migrations EXCEPT Workshop
+        // ============================================================
         const branchMigrations = getBranchMigrations();
         const dbConfig = {
             host: process.env.DB_HOST || '127.0.0.1',
@@ -639,11 +725,14 @@ export class TenantModel {
             authPlugins: AUTH_PLUGINS
         };
 
+        console.log(`📋 Running ALL migrations (${branchMigrations.length} total) for new branch DB: ${branchDbName}`);
+
         let completedBranchMigrations = 0;
         const branchResult = await migrationService.runTenantMigrations(branchDbName, branchMigrations, dbConfig, (migrationName) => {
             completedBranchMigrations++;
             console.log(`   📦 Branch migration ${completedBranchMigrations}/${branchMigrations.length}: ${migrationName}`);
         });
+
         if (!branchResult.success) {
             const errorMsg = `Failed to run migrations for branch database ${branchDbName}: ${branchResult.errors.join(', ')}`;
             console.error(`❌ ${errorMsg}`);

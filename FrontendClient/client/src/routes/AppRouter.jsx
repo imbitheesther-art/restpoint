@@ -453,15 +453,39 @@ const TenantDashboardRoutes = ({ tenantData }) => {
   );
 };
 
+// System Admin Route Guard
+const SystemAdminRoute = () => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+
+  // Only allow systemadmin role
+  if (user?.role !== 'systemadmin') {
+    return <Navigate to="/tenant/default/dashboard" replace />;
+  }
+
+  // Render the system admin dashboard
+  const AdminSys = lazy(() => import('../components/support/adminsys'));
+  return <AdminSys />;
+};
+
 const DashboardRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || null;
   useEffect(() => {
-    const tenantSlug = localStorage.getItem('tenantSlug');
     const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : {};
+
+    // Check if user is system admin - redirect to system admin dashboard
+    if (user?.role === 'systemadmin') {
+      navigate('/system-admin', { replace: true });
+      return;
+    }
+
+    // Normal tenant flow
+    const tenantSlug = localStorage.getItem('tenantSlug');
     let userTenantSlug = '';
-    if (userStr) { try { const user = JSON.parse(userStr); userTenantSlug = user.tenantSlug || ''; } catch (e) { console.error('Error parsing user', e); } }
+    if (userStr) { try { const u = JSON.parse(userStr); userTenantSlug = u.tenantSlug || ''; } catch (e) { console.error('Error parsing user', e); } }
     const finalSlug = tenantSlug || userTenantSlug || 'default';
     if (from && from !== '/login' && from !== '/') { navigate(`/tenant/${finalSlug}${from}`, { replace: true }); } else { navigate(`/tenant/${finalSlug}/all-deceased`, { replace: true }); }
   }, [navigate, location]);
@@ -507,6 +531,13 @@ const AppRouter = () => (
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/support" element={<SupportPage />} />
       <Route path="/support/:slug" element={<SupportPage />} />
+
+      {/* System Admin Dashboard - Protected route for systemadmin role */}
+      <Route path="/system-admin" element={
+        <ProtectedRoute>
+          <SystemAdminRoute />
+        </ProtectedRoute>
+      } />
 
       // SEO Topic Cluster Routes
       <Route path="/mortuary-management-software" element={<MortuaryManagementSoftware />} />

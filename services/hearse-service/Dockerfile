@@ -26,9 +26,10 @@ COPY services/hearse-service/package.json ./services/hearse-service/
 RUN yarn config set network-timeout 600000 && yarn install --no-lockfile --network-timeout 600000 && yarn cache clean
 
 # Copy source code
-COPY configurations/ ./configurations/
+COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
+COPY services/app-global/ ./app-global/
 COPY services/hearse-service/ ./services/hearse-service/
 
 # Build shared packages (critical for TypeScript imports)

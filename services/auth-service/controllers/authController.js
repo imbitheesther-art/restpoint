@@ -73,6 +73,25 @@ const queryTenantDB = async (dbName, sql, params = []) => {
  */
 const getTenantJwtSecret = async (tenantId) => {
   try {
+    // First check if jwt_secret column exists
+    const [columns] = await pool.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = 'tenant_tracking' 
+      AND TABLE_NAME = 'tenants' 
+      AND COLUMN_NAME = 'jwt_secret'
+    `);
+
+    // If column doesn't exist, use global secrets
+    if (!columns || columns.length === 0) {
+      console.log('⚠️ jwt_secret column not found, using global JWT secret');
+      return {
+        jwtSecret: GLOBAL_JWT_SECRET,
+        refreshSecret: GLOBAL_REFRESH_SECRET
+      };
+    }
+
+    // Column exists, fetch the tenant-specific secrets
     const [tenants] = await pool.query(
       'SELECT jwt_secret, refresh_secret FROM tenant_tracking.tenants WHERE tenant_id = ?',
       [tenantId]
@@ -88,6 +107,7 @@ const getTenantJwtSecret = async (tenantId) => {
     console.error('Error fetching tenant JWT secret:', error.message);
   }
 
+  // Fallback to global secrets
   return {
     jwtSecret: GLOBAL_JWT_SECRET,
     refreshSecret: GLOBAL_REFRESH_SECRET
