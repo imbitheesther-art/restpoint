@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, AlertCircle, Info, Clock } from 'lucide-react';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
-import env from '../../config/env';
 
 const UserProfile = () => {
     const [notifications, setNotifications] = useState([]);
@@ -66,36 +65,45 @@ const UserProfile = () => {
         return dt.toLocaleDateString();
     };
 
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : {};
+    const name = user?.full_name || user?.name || 'User';
+    const role = user?.role || 'User';
+
     return (
         <div style={{
             position: 'fixed',
             top: '16px',
             right: '16px',
-            zIndex: 1000
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
         }}>
+            {/* Notification Bell */}
             <div ref={bellRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <button
                     onClick={() => setShowNotifications(!showNotifications)}
                     style={{
-
                         border: '2px solid #E8ECF0',
                         cursor: 'pointer',
-                        padding: '4px',
-                        borderRadius: '4px',
-                        color: '#ff0a0a',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        color: '#3D4F47',
                         position: 'relative',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        background: 'white'
                     }}
                     title="Notifications">
                     <Bell size={18} />
                     {unreadCount > 0 && (
                         <span style={{
                             position: 'absolute',
-                            top: '-3px',
-                            right: '-3px',
+                            top: '-4px',
+                            right: '-4px',
                             background: '#EF4444',
                             color: 'white',
                             fontSize: '9px',
@@ -240,6 +248,37 @@ const UserProfile = () => {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* User Info */}
+            <div style={{
+                background: 'white',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid #E8ECF0',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            }}>
+                <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: '#3D4F47',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 600
+                }}>
+                    {name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <div style={{ fontWeight: 600, color: '#1A1D24', fontSize: '12px', lineHeight: 1.2 }}>{name}</div>
+                    <div style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'capitalize' }}>{role}</div>
+                </div>
             </div>
         </div>
     );

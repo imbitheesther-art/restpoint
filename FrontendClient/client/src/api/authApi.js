@@ -28,6 +28,11 @@ export const authApi = {
       sessionStorage.setItem('authToken', data.accessToken);
       sessionStorage.setItem('user', JSON.stringify(data.user || {}));
 
+      // Store refresh token in sessionStorage
+      if (data.refreshToken) {
+        sessionStorage.setItem('refreshToken', data.refreshToken);
+      }
+
       // Non-sensitive metadata in localStorage
       if (data.tenant?.tenantSlug) localStorage.setItem('tenantSlug', data.tenant.tenantSlug);
       if (data.tenant?.tenantId) localStorage.setItem('tenantId', data.tenant.tenantId.toString());
@@ -53,6 +58,7 @@ export const authApi = {
       // Swallow network errors on logout
     } finally {
       sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('refreshToken');
       sessionStorage.removeItem('user');
       localStorage.removeItem('tenantSlug');
       localStorage.removeItem('tenantId');
@@ -78,10 +84,11 @@ export const authApi = {
 
   /**
    * Refresh access token — POST /api/v1/restpoint/auth/refresh
-   * Uses httpOnly cookie (sent automatically via withCredentials)
+   * Sends refresh token in request body
    */
   refresh: async () => {
-    const response = await api.post(ENDPOINTS.AUTH.REFRESH, {});
+    const refreshToken = sessionStorage.getItem('refreshToken');
+    const response = await api.post(ENDPOINTS.AUTH.REFRESH, { refreshToken });
     const data = response.data;
     if (data?.accessToken) {
       sessionStorage.setItem('authToken', data.accessToken);

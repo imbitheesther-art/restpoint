@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { protect, authorizeAny } from '../../../global/middlewares/authMiddleware';
+import { protect, authorizeAny } from '../../../services/app-global/middlewares/authMiddleware';
 
 const router = Router();
 

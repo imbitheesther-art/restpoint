@@ -159,7 +159,7 @@ export const getEndpointBasedKey = (req: Request): string => {
  */
 export const apiLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  max: 200, // 100 requests per window
   keyGenerator: (req: Request) => req.ip || req.socket.remoteAddress || 'unknown',
   message: {
     success: false,

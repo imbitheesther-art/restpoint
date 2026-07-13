@@ -3,7 +3,7 @@
  * Fetches tenant-specific branding data (name, logo, signature, contact info)
  * from the tracking database for multi-tenant invoice generation.
  */
-import { safeQuery } from '../../../configurations/sqlConfig/db';
+import { safeQuery } from '../../configurations/sqlConfig/db';
 import path from 'path';
 import fs from 'fs';
 

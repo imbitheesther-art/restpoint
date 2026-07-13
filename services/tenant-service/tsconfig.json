@@ -11,7 +11,6 @@
     "noImplicitAny": false,
     "noUncheckedIndexedAccess": false,
     "allowJs": true,
-    "ignoreDeprecations": "6.0"
   },
   "include": [
     "server.ts",

@@ -1,4 +1,6 @@
 const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 
 async function initDatabase() {
     const connection = await mysql.createConnection({
@@ -25,7 +27,7 @@ async function initDatabase() {
         await connection.query('FLUSH PRIVILEGES');
         console.log('✅ User created and privileges granted to restpoint_user');
 
-        // Now connect to support_db and create tables
+        // Now connect to support_db and run migrations
         const dbConnection = await mysql.createConnection({
             host: '127.0.0.1',
             port: 3306,
@@ -34,47 +36,66 @@ async function initDatabase() {
             database: 'support_db'
         });
 
-        // Create support_tickets table (matching the name in supportController.js)
-        await dbConnection.query(`
-      CREATE TABLE IF NOT EXISTS support_tickets (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_slug VARCHAR(255) NOT NULL,
-        tenant_name VARCHAR(255) DEFAULT 'Unknown',
-        user_id INT NOT NULL,
-        user_name VARCHAR(255) NOT NULL,
-        user_email VARCHAR(255) NOT NULL,
-        type VARCHAR(50) DEFAULT 'help',
-        subject VARCHAR(500) NOT NULL,
-        message TEXT NOT NULL,
-        priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-        status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
-        assigned_to INT,
-        resolved_at DATETIME,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_tenant (tenant_slug),
-        INDEX idx_user (user_id),
-        INDEX idx_status (status),
-        INDEX idx_priority (priority)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-        console.log('✅ support_tickets table created');
+        // Read migration SQL from centralized location
+        const migrationPath = path.join(__dirname, '..', 'tenant-service', 'migrations', 'support', '001_create_support_tables.sql');
 
-        // Create ticket_responses table
-        await dbConnection.query(`
-      CREATE TABLE IF NOT EXISTS ticket_responses (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        ticket_id INT NOT NULL,
-        user_id INT NOT NULL,
-        user_name VARCHAR(255) NOT NULL,
-        response TEXT NOT NULL,
-        is_internal BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
-        INDEX idx_ticket (ticket_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-        console.log('✅ ticket_responses table created');
+        // Fallback to local migration if centralized one not found
+        const localMigrationPath = path.join(__dirname, 'migrations', '001_create_support_tables.sql');
+
+        let migrationSql;
+        if (fs.existsSync(migrationPath)) {
+            migrationSql = fs.readFileSync(migrationPath, 'utf8');
+            console.log('✅ Using centralized migration from tenant-service/migrations/support/');
+        } else if (fs.existsSync(localMigrationPath)) {
+            migrationSql = fs.readFileSync(localMigrationPath, 'utf8');
+            console.log('✅ Using local migration');
+        } else {
+            // Inline fallback
+            console.log('⚠️ No migration file found, using inline schema...');
+            migrationSql = `
+                CREATE TABLE IF NOT EXISTS support_tickets (
+                    ticket_id INT AUTO_INCREMENT PRIMARY KEY,
+                    tenant_slug VARCHAR(100) NOT NULL,
+                    tenant_name VARCHAR(255),
+                    user_email VARCHAR(255),
+                    user_name VARCHAR(255),
+                    type VARCHAR(50) DEFAULT 'help',
+                    subject VARCHAR(500) NOT NULL,
+                    message TEXT NOT NULL,
+                    status VARCHAR(50) DEFAULT 'open',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_tenant (tenant_slug),
+                    INDEX idx_status (status),
+                    INDEX idx_created (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+                CREATE TABLE IF NOT EXISTS ticket_replies (
+                    reply_id INT AUTO_INCREMENT PRIMARY KEY,
+                    ticket_id INT NOT NULL,
+                    user_type VARCHAR(50) NOT NULL,
+                    message TEXT NOT NULL,
+                    tenant_slug VARCHAR(100) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (ticket_id) REFERENCES support_tickets(ticket_id) ON DELETE CASCADE,
+                    INDEX idx_ticket (ticket_id),
+                    INDEX idx_tenant (tenant_slug)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `;
+        }
+
+        // Execute migration SQL (split by semicolons for multi-statement execution)
+        const statements = migrationSql
+            .split(';')
+            .map(s => s.trim())
+            .filter(s => s.length > 0 && !s.startsWith('--'));
+
+        for (const stmt of statements) {
+            if (stmt) {
+                await dbConnection.query(stmt);
+            }
+        }
+        console.log('✅ Support tables created via centralized migration');
 
         await dbConnection.end();
         console.log('✅ Support database initialization complete');

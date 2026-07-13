@@ -2,11 +2,10 @@ import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 import { tenantApi } from '../api/tenant.api';
-import { useTenantStore } from '../components/store/useTenantStore';
+import { useTenantStore } from '../modules/seo/useTenantStore';
 import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
-import NotificationBell from '../components/notifications/NotificationBell';
 
 import SingleTenantLayout from '../components/layout/SingleTenantLayout';
 import Loader from '../components/loader/loader';
@@ -52,19 +51,19 @@ const LogsPage = lazy(() => import('../modules/resources/LogsPage'));
 const LocationPage = lazy(() => import('../modules/locations/LocationPage'));
 const NairobiFuneralWelfare = lazy(() => import('../modules/locations/NairobiFuneralWelfare'));
 
-const PrivacyPolicy = lazy(() => import('../components/pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('../components/pages/TermsOfService'));
-const AccountDeletion = lazy(() => import('../components/pages/AccountDeletion'));
-const DataMigrationPolicy = lazy(() => import('../components/pages/DataMigrationPolicy'));
-const SecurityPolicy = lazy(() => import('../components/pages/securityPolicy'));
-const SLAPolicy = lazy(() => import('../components/pages/slaPolicy'));
-const ReleasePolicy = lazy(() => import('../components/pages/releasePolicy'));
-const CookiesPolicy = lazy(() => import('../components/pages/CookiesPolicy'));
+const PrivacyPolicy = lazy(() => import('../modules/pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('../modules/pages/TermsOfService'));
+const AccountDeletion = lazy(() => import('../modules/pages/AccountDeletion'));
+const DataMigrationPolicy = lazy(() => import('../modules/pages/DataMigrationPolicy'));
+const SecurityPolicy = lazy(() => import('../modules/pages/securityPolicy'));
+const SLAPolicy = lazy(() => import('../modules/pages/slaPolicy'));
+const ReleasePolicy = lazy(() => import('../modules/pages/releasePolicy'));
+const CookiesPolicy = lazy(() => import('../modules/pages/CookiesPolicy'));
 const SupportPage = lazy(() => import('../components/support/SupportPage'));
 const AdminSupportDashboard = lazy(() => import('../components/support/AdminSupportDashboard'));
-const WhyUsPage = lazy(() => import('../components/pages/WhyUsPage'));
-const AboutPage = lazy(() => import('../components/pages/AboutPage'));
-const ContactPage = lazy(() => import('../components/pages/ContactPage'));
+const WhyUsPage = lazy(() => import('../modules/pages/WhyUsPage'));
+const AboutPage = lazy(() => import('../modules/pages/AboutPage'));
+const ContactPage = lazy(() => import('../modules/pages/ContactPage'));
 const WeltTallisAbout = lazy(() => import('../modules/about/WeltTallisAbout'));
 const LoginPage = lazy(() => import('../components/auth/login'));
 const PortalLoginPage = lazy(() => import('../components/auth/PortalLogin'));
@@ -82,7 +81,7 @@ const DeceasedDetails = lazy(() => import('../components/deceasedprofile/decease
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
 
-const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
+const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
 const UserManagement = lazy(() => import('../components/modals/users'));
 const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemorialPage'));
@@ -157,18 +156,6 @@ const DashboardLayout = ({ children, tenantData }) => {
             padding: '0 0 1rem 0',
             gap: '1rem',
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              background: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '10px',
-              border: '1px solid #E8ECF0',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-            }}>
-              <NotificationBell />
-            </div>
           </div>
           <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
         </main>

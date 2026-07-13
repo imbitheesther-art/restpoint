@@ -9,10 +9,11 @@ const {
   getMe,
   changePassword
 } = require('../controllers/authController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');
+const rateLimit = require('express-rate-limit');
 
 // Rate limiting for auth endpoints
-const authLimiter = {
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts per window
   message: {
@@ -21,7 +22,7 @@ const authLimiter = {
   },
   standardHeaders: true,
   legacyHeaders: false,
-};
+});
 
 // Apply rate limiting to login endpoint
 router.post('/login', authLimiter, login);

@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { errorHandler, notFoundHandler } from '../../app-global/middlewares/errorHandler';
+import { errorHandler, notFoundHandler } from '../app-global/middlewares/errorHandler';
 
 dotenv.config();
 
@@ -154,26 +154,28 @@ app.get('/health', (req: Request, res: Response) => {
 //   We match it with full-prefix routes below
 
 // Import routes
-import deceasedRoutes from './routes/deceasedRoutes';
 import autopsyRoutes from './routes/autopsyRoutes';
 import chargesRoutes from './routes/chargesRoutes';
 import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
-
-// Mount all sub-routers at root - routes use paths relative to root
-// IMPORTANT: Routes must match the FULL forwarded path from the gateway
-app.use('/', deceasedRoutes);
 
 // Import other route modules
 import nextOfKinRoutes from './routes/nextOfKinRoutes';
 import hearseRoutes from './routes/hearseRoutes';
 import documentsRoutes from './routes/documentsRoutes';
 
+// Mount all sub-routers at root - routes use paths relative to root
+// IMPORTANT: Order matters! Mount specific routes BEFORE generic routes
+// Next-of-kin must be mounted BEFORE deceasedRoutes to avoid /:id catch-all conflict
 app.use('/', nextOfKinRoutes);
 app.use('/', hearseRoutes);
 app.use('/', documentsRoutes);
 app.use('/', autopsyRoutes);
 app.use('/', chargesRoutes);
 app.use('/', chargeSettingsRoutes);
+
+// Mount deceasedRoutes LAST (has catch-all /:id route)
+import deceasedRoutes from './routes/deceasedRoutes';
+app.use('/', deceasedRoutes);
 
 // ============================================
 // 404 HANDLER

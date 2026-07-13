@@ -626,8 +626,13 @@ const CoffinDetails = () => {
 
     const getImageUrl = (src) => {
         if (!src) return null;
-        const baseUrl = env.API_GATEWAY_URL || 'http://localhost:4000';
-        return src.startsWith('http') ? src : `${baseUrl}${src}`;
+        // If src is already a full URL, return as is
+        if (src.startsWith('http')) return src;
+        // Otherwise, construct the full URL using the API base URL
+        const baseUrl = env.FULL_API_URL || 'http://localhost:5000';
+        // Remove leading slash if present to avoid double slashes
+        const cleanSrc = src.startsWith('/') ? src : `/${src}`;
+        return `${baseUrl}${cleanSrc}`;
     };
 
     const getStockVariant = (stock) => {
@@ -704,8 +709,8 @@ const CoffinDetails = () => {
                         </HeaderTitle>
                     </div>
                     <HeaderActions>
-                        <Button className="ghost sm" onClick={() => navigate(`/tenant/${tenantSlug}/coffins/${coffin.coffin_id}/edit`)}>
-                            <Edit size={14} /> Edit
+                        <Button className="ghost sm" onClick={() => navigate(`/tenant/${tenantSlug}/coffins`)}>
+                            <ArrowLeft size={14} /> Back to Inventory
                         </Button>
                     </HeaderActions>
                 </CardHeader>

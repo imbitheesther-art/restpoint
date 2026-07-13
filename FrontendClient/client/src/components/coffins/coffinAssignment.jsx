@@ -731,9 +731,8 @@ const CoffinAssignment = () => {
         setIsLoading(true);
         try {
             console.log('🔄 Fetching deceased data for coffin assignment...');
-            const endpoint = `${ENDPOINTS.DECEASED.DETAIL(deceasedId)}`;
+            const endpoint = `${ENDPOINTS.DECEASED.DETAIL(id)}`;
             const response = await api.get(endpoint, {
-                params: { id: id },
                 timeout: 10000
             });
 

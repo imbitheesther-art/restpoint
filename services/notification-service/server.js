@@ -132,7 +132,7 @@ app.use('/api/v1/restpoint', supportTicketsRouter);
 app.use('/v1/restpoint', supportTicketsRouter);
 
 // 404 and error handlers
-const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+const { notFoundHandler, errorHandler } = require('../../services/app-global/middlewares/errorHandler');
 app.use(notFoundHandler);
 app.use(errorHandler);
 

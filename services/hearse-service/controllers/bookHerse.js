@@ -1,4 +1,4 @@
-const { safeQuery } = require('../../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../configurations/sqlConfig/db');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 
@@ -58,43 +58,65 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
 
         // ✅ Check if hearse is already booked (double-booking prevention)
         if (hearse_id) {
-            // Check hearse status
-            const [hearse] = await safeQuery(
-                'SELECT id, status FROM hearses WHERE id = ?',
-                [hearse_id],
-                req.tenant?.db_name || req.tenantSlug
-            );
+            // Use transaction with row locking to prevent race conditions
+            const connection = await safeQuery.getConnection(req.tenant?.db_name || req.tenantSlug);
+            try {
+                await connection.beginTransaction();
 
-            if (!hearse) {
-                return res.status(404).json({
+                // Lock the hearse row for update
+                const [hearse] = await connection.query(
+                    'SELECT id, status FROM hearses WHERE id = ? FOR UPDATE',
+                    [hearse_id]
+                );
+
+                if (!hearse) {
+                    await connection.rollback();
+                    connection.release();
+                    return res.status(404).json({
+                        status: 'error',
+                        message: 'The selected hearse does not exist.'
+                    });
+                }
+
+                // Check hearse status
+                if (hearse.status === 'booked') {
+                    await connection.rollback();
+                    connection.release();
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'This hearse is already booked. Please choose another one.'
+                    });
+                }
+
+                // Additional check: Look for active bookings (not completed/cancelled)
+                const [activeBooking] = await connection.query(
+                    `SELECT id FROM hearse_bookings 
+                     WHERE hearse_id = ? 
+                     AND status NOT IN ('completed', 'cancelled') 
+                     LIMIT 1`,
+                    [hearse_id]
+                );
+
+                if (activeBooking) {
+                    await connection.rollback();
+                    connection.release();
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'This hearse has an active booking. Please choose another one.',
+                        existing_booking_id: activeBooking.id
+                    });
+                }
+
+                // Commit the transaction - hearse is available
+                await connection.commit();
+                connection.release();
+            } catch (txError) {
+                await connection.rollback();
+                connection.release();
+                console.error('Transaction error during booking check:', txError);
+                return res.status(500).json({
                     status: 'error',
-                    message: 'The selected hearse does not exist.'
-                });
-            }
-
-            // Check hearse status
-            if (hearse.status === 'booked') {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'This hearse is already booked. Please choose another one.'
-                });
-            }
-
-            // Additional check: Look for active bookings (not completed/cancelled)
-            const [activeBooking] = await safeQuery(
-                `SELECT id FROM hearse_bookings 
-                 WHERE hearse_id = ? 
-                 AND status NOT IN ('completed', 'cancelled') 
-                 LIMIT 1`,
-                [hearse_id],
-                req.tenant?.db_name || req.tenantSlug
-            );
-
-            if (activeBooking) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'This hearse has an active booking. Please choose another one.',
-                    existing_booking_id: activeBooking.id
+                    message: 'Failed to verify hearse availability. Please try again.'
                 });
             }
         }
@@ -153,8 +175,8 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         const insertQuery = `
             INSERT INTO hearse_bookings
             (booking_code, hearse_id, tenant_db_name, client_name, client_phone, destination,
-             from_timestamp, to_timestamp, booking_date, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             from_timestamp, to_timestamp, booking_date, status, booked_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const insertParams = [
@@ -168,6 +190,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             to_timestamp || null,
             from_timestamp || now, // booking_date
             bookingStatus, // 'booked'
+            data.booked_by || null, // Store who created the booking
             now,
             now
         ];
@@ -203,6 +226,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
                 hb.to_location,
                 hb.status, 
                 hb.booking_date, 
+                hb.booked_by,
                 hb.created_at,
                 h.id AS hearse_id, 
                 h.plate_number, 
@@ -399,7 +423,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
         // ✅ Valid statuses - accept both old and new status values
         const validStatuses = [
             'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'booked',
-            'in_transit', 'postponed', 'maintenance'
+            'in_transit', 'postponed'
         ];
 
         if (!validStatuses.includes(status)) {

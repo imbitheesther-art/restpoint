@@ -160,6 +160,9 @@ export const getAllDeceased = async (req: Request, res: Response): Promise<Respo
             });
         }
 
+        // ✅ Ensure deceased table exists
+        await ensureDeceasedTable(dbName);
+
         const { search = '', page = '1', limit = '50' } = req.query;
         const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
         const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 50));

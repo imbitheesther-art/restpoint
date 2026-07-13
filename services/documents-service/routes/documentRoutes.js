@@ -1,0 +1,1 @@
+const { protect, authorizeAny } = require('../../../services/app-global/middlewares/authMiddleware');

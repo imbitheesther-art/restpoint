@@ -1,4 +1,4 @@
-const { safeQuery } = require('../../../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../../configurations/sqlConfig/db');
 const { getKenyaTimeISO } = require('../../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableHearses, upload } = require('../registerHearse');
@@ -9,7 +9,7 @@ const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableH
  */
 const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
     try {
-        console.log('\n [CrossBranchAvailability] Fetching available hearses across all branches...');
+
 
         const { branch_id } = req.query;
 

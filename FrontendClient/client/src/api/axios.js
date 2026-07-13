@@ -26,6 +26,7 @@ workshopApi.interceptors.request.use((config) => {
 let cachedToken = null;
 let cachedSlug = null;
 let refreshIntervalId = null;
+let isRefreshing = false; // Prevent concurrent refresh calls
 
 const getToken = () => cachedToken || sessionStorage.getItem('authToken');
 const setToken = (token) => {
@@ -37,13 +38,31 @@ const getSlug = () => cachedSlug || localStorage.getItem('tenantSlug');
 
 // ─── Token Refresh (every 10 minutes) ────────────────────────────────────
 export const startTokenRefresh = () => {
-  stopTokenRefresh();
+  // Guard: don't start multiple intervals
+  if (refreshIntervalId) {
+    console.log('[Auth] Token refresh already running, skipping duplicate start');
+    return;
+  }
+
   refreshIntervalId = setInterval(async () => {
+    // Guard: prevent concurrent refresh calls
+    if (isRefreshing) {
+      console.log('[Auth] Refresh already in progress, skipping');
+      return;
+    }
+
+    isRefreshing = true;
     try {
+      const refreshToken = sessionStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        console.warn('[Auth] No refresh token available');
+        return;
+      }
+
       const response = await axios.post(
         env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
-        {},
-        { withCredentials: true } // sends httpOnly cookie automatically
+        { refreshToken },
+        { withCredentials: true }
       );
       const newToken = response.data?.token || response.data?.accessToken;
       if (newToken) {
@@ -56,9 +75,14 @@ export const startTokenRefresh = () => {
       if (error.response?.status === 401) {
         setTimeout(async () => {
           try {
+            const refreshToken = sessionStorage.getItem('refreshToken');
+            if (!refreshToken) {
+              forceLogout();
+              return;
+            }
             const retry = await axios.post(
               env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
-              {},
+              { refreshToken },
               { withCredentials: true }
             );
             if (retry.data?.token || retry.data?.accessToken) {
@@ -71,6 +95,8 @@ export const startTokenRefresh = () => {
           }
         }, 30000);
       }
+    } finally {
+      isRefreshing = false;
     }
   }, 600000); // Every 10 minutes (600,000ms)
 };
@@ -135,10 +161,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // Try refresh using httpOnly cookie
+        // Try refresh using refresh token
+        const refreshToken = sessionStorage.getItem('refreshToken');
         const response = await axios.post(
           env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
-          {},
+          { refreshToken },
           { withCredentials: true }
         );
         const newToken = response.data?.token || response.data?.accessToken;

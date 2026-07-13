@@ -3,7 +3,10 @@
  * Multi-tenant aware with tenant resolution middleware
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import express from 'express';
 import cors from 'cors';
 import http from 'http';

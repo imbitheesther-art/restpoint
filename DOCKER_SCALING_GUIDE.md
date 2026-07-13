@@ -1,89 +1,6 @@
-# RestPoint - Docker-Only Scaling Guide
-## Production Architecture (No PM2 Required)
 
----
 
-## 🎯 Current Architecture Status
-
-Your system is already configured correctly for **Docker-only scaling**:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    NGINX (Port 80/443)                   │
-│              Single Entry Point / Load Balancer          │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-        ┌───────────────┼───────────────┐
-        │               │               │
-        ▼               ▼               ▼
-   ┌─────────┐    ┌─────────┐    ┌──────────┐
-   │ API     │    │ Socket  │    │ Frontend │
-   │ Gateway │    │ IO Svc  │    │  Client  │
-   └────┬────┘    └─────────┘    └──────────┘
-        │
-        ▼
-   ┌──────────────────────────────────────┐
-   │  Microservices (1 process each)     │
-   │  - auth-service                     │
-   │  - tenant-service                   │
-   │  - deceased-service                 │
-   │  - hearse-service                   │
-   │  - etc...                           │
-   └───────┬──────────────────────────────┘
-           │
-   ┌───────┼───────┐
-   │       │       │
-   ▼       ▼       ▼
-┌────┐ ┌────┐ ┌────┐
-│ DB │ │Redis│ │MQ  │
-└────┘ └────┘ └────┘
-```
-
----
-
-## ✅ What You Already Have (Correct Setup)
-
-### 1. **Docker Containers** ✅
-- Each service runs in its own container
-- **1 container = 1 Node.js process** (no PM2 inside)
-- Proper health checks on all services
-- Restart policies configured (`unless-stopped` or `always`)
-
-### 2. **NGINX Reverse Proxy** ✅
-- Single entry point for all traffic
-- Routes to appropriate services
-- Handles WebSocket connections
-- SSL termination ready
-
-### 3. **Redis** ✅
-- Caching layer
-- Session storage
-- Rate limiting
-
-### 4. **RabbitMQ** ✅
-- Async communication
-- Background jobs
-- Event-driven workflows
-
----
-
-## 🚫 What You DON'T Need (PM2 in Docker)
-
-### PM2 is NOT used inside Docker containers because:
-
-1. **Docker already isolates processes** - Each container is isolated
-2. **Docker handles restarts** - `restart: unless-stopped` policy
-3. **Docker Compose/Kubernetes handles scaling** - Just increase replicas
-4. **PM2 cluster mode + Docker = double scaling** - Causes CPU over-subscription
-
-### Your PM2 ecosystem.config.js
-- **Purpose**: For non-Docker deployments (legacy/alternative)
-- **Status**: Can be kept for reference but NOT used with Docker
-- **Action**: No changes needed to Dockerfiles
-
----
-
-## 📊 Scaling Strategy
+##  Scaling Strategy
 
 ### Option A: Docker Compose Scaling (Recommended for Single Server)
 
@@ -170,54 +87,8 @@ spec:
             memory: "256Mi"
 ```
 
----
 
-## 🔧 Current Configuration Review
-
-### Docker Compose (docker-compose.prod.yml)
-
-**Status**: ✅ Correctly configured
-
-**Key Features**:
-- Single network: `restpoint_network`
-- Health checks on all services
-- Proper dependencies (`depends_on` with conditions)
-- Environment variables via `.env.production`
-- Volume mounts for persistent data
-- Restart policies
-
-**No PM2 references found** - Perfect!
-
-### Dockerfiles
-
-**Status**: ✅ Correctly configured
-
-**Pattern Used**:
-```dockerfile
-# Start application directly (no PM2)
-CMD ["node", "services/auth-service/server.js"]
-# OR
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/auth-service/server.js"]
-```
-
-**No PM2 in any Dockerfile** - Perfect!
-
-### NGINX Configuration
-
-**Status**: ✅ Correctly configured
-
-**Features**:
-- Single entry point
-- Path rewriting (`/api/` → `/api/v1/restpoint/`)
-- WebSocket support for Socket.IO
-- Static asset caching
-- Security headers
-- Health check endpoint
-
----
-
-## 📈 Performance Optimization
+##  Performance Optimization
 
 ### 1. **Resource Limits** (Add to docker-compose.prod.yml)
 
@@ -236,7 +107,7 @@ services:
 
 ### 2. **Redis Optimization**
 
-Already configured:
+configured:
 ```yaml
 redis:
   command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
@@ -255,7 +126,7 @@ rabbitmq:
 
 ---
 
-## 🚀 Deployment Workflow
+##  Deployment Workflow
 
 ### Production Deployment (Docker-Only)
 
@@ -295,7 +166,7 @@ docker-compose -f docker-compose.prod.yml ps
 
 ---
 
-## 🔍 Monitoring & Health Checks
+##  Monitoring & Health Checks
 
 ### Health Check Status
 
@@ -335,7 +206,7 @@ docker stats restpoint_auth_service
 
 ---
 
-## 🛠️ Troubleshooting
+##  Troubleshooting
 
 ### Issue: Service won't start
 
@@ -381,7 +252,7 @@ kubectl rollout status deployment/auth-service
 
 ---
 
-## 📋 Checklist: Docker-Only Setup
+##  Checklist: Docker-Only Setup
 
 - [x] Docker containers run single process (no PM2)
 - [x] Each service in own container
@@ -394,75 +265,7 @@ kubectl rollout status deployment/auth-service
 - [x] Volumes for persistence
 - [x] Environment variables configured
 
----
 
-## 🎓 Best Practices
-
-### DO ✅
-
-1. **Scale horizontally** - Add more containers
-2. **Use Docker Compose/K8s** for orchestration
-3. **Monitor with health checks** - Already configured
-4. **Use NGINX** as load balancer - Already configured
-5. **Let Docker handle restarts** - Already configured
-
-### DON'T ❌
-
-1. **Don't use PM2 in Docker** - Double scaling
-2. **Don't expose ports unnecessarily** - Only through NGINX
-3. **Don't run multiple processes in one container** - One process per container
-4. **Don't skip health checks** - Already configured, keep them
-5. **Don't hardcode configurations** - Use environment variables
-
----
-
-## 📚 Additional Resources
-
-### Files in Your Setup
-
-| File | Purpose | PM2 Used? |
-|------|---------|-----------|
-| `docker-compose.prod.yml` | Production orchestration | ❌ No |
-| `docker-compose.yml` | Development orchestration | ❌ No |
-| `ecosystem.config.js` | PM2 config (non-Docker only) | ⚠️ Legacy |
-| `Dockerfile` (each service) | Container definition | ❌ No |
-| `nginx.conf` | Reverse proxy | ❌ No |
-
-### When to Use ecosystem.config.js
-
-**Use PM2 ecosystem.config.js when**:
-- Deploying directly to VPS without Docker
-- Running services on host machine
-- Need PM2-specific features (log rotation, etc.)
-
-**Don't use PM2 when**:
-- Running in Docker containers ❌
-- Using Docker Compose ❌
-- Using Kubernetes ❌
-- Using Docker Swarm ❌
-
----
-
-## 🎯 Summary
-
-Your RestPoint system is **already correctly configured** for Docker-only scaling:
-
-✅ **Architecture**: Microservices with Docker
-✅ **Process Management**: Docker (not PM2)
-✅ **Scaling**: Horizontal (add containers)
-✅ **Load Balancing**: NGINX
-✅ **Caching**: Redis
-✅ **Async Jobs**: RabbitMQ
-
-### Next Steps
-
-1. **Keep current setup** - It's already correct!
-2. **Scale when needed** - Use `docker-compose up --scale`
-3. **Monitor performance** - Use `docker stats`
-4. **Add resource limits** - Optional but recommended
-5. **Consider Kubernetes** - When you need multi-server scaling
-
----
 
 ## 🆘 Need Help?
 

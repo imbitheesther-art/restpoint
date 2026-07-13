@@ -74,7 +74,7 @@ export const ENDPOINTS = {
     POSTMORTEM: '/deceased/postmortem',
     COFFIN: '/deceased/coffin',
     LIST: '/deceased/deceased-all',
-    DETAIL: (id) => `/deceased/deceased-id/${id}`,
+    DETAIL: (id) => `/deceased/${id}`,
     QR: (id) => `/deceased/${id}/qrcode`,
     CHECKOUT: (id) => `/deceased/${id}/checkout`,
     NEXT_OF_KIN: (id) => `/deceased/${id}/next-of-kin`,

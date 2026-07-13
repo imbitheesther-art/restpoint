@@ -37,7 +37,7 @@ app.get('/health', (req, res) => {
 });
 
 const visitorsRoutes = require('./routes/visitorsRoutes');
-const { notFoundHandler, errorHandler } = require('../../global/middlewares/errorHandler');
+const { notFoundHandler, errorHandler } = require('../../services/app-global/middlewares/errorHandler');
 
 // Mount routes at BOTH prefixes for gateway compatibility
 app.use('/api/v1/restpoint/visitors', visitorsRoutes);
