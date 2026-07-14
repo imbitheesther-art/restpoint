@@ -57,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 # Start application with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["tsx", "services/support-service/server.ts"]
+CMD ["node", "services/support-service/server.js"]
