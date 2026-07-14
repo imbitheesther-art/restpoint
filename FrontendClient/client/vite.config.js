@@ -20,7 +20,7 @@ export default defineConfig({
       minRatio: 0.8,
     }),
   ],
-  base: './',
+  base: '/',
 
   resolve: {
     alias: {
