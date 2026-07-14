@@ -1,4 +1,4 @@
-const { safeQuery, getConnection } = require('../../shared/config/db');
+const { safeQuery, getConnection } = require('../../../shared/config/db');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 

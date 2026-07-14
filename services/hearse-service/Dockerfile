@@ -23,13 +23,15 @@ COPY shared/package.json ./shared/
 # Copy service package.json
 COPY services/hearse-service/package.json ./services/hearse-service/
 
+# Copy shared folder BEFORE install (critical for module resolution)
+COPY shared/ ./shared/
+
 # Install ALL dependencies (respecting package-lock.json)
 RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
 
-# Copy source code
+# Copy remaining source code
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
-COPY shared/ ./shared/
 COPY services/app-global/ ./services/app-global/
 COPY services/hearse-service/ ./services/hearse-service/
 
