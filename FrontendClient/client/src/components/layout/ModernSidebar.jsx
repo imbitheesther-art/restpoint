@@ -403,11 +403,8 @@ const ModernSidebar = ({
 
   const tenantSlug = slug || localStorage.getItem('tenantSlug') || 'default';
 
-  // Check if single tenant from tenantData prop or localStorage
-  const isSingleTenant = tenantData?.deploymentType === 'single' || localStorage.getItem('deploymentType') === 'single';
-
-  // Multi-tenant menu items (full menu)
-  const multiTenantMenuItems = [
+  // Full menu items for all users (no single tenant restriction)
+  const defaultMenuItems = [
     {
       section: 'Main',
       items: [
@@ -435,21 +432,6 @@ const ModernSidebar = ({
       ]
     }
   ];
-
-  // Single-tenant menu items (simplified menu)
-  const singleTenantMenuItems = [
-    {
-      section: 'Menu',
-      items: [
-        { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/all-deceased` },
-        { icon: Users, label: 'Deceased', path: `/tenant/${tenantSlug}/deceased` },
-        { icon: Package, label: 'Coffins', path: `/tenant/${tenantSlug}/coffins` },
-        { icon: Settings, label: 'Settings', path: `/tenant/${tenantSlug}/settings` },
-      ]
-    }
-  ];
-
-  const defaultMenuItems = isSingleTenant ? singleTenantMenuItems : multiTenantMenuItems;
 
   const menuItems = customMenuItems || defaultMenuItems;
 

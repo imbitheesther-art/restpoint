@@ -7,7 +7,6 @@ import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
 
-import SingleTenantLayout from '../components/layout/SingleTenantLayout';
 import Loader from '../components/loader/loader';
 
 
@@ -294,13 +293,12 @@ const RoleBasedRoute = ({ children, allowedRoles, userRole }) => {
 
 const TenantDashboardRoutes = ({ tenantData }) => {
   const { slug } = useParams();
-  // Multi-tenant ONLY if deploymentType is explicitly 'multi'
-  const isMultiTenant = tenantData?.deploymentType === 'multi';
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : {};
   const userRole = user?.role || 'user';
 
-  const Layout = isMultiTenant ? DashboardLayout : SingleTenantLayout;
+  // Always use DashboardLayout with sidebar for all users
+  const Layout = DashboardLayout;
 
   return (
     <Routes>

@@ -1,4 +1,6 @@
-# Rebuild and redeploy frontend with fixed asset paths
+# Rebuild and redeploy frontend with fixes for:
+# 1. Asset path 404 errors (vite base path)
+# 2. Multi-tenant routing issue (deploymentType detection)
 # For Windows PowerShell
 
 Write-Host "🔨 Building frontend Docker image..." -ForegroundColor Cyan
@@ -17,4 +19,9 @@ Write-Host "⏳ Waiting for frontend to be healthy..." -ForegroundColor Cyan
 Start-Sleep -Seconds 10
 
 Write-Host "✅ Frontend deployment complete!" -ForegroundColor Green
-Write-Host "🌐 Visit https://restpoint.co.ke to verify the fix" -ForegroundColor Green
+Write-Host ""
+Write-Host "Fixes applied:" -ForegroundColor Cyan
+Write-Host "  1. Fixed asset paths - assets now load from root /assets/ instead of tenant subdirectory" -ForegroundColor White
+Write-Host "  2. Fixed multi-tenant routing - frontend now respects backend deploymentType setting" -ForegroundColor White
+Write-Host ""
+Write-Host "🌐 Visit https://restpoint.co.ke/tenant/monezuma-monalisa-funeral-home-nairobi/ to verify" -ForegroundColor Green
