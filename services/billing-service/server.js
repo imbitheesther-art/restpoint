@@ -6,8 +6,8 @@ const axios = require('axios');
 const winston = require('winston');
 const rateLimit = require('express-rate-limit');
 
-const { safeQuery } = require('../../shared/config/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { safeQuery } = require('../../../shared/config/db');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 
 const app = express();
 const PORT = process.env.PORT || 5020;

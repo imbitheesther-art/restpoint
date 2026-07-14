@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
-const { safeQuery } = require('../../shared/config/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { safeQuery } = require('../../../shared/config/db');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 
 /**
  * @desc Update billing currency and amount for a deceased record

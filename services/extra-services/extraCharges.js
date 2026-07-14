@@ -1,5 +1,5 @@
-const { safeQuery } = require('../../shared/config/db');
-const { getKenyaTimeISO } = require('../../packages/shared-utils/dist/timestamps');
+const { safeQuery } = require('../../../shared/config/db');
+const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 
 // ----------------- Add Extra Charge -----------------
 async function addExtraCharge(req, res) {

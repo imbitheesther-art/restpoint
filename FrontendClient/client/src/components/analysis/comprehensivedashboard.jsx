@@ -188,7 +188,7 @@ const ComprehensiveDashboard = () => {
     }
   };
 
-  // Dummy data for all analytics sections
+  // Dummy data for all analytics sections - ONLY USE THIS, NO BACKEND FETCH
   const getDummyData = () => ({
     deceased: {
       total: 1247,
@@ -279,31 +279,10 @@ const ComprehensiveDashboard = () => {
     }
   });
 
-  // Fetch data
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const headers = getTenantHeaders();
-      const url = API_BASE;
-      console.log('[Dashboard] Fetching from:', url);
-
-      const response = await fetch(url, { headers });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data);
-        setError(null);
-      } else {
-        throw new Error(result.message || 'API returned unsuccessful');
-      }
-    } catch (err) {
-      console.error('[Dashboard] Fetch error:', err);
-      setError(err.message);
-      // Use dummy data on error
-      setData(getDummyData());
-    } finally {
-      setLoading(false);
-    }
+  // Initialize with dummy data immediately - NO BACKEND FETCH
+  useEffect(() => {
+    setData(getDummyData());
+    setLoading(false);
   }, []);
 
   // Initial data load
