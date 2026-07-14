@@ -401,7 +401,7 @@ const ModernSidebar = ({
     }
   }, [isOpen, isMobile]);
 
-  const tenantSlug = slug || localStorage.getItem('tenantSlug') || '';
+  const tenantSlug = slug || localStorage.getItem('tenantSlug') || 'default';
 
   // Check if single tenant from tenantData prop or localStorage
   const isSingleTenant = tenantData?.deploymentType === 'single' || localStorage.getItem('deploymentType') === 'single';

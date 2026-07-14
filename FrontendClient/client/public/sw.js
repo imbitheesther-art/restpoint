@@ -95,30 +95,43 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Handle tenant path requests - rewrite to root
+    let cacheRequest = request;
+    if (url.pathname.startsWith('/tenant/')) {
+        // Extract the asset path after /tenant/[tenant-slug]/
+        const match = url.pathname.match(/^\/tenant\/[^\/]+\/(.+)$/);
+        if (match) {
+            // Rewrite to root path
+            const newUrl = new URL(request.url);
+            newUrl.pathname = '/' + match[1];
+            cacheRequest = new Request(newUrl.toString(), request);
+        }
+    }
+
     // For static assets (JS, CSS, images, fonts), use cache-first strategy
     if (request.destination === 'script' ||
         request.destination === 'style' ||
         request.destination === 'image' ||
         request.destination === 'font' ||
-        request.pathname.endsWith('.js') ||
-        request.pathname.endsWith('.css') ||
-        request.pathname.endsWith('.png') ||
-        request.pathname.endsWith('.jpg') ||
-        request.pathname.endsWith('.svg') ||
-        request.pathname.endsWith('.woff') ||
-        request.pathname.endsWith('.woff2')) {
+        url.pathname.endsWith('.js') ||
+        url.pathname.endsWith('.css') ||
+        url.pathname.endsWith('.png') ||
+        url.pathname.endsWith('.jpg') ||
+        url.pathname.endsWith('.svg') ||
+        url.pathname.endsWith('.woff') ||
+        url.pathname.endsWith('.woff2')) {
 
         event.respondWith(
-            caches.match(request)
+            caches.match(cacheRequest)
                 .then((cachedResponse) => {
                     if (cachedResponse) {
                         // Return cached version, but update cache in background
                         event.waitUntil(
-                            fetch(request)
+                            fetch(cacheRequest)
                                 .then((response) => {
                                     if (response.ok) {
                                         caches.open(STATIC_CACHE)
-                                            .then((cache) => cache.put(request, response));
+                                            .then((cache) => cache.put(cacheRequest, response));
                                     }
                                     return response;
                                 })
@@ -128,12 +141,12 @@ self.addEventListener('fetch', (event) => {
                     }
 
                     // Not in cache, fetch from network
-                    return fetch(request)
+                    return fetch(cacheRequest)
                         .then((response) => {
                             if (response.ok) {
                                 const responseClone = response.clone();
                                 caches.open(STATIC_CACHE)
-                                    .then((cache) => cache.put(request, responseClone));
+                                    .then((cache) => cache.put(cacheRequest, responseClone));
                             }
                             return response;
                         })

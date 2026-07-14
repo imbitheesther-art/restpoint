@@ -100,15 +100,19 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(requestUrl, { mode: 'cors' })
       .then((response) => {
-        if (!response || response.status !== 200) {
+        if (!response) {
+          return response;
+        }
+
+        if (response.status !== 200) {
           return response;
         }
 
         const responseToCache = response.clone();
         caches.open(CACHE_NAME)
           .then((cache) => {
-            // Cache the original request URL
-            cache.put(event.request, responseToCache);
+            // Cache using the rewritten URL (root path)
+            cache.put(requestUrl, responseToCache);
           });
 
         return response;
