@@ -232,8 +232,9 @@ const TenantResolver = () => {
         const branches = branchesResult?.data || branchesResult || [];
         const branchCount = Array.isArray(branches) ? branches.length : 0;
 
-        // CRITICAL: If user has branchId in their profile, they're in a multi-branch system
-        // This overrides the deploymentType setting from the database
+        // CRITICAL: Trust the backend's deploymentType setting from the database
+        // The backend already knows if this is a multi-tenant deployment
+        // Only use branch detection as a fallback if backend doesn't provide deploymentType
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : {};
         const hasBranchAssignment = user?.branchId !== null && user?.branchId !== undefined;
@@ -241,10 +242,11 @@ const TenantResolver = () => {
 
         if (!cancelled) {
           // Merge branding data with deployment settings
+          // Priority: 1) Backend settings, 2) Backend branding data, 3) Branch detection fallback
           const safeData = {
             ...(data || {}),
             name: data?.name || settings?.tenantName || slug,
-            deploymentType: isMultiBranch ? 'multi' : (settings?.deploymentType || data?.deploymentType || 'single'),
+            deploymentType: settings?.deploymentType || data?.deploymentType || (isMultiBranch ? 'multi' : 'single'),
             branchCount: branchCount,
             branches: data?.branches || branches || (branchCount > 0 ? [{ name: settings?.tenantName || slug }] : []),
             tenantName: settings?.tenantName || data?.name || slug,

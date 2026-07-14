@@ -1,5 +1,7 @@
 #!/bin/bash
-# Rebuild and redeploy frontend with fixed asset paths
+# Rebuild and redeploy frontend with fixes for:
+# 1. Asset path 404 errors (vite base path)
+# 2. Multi-tenant routing issue (deploymentType detection)
 
 echo "🔨 Building frontend Docker image..."
 docker-compose build frontend
@@ -17,4 +19,9 @@ echo "⏳ Waiting for frontend to be healthy..."
 sleep 10
 
 echo "✅ Frontend deployment complete!"
-echo "🌐 Visit https://restpoint.co.ke to verify the fix"
+echo ""
+echo "Fixes applied:"
+echo "  1. Fixed asset paths - assets now load from root /assets/ instead of tenant subdirectory"
+echo "  2. Fixed multi-tenant routing - frontend now respects backend deploymentType setting"
+echo ""
+echo "🌐 Visit https://restpoint.co.ke/tenant/monezuma-monalisa-funeral-home-nairobi/ to verify"
