@@ -188,6 +188,97 @@ const ComprehensiveDashboard = () => {
     }
   };
 
+  // Dummy data for all analytics sections
+  const getDummyData = () => ({
+    deceased: {
+      total: 1247,
+      active: 89,
+      thisWeek: 23,
+      thisMonth: 156,
+      monthlyTrends: [
+        { month: 'Jan', count: 45 }, { month: 'Feb', count: 52 }, { month: 'Mar', count: 48 },
+        { month: 'Apr', count: 61 }, { month: 'May', count: 55 }, { month: 'Jun', count: 67 },
+        { month: 'Jul', count: 72 }, { month: 'Aug', count: 58 }, { month: 'Sep', count: 63 },
+        { month: 'Oct', count: 70 }, { month: 'Nov', count: 59 }, { month: 'Dec', count: 77 }
+      ],
+      caseStatus: [
+        { status: 'Active', count: 89 }, { status: 'Released', count: 1024 },
+        { status: 'Pending', count: 134 }, { status: 'Archived', count: 156 },
+        { status: 'In Transit', count: 12 }
+      ]
+    },
+    bookings: {
+      total: 342,
+      thisWeek: 18,
+      booked: 24,
+      fleet: {
+        total: 12,
+        available: 8,
+        inService: 3,
+        maintenance: 1
+      }
+    },
+    revenue: {
+      total: 4567890,
+      collected: 3892450,
+      outstanding: 675440,
+      collectionRate: 85.2,
+      monthlyTrends: [
+        { month: 'Jan', revenue: 345000 }, { month: 'Feb', revenue: 378000 },
+        { month: 'Mar', revenue: 412000 }, { month: 'Apr', revenue: 389000 },
+        { month: 'May', revenue: 445000 }, { month: 'Jun', revenue: 467000 }
+      ]
+    },
+    coffins: {
+      totalStock: 234,
+      totalTypes: 18,
+      totalValue: 5678000,
+      sales: [
+        { type: 'Standard', sold: 45 }, { type: 'Premium', sold: 28 },
+        { type: 'Deluxe', sold: 15 }, { type: 'Eco-Friendly', sold: 12 },
+        { type: 'Custom', sold: 8 }
+      ]
+    },
+    chemicals: {
+      recent: [
+        { chemical: 'Formalin', totalUsed: 450, unit: 'L' },
+        { chemical: 'Ethanol', totalUsed: 320, unit: 'L' },
+        { chemical: 'Phenol', totalUsed: 180, unit: 'L' },
+        { chemical: 'Glutaraldehyde', totalUsed: 95, unit: 'L' },
+        { chemical: 'Sodium Hydroxide', totalUsed: 120, unit: 'kg' }
+      ],
+      usageTrends: [
+        { month: 'Jan', chemical: 'Formalin', quantity: 120 },
+        { month: 'Jan', chemical: 'Ethanol', quantity: 85 },
+        { month: 'Feb', chemical: 'Formalin', quantity: 135 },
+        { month: 'Feb', chemical: 'Ethanol', quantity: 92 },
+        { month: 'Mar', chemical: 'Formalin', quantity: 128 },
+        { month: 'Mar', chemical: 'Ethanol', quantity: 88 },
+        { month: 'Apr', chemical: 'Formalin', quantity: 142 },
+        { month: 'Apr', chemical: 'Ethanol', quantity: 95 },
+        { month: 'May', chemical: 'Formalin', quantity: 138 },
+        { month: 'May', chemical: 'Ethanol', quantity: 90 },
+        { month: 'Jun', chemical: 'Formalin', quantity: 145 },
+        { month: 'Jun', chemical: 'Ethanol', quantity: 98 }
+      ]
+    },
+    workshop: {
+      orders: {
+        total: 89,
+        completed: 67,
+        pending: 22,
+        revenue: 1234000
+      },
+      production: [
+        { stage: 'Design', completed: 45, inProgress: 12 },
+        { stage: 'Fabrication', completed: 38, inProgress: 8 },
+        { stage: 'Finishing', completed: 52, inProgress: 6 },
+        { stage: 'Quality Check', completed: 41, inProgress: 3 },
+        { stage: 'Delivery', completed: 35, inProgress: 5 }
+      ]
+    }
+  });
+
   // Fetch data
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -208,6 +299,8 @@ const ComprehensiveDashboard = () => {
     } catch (err) {
       console.error('[Dashboard] Fetch error:', err);
       setError(err.message);
+      // Use dummy data on error
+      setData(getDummyData());
     } finally {
       setLoading(false);
     }
