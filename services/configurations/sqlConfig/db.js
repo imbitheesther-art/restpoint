@@ -9,5 +9,5 @@
  * 
  * This shim exists for backward compatibility only.
  */
-const migrated = require('../../../shared/config/db');
+const migrated = require('../../shared/config/db');
 module.exports = migrated;

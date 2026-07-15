@@ -2,7 +2,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 
 // Load .env from chemical-service directory
-dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+dotenv.config({ path: path.join(__dirname, '.env'), override: false });
 // Also load global .env as fallback
 dotenv.config({ path: path.join(__dirname, '../../.env'), override: false });
 
