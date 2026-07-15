@@ -4,6 +4,7 @@ import AppRoutes from './routes/AppRouter';
 import { AuthProvider } from './context/AuthContext';
 import { TenantProvider } from './context/TenantContext';
 import { UserProvider } from './context/userContext';
+import { SocketProvider } from './context/socketContext';
 import './index.css';
 
 function App() {
@@ -13,7 +14,9 @@ function App() {
         <AuthProvider>
           <TenantProvider>
             <UserProvider>
-              <AppRoutes />
+              <SocketProvider>
+                <AppRoutes />
+              </SocketProvider>
             </UserProvider>
           </TenantProvider>
         </AuthProvider>
