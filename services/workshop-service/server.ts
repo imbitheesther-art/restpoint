@@ -383,8 +383,10 @@ async function startServer() {
     console.log('[WORKSHOP] Checking for tenant databases to migrate...');
     try {
         // @ts-ignore - dynamic import for shared module
-        const { safeTenantQuery } = await import('../../shared/dbConfig.js');
-        const tenants = await safeTenantQuery(mainDb, 'SELECT db_name, name FROM tenants WHERE is_active = 1');
+        const { getRootPool } = await import('../../shared/dbConfig.js');
+        const rootPool = await getRootPool();
+        const [tenantRows] = await rootPool.query('SELECT db_name, name FROM tenant_tracking.tenants WHERE status = "active"');
+        const tenants = tenantRows as Array<{ db_name: string; name: string }>;
 
         console.log(`[WORKSHOP] Found ${tenants.length} active tenant(s)`);
 

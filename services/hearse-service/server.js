@@ -7,7 +7,7 @@ const http = require('http');
 const cors = require('cors');
 const path = require('path');
 const { Server } = require('socket.io');
-const { safeTenantQuery, safeTenantExecute, resolveDatabase, getTenantDB } = require('../../shared/dbConfig');
+const { safeTenantQuery, safeTenantExecute, resolveDatabase, getTenantDB, getRootPool } = require('../../shared/dbConfig');
 const { validateTenantActive } = require('../../shared/tenancy');
 const Logger = require('../../services/app-global/middlewares/serviceDiscovery').Logger;
 const asyncHandler = require('express-async-handler');
@@ -87,7 +87,7 @@ app.use(async (req, res, next) => {
 
 
             try {
-                const rootPool = await require('../../shared/dbConfig').getRootPool();
+                const rootPool = await getRootPool();
                 const [branchRows] = await rootPool.query(
                     `SELECT b.branch_db_name, t.db_name as tenant_db_name, t.tenant_slug 
                      FROM tenant_tracking.branch_tracking b
@@ -138,14 +138,14 @@ app.use(async (req, res, next) => {
             // FOURTH TRY: Cross-tenant search across all branches tables
             if (!resolvedDbName) {
                 try {
-                    const rootPool = await require('../../shared/dbConfig').getRootPool();
+                    const rootPool = await getRootPool();
                     const [allTenants] = await rootPool.query(
                         'SELECT tenant_slug, db_name FROM tenant_tracking.tenants WHERE status = "active"'
                     );
 
                     for (const t of allTenants) {
                         try {
-                            const pool = await require('../../shared/dbConfig').getTenantDB(t.db_name);
+                            const pool = await getTenantDB(t.db_name);
                             const [branchRows] = await pool.query(
                                 `SELECT branch_db_name FROM branches WHERE branch_slug = ? OR branch_db_name = ? LIMIT 1`,
                                 [tenantSlug, tenantSlug]
@@ -166,7 +166,7 @@ app.use(async (req, res, next) => {
 
             if (resolvedDbName) {
                 // Found the database - look up the tenant that owns it
-                const rootPool = await require('../../shared/dbConfig').getRootPool();
+                const rootPool = await getRootPool();
                 const [tenants] = await rootPool.query(
                     `SELECT * FROM tenant_tracking.tenants WHERE db_name = ? OR tenant_slug = ? LIMIT 1`,
                     [resolvedDbName, tenantSlug]
@@ -242,7 +242,7 @@ app.get('/tenants/:tenantSlug/config', asyncHandler(async (req, res) => {
 
     try {
         // Resolve tenant from slug
-        const rootPool = await require('../../shared/dbConfig').getRootPool();
+        const rootPool = await getRootPool();
         const [tenantRows] = await rootPool.query(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
             [tenantSlug]
@@ -257,7 +257,7 @@ app.get('/tenants/:tenantSlug/config', asyncHandler(async (req, res) => {
         // Get branch count
         let branchCount = 0;
         try {
-            const pool = await require('../../shared/dbConfig').getTenantDB(tenant.db_name);
+            const pool = await getTenantDB(tenant.db_name);
             const [branches] = await pool.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
             branchCount = branches[0]?.count || 0;
         } catch (e) {
@@ -316,7 +316,7 @@ app.get('/tenant/:tenantSlug/settings', asyncHandler(async (req, res) => {
         }
 
         // Fallback: look up via root pool
-        const rootPool = await require('../../shared/dbConfig').getRootPool();
+        const rootPool = await getRootPool();
         const [tenantRows] = await rootPool.query(
             'SELECT * FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
             [tenantSlug]
@@ -329,7 +329,7 @@ app.get('/tenant/:tenantSlug/settings', asyncHandler(async (req, res) => {
         const tenant = tenantRows[0];
         let branchCount = 0;
         try {
-            const pool = await require('../../shared/dbConfig').getTenantDB(tenant.db_name);
+            const pool = await getTenantDB(tenant.db_name);
             const [branches] = await pool.query('SELECT COUNT(*) as count FROM branches WHERE is_active = TRUE');
             branchCount = branches[0]?.count || 0;
         } catch (e) { }
@@ -360,7 +360,7 @@ app.get('/tenant/:tenantSlug/branches', asyncHandler(async (req, res) => {
         let dbName = req.tenant?.db_name;
 
         if (!dbName) {
-            const rootPool = await require('../../shared/dbConfig').getRootPool();
+            const rootPool = await getRootPool();
             const [tenantRows] = await rootPool.query(
                 'SELECT db_name FROM tenant_tracking.tenants WHERE tenant_slug = ? AND status = "active" LIMIT 1',
                 [tenantSlug]

@@ -336,6 +336,9 @@ const LeaveCard = ({ leave }) => (
 );
 
 const LeaveSection = ({ leaves, loading }) => {
+    const navigate = useNavigate();
+    const slug = getTenantSlug();
+
     if (loading) return (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
             <Loader2 size={32} className="spin" style={{ marginBottom: '16px' }} />
@@ -345,11 +348,41 @@ const LeaveSection = ({ leaves, loading }) => {
     if (leaves.length === 0) return (
         <div className="premium-card" style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #e2e8f0' }}>
             <Calendar size={40} style={{ marginBottom: '16px', color: '#cbd5e1', display: 'inline-block' }} />
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#334155' }}>No leave applications</div>
-            <div style={{ fontSize: '0.88rem', marginTop: '6px', color: '#94a3b8' }}>Your requests will appear here</div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#334155', marginBottom: '12px' }}>No leave applications</div>
+            <button 
+                onClick={() => navigate(`/tenant/${slug}/leaves/apply`)}
+                style={{
+                    padding: '12px 24px', borderRadius: '12px', background: '#3b82f6', color: '#fff',
+                    border: 'none', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)'
+                }}
+            >
+                Apply for Leave
+            </button>
         </div>
     );
-    return <div>{leaves.map(l => <LeaveCard key={l.id || l.leave_id} leave={l} />)}</div>;
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                <button 
+                    onClick={() => navigate(`/tenant/${slug}/leaves/apply`)}
+                    style={{
+                        padding: '10px 18px', borderRadius: '10px', background: '#3b82f6', color: '#fff',
+                        border: 'none', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)'
+                    }}
+                >
+                    <Calendar size={16} /> Apply Leave
+                </button>
+            </div>
+            {leaves.map((l, i) => (
+                <div key={l.id || i} className="fade-in-up" style={{ animationDelay: `${i * 0.08}s` }}>
+                    <LeaveCard leave={l} />
+                </div>
+            ))}
+        </div>
+    );
 };
 
 
