@@ -433,19 +433,19 @@ const TenantDashboardRoutes = ({ tenantData }) => {
         </RoleBasedRoute>
       } />
 
-      {/* Leave Management - Available to all except drivers */}
+      {/* Leave Management */}
       <Route path="leaves" element={
-        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user', 'driver']} userRole={userRole}>
           <Layout tenantData={tenantData}><LeaveDashboard /></Layout>
         </RoleBasedRoute>
       } />
       <Route path="leaves/apply" element={
-        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user', 'driver']} userRole={userRole}>
           <Layout tenantData={tenantData}><ApplyLeave /></Layout>
         </RoleBasedRoute>
       } />
       <Route path="leaves/my-leaves" element={
-        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user', 'driver']} userRole={userRole}>
           <Layout tenantData={tenantData}><MyLeaves /></Layout>
         </RoleBasedRoute>
       } />

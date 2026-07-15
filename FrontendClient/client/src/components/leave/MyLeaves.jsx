@@ -354,7 +354,7 @@ const MyLeaves = () => {
   return (
     <Container>
       <Header>
-        <BackButton onClick={() => navigate(`/leaves/${tenantSlug}/apply`)} title="Go back to Apply Leave">
+        <BackButton onClick={() => navigate(`/tenant/${tenantSlug}/leaves/apply`)} title="Go back to Apply Leave">
           <ArrowLeft size={20} />
         </BackButton>
         <HeaderContent>
@@ -418,7 +418,7 @@ const MyLeaves = () => {
         {leaves.length === 0 ? (
           <EmptyState>
             <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-            <p>No leave requests found. <a href="/leaves/apply" style={{ color: COLORS.primary }}>Apply for leave now</a></p>
+            <p>No leave requests found. <a href={`/tenant/${tenantSlug}/leaves/apply`} style={{ color: COLORS.primary }}>Apply for leave now</a></p>
           </EmptyState>
         ) : (
           <LeavesList>

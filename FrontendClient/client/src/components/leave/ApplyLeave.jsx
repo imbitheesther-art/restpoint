@@ -420,7 +420,7 @@ const ApplyLeave = () => {
                 </HeaderContent>
                 <Button
                     $variant="secondary"
-                    onClick={() => navigate('/leaves/my-leaves')}
+                    onClick={() => navigate(`/tenant/${tenantSlug}/leaves/my-leaves`)}
                     style={{ marginTop: '0.25rem', width: 'auto' }}
                 >
                     <History size={18} />

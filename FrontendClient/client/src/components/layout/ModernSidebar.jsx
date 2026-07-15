@@ -419,7 +419,6 @@ const ModernSidebar = ({
       section: 'Analytics',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/dashboard` },
-        { icon: Activity, label: 'Insurance', path: `/tenant/${tenantSlug}/insurance` },
       ]
     },
     {
