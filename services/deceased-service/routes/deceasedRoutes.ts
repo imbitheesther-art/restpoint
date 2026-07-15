@@ -7,7 +7,8 @@ import {
     getDeceasedById,
     updateDeceased,
     deleteDeceased,
-    getDeceasedStats
+    getDeceasedStats,
+    exportDeceasedToExcel
 } from '../controllers/deceasedControl';
 
 const router = Router();
@@ -49,5 +50,8 @@ router.delete('/delete-deceased/:id', deleteDeceased);
 
 // GET - Stats
 router.get('/stats', getDeceasedStats);
+
+// GET - Export
+router.get('/export', exportDeceasedToExcel);
 
 export default router;

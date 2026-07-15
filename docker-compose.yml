@@ -115,12 +115,17 @@ services:
       - BODYCHECKOUT_SERVICE_URL=http://restpoint_bodycheckout_service:5000
       - EDOCUMENTS_SERVICE_URL=http://restpoint_edocuments_service:5000
       - CALENDAR_SERVICE_URL=http://restpoint_calender_service:5000
-      - CHEMICAL_SERVICE_URL=http://restpoint_chemical_service:5000
+      - CHEMICALS_SERVICE_URL=http://restpoint_chemical_service:5000
       - BILLING_SERVICE_URL=http://restpoint_billing_service:5000
       - SOCKETIO_SERVICE_URL=http://restpoint_socketio_service:5000
       - EXTRA_SERVICES_URL=http://restpoint_extra_services:5000
       - CALL_SERVICE_URL=http://restpoint_call_service:5000
       - QRCODE_SERVICE_URL=http://restpoint_qrcode_service:5000
+      - WORKSHOP_SERVICE_URL=http://restpoint_workshop_service:5000
+      - HEARSE_SERVICE_URL=http://restpoint_hearse_service:5000
+      - SCANNER_SERVICE_URL=http://restpoint_scanner_service:2024
+      - SUPPORT_SERVICE_URL=http://restpoint_support_service:5000
+      - LEAVE_SERVICE_URL=http://restpoint_leave_service:5000
     env_file:
       - .env
     networks:

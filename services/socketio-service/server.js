@@ -21,7 +21,7 @@ const REDIS_URL = process.env.REDIS_URL
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: true,
     methods: ["GET", "POST"],
     credentials: true
   },
