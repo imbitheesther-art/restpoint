@@ -259,7 +259,7 @@ curl http://localhost:5002/health  # Tenant Service
 - Root Password: `RestPoint2024!`
 - Database: `restpoint_main`
 - User: `restpoint_user`
-- Password: `RestPointUser2024`
+- Password: `${DB_PASSWORD}` (set in your .env or environment)
 
 ### Redis
 - Host: `localhost:6379`

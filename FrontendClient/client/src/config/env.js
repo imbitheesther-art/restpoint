@@ -28,8 +28,10 @@ const env = {
   // Hearse service API URL (direct access for driver portal)
   HEARSE_API_URL: import.meta.env.VITE_HEARSE_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint/hearse' : 'http://localhost:5002'),
 
-  // Workshop service API URL (direct access for workshop dashboard)
-  WORKSHOP_API_URL: import.meta.env.VITE_WORKSHOP_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint/workshop' : 'http://localhost:6969'),
+  // Workshop service API URL (goes through API gateway for auth forwarding)
+  // The gateway strips /api/v1/restpoint and routes /workshop* → workshop service
+  // Final path after gateway: /workshop/materials → matches workshopRouter at /workshop
+  WORKSHOP_API_URL: import.meta.env.VITE_WORKSHOP_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint' : 'http://localhost:5000/api/v1/restpoint'),
 
   // WebSocket URL for real-time features (socketio-service port 5018)
   SOCKET_URL: import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5018'),

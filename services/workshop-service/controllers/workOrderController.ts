@@ -95,7 +95,7 @@ const getMaterialIntakeHistory = async (req: Request, res: Response) => {
         if (!tenantDb) return res.status(400).json({ error: 'Tenant database not resolved' });
 
         const rows = await safeTenantQuery(tenantDb,
-            'SELECT mi.*, m.name as material_name FROM material_intake mi JOIN materials m ON mi.material_id = m.id ORDER BY mi.created_at DESC'
+            'SELECT mi.*, m.name as material_name FROM material_intake mi JOIN materials m ON mi.material_id = m.id ORDER BY mi.received_at DESC'
         );
         res.json(rows);
     } catch (error: any) {

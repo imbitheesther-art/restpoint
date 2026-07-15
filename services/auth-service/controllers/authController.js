@@ -93,7 +93,7 @@ const getTenantJwtSecret = async (tenantId) => {
 
     // Column exists, fetch the tenant-specific secrets
     const [tenants] = await pool.query(
-      'SELECT jwt_secret, refresh_secret FROM tenant_tracking.tenants WHERE tenant_id = ?',
+      'SELECT jwt_secret, refresh_secret FROM tenant_tracking.tenants WHERE id = ?',
       [tenantId]
     );
 
@@ -149,6 +149,11 @@ const findTenantByEmail = async (email) => {
     return null;
 
   } catch (error) {
+    // If access denied or connection errors occur, rethrow to let caller handle 503 responses
+    if (error && (error.code === 'ER_ACCESS_DENIED_ERROR' || (error.message && error.message.includes('Access denied')))) {
+      console.error(' Error finding tenant (DB access denied):', error.message);
+      throw error;
+    }
     console.error(' Error finding tenant:', error.message);
     return null;
   }
@@ -174,7 +179,13 @@ const findTenantByUserEmail = async (email) => {
       } catch (e) { continue; }
     }
     return null;
-  } catch (e) { return null; }
+  } catch (e) {
+    if (e && (e.code === 'ER_ACCESS_DENIED_ERROR' || (e.message && e.message.includes('Access denied')))) {
+      console.error(' Error searching tenants (DB access denied):', e.message);
+      throw e;
+    }
+    return null;
+  }
 };
 
 /**
@@ -192,6 +203,10 @@ const findUserInTenantDB = async (dbName, email) => {
     }
     return null;
   } catch (error) {
+    if (error && (error.code === 'ER_ACCESS_DENIED_ERROR' || (error.message && error.message.includes('Access denied')))) {
+      console.error(' Error finding user in tenant DB (DB access denied):', error.message);
+      throw error;
+    }
     console.error('Error finding user in tenant DB:', error.message);
     return null;
   }
@@ -353,7 +368,7 @@ exports.login = asyncHandler(async (req, res) => {
     let deploymentType = tenant.deployment_type || 'single';
     try {
       const [tenantRows] = await pool.query(
-        `SELECT deployment_type FROM tenant_tracking.tenants WHERE tenant_id = ?`,
+        `SELECT deployment_type FROM tenant_tracking.tenants WHERE id = ?`,
         [tenant.tenant_id]
       );
       if (tenantRows.length > 0 && tenantRows[0].deployment_type) {
@@ -403,6 +418,15 @@ exports.login = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
+    // If database access denied, return 503 with clear guidance
+    if (error && (error.code === 'ER_ACCESS_DENIED_ERROR' || (error.message && error.message.includes('Access denied')))) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database access denied. Please verify DB credentials and ensure the database is running.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'An error occurred during login',
@@ -515,7 +539,7 @@ exports.refresh = asyncHandler(async (req, res) => {
     const verified = jwt.verify(refreshToken, refreshSecret);
 
     const [tenants] = await pool.query(
-      `SELECT * FROM tenant_tracking.tenants WHERE tenant_id = ? AND status = 'active'`,
+      `SELECT * FROM tenant_tracking.tenants WHERE id = ? AND status = 'active'`,
       [verified.tenantId]
     );
 

@@ -93,11 +93,30 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Analytics routes - all under /api/v1/restpoint
-app.use('/api/v1/restpoint', analyticsRoutes);
+// Analytics routes - mounted at root, gateway will proxy /analytics/... to these routes
+// Frontend calls /api/v1/restpoint/analytics/deceased/count
+// Gateway strips /api/v1/restpoint and proxies /analytics/deceased/count here
+app.use('/', analyticsRoutes);
 
 // Enhanced analytics routes
-app.use('/api/v1/analytics', enhancedAnalyticsRoutes);
+app.use('/enhanced', enhancedAnalyticsRoutes);
+
+// Start analytics worker (BullMQ) so background jobs are processed
+try {
+  require('./workers-analyticsWorker');
+  console.log('Analytics worker started');
+} catch (err) {
+  console.warn('Analytics worker could not be started:', err.message);
+}
+
+// Metrics endpoint (Prometheus)
+try {
+  const metrics = require('./services/metrics');
+  app.get('/metrics', metrics.metricsEndpoint);
+  console.log('Metrics endpoint exposed at /metrics');
+} catch (err) {
+  console.warn('Metrics module could not be initialized:', err.message || err);
+}
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

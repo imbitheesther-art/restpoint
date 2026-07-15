@@ -10,6 +10,21 @@ CREATE DATABASE IF NOT EXISTS tenant_tracking;
 USE tenant_tracking;
 
 -- =====================================================
+-- PROVISIONING STATUS TABLE - Track tenant provisioning progress
+-- =====================================================
+CREATE TABLE IF NOT EXISTS provisioning_status (
+    tenant_slug VARCHAR(255) PRIMARY KEY,
+    status VARCHAR(50) DEFAULT 'pending',
+    progress INT DEFAULT 0,
+    details TEXT,
+    error_message TEXT,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_started_at (started_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- TENANTS TABLE - Main tenant registry
 -- =====================================================
 CREATE TABLE IF NOT EXISTS tenants (

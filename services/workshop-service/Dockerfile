@@ -19,13 +19,15 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
+# Copy shared workspace package.json so workspaces resolve during install
+COPY shared/package.json ./shared/
 
 # Copy service package.json
 COPY services/workshop-service/package.json ./services/workshop-service/
 
 # Install ALL dependencies 
 # Increase network timeout to handle slow connections
-RUN yarn config set network-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
 
 # Copy shared source modules first
 COPY services/configurations/ ./configurations/
@@ -44,12 +46,15 @@ COPY services/workshop-service/ ./services/workshop-service/
 
 
 
+# Install tsx globally so TypeScript entrypoint works in production
+RUN npm install -g tsx
+
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
-
+ 
 # Switch to non-root user
-
+ 
 USER nodejs
-
+ 
 EXPOSE 6969
 ENV NODE_ENV=production
 ENV PORT=6969

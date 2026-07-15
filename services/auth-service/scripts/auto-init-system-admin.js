@@ -32,49 +32,56 @@ async function autoInitSystemAdmin() {
     try {
         console.log('🔧 Checking system admin initialization...');
 
-        // Connect to MariaDB
-        connection = await mysql.createConnection({
-            host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT || '3306'),
-            user: process.env.DB_USER || 'root',
-            password: process.env.DB_PASSWORD || '',
-            database: 'tenant_tracking'
-        });
+        // Retry logic for DB connection (useful when DB is still starting)
+        const maxAttempts = parseInt(process.env.DB_INIT_RETRY_ATTEMPTS || '5', 10);
+        const baseDelayMs = parseInt(process.env.DB_INIT_RETRY_DELAY_MS || '5000', 10);
+        let attempt = 0;
+        let connected = false;
 
-        console.log('✅ Connected to database');
+        while (attempt < maxAttempts && !connected) {
+            attempt += 1;
+            try {
+                console.log(`Attempt ${attempt}/${maxAttempts} connecting to DB...`);
+                connection = await mysql.createConnection({
+                    host: process.env.DB_HOST || 'localhost',
+                    port: parseInt(process.env.DB_PORT || '3306'),
+                    user: process.env.DB_USER || 'root',
+                    password: process.env.DB_PASSWORD || '',
+                    database: 'tenant_tracking'
+                });
+                connected = true;
+                console.log('✅ Connected to database');
+            } catch (connErr) {
+                // If access denied, do not attempt auto-provisioning during startup in production.
+                // Instead, instruct operator to run the bootstrap tool with admin credentials.
+                if (connErr && (connErr.code === 'ER_ACCESS_DENIED_ERROR' || (connErr.message && connErr.message.includes('Access denied')))) {
+                    console.error('❌ Database access denied for configured DB user. Auto-provisioning is disabled at startup to avoid unexpected privilege escalations.');
+                    console.error('To provision the database and user, run the provided bootstrap script with administrator credentials (DB_ADMIN_USER / DB_ADMIN_PASSWORD).');
+                    console.error(`Configured DB_USER=${process.env.DB_USER}, DB_HOST=${process.env.DB_HOST}, DB_PORT=${process.env.DB_PORT}`);
+                    throw connErr; // bubble to outer catch and return appropriate failure
+                }
 
-        // Check if system admin already exists
-        const [existingUsers] = await connection.query(
-            'SELECT user_id, role FROM users WHERE email = ?',
-            [SYSTEM_ADMIN.email]
-        );
-
-        if (existingUsers.length > 0) {
-            const user = existingUsers[0];
-            if (user.role === 'systemadmin') {
-                console.log('✅ System admin already exists and has correct role');
-                return { success: true, message: 'System admin already initialized', userId: user.user_id };
-            } else {
-                // Update role to systemadmin if it's different
-                await connection.query(
-                    'UPDATE users SET role = ? WHERE email = ?',
-                    ['systemadmin', SYSTEM_ADMIN.email]
-                );
-                console.log('✅ Updated system admin role to systemadmin');
-                return { success: true, message: 'System admin role updated', userId: user.user_id };
+                console.warn(`DB connection attempt ${attempt} failed: ${connErr.message || connErr}. Retrying in ${baseDelayMs}ms...`);
+                if (attempt < maxAttempts) {
+                    await new Promise(res => setTimeout(res, baseDelayMs));
+                }
             }
         }
 
-        console.log('🔨 Creating system admin user...');
+        if (!connected) {
+            throw new Error('Could not connect to database after multiple attempts');
+        }
 
-        // Create tenant_tracking database if it doesn't exist
+        // Create tenant_tracking database and tables FIRST
+        console.log('🔨 Creating system admin user...');
         await connection.query('CREATE DATABASE IF NOT EXISTS tenant_tracking');
         await connection.query('USE tenant_tracking');
+        console.log('Using tenant_tracking database');
 
         // Create tenants table if it doesn't exist
         await connection.query(`
       CREATE TABLE IF NOT EXISTS tenants (
-        tenant_id INT PRIMARY KEY AUTO_INCREMENT,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         tenant_name VARCHAR(255) NOT NULL,
         tenant_slug VARCHAR(255) UNIQUE NOT NULL,
         db_name VARCHAR(255) UNIQUE NOT NULL,
@@ -89,9 +96,11 @@ async function autoInitSystemAdmin() {
         deployment_type ENUM('single', 'multi') DEFAULT 'single',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_deployment_type (deployment_type)
+        INDEX idx_deployment_type (deployment_type),
+        INDEX idx_tenant_slug (tenant_slug)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+        console.log('Ensured tenants table');
 
         // Create users table if it doesn't exist
         await connection.query(`
@@ -114,15 +123,38 @@ async function autoInitSystemAdmin() {
         INDEX idx_role (role)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+        console.log('Ensured users table');
+
+        // NOW check if system admin already exists
+        const [existingUsers] = await connection.query(
+            'SELECT user_id, role FROM users WHERE email = ?',
+            [SYSTEM_ADMIN.email]
+        );
+
+        if (existingUsers.length > 0) {
+            const user = existingUsers[0];
+            if (user.role === 'systemadmin') {
+                console.log('✅ System admin already exists and has correct role');
+                return { success: true, message: 'System admin already initialized', userId: user.user_id };
+            } else {
+                // Update role to systemadmin if it's different
+                await connection.query(
+                    'UPDATE users SET role = ? WHERE email = ?',
+                    ['systemadmin', SYSTEM_ADMIN.email]
+                );
+                console.log('✅ Updated system admin role to systemadmin');
+                return { success: true, message: 'System admin role updated', userId: user.user_id };
+            }
+        }
 
         // Create or update tenant
         await connection.query(`
-      INSERT INTO tenants (
-        tenant_name, tenant_slug, db_name, email, phone, 
-        location, country, status, subscription_status, deployment_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'active', 'single')
-      ON DUPLICATE KEY UPDATE tenant_name = tenant_name
-    `, [
+            INSERT INTO tenants (
+                tenant_name, tenant_slug, db_name, email, phone, 
+                location, country, status, subscription_status, deployment_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'active', 'single')
+            ON DUPLICATE KEY UPDATE tenant_name = VALUES(tenant_name)
+        `, [
             SYSTEM_ADMIN.tenantName,
             SYSTEM_ADMIN.tenantSlug,
             SYSTEM_ADMIN.dbName,
@@ -132,12 +164,12 @@ async function autoInitSystemAdmin() {
             SYSTEM_ADMIN.country
         ]);
 
-        // Get tenant_id
-        const [tenants] = await connection.query(
-            'SELECT tenant_id FROM tenants WHERE email = ?',
+        // Get tenant id
+        const [tenantsResult] = await connection.query(
+            'SELECT id FROM tenants WHERE email = ?',
             [SYSTEM_ADMIN.email]
         );
-        const tenantId = tenants[0]?.tenant_id;
+        const tenantId = tenantsResult[0]?.id;
 
         if (!tenantId) {
             throw new Error('Failed to get tenant_id');
@@ -148,32 +180,30 @@ async function autoInitSystemAdmin() {
 
         // Create system admin user
         await connection.query(`
-      INSERT INTO users (
-        email, password_hash, full_name, phone, 
-        role, tenant_id, is_verified, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, 1, 1)
-      ON DUPLICATE KEY UPDATE 
-        password_hash = ?,
-        role = ?,
-        is_active = 1,
-        is_verified = 1
-    `, [
+            INSERT INTO users (
+                email, password_hash, full_name, phone, 
+                role, tenant_id, is_verified, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, 1)
+            ON DUPLICATE KEY UPDATE 
+                password_hash = VALUES(password_hash),
+                role = VALUES(role),
+                is_active = 1,
+                is_verified = 1
+        `, [
             SYSTEM_ADMIN.email,
             passwordHash,
             SYSTEM_ADMIN.fullName,
             SYSTEM_ADMIN.phone,
             SYSTEM_ADMIN.role,
-            tenantId,
-            passwordHash,
-            SYSTEM_ADMIN.role
+            tenantId
         ]);
 
         // Get the user_id
-        const [users] = await connection.query(
+        const [usersResult] = await connection.query(
             'SELECT user_id FROM users WHERE email = ?',
             [SYSTEM_ADMIN.email]
         );
-        const userId = users[0]?.user_id;
+        const userId = usersResult[0]?.user_id;
 
         console.log('✅ System admin user created successfully!');
         console.log(`   Email: ${SYSTEM_ADMIN.email}`);
@@ -212,7 +242,7 @@ if (require.main === module) {
             process.exit(result.success ? 0 : 1);
         })
         .catch(error => {
-            console.error('Fatal error:', error);
+            console.error('Fatal error:', error && error.message ? error.message : error);
             process.exit(1);
         });
 }

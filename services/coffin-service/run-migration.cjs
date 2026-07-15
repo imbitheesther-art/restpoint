@@ -11,10 +11,10 @@ async function runMigration() {
     try {
         // Connect to the tenant database directly
         connection = await mysql.createConnection({
-            host: '127.0.0.1',
-            user: 'restpoint_user',
-            password: 'RestPointUser2024',
-            database: 'embenezar-feuneral-nairobi'
+            host: process.env.DB_HOST || '127.0.0.1',
+            user: process.env.DB_USER || 'restpoint_user',
+            password: process.env.DB_PASSWORD,
+            database: process.env.MIGRATION_DB || 'embenezar-feuneral-nairobi'
         });
 
         console.log('✅ Connected to database: embenezar-feuneral-nairobi');

@@ -69,8 +69,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    if (token && token !== 'undefined' && token !== 'null') {
+    const slug = localStorage.getItem('tenantSlug');
+    // Only redirect to dashboard if we have BOTH a token AND a real tenant slug
+    if (token && token !== 'undefined' && token !== 'null' && slug && slug !== 'default') {
       navigate('/dashboard');
+    } else if (!token || token === 'undefined' || token === 'null') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('tenantSlug');
     }
   }, [navigate]);
 
@@ -103,18 +108,34 @@ export default function LoginPage() {
         const token = data.accessToken || data.token;
         if (!token) throw new Error('No token received');
 
+        // Store in BOTH localStorage and sessionStorage for cross-compatibility
         localStorage.setItem('authToken', token);
+        sessionStorage.setItem('authToken', token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('loginTime', new Date().toISOString());
 
         if (data.tenant) {
           localStorage.setItem('tenant', JSON.stringify(data.tenant));
-          if (data.tenant.tenantSlug) localStorage.setItem('tenantSlug', data.tenant.tenantSlug);
-          if (data.tenant.tenantId) localStorage.setItem('tenantId', data.tenant.tenantId.toString());
+          if (data.tenant.tenantSlug) {
+            localStorage.setItem('tenantSlug', data.tenant.tenantSlug);
+            sessionStorage.setItem('tenantSlug', data.tenant.tenantSlug);
+          }
+          if (data.tenant.tenantId) {
+            localStorage.setItem('tenantId', data.tenant.tenantId.toString());
+          }
         }
-        if (data.user?.dbName) localStorage.setItem('dbName', data.user.dbName);
+        if (data.user?.dbName) {
+          localStorage.setItem('dbName', data.user.dbName);
+          sessionStorage.setItem('dbName', data.user.dbName);
+        }
         if (data.deploymentType) localStorage.setItem('deploymentType', data.deploymentType);
-        if (data.user?.role) localStorage.setItem('userRole', data.user.role);
+        if (data.user?.role) {
+          localStorage.setItem('userRole', data.user.role);
+          sessionStorage.setItem('userRole', data.user.role);
+        }
+        if (data.accessToken) sessionStorage.setItem('authToken', data.accessToken);
+        if (data.refreshToken) sessionStorage.setItem('refreshToken', data.refreshToken);
 
         setSuccessName(data.user?.fullName || 'Director');
         setShowSuccess(true);
@@ -125,14 +146,21 @@ export default function LoginPage() {
             localStorage.setItem('systemAdmin', 'true');
             navigate('/system-admin', { replace: true });
           } else {
-            // Normal tenant flow
-            const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug || 'default';
+            // Normal tenant flow - use REAL tenant slug, NEVER 'default'
+            const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug;
 
-            if (tenantSlug && tenantSlug !== 'default') {
+            if (tenantSlug) {
               localStorage.setItem('tenantSlug', tenantSlug);
+              // Redirect based on user role
+              const userRole = data.user?.role;
+              if (userRole === 'driver') {
+                navigate(`/tenant/${tenantSlug}/driver-portal`, { replace: true });
+              } else {
+                navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
+              }
+            } else {
+              console.error('No tenant slug in login response!', data);
             }
-
-            navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
           }
         }, 1600);
       } else {

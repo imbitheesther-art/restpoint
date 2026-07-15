@@ -12,7 +12,8 @@ export const workshopApi = axios.create({
 
 workshopApi.interceptors.request.use((config) => {
   const slug = localStorage.getItem('tenantSlug');
-  const token = sessionStorage.getItem('authToken');
+  // Check BOTH localStorage and sessionStorage for auth token
+  const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
   if (token) config.headers['Authorization'] = `Bearer ${token}`;
   if (slug) config.headers['x-tenant-slug'] = slug;
   return config;
@@ -111,14 +112,14 @@ export const stopTokenRefresh = () => {
 const forceLogout = () => {
   setToken(null);
   sessionStorage.removeItem('authToken');
-  localStorage.removeItem('tenantSlug');
   localStorage.removeItem('tenantId');
   try {
     const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     Object.keys(user).forEach(key => sessionStorage.removeItem(key));
   } catch { }
   sessionStorage.removeItem('user');
-  window.location.href = '/login';
+  // Preserve tenantSlug so we don't redirect to 'default'
+  // window.location.href = '/login';
 };
 
 // ─── Main Axios Instance ──────────────────────────────────────────────────

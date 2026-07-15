@@ -50,6 +50,23 @@ app.get('/health', (req, res) => {
     });
 });
 
+// DB readiness check
+const { checkDBConnection } = require('./scripts/dbHealth');
+app.get('/health/db', async (req, res) => {
+    try {
+        const result = await checkDBConnection();
+        if (result.ok) {
+            return res.status(200).json({ ok: true, message: 'Database reachable' });
+        }
+        const err = result.error || {};
+        // Provide limited error details in production
+        const msg = process.env.NODE_ENV === 'development' ? (err.message || String(err)) : 'Database unreachable';
+        return res.status(503).json({ ok: false, message: msg });
+    } catch (error) {
+        return res.status(503).json({ ok: false, message: process.env.NODE_ENV === 'development' ? (error.message || String(error)) : 'Database unreachable' });
+    }
+});
+
 // =============================================================================
 // FIX 2: CLEAN ROOT MOUNTING FOR THE GATEWAY
 // =============================================================================
@@ -87,20 +104,112 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Auto-initialize system admin on startup
-autoInitSystemAdmin()
-    .then(result => {
-        if (result.success) {
-            console.log('✅ System admin auto-initialization complete');
-        } else {
-            console.warn('⚠️ System admin auto-initialization failed:', result.message);
-        }
-    })
-    .catch(error => {
-        console.error('❌ System admin auto-initialization error:', error.message);
-    });
+// Startup sequence: auto-init system admin and verify DB before starting server
+(async () => {
+    const { spawn } = require('child_process');
 
-// Start Server
-app.listen(PORT, () => {
-    console.log(`🚀 [auth-service] running cleanly on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-});
+    async function runBootstrapIfAdminAvailable() {
+        const adminUser = process.env.DB_ADMIN_USER || process.env.ROOT_DB_USER;
+        const adminPass = process.env.DB_ADMIN_PASSWORD || process.env.ROOT_DB_PASSWORD;
+        if (!adminUser || !adminPass) {
+            console.log('No DB admin credentials provided; skipping auto-provisioning.');
+            return false;
+        }
+
+        console.log('Admin credentials detected; attempting to run bootstrap script to provision database and user...');
+
+        return new Promise((resolve, reject) => {
+            const env = Object.assign({}, process.env, {
+                DB_ADMIN_USER: adminUser,
+                DB_ADMIN_PASSWORD: adminPass,
+            });
+
+            const child = spawn(process.execPath, ['scripts/bootstrap-db.js'], { env, cwd: __dirname, stdio: ['ignore', 'pipe', 'pipe'] });
+
+            child.stdout.on('data', (data) => console.log(`[bootstrap] ${data.toString().trim()}`));
+            child.stderr.on('data', (data) => console.error(`[bootstrap] ${data.toString().trim()}`));
+
+            child.on('error', (err) => reject(err));
+            child.on('close', (code) => {
+                if (code === 0) {
+                    console.log('Bootstrap script completed successfully');
+                    resolve(true);
+                } else {
+                    reject(new Error('Bootstrap script failed with exit code ' + code));
+                }
+            });
+        });
+    }
+
+    try {
+        // First attempt to initialize using the runtime DB user (restpoint_user)
+        let initResult;
+        try {
+            initResult = await autoInitSystemAdmin();
+            if (!initResult.success) {
+                // If init failed due to access denied, attempt bootstrap if possible
+                const isAccessDenied = initResult.message && initResult.message.toLowerCase().includes('access denied');
+                if (isAccessDenied) {
+                    console.warn('Detected DB access denied during auto-init.');
+                    const bootAttempt = await runBootstrapIfAdminAvailable();
+                    if (bootAttempt) {
+                        // Retry initialization after bootstrap
+                        initResult = await autoInitSystemAdmin();
+                    } else {
+                        console.error('No admin credentials available to bootstrap DB. Exiting to allow operator intervention.');
+                        process.exit(1);
+                    }
+                } else {
+                    console.warn('⚠️ System admin auto-initialization failed:', initResult.message);
+                }
+            } else {
+                console.log('✅ System admin auto-initialization complete');
+            }
+        } catch (err) {
+            // handle thrown errors (e.g., connection errors, access denied exceptions)
+            const isAccessDenied = err && (err.code === 'ER_ACCESS_DENIED_ERROR' || (err.message && err.message.toLowerCase().includes('access denied')));
+            if (isAccessDenied) {
+                console.warn('Detected DB access denied on initial auto-init (exception).');
+                try {
+                    const booted = await runBootstrapIfAdminAvailable();
+                    if (!booted) {
+                        console.error('No admin credentials available to bootstrap DB. Exiting.');
+                        process.exit(1);
+                    }
+                    // Retry init after bootstrapping
+                    const retryResult = await autoInitSystemAdmin();
+                    if (!retryResult.success) {
+                        console.error('Initialization still failed after bootstrap:', retryResult.message);
+                        process.exit(1);
+                    }
+                    console.log('✅ System admin auto-initialization complete after bootstrap');
+                } catch (bootstrapErr) {
+                    console.error('Bootstrap attempt failed:', bootstrapErr && bootstrapErr.message ? bootstrapErr.message : bootstrapErr);
+                    process.exit(1);
+                }
+            } else {
+                console.error('❌ System admin auto-initialization error:', err && err.message ? err.message : err);
+                console.error('❌ Make sure the database user "restpoint_user" exists and has proper permissions');
+                console.error('❌ Run this SQL in MySQL if needed:');
+                console.error('   CREATE USER IF NOT EXISTS \'restpoint_user\'@\'localhost\' IDENTIFIED BY \'RestPointUser2024\';');
+                console.error('   GRANT ALL PRIVILEGES ON *.* TO \'restpoint_user\'@\'localhost\' WITH GRANT OPTION;');
+                console.error('   FLUSH PRIVILEGES;');
+                process.exit(1);
+            }
+        }
+    } catch (error) {
+        console.error('❌ System admin auto-initialization error:', error && error.message ? error.message : error);
+        console.error('❌ Make sure the database user "restpoint_user" exists and has proper permissions');
+        console.error('❌ Run this SQL in MySQL if needed:');
+        console.error('   CREATE USER IF NOT EXISTS \'restpoint_user\'@\'localhost\' IDENTIFIED BY \'RestPointUser2024\';');
+        console.error('   GRANT ALL PRIVILEGES ON *.* TO \'restpoint_user\'@\'localhost\' WITH GRANT OPTION;');
+        console.error('   FLUSH PRIVILEGES;');
+        process.exit(1);
+    }
+
+    // Start Server - listen on 0.0.0.0 for external access
+    const HOST = process.env.HOST || '0.0.0.0';
+    app.listen(PORT, HOST, () => {
+        console.log(`🚀 [auth-service] running cleanly on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    });
+})();

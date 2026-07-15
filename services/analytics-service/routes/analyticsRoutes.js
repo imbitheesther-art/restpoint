@@ -20,39 +20,39 @@ router.use(optionalAuth);
 // ============================================================
 
 // Deceased analytics
-router.get('/deceased/count', deceasedAnalytics.getDeceasedCount);
-router.get('/deceased/status', deceasedAnalytics.getCaseStatusDistribution);
-router.get('/deceased/trends', deceasedAnalytics.getDeceasedTrends);
+router.get('/analytics/deceased/count', deceasedAnalytics.getDeceasedCount);
+router.get('/analytics/deceased/status', deceasedAnalytics.getCaseStatusDistribution);
+router.get('/analytics/deceased/trends', deceasedAnalytics.getDeceasedTrends);
 
 // Booking & Hearse analytics
-router.get('/bookings/counts', bookingAnalytics.getBookingCounts);
-router.get('/hearse/fleet', bookingAnalytics.getHearseFleetStatus);
+router.get('/analytics/bookings/counts', bookingAnalytics.getBookingCounts);
+router.get('/analytics/hearse/fleet', bookingAnalytics.getHearseFleetStatus);
 
 // Revenue analytics
-router.get('/revenue/summary', revenueAnalytics.getRevenueSummary);
-router.get('/revenue/trends', revenueAnalytics.getMonthlyRevenueTrends);
+router.get('/analytics/revenue/summary', revenueAnalytics.getRevenueSummary);
+router.get('/analytics/revenue/trends', revenueAnalytics.getMonthlyRevenueTrends);
 
 // Coffin analytics
-router.get('/coffins/inventory', coffinAnalytics.getCoffinInventorySummary);
-router.get('/coffins/sales', coffinAnalytics.getCoffinSales);
+router.get('/analytics/coffins/inventory', coffinAnalytics.getCoffinInventorySummary);
+router.get('/analytics/coffins/sales', coffinAnalytics.getCoffinSales);
 
 // Chemical analytics
-router.get('/chemicals/stock', chemicalAnalytics.getChemicalStockSummary);
-router.get('/chemicals/trends', chemicalAnalytics.getChemicalUsageTrends);
+router.get('/analytics/chemicals/stock', chemicalAnalytics.getChemicalStockSummary);
+router.get('/analytics/chemicals/trends', chemicalAnalytics.getChemicalUsageTrends);
 
 // Workshop analytics
-router.get('/workshop/summary', workshopAnalytics.getWorkshopSummary);
-router.get('/workshop/production', workshopAnalytics.getWorkshopProductionStatus);
+router.get('/analytics/workshop/summary', workshopAnalytics.getWorkshopSummary);
+router.get('/analytics/workshop/production', workshopAnalytics.getWorkshopProductionStatus);
 
 // Vehicle analytics
-router.get('/vehicle/analytics', getComprehensiveVehicleAnalytics);
+router.get('/analytics/vehicle/analytics', getComprehensiveVehicleAnalytics);
 
 // ============================================================
 // COMPREHENSIVE DASHBOARD - aggregates all into one response
 // ============================================================
-router.get('/dashboard/comprehensive', comprehensiveDashboard.getComprehensiveDashboard);
+router.get('/analytics/dashboard/comprehensive', comprehensiveDashboard.getComprehensiveDashboard);
 
 // Legacy route - backward compatibility
-router.get('/mortuary-analytics', comprehensiveDashboard.getComprehensiveDashboard);
+router.get('/analytics/mortuary-analytics', comprehensiveDashboard.getComprehensiveDashboard);
 
 module.exports = router;

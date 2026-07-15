@@ -74,9 +74,9 @@ const getOrder = async (req: Request, res: Response) => {
 
         // Get worker assignments
         const assignments: any = await safeTenantQuery(tenantDb,
-            `SELECT wa.*, u.first_name, u.last_name 
+            `SELECT wa.*, u.id as user_id, u.first_name, u.last_name 
              FROM worker_assignments wa 
-             JOIN users u ON wa.user_id = u.user_id 
+             JOIN users u ON wa.user_id = u.id 
              WHERE wa.coffin_order_id = ?`,
             [req.params.id]
         );

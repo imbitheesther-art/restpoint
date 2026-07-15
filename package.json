@@ -26,9 +26,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f --tail=100",
     "docker:rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d",
-    "migrate:soft-delete": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts",
-    "migrate:soft-delete:dry-run": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --dry-run",
-    "migrate:soft-delete:tenant": "ts-node services/tenant-service/scripts/migrate-soft-delete.ts --tenant="
+    "provision-worker": "ts-node services/tenant-service/scripts/provision-worker.ts"
   },
   "dependencies": {
     "axios": "^1.18.1",
@@ -40,7 +38,9 @@
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "prop-types": "^15.8.1",
-    "react-gauge-chart": "^0.5.1"
+    "react-gauge-chart": "^0.5.1",
+    "bull": "^3.29.3",
+    "ioredis": "^5.3.2"
   },
   "devDependencies": {
     "@types/pino": "^7.0.4",

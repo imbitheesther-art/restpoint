@@ -17,18 +17,31 @@ const ActiveOrdersTable = ({ orders, onViewOrder, onDownloadPDF, onViewAll }) =>
         );
     }
 
+    const stageOrder = ['design', 'cutting', 'assembly', 'polishing', 'finishing', 'quality_check', 'delivery'];
+
     const getStatusBadge = (s) => {
         if (!s) return <Badge $status="pending">Unknown</Badge>;
         return <Badge $status={s}>{s.replace(/_/g, ' ')}</Badge>;
     };
 
+    const getOrderStage = (order) => {
+        const orderStages = order.stages || [];
+        const activeStage = orderStages.find(s => s.status === 'in_progress') || orderStages.find(s => s.status === 'pending') || orderStages.find(s => s.status === 'completed');
+        const stageName = activeStage?.stage || (order.status === 'completed' ? 'delivery' : order.status === 'pending' ? 'design' : 'assembly');
+        return stageName.replace(/_/g, ' ');
+    };
+
     const getProgress = (order) => {
         if (!order) return 0;
         if (['completed', 'delivered'].includes(order.status)) return 100;
-        if (order.status === 'in_production' || order.status === 'in-production') return 60;
-        if (['design', 'cutting', 'assembly', 'polishing', 'finishing', 'quality_check'].includes(order.status)) return 40;
+        const stageName = getOrderStage(order).toLowerCase().replace(/ /g, '_');
+        const index = stageOrder.indexOf(stageName);
+        if (index >= 0) {
+            return Math.round(((index + 1) / stageOrder.length) * 100);
+        }
+        if (order.status === 'in_production' || order.status === 'in-production') return 55;
         if (order.status === 'pending') return 10;
-        return 25;
+        return 30;
     };
 
     return (
@@ -59,7 +72,7 @@ const ActiveOrdersTable = ({ orders, onViewOrder, onDownloadPDF, onViewAll }) =>
                                 <div style={{ fontSize: '0.75rem', color: COLORS.textMuted }}>Deceased: {order.deceased_name}</div>
                             </Td>
                             <Td style={{ textTransform: 'capitalize' }}>{order.coffin_type}</Td>
-                            <Td>{getStatusBadge(order.status)}</Td>
+                            <Td><span style={{ display: 'inline-flex', padding: '0.35rem 0.7rem', borderRadius: '999px', background: '#eef2ff', color: '#4338ca', fontWeight: 600, fontSize: '0.75rem' }}>{getOrderStage(order)}</span></Td>
                             <Td>
                                 <MiniProgress $percent={getProgress(order)}>
                                     <div />

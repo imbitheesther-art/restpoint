@@ -58,6 +58,11 @@ const SERVICE_URLS = {
 
 const app = express();
 
+// Honor proxy headers when running behind a reverse proxy (load balancer, nginx, CDN)
+if ((process.env.TRUST_PROXY || 'false').toString().toLowerCase() === 'true') {
+  app.set('trust proxy', true);
+  Logger.info('Express trust proxy enabled (TRUST_PROXY=true)');
+}
 // CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')

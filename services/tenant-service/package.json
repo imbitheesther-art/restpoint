@@ -16,7 +16,9 @@
     "clean": "rimraf dist",
     "migrate": "npx ts-node scripts/run-tenant-migrations.ts",
     "migrate:all": "npx ts-node scripts/run-tenant-migrations.ts",
-    "migrate:tenant": "npx ts-node scripts/run-tenant-migrations.ts --tenant"
+    "migrate:tenant": "npx ts-node scripts/run-tenant-migrations.ts --tenant",
+    "migrate:pending": "node scripts/run-pending-migrations.js --mode optional",
+    "provision-worker": "ts-node scripts/provision-worker.ts"
   },
   "nodemonConfig": {
     "watch": [

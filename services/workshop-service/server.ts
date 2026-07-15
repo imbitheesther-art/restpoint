@@ -206,16 +206,23 @@ CREATE TABLE IF NOT EXISTS coffin_orders (
   color VARCHAR(100),
   interior_fabric VARCHAR(100),
   notes TEXT,
+  instructions TEXT,
   selling_price DECIMAL(10,2) DEFAULT 0,
   total_cost DECIMAL(10,2) DEFAULT 0,
   profit DECIMAL(10,2) DEFAULT 0,
+  due_date DATE,
+  priority VARCHAR(20) DEFAULT 'normal',
+  branch_id INT DEFAULT NULL,
+  hold_reason TEXT,
+  created_by VARCHAR(255),
   status VARCHAR(50) DEFAULT 'pending',
   delivery_date DATE,
   order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_orders_status (status),
-  INDEX idx_orders_date (order_date)
+  INDEX idx_orders_date (order_date),
+  INDEX idx_orders_branch (branch_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS materials (

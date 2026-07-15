@@ -9,12 +9,15 @@ async function main() {
     console.log('🔍 Diagnosing MariaDB authentication plugin...\n');
 
     // Try connecting as root with no password first (common on local installs)
-    const attempts = [
-        { user: 'root', password: '', label: 'root with no password' },
-        { user: 'root', password: 'RestPoint2024!', label: 'root with RestPoint2024!' },
-        { user: 'root', password: 'root', label: 'root with root' },
-        { user: 'restpoint_user', password: 'RestPointUser2024', label: 'restpoint_user' },
-    ];
+    const ROOT_PASSWORD = process.env.ROOT_PASSWORD;
+        const DB_PASSWORD = process.env.DB_PASSWORD;
+
+        const attempts = [
+            { user: 'root', password: '', label: 'root with no password' },
+            { user: 'root', password: ROOT_PASSWORD || '', label: 'root with ROOT_PASSWORD (env)' },
+            { user: 'root', password: 'root', label: 'root with root' },
+            { user: 'restpoint_user', password: DB_PASSWORD || '', label: 'restpoint_user (DB_PASSWORD env)' },
+        ];
 
     let conn = null;
     let successAttempt = null;
@@ -59,7 +62,7 @@ async function main() {
             if (restpointUser.plugin !== 'mysql_native_password') {
                 console.log('\n🔧 Fixing: Changing restpoint_user to mysql_native_password...');
                 await conn.query(
-                    `ALTER USER 'restpoint_user'@'${restpointUser.host}' IDENTIFIED WITH mysql_native_password BY 'RestPointUser2024'`
+                    `ALTER USER 'restpoint_user'@'${restpointUser.host}' IDENTIFIED WITH mysql_native_password BY '${DB_PASSWORD || ''}'`
                 );
                 await conn.query('FLUSH PRIVILEGES');
                 console.log('✅ User plugin changed to mysql_native_password');
@@ -76,7 +79,7 @@ async function main() {
             console.log('\n⚠️ restpoint_user does not exist. Creating it...');
             // MariaDB 11+ uses IDENTIFIED VIA instead of IDENTIFIED WITH
             await conn.query(
-                "CREATE USER IF NOT EXISTS 'restpoint_user'@'%' IDENTIFIED BY 'RestPointUser2024'"
+               `CREATE USER IF NOT EXISTS 'restpoint_user'@'%' IDENTIFIED BY '${DB_PASSWORD || ''}'`
             );
             await conn.query("GRANT ALL PRIVILEGES ON *.* TO 'restpoint_user'@'%' WITH GRANT OPTION");
             await conn.query('FLUSH PRIVILEGES');
@@ -89,7 +92,7 @@ async function main() {
             host: '127.0.0.1',
             port: 3306,
             user: 'restpoint_user',
-            password: 'RestPointUser2024',
+            password: DB_PASSWORD || '',
             authPlugins: {
                 mysql_native_password: () => Buffer.from('mysql_native_password')
             }

@@ -1,16 +1,13 @@
-/**
- * @file shared/services/soft-delete-migrations.ts
- * SOFT DELETE MODULE - Prevents hard deletes across all tenant databases
- * 
- * This module adds soft delete capabilities to all tables in the system.
- * When a new tenant is created, these migrations automatically add:
- * - is_deleted (BOOLEAN) - marks records as deleted
- * - deleted_at (TIMESTAMP) - records when deletion occurred
- * - deleted_by (INT) - tracks who performed the deletion
- * 
- * All DELETE operations are converted to UPDATE operations that set is_deleted = TRUE
- * All SELECT operations automatically filter out is_deleted = TRUE records
- */
+// Soft delete migrations removed
+// The soft-delete migrations module was intentionally removed per project policy.
+// Export a noop function to preserve any imports but prevent any soft-delete SQL changes.
+
+import { Migration } from './migration-service';
+
+export function getSoftDeleteMigrations(): Migration[] {
+  return [];
+}
+
 
 import { Migration } from './migration-service';
 

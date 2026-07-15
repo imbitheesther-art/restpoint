@@ -9,10 +9,10 @@ services:
     container_name: restpoint_mariadb
     restart: always
     environment:
-      MARIADB_ROOT_PASSWORD: RestPoint2024!
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: restpoint_main
       MARIADB_USER: restpoint_user
-      MARIADB_PASSWORD: RestPointUser2024
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -32,7 +32,7 @@ services:
     image: redis:7-alpine
     container_name: restpoint_redis
     restart: always
-    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy noeviction
     ports:
       - "6379:6379"
     volumes:
@@ -54,8 +54,8 @@ services:
     container_name: restpoint_rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: restpoint
-      RABBITMQ_DEFAULT_PASS: RestPointRabbit2024
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-restpoint}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -93,13 +93,13 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=restpoint_rabbitmq
       - RABBITMQ_PORT=5672
-      - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
-      - REFRESH_TOKEN_SECRET=RestPointRefreshTokenSecret2024!ChangeMe
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - AUTH_SERVICE_URL=http://restpoint_auth_service:5000
       - USERS_SERVICE_URL=http://restpoint_auth_service:5000
       - TENANT_SERVICE_URL=http://restpoint_tenant_service:5000
@@ -159,11 +159,11 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
-      - JWT_SECRET=RestPointJWTSecret2024ChangeMe!SuperSecureInProduction
-      - REFRESH_TOKEN_SECRET=RestPointRefreshTokenSecret2024!ChangeMe
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - JWT_EXPIRY=24h
       - REFRESH_TOKEN_EXPIRY=7d
     env_file:
@@ -202,7 +202,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=restpoint_rabbitmq
@@ -247,7 +247,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -287,7 +287,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -326,7 +326,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=restpoint_rabbitmq
@@ -369,7 +369,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
       - SOCKETIO_SERVICE_URL=http://socketio-service:5018
@@ -410,7 +410,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -514,7 +514,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     networks:
@@ -547,7 +547,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     networks:
@@ -580,7 +580,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     networks:
@@ -613,7 +613,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     networks:
@@ -646,7 +646,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     networks:
@@ -684,7 +684,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:
@@ -721,7 +721,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     networks:
@@ -759,7 +759,7 @@ services:
       - DB_HOST=restpoint_mariadb
       - DB_PORT=3306
       - DB_USER=restpoint_user
-      - DB_PASSWORD=RestPointUser2024
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
     env_file:

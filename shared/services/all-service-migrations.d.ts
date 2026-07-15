@@ -29,6 +29,8 @@ export declare const ALL_TENANT_MIGRATIONS: Migration[];
 export declare const BRANCH_MIGRATIONS: Migration[];
 export declare const SINGLE_TENANT_MIGRATIONS: Migration[];
 export { TENANT_SERVICE_MIGRATIONS, DECEASED_SERVICE_MIGRATIONS, INVOICE_SERVICE_MIGRATIONS, NOTIFICATIONS_SERVICE_MIGRATIONS, BODY_CHECKOUT_SERVICE_MIGRATIONS, COFFIN_SERVICE_MIGRATIONS, CHEMICALS_SERVICE_MIGRATIONS, HEARSE_SERVICE_MIGRATIONS, WORKSHOP_SERVICE_MIGRATIONS, EXTRA_SERVICES_MIGRATIONS, BILLING_SERVICE_MIGRATIONS, };
+export declare function getCoreMigrations(): Migration[];
+export declare function getOptionalMigrations(): Migration[];
 export declare function getMainTenantMigrations(): Migration[];
 export declare function getBranchMigrations(): Migration[];
 export declare function getSingleTenantMigrations(): Migration[];

@@ -118,7 +118,7 @@ app.use(async (req, res, next) => {
                         host: process.env.DB_HOST || '127.0.0.1',
                         port: parseInt(process.env.DB_PORT || '3306'),
                         user: process.env.DB_USER || 'restpoint_user',
-                        password: process.env.DB_PASSWORD || 'RestPointUser2024',
+                        password: process.env.DB_PASSWORD,
                         database: tenantSlug,
                         waitForConnections: true,
                         connectionLimit: 2,

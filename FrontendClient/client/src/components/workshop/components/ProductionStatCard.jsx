@@ -1,15 +1,16 @@
 import React from 'react';
 
-const ProductionStatCard = ({ label, value, unit, icon: Icon, accent }) => (
+const ProductionStatCard = ({ label, value, unit, icon: Icon, accent, cardStyle = {}, textColor, labelColor, unitColor, iconColor }) => (
     <div style={{
         display: 'flex',
         flexDirection: 'column',
         gap: '0.8rem',
-        padding: '1.25rem',
-        background: 'white',
-        borderRadius: '12px',
-        border: '1px solid #e2e8f0',
-        transition: 'all 0.2s ease'
+        padding: '1.35rem',
+        background: 'linear-gradient(180deg, #ffffff 0%, #eff7ff 100%)',
+        borderRadius: '18px',
+        border: '1px solid rgba(148,163,184,0.18)',
+        transition: 'all 0.2s ease',
+        ...cardStyle
     }}
         onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
@@ -27,7 +28,7 @@ const ProductionStatCard = ({ label, value, unit, icon: Icon, accent }) => (
         }}>
             <span style={{
                 fontSize: '0.85rem',
-                color: '#64748b',
+                color: labelColor || '#64748b',
                 fontWeight: 500
             }}>
                 {label}
@@ -41,7 +42,7 @@ const ProductionStatCard = ({ label, value, unit, icon: Icon, accent }) => (
                 alignItems: 'center',
                 justifyContent: 'center',
             }}>
-                <Icon size={18} style={{ color: '#14DD3C' }} />
+                <Icon size={18} style={{ color: iconColor || '#14DD3C' }} />
             </div>
         </div>
         <div style={{
@@ -54,14 +55,14 @@ const ProductionStatCard = ({ label, value, unit, icon: Icon, accent }) => (
                 fontWeight: 700,
                 letterSpacing: '-0.03em',
                 lineHeight: 1,
-                color: '#0f172a'
+                color: textColor || '#0f172a'
             }}>
                 {value}
             </span>
             {unit && (
                 <span style={{
                     fontSize: '0.85rem',
-                    color: '#94a3b8',
+                    color: unitColor || '#94a3b8',
                     fontWeight: 500
                 }}>
                     {unit}

@@ -21,6 +21,9 @@ router.post(
   onboardingController.login.bind(onboardingController)
 );
 
+// Provisioning status (public) - allows frontend polling as a fallback
+router.get('/status/:tenantSlug', onboardingController.getProvisioningStatus.bind(onboardingController));
+
 router.post(
   '/logout',
   authenticateToken,

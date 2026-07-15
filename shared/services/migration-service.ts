@@ -111,6 +111,8 @@ export class MigrationService {
         waitForConnections: true,
         connectionLimit: 5,
         queueLimit: 0,
+        // Allow running migrations that contain multiple statements
+        multipleStatements: true,
       });
 
       // Ensure migrations tracking table exists
@@ -130,15 +132,25 @@ export class MigrationService {
           console.log(`[MigrationService] 🔄 Running migration: ${migration.name} on ${dbName}`);
 
           // Execute the migration SQL
-          // Split on semicolons to handle multiple statements, but be careful with
-          // semicolons inside strings/triggers. Use mysql2's ability to run multiple statements.
+          // multipleStatements is enabled on the pool so migration.sql can contain multiple statements
           await connection.query(migration.sql);
 
-          // Record the migration as executed
-          await connection.query(
-            'INSERT INTO migrations (migration_name, executed_at) VALUES (?, NOW())',
-            [migration.name]
-          );
+          // Record the migration as executed (ignore duplicate-key errors if another process recorded it)
+          try {
+            await connection.query(
+              'INSERT INTO migrations (migration_name, executed_at) VALUES (?, NOW())',
+              [migration.name]
+            );
+          } catch (insertErr: any) {
+            if (insertErr && insertErr.code === 'ER_DUP_ENTRY') {
+              console.warn(`[MigrationService] ⚠️ Migration tracking record already exists for: ${migration.name} (another process?)`);
+            } else {
+              throw insertErr;
+            }
+          }
+
+          // Update in-memory set so duplicate names in the migration list don't try to run twice
+          executedMigrations.add(migration.name);
 
           result.migrationsRun.push(migration.name);
           console.log(`[MigrationService] ✅ Completed migration: ${migration.name}`);
@@ -246,6 +258,8 @@ export class MigrationService {
         waitForConnections: true,
         connectionLimit: 5,
         queueLimit: 0,
+        // Allow multiple statements for rollback operations as well
+        multipleStatements: true,
       });
 
       await this.ensureMigrationsTable(connection);

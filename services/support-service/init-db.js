@@ -4,10 +4,10 @@ const path = require('path');
 
 async function initDatabase() {
     const connection = await mysql.createConnection({
-        host: '127.0.0.1',
-        port: 3306,
-        user: 'root',
-        password: 'RestPoint2024!'
+        host: process.env.DB_HOST || '127.0.0.1',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.ROOT_DB_USER || 'root',
+        password: process.env.ROOT_PASSWORD || ''
     });
 
     try {
@@ -16,9 +16,10 @@ async function initDatabase() {
         console.log('✅ Database support_db created or already exists');
 
         // Create user if not exists
-        await connection.query("CREATE USER IF NOT EXISTS 'restpoint_user'@'localhost' IDENTIFIED BY 'RestPointUser2024'");
-        await connection.query("CREATE USER IF NOT EXISTS 'restpoint_user'@'127.0.0.1' IDENTIFIED BY 'RestPointUser2024'");
-        await connection.query("CREATE USER IF NOT EXISTS 'restpoint_user'@'%' IDENTIFIED BY 'RestPointUser2024'");
+        const dbPassword = process.env.DB_PASSWORD || '';
+        await connection.query(`CREATE USER IF NOT EXISTS 'restpoint_user'@'localhost' IDENTIFIED BY '${dbPassword}'`);
+        await connection.query(`CREATE USER IF NOT EXISTS 'restpoint_user'@'127.0.0.1' IDENTIFIED BY '${dbPassword}'`);
+        await connection.query(`CREATE USER IF NOT EXISTS 'restpoint_user'@'%' IDENTIFIED BY '${dbPassword}'`);
 
         // Grant privileges to restpoint_user
         await connection.query("GRANT ALL PRIVILEGES ON support_db.* TO 'restpoint_user'@'localhost'");
@@ -29,11 +30,11 @@ async function initDatabase() {
 
         // Now connect to support_db and run migrations
         const dbConnection = await mysql.createConnection({
-            host: '127.0.0.1',
-            port: 3306,
-            user: 'restpoint_user',
-            password: 'RestPointUser2024',
-            database: 'support_db'
+            host: process.env.DB_HOST || '127.0.0.1',
+            port: parseInt(process.env.DB_PORT || '3306'),
+            user: process.env.DB_USER || 'restpoint_user',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.SUPPORT_DB_NAME || 'support_db'
         });
 
         // Read migration SQL from centralized location

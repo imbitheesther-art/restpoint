@@ -125,8 +125,8 @@ export const workshopService = {
         })),
 
     // --- Analytics ---
-    getMonthlyAnalytics: (year) =>
-        handleResponse(workshopApi.get(ENDPOINTS.WORKSHOP.ANALYTICS.MONTHLY, { params: { year } })),
+    getMonthlyAnalytics: (params = {}) =>
+        handleResponse(workshopApi.get(ENDPOINTS.WORKSHOP.ANALYTICS.MONTHLY, { params })),
 
     // --- Design ---
     saveDesign: (id, data) =>

@@ -12,6 +12,16 @@ import { errorHandler, notFoundHandler, asyncHandler } from '../app-global/middl
 
 dotenv.config();
 
+// Start provision worker if enabled
+if (process.env.START_PROVISION_WORKER !== 'false') {
+  try {
+    require('./scripts/provision-worker');
+    console.log('Provision worker started');
+  } catch (err) {
+    console.warn('Failed to start provision worker:', err);
+  }
+}
+
 
 // ============================================
 // EXPRESS APP SETUP
@@ -432,8 +442,9 @@ app.use(errorHandler);
 // ============================================
 // START SERVER
 // ============================================
-app.listen(PORT, () => {
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(Number(PORT), HOST, () => {
   console.log(`Tenant service running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Health check: http://${HOST}:${PORT}/health`);
   console.log(`${new Date().toISOString()}`);
 });

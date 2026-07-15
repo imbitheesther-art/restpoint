@@ -94,6 +94,7 @@ const HearseBookings = lazy(() => import('../components/hearse/hearseBookings'))
 const DriverPortal = lazy(() => import('../components/hearse/DriverPortal'));
 const LeaveDashboard = lazy(() => import('../components/leave/Dashboard'));
 const ApplyLeave = lazy(() => import('../components/leave/ApplyLeave'));
+const MyLeaves = lazy(() => import('../components/leave/MyLeaves'));
 
 
 const RouteLoadingFallback = () => (
@@ -110,9 +111,13 @@ const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('user');
   const location = useLocation();
   if (!token || !user || token === 'undefined' || token === 'null') {
+    // Preserve tenantSlug so we don't redirect to 'default'
+    const slug = localStorage.getItem('tenantSlug');
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    localStorage.removeItem('tenantSlug');
+    localStorage.removeItem('tenantId');
+    // Restore tenantSlug after clearing
+    if (slug) localStorage.setItem('tenantSlug', slug);
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   return children;
@@ -414,10 +419,10 @@ const TenantDashboardRoutes = ({ tenantData }) => {
         </RoleBasedRoute>
       } />
 
-      {/* Driver Portal - Only for drivers */}
+      {/* Driver Portal - Only for drivers, standalone without sidebar */}
       <Route path="driver-portal" element={
         <RoleBasedRoute allowedRoles={['driver']} userRole={userRole}>
-          <Layout tenantData={tenantData}><DriverPortal /></Layout>
+          <DriverPortal />
         </RoleBasedRoute>
       } />
 
@@ -430,6 +435,11 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="leaves/apply" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
           <Layout tenantData={tenantData}><ApplyLeave /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="leaves/my-leaves" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+          <Layout tenantData={tenantData}><MyLeaves /></Layout>
         </RoleBasedRoute>
       } />
 
@@ -482,7 +492,15 @@ const DashboardRedirect = () => {
       return;
     }
 
-    // Normal tenant flow
+    // Check if user is driver - redirect to driver portal
+    if (user?.role === 'driver') {
+      const tenantSlug = localStorage.getItem('tenantSlug');
+      const finalSlug = tenantSlug || user.tenantSlug || 'default';
+      navigate(`/tenant/${finalSlug}/driver-portal`, { replace: true });
+      return;
+    }
+
+    // Normal tenant flow for admin/manager/staff
     const tenantSlug = localStorage.getItem('tenantSlug');
     let userTenantSlug = '';
     if (userStr) { try { const u = JSON.parse(userStr); userTenantSlug = u.tenantSlug || ''; } catch (e) { console.error('Error parsing user', e); } }

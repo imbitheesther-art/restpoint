@@ -158,13 +158,8 @@ const updateSoftware = async () => {
         log.info('Updating dependencies...');
         await execute('npm install', { stdio: 'inherit' });
 
-        // Run any migration scripts
-        log.info('Running migrations...');
-        try {
-            await execute('npm run migrate:soft-delete', { stdio: 'inherit' });
-        } catch (error) {
-            log.warning('Migration script failed (this may be normal)');
-        }
+        // Run any migration scripts (soft-delete migrations removed)
+        log.info('Skipping soft-delete migration step (module removed)');
 
         // Rebuild if needed
         log.info('Rebuilding application...');

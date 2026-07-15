@@ -17,8 +17,8 @@ async function runMigration() {
             host: process.env.DB_HOST || '127.0.0.1',
             port: parseInt(process.env.DB_PORT || '3306'),
             user: process.env.DB_USER || 'restpoint_user',
-            password: process.env.DB_PASSWORD || 'RestPointUser2024',
-            database: 'embenezar-feuneral-nairobi' // The tenant database from the error log
+            password: process.env.DB_PASSWORD,
+            database: process.env.MIGRATION_DB || 'embenezar-feuneral-nairobi' // The tenant database from the error log
         };
 
         console.log(`📊 Connecting to database: ${dbConfig.database}`);

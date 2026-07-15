@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, FileText, Upload, X, User, Mail, MapPin, Briefcase } from 'lucide-react';
+import { Calendar, FileText, Upload, X, User, Mail, MapPin, Briefcase, History } from 'lucide-react';
 
 const COLORS = {
     primary: '#0A2463',
@@ -23,7 +24,15 @@ const Container = styled.div`
 `;
 
 const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 2rem;
+  gap: 1rem;
+`;
+
+const HeaderContent = styled.div`
+  flex: 1;
 `;
 
 const Title = styled.h1`
@@ -286,6 +295,7 @@ const RemoveButton = styled.button`
 `;
 
 const ApplyLeave = () => {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         leave_type: 'annual',
         priority: 'medium',
@@ -404,8 +414,18 @@ const ApplyLeave = () => {
     return (
         <Container>
             <Header>
-                <Title>Apply for Leave</Title>
-                <Subtitle>Submit a new leave request</Subtitle>
+                <HeaderContent>
+                    <Title>Apply for Leave</Title>
+                    <Subtitle>Submit a new leave request</Subtitle>
+                </HeaderContent>
+                <Button
+                    $variant="secondary"
+                    onClick={() => navigate('/leaves/my-leaves')}
+                    style={{ marginTop: '0.25rem', width: 'auto' }}
+                >
+                    <History size={18} />
+                    My Leaves
+                </Button>
             </Header>
 
             {/* User Information Card - All fields editable */}

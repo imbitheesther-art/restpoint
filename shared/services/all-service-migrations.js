@@ -16,6 +16,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BILLING_SERVICE_MIGRATIONS = exports.EXTRA_SERVICES_MIGRATIONS = exports.WORKSHOP_SERVICE_MIGRATIONS = exports.HEARSE_SERVICE_MIGRATIONS = exports.CHEMICALS_SERVICE_MIGRATIONS = exports.COFFIN_SERVICE_MIGRATIONS = exports.BODY_CHECKOUT_SERVICE_MIGRATIONS = exports.NOTIFICATIONS_SERVICE_MIGRATIONS = exports.INVOICE_SERVICE_MIGRATIONS = exports.DECEASED_SERVICE_MIGRATIONS = exports.TENANT_SERVICE_MIGRATIONS = exports.SINGLE_TENANT_MIGRATIONS = exports.BRANCH_MIGRATIONS = exports.ALL_TENANT_MIGRATIONS = void 0;
+exports.getCoreMigrations = getCoreMigrations;
+exports.getOptionalMigrations = getOptionalMigrations;
 exports.getMainTenantMigrations = getMainTenantMigrations;
 exports.getBranchMigrations = getBranchMigrations;
 exports.getSingleTenantMigrations = getSingleTenantMigrations;
@@ -295,8 +297,31 @@ exports.SINGLE_TENANT_MIGRATIONS = [
     ...BILLING_SERVICE_MIGRATIONS,
 ];
 // ─── Helper Functions ────────────────────────────────────────────────────────
+// ─── Core / Optional split ───────────────────────────────────────────────
+// Define the minimal set of migrations that every tenant MUST have. These are
+// essential tables required for tenant lifecycle and authentication. All other
+// migrations are considered optional and can be applied later via a migration
+// runner (see services/tenant-service/scripts/run-pending-migrations.js).
+const CORE_MIGRATION_NAMES = [
+    '001_create_organizations_table',
+    '001a_create_tenants_table',
+    '002_create_branches_table',
+    '003_create_users_table',
+    '003_create_refresh_tokens_table',
+    '004_create_mortuary_settings_table',
+    '005_create_activity_logs_table'
+];
+function getCoreMigrations() {
+    return exports.ALL_TENANT_MIGRATIONS.filter(m => CORE_MIGRATION_NAMES.includes(m.name));
+}
+function getOptionalMigrations() {
+    return exports.ALL_TENANT_MIGRATIONS.filter(m => !CORE_MIGRATION_NAMES.includes(m.name));
+}
 function getMainTenantMigrations() {
-    return exports.ALL_TENANT_MIGRATIONS;
+    // By default, when creating a primary tenant database keep the migration set
+    // small and safe: only run core/essential migrations. Optional feature
+    // migrations are applied later using the migration runner.
+    return getCoreMigrations();
 }
 function getBranchMigrations() {
     return exports.BRANCH_MIGRATIONS;
@@ -305,6 +330,8 @@ function getSingleTenantMigrations() {
     return exports.SINGLE_TENANT_MIGRATIONS;
 }
 function getAllTenantMigrations() {
-    return exports.BRANCH_MIGRATIONS;
+    // Return the full migration list when an operator explicitly requests all
+    // migrations (migration runner --mode=all).
+    return exports.ALL_TENANT_MIGRATIONS;
 }
 //# sourceMappingURL=all-service-migrations.js.map
