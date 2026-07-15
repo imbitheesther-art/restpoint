@@ -23,7 +23,7 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY services/support-service/package.json ./services/support-service/
 
 # Install ALL dependencies (including dev for building)
-RUN yarn config set network-timeout 600000 && npm ci --omit=optional
+RUN npm install --omit=optional
 
 # Copy source code
 COPY services/configurations/ ./configurations/

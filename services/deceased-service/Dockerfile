@@ -16,7 +16,7 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY shared/package.json ./shared/
 COPY services/deceased-service/package.json ./services/deceased-service/
 
-RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm install --omit=optional
 
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/

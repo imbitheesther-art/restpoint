@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/notification-service/package.json ./services/notification-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn config set network-timeout 600000 && npm ci --omit=optional
+RUN npm install --omit=optional
 
 # Copy shared source modules first
 COPY services/configurations/ ./configurations/

@@ -27,7 +27,7 @@ COPY services/hearse-service/package.json ./services/hearse-service/
 COPY shared/ ./shared/
 
 # Install ALL dependencies (respecting package-lock.json)
-RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm install --omit=optional
 
 # Copy remaining source code
 COPY services/configurations/ ./configurations/

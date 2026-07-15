@@ -15,7 +15,7 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/billing-service/package.json ./services/billing-service/
 
-RUN yarn config set network-timeout 600000 && npm ci --omit=optional
+RUN npm install --omit=optional
 
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/

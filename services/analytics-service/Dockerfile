@@ -23,7 +23,7 @@ COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/analytics-service/package.json ./services/analytics-service/
 
 # Install ALL dependencies (including dev for building shared packages)
-RUN yarn config set network-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm install --omit=optional
 
 # Copy source code
 COPY services/configurations/ ./configurations/

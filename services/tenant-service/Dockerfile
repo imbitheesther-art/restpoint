@@ -24,7 +24,7 @@ COPY shared/package.json ./shared/
 COPY services/tenant-service/package.json ./services/tenant-service/
 
 # Install ALL dependencies (respecting package-lock.json)
-RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm install --omit=optional
 
 # Copy source code
 COPY services/configurations/ ./configurations/

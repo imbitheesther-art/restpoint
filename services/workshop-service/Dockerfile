@@ -27,7 +27,7 @@ COPY services/workshop-service/package.json ./services/workshop-service/
 
 # Install ALL dependencies 
 # Increase network timeout to handle slow connections
-RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm install --omit=optional
 
 # Copy shared source modules first
 COPY services/configurations/ ./configurations/

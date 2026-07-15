@@ -25,7 +25,7 @@ COPY shared/package.json ./shared/
 COPY services/api-gateway/package.json ./services/api-gateway/
 
 # Install ALL dependencies (respecting package-lock.json)
-RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
+RUN npm config set fetch-timeout 600000 && npm install --omit=optional
 
 # Copy source code
 COPY services/configurations/ ./configurations/
