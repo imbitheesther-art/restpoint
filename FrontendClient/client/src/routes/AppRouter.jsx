@@ -221,11 +221,16 @@ const TenantResolver = () => {
         return;
       }
       try {
-        // Get tenantSlug from localStorage for API calls
-        const tenantSlug = localStorage.getItem('tenantSlug');
+        // CRITICAL: Use the URL slug parameter directly, not localStorage
+        // This ensures we always fetch the correct tenant data for the current URL
+        // Also, never use 'default' as a tenant slug - replace with system_shared
+        const tenantSlug = slug === 'default' ? 'system_shared' : slug;
 
-        // Fetch branding/config info using tenantSlug
-        const data = await tenantApi.getBranding(tenantSlug || slug);
+        // Save the correct tenantSlug to localStorage for future use
+        localStorage.setItem('tenantSlug', tenantSlug);
+
+        // Fetch branding/config info using the URL slug
+        const data = await tenantApi.getBranding(tenantSlug);
 
         // Fetch deployment settings (deploymentType, branchCount, etc.)
         const settingsResult = await tenantApi.getTenantSettings();
@@ -289,9 +294,11 @@ const TenantResolver = () => {
 };
 
 // Role-based access control helper
-const RoleBasedRoute = ({ children, allowedRoles, userRole }) => {
+const RoleBasedRoute = ({ children, allowedRoles, userRole, tenantSlug }) => {
   if (!allowedRoles.includes(userRole)) {
-    return <Navigate to="/tenant/default/dashboard" replace />;
+    // Use tenantSlug from URL param, fallback to system_shared (not 'default')
+    const slug = tenantSlug || 'system_shared';
+    return <Navigate to={`/tenant/${slug}/dashboard`} replace />;
   }
   return children;
 };
@@ -317,7 +324,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
 
       {/* Deceased Management - Available to admin, manager, staff, user */}
       <Route path="all-deceased" element={
-        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole} tenantSlug={slug}>
           <Layout tenantData={tenantData}><AllDeceasedPage /></Layout>
         </RoleBasedRoute>
       } />
@@ -467,10 +474,11 @@ const TenantDashboardRoutes = ({ tenantData }) => {
 const SystemAdminRoute = () => {
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : {};
+  const tenantSlug = localStorage.getItem('tenantSlug') || user?.tenantSlug || 'system_shared';
 
   // Only allow systemadmin role
   if (user?.role !== 'systemadmin') {
-    return <Navigate to="/tenant/default/dashboard" replace />;
+    return <Navigate to={`/tenant/${tenantSlug}/dashboard`} replace />;
   }
 
   // Render the system admin dashboard
@@ -486,25 +494,37 @@ const DashboardRedirect = () => {
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : {};
 
+    // CRITICAL: Extract tenant slug from the current URL path
+    // This ensures we ALWAYS use the tenant slug from the URL, never a default value
+    const urlSlug = location.pathname.match(/\/tenant\/([^\/]+)/)?.[1];
+
+    // Get tenantSlug from localStorage or user data as fallback ONLY if URL doesn't have it
+    const storedTenantSlug = localStorage.getItem('tenantSlug');
+    let userTenantSlug = '';
+    if (userStr) { try { const u = JSON.parse(userStr); userTenantSlug = u.tenantSlug || ''; } catch (e) { console.error('Error parsing user', e); } }
+
+    // Use URL slug if present and not 'default', otherwise use stored values
+    // This prevents using 'default' as a tenant slug - we prefer system_shared or actual tenant slugs
+    let finalSlug = (urlSlug && urlSlug !== 'default') ? urlSlug : (storedTenantSlug || userTenantSlug || 'system_shared');
+
+    // CRITICAL: Never use 'default' as tenant slug - replace with system_shared
+    if (finalSlug === 'default') {
+      finalSlug = 'system_shared';
+    }
+
     // Check if user is system admin - redirect to system admin dashboard
     if (user?.role === 'systemadmin') {
-      navigate('/system-admin', { replace: true });
+      navigate(`/tenant/${finalSlug}/system-admin`, { replace: true });
       return;
     }
 
     // Check if user is driver - redirect to driver portal
     if (user?.role === 'driver') {
-      const tenantSlug = localStorage.getItem('tenantSlug');
-      const finalSlug = tenantSlug || user.tenantSlug || 'default';
       navigate(`/tenant/${finalSlug}/driver-portal`, { replace: true });
       return;
     }
 
     // Normal tenant flow for admin/manager/staff
-    const tenantSlug = localStorage.getItem('tenantSlug');
-    let userTenantSlug = '';
-    if (userStr) { try { const u = JSON.parse(userStr); userTenantSlug = u.tenantSlug || ''; } catch (e) { console.error('Error parsing user', e); } }
-    const finalSlug = tenantSlug || userTenantSlug || 'default';
     if (from && from !== '/login' && from !== '/') { navigate(`/tenant/${finalSlug}${from}`, { replace: true }); } else { navigate(`/tenant/${finalSlug}/all-deceased`, { replace: true }); }
   }, [navigate, location]);
   return (

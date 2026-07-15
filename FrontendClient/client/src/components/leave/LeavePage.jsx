@@ -4,7 +4,7 @@ import axios from "axios";
 import { DatePicker, Form, message } from "antd";
 import { Button } from "react-bootstrap";
 import userContext from "../../context/userContext";
-import {calculateTotalDaysSelected} from "../../utils/leaveFunctions";
+import { calculateTotalDaysSelected } from "../../utils/leaveFunctions";
 import { Link, useNavigate } from "react-router-dom";
 const { RangePicker } = DatePicker;
 
@@ -33,7 +33,10 @@ const LeavePage = () => {
     const leaveapplication = async () => {
       if (totalDays) {
         try {
-          await axios.patch(`https://employee-management-system-ujnj.onrender.com/api/leaves/applyForleave/${authUser.userId}`, {
+          // Get tenant slug from user context or localStorage
+          const tenantSlug = authUser?.tenantSlug || localStorage.getItem('tenantSlug') || 'system_shared';
+
+          await axios.patch(`https://employee-management-system-ujnj.onrender.com/api/leaves/${tenantSlug}/applyForleave/${authUser.userId}`, {
             leaveDate: {
               leaveDays: totalDays,
               leaveStartDate: rangePicker.rangepicker[0],
@@ -41,7 +44,7 @@ const LeavePage = () => {
             },
           });
           message.success("Applied for leave!");
-          navigate("/leave-page");
+          navigate(`/leaves/${tenantSlug}/my-leaves`);
         } catch (error) {
           console.log(error);
         }

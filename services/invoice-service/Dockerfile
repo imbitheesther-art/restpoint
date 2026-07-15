@@ -15,13 +15,19 @@ COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
 COPY services/invoice-service/package.json ./services/invoice-service/
 
-RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN npm config set fetch-timeout 600000 && npm ci --omit=optional
 
 COPY services/configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
 COPY services/app-global/ ./services/app-global/
 COPY services/invoice-service/ ./services/invoice-service/
+
+# Build shared packages (critical for TypeScript imports)
+RUN cd packages/shared-config && npm run build
+RUN cd packages/shared-logger && npm run build
+RUN cd packages/shared-services && npm run build
+RUN cd packages/shared-utils && npm run build
 
 RUN mkdir -p /usr/src/app/data && chown -R nodejs:nodejs /usr/src/app
 

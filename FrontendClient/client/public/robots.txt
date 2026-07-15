@@ -1,8 +1,10 @@
 User-agent: *
 Allow: /
-
 Disallow: /api/
-Disallow: /admin/
 Disallow: /dashboard/
+Disallow: /admin/
 
 Sitemap: https://restpoint.co.ke/sitemap.xml
+
+# Crawl-delay for polite crawlers
+Crawl-delay: 1

@@ -305,6 +305,7 @@ const MyLeaves = () => {
     rejected: 0
   });
   const [loading, setLoading] = useState(true);
+  const tenantSlug = localStorage.getItem('tenantSlug') || 'system_shared';
 
   useEffect(() => {
     fetchMyLeaves();
@@ -316,7 +317,10 @@ const MyLeaves = () => {
       const userId = JSON.parse(localStorage.getItem('user') || '{}').id ||
         JSON.parse(localStorage.getItem('user') || '{}').userId || 1;
 
-      const response = await api.get(ENDPOINTS.LEAVE.MY_LEAVES);
+      // Get tenant slug from localStorage
+      const tenantSlug = localStorage.getItem('tenantSlug') || 'system_shared';
+
+      const response = await api.get(ENDPOINTS.LEAVE.MY_LEAVES(tenantSlug));
 
       const leavesData = Array.isArray(response?.data?.data) ? response.data.data : [];
       setLeaves(leavesData);
@@ -350,7 +354,7 @@ const MyLeaves = () => {
   return (
     <Container>
       <Header>
-        <BackButton onClick={() => navigate('/leaves/apply')} title="Go back to Apply Leave">
+        <BackButton onClick={() => navigate(`/leaves/${tenantSlug}/apply`)} title="Go back to Apply Leave">
           <ArrowLeft size={20} />
         </BackButton>
         <HeaderContent>

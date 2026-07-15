@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const axios = require('axios');
-const { lookupTenantDatabase } = require('../../shared/dbConfig');
+const { lookupTenantDb } = require('../../shared/config/db');
 const { validateTenantActive } = require('../../shared/tenancy');
 const notificationsController = require('./controllers/notifications');
 const supportTicketsRouter = require('./routes/supportTickets');
@@ -43,7 +43,7 @@ app.use(async (req, res, next) => {
         console.error('[TenantAuth] Error validating tenant:', err.message);
         // Allow request to proceed - use tenantSlug to derive db_name
         try {
-          const dbName = await lookupTenantDatabase(tenantSlug);
+          const dbName = await lookupTenantDb(tenantSlug);
           if (dbName) {
             req.tenantDbName = dbName;
           }
@@ -107,7 +107,7 @@ app.post('/api/v1/restpoint/notification/notifications', async (req, res) => {
     const tenantSlug = req.headers['x-tenant-slug'];
     if (tenantSlug) {
       try {
-        const dbName = await lookupTenantDatabase(tenantSlug);
+        const dbName = await lookupTenantDb(tenantSlug);
         if (dbName) {
           req.tenantDbName = dbName;
         }
@@ -148,7 +148,7 @@ app.listen(PORT, '0.0.0.0', () => {
         return;
       }
 
-      const tenants = await lookupTenantDatabase('system');
+      const tenants = await lookupTenantDb('system');
       if (!tenants) {
         console.log('⚠️ Background job skipped: no tenant database available');
         return;

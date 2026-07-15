@@ -31,16 +31,17 @@
   "dependencies": {
     "axios": "^1.18.1",
     "bcryptjs": "^2.4.3",
+    "bull": "^3.29.3",
     "chart.js": "^4.5.1",
     "express-rate-limit": "^8.5.2",
+    "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.0",
     "mysql2": "^3.22.6",
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "prop-types": "^15.8.1",
     "react-gauge-chart": "^0.5.1",
-    "bull": "^3.29.3",
-    "ioredis": "^5.3.2"
+    "react-helmet-async": "^3.0.0"
   },
   "devDependencies": {
     "@types/pino": "^7.0.4",

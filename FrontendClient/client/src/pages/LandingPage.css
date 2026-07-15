@@ -1,0 +1,204 @@
+/* Landing Page Styles */
+.landing-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(135deg, #0A2463 0%, #1A3A7A 100%);
+    color: white;
+    padding: 6rem 0 4rem;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: white;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 800px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.6;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.875rem 2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #C9A84C;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #B8983F;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+}
+
+.btn-secondary:hover {
+    background: white;
+    color: #0A2463;
+}
+
+.btn-large {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+/* Features Section */
+.features {
+    padding: 5rem 0;
+    background: #F5F7FA;
+}
+
+.features h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0A2463;
+    margin-bottom: 3rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.feature-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(10, 36, 99, 0.12);
+}
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0A2463;
+    margin-bottom: 0.75rem;
+}
+
+.feature-card p {
+    color: #6B7280;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* CTA Section */
+.cta {
+    background: linear-gradient(135deg, #C9A84C 0%, #B8983F 100%);
+    color: white;
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.cta h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.cta p {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.cta .btn-primary {
+    background: white;
+    color: #C9A84C;
+}
+
+.cta .btn-primary:hover {
+    background: #F5F7FA;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+/* Footer */
+.footer {
+    background: #1A1D24;
+    color: white;
+    padding: 2rem 0;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .features h2,
+    .cta h2 {
+        font-size: 1.75rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}

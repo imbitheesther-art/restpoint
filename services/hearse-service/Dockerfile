@@ -41,9 +41,6 @@ RUN cd packages/shared-logger && npm run build
 RUN cd packages/shared-services && npm run build
 RUN cd packages/shared-utils && npm run build
 
-# Install tsx for running TypeScript directly
-RUN npm install -g tsx
-
 RUN mkdir -p /usr/src/app/services/hearse-service/uploads && chown -R nodejs:nodejs /usr/src/app
 
 USER nodejs
@@ -56,4 +53,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["tsx", "services/hearse-service/server.js"]
+CMD ["npx", "tsx", "services/hearse-service/server.js"]
