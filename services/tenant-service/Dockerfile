@@ -2,7 +2,7 @@
 FROM node:24-alpine
 
 # Install build dependencies for TypeScript/tsx
-RUN apk add --no-cache dumb-init python3 make g++
+RUN apk add --no-cache dumb-init python3 make g++ wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

@@ -3,7 +3,7 @@
 FROM node:24-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

@@ -1,7 +1,7 @@
 # Production Dockerfile for Invoice Service
 FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001
