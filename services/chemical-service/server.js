@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5016;
 
 // Enable CORS for gateway
 app.use(cors({
-  origin: '*', // In production, restrict this
+  origin: true, // In production, restrict this
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'Origin', 'X-Requested-With', 'Accept'],

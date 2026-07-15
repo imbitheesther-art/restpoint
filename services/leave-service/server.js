@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO for real-time updates
 const io = new Server(server, {
   cors: {
-    origin: process.env.SOCKET_CORS_ORIGIN || '*',
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true
   }

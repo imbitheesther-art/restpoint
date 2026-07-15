@@ -42,7 +42,7 @@ app.use(cors({
 // Socket.IO setup for real-time analytics updates
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: true,
     methods: ['GET', 'POST']
   }
 });

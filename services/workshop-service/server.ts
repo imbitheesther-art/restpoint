@@ -21,15 +21,13 @@ initSocket(server);
 
 // Middleware
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8082').split(',');
-    if (!origin || allowedOrigins.some(o => origin.includes(o.replace(/https?:\/\//, '')))) {
-        return callback(null, true);
-    }
-    return callback(new Error('Origin not allowed by CORS: ' + origin));
+    // The API Gateway handles public CORS validation.
+    // Internal microservices should allow all origins passed by the gateway.
+    return callback(null, true);
 };
 
 app.use(cors({
-    origin: corsOrigin,
+    origin: true,
     credentials: true
 }));
 app.use(express.json());

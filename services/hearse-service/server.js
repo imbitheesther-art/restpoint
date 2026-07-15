@@ -20,7 +20,7 @@ const server = http.createServer(app);
 // Socket.IO
 const io = new Server(server, {
     cors: {
-        origin: '*',
+        origin: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
     }
 });
@@ -29,7 +29,7 @@ app.set('io', io);
 
 // Middleware
 const corsOptions = {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code']
