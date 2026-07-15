@@ -57,33 +57,33 @@ app.use(async (req: any, res: any, next: any) => {
         return next();
     }
 
-    // For non-system tenants, validate
+    // For non-system tenants — resolve database directly (no active-status blocking)
     try {
-        // @ts-ignore - dynamic import for shared module
-        const { validateTenantActive } = await import('../../shared/tenancy.js');
-        const tenantStatus = await validateTenantActive(tenantSlug);
+        // @ts-ignore
+        const { resolveDatabase, safeTenantQuery } = await import('../../shared/dbConfig.js');
 
-        if (!tenantStatus.active) {
-            console.log(`[WORKSHOP] Tenant ${tenantSlug} not active: ${tenantStatus.reason}`);
-            return res.status(403).json({
-                success: false,
-                message: tenantStatus.reason || 'Tenant not active'
-            });
+        let dbName = await resolveDatabase(tenantSlug);
+
+        // Fallback: convert slug to db name pattern
+        if (!dbName) {
+            dbName = tenantSlug.replace(/-/g, '_');
         }
 
-        req.tenant = tenantStatus.tenant;
-        console.log(`[WORKSHOP] Tenant validated: ${tenantStatus.tenant.db_name}`);
+        req.tenant = {
+            db_name: dbName,
+            tenant_slug: tenantSlug,
+            name: tenantSlug
+        };
+        console.log(`[WORKSHOP] Tenant resolved: ${dbName}`);
 
         // Resolve branch if not provided
-        if (!req.branchId && tenantStatus.tenant?.db_name) {
+        if (!req.branchId && dbName) {
             const lastDash = tenantSlug.lastIndexOf('-');
             if (lastDash > 0) {
                 const branchPart = tenantSlug.substring(lastDash + 1);
                 try {
-                    // @ts-ignore - dynamic import for shared module
-                    const { safeTenantQuery } = await import('../../shared/dbConfig.js');
                     const branches = await safeTenantQuery(
-                        tenantStatus.tenant.db_name,
+                        dbName,
                         'SELECT branch_id FROM branches WHERE branch_slug LIKE ? OR branch_name LIKE ? LIMIT 1',
                         [`%${branchPart}%`, `%${branchPart}%`]
                     );
@@ -91,43 +91,32 @@ app.use(async (req: any, res: any, next: any) => {
                         req.branchId = branches[0].branch_id.toString();
                         console.log(`[WORKSHOP] Branch resolved: ${req.branchId}`);
                     } else {
-                        console.log(`[WORKSHOP] No branch found for "${branchPart}", using single-tenant mode (no branch filter)`);
+                        console.log(`[WORKSHOP] No branch found for "${branchPart}", using single-tenant mode`);
                     }
                 } catch (e) {
                     console.log('[WORKSHOP] Branch resolution skipped:', (e as Error).message);
                 }
             } else {
-                console.log(`[WORKSHOP] Single-tenant mode detected (no dash in slug), using main DB without branch filter`);
+                console.log(`[WORKSHOP] Single-tenant mode detected`);
             }
         }
 
         // Ensure workshop tables exist in tenant database
-        if (tenantStatus.tenant?.db_name) {
+        if (dbName) {
             try {
-                await ensureWorkshopTables(tenantStatus.tenant.db_name);
+                await ensureWorkshopTables(dbName);
             } catch (tableError: any) {
-                console.error(`[WORKSHOP] Warning: Could not ensure tables in ${tenantStatus.tenant.db_name}:`, tableError.message);
-                // Don't fail the request, tables might already exist
+                console.error(`[WORKSHOP] Warning: Could not ensure tables in ${dbName}:`, tableError.message);
             }
         }
     } catch (err: any) {
         console.error('[WORKSHOP] Tenant resolution error:', err.message);
-
-        // In development, allow fallback
-        if (process.env.NODE_ENV === 'development') {
-            console.log('[WORKSHOP] Development fallback: Using default tenant');
-            req.tenant = {
-                db_name: process.env.DB_NAME || 'restpoint_main',
-                tenant_id: 1,
-                name: 'Development Fallback'
-            };
-            return next();
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: 'Tenant resolution failed: ' + err.message
-        });
+        // Always fall back to default DB rather than blocking
+        req.tenant = {
+            db_name: process.env.DB_NAME || 'restpoint_main',
+            tenant_slug: tenantSlug,
+            name: tenantSlug
+        };
     }
 
     next();

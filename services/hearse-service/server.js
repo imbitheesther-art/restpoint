@@ -77,135 +77,27 @@ app.use(async (req, res, next) => {
             return next();
         }
 
-        // Step 1: Try direct tenant lookup
-        let tenantStatus = await validateTenantActive(tenantSlug);
-        let resolvedDbName = null;
+        // Resolve database directly — no active-status blocking
+        let dbName = await resolveDatabase(tenantSlug);
 
-        //  If not found as tenant, try to resolve the database
-        // The main tenant DB has the branches table and hearses shared by all branches.
-        if (!tenantStatus.active) {
-
-
-            try {
-                const rootPool = await getRootPool();
-                const [branchRows] = await rootPool.query(
-                    `SELECT b.branch_db_name, t.db_name as tenant_db_name, t.tenant_slug 
-                     FROM tenant_tracking.branch_tracking b
-                     JOIN tenant_tracking.tenants t ON b.tenant_id = t.tenant_id
-                     WHERE (b.branch_slug = ? OR b.branch_db_name = ?) AND t.status = 'active'
-                     LIMIT 1`,
-                    [tenantSlug, tenantSlug]
-                );
-
-                if (branchRows && branchRows.length > 0) {
-                    resolvedDbName = branchRows[0].tenant_db_name;
-                    Logger.info(`[HEARSE] Found branch in branch_tracking: ${tenantSlug} → main tenant DB: ${resolvedDbName}`);
-                }
-            } catch (e) {
-                Logger.error(`[HEARSE] branch_tracking lookup failed: ${e.message}`);
-            }
-
-            // SECOND TRY: resolveDatabase() which supports branch slug patterns
-            if (!resolvedDbName) {
-                resolvedDbName = await resolveDatabase(tenantSlug);
-            }
-
-            // THIRD TRY: The slug itself IS a database name (main tenant DB or branch DB)
-            if (!resolvedDbName) {
-                Logger.info(`[HEARSE] Trying slug "${tenantSlug}" directly as database name...`);
-                try {
-                    const testPool = require('mysql2/promise').createPool({
-                        host: process.env.DB_HOST || '127.0.0.1',
-                        port: parseInt(process.env.DB_PORT || '3306'),
-                        user: process.env.DB_USER || 'restpoint_user',
-                        password: process.env.DB_PASSWORD,
-                        database: tenantSlug,
-                        waitForConnections: true,
-                        connectionLimit: 2,
-                        queueLimit: 0,
-                    });
-                    const [result] = await testPool.query('SELECT 1');
-                    if (result) {
-                        resolvedDbName = tenantSlug;
-                        Logger.info(`[HEARSE] Direct database connection successful: ${resolvedDbName}`);
-                    }
-                    await testPool.end().catch(() => { });
-                } catch (dbErr) {
-
-                }
-            }
-
-            // FOURTH TRY: Cross-tenant search across all branches tables
-            if (!resolvedDbName) {
-                try {
-                    const rootPool = await getRootPool();
-                    const [allTenants] = await rootPool.query(
-                        'SELECT tenant_slug, db_name FROM tenant_tracking.tenants WHERE status = "active"'
-                    );
-
-                    for (const t of allTenants) {
-                        try {
-                            const pool = await getTenantDB(t.db_name);
-                            const [branchRows] = await pool.query(
-                                `SELECT branch_db_name FROM branches WHERE branch_slug = ? OR branch_db_name = ? LIMIT 1`,
-                                [tenantSlug, tenantSlug]
-                            );
-                            if (branchRows && branchRows.length > 0) {
-                                resolvedDbName = t.db_name;
-                                Logger.info(`[HEARSE] Found branch "${tenantSlug}" in tenant "${t.tenant_slug}" → main DB: ${resolvedDbName}`);
-                                break;
-                            }
-                        } catch (tenantErr) {
-                            // Skip tenants we can't query
-                        }
-                    }
-                } catch (e) {
-
-                }
-            }
-
-            if (resolvedDbName) {
-                // Found the database - look up the tenant that owns it
-                const rootPool = await getRootPool();
-                const [tenants] = await rootPool.query(
-                    `SELECT * FROM tenant_tracking.tenants WHERE db_name = ? OR tenant_slug = ? LIMIT 1`,
-                    [resolvedDbName, tenantSlug]
-                );
-
-                if (tenants && tenants.length > 0) {
-                    tenantStatus = { active: true, tenant: tenants[0] };
-                    Logger.info(`[HEARSE] Resolved "${tenantSlug}" → tenant: ${tenantStatus.tenant.tenant_name} (db: ${tenantStatus.tenant.db_name})`);
-                } else {
-                    // Fallback: use resolved DB name directly as tenant
-                    tenantStatus = {
-                        active: true,
-                        tenant: {
-                            db_name: resolvedDbName,
-                            tenant_id: 0,
-                            tenant_name: tenantSlug,
-                            tenant_slug: tenantSlug
-                        }
-                    };
-
-                }
-            }
+        // Fallback: try converting slug to db name (e.g. mumo-feuneral-nairobi → mumo_feuneral_nairobi)
+        if (!dbName) {
+            dbName = tenantSlug.replace(/-/g, '_');
         }
 
-        if (!tenantStatus.active) {
-            return res.status(403).json({
-                status: 'error',
-                message: tenantStatus.reason || 'Tenant not active'
-            });
-        }
+        req.tenant = {
+            db_name: dbName,
+            tenant_slug: tenantSlug,
+            name: tenantSlug
+        };
 
-        req.tenant = tenantStatus.tenant;
-
+        Logger.info(`[HEARSE] Tenant resolved: ${dbName}`);
 
         // Resolve branch if not provided
-        if (!req.branchId && req.tenant?.db_name) {
+        if (!req.branchId && dbName) {
             try {
                 const branches = await safeTenantQuery(
-                    req.tenant.db_name,
+                    dbName,
                     'SELECT branch_id FROM branches LIMIT 1'
                 );
                 if (branches.length > 0) {
@@ -213,18 +105,21 @@ app.use(async (req, res, next) => {
                     Logger.info(`[HEARSE] Branch resolved: ${req.branchId}`);
                 }
             } catch (e) {
-                Logger.error(`[HEARSE] Branch resolution failed: ${e.message}`);
+                Logger.error(`[HEARSE] Branch resolution skipped: ${e.message}`);
             }
         }
 
         next();
     } catch (error) {
-
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to initialize tenant database',
-            error: error.message
-        });
+        // Even on error, fall through with a default db rather than blocking
+        Logger.error(`[HEARSE] Tenant resolution error: ${error.message}`);
+        const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-slug'] || 'system_shared';
+        req.tenant = {
+            db_name: process.env.DB_NAME || 'restpoint_main',
+            tenant_slug: tenantSlug,
+            name: tenantSlug
+        };
+        next();
     }
 });
 

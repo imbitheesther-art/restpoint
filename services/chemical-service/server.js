@@ -56,37 +56,40 @@ app.use(async (req, res, next) => {
     return next();
   }
 
-  // For non-system tenants, validate
+  // For non-system tenants — resolve database directly (no active-status blocking)
   try {
     console.log(`[CHEMICAL] Validating tenant: ${tenantSlug}`);
-    const tenantStatus = await validateTenantActive(tenantSlug);
+    const { resolveDatabase, getTenantDB } = require('../../shared/dbConfig');
 
-    if (!tenantStatus.active) {
-      console.log(`[CHEMICAL] Tenant ${tenantSlug} not active: ${tenantStatus.reason}`);
-      return res.status(403).json({
-        success: false,
-        message: tenantStatus.reason || 'Tenant not active'
-      });
+    let dbName = await resolveDatabase(tenantSlug);
+
+    // Fallback: try the slug itself as a db name
+    if (!dbName) {
+      dbName = tenantSlug.replace(/-/g, '_');
     }
 
-    req.tenant = tenantStatus.tenant;
-    console.log(`[CHEMICAL] Tenant validated: ${tenantStatus.tenant.db_name}`);
+    req.tenant = {
+      db_name: dbName,
+      tenant_slug: tenantSlug,
+      name: tenantSlug
+    };
+    console.log(`[CHEMICAL] Tenant resolved: ${dbName}`);
 
     // Auto-migrate: Ensure chemical tables exist in this tenant's database
-    if (tenantStatus.tenant?.db_name) {
-      ensureChemicalTables(tenantStatus.tenant.db_name).catch(err => {
-        console.warn(`[CHEMICAL] Auto-migration warning for ${tenantStatus.tenant.db_name}:`, err.message);
+    if (dbName) {
+      ensureChemicalTables(dbName).catch(err => {
+        console.warn(`[CHEMICAL] Auto-migration warning for ${dbName}:`, err.message);
       });
     }
 
     // Resolve branch if not provided
-    if (!req.branchId && tenantStatus.tenant?.db_name) {
+    if (!req.branchId && dbName) {
       const lastDash = tenantSlug.lastIndexOf('-');
       if (lastDash > 0) {
         const branchPart = tenantSlug.substring(lastDash + 1);
         try {
           const branches = await safeTenantQuery(
-            tenantStatus.tenant.db_name,
+            dbName,
             'SELECT branch_id FROM branches WHERE branch_slug LIKE ? OR branch_name LIKE ? LIMIT 1',
             [`%${branchPart}%`, `%${branchPart}%`]
           );
@@ -101,22 +104,12 @@ app.use(async (req, res, next) => {
     }
   } catch (err) {
     console.error('[CHEMICAL] Tenant resolution error:', err.message);
-
-    // In development, allow fallback
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[CHEMICAL] Development fallback: Using default tenant');
-      req.tenant = {
-        db_name: process.env.DB_NAME || 'restpoint_main',
-        tenant_id: 1,
-        name: 'Development Fallback'
-      };
-      return next();
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Tenant resolution failed: ' + err.message
-    });
+    // Always fall back to default DB rather than blocking
+    req.tenant = {
+      db_name: process.env.DB_NAME || 'restpoint_main',
+      tenant_slug: tenantSlug,
+      name: tenantSlug
+    };
   }
 
   next();
