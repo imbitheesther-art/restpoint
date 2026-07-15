@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 8111;
 
 // Middleware - Allow all origins for development
 app.use(cors({
-    origin: true, // Allow all origins
+    origin: true,
     credentials: true,
 }));
 app.use(helmet());
@@ -44,10 +44,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log('========================================');
-    console.log(`  Support Service v1.0.0`);
-    console.log(`  Running on http://0.0.0.0:${PORT}`);
-    console.log('========================================');
+
 });
 
 module.exports = { app, server };

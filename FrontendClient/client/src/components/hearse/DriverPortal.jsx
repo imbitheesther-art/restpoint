@@ -339,6 +339,21 @@ const LeaveSection = ({ leaves, loading }) => {
     const navigate = useNavigate();
     const slug = getTenantSlug();
 
+    const applyLeaveAction = (
+        <button
+            onClick={() => navigate(`/tenant/${slug}/leaves/apply`)}
+            style={{
+                display: 'block', width: '100%', padding: '14px', marginBottom: '20px',
+                background: '#0f172a', color: 'white', border: 'none', borderRadius: '12px',
+                fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer',
+                textAlign: 'center', transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)'
+            }}
+        >
+            + Apply for Leave
+        </button>
+    );
+
     if (loading) return (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
             <Loader2 size={32} className="spin" style={{ marginBottom: '16px' }} />

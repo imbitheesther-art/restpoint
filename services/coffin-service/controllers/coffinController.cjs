@@ -4,7 +4,7 @@
  * when loaded via ts-node (which handles .ts requires from .ts files)
  */
 
-const dbConfig = require('../../../shared/dbConfig');
+const { query, execute } = require('../../../shared/dbConfig');
 const { validateTenantActive } = require('../../../shared/tenancy');
 const crypto = require('crypto');
 const path = require('path');
@@ -91,7 +91,7 @@ const createCoffin = async (req, res) => {
         // Use the query function which resolves the database from the tenant slug
         // Check for duplicate custom ID
         if (custom_id) {
-            const existing = await dbConfig.query(req,
+const existing = await query(req,
                 'SELECT coffin_id FROM coffins WHERE custom_id = ? AND tenant_slug = ?',
                 [custom_id, tenantSlug]
             );
@@ -109,7 +109,7 @@ const createCoffin = async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
-        const result = await dbConfig.query(req, insertSql, [
+const result = await query(req, insertSql, [
             finalCoffinId, finalCoffinId, tenantSlug, type.trim(), material.trim(), priceKES, finalCurrency,
             priceUSD, EXCHANGE_RATES.USD, parseInt(quantity) || 1,
             supplier?.trim() || null, origin?.trim() || null, color?.trim() || null,
@@ -132,7 +132,7 @@ const createCoffin = async (req, res) => {
             if (imageUrls.length > 0) {
                 const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_slug, image_url, created_at) VALUES ?`;
                 const imageValues = imageUrls.map(url => [coffinDbId, tenantSlug, url, new Date().toISOString()]);
-                await dbConfig.query(req, imageSql, [imageValues]);
+await query(req, imageSql, [imageValues]);
             }
         }
 
@@ -187,7 +187,7 @@ const getAllCoffins = async (req, res) => {
         ORDER BY c.created_at DESC
       `;
 
-            coffins = await dbConfig.query(req, sql, [tenantSlug]);
+coffins = await query(req, sql, [tenantSlug]);
 
             coffins = coffins.map(coffin => ({
                 ...coffin,
@@ -244,7 +244,7 @@ const getCoffinById = async (req, res) => {
         GROUP BY c.coffin_id
       `;
 
-            const coffins = await dbConfig.query(req, sql, [id, id, tenantSlug]);
+const coffins = await query(req, sql, [id, id, tenantSlug]);
 
             if (coffins.length === 0) {
                 return res.status(404).json({ success: false, message: 'Coffin not found' });
@@ -281,7 +281,7 @@ const updateCoffin = async (req, res) => {
         const { type, material, exact_price, currency, quantity, supplier, origin, color, size, category } = req.body;
 
         // Check if coffin exists
-        const existingCoffin = await dbConfig.query(req,
+const existingCoffin = await query(req,
             'SELECT * FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?',
             [id, id, tenantSlug]
         );
@@ -323,7 +323,7 @@ const updateCoffin = async (req, res) => {
         SET ${updateFields.join(', ')} 
         WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ? AND is_deleted = FALSE
       `;
-            await dbConfig.query(req, updateSql, updateValues);
+await query(req, updateSql, updateValues);
         }
 
         // Clear caches
@@ -351,7 +351,7 @@ const deleteCoffin = async (req, res) => {
 
     try {
         // Check if coffin has assignments
-        const assignments = await dbConfig.query(req,
+const assignments = await query(req,
             `SELECT id FROM deceased_coffin 
        WHERE coffin_id = (SELECT coffin_id FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?)`,
             [id, id, tenantSlug]
@@ -365,7 +365,7 @@ const deleteCoffin = async (req, res) => {
         }
 
         // Soft delete
-        await dbConfig.query(req,
+await query(req,
             'UPDATE coffins SET is_deleted = TRUE WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?',
             [id, id, tenantSlug]
         );
@@ -402,7 +402,7 @@ const assignCoffin = async (req, res) => {
 
     try {
         // Check coffin availability
-        const coffins = await dbConfig.query(req,
+const coffins = await query(req,
             `SELECT coffin_id, quantity, type, material FROM coffins 
        WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ? AND is_deleted = FALSE`,
             [coffin_id, coffin_id, tenantSlug]
@@ -421,14 +421,14 @@ const assignCoffin = async (req, res) => {
         const assignedBy = assigned_by || req.user?.name || 'system';
 
         // Insert assignment
-        const insertResult = await dbConfig.query(req,
+const insertResult = await query(req,
             `INSERT INTO deceased_coffin (deceased_id, coffin_id, tenant_slug, assigned_by_username, assigned_date, rfid, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
             [deceased_id, coffins[0].coffin_id, tenantSlug, assignedBy, finalAssignedDate, rfid]
         );
 
         // Update coffin stock
-        await dbConfig.query(req,
+await query(req,
             'UPDATE coffins SET quantity = quantity - 1, updated_at = NOW() WHERE coffin_id = ? AND tenant_slug = ?',
             [coffins[0].coffin_id, tenantSlug]
         );
@@ -465,7 +465,7 @@ const getCoffinAnalytics = async (req, res) => {
         let analytics = getCached(cacheKey);
 
         if (!analytics) {
-            const overview = await dbConfig.query(req, `
+const overview = await query(req, `
         SELECT 
           COUNT(*) AS total_coffins,
           SUM(quantity) AS total_in_stock,

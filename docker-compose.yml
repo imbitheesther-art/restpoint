@@ -396,6 +396,30 @@ services:
       start_period: 40s
 
   # Documents Service
+
+  leave-service:
+    build:
+      context: .
+      dockerfile: ./services/leave-service/Dockerfile
+    container_name: restpoint_leave_service
+    ports:
+      - "5017:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - SERVICE_NAME=leave-service
+      - DB_HOST=restpoint_mariadb
+      - DB_PORT=3306
+      - DB_USER=restpoint_user
+      - DB_PASSWORD=${DB_PASSWORD}
+    env_file:
+      - .env
+    networks:
+      - restpoint_network
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
   documents-service:
     build:
       context: .
@@ -897,3 +921,4 @@ volumes:
     driver: local
   loki_data:
     driver: local
+

@@ -13,15 +13,12 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/shared-logger/package.json ./packages/shared-logger/
 COPY packages/shared-services/package.json ./packages/shared-services/
-COPY services/invoice-service/package.json ./services/invoice-service/
+COPY services/leave-service/package.json ./services/leave-service/
 
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
-COPY configurations/ ./configurations/
 COPY packages/ ./packages/
 COPY shared/ ./shared/
-COPY services/app-global/ ./app-global/
-
 
 COPY services/leave-service/ ./services/leave-service/
 
