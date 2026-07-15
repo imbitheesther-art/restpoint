@@ -9,7 +9,7 @@ const path = require('path');
 // Load .env from the api-gateway directory specifically
 const dotenvPath = path.join(__dirname, '.env');
 console.log('Loading .env from:', dotenvPath);
-dotenv.config({ path: dotenvPath, override: true });
+dotenv.config({ path: dotenvPath, override: false });
 
 const APP_NAME = 'restpoint-gateway';
 const APP_VERSION = '2.0.0';

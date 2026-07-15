@@ -1,6 +1,6 @@
 // Load service-specific .env first, then root .env for shared config (with override)
 require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'), override: true });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'), override: false });
 
 // Debug: Check if DB credentials are loaded
 console.log('[COFFIN] DB_USER:', process.env.DB_USER);
