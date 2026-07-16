@@ -592,7 +592,7 @@ const ComprehensiveDashboard = () => {
                   <div className="d-flex gap-2">
                     <Button variant="primary" size="sm" onClick={() => fetchComparison(selectedBranches)}
                       disabled={loadingComparison || selectedBranches.length < 2}>
-                      {loadingComparison ? <Spinner size="sm" className="me-1" /> : <BarChart3 size={14} className="me-1" />}
+                      {loadingComparison ? <Spinner size="sm" className="me-1" /> : <Bar size={14} className="me-1" />}
                       Compare Selected
                     </Button>
                     {branches.length >= 2 && (

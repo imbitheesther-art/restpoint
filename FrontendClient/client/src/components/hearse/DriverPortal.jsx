@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Car, RefreshCw, CheckCircle, Phone, MapPin, LogOut, Calendar,
-    Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ChevronRight,
-    Route, Sun, Moon, CloudSun, User, ArrowRight, Shield, Star,
-    TrendingUp, Package
+    Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ArrowRight,
+    Route, Sun, Moon, CloudSun, User, Shield, Star, Coffee,
+    Flame, Wind, Eye
 } from 'lucide-react';
 import env from '../../config/env';
 
@@ -35,212 +35,245 @@ const getAuthHeaders = () => {
     return headers;
 };
 
-/* ─── REAL-TIME GREETING (updates every minute) ──────────────── */
+/* ─── NAIROBI TIME GREETING ───────────────────────────────────── */
 const useGreeting = () => {
-    const [now, setNow] = useState(() => new Date());
+    const [now, setNow] = useState(() => getNairobiNow());
 
     useEffect(() => {
-        const interval = setInterval(() => setNow(new Date()), 30000);
+        const interval = setInterval(() => setNow(getNairobiNow()), 15000);
         return () => clearInterval(interval);
     }, []);
 
     const h = now.getHours();
-    let text, icon, period;
+    let text, icon, subtext;
 
     if (h >= 5 && h < 12) {
-        text = 'Good Morning'; icon = Sun; period = 'morning';
-    } else if (h >= 12 && h < 17) {
-        text = 'Good Afternoon'; icon = CloudSun; period = 'afternoon';
-    } else if (h >= 17 && h < 21) {
-        text = 'Good Evening'; icon = Moon; period = 'evening';
+        text = 'Good Morning'; icon = Sun;
+        subtext = 'Rise and drive safe today';
+    } else if (h >= 12 && h < 14) {
+        text = 'Good Afternoon'; icon = Sun;
+        subtext = 'Hope the roads are kind';
+    } else if (h >= 14 && h < 17) {
+        text = 'Good Afternoon'; icon = CloudSun;
+        subtext = 'Almost there, stay strong';
+    } else if (h >= 17 && h < 20) {
+        text = 'Good Evening'; icon = Moon;
+        subtext = 'Heading home soon?';
+    } else if (h >= 20 && h < 23) {
+        text = 'Good Evening'; icon = Moon;
+        subtext = 'Long day? Rest well';
     } else {
-        text = 'Good Night'; icon = Moon; period = 'night';
+        text = 'Working Late'; icon = Moon;
+        subtext = 'Take care on the night road';
     }
 
-    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', hour12: true
+    });
 
-    return { text, icon, period, timeStr, dateStr };
+    const dateStr = now.toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+    });
+
+    return { text, icon, subtext, timeStr, dateStr, hour: h };
 };
 
-/* ─── LIGHT COLOR SYSTEM ──────────────────────────────────────── */
-const C = {
-    bg: '#F5F6FA',
-    bgWarm: '#FAFAF8',
-    card: '#FFFFFF',
-    cardHover: '#FDFDFD',
-    text: '#111827',
-    textSecondary: '#6B7280',
-    textTertiary: '#9CA3AF',
-    border: '#E8EBF0',
-    borderLight: '#F0F1F4',
-    primary: '#059669',
-    primaryDark: '#047857',
-    primaryLight: '#ECFDF5',
-    primaryBorder: '#A7F3D0',
-    primarySubtle: '#D1FAE5',
-    blue: '#2563EB',
-    blueLight: '#EFF6FF',
-    blueBorder: '#BFDBFE',
-    amber: '#D97706',
-    amberLight: '#FFFBEB',
-    amberBorder: '#FDE68A',
-    red: '#DC2626',
-    redLight: '#FEF2F2',
-    redBorder: '#FECACA',
-    purple: '#7C3AED',
-    purpleLight: '#F5F3FF',
-    purpleBorder: '#DDD6FE',
-    shadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-    shadowMd: '0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04)',
-    shadowLg: '0 10px 30px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04)',
-    plateBg: '#FFFFFF',
-    plateText: '#1F2937',
-    plateBorder: '#D1D5DB',
+function getNairobiNow() {
+    const str = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
+    return new Date(str);
+}
+
+/* ─── RICH COLOR SYSTEM ──────────────────────────────────────── */
+const P = {
+    bg: '#0E1117',
+    bgCard: '#161B22',
+    bgElevated: '#1C2129',
+    surface: '#21262D',
+    text: '#F0F2F5',
+    textSec: '#9BA4B0',
+    textMuted: '#5E6670',
+    border: '#2A3140',
+    borderLight: '#1E252E',
+
+    emerald: '#2DD4A0',
+    emeraldDark: '#0D3D2E',
+    emeraldMid: '#134E3A',
+    emeraldGlow: 'rgba(45, 212, 160, 0.15)',
+
+    ocean: '#38BDF8',
+    oceanDark: '#0C2D4A',
+    oceanMid: '#133B5C',
+    oceanGlow: 'rgba(56, 189, 248, 0.15)',
+
+    amber: '#FBBF24',
+    amberDark: '#3D2E06',
+    amberMid: '#4A3A0A',
+    amberGlow: 'rgba(251, 191, 36, 0.12)',
+
+    rose: '#FB7185',
+    roseDark: '#3D0F17',
+    roseMid: '#4A1520',
+    roseGlow: 'rgba(251, 113, 133, 0.12)',
+
+    violet: '#A78BFA',
+    violetDark: '#1E153D',
+    violetMid: '#2A1F4E',
+    violetGlow: 'rgba(167, 139, 250, 0.12)',
+
+    plateBg: '#F8FAFC',
+    plateText: '#0F172A',
+    plateBorder: '#64748B',
 };
 
-/* ─── Status Config ───────────────────────────────────────────── */
+/* ─── STATUS → CARD THEME ────────────────────────────────────── */
 const STATUS = {
     booked: {
-        label: 'Booked', color: C.amber, bg: C.amberLight,
-        border: C.amberBorder, dotColor: '#F59E0B', icon: Clock,
+        label: 'Booked', color: P.amber, dotColor: '#FBBF24',
+        cardBg: P.amberDark, cardBorder: P.amberMid,
+        glow: P.amberGlow, accentLine: '#F59E0B',
     },
     in_transit: {
-        label: 'In Transit', color: C.blue, bg: C.blueLight,
-        border: C.blueBorder, dotColor: '#3B82F6', icon: Navigation,
+        label: 'In Transit', color: P.ocean, dotColor: '#38BDF8',
+        cardBg: P.oceanDark, cardBorder: P.oceanMid,
+        glow: P.oceanGlow, accentLine: '#0EA5E9',
     },
     completed: {
-        label: 'Completed', color: C.primary, bg: C.primaryLight,
-        border: C.primaryBorder, dotColor: '#10B981', icon: CheckCircle,
+        label: 'Completed', color: P.emerald, dotColor: '#2DD4A0',
+        cardBg: P.emeraldDark, cardBorder: P.emeraldMid,
+        glow: P.emeraldGlow, accentLine: '#10B981',
     },
     cancelled: {
-        label: 'Cancelled', color: C.red, bg: C.redLight,
-        border: C.redBorder, dotColor: '#EF4444', icon: AlertCircle,
+        label: 'Cancelled', color: P.rose, dotColor: '#FB7185',
+        cardBg: P.roseDark, cardBorder: P.roseMid,
+        glow: P.roseGlow, accentLine: '#F43F5E',
     },
     postponed: {
-        label: 'Postponed', color: C.purple, bg: C.purpleLight,
-        border: C.purpleBorder, dotColor: '#8B5CF6', icon: Clock,
+        label: 'Postponed', color: P.violet, dotColor: '#A78BFA',
+        cardBg: P.violetDark, cardBorder: P.violetMid,
+        glow: P.violetGlow, accentLine: '#8B5CF6',
     },
 };
 
 const LEAVE_STATUS = {
-    approved: { color: C.primary, bg: C.primaryLight, border: C.primaryBorder, label: 'Approved' },
-    rejected: { color: C.red, bg: C.redLight, border: C.redBorder, label: 'Rejected' },
-    pending: { color: C.amber, bg: C.amberLight, border: C.amberBorder, label: 'Pending' },
+    approved: { color: P.emerald, bg: P.emeraldDark, border: P.emeraldMid, label: 'Approved' },
+    rejected: { color: P.rose, bg: P.roseDark, border: P.roseMid, label: 'Rejected' },
+    pending: { color: P.amber, bg: P.amberDark, border: P.amberMid, label: 'Pending' },
 };
 
-/* ─── Global Animations ───────────────────────────────────────── */
+/* ─── ANIMATIONS ──────────────────────────────────────────────── */
 const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
+
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(18px); }
     to { opacity: 1; transform: translateY(0); }
   }
   @keyframes pulseDot {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.3; transform: scale(0.7); }
+    50% { opacity: 0.25; transform: scale(0.65); }
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(12px); }
-    to { opacity: 1; transform: translateX(0); }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+  @keyframes accentPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
   }
 
   * {
     -webkit-tap-highlight-color: transparent;
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
 
   .dp-fade-up {
-    animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     opacity: 0;
   }
-  .dp-spin { animation: spin 0.8s linear infinite; }
+  .dp-spin { animation: spin 0.75s linear infinite; }
   .dp-pulse { animation: pulseDot 1.5s ease-in-out infinite; }
-  .dp-slide-down { animation: slideDown 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .dp-slide-right { animation: slideInRight 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-
-  input, select, textarea, button {
-    font-family: inherit;
-  }
+  .dp-toast { animation: toastIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .dp-breathe { animation: breathe 5s ease-in-out infinite; }
+  .dp-accent-pulse { animation: accentPulse 3s ease-in-out infinite; }
 `;
 
 /* ─── Toast ───────────────────────────────────────────────────── */
 const Toast = ({ type, message, onClose }) => {
     if (!message) return null;
     const isError = type === 'error';
-    const color = isError ? C.red : C.primary;
-    const bg = isError ? C.redLight : C.primaryLight;
-    const border = isError ? C.redBorder : C.primaryBorder;
+    const c = isError ? P.rose : P.emerald;
+    const bg = isError ? P.roseDark : P.emeraldDark;
+    const border = isError ? P.roseMid : P.emeraldMid;
     const Icon = isError ? AlertCircle : CheckCircle;
 
     useEffect(() => {
-        const t = setTimeout(() => onClose?.(), 3500);
+        const t = setTimeout(() => onClose?.(), 3200);
         return () => clearTimeout(t);
     }, [message, onClose]);
 
     return (
-        <div className="dp-slide-down" style={{
+        <div className="dp-toast" style={{
             position: 'fixed', top: 16, left: 16, right: 16, zIndex: 9999,
-            padding: '14px 18px', borderRadius: 14,
-            background, border: `1.5px solid ${border}`,
-            color, fontSize: '0.88rem', fontWeight: 600,
+            padding: '13px 18px', borderRadius: 14,
+            background: bg, border: `1.5px solid ${border}`,
+            color: c, fontSize: '0.85rem', fontWeight: 600,
             display: 'flex', alignItems: 'center', gap: 10,
-            boxShadow: C.shadowLg, fontFamily: 'inherit',
-            maxWidth: 420, margin: '0 auto',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            fontFamily: "'DM Sans', sans-serif",
+            maxWidth: 400, margin: '0 auto',
+            backdropFilter: 'blur(12px)',
         }}>
-            <Icon size={20} strokeWidth={2.5} />
+            <Icon size={19} strokeWidth={2.5} />
             <span style={{ flex: 1 }}>{message}</span>
         </div>
     );
 };
 
-/* ─── License Plate ───────────────────────────────────────────── */
+/* ─── License Plate (dark card version) ──────────────────────── */
 const LicensePlate = ({ number, model }) => {
     if (!number) return null;
     const clean = number.replace(/\s+/g, '').toUpperCase();
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
             <div style={{
-                background: C.plateBg,
-                border: `2px solid ${C.plateBorder}`,
-                borderRadius: 6, padding: '4px 12px',
+                background: P.plateBg,
+                border: `2px solid ${P.plateBorder}`,
+                borderRadius: 5, padding: '3px 10px',
                 position: 'relative',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(0,0,0,0.04)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
             }}>
-                <div style={{
-                    position: 'absolute', top: 4, left: 5, width: 4, height: 4,
-                    borderRadius: '50%', background: '#D1D5DB',
-                    boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.2)',
-                }} />
-                <div style={{
-                    position: 'absolute', top: 4, right: 5, width: 4, height: 4,
-                    borderRadius: '50%', background: '#D1D5DB',
-                    boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.2)',
-                }} />
-                <div style={{
-                    position: 'absolute', bottom: 4, left: 5, width: 4, height: 4,
-                    borderRadius: '50%', background: '#D1D5DB',
-                    boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.2)',
-                }} />
-                <div style={{
-                    position: 'absolute', bottom: 4, right: 5, width: 4, height: 4,
-                    borderRadius: '50%', background: '#D1D5DB',
-                    boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.2)',
-                }} />
+                {[[4, 5], [4, 'right']].map(([t, l], i) =>
+                    ['left', 'right'].map(side =>
+                        <div key={`${t}-${side}-${i}`} style={{
+                            position: 'absolute', [side === 'left' ? 'left' : 'right']: 4,
+                            [t === 4 ? 'top' : 'bottom']: 3,
+                            width: 3.5, height: 3.5, borderRadius: '50%',
+                            background: '#94A3B8',
+                            boxShadow: 'inset 0 0.5px 1px rgba(0,0,0,0.3)',
+                        }} />
+                    )
+                )}
                 <div style={{
                     fontFamily: "'Helvetica Neue', Arial, sans-serif",
-                    fontSize: '0.85rem', fontWeight: 900, color: C.plateText,
-                    letterSpacing: '0.1em', textAlign: 'center', minWidth: 52,
+                    fontSize: '0.8rem', fontWeight: 900, color: P.plateText,
+                    letterSpacing: '0.1em', textAlign: 'center', minWidth: 48,
                 }}>
                     {clean}
                 </div>
             </div>
             {model && (
-                <span style={{ fontSize: '0.6rem', color: C.textTertiary, fontWeight: 600 }}>
+                <span style={{ fontSize: '0.58rem', color: P.textMuted, fontWeight: 600 }}>
                     {model}
                 </span>
             )}
@@ -248,27 +281,26 @@ const LicensePlate = ({ number, model }) => {
     );
 };
 
-/* ─── Status Badge ────────────────────────────────────────────── */
-const StatusBadge = ({ status, size = 'md' }) => {
+/* ─── Status Pill ─────────────────────────────────────────────── */
+const StatusPill = ({ status }) => {
     const cfg = STATUS[status] || {
-        label: status || 'Unknown', color: C.textTertiary,
-        bg: '#F9FAFB', border: C.border, dotColor: C.textTertiary,
+        color: P.textMuted, dotColor: P.textMuted,
+        label: status || 'Unknown',
     };
     const isTransit = status === 'in_transit';
-    const sm = size === 'sm';
 
     return (
         <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: sm ? '3px 10px' : '5px 14px', borderRadius: 100,
-            background: cfg.bg, border: `1px solid ${cfg.border}`,
-            color: cfg.color, fontSize: sm ? '0.62rem' : '0.7rem', fontWeight: 700,
-            letterSpacing: '0.03em', textTransform: 'uppercase',
+            padding: '4px 12px', borderRadius: 100,
+            background: `${cfg.color}18`, border: `1px solid ${cfg.color}30`,
+            color: cfg.color, fontSize: '0.62rem', fontWeight: 700,
+            letterSpacing: '0.04em', textTransform: 'uppercase',
         }}>
             <span style={{
-                width: sm ? 5 : 6, height: sm ? 5 : 6, borderRadius: '50%',
+                width: 5.5, height: 5.5, borderRadius: '50%',
                 background: cfg.dotColor,
-                boxShadow: `0 0 6px ${cfg.dotColor}50`,
+                boxShadow: `0 0 8px ${cfg.dotColor}60`,
                 className: isTransit ? 'dp-pulse' : undefined,
             }} />
             {cfg.label}
@@ -276,65 +308,86 @@ const StatusBadge = ({ status, size = 'md' }) => {
     );
 };
 
-/* ─── Quick Stat ──────────────────────────────────────────────── */
-const QuickStat = ({ value, label, color, bgColor, icon: Icon, pulse }) => (
+/* ─── Stat Tile (colored dark bg) ────────────────────────────── */
+const StatTile = ({ value, label, color, darkBg, glowBg, icon: Icon, pulse }) => (
     <div style={{
-        flex: 1, padding: '16px 10px', textAlign: 'center',
-        background: C.card, borderRadius: 14,
-        border: `1px solid ${C.borderLight}`,
-        boxShadow: C.shadow, position: 'relative',
+        flex: 1, padding: '18px 10px', textAlign: 'center',
+        background: darkBg, borderRadius: 16,
+        border: `1px solid ${color}20`,
+        position: 'relative', overflow: 'hidden',
     }}>
+        {/* Subtle glow */}
         <div style={{
-            width: 38, height: 38, borderRadius: 11,
-            background: bgColor, color,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 10px', position: 'relative',
-        }}>
-            <Icon size={17} strokeWidth={2.2} />
-            {pulse && (
-                <span className="dp-pulse" style={{
-                    position: 'absolute', top: -2, right: -2,
-                    width: 9, height: 9, borderRadius: '50%',
-                    background: color, border: '2px solid ' + C.card,
-                }} />
-            )}
-        </div>
-        <div style={{
-            fontSize: '1.6rem', fontWeight: 800, color: C.text,
-            lineHeight: 1, marginBottom: 4,
-            fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em',
-        }}>
-            {value}
-        </div>
-        <div style={{
-            fontSize: '0.58rem', color: C.textTertiary, fontWeight: 700,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-        }}>
-            {label}
+            position: 'absolute', top: '-20px', right: '-20px',
+            width: 80, height: 80, borderRadius: '50%',
+            background: glowBg, filter: 'blur(25px)',
+            pointerEvents: 'none',
+        }} />
+        <div style={{ position: 'relative' }}>
+            <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: `${color}15`, border: `1px solid ${color}25`,
+                color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 10px', position: 'relative',
+            }}>
+                <Icon size={18} strokeWidth={2.2} />
+                {pulse && (
+                    <span className="dp-pulse" style={{
+                        position: 'absolute', top: -2, right: -2,
+                        width: 9, height: 9, borderRadius: '50%',
+                        background: color, border: '2px solid ' + darkBg,
+                    }} />
+                )}
+            </div>
+            <div style={{
+                fontSize: '1.65rem', fontWeight: 800, color: P.text,
+                lineHeight: 1, marginBottom: 4,
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em',
+            }}>
+                {value}
+            </div>
+            <div style={{
+                fontSize: '0.56rem', color: P.textMuted, fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+            }}>
+                {label}
+            </div>
         </div>
     </div>
 );
 
-/* ─── Trip Card ───────────────────────────────────────────────── */
+/* ─── Trip Card (dark, colored by status) ────────────────────── */
 const TripCard = ({ booking, onStatusChange, index }) => {
     const b = booking;
     const cfg = STATUS[b.status] || {};
+    const cardBg = cfg.cardBg || P.bgCard;
+    const cardBorder = cfg.cardBorder || P.border;
+    const glowColor = cfg.glow || 'transparent';
+    const accentLine = cfg.accentLine || P.emerald;
 
     return (
         <div className="dp-fade-up" style={{
-            background: C.card, borderRadius: 18,
+            background: cardBg, borderRadius: 18,
             marginBottom: 14, overflow: 'hidden',
-            border: `1px solid ${C.borderLight}`,
-            boxShadow: C.shadow,
-            animationDelay: `${(index || 0) * 0.05}s`,
+            border: `1px solid ${cardBorder}`,
+            animationDelay: `${(index || 0) * 0.06}s`,
+            position: 'relative',
         }}>
-            {/* Status accent line */}
+            {/* Background glow */}
             <div style={{
-                height: 3.5, background: cfg.color || C.primary, opacity: 0.85,
+                position: 'absolute', top: '-40px', left: '-20px',
+                width: 160, height: 160, borderRadius: '50%',
+                background: glowColor, filter: 'blur(50px)',
+                pointerEvents: 'none', opacity: 0.6,
             }} />
 
-            <div style={{ padding: '18px 18px 20px' }}>
-                {/* Top: ID + Status */}
+            {/* Accent line */}
+            <div style={{
+                height: 3, background: accentLine, opacity: 0.9,
+            }} />
+
+            <div style={{ padding: '18px 18px 20px', position: 'relative' }}>
+                {/* Top row */}
                 <div style={{
                     display: 'flex', justifyContent: 'space-between',
                     alignItems: 'center', marginBottom: 16,
@@ -342,53 +395,52 @@ const TripCard = ({ booking, onStatusChange, index }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                         <div style={{
                             width: 38, height: 38, borderRadius: 11,
-                            background: cfg.bg || C.primaryLight,
-                            border: `1px solid ${cfg.border || C.primaryBorder}`,
-                            color: cfg.color || C.primary,
+                            background: `${accentLine}18`, border: `1px solid ${accentLine}30`,
+                            color: accentLine,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                             <Truck size={17} strokeWidth={2.2} />
                         </div>
                         <div>
                             <div style={{
-                                color: C.text, fontSize: '0.84rem', fontWeight: 800,
-                                fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                color: P.text, fontSize: '0.82rem', fontWeight: 800,
+                                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
                                 letterSpacing: '0.02em',
                             }}>
                                 {genId(b.booking_id)}
                             </div>
-                            <div style={{ fontSize: '0.65rem', color: C.textTertiary, marginTop: 1 }}>
+                            <div style={{ fontSize: '0.62rem', color: P.textMuted, marginTop: 2 }}>
                                 {fmtDate(b.created_at)} · {fmtTime(b.created_at)}
                             </div>
                         </div>
                     </div>
-                    <StatusBadge status={b.status} size="sm" />
+                    <StatusPill status={b.status} />
                 </div>
 
                 {/* Client */}
                 <div style={{
                     marginBottom: 14, padding: '12px 14px',
-                    background: '#FAFBFC', borderRadius: 12,
-                    border: `1px solid ${C.borderLight}`,
+                    background: 'rgba(255,255,255,0.03)', borderRadius: 12,
+                    border: `1px solid rgba(255,255,255,0.04)`,
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: '1rem', color: C.text, marginBottom: 3 }}>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: P.text, marginBottom: 3 }}>
                             {b.client_name}
                         </div>
                         {b.client_phone && (
                             <div style={{
-                                fontSize: '0.78rem', color: C.textSecondary,
+                                fontSize: '0.76rem', color: P.textSec,
                                 display: 'flex', alignItems: 'center', gap: 5,
                             }}>
-                                <Phone size={12} /> {b.client_phone}
+                                <Phone size={12} style={{ opacity: 0.6 }} /> {b.client_phone}
                             </div>
                         )}
                     </div>
                     <div style={{
                         width: 36, height: 36, borderRadius: 50,
-                        background: C.primaryLight, border: `1px solid ${C.primaryBorder}`,
-                        color: C.primary,
+                        background: `${accentLine}15`, border: `1px solid ${accentLine}25`,
+                        color: accentLine,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                         <User size={15} />
@@ -398,84 +450,80 @@ const TripCard = ({ booking, onStatusChange, index }) => {
                 {/* Route */}
                 <div style={{
                     marginBottom: 14, padding: '14px',
-                    background: '#FAFBFC', borderRadius: 12,
-                    border: `1px solid ${C.borderLight}`,
+                    background: 'rgba(255,255,255,0.03)', borderRadius: 12,
+                    border: `1px solid rgba(255,255,255,0.04)`,
                 }}>
                     <div style={{ display: 'flex', gap: 11 }}>
-                        {/* Route dots + line */}
                         <div style={{
                             display: 'flex', flexDirection: 'column',
                             alignItems: 'center', paddingTop: 1,
                         }}>
                             <div style={{
-                                width: 20, height: 20, borderRadius: '50%',
-                                background: '#FEF2F2', border: '2px solid #FCA5A5',
+                                width: 18, height: 18, borderRadius: '50%',
+                                background: 'rgba(251,113,133,0.15)', border: '2px solid rgba(251,113,133,0.4)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0,
                             }}>
-                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444' }} />
+                                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#FB7185' }} />
                             </div>
                             <div style={{
-                                width: 1.5, flex: 1, minHeight: 28, margin: '3px 0',
-                                background: 'repeating-linear-gradient(to bottom, #D1D5DB 0px, #D1D5DB 3px, transparent 3px, transparent 7px)',
+                                width: 1.5, flex: 1, minHeight: 26, margin: '3px 0',
+                                background: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 3px, transparent 3px, transparent 7px)',
                             }} />
                             <div style={{
-                                width: 20, height: 20, borderRadius: '50%',
-                                background: '#ECFDF5', border: '2px solid #6EE7B7',
+                                width: 18, height: 18, borderRadius: '50%',
+                                background: 'rgba(45,212,160,0.15)', border: '2px solid rgba(45,212,160,0.4)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0,
                             }}>
-                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#2DD4A0' }} />
                             </div>
                         </div>
-
                         <div style={{
                             flex: 1, display: 'flex', flexDirection: 'column',
                             justifyContent: 'space-between', gap: 10,
                         }}>
                             <div>
                                 <div style={{
-                                    fontSize: '0.58rem', color: C.textTertiary, fontWeight: 700,
+                                    fontSize: '0.55rem', color: P.textMuted, fontWeight: 700,
                                     textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2,
                                 }}>Pickup</div>
-                                <div style={{ fontSize: '0.82rem', color: C.text, fontWeight: 600 }}>
+                                <div style={{ fontSize: '0.8rem', color: P.text, fontWeight: 600 }}>
                                     {b.from_location || b.destination || 'N/A'}
                                 </div>
                             </div>
                             <div>
                                 <div style={{
-                                    fontSize: '0.58rem', color: C.textTertiary, fontWeight: 700,
+                                    fontSize: '0.55rem', color: P.textMuted, fontWeight: 700,
                                     textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2,
                                 }}>Destination</div>
-                                <div style={{ fontSize: '0.82rem', color: C.text, fontWeight: 600 }}>
+                                <div style={{ fontSize: '0.8rem', color: P.text, fontWeight: 600 }}>
                                     {b.destination || 'N/A'}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Vehicle row */}
-                    <div style={{
-                        height: 1, background: C.borderLight, margin: '12px 0',
-                    }} />
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '11px 0' }} />
+
                     <div style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                             <div style={{
-                                width: 32, height: 32, borderRadius: 9,
-                                background: C.primaryLight, border: `1px solid ${C.primaryBorder}`,
-                                color: C.primary,
+                                width: 30, height: 30, borderRadius: 8,
+                                background: `${accentLine}12`, border: `1px solid ${accentLine}20`,
+                                color: accentLine,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
-                                <Car size={15} />
+                                <Car size={14} />
                             </div>
                             <div>
                                 <div style={{
-                                    fontSize: '0.56rem', color: C.textTertiary, fontWeight: 700,
+                                    fontSize: '0.5rem', color: P.textMuted, fontWeight: 700,
                                     textTransform: 'uppercase', letterSpacing: '0.08em',
                                 }}>Vehicle</div>
-                                <div style={{ fontSize: '0.78rem', color: C.text, fontWeight: 700, marginTop: 1 }}>
+                                <div style={{ fontSize: '0.76rem', color: P.text, fontWeight: 700, marginTop: 1 }}>
                                     {b.vehicle_name || b.model || 'Assigned'}
                                 </div>
                             </div>
@@ -484,46 +532,45 @@ const TripCard = ({ booking, onStatusChange, index }) => {
                     </div>
                 </div>
 
-                {/* Action button */}
-                <div>
-                    {b.status === 'booked' && (
-                        <button
-                            onClick={() => onStatusChange(b.booking_id, 'in_transit')}
-                            style={{
-                                width: '100%', padding: '15px', border: 'none', borderRadius: 14,
-                                cursor: 'pointer', background: C.primary, color: '#FFFFFF',
-                                fontWeight: 700, fontSize: '0.9rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                boxShadow: `0 4px 14px -2px ${C.primary}40`,
-                                transition: 'all 0.2s ease',
-                                fontFamily: 'inherit',
-                            }}
-                            activeStyle={{ transform: 'scale(0.98)', opacity: 0.9 }}
-                        >
-                            <Zap size={19} strokeWidth={2.5} />
-                            Accept Trip
-                            <ArrowRight size={16} style={{ opacity: 0.6 }} />
-                        </button>
-                    )}
-                    {b.status === 'in_transit' && (
-                        <button
-                            onClick={() => onStatusChange(b.booking_id, 'completed')}
-                            style={{
-                                width: '100%', padding: '15px', border: 'none', borderRadius: 14,
-                                cursor: 'pointer', background: C.blue, color: '#FFFFFF',
-                                fontWeight: 700, fontSize: '0.9rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                boxShadow: `0 4px 14px -2px ${C.blue}40`,
-                                transition: 'all 0.2s ease',
-                                fontFamily: 'inherit',
-                            }}
-                            activeStyle={{ transform: 'scale(0.98)', opacity: 0.9 }}
-                        >
-                            <CheckCircle size={19} strokeWidth={2.5} />
-                            Complete Trip
-                        </button>
-                    )}
-                </div>
+                {/* Action */}
+                {b.status === 'booked' && (
+                    <button
+                        onClick={() => onStatusChange(b.booking_id, 'in_transit')}
+                        style={{
+                            width: '100%', padding: '15px', border: 'none', borderRadius: 14,
+                            cursor: 'pointer',
+                            background: `linear-gradient(135deg, ${accentLine}, ${accentLine}CC)`,
+                            color: '#fff', fontWeight: 800, fontSize: '0.88rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                            boxShadow: `0 6px 20px -2px ${accentLine}50`,
+                            transition: 'all 0.2s ease',
+                            fontFamily: "'DM Sans', sans-serif",
+                            letterSpacing: '0.01em',
+                        }}
+                    >
+                        <Zap size={18} strokeWidth={2.5} />
+                        Accept Trip
+                        <ArrowRight size={15} style={{ opacity: 0.5 }} />
+                    </button>
+                )}
+                {b.status === 'in_transit' && (
+                    <button
+                        onClick={() => onStatusChange(b.booking_id, 'completed')}
+                        style={{
+                            width: '100%', padding: '15px', border: 'none', borderRadius: 14,
+                            cursor: 'pointer',
+                            background: `linear-gradient(135deg, ${P.emerald}, ${P.emerald}CC)`,
+                            color: '#fff', fontWeight: 800, fontSize: '0.88rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                            boxShadow: `0 6px 20px -2px ${P.emerald}50`,
+                            transition: 'all 0.2s ease',
+                            fontFamily: "'DM Sans', sans-serif",
+                        }}
+                    >
+                        <CheckCircle size={18} strokeWidth={2.5} />
+                        Complete Trip
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -536,26 +583,25 @@ const LeaveCard = ({ leave }) => {
 
     return (
         <div style={{
-            background: C.card, borderRadius: 14, padding: '14px 16px',
+            background: cfg.bg, borderRadius: 14, padding: '14px 16px',
             marginBottom: 10, display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', border: `1px solid ${C.borderLight}`,
-            boxShadow: C.shadow,
+            alignItems: 'center', border: `1px solid ${cfg.border}`,
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
                     width: 38, height: 38, borderRadius: 11,
-                    background: cfg.bg, border: `1px solid ${cfg.border}`,
+                    background: `${cfg.color}12`, border: `1px solid ${cfg.color}25`,
                     color: cfg.color,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                     <Calendar size={17} />
                 </div>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: C.text, marginBottom: 3 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.84rem', color: P.text, marginBottom: 3 }}>
                         {leave.leave_type || 'Leave'}
                     </div>
                     <div style={{
-                        fontSize: '0.72rem', color: C.textTertiary,
+                        fontSize: '0.7rem', color: P.textMuted,
                         display: 'flex', alignItems: 'center', gap: 5,
                     }}>
                         <Clock size={11} />
@@ -571,8 +617,8 @@ const LeaveCard = ({ leave }) => {
             </div>
             <span style={{
                 padding: '3px 12px', borderRadius: 100,
-                background: cfg.bg, border: `1px solid ${cfg.border}`,
-                color: cfg.color, fontSize: '0.6rem', fontWeight: 700,
+                background: `${cfg.color}12`, border: `1px solid ${cfg.color}25`,
+                color: cfg.color, fontSize: '0.58rem', fontWeight: 700,
                 letterSpacing: '0.04em', textTransform: 'uppercase',
             }}>
                 {cfg.label}
@@ -585,41 +631,41 @@ const LeaveCard = ({ leave }) => {
 const EmptyState = ({ icon: Icon, title, subtitle }) => (
     <div style={{
         textAlign: 'center', padding: '60px 24px',
-        background: C.card, borderRadius: 18,
-        border: `1.5px dashed ${C.border}`,
+        background: P.bgCard, borderRadius: 18,
+        border: `1.5px dashed ${P.border}`,
     }}>
         <div style={{
-            width: 60, height: 60, borderRadius: '50%',
-            background: C.bg, border: `1px solid ${C.border}`,
+            width: 56, height: 56, borderRadius: '50%',
+            background: P.surface, border: `1px solid ${P.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 18px', color: C.textTertiary,
+            margin: '0 auto 18px', color: P.textMuted,
         }}>
-            <Icon size={26} />
+            <Icon size={24} />
         </div>
         <div style={{
-            fontSize: '1.05rem', fontWeight: 800, color: C.textSecondary,
+            fontSize: '1rem', fontWeight: 800, color: P.textSec,
             marginBottom: 6, letterSpacing: '-0.01em',
         }}>
             {title}
         </div>
-        <div style={{ fontSize: '0.82rem', color: C.textTertiary, lineHeight: 1.6 }}>
+        <div style={{ fontSize: '0.8rem', color: P.textMuted, lineHeight: 1.6 }}>
             {subtitle}
         </div>
     </div>
 );
 
-/* ─── Loading Spinner ─────────────────────────────────────────── */
+/* ─── Loading ─────────────────────────────────────────────────── */
 const LoadingState = ({ text }) => (
     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
         <div style={{
             width: 44, height: 44, margin: '0 auto 16px',
-            borderRadius: 13, background: C.bg,
-            border: `1px solid ${C.border}`,
+            borderRadius: 13, background: P.surface,
+            border: `1px solid ${P.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-            <Loader2 size={22} className="dp-spin" style={{ color: C.textTertiary }} />
+            <Loader2 size={22} className="dp-spin" style={{ color: P.textMuted }} />
         </div>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: C.textSecondary }}>
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: P.textSec, fontFamily: "'DM Sans', sans-serif" }}>
             {text || 'Loading...'}
         </div>
     </div>
@@ -684,7 +730,7 @@ const DriverPortal = () => {
                 body: JSON.stringify({ status }),
             });
             if (!res.ok) throw new Error('Update failed');
-            setSuccess(`Trip ${STATUS[status]?.label || status}`);
+            setSuccess(`Trip marked as ${STATUS[status]?.label || status}`);
             setTimeout(() => setSuccess(''), 3000);
             loadBookings(true);
         } catch {
@@ -710,293 +756,327 @@ const DriverPortal = () => {
         ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
         : 'DR';
 
+    const firstName = user?.name ? user.name.split(' ')[0] : 'Driver';
+
     return (
         <div style={{
             minHeight: '100vh',
             minHeight: '100dvh',
-            background: C.bg,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-            color: C.text,
+            background: P.bg,
+            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: P.text,
             position: 'relative',
             WebkitFontSmoothing: 'antialiased',
         }}>
             <style>{globalStyles}</style>
 
+            {/* Ambient glows */}
+            <div className="dp-breathe" style={{
+                position: 'fixed', top: '-20%', right: '-15%',
+                width: 500, height: 500, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(45,212,160,0.04) 0%, transparent 65%)',
+                filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0,
+            }} />
+            <div className="dp-breathe" style={{
+                position: 'fixed', bottom: '-15%', left: '-10%',
+                width: 400, height: 400, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(56,189,248,0.03) 0%, transparent 65%)',
+                filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0,
+                animationDelay: '2.5s',
+            }} />
+
             {/* Toast */}
             <Toast type="error" message={error} onClose={() => setError('')} />
             <Toast type="success" message={success} onClose={() => setSuccess('')} />
 
-            {/* ═══ STICKY HEADER ═══ */}
-            <header style={{
-                position: 'sticky', top: 0, zIndex: 50,
-                background: 'rgba(255,255,255,0.88)',
-                backdropFilter: 'blur(16px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-                borderBottom: `1px solid ${C.borderLight}`,
-            }}>
-                <div style={{
-                    maxWidth: 520, margin: '0 auto',
-                    padding: '12px 18px',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            <div style={{ position: 'relative', zIndex: 1 }}>
+
+                {/* ═══ HEADER ═══ */}
+                <header style={{
+                    position: 'sticky', top: 0, zIndex: 50,
+                    background: 'rgba(14,17,23,0.82)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    borderBottom: `1px solid ${P.borderLight}`,
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                        <div style={{
-                            width: 38, height: 38, borderRadius: 11,
-                            background: C.primary,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: `0 3px 10px -1px ${C.primary}30`,
-                        }}>
-                            <Car size={18} color="#fff" strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <div style={{
-                                fontSize: '0.92rem', fontWeight: 800, color: C.text,
-                                letterSpacing: '-0.01em',
-                            }}>
-                                RestPoint
-                            </div>
-                            <div style={{
-                                fontSize: '0.52rem', color: C.textTertiary, fontWeight: 600,
-                                letterSpacing: '0.08em', textTransform: 'uppercase',
-                            }}>
-                                Driver Portal
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <button
-                            onClick={() => loadBookings(true)}
-                            disabled={refreshing}
-                            style={{
-                                width: 38, height: 38, borderRadius: 11,
-                                background: C.bg, border: `1px solid ${C.border}`,
-                                color: C.textSecondary, display: 'flex',
-                                alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer', transition: 'all 0.2s',
-                            }}
-                        >
-                            <RefreshCw size={15} className={refreshing ? 'dp-spin' : ''} />
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            style={{
-                                padding: '8px 14px', borderRadius: 11,
-                                background: C.redLight, border: `1px solid ${C.redBorder}`,
-                                color: C.red, fontSize: '0.72rem', fontWeight: 700,
-                                display: 'flex', alignItems: 'center', gap: 5,
-                                cursor: 'pointer', transition: 'all 0.2s',
-                            }}
-                        >
-                            <LogOut size={13} />
-                            <span className="dp-logout-text">Logout</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <main style={{ maxWidth: 520, margin: '0 auto', padding: '20px 18px 120px' }}>
-
-                {/* ═══ GREETING ═══ */}
-                <div className="dp-fade-up" style={{ marginBottom: 22 }}>
                     <div style={{
-                        display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12,
+                        maxWidth: 520, margin: '0 auto',
+                        padding: '12px 18px',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                        <div style={{
-                            padding: '4px 11px', borderRadius: 8,
-                            background: C.primaryLight, border: `1px solid ${C.primaryBorder}`,
-                            color: C.primary, fontSize: '0.68rem', fontWeight: 700,
-                            display: 'flex', alignItems: 'center', gap: 5,
-                        }}>
-                            <GreetingIcon size={13} />
-                            {greeting.text}
-                        </div>
-                        <span style={{ fontSize: '0.68rem', color: C.textTertiary, fontWeight: 600 }}>
-                            {greeting.timeStr}
-                        </span>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <h1 style={{
-                                margin: 0, fontSize: '1.75rem', fontWeight: 800,
-                                lineHeight: 1.1, letterSpacing: '-0.03em',
-                                color: C.text, marginBottom: 4,
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+                            <div style={{
+                                width: 38, height: 38, borderRadius: 11,
+                                background: `linear-gradient(135deg, ${P.emerald}, ${P.emerald}CC)`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: `0 3px 12px ${P.emerald}30`,
                             }}>
-                                {user?.name || 'Driver'}
-                            </h1>
-                            <div style={{ fontSize: '0.78rem', color: C.textTertiary, fontWeight: 500 }}>
-                                {greeting.dateStr}
+                                <Car size={18} color="#fff" strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <div style={{
+                                    fontSize: '0.9rem', fontWeight: 800, color: P.text,
+                                    letterSpacing: '-0.01em',
+                                }}>
+                                    RestPoint
+                                </div>
+                                <div style={{
+                                    fontSize: '0.5rem', color: P.textMuted, fontWeight: 700,
+                                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                                }}>
+                                    Nairobi · Driver
+                                </div>
                             </div>
                         </div>
 
-                        {/* Avatar */}
-                        <div style={{
-                            width: 50, height: 50, borderRadius: 15,
-                            background: `linear-gradient(135deg, ${C.primary}, #10B981)`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontSize: '0.95rem', fontWeight: 800,
-                            boxShadow: `0 4px 16px -2px ${C.primary}25`,
-                            flexShrink: 0, position: 'relative',
-                        }}>
-                            {initials}
-                            <div style={{
-                                position: 'absolute', bottom: -1, right: -1,
-                                width: 14, height: 14, borderRadius: '50%',
-                                background: C.primary, border: '2.5px solid #fff',
-                                boxShadow: `0 0 0 1px ${C.primaryBorder}`,
-                            }} />
-                        </div>
-                    </div>
-
-                    {/* Active trip banner */}
-                    {activeBookings.length > 0 && (
-                        <div style={{
-                            marginTop: 14, padding: '10px 14px',
-                            background: C.amberLight, border: `1px solid ${C.amberBorder}`,
-                            borderRadius: 11, display: 'flex', alignItems: 'center', gap: 8,
-                        }}>
-                            <span className="dp-pulse" style={{
-                                width: 8, height: 8, borderRadius: '50%',
-                                background: '#F59E0B', flexShrink: 0,
-                                boxShadow: '0 0 8px #F59E0B50',
-                            }} />
-                            <span style={{ fontSize: '0.8rem', color: '#92400E', fontWeight: 600 }}>
-                                <strong>{activeBookings.length}</strong> trip{activeBookings.length !== 1 ? 's' : ''} waiting for your action
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                {/* ═══ STATS ═══ */}
-                <div className="dp-fade-up" style={{
-                    display: 'flex', gap: 8, marginBottom: 22,
-                    animationDelay: '0.06s',
-                }}>
-                    <QuickStat
-                        value={activeBookings.length} label="Active"
-                        color={C.amber} bgColor={C.amberLight}
-                        icon={Zap} pulse={activeBookings.length > 0}
-                    />
-                    <QuickStat
-                        value={inTransitCount} label="En Route"
-                        color={C.blue} bgColor={C.blueLight}
-                        icon={Navigation}
-                    />
-                    <QuickStat
-                        value={completedCount} label="Done"
-                        color={C.primary} bgColor={C.primaryLight}
-                        icon={CheckCircle}
-                    />
-                </div>
-
-                {/* ═══ TABS ═══ */}
-                <div className="dp-fade-up" style={{
-                    display: 'flex', gap: 3, marginBottom: 18,
-                    padding: 3, background: C.bg,
-                    borderRadius: 13, border: `1px solid ${C.borderLight}`,
-                    animationDelay: '0.09s',
-                }}>
-                    {[
-                        { key: 'bookings', label: 'Trips', icon: Route, count: activeBookings.length },
-                        { key: 'leaves', label: 'Leaves', icon: Calendar, count: leaves.length },
-                    ].map(tab => {
-                        const isActive = activeTab === tab.key;
-                        const Icon = tab.icon;
-                        const tabColor = tab.key === 'bookings' ? C.primary : C.purple;
-
-                        return (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
+                                onClick={() => loadBookings(true)}
+                                disabled={refreshing}
                                 style={{
-                                    flex: 1, padding: '11px 6px', borderRadius: 11,
-                                    background: isActive ? C.card : 'transparent',
-                                    border: isActive ? `1.5px solid ${tabColor}30` : '1.5px solid transparent',
-                                    color: isActive ? C.text : C.textTertiary,
-                                    fontWeight: 700, fontSize: '0.76rem', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                    transition: 'all 0.2s ease',
-                                    fontFamily: 'inherit',
-                                    boxShadow: isActive ? C.shadow : 'none',
+                                    width: 38, height: 38, borderRadius: 11,
+                                    background: P.surface, border: `1px solid ${P.border}`,
+                                    color: P.textSec, display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer', transition: 'all 0.2s',
                                 }}
                             >
-                                <Icon size={14} style={{ color: isActive ? tabColor : undefined }} />
-                                {tab.label}
-                                {tab.count > 0 && (
-                                    <span style={{
-                                        fontSize: '0.58rem', fontWeight: 800,
-                                        padding: '1px 6px', borderRadius: 6,
-                                        background: isActive ? `${tabColor}12` : 'rgba(0,0,0,0.03)',
-                                        color: isActive ? tabColor : C.textTertiary,
-                                    }}>
-                                        {tab.count}
-                                    </span>
-                                )}
+                                <RefreshCw size={15} className={refreshing ? 'dp-spin' : ''} />
                             </button>
-                        );
-                    })}
-                </div>
+                            <button
+                                onClick={handleLogout}
+                                style={{
+                                    padding: '8px 14px', borderRadius: 11,
+                                    background: P.roseDark, border: `1px solid ${P.roseMid}`,
+                                    color: P.rose, fontSize: '0.7rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: 5,
+                                    cursor: 'pointer', transition: 'all 0.2s',
+                                }}
+                            >
+                                <LogOut size={13} />
+                                <span className="dp-logout-text">Exit</span>
+                            </button>
+                        </div>
+                    </div>
+                </header>
 
-                {/* ═══ CONTENT ═══ */}
-                <div className="dp-fade-up" style={{ animationDelay: '0.12s' }}>
-                    {activeTab === 'bookings' ? (
-                        loadingBookings ? (
-                            <LoadingState text="Loading trips..." />
-                        ) : activeBookings.length === 0 ? (
-                            <EmptyState
-                                icon={Car}
-                                title="All Clear"
-                                subtitle="No active trips right now. You'll be notified when a new booking arrives."
-                            />
-                        ) : (
-                            activeBookings.map((b, i) => (
-                                <TripCard
-                                    key={b.booking_id}
-                                    booking={b}
-                                    onStatusChange={handleStatusChange}
-                                    index={i}
-                                />
-                            ))
-                        )
-                    ) : (
-                        loadingLeaves ? (
-                            <LoadingState text="Loading leaves..." />
-                        ) : leaves.length === 0 ? (
-                            <EmptyState
-                                icon={Calendar}
-                                title="No Leaves"
-                                subtitle="You haven't submitted any leave requests yet."
-                            />
-                        ) : (
-                            leaves.map((leave, i) => (
-                                <div key={leave.id || i} className="dp-fade-up" style={{ animationDelay: `${i * 0.04}s` }}>
-                                    <LeaveCard leave={leave} />
+                <main style={{ maxWidth: 520, margin: '0 auto', padding: '22px 18px 120px' }}>
+
+                    {/* ═══ GREETING — warm & human ═══ */}
+                    <div className="dp-fade-up" style={{ marginBottom: 24 }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
+                        }}>
+                            <div style={{
+                                padding: '5px 12px', borderRadius: 9,
+                                background: `${P.emerald}12`, border: `1px solid ${P.emerald}25`,
+                                color: P.emerald, fontSize: '0.7rem', fontWeight: 700,
+                                display: 'flex', alignItems: 'center', gap: 6,
+                            }}>
+                                <GreetingIcon size={13} />
+                                {greeting.text}
+                            </div>
+                            <div style={{
+                                padding: '5px 10px', borderRadius: 9,
+                                background: P.surface, border: `1px solid ${P.border}`,
+                                color: P.textSec, fontSize: '0.7rem', fontWeight: 650,
+                            }}>
+                                {greeting.timeStr} EAT
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h1 style={{
+                                    margin: 0, fontSize: '1.8rem', fontWeight: 800,
+                                    lineHeight: 1.1, letterSpacing: '-0.03em',
+                                    color: P.text, marginBottom: 5,
+                                }}>
+                                    {firstName}
+                                </h1>
+                                <div style={{ fontSize: '0.78rem', color: P.textMuted, fontWeight: 500, marginBottom: 6 }}>
+                                    {greeting.dateStr}
                                 </div>
-                            ))
-                        )
-                    )}
-                </div>
+                                <div style={{
+                                    fontSize: '0.76rem', color: P.textSec, fontWeight: 500,
+                                    fontStyle: 'italic', opacity: 0.8,
+                                }}>
+                                    {greeting.subtext}
+                                </div>
+                            </div>
 
-                {/* ═══ FOOTER ═══ */}
-                <div style={{
-                    textAlign: 'center', padding: '36px 0 0',
-                    borderTop: `1px solid ${C.borderLight}`, marginTop: 32,
-                }}>
-                    <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                        marginBottom: 4,
+                            {/* Avatar */}
+                            <div style={{
+                                width: 52, height: 52, borderRadius: 16,
+                                background: `linear-gradient(145deg, ${P.emerald}, ${P.ocean})`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#fff', fontSize: '1rem', fontWeight: 800,
+                                boxShadow: `0 6px 20px -2px ${P.emerald}30`,
+                                flexShrink: 0, marginLeft: 16,
+                                position: 'relative',
+                            }}>
+                                {initials}
+                                <div style={{
+                                    position: 'absolute', bottom: -1, right: -1,
+                                    width: 15, height: 15, borderRadius: '50%',
+                                    background: P.emerald, border: '2.5px solid ' + P.bg,
+                                    boxShadow: `0 0 10px ${P.emerald}50`,
+                                }} />
+                            </div>
+                        </div>
+
+                        {/* Active trip alert */}
+                        {activeBookings.length > 0 && (
+                            <div style={{
+                                marginTop: 16, padding: '11px 14px',
+                                background: P.amberDark, border: `1px solid ${P.amberMid}`,
+                                borderRadius: 12, display: 'flex', alignItems: 'center', gap: 9,
+                            }}>
+                                <span className="dp-accent-pulse" style={{
+                                    width: 8, height: 8, borderRadius: '50%',
+                                    background: P.amber, flexShrink: 0,
+                                    boxShadow: `0 0 10px ${P.amber}50`,
+                                }} />
+                                <span style={{ fontSize: '0.78rem', color: P.amber, fontWeight: 650 }}>
+                                    <strong>{activeBookings.length}</strong> trip{activeBookings.length !== 1 ? 's' : ''} need{activeBookings.length === 1 ? 's' : ''} your attention
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ═══ STATS — colored dark tiles ═══ */}
+                    <div className="dp-fade-up" style={{
+                        display: 'flex', gap: 8, marginBottom: 24,
+                        animationDelay: '0.06s',
                     }}>
-                        <Shield size={11} style={{ color: C.textTertiary }} />
-                        <span style={{ fontSize: '0.65rem', color: C.textTertiary, fontWeight: 600 }}>
-                            Secure Driver Portal
-                        </span>
+                        <StatTile
+                            value={activeBookings.length} label="Active"
+                            color={P.amber} darkBg={P.amberDark} glowBg={P.amberGlow}
+                            icon={Zap} pulse={activeBookings.length > 0}
+                        />
+                        <StatTile
+                            value={inTransitCount} label="En Route"
+                            color={P.ocean} darkBg={P.oceanDark} glowBg={P.oceanGlow}
+                            icon={Navigation}
+                        />
+                        <StatTile
+                            value={completedCount} label="Done"
+                            color={P.emerald} darkBg={P.emeraldDark} glowBg={P.emeraldGlow}
+                            icon={CheckCircle}
+                        />
                     </div>
-                    <div style={{ fontSize: '0.55rem', color: C.textTertiary, fontWeight: 500, opacity: 0.6 }}>
-                        RestPoint v2.0 · {slug}
+
+                    {/* ═══ TABS ═══ */}
+                    <div className="dp-fade-up" style={{
+                        display: 'flex', gap: 3, marginBottom: 18,
+                        padding: 3, background: P.bgCard,
+                        borderRadius: 13, border: `1px solid ${P.border}`,
+                        animationDelay: '0.09s',
+                    }}>
+                        {[
+                            { key: 'bookings', label: 'Trips', icon: Route, count: activeBookings.length, color: P.emerald },
+                            { key: 'leaves', label: 'Leaves', icon: Calendar, count: leaves.length, color: P.violet },
+                        ].map(tab => {
+                            const isActive = activeTab === tab.key;
+                            const Icon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key)}
+                                    style={{
+                                        flex: 1, padding: '11px 6px', borderRadius: 11,
+                                        background: isActive ? P.surface : 'transparent',
+                                        border: isActive ? `1.5px solid ${tab.color}30` : '1.5px solid transparent',
+                                        color: isActive ? P.text : P.textMuted,
+                                        fontWeight: 700, fontSize: '0.76rem', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                        transition: 'all 0.2s ease',
+                                        fontFamily: "'DM Sans', sans-serif",
+                                    }}
+                                >
+                                    <Icon size={14} style={{ color: isActive ? tab.color : undefined }} />
+                                    {tab.label}
+                                    {tab.count > 0 && (
+                                        <span style={{
+                                            fontSize: '0.56rem', fontWeight: 800,
+                                            padding: '1px 6px', borderRadius: 6,
+                                            background: isActive ? `${tab.color}18` : 'rgba(255,255,255,0.03)',
+                                            color: isActive ? tab.color : P.textMuted,
+                                        }}>
+                                            {tab.count}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                </div>
-            </main>
+
+                    {/* ═══ CONTENT ═══ */}
+                    <div className="dp-fade-up" style={{ animationDelay: '0.12s' }}>
+                        {activeTab === 'bookings' ? (
+                            loadingBookings ? (
+                                <LoadingState text="Loading your trips..." />
+                            ) : activeBookings.length === 0 ? (
+                                <EmptyState
+                                    icon={Car}
+                                    title="All Clear"
+                                    subtitle="No active trips right now. You'll be notified when a new booking comes in."
+                                />
+                            ) : (
+                                activeBookings.map((b, i) => (
+                                    <TripCard
+                                        key={b.booking_id}
+                                        booking={b}
+                                        onStatusChange={handleStatusChange}
+                                        index={i}
+                                    />
+                                ))
+                            )
+                        ) : (
+                            loadingLeaves ? (
+                                <LoadingState text="Loading leaves..." />
+                            ) : leaves.length === 0 ? (
+                                <EmptyState
+                                    icon={Calendar}
+                                    title="No Leaves"
+                                    subtitle="You haven't submitted any leave requests yet."
+                                />
+                            ) : (
+                                leaves.map((leave, i) => (
+                                    <div key={leave.id || i} className="dp-fade-up" style={{ animationDelay: `${i * 0.04}s` }}>
+                                        <LeaveCard leave={leave} />
+                                    </div>
+                                ))
+                            )
+                        )}
+                    </div>
+
+                    {/* ═══ FOOTER ═══ */}
+                    <div style={{
+                        textAlign: 'center', padding: '36px 0 0',
+                        borderTop: `1px solid ${P.borderLight}`, marginTop: 32,
+                    }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            marginBottom: 5,
+                        }}>
+                            <Shield size={11} style={{ color: P.textMuted }} />
+                            <span style={{
+                                fontSize: '0.62rem', color: P.textMuted, fontWeight: 600,
+                                fontFamily: "'DM Sans', sans-serif",
+                            }}>
+                                Secure · Encrypted
+                            </span>
+                        </div>
+                        <div style={{
+                            fontSize: '0.52rem', color: P.textMuted, fontWeight: 500,
+                            opacity: 0.5, fontFamily: "'DM Sans', sans-serif",
+                        }}>
+                            RestPoint v2.0 · {slug} · Nairobi
+                        </div>
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };
