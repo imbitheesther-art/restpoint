@@ -261,11 +261,11 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Log successful booking creation
+        //  Log successful booking creation
         const userInfo = req.headers['x-user-name'] || 'System';
-        console.log(`[ActionLog] ✅ New booking created: ${booking_code} by ${userInfo} - Client: ${client_name}, Destination: ${destination}`);
+        console.log(`[ActionLog]  New booking created: ${booking_code} by ${userInfo} - Client: ${client_name}, Destination: ${destination}`);
 
-        // ✅ Success response
+        // Success response
         res.status(201).json({
             status: 'success',
             message: 'Hearse booking created successfully and hearse status updated.',
@@ -288,10 +288,47 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get all hearse bookings
+ * Get all hearse bookings — cross-branch aware.
+ * Joins hearses → branches so every booking carries branch_name, branch_code, branch_id.
+ * Optional ?branch_id=X query param to filter to a specific branch.
  */
 const getAllHearseBookings = asyncHandler(async (req, res) => {
     try {
+        const { branch_id, status } = req.query;
+        const dbName = req.tenant?.db_name || req.tenantSlug;
+
+        // Build WHERE clauses
+        const whereClauses = [];
+        const params = [];
+
+        if (branch_id && branch_id !== 'all') {
+            whereClauses.push('h.branch_id = ?');
+            params.push(branch_id);
+        }
+
+        if (status && status !== 'all') {
+            whereClauses.push('hb.status = ?');
+            params.push(status);
+        }
+
+        const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Check whether branches table has branch_code column
+        let hasBranchCode = false;
+        try {
+            const { safeTenantQuery } = require('../../../shared/dbConfig');
+            const colResult = await safeTenantQuery(
+                dbName,
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'branches' AND COLUMN_NAME = 'branch_code'",
+                [dbName]
+            );
+            hasBranchCode = Array.isArray(colResult) && colResult.length > 0;
+        } catch (e) { /* ignore */ }
+
+        const branchCodeSel = hasBranchCode
+            ? 'COALESCE(h.branch_code, b.branch_code) AS branch_code,'
+            : 'h.branch_code AS branch_code,';
+
         const query = `
             SELECT 
                 hb.id AS booking_id,
@@ -312,18 +349,36 @@ const getAllHearseBookings = asyncHandler(async (req, res) => {
                 h.hearse_name,
                 h.model,
                 h.status AS hearse_status,
-                h.capacity
+                h.capacity,
+                h.branch_id,
+                ${branchCodeSel}
+                b.branch_name,
+                b.branch_location
             FROM hearse_bookings hb
             LEFT JOIN hearses h ON hb.hearse_id = h.id
+            LEFT JOIN branches b ON h.branch_id = b.branch_id
+            ${whereSQL}
             ORDER BY hb.created_at DESC
         `;
 
-        const bookings = await safeQuery(query, [], req.tenant?.db_name || req.tenantSlug);
+        const bookings = await safeQuery(query, params, dbName);
+
+        // Also return all known branches for the tenant (for filter dropdowns in UI)
+        let allBranches = [];
+        try {
+            const { safeTenantQuery } = require('../../../shared/dbConfig');
+            allBranches = await safeTenantQuery(
+                dbName,
+                'SELECT branch_id, branch_name, branch_slug, branch_location FROM branches WHERE is_active = TRUE ORDER BY branch_name ASC',
+                []
+            );
+        } catch (e) { /* branches table may not exist in older tenants */ }
 
         res.status(200).json({
             status: 'success',
             total: bookings.length,
-            bookings
+            bookings,
+            branches: allBranches
         });
     } catch (error) {
         console.error('❌ Fetch Bookings Error:', error);

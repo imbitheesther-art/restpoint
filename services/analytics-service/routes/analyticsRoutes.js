@@ -51,6 +51,7 @@ router.get('/analytics/vehicle/analytics', getComprehensiveVehicleAnalytics);
 // COMPREHENSIVE DASHBOARD - aggregates all into one response
 // ============================================================
 router.get('/analytics/dashboard/comprehensive', comprehensiveDashboard.getComprehensiveDashboard);
+router.get('/analytics/dashboard/compare', comprehensiveDashboard.getComparisonDashboard);
 
 // Legacy route - backward compatibility
 router.get('/analytics/mortuary-analytics', comprehensiveDashboard.getComprehensiveDashboard);

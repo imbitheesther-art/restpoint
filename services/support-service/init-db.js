@@ -23,7 +23,7 @@ async function initDatabase() {
     try {
         // Create support_db if it doesn't exist
         await connection.query('CREATE DATABASE IF NOT EXISTS support_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        console.log('✅ Database support_db created or already exists');
+        console.log('Database support_db created or already exists');
 
         // Create user if not exists
         const dbPassword = process.env.DB_PASSWORD || '';

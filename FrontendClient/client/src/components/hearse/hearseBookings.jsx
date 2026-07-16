@@ -6,15 +6,15 @@ import './hearseBookings.css';
 import { useSocket } from '../../context/socketContext';
 import {
     Eye, RefreshCw, User, Car, CheckCircle, XCircle, AlertCircle,
-    Calendar, Truck, Search, MoreVertical, MapPin, Plus, Wrench
+    Calendar, Truck, Search, MoreVertical, MapPin, Plus, Wrench,
+    ChevronDown, Phone, Clock, ArrowRight, Building2
 } from 'lucide-react';
 import env from '../../config/env';
 
 const API_BASE_URL = `${env.FULL_API_URL}`;
 
-const getTenantSlug = () => {
-    return localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
-};
+const getTenantSlug = () =>
+    localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
 
 const getAuthHeaders = () => {
     const token = sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
@@ -23,30 +23,53 @@ const getAuthHeaders = () => {
     return headers;
 };
 
+// ─── Service Layer ────────────────────────────────────────────────────────────
 const bookingService = {
-    getBookings: async () => {
-        const r = await fetch(`${API_BASE_URL}/hearse-bookings`, { headers: getAuthHeaders() });
-        if (!r.ok) throw new Error('Failed');
-        return (await r.json()).bookings || [];
+    /** Fetch all bookings, optionally filtered by branch_id */
+    getBookings: async (branchId = null) => {
+        const params = new URLSearchParams({ t: Date.now() });
+        if (branchId && branchId !== 'all') params.set('branch_id', branchId);
+        const r = await fetch(`${API_BASE_URL}/hearse-bookings?${params}`, { headers: getAuthHeaders() });
+        if (!r.ok) throw new Error('Failed to load bookings');
+        const data = await r.json();
+        return { bookings: data.bookings || [], branches: data.branches || [] };
     },
     getAllHearses: async () => {
         const r = await fetch(`${API_BASE_URL}/hearses`, { headers: getAuthHeaders() });
         if (!r.ok) throw new Error('Failed');
         return (await r.json()).hearses || [];
     },
+    getAvailableHearses: async () => {
+        // Use cross-branch endpoint so any branch can see all available hearses
+        const r = await fetch(`${API_BASE_URL}/hearses/available/cross-branch?t=${Date.now()}`, { headers: getAuthHeaders() });
+        if (r.ok) {
+            const data = await r.json();
+            return data.hearses || [];
+        }
+        // Fallback to single-branch available
+        const r2 = await fetch(`${API_BASE_URL}/hearses/available?t=${Date.now()}`, { headers: getAuthHeaders() });
+        const data2 = await r2.json();
+        return data2.hearses || data2 || [];
+    },
+    getBranches: async () => {
+        try {
+            const tenantSlug = getTenantSlug();
+            const r = await fetch(`${API_BASE_URL}/tenant/${tenantSlug}/branches`, { headers: getAuthHeaders() });
+            if (!r.ok) throw new Error('branches api failed');
+            const data = await r.json();
+            return data.data || [];
+        } catch {
+            return [];
+        }
+    },
     createBooking: async (data) => {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
         const r = await fetch(`${API_BASE_URL}/hearse-bookings`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(data)
+            method: 'POST', headers, body: JSON.stringify(data)
         });
-        if (!r.ok) {
-            const error = await r.json();
-            throw new Error(error.message || 'Failed');
-        }
-        return await r.json();
+        if (!r.ok) { const err = await r.json(); throw new Error(err.message || 'Failed'); }
+        return r.json();
     },
     registerHearse: async (data) => {
         const fd = new FormData();
@@ -54,84 +77,80 @@ const bookingService = {
         fd.append('hearse_name', data.hearse_name || '');
         fd.append('model', data.model || '');
         fd.append('capacity', data.capacity || 1);
-        fd.append('branch_code', data.branch_code || '');
+        if (data.branch_id) fd.append('branch_id', data.branch_id);
+        if (data.branch_code) fd.append('branch_code', data.branch_code);
         const r = await fetch(`${API_BASE_URL}/hearses`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: fd
+            method: 'POST', headers: getAuthHeaders(), body: fd
         });
-        if (!r.ok) throw new Error('Failed');
+        if (!r.ok) throw new Error('Failed to register hearse');
         return r.json();
     },
     updateBookingStatus: async (bookingId, status) => {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
         const r = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/status`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({ status })
+            method: 'PUT', headers, body: JSON.stringify({ status })
         });
-        if (!r.ok) {
-            const error = await r.json();
-            throw new Error(error.message || 'Failed');
-        }
-        return await r.json();
+        if (!r.ok) { const err = await r.json(); throw new Error(err.message || 'Failed'); }
+        return r.json();
     },
     postponeBooking: async (bookingId, data) => {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
         const r = await fetch(`${API_BASE_URL}/hearse-bookings/${bookingId}/postpone`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify(data)
+            method: 'PATCH', headers, body: JSON.stringify(data)
         });
-        if (!r.ok) {
-            const error = await r.json();
-            throw new Error(error.message || 'Failed');
-        }
-        return await r.json();
+        if (!r.ok) { const err = await r.json(); throw new Error(err.message || 'Failed'); }
+        return r.json();
     }
 };
 
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
-const genId = (id) => `BK-${String(id).padStart(4, '0')}`;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmtDate = (d) => d
+    ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : 'N/A';
+const genId = (id) => id ? (id.toString().startsWith('BK-') ? id : `BK-${String(id).padStart(4, '0')}`) : 'N/A';
 
+// ─── StatusBadge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
-    const cfg = {
-        booked: 'BOOKED',
-        in_transit: 'IN TRANSIT',
-        completed: 'COMPLETED',
-        cancelled: 'CANCELLED',
-        postponed: 'POSTPONED',
-        maintenance: 'MAINTENANCE'
+    const labels = {
+        booked: 'BOOKED', in_transit: 'IN TRANSIT', completed: 'COMPLETED',
+        cancelled: 'CANCELLED', postponed: 'POSTPONED', maintenance: 'MAINTENANCE',
+        pending: 'PENDING', confirmed: 'CONFIRMED'
     };
     return (
         <span className={`hb-status ${status || ''}`}>
             <span className="hb-status-dot" />
-            {cfg[status] || status?.toUpperCase() || 'UNKNOWN'}
+            {labels[status] || status?.toUpperCase() || 'UNKNOWN'}
         </span>
     );
 };
 
-/* Toast Notification */
-const Toast = ({ message, type, onDone }) => {
-    useEffect(() => {
-        const t = setTimeout(() => {
-            onDone();
-        }, 3500);
-        return () => clearTimeout(t);
-    }, [onDone]);
+// ─── BranchBadge ─────────────────────────────────────────────────────────────
+const BranchBadge = ({ name, code }) => {
+    const label = name || code || null;
+    if (!label) return <span className="text-muted" style={{ fontSize: '0.8rem' }}>—</span>;
+    return (
+        <span className="hb-branch-tag">
+            <Building2 size={11} />
+            {label}
+        </span>
+    );
+};
 
+// ─── Toast ───────────────────────────────────────────────────────────────────
+const Toast = ({ message, type, onDone }) => {
+    useEffect(() => { const t = setTimeout(onDone, 3500); return () => clearTimeout(t); }, [onDone]);
     return (
         <div className={`hb-toast ${type}`}>
             {type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-            {message}
+            <span>{message}</span>
         </div>
     );
 };
 
-/* Available Hearses Modal */
-const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
+// ─── AvailableHearsesModal ────────────────────────────────────────────────────
+const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches }) => {
     const [hearses, setHearses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState(null);
@@ -140,235 +159,226 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     const [clientPhone, setClientPhone] = useState('');
     const [fromLocation, setFromLocation] = useState('');
     const [toLocation, setToLocation] = useState('');
+    const [filterBranch, setFilterBranch] = useState('all');
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         if (show) {
-            setSelected(null);
-            setBookingDate('');
-            setClientName('');
-            setClientPhone('');
-            setFromLocation('');
-            setToLocation('');
-            setErrorMessage('');
+            setSelected(null); setBookingDate(''); setClientName('');
+            setClientPhone(''); setFromLocation(''); setToLocation('');
+            setErrorMessage(''); setFilterBranch('all');
             loadHearses();
         }
     }, [show]);
 
     const loadHearses = async () => {
         setLoading(true);
-        try {
-            const r = await fetch(`${API_BASE_URL}/hearses/available?t=${Date.now()}`, {
-                headers: getAuthHeaders()
-            });
-            const data = await r.json();
-            const hearses = data.hearses || data || [];
-            setHearses(hearses);
-        } catch (e) {
-            console.error('Failed to load hearses:', e);
-        } finally {
-            setLoading(false);
-        }
+        try { setHearses(await bookingService.getAvailableHearses()); }
+        catch (e) { console.error('Failed to load hearses:', e); }
+        finally { setLoading(false); }
     };
+
+    const displayedHearses = filterBranch === 'all'
+        ? hearses
+        : hearses.filter(h => String(h.branch_id) === String(filterBranch));
 
     const handleBook = async () => {
         if (!selected || !bookingDate || !clientName || !fromLocation || !toLocation) {
-            setErrorMessage('Please fill in all required fields');
-            return;
+            setErrorMessage('Please fill in all required fields'); return;
         }
-        setSubmitting(true);
-        setErrorMessage('');
+        setSubmitting(true); setErrorMessage('');
         try {
-            // Get logged-in user info
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : {};
-            const bookedByUser = user?.user_slug || user?.username || user?.full_name || 'unknown';
-
-            const bookingData = {
+            await bookingService.createBooking({
                 hearse_id: selected.id,
                 client_name: clientName,
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
                 from_timestamp: bookingDate,
                 to_timestamp: bookingDate,
-                booked_by: bookedByUser
-            };
-
-            const userId = localStorage.getItem('userId') || localStorage.getItem('user_id');
-            if (userId) {
-                bookingData.created_by = parseInt(userId);
-            }
-
-            await bookingService.createBooking(bookingData);
-            onBookingCreated();
-            onHide();
-        } catch (e) {
-            setErrorMessage(e.message || 'Failed to create booking. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
+                booked_by: user?.user_slug || user?.username || user?.full_name || 'unknown'
+            });
+            onBookingCreated(); onHide();
+        } catch (e) { setErrorMessage(e.message || 'Failed to create booking.'); }
+        finally { setSubmitting(false); }
     };
 
+    // Unique branches from available hearses
+    const branchOptions = globalBranches.length > 0
+        ? globalBranches
+        : [...new Map(hearses.filter(h => h.branch_id).map(h => [h.branch_id, { branch_id: h.branch_id, branch_name: h.branch_name || h.branch_code || `Branch ${h.branch_id}` }])).values()];
+
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark">
+        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark" fullscreen="sm-down">
             <Modal.Header closeButton>
                 <Modal.Title>
-                    <Truck size={18} />
-                    Available Hearses
-                    <span className="hb-count-badge accent">{hearses.length}</span>
+                    <Truck size={18} /> Book a Hearse
+                    <span className="hb-count-badge accent">{displayedHearses.length} available</span>
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {!selected ? (
                     <>
+                        {/* Branch filter tabs */}
+                        {branchOptions.length > 1 && (
+                            <div className="hb-branch-tabs mb-3">
+                                <button
+                                    className={`hb-branch-tab ${filterBranch === 'all' ? 'active' : ''}`}
+                                    onClick={() => setFilterBranch('all')}
+                                >
+                                    All Branches <span className="pill-count">{hearses.length}</span>
+                                </button>
+                                {branchOptions.map(br => (
+                                    <button
+                                        key={br.branch_id}
+                                        className={`hb-branch-tab ${String(filterBranch) === String(br.branch_id) ? 'active' : ''}`}
+                                        onClick={() => setFilterBranch(String(br.branch_id))}
+                                    >
+                                        <Building2 size={12} />
+                                        {br.branch_name}
+                                        <span className="pill-count">
+                                            {hearses.filter(h => String(h.branch_id) === String(br.branch_id)).length}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         {loading ? (
                             <div className="text-center py-4">
                                 <div className="hb-loading-spinner" />
                                 <p className="text-muted small mt-2">Loading available vehicles...</p>
                             </div>
-                        ) : hearses.length === 0 ? (
+                        ) : displayedHearses.length === 0 ? (
                             <div className="hb-modal-empty">
-                                <div className="hb-modal-empty-icon">
-                                    <Car size={28} />
-                                </div>
+                                <div className="hb-modal-empty-icon"><Car size={28} /></div>
                                 <h5>No hearses available</h5>
                                 <p className="text-muted small mb-0">All vehicles are currently booked or in maintenance</p>
                             </div>
                         ) : (
-                            <div className="table-responsive">
-                                <Table hover size="sm" className="hb-modal-table mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Plate</th>
-                                            <th className="d-none d-md-table-cell">Model</th>
-                                            <th className="d-none d-md-table-cell">Branch</th>
-                                            <th className="text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {hearses.map(h => (
-                                            <tr key={h.id}>
-                                                <td><strong>{h.hearse_name || 'N/A'}</strong></td>
-                                                <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
-                                                <td className="d-none d-md-table-cell text-muted">{h.model || 'N/A'}</td>
-                                                <td className="d-none d-md-table-cell text-muted">{h.branch_code || h.branch_name || 'N/A'}</td>
-                                                <td className="text-center">
-                                                    <button className="hb-btn-book-sm" onClick={() => setSelected(h)}>
-                                                        <Car size={13} /> Book
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
+                            <>
+                                {/* Desktop table */}
+                                <div className="hb-desktop-only">
+                                    <div className="table-responsive">
+                                        <Table hover size="sm" className="hb-modal-table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Plate</th>
+                                                    <th>Model</th>
+                                                    <th>Branch</th>
+                                                    <th className="text-center">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {displayedHearses.map(h => (
+                                                    <tr key={h.id}>
+                                                        <td><strong>{h.hearse_name || 'N/A'}</strong></td>
+                                                        <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
+                                                        <td className="text-muted">{h.model || 'N/A'}</td>
+                                                        <td>
+                                                            <BranchBadge name={h.branch_name} code={h.branch_code} />
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <button className="hb-btn-book-sm" onClick={() => setSelected(h)}>
+                                                                <Car size={13} /> Book
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                </div>
+                                {/* Mobile cards */}
+                                <div className="hb-mobile-only">
+                                    {displayedHearses.map(h => (
+                                        <div key={h.id} className="hb-hearse-card" onClick={() => setSelected(h)}>
+                                            <div className="hb-hearse-card-top">
+                                                <div>
+                                                    <div className="hb-hearse-card-name">{h.hearse_name || 'N/A'}</div>
+                                                    <div className="hb-hearse-card-model">{h.model || 'No model'}</div>
+                                                </div>
+                                                <span className="hb-plate-badge">{h.plate_number || h.number_plate}</span>
+                                            </div>
+                                            <div className="hb-hearse-card-bottom">
+                                                <BranchBadge name={h.branch_name} code={h.branch_code} />
+                                                <span className="hb-hearse-card-book">Book <ArrowRight size={14} /></span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </>
                 ) : (
                     <>
                         {errorMessage && (
-                            <div className="alert alert-danger d-flex align-items-center" role="alert" style={{ fontSize: '0.85rem', padding: '0.65rem 0.85rem', marginBottom: '1rem', borderRadius: '8px' }}>
+                            <div className="alert alert-danger d-flex align-items-center" style={{ fontSize: '0.85rem', padding: '0.65rem 0.85rem', marginBottom: '1rem', borderRadius: '8px' }}>
                                 <XCircle size={16} className="me-2 flex-shrink-0" />
                                 <span>{errorMessage}</span>
                             </div>
                         )}
                         <div className="hb-selected-info">
-                            <div className="hb-selected-icon">
-                                <Car size={22} />
-                            </div>
+                            <div className="hb-selected-icon"><Car size={22} /></div>
                             <div className="hb-selected-details">
                                 <strong>{selected.hearse_name}</strong>
-                                <span className="hb-plate-badge ms-2">{selected.plate_number || selected.number_plate}</span>
-                                <div className="sub">{selected.model} • {selected.capacity} seats</div>
+                                <span className="hb-plate-badge hb-plate-inline">{selected.plate_number || selected.number_plate}</span>
+                                <div className="sub">
+                                    {selected.model} • {selected.capacity} seats
+                                    {(selected.branch_name || selected.branch_code) && (
+                                        <> • <BranchBadge name={selected.branch_name} code={selected.branch_code} /></>
+                                    )}
+                                </div>
                             </div>
-                            <Button variant="link" className="text-muted p-0 ms-auto" onClick={() => setSelected(null)} style={{ fontSize: '0.82rem', textDecoration: 'none' }}>
-                                ← Change
-                            </Button>
+                            <Button variant="link" className="hb-change-btn" onClick={() => setSelected(null)}>← Change</Button>
                         </div>
 
                         <div className="hb-section-label">Booking Details</div>
-                        <Row>
+                        <Row className="g-3">
                             <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
+                                <Form.Group>
                                     <Form.Label className="hb-form-label">Booking Date *</Form.Label>
-                                    <Form.Control
-                                        type="date"
-                                        value={bookingDate}
-                                        onChange={e => setBookingDate(e.target.value)}
-                                        className="hb-form-control"
-                                        required
-                                    />
+                                    <Form.Control type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} className="hb-form-control" required />
                                 </Form.Group>
                             </Col>
                             <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
+                                <Form.Group>
                                     <Form.Label className="hb-form-label">Client Name *</Form.Label>
-                                    <Form.Control
-                                        value={clientName}
-                                        onChange={e => setClientName(e.target.value)}
-                                        placeholder="Full name"
-                                        className="hb-form-control"
-                                        required
-                                    />
+                                    <Form.Control value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Full name" className="hb-form-control" required />
                                 </Form.Group>
                             </Col>
-                        </Row>
-                        <Row>
                             <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
+                                <Form.Group>
                                     <Form.Label className="hb-form-label">Phone</Form.Label>
-                                    <Form.Control
-                                        value={clientPhone}
-                                        onChange={e => setClientPhone(e.target.value)}
-                                        placeholder="0712345678"
-                                        className="hb-form-control"
-                                    />
+                                    <Form.Control value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="0712345678" className="hb-form-control" />
                                 </Form.Group>
                             </Col>
                         </Row>
-                        <Row>
+                        <Row className="g-3 mt-0">
                             <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
+                                <Form.Group>
                                     <Form.Label className="hb-form-label">From *</Form.Label>
-                                    <Form.Control
-                                        value={fromLocation}
-                                        onChange={e => setFromLocation(e.target.value)}
-                                        placeholder="Pickup location"
-                                        className="hb-form-control"
-                                        required
-                                    />
+                                    <Form.Control value={fromLocation} onChange={e => setFromLocation(e.target.value)} placeholder="Pickup location" className="hb-form-control" required />
                                 </Form.Group>
                             </Col>
                             <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
+                                <Form.Group>
                                     <Form.Label className="hb-form-label">To *</Form.Label>
-                                    <Form.Control
-                                        value={toLocation}
-                                        onChange={e => setToLocation(e.target.value)}
-                                        placeholder="Destination"
-                                        className="hb-form-control"
-                                        required
-                                    />
+                                    <Form.Control value={toLocation} onChange={e => setToLocation(e.target.value)} placeholder="Destination" className="hb-form-control" required />
                                 </Form.Group>
                             </Col>
                         </Row>
-                        <div className="d-flex justify-content-between mt-4">
-                            <button type="button" className="hb-btn hb-btn-ghost" onClick={() => setSelected(null)}>
-                                ← Back
-                            </button>
+                        <div className="hb-modal-actions">
+                            <button type="button" className="hb-btn hb-btn-ghost" onClick={() => setSelected(null)}>← Back</button>
                             <button
-                                type="button"
-                                className="hb-btn hb-btn-green"
+                                type="button" className="hb-btn hb-btn-green"
                                 onClick={handleBook}
                                 disabled={!bookingDate || !clientName || !fromLocation || !toLocation || submitting}
                             >
-                                {submitting ? (
-                                    <><span className="hb-loading-spinner" style={{ width: 16, height: 16, borderWidth: 2, margin: 0, marginRight: 8, display: 'inline-block', verticalAlign: 'middle' }} />Booking...</>
-                                ) : (
-                                    <><CheckCircle size={16} />Confirm Booking</>
-                                )}
+                                {submitting ? <><span className="hb-loading-spinner hb-spinner-sm" />Booking...</> : <><CheckCircle size={16} />Confirm Booking</>}
                             </button>
                         </div>
                     </>
@@ -378,11 +388,10 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated }) => {
     );
 };
 
-/* Postpone Modal */
+// ─── PostponeModal ────────────────────────────────────────────────────────────
 const PostponeModal = ({ show, onHide, booking, onPostpone }) => {
     const [date, setDate] = useState('');
     const [reason, setReason] = useState('');
-
     useEffect(() => {
         if (booking) {
             const d = new Date(booking.booking_date || booking.estimated_departure_time || new Date());
@@ -390,20 +399,11 @@ const PostponeModal = ({ show, onHide, booking, onPostpone }) => {
             setReason('');
         }
     }, [booking]);
-
-    const submit = async (e) => {
-        e.preventDefault();
-        await onPostpone(booking.booking_id, { new_departure_time: date, reason });
-        onHide();
-    };
-
+    const submit = async (e) => { e.preventDefault(); await onPostpone(booking.booking_id, { new_departure_time: date, reason }); onHide(); };
     return (
-        <Modal show={show} onHide={onHide} centered className="hb-modal hb-modal-amber">
+        <Modal show={show} onHide={onHide} centered className="hb-modal hb-modal-amber" fullscreen="sm-down">
             <Modal.Header closeButton>
-                <Modal.Title>
-                    <Calendar size={18} />
-                    Postpone Booking
-                </Modal.Title>
+                <Modal.Title><Calendar size={18} /> Postpone Booking</Modal.Title>
             </Modal.Header>
             <form onSubmit={submit}>
                 <Modal.Body>
@@ -411,30 +411,13 @@ const PostponeModal = ({ show, onHide, booking, onPostpone }) => {
                         <AlertCircle size={18} />
                         <span>Postponing <strong>{genId(booking?.booking_id)}</strong> for {booking?.client_name}</span>
                     </div>
-                    <Row>
-                        <Col xs={12}>
-                            <Form.Group className="mb-3">
-                                <Form.Label className="hb-form-label">New Date *</Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    value={date}
-                                    onChange={e => setDate(e.target.value)}
-                                    className="hb-form-control"
-                                    required
-                                />
-                            </Form.Group>
-                        </Col>
-                    </Row>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="hb-form-label">New Date *</Form.Label>
+                        <Form.Control type="date" value={date} onChange={e => setDate(e.target.value)} className="hb-form-control" required />
+                    </Form.Group>
                     <Form.Group>
                         <Form.Label className="hb-form-label">Reason</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={2}
-                            value={reason}
-                            onChange={e => setReason(e.target.value)}
-                            placeholder="Why is this booking being postponed?"
-                            className="hb-form-control"
-                        />
+                        <Form.Control as="textarea" rows={3} value={reason} onChange={e => setReason(e.target.value)} placeholder="Why is this booking being postponed?" className="hb-form-control" />
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>
@@ -446,88 +429,124 @@ const PostponeModal = ({ show, onHide, booking, onPostpone }) => {
     );
 };
 
-/* All Hearses Modal */
-const AllHearsesModal = ({ show, onHide, hearses }) => {
-    const bookedPlates = new Set();
+// ─── AllHearsesModal ──────────────────────────────────────────────────────────
+const AllHearsesModal = ({ show, onHide, hearses, globalBranches }) => {
+    const [branchFilter, setBranchFilter] = useState('all');
+    const displayed = branchFilter === 'all' ? hearses : hearses.filter(h => String(h.branch_id) === String(branchFilter));
+    const branchOptions = globalBranches.length > 0
+        ? globalBranches
+        : [...new Map(hearses.filter(h => h.branch_id).map(h => [h.branch_id, { branch_id: h.branch_id, branch_name: h.branch_name || h.branch_code || `Branch ${h.branch_id}` }])).values()];
+
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark">
+        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark" fullscreen="sm-down">
             <Modal.Header closeButton>
                 <Modal.Title>
-                    <Car size={18} />
-                    All Hearses
-                    <span className="hb-count-badge accent">{hearses.length}</span>
+                    <Car size={18} /> All Hearses
+                    <span className="hb-count-badge accent">{displayed.length}</span>
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                {hearses.length === 0 ? (
+                {branchOptions.length > 1 && (
+                    <div className="hb-branch-tabs mb-3">
+                        <button className={`hb-branch-tab ${branchFilter === 'all' ? 'active' : ''}`} onClick={() => setBranchFilter('all')}>
+                            All <span className="pill-count">{hearses.length}</span>
+                        </button>
+                        {branchOptions.map(br => (
+                            <button
+                                key={br.branch_id}
+                                className={`hb-branch-tab ${String(branchFilter) === String(br.branch_id) ? 'active' : ''}`}
+                                onClick={() => setBranchFilter(String(br.branch_id))}
+                            >
+                                <Building2 size={12} /> {br.branch_name}
+                                <span className="pill-count">{hearses.filter(h => String(h.branch_id) === String(br.branch_id)).length}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+                {displayed.length === 0 ? (
                     <div className="hb-modal-empty">
                         <div className="hb-modal-empty-icon"><Car size={28} /></div>
                         <h5>No hearses registered</h5>
                         <p className="text-muted small mb-0">Register a new hearse to get started</p>
                     </div>
                 ) : (
-                    <div className="table-responsive">
-                        <Table hover size="sm" className="hb-modal-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Plate</th>
-                                    <th className="d-none d-md-table-cell">Model</th>
-                                    <th>Capacity</th>
-                                    <th className="d-none d-md-table-cell">Branch</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {hearses.map(h => {
-                                    const isBooked = h.status === 'booked' || h.is_booked;
-                                    return (
-                                        <tr key={h.id}>
-                                            <td><strong>{h.hearse_name || 'N/A'}</strong></td>
-                                            <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
-                                            <td className="d-none d-md-table-cell text-muted">{h.model || 'N/A'}</td>
-                                            <td>{h.capacity || '-'}</td>
-                                            <td className="d-none d-md-table-cell text-muted">{h.branch_code || h.branch_name || 'N/A'}</td>
-                                            <td>
-                                                <span className={`hb-status ${isBooked ? 'booked' : 'completed'}`}>
-                                                    <span className="hb-status-dot" />
-                                                    {isBooked ? 'BOOKED' : 'AVAILABLE'}
-                                                </span>
-                                            </td>
+                    <>
+                        <div className="hb-desktop-only">
+                            <div className="table-responsive">
+                                <Table hover size="sm" className="hb-modal-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th><th>Plate</th><th>Model</th><th>Cap.</th><th>Branch</th><th>Status</th>
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </Table>
-                    </div>
+                                    </thead>
+                                    <tbody>
+                                        {displayed.map(h => {
+                                            const isBooked = h.status === 'booked' || h.is_booked;
+                                            return (
+                                                <tr key={h.id}>
+                                                    <td><strong>{h.hearse_name || 'N/A'}</strong></td>
+                                                    <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
+                                                    <td className="text-muted">{h.model || 'N/A'}</td>
+                                                    <td>{h.capacity || '-'}</td>
+                                                    <td><BranchBadge name={h.branch_name} code={h.branch_code} /></td>
+                                                    <td>
+                                                        <span className={`hb-status ${isBooked ? 'booked' : 'completed'}`}>
+                                                            <span className="hb-status-dot" />
+                                                            {isBooked ? 'BOOKED' : 'AVAILABLE'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </div>
+                        <div className="hb-mobile-only">
+                            {displayed.map(h => {
+                                const isBooked = h.status === 'booked' || h.is_booked;
+                                return (
+                                    <div key={h.id} className="hb-hearse-card">
+                                        <div className="hb-hearse-card-top">
+                                            <div>
+                                                <div className="hb-hearse-card-name">{h.hearse_name || 'N/A'}</div>
+                                                <div className="hb-hearse-card-model">{h.model || 'No model'} • {h.capacity || '-'} seats</div>
+                                            </div>
+                                            <span className={`hb-status ${isBooked ? 'booked' : 'completed'}`}>
+                                                <span className="hb-status-dot" />
+                                                {isBooked ? 'BOOKED' : 'AVAILABLE'}
+                                            </span>
+                                        </div>
+                                        <div className="hb-hearse-card-bottom">
+                                            <span className="hb-plate-badge">{h.plate_number || h.number_plate}</span>
+                                            <BranchBadge name={h.branch_name} code={h.branch_code} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </Modal.Body>
         </Modal>
     );
 };
 
-/* Register Hearse Modal */
-const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegistering, registerForm, setRegisterForm }) => {
+// ─── RegisterHearseModal ──────────────────────────────────────────────────────
+const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegistering, registerForm, setRegisterForm, globalBranches }) => {
     const handleRegister = async (e) => {
         e.preventDefault();
         setRegistering(true);
         try {
             await bookingService.registerHearse(registerForm);
-            onRegistered();
-            onHide();
-        } catch (e) {
-            alert('Failed to register hearse: ' + e.message);
-        }
+            onRegistered(); onHide();
+        } catch (e) { alert('Failed to register hearse: ' + e.message); }
         setRegistering(false);
     };
-
     return (
-        <Modal show={show} onHide={onHide} centered className="hb-modal hb-modal-dark">
+        <Modal show={show} onHide={onHide} centered className="hb-modal hb-modal-dark" fullscreen="sm-down">
             <Modal.Header closeButton>
-                <Modal.Title>
-                    <Plus size={18} />
-                    Register Hearse
-                </Modal.Title>
+                <Modal.Title><Plus size={18} /> Register Hearse</Modal.Title>
             </Modal.Header>
             <form onSubmit={handleRegister}>
                 <Modal.Body>
@@ -536,9 +555,7 @@ const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegis
                         <Form.Control
                             value={registerForm.hearse_name}
                             onChange={e => setRegisterForm(p => ({ ...p, hearse_name: e.target.value }))}
-                            placeholder="e.g., Mercedes Sprinter"
-                            className="hb-form-control"
-                            required
+                            placeholder="e.g., Mercedes Sprinter" className="hb-form-control" required
                         />
                     </Form.Group>
                     <Row className="g-3">
@@ -548,9 +565,7 @@ const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegis
                                 <Form.Control
                                     value={registerForm.plate_number}
                                     onChange={e => setRegisterForm(p => ({ ...p, plate_number: e.target.value.toUpperCase() }))}
-                                    placeholder="KCA 1234"
-                                    className="hb-form-control"
-                                    required
+                                    placeholder="KCA 1234" className="hb-form-control" required
                                 />
                             </Form.Group>
                         </Col>
@@ -560,8 +575,7 @@ const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegis
                                 <Form.Control
                                     value={registerForm.model}
                                     onChange={e => setRegisterForm(p => ({ ...p, model: e.target.value }))}
-                                    placeholder="Toyota Hiace"
-                                    className="hb-form-control"
+                                    placeholder="Toyota Hiace" className="hb-form-control"
                                 />
                             </Form.Group>
                         </Col>
@@ -569,25 +583,45 @@ const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegis
                             <Form.Group>
                                 <Form.Label className="hb-form-label">Capacity</Form.Label>
                                 <Form.Control
-                                    type="number"
-                                    value={registerForm.capacity}
+                                    type="number" value={registerForm.capacity}
                                     onChange={e => setRegisterForm(p => ({ ...p, capacity: e.target.value }))}
-                                    placeholder="4"
-                                    min="1"
-                                    className="hb-form-control"
+                                    placeholder="4" min="1" className="hb-form-control"
                                 />
                             </Form.Group>
                         </Col>
                         <Col xs={12} md={6}>
                             <Form.Group>
-                                <Form.Label className="hb-form-label">Branch Code *</Form.Label>
-                                <Form.Control
-                                    value={registerForm.branch_code}
-                                    onChange={e => setRegisterForm(p => ({ ...p, branch_code: e.target.value.toUpperCase() }))}
-                                    placeholder="e.g., NBI"
-                                    className="hb-form-control"
-                                    required
-                                />
+                                <Form.Label className="hb-form-label">
+                                    Branch {globalBranches.length > 0 ? '*' : '(Code)'}
+                                </Form.Label>
+                                {globalBranches.length > 0 ? (
+                                    <Form.Select
+                                        className="hb-form-control"
+                                        value={registerForm.branch_id || ''}
+                                        onChange={e => {
+                                            const br = globalBranches.find(b => String(b.branch_id) === e.target.value);
+                                            setRegisterForm(p => ({
+                                                ...p,
+                                                branch_id: e.target.value,
+                                                branch_code: br?.branch_slug || br?.branch_name?.substring(0, 3).toUpperCase() || ''
+                                            }));
+                                        }}
+                                        required
+                                    >
+                                        <option value="">— Select Branch —</option>
+                                        {globalBranches.map(br => (
+                                            <option key={br.branch_id} value={br.branch_id}>
+                                                {br.branch_name} {br.branch_location ? `(${br.branch_location})` : ''}
+                                            </option>
+                                        ))}
+                                    </Form.Select>
+                                ) : (
+                                    <Form.Control
+                                        value={registerForm.branch_code}
+                                        onChange={e => setRegisterForm(p => ({ ...p, branch_code: e.target.value.toUpperCase() }))}
+                                        placeholder="e.g., NBI" className="hb-form-control" required
+                                    />
+                                )}
                             </Form.Group>
                         </Col>
                     </Row>
@@ -595,11 +629,7 @@ const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegis
                 <Modal.Footer>
                     <button type="button" className="hb-btn hb-btn-ghost" onClick={onHide}>Cancel</button>
                     <button type="submit" className="hb-btn hb-btn-green" disabled={registering}>
-                        {registering ? (
-                            <><span className="hb-loading-spinner" style={{ width: 16, height: 16, borderWidth: 2, margin: 0, marginRight: 8, display: 'inline-block', verticalAlign: 'middle' }} />Saving...</>
-                        ) : (
-                            <><CheckCircle size={16} />Register Hearse</>
-                        )}
+                        {registering ? <><span className="hb-loading-spinner hb-spinner-sm" />Saving...</> : <><CheckCircle size={16} />Register Hearse</>}
                     </button>
                 </Modal.Footer>
             </form>
@@ -607,12 +637,149 @@ const RegisterHearseModal = ({ show, onHide, onRegistered, registering, setRegis
     );
 };
 
-/* Main Component */
+// ─── DetailsModal ─────────────────────────────────────────────────────────────
+const DetailsModal = ({ show, onHide, booking }) => {
+    if (!booking) return null;
+    const b = booking;
+    return (
+        <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark" fullscreen="sm-down">
+            <Modal.Header closeButton>
+                <Modal.Title><Eye size={18} /> Booking {b.booking_code || genId(b.booking_id)}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Row className="g-3">
+                    <Col xs={12} md={6}>
+                        <div className="hb-detail-card">
+                            <div className="hb-detail-card-header"><User size={14} />Client Information</div>
+                            <div className="hb-detail-card-body">
+                                <div className="hb-detail-row"><span className="label">Name</span><span className="value">{b.client_name}</span></div>
+                                <div className="hb-detail-row"><span className="label">Phone</span><span className="value">{b.client_phone || 'N/A'}</span></div>
+                                <div className="hb-detail-row"><span className="label">Booked By</span><span className="value">{b.booked_by || 'N/A'}</span></div>
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xs={12} md={6}>
+                        <div className="hb-detail-card">
+                            <div className="hb-detail-card-header"><Truck size={14} />Trip Details</div>
+                            <div className="hb-detail-card-body">
+                                <div className="hb-detail-row"><span className="label">Destination</span><span className="value">{b.destination || 'N/A'}</span></div>
+                                <div className="hb-detail-row"><span className="label">Date</span><span className="value">{fmtDate(b.booking_date || b.estimated_departure_time)}</span></div>
+                                <div className="hb-detail-row"><span className="label">Status</span><span className="value"><StatusBadge status={b.status} /></span></div>
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xs={12} md={6}>
+                        <div className="hb-detail-card">
+                            <div className="hb-detail-card-header"><Car size={14} />Vehicle</div>
+                            <div className="hb-detail-card-body">
+                                <div className="hb-detail-row"><span className="label">Name</span><span className="value">{b.hearse_name || 'N/A'}</span></div>
+                                <div className="hb-detail-row"><span className="label">Plate</span><span className="value"><span className="hb-plate-badge">{b.plate_number || b.number_plate || 'N/A'}</span></span></div>
+                                <div className="hb-detail-row">
+                                    <span className="label">Branch</span>
+                                    <span className="value"><BranchBadge name={b.branch_name} code={b.branch_code} /></span>
+                                </div>
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xs={12} md={6}>
+                        <div className="hb-detail-card">
+                            <div className="hb-detail-card-header"><Clock size={14} />Timestamps</div>
+                            <div className="hb-detail-card-body">
+                                <div className="hb-detail-row"><span className="label">Created</span><span className="value">{fmtDate(b.created_at)}</span></div>
+                                <div className="hb-detail-row"><span className="label">Updated</span><span className="value">{fmtDate(b.updated_at)}</span></div>
+                                {b.postpone_reason && (
+                                    <div className="hb-detail-row"><span className="label">Reason</span><span className="value">{b.postpone_reason}</span></div>
+                                )}
+                            </div>
+                        </div>
+                    </Col>
+                </Row>
+            </Modal.Body>
+        </Modal>
+    );
+};
+
+// ─── Mobile BookingCard ───────────────────────────────────────────────────────
+const BookingCard = ({ b, onStatus, onView, onPostpone }) => (
+    <div className="hb-booking-card">
+        <div className="hb-booking-card-header">
+            <div>
+                <div className="hb-booking-card-id">{b.booking_code || genId(b.booking_id)}</div>
+                <div className="hb-booking-card-date">{fmtDate(b.created_at)}</div>
+            </div>
+            <StatusBadge status={b.status} />
+        </div>
+
+        <div className="hb-booking-card-client">
+            <div className="hb-booking-card-client-avatar"><User size={16} /></div>
+            <div className="hb-booking-card-client-info">
+                <div className="hb-booking-card-client-name">{b.client_name}</div>
+                {b.client_phone && (
+                    <div className="hb-booking-card-client-phone"><Phone size={11} /> {b.client_phone}</div>
+                )}
+            </div>
+        </div>
+
+        <div className="hb-booking-card-route">
+            <div className="hb-route-item">
+                <div className="hb-route-dot hb-route-dot-red" />
+                <div className="hb-route-text">{b.destination || 'N/A'}</div>
+            </div>
+        </div>
+
+        <div className="hb-booking-card-vehicle">
+            <Car size={14} />
+            <span className="hb-plate-badge">{b.plate_number || b.number_plate || 'N/A'}</span>
+            {b.hearse_name && <span className="hb-booking-card-hearse-name">{b.hearse_name}</span>}
+            <BranchBadge name={b.branch_name} code={b.branch_code} />
+        </div>
+
+        <div className="hb-booking-card-date-mobile">
+            <Clock size={12} />{fmtDate(b.booking_date || b.estimated_departure_time)}
+        </div>
+
+        <div className="hb-booking-card-actions">
+            <button className="hb-card-action" onClick={() => onView(b)}><Eye size={15} /> View</button>
+            {b.status === 'booked' && (
+                <button className="hb-card-action hb-card-action-primary" onClick={() => onStatus(b.booking_id, 'in_transit')}>
+                    <Truck size={15} /> Transit
+                </button>
+            )}
+            {b.status === 'in_transit' && (
+                <button className="hb-card-action hb-card-action-success" onClick={() => onStatus(b.booking_id, 'completed')}>
+                    <CheckCircle size={15} /> Complete
+                </button>
+            )}
+            {b.status !== 'cancelled' && b.status !== 'completed' && (
+                <Dropdown align="end">
+                    <Dropdown.Toggle as="div">
+                        <button className="hb-card-action hb-card-action-more"><MoreVertical size={15} /></button>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="hb-action-menu">
+                        <Dropdown.Item onClick={() => onStatus(b.booking_id, 'maintenance')}>
+                            <Wrench size={14} style={{ color: '#9333ea' }} />Maintenance
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => onStatus(b.booking_id, 'cancelled')}>
+                            <XCircle size={14} style={{ color: '#dc2626' }} />Cancel
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item onClick={() => onPostpone(b)}>
+                            <Calendar size={14} style={{ color: '#d97706' }} />Postpone
+                        </Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
+            )}
+        </div>
+    </div>
+);
+
+// ─── Main BookingSystem ───────────────────────────────────────────────────────
 const BookingSystem = () => {
     const [bookings, setBookings] = useState([]);
     const [hearses, setHearses] = useState([]);
+    const [globalBranches, setGlobalBranches] = useState([]); // real branches from tenant API
     const [filter, setFilter] = useState('booked');
-    const [branchFilter, setBranchFilter] = useState('all');
+    const [branchFilter, setBranchFilter] = useState('all'); // branch_id or 'all'
     const [loading, setLoading] = useState(true);
     const [toasts, setToasts] = useState([]);
     const [selectedBooking, setSelectedBooking] = useState(null);
@@ -622,151 +789,113 @@ const BookingSystem = () => {
     const [showHearses, setShowHearses] = useState(false);
     const [showAvailable, setShowAvailable] = useState(false);
     const [registerForm, setRegisterForm] = useState({
-        plate_number: '',
-        hearse_name: '',
-        model: '',
-        capacity: '',
-        branch_code: ''
+        plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '', branch_id: ''
     });
     const [registering, setRegistering] = useState(false);
     const [availabilityResult, setAvailabilityResult] = useState(null);
-    const [branches, setBranches] = useState([]);
+    const [showBranchDropdown, setShowBranchDropdown] = useState(false);
     const { socket } = useSocket();
 
     const addToast = useCallback((message, type = 'success') => {
         const id = Date.now();
         setToasts(prev => [...prev, { id, message, type }]);
     }, []);
+    const removeToast = useCallback((id) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
-    const removeToast = useCallback((id) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+    // ── Load branches once on mount ─────────────────────────────────────────
+    useEffect(() => {
+        bookingService.getBranches().then(branches => {
+            if (branches && branches.length > 0) setGlobalBranches(branches);
+        });
     }, []);
 
-    useEffect(() => {
-        const branchesFromHearses = [...new Set(hearses.map(h => h.branch_code || h.branch_name).filter(Boolean))];
-        const branchesFromBookings = [...new Set(bookings.map(b => b.branch_code).filter(Boolean))];
-        const allBranches = [...new Set([...branchesFromHearses, ...branchesFromBookings])];
-        setBranches(allBranches.sort());
-    }, [hearses, bookings]);
+    // ── Initial data load ───────────────────────────────────────────────────
+    useEffect(() => { loadData(); loadHearses(); }, []);
 
-    useEffect(() => {
-        loadData();
-        loadHearses();
-    }, []);
-
+    // ── Socket.io real-time ─────────────────────────────────────────────────
     useEffect(() => {
         if (!socket) return;
-        socket.on('new_booking', (d) => {
-            setBookings(p => [d.booking, ...p]);
-            addToast('New booking received!');
-        });
+        socket.on('new_booking', (d) => { setBookings(p => [d.booking, ...p]); addToast('New booking received!'); });
         socket.on('booking_status_updated', (d) => {
             setBookings(p => p.map(b => b.booking_id === d.booking_id ? { ...b, status: d.status, ...d.booking } : b));
         });
-        return () => {
-            socket.off('new_booking');
-            socket.off('booking_status_updated');
-        };
+        return () => { socket.off('new_booking'); socket.off('booking_status_updated'); };
     }, [socket, addToast]);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const r = await fetch(`${API_BASE_URL}/hearse-bookings?t=${Date.now()}`, {
-                headers: getAuthHeaders()
-            });
-            const data = await r.json();
-            const bookingsData = Array.isArray(data.bookings) ? data.bookings : (Array.isArray(data) ? data : []);
-            setBookings(bookingsData);
-        } catch (e) {
-            addToast('Failed to load data.', 'error');
-            console.error(e);
-        }
+            const { bookings: bks, branches: brs } = await bookingService.getBookings();
+            setBookings(bks);
+            // Merge API branches with any returned from bookings response
+            if (brs && brs.length > 0) {
+                setGlobalBranches(prev => {
+                    const combined = [...prev, ...brs];
+                    const seen = new Set();
+                    return combined.filter(b => { if (seen.has(b.branch_id)) return false; seen.add(b.branch_id); return true; });
+                });
+            }
+        } catch (e) { addToast('Failed to load bookings.', 'error'); }
         setLoading(false);
     };
 
     const loadHearses = async () => {
-        try {
-            const data = await bookingService.getAllHearses();
-            setHearses(data);
-        } catch (e) {
-            console.error(e);
-        }
+        try { setHearses(await bookingService.getAllHearses()); }
+        catch (e) { console.error(e); }
     };
 
     const handleStatus = async (id, s) => {
-        try {
-            await bookingService.updateBookingStatus(id, s);
-            addToast('Status updated successfully!');
-            await loadData();
-        } catch (e) {
-            addToast('Failed to update status.', 'error');
-            console.error(e);
-        }
+        try { await bookingService.updateBookingStatus(id, s); addToast('Status updated!'); await loadData(); }
+        catch (e) { addToast('Failed to update status.', 'error'); }
     };
-
     const handlePostpone = async (id, d) => {
-        try {
-            await bookingService.postponeBooking(id, d);
-            addToast('Booking postponed!');
-            await loadData();
-        } catch (e) {
-            addToast('Failed to postpone booking.', 'error');
-            console.error(e);
-        }
+        try { await bookingService.postponeBooking(id, d); addToast('Booking postponed!'); await loadData(); }
+        catch (e) { addToast('Failed to postpone.', 'error'); }
     };
-
     const handleRegistered = async () => {
-        addToast('Hearse registered successfully!');
-        setRegisterForm({ plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '' });
+        addToast('Hearse registered!');
+        setRegisterForm({ plate_number: '', hearse_name: '', model: '', capacity: '', branch_code: '', branch_id: '' });
         await loadHearses();
     };
 
     const checkAvailability = async () => {
         const date = document.getElementById('availabilityDate')?.value;
-        if (!date) {
-            addToast('Please select a date', 'error');
-            return;
-        }
-
+        if (!date) { addToast('Please select a date', 'error'); return; }
         try {
             setAvailabilityResult(null);
-            const r = await fetch(`${API_BASE_URL}/hearse-bookings/availability?date=${date}`, {
-                headers: getAuthHeaders()
-            });
+            const r = await fetch(`${API_BASE_URL}/hearse-bookings/check-date?date=${date}`, { headers: getAuthHeaders() });
             const data = await r.json();
-
             if (data.status === 'success') {
-                setAvailabilityResult({
-                    available: data.available_hearses?.length || 0,
-                    booked: data.booked_hearses?.length || 0,
-                    date: date
-                });
-            } else {
-                addToast(data.message || 'No availability data returned', 'error');
-            }
-        } catch (e) {
-            addToast('Failed to check availability: ' + e.message, 'error');
-        }
+                setAvailabilityResult({ available: data.available_hearses?.length || 0, booked: data.booked_hearses?.length || 0, date });
+            } else { addToast(data.message || 'No data returned', 'error'); }
+        } catch (e) { addToast('Failed to check availability.', 'error'); }
     };
 
+    // ── Filtering ────────────────────────────────────────────────────────────
     const getStatusCount = (status) => bookings.filter(b => b.status === status).length;
-    const getBranchCount = (branch) => bookings.filter(b => b.branch_code === branch).length;
+    const getBranchBookingCount = (branchId) => bookings.filter(b => String(b.branch_id) === String(branchId)).length;
 
     const filtered = bookings.filter(b => {
-        const statusMatch = filter === 'all' ? !['completed', 'cancelled', 'postponed'].includes(b.status) : b.status === filter;
-        const branchMatch = branchFilter === 'all' || b.branch_code === branchFilter;
+        const statusMatch = filter === 'all'
+            ? !['completed', 'cancelled', 'postponed'].includes(b.status)
+            : b.status === filter;
+        const branchMatch = branchFilter === 'all' || String(b.branch_id) === String(branchFilter);
         return statusMatch && branchMatch;
     });
 
     const statusPills = [
         { key: 'all', label: 'ALL', color: 'navy', count: bookings.length },
         { key: 'booked', label: 'BOOKED', color: 'blue', count: getStatusCount('booked') },
-        { key: 'in_transit', label: 'IN TRANSIT', color: 'cyan', count: getStatusCount('in_transit') },
-        { key: 'completed', label: 'COMPLETED', color: 'green', count: getStatusCount('completed') },
-        { key: 'cancelled', label: 'CANCELLED', color: 'red', count: getStatusCount('cancelled') },
-        { key: 'postponed', label: 'POSTPONED', color: 'amber', count: getStatusCount('postponed') }
+        { key: 'in_transit', label: 'TRANSIT', color: 'cyan', count: getStatusCount('in_transit') },
+        { key: 'completed', label: 'DONE', color: 'green', count: getStatusCount('completed') },
+        { key: 'cancelled', label: 'CANCEL', color: 'red', count: getStatusCount('cancelled') },
+        { key: 'postponed', label: 'LATER', color: 'amber', count: getStatusCount('postponed') }
     ];
+
+    // Build branch display label
+    const selectedBranchName = branchFilter === 'all'
+        ? 'All Branches'
+        : globalBranches.find(b => String(b.branch_id) === String(branchFilter))?.branch_name || `Branch ${branchFilter}`;
 
     if (loading) return (
         <div className="hb-loading">
@@ -779,21 +908,23 @@ const BookingSystem = () => {
 
     return (
         <>
-            {/* Toast Container */}
             <div className="hb-toast-container">
-                {toasts.map(t => (
-                    <Toast key={t.id} message={t.message} type={t.type} onDone={() => removeToast(t.id)} />
-                ))}
+                {toasts.map(t => <Toast key={t.id} message={t.message} type={t.type} onDone={() => removeToast(t.id)} />)}
             </div>
 
             <div className="hb-page">
                 {/* Header */}
                 <div className="hb-header">
                     <div className="hb-header-top">
-                        <div>
+                        <div className="hb-header-info">
                             <h4 className="hb-header-title">
                                 <span className="icon-wrap"><Car size={20} /></span>
                                 Hearse Management
+                                {branchFilter !== 'all' && (
+                                    <span className="hb-branch-context-badge">
+                                        <Building2 size={13} /> {selectedBranchName}
+                                    </span>
+                                )}
                             </h4>
                             <div className="hb-header-meta">
                                 <span className={`hb-live-badge ${socket?.connected ? 'online' : 'offline'}`}>
@@ -801,19 +932,24 @@ const BookingSystem = () => {
                                     {socket?.connected ? 'LIVE' : 'OFFLINE'}
                                 </span>
                                 <span className="hb-active-count">
-                                    {bookings.filter(b => !['completed', 'cancelled'].includes(b.status)).length} active bookings
+                                    {bookings.filter(b => !['completed', 'cancelled'].includes(b.status)).length} active
                                 </span>
+                                {globalBranches.length > 0 && (
+                                    <span className="hb-active-count" style={{ color: '#8b5cf6' }}>
+                                        {globalBranches.length} branches
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div className="hb-header-actions">
                             <button className="hb-btn-header ghost" onClick={loadData}>
-                                <RefreshCw size={14} />Refresh
+                                <RefreshCw size={14} /><span>Refresh</span>
                             </button>
                             <button className="hb-btn-header primary" onClick={() => setShowAvailable(true)}>
-                                <Truck size={14} />New Booking
+                                <Truck size={14} /><span>New Booking</span>
                             </button>
                             <button className="hb-btn-header success" onClick={() => setShowRegister(true)}>
-                                <Plus size={14} />Register
+                                <Plus size={14} /><span>Register</span>
                             </button>
                         </div>
                     </div>
@@ -822,53 +958,71 @@ const BookingSystem = () => {
                     <div className="hb-filter-bar">
                         <div className="hb-filter-row">
                             <div className="hb-filter-left">
-                                <Form.Control
-                                    type="date"
-                                    id="availabilityDate"
-                                    size="sm"
-                                    className="hb-input-sm"
-                                    style={{ width: 'auto' }}
-                                />
-                                <button className="hb-btn-filter dark" onClick={checkAvailability}>
-                                    <Search size={13} />Check
-                                </button>
-                                <button className="hb-btn-filter" onClick={async () => { await loadHearses(); setShowHearses(true); }}>
-                                    <Car size={13} />All Hearses
+                                <div className="hb-avail-check">
+                                    <input type="date" id="availabilityDate" className="hb-input-sm" />
+                                    <button className="hb-btn-filter dark" onClick={checkAvailability}>
+                                        <Search size={13} /> Check
+                                    </button>
+                                </div>
+                                <button className="hb-btn-filter hb-desktop-only" onClick={async () => { await loadHearses(); setShowHearses(true); }}>
+                                    <Car size={13} /> All Hearses
                                 </button>
                                 {availabilityResult && (
                                     <div className="hb-avail-badges">
-                                        <span className="hb-avail-badge green">{availabilityResult.available} Available</span>
+                                        <span className="hb-avail-badge green">{availabilityResult.available} Free</span>
                                         <span className="hb-avail-badge red">{availabilityResult.booked} Booked</span>
                                     </div>
                                 )}
                             </div>
-                            <Dropdown className="hb-branch-dropdown">
-                                <Dropdown.Toggle as="div" style={{ cursor: 'pointer' }}>
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.85rem', fontSize: '0.8rem', fontWeight: 600, border: '1.5px solid #e2e8f0', borderRadius: '10px', background: '#fff', color: '#0f172a' }}>
-                                        <MapPin size={13} />
-                                        {branchFilter === 'all' ? 'All Branches' : branchFilter}
-                                    </span>
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu align="end">
-                                    <Dropdown.Item onClick={() => setBranchFilter('all')} active={branchFilter === 'all'}>
-                                        <strong>All Branches</strong>
-                                        <span className="hb-count-badge dark">{bookings.length}</span>
-                                    </Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    {branches.map(branch => (
-                                        <Dropdown.Item
-                                            key={branch}
-                                            onClick={() => setBranchFilter(branch)}
-                                            active={branchFilter === branch}
-                                        >
-                                            <MapPin size={12} style={{ marginRight: '0.35rem', opacity: 0.5 }} />
-                                            <strong>{branch}</strong>
-                                            <span className="hb-count-badge accent">{getBranchCount(branch)}</span>
-                                        </Dropdown.Item>
-                                    ))}
-                                </Dropdown.Menu>
-                            </Dropdown>
+
+                            {/* Branch filter dropdown */}
+                            <div className="hb-branch-filter-wrapper">
+                                <button className="hb-branch-btn" onClick={() => setShowBranchDropdown(!showBranchDropdown)}>
+                                    <Building2 size={13} />
+                                    {selectedBranchName}
+                                    <ChevronDown size={13} />
+                                </button>
+                                {showBranchDropdown && (
+                                    <>
+                                        <div className="hb-branch-overlay" onClick={() => setShowBranchDropdown(false)} />
+                                        <div className="hb-branch-menu">
+                                            <div
+                                                className={`hb-branch-item ${branchFilter === 'all' ? 'active' : ''}`}
+                                                onClick={() => { setBranchFilter('all'); setShowBranchDropdown(false); }}
+                                            >
+                                                <strong>All Branches</strong>
+                                                <span className="hb-count-badge dark">{bookings.length}</span>
+                                            </div>
+                                            <div className="hb-branch-divider" />
+                                            {globalBranches.length > 0 ? (
+                                                globalBranches.map(branch => (
+                                                    <div
+                                                        key={branch.branch_id}
+                                                        className={`hb-branch-item ${String(branchFilter) === String(branch.branch_id) ? 'active' : ''}`}
+                                                        onClick={() => { setBranchFilter(String(branch.branch_id)); setShowBranchDropdown(false); }}
+                                                    >
+                                                        <Building2 size={12} style={{ opacity: 0.5, marginRight: 4 }} />
+                                                        <strong>{branch.branch_name}</strong>
+                                                        {branch.branch_location && (
+                                                            <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: 4 }}>
+                                                                {branch.branch_location}
+                                                            </span>
+                                                        )}
+                                                        <span className="hb-count-badge accent">{getBranchBookingCount(branch.branch_id)}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="hb-branch-item" style={{ opacity: 0.5, fontSize: '0.8rem' }}>
+                                                    No branches found
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Status pills */}
                         <div className="hb-filter-pills">
                             {statusPills.map(btn => (
                                 <button
@@ -885,17 +1039,18 @@ const BookingSystem = () => {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="hb-table-card" style={{ marginTop: '1rem' }}>
+                {/* Desktop Table */}
+                <div className="hb-table-card hb-desktop-only">
                     <div className="table-responsive">
                         <Table hover className="hb-table">
                             <thead>
                                 <tr>
-                                    <th className="d-none d-md-table-cell">ID</th>
+                                    <th>ID</th>
                                     <th>Client</th>
-                                    <th className="d-none d-md-table-cell">Destination</th>
+                                    <th>Destination</th>
                                     <th>Hearse</th>
-                                    <th className="d-none d-md-table-cell">Date</th>
+                                    <th>Branch</th>
+                                    <th>Date</th>
                                     <th>Status</th>
                                     <th className="text-center" style={{ width: '60px' }}></th>
                                 </tr>
@@ -903,43 +1058,41 @@ const BookingSystem = () => {
                             <tbody>
                                 {filtered.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7">
+                                        <td colSpan="8">
                                             <div className="hb-empty">
                                                 <div className="hb-empty-icon"><Car size={32} /></div>
                                                 <h5>No bookings found</h5>
-                                                <p>Try adjusting your filters</p>
+                                                <p>Try adjusting your filters or branch selection</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : filtered.map(b => (
                                     <tr key={b.booking_id}>
-                                        <td className="d-none d-md-table-cell">
-                                            <div className="booking-id">{genId(b.booking_id)}</div>
+                                        <td>
+                                            <div className="booking-id">{b.booking_code || genId(b.booking_id)}</div>
                                             <div className="booking-date-sub">{fmtDate(b.created_at)}</div>
                                         </td>
                                         <td>
                                             <div className="client-name">{b.client_name}</div>
-                                            <div className="text-muted small d-md-none" style={{ fontSize: '0.72rem' }}>
-                                                {genId(b.booking_id)} • {fmtDate(b.booking_date || b.estimated_departure_time)}
-                                            </div>
                                         </td>
-                                        <td className="d-none d-md-table-cell">
+                                        <td>
                                             <div className="dest-text" title={b.destination}>{b.destination}</div>
                                         </td>
                                         <td>
                                             <span className="hearse-plate">{b.plate_number || b.number_plate || 'N/A'}</span>
                                             <div className="hearse-sub">{b.hearse_name || ''}</div>
                                         </td>
-                                        <td className="d-none d-md-table-cell text-muted" style={{ fontSize: '0.84rem' }}>
+                                        <td>
+                                            <BranchBadge name={b.branch_name} code={b.branch_code} />
+                                        </td>
+                                        <td className="text-muted" style={{ fontSize: '0.84rem' }}>
                                             {fmtDate(b.booking_date || b.estimated_departure_time)}
                                         </td>
                                         <td><StatusBadge status={b.status} /></td>
                                         <td className="text-center">
                                             <Dropdown align="end">
                                                 <Dropdown.Toggle as="div">
-                                                    <button className="hb-action-btn">
-                                                        <MoreVertical size={15} />
-                                                    </button>
+                                                    <button className="hb-action-btn"><MoreVertical size={15} /></button>
                                                 </Dropdown.Toggle>
                                                 <Dropdown.Menu className="hb-action-menu">
                                                     <Dropdown.Item onClick={() => { setSelectedBooking(b); setShowDetails(true); }}>
@@ -975,116 +1128,58 @@ const BookingSystem = () => {
                         </Table>
                     </div>
                 </div>
+
+                {/* Mobile Cards */}
+                <div className="hb-mobile-only">
+                    {filtered.length === 0 ? (
+                        <div className="hb-table-card">
+                            <div className="hb-empty">
+                                <div className="hb-empty-icon"><Car size={32} /></div>
+                                <h5>No bookings found</h5>
+                                <p>Try adjusting your filters</p>
+                            </div>
+                        </div>
+                    ) : (
+                        filtered.map(b => (
+                            <BookingCard
+                                key={b.booking_id} b={b}
+                                onStatus={handleStatus}
+                                onView={(bk) => { setSelectedBooking(bk); setShowDetails(true); }}
+                                onPostpone={(bk) => { setSelectedBooking(bk); setShowPostpone(true); }}
+                            />
+                        ))
+                    )}
+                </div>
+
+                {/* Mobile floating All Hearses button */}
+                <button className="hb-mobile-fab" onClick={async () => { await loadHearses(); setShowHearses(true); }}>
+                    <Car size={18} />
+                </button>
             </div>
 
-            {/* View Details Modal */}
-            <Modal show={showDetails} onHide={() => setShowDetails(false)} size="lg" centered className="hb-modal hb-modal-dark">
-                <Modal.Header closeButton>
-                    <Modal.Title>
-                        <Eye size={18} />
-                        Booking {genId(selectedBooking?.booking_id)}
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Row className="g-3">
-                        <Col md={6}>
-                            <div className="hb-detail-card">
-                                <div className="hb-detail-card-header">
-                                    <User size={14} />Client Information
-                                </div>
-                                <div className="hb-detail-card-body">
-                                    <div className="hb-detail-row">
-                                        <span className="label">Name</span>
-                                        <span className="value">{selectedBooking?.client_name}</span>
-                                    </div>
-                                    <div className="hb-detail-row">
-                                        <span className="label">Phone</span>
-                                        <span className="value">{selectedBooking?.client_phone || 'N/A'}</span>
-                                    </div>
-                                    <div className="hb-detail-row">
-                                        <span className="label">Email</span>
-                                        <span className="value">{selectedBooking?.client_email || 'N/A'}</span>
-                                    </div>
-                                    <div className="hb-detail-row">
-                                        <span className="label">Booked By</span>
-                                        <span className="value">{selectedBooking?.created_by ? `Staff ID: ${selectedBooking.created_by}` : 'N/A'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Col>
-                        <Col md={6}>
-                            <div className="hb-detail-card">
-                                <div className="hb-detail-card-header">
-                                    <Car size={14} />Service Details
-                                </div>
-                                <div className="hb-detail-card-body">
-                                    <div className="hb-detail-row">
-                                        <span className="label">Destination</span>
-                                        <span className="value">{selectedBooking?.destination}</span>
-                                    </div>
-                                    <div className="hb-detail-row">
-                                        <span className="label">Hearse</span>
-                                        <span className="value">{selectedBooking?.hearse_name || selectedBooking?.plate_number || 'N/A'}</span>
-                                    </div>
-                                    <div className="hb-detail-row">
-                                        <span className="label">Date</span>
-                                        <span className="value">{fmtDate(selectedBooking?.booking_date || selectedBooking?.estimated_departure_time)}</span>
-                                    </div>
-                                    <div className="hb-detail-row">
-                                        <span className="label">Status</span>
-                                        <span className="value">
-                                            <Form.Select
-                                                size="sm"
-                                                value={selectedBooking?.status || 'pending'}
-                                                onChange={(e) => handleStatus(selectedBooking?.booking_id, e.target.value)}
-                                                className="hb-form-control"
-                                                style={{ width: 'auto', display: 'inline-block' }}
-                                            >
-                                                <option value="pending">Pending</option>
-                                                <option value="confirmed">Confirmed</option>
-                                                <option value="in_progress">In Progress</option>
-                                                <option value="in_transit">In Transit</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="cancelled">Cancelled</option>
-                                                <option value="postponed">Postponed</option>
-                                                <option value="maintenance">Maintenance</option>
-                                            </Form.Select>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Col>
-                    </Row>
-                </Modal.Body>
-            </Modal>
-
-            <PostponeModal
-                show={showPostpone}
-                onHide={() => setShowPostpone(false)}
-                booking={selectedBooking}
-                onPostpone={handlePostpone}
-            />
-
+            {/* Modals */}
             <AvailableHearsesModal
-                show={showAvailable}
-                onHide={() => setShowAvailable(false)}
-                onBookingCreated={loadData}
+                show={showAvailable} onHide={() => setShowAvailable(false)}
+                onBookingCreated={async () => { addToast('Booking created!'); await loadData(); }}
+                globalBranches={globalBranches}
             />
-
+            <PostponeModal
+                show={showPostpone} onHide={() => setShowPostpone(false)}
+                booking={selectedBooking} onPostpone={handlePostpone}
+            />
             <AllHearsesModal
-                show={showHearses}
-                onHide={() => setShowHearses(false)}
-                hearses={hearses}
+                show={showHearses} onHide={() => setShowHearses(false)}
+                hearses={hearses} globalBranches={globalBranches}
             />
-
             <RegisterHearseModal
-                show={showRegister}
-                onHide={() => setShowRegister(false)}
+                show={showRegister} onHide={() => setShowRegister(false)}
                 onRegistered={handleRegistered}
-                registering={registering}
-                setRegistering={setRegistering}
-                registerForm={registerForm}
-                setRegisterForm={setRegisterForm}
+                registering={registering} setRegistering={setRegistering}
+                registerForm={registerForm} setRegisterForm={setRegisterForm}
+                globalBranches={globalBranches}
+            />
+            <DetailsModal
+                show={showDetails} onHide={() => setShowDetails(false)} booking={selectedBooking}
             />
         </>
     );

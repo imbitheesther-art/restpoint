@@ -1,0 +1,207 @@
+/* src/components/analysis/comprehensiveDashboard.css */
+
+.cd-page {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding: 20px 30px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.cd-header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.cd-title {
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.cd-header .text-muted {
+  color: #e2e8f0 !important;
+}
+
+.cd-btn {
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.cd-select {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+}
+
+/* Loader */
+.cd-loader-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  color: #64748b;
+}
+
+/* Stat Cards */
+.cd-stat-card {
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cd-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.cd-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cd-diff-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.cd-diff-badge.positive {
+  background-color: #d1fae5;
+  color: #059669;
+}
+.cd-diff-badge.negative {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.cd-diff-text.positive { color: #059669; font-weight: bold; }
+.cd-diff-text.negative { color: #dc2626; font-weight: bold; }
+
+/* Chart Cards */
+.cd-chart-card {
+  border-radius: 12px;
+}
+
+/* Compare Mode Banner */
+.cd-vs-banner {
+  background: linear-gradient(90deg, #1f2937 0%, #374151 100%);
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+}
+.cd-vs-banner .vs-badge {
+  background: #f59e0b;
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+.cd-vs-banner .b1-side { color: #60a5fa; font-weight: bold; font-size: 1.2rem; }
+.cd-vs-banner .b2-side { color: #fbbf24; font-weight: bold; font-size: 1.2rem; }
+
+/* Battery Gauge */
+.cd-battery-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.cd-battery-label {
+  width: 80px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.cd-battery-outer {
+  flex: 1;
+  height: 12px;
+  background-color: #e2e8f0;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+.cd-battery-inner {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cd-battery-pct {
+  width: 40px;
+  text-align: right;
+  font-weight: 600;
+}
+
+/* AI Insights Card */
+.cd-ai-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0 !important;
+}
+.cd-ai-icon { color: #8b5cf6; }
+.cd-ai-title { color: #4c1d95; }
+.cd-insight-box {
+  background: #ede9fe;
+  color: #5b21b6;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border-left: 4px solid #8b5cf6;
+}
+.cd-rec-item {
+  display: flex;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #334155;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.cd-rec-item .bullet { font-size: 1rem; line-height: 1.1; }
+
+/* Summary Table */
+.cd-summary-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cd-summary-table th {
+  background-color: #f1f5f9;
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+}
+.cd-summary-table td {
+  padding: 16px 20px;
+  vertical-align: middle;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+.cd-summary-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.cd-spin {
+  animation: spin 1s linear infinite;
+}

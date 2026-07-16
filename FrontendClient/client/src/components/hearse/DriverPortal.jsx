@@ -1,52 +1,21 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Car,
-    RefreshCw,
-    CheckCircle,
-    Phone,
-    MapPin,
-    LogOut,
-    Calendar,
-    Clock,
-    AlertCircle,
-    Truck,
-    Loader2,
-    Zap,
-    CircleDot,
-    Navigation,
-    ChevronRight,
-    Star,
-    Activity,
-    Shield,
-    Award,
-    Gauge,
-    Fuel,
-    Wind,
-    User,
-    Bell,
-    Settings,
-    Search,
-    Eye,
-    MoreHorizontal,
-    ArrowRight,
-    Target,
-    Compass,
-    Route
+    Car, RefreshCw, CheckCircle, Phone, MapPin, LogOut, Calendar,
+    Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ChevronRight,
+    Route, Sun, Moon, CloudSun, User, ArrowRight, CircleDot, Shield
 } from 'lucide-react';
 import env from '../../config/env';
 
 const API_BASE_URL = env.FULL_API_URL;
 
-// ─── Utility ─────────────────────────────────────────────────────
+/* ─── Utility ─────────────────────────────────────────────────── */
 const getTenantSlug = () =>
     localStorage.getItem('tenantSlug') || sessionStorage.getItem('tenantSlug') || '';
 
 const getUser = () => {
-    try {
-        const u = localStorage.getItem('user');
-        return u ? JSON.parse(u) : {};
-    } catch { return {}; }
+    try { const u = localStorage.getItem('user'); return u ? JSON.parse(u) : {}; }
+    catch { return {}; }
 };
 
 const fmtTime = (d) =>
@@ -67,279 +36,253 @@ const getAuthHeaders = () => {
 
 const getGreeting = () => {
     const h = new Date().getHours();
-    if (h < 12) return 'Good Morning';
-    if (h < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (h < 12) return { text: 'Good Morning', icon: Sun, period: 'morning' };
+    if (h < 17) return { text: 'Good Afternoon', icon: CloudSun, period: 'afternoon' };
+    return { text: 'Good Evening', icon: Moon, period: 'evening' };
 };
 
-// ─── Premium Status Config ────────────────────────────────────────
+/* ─── Color System ────────────────────────────────────────────── */
+const THEME = {
+    bg: '#0f1117',
+    bgCard: '#181a22',
+    bgCardHover: '#1e2029',
+    bgInput: '#12141b',
+    border: 'rgba(255,255,255,0.06)',
+    borderLight: 'rgba(255,255,255,0.04)',
+    text: '#e8eaed',
+    textSecondary: '#9aa0a6',
+    textMuted: '#5f6368',
+    accent: '#e8a838',
+    accentLight: 'rgba(232,168,56,0.12)',
+    accentBorder: 'rgba(232,168,56,0.25)',
+    success: '#34d399',
+    successLight: 'rgba(52,211,153,0.10)',
+    successBorder: 'rgba(52,211,153,0.20)',
+    danger: '#f87171',
+    dangerLight: 'rgba(248,113,113,0.10)',
+    dangerBorder: 'rgba(248,113,113,0.20)',
+    warning: '#fbbf24',
+    warningLight: 'rgba(251,191,36,0.10)',
+    warningBorder: 'rgba(251,191,36,0.20)',
+    info: '#60a5fa',
+    infoLight: 'rgba(96,165,250,0.10)',
+    infoBorder: 'rgba(96,165,250,0.20)',
+    plateBg: '#ffffff',
+    plateText: '#1a1a2e',
+    plateBorder: '#c0c4cc',
+};
+
+/* ─── Status Config ───────────────────────────────────────────── */
 const STATUS = {
     booked: {
-        label: 'Booked', icon: Clock, color: '#f87171',
-        gradient: 'linear-gradient(135deg, #ef4444, #f97316)',
-        glow: 'rgba(248,113,113,0.35)', bg: 'rgba(248,113,113,0.08)',
-        border: 'rgba(248,113,113,0.2)',
-        dotBg: 'rgba(248,113,113,0.15)',
+        label: 'Booked', color: THEME.warning, bg: THEME.warningLight,
+        border: THEME.warningBorder, icon: Clock, dotColor: '#fbbf24',
     },
     in_transit: {
-        label: 'In Transit', icon: Navigation, color: '#4ade80',
-        gradient: 'linear-gradient(135deg, #22c55e, #10b981)',
-        glow: 'rgba(74,222,128,0.35)', bg: 'rgba(74,222,128,0.08)',
-        border: 'rgba(74,222,128,0.2)',
-        dotBg: 'rgba(74,222,128,0.15)',
+        label: 'In Transit', color: THEME.info, bg: THEME.infoLight,
+        border: THEME.infoBorder, icon: Navigation, dotColor: '#60a5fa',
     },
     completed: {
-        label: 'Completed', icon: CheckCircle, color: '#34d399',
-        gradient: 'linear-gradient(135deg, #10b981, #14b8a6)',
-        glow: 'rgba(52,211,153,0.35)', bg: 'rgba(52,211,153,0.08)',
-        border: 'rgba(52,211,153,0.2)',
-        dotBg: 'rgba(52,211,153,0.15)',
+        label: 'Completed', color: THEME.success, bg: THEME.successLight,
+        border: THEME.successBorder, icon: CheckCircle, dotColor: '#34d399',
     },
     cancelled: {
-        label: 'Cancelled', icon: AlertCircle, color: '#fb923c',
-        gradient: 'linear-gradient(135deg, #f97316, #eab308)',
-        glow: 'rgba(251,146,60,0.35)', bg: 'rgba(251,146,60,0.08)',
-        border: 'rgba(251,146,60,0.2)',
-        dotBg: 'rgba(251,146,60,0.15)',
+        label: 'Cancelled', color: THEME.danger, bg: THEME.dangerLight,
+        border: THEME.dangerBorder, icon: AlertCircle, dotColor: '#f87171',
     },
     postponed: {
-        label: 'Postponed', icon: Clock, color: '#facc15',
-        gradient: 'linear-gradient(135deg, #eab308, #f59e0b)',
-        glow: 'rgba(250,204,21,0.35)', bg: 'rgba(250,204,21,0.08)',
-        border: 'rgba(250,204,21,0.2)',
-        dotBg: 'rgba(250,204,21,0.15)',
+        label: 'Postponed', color: '#c084fc', bg: 'rgba(192,132,252,0.10)',
+        border: 'rgba(192,132,252,0.20)', icon: Clock, dotColor: '#c084fc',
     },
 };
 
 const LEAVE_STATUS = {
-    approved: { color: '#4ade80', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.2)', icon: CheckCircle },
-    rejected: { color: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.2)', icon: AlertCircle },
-    pending: { color: '#facc15', bg: 'rgba(250,204,21,0.08)', border: 'rgba(250,204,21,0.2)', icon: Clock },
+    approved: { color: THEME.success, bg: THEME.successLight, border: THEME.successBorder, label: 'Approved' },
+    rejected: { color: THEME.danger, bg: THEME.dangerLight, border: THEME.dangerBorder, label: 'Rejected' },
+    pending: { color: THEME.warning, bg: THEME.warningLight, border: THEME.warningBorder, label: 'Pending' },
 };
 
-// ─── Global Premium Styles ─────────────────────────────────────────
+/* ─── Global Styles ───────────────────────────────────────────── */
 const globalStyles = `
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
-  }
-  @keyframes floatSlow {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    33% { transform: translateY(-10px) rotate(1deg); }
-    66% { transform: translateY(5px) rotate(-1deg); }
-  }
-  @keyframes pulseGlow {
-    0%, 100% { opacity: 0.15; transform: scale(1); }
-    50% { opacity: 0.3; transform: scale(1.02); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @keyframes pulseDot {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.3; transform: scale(0.85); }
-  }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  @keyframes shimmer {
-    0% { background-position: -300% 0; }
-    100% { background-position: 300% 0; }
+    50% { opacity: 0.4; transform: scale(0.8); }
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes toastIn {
-    0% { transform: translateY(-20px) scale(0.95); opacity: 0; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
+  @keyframes toastSlide {
+    from { opacity: 0; transform: translateY(-14px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  @keyframes toastOut {
-    0% { transform: translateY(0) scale(1); opacity: 1; }
-    100% { transform: translateY(-20px) scale(0.95); opacity: 0; }
+  @keyframes glow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
   }
-  @keyframes breathe {
-    0%, 100% { box-shadow: 0 0 20px rgba(248,113,113,0.15); }
-    50% { box-shadow: 0 0 40px rgba(248,113,113,0.3); }
-  }
-  @keyframes routeDash {
-    to { stroke-dashoffset: -24; }
-  }
-  @keyframes borderGlow {
-    0%, 100% { border-color: rgba(255,255,255,0.06); }
-    50% { border-color: rgba(255,255,255,0.12); }
+  @keyframes gentleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
   }
 
-  * { -webkit-tap-highlight-color: transparent; }
-  *::-webkit-scrollbar { width: 4px; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  *::-webkit-scrollbar { width: 5px; }
   *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
-  *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+  *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
 
-  .slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-  .slide-down { animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .spin { animation: spin 1s linear infinite; }
-  .toast-in { animation: toastIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .toast-out { animation: toastOut 0.3s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
-  .pulse-dot { animation: pulseDot 1.8s ease-in-out infinite; }
-  .breathe { animation: breathe 3s ease-in-out infinite; }
-
-  .glass {
-    background: linear-gradient(165deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.06);
-  }
-  .glass-strong {
-    background: linear-gradient(165deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
-    border: 1px solid rgba(255,255,255,0.08);
-  }
-  .card-hover {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .card-hover:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255,255,255,0.12);
-    box-shadow: 0 24px 60px -16px rgba(0,0,0,0.6);
-  }
-  .btn-press:active {
-    transform: scale(0.96) !important;
-  }
+  .fade-up { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+  .spin { animation: spin 0.9s linear infinite; }
+  .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+  .toast-anim { animation: toastSlide 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .glow-anim { animation: glow 4s ease-in-out infinite; }
 `;
 
-// ─── Reusable Components ──────────────────────────────────────────
+/* ─── Toast ───────────────────────────────────────────────────── */
+const Toast = ({ type, message, onClose }) => {
+    if (!message) return null;
+    const isError = type === 'error';
+    const color = isError ? THEME.danger : THEME.success;
+    const bg = isError ? THEME.dangerLight : THEME.successLight;
+    const border = isError ? THEME.dangerBorder : THEME.successBorder;
+    const Icon = isError ? AlertCircle : CheckCircle;
 
-// Premium Status Badge with animated dot
-const StatusBadge = ({ status, size = 'md' }) => {
+    useEffect(() => {
+        const t = setTimeout(() => onClose?.(), 3200);
+        return () => clearTimeout(t);
+    }, [message, onClose]);
+
+    return (
+        <div className="toast-anim" style={{
+            position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+            padding: '12px 24px', borderRadius: 14,
+            background: `linear-gradient(135deg, ${bg}, rgba(15,17,23,0.95))`,
+            backdropFilter: 'blur(20px)', border: `1px solid ${border}`,
+            color, fontSize: '0.85rem', fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: `0 12px 40px rgba(0,0,0,0.5)`,
+            fontFamily: 'inherit',
+        }}>
+            <Icon size={18} /> {message}
+        </div>
+    );
+};
+
+/* ─── License Plate Component ─────────────────────────────────── */
+const LicensePlate = ({ number, model }) => {
+    if (!number) return null;
+    const clean = number.replace(/\s+/g, '').toUpperCase();
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{
+                background: THEME.plateBg,
+                border: `2.5px solid ${THEME.plateBorder}`,
+                borderRadius: 8,
+                padding: '5px 14px',
+                position: 'relative',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4)',
+            }}>
+                {/* Screw dots */}
+                <div style={{
+                    position: 'absolute', top: 5, left: 6,
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: '#b0b4bc', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                }} />
+                <div style={{
+                    position: 'absolute', top: 5, right: 6,
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: '#b0b4bc', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                }} />
+                <div style={{
+                    position: 'absolute', bottom: 5, left: 6,
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: '#b0b4bc', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                }} />
+                <div style={{
+                    position: 'absolute', bottom: 5, right: 6,
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: '#b0b4bc', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                }} />
+
+                <div style={{
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                    fontSize: '1rem', fontWeight: 900, color: THEME.plateText,
+                    letterSpacing: '0.12em',
+                    textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+                    textAlign: 'center', minWidth: 60,
+                }}>
+                    {clean}
+                </div>
+            </div>
+            {model && (
+                <span style={{ fontSize: '0.62rem', color: THEME.textMuted, fontWeight: 600, letterSpacing: '0.04em' }}>
+                    {model}
+                </span>
+            )}
+        </div>
+    );
+};
+
+/* ─── Status Pill ─────────────────────────────────────────────── */
+const StatusPill = ({ status }) => {
     const cfg = STATUS[status] || {
-        label: status || 'Unknown', color: '#71717a',
-        gradient: 'linear-gradient(135deg, #52525b, #3f3f46)',
-        glow: 'rgba(113,113,122,0.3)', bg: 'rgba(113,113,122,0.08)',
-        border: 'rgba(113,113,122,0.2)', dotBg: 'rgba(113,113,122,0.15)',
+        label: status || 'Unknown', color: THEME.textMuted,
+        bg: 'rgba(255,255,255,0.04)', border: THEME.border, dotColor: THEME.textMuted,
     };
-    const Icon = cfg.icon;
-    const isLarge = size === 'lg';
+    const isTransit = status === 'in_transit';
 
     return (
         <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: isLarge ? '10px' : '7px',
-            padding: isLarge ? '8px 18px' : '5px 12px',
-            background: cfg.bg,
-            border: `1px solid ${cfg.border}`,
-            borderRadius: '100px',
-            color: cfg.color,
-            fontSize: isLarge ? '0.82rem' : '0.7rem',
-            fontWeight: 700,
-            letterSpacing: '0.03em',
-            textTransform: 'uppercase',
-            position: 'relative',
-            overflow: 'hidden',
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            padding: '5px 14px', borderRadius: 100,
+            background: cfg.bg, border: `1px solid ${cfg.border}`,
+            color: cfg.color, fontSize: '0.68rem', fontWeight: 700,
+            letterSpacing: '0.04em', textTransform: 'uppercase',
         }}>
             <span style={{
-                position: 'relative', display: 'flex', alignItems: 'center', gap: '7px',
-            }}>
-                <span style={{
-                    width: isLarge ? '8px' : '6px', height: isLarge ? '8px' : '6px',
-                    borderRadius: '50%',
-                    background: cfg.color,
-                    boxShadow: `0 0 12px ${cfg.glow}`,
-                    animation: status === 'in_transit' ? 'pulseDot 0.8s ease-in-out infinite' : 'pulseDot 2s ease-in-out infinite',
-                }} />
-                {cfg.label}
-            </span>
+                width: 6, height: 6, borderRadius: '50%',
+                background: cfg.dotColor,
+                boxShadow: `0 0 8px ${cfg.dotColor}`,
+                className: isTransit ? 'pulse-dot' : undefined,
+            }} />
+            {cfg.label}
         </span>
     );
 };
 
-// Toast Notifications
-const Toast = ({ type, message, onClose }) => {
-    if (!message) return null;
-    const isError = type === 'error';
-    const icon = isError ? AlertCircle : CheckCircle;
-    const color = isError ? '#f87171' : '#4ade80';
-    const borderColor = isError ? 'rgba(248,113,113,0.2)' : 'rgba(74,222,128,0.2)';
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => { if (onClose) onClose(); }, 3500);
-        return () => clearTimeout(timer);
-    }, [message, onClose]);
-
-    return (
-        <div className="toast-in" style={{
-            position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
-            padding: '14px 28px',
-            background: 'rgba(12, 12, 16, 0.92)',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-            border: `1px solid ${borderColor}`,
-            borderRadius: '18px',
-            color: color,
-            fontSize: '0.88rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            textAlign: 'center',
-            boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 40px ${isError ? 'rgba(248,113,113,0.06)' : 'rgba(74,222,128,0.06)'}`,
-            maxWidth: '88vw',
-            whiteSpace: 'nowrap',
-            fontFamily: 'inherit',
-        }}>
-            {React.createElement(icon, { size: 20 })}
-            {message}
-        </div>
-    );
-};
-
-// Stat Card with animated gradient bar
-const StatCard = ({ value, label, color, icon: Icon, gradient }) => (
-    <div className="glass card-hover" style={{
-        flex: 1, padding: '24px 16px', textAlign: 'center', cursor: 'default',
-        borderRadius: '20px', position: 'relative', overflow: 'hidden',
-        minWidth: 0,
+/* ─── Stat Box ────────────────────────────────────────────────── */
+const StatBox = ({ value, label, color, icon: Icon }) => (
+    <div style={{
+        flex: 1, padding: '20px 12px', textAlign: 'center',
+        background: THEME.bgCard, borderRadius: 16,
+        border: `1px solid ${THEME.border}`,
+        transition: 'all 0.3s ease',
     }}>
         <div style={{
-            position: 'absolute', top: 0, left: '15%', right: '15%', height: '2.5px',
-            background: gradient || color,
-            borderRadius: '0 0 3px 3px',
-            opacity: 0.8,
-        }} />
-        <div style={{
-            width: '44px', height: '44px', borderRadius: '14px',
-            background: `${color}10`,
-            border: `1px solid ${color}20`,
-            color: color,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 14px',
-            position: 'relative',
+            width: 40, height: 40, borderRadius: 12,
+            background: `${color}10`, border: `1px solid ${color}20`,
+            color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 12px', position: 'relative',
         }}>
-            <Icon size={20} />
+            <Icon size={18} />
             {label === 'Active' && (
-                <span style={{
-                    position: 'absolute', top: '-2px', right: '-2px',
-                    width: '10px', height: '10px', borderRadius: '50%',
-                    background: color,
-                    boxShadow: `0 0 12px ${color}`,
-                    animation: 'pulseDot 1.2s ease-in-out infinite',
+                <span className="pulse-dot" style={{
+                    position: 'absolute', top: -2, right: -2,
+                    width: 9, height: 9, borderRadius: '50%',
+                    background: color, border: '2px solid ' + THEME.bgCard,
                 }} />
             )}
         </div>
         <div style={{
-            fontSize: '2rem', fontWeight: 800, color: '#f1f5f9',
-            lineHeight: 1, marginBottom: '8px',
-            fontVariantNumeric: 'tabular-nums',
+            fontSize: '1.75rem', fontWeight: 800, color: THEME.text,
+            lineHeight: 1, marginBottom: 6, fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.03em',
         }}>
             {value}
         </div>
         <div style={{
-            fontSize: '0.65rem', color: '#52525b', fontWeight: 700,
+            fontSize: '0.6rem', color: THEME.textMuted, fontWeight: 700,
             letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>
             {label}
@@ -347,221 +290,228 @@ const StatCard = ({ value, label, color, icon: Icon, gradient }) => (
     </div>
 );
 
-// Premium Booking Card with 3D feel
+/* ─── Booking Card ────────────────────────────────────────────── */
 const BookingCard = ({ booking, onStatusChange, index }) => {
     const b = booking;
     const cfg = STATUS[b.status] || {};
 
     return (
-        <div className="glass card-hover" style={{
-            borderRadius: '24px', marginBottom: '20px', overflow: 'hidden',
-            position: 'relative', animationDelay: `${(index || 0) * 0.07}s`,
+        <div style={{
+            background: THEME.bgCard, borderRadius: 20,
+            marginBottom: 16, overflow: 'hidden',
+            border: `1px solid ${THEME.border}`,
+            transition: 'all 0.3s ease',
+            animationDelay: `${(index || 0) * 0.06}s`,
         }}>
-            {/* Animated gradient border */}
+            {/* Top accent bar */}
             <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
-                background: cfg.gradient || 'rgba(255,255,255,0.1)',
-                opacity: 0.9,
+                height: 3,
+                background: `linear-gradient(90deg, ${cfg.color || THEME.accent}, transparent)`,
+                opacity: 0.7,
             }} />
 
-            {/* Glow accent */}
-            <div style={{
-                position: 'absolute', top: '-80px', right: '-40px',
-                width: '200px', height: '200px', borderRadius: '50%',
-                background: `${cfg.color}04`,
-                filter: 'blur(60px)',
-                pointerEvents: 'none',
-            }} />
-
-            <div style={{ padding: '24px 24px 22px' }}>
-                {/* Top Row - ID & Status */}
+            <div style={{ padding: '22px 20px 20px' }}>
+                {/* Header row */}
                 <div style={{
                     display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: '20px',
+                    alignItems: 'center', marginBottom: 18,
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{
-                            width: '38px', height: '38px', borderRadius: '12px',
-                            background: `${cfg.color}10`,
-                            border: `1px solid ${cfg.border || 'rgba(255,255,255,0.05)'}`,
+                            width: 40, height: 40, borderRadius: 12,
+                            background: `${cfg.color || THEME.accent}10`,
+                            border: `1px solid ${cfg.color || THEME.accent}18`,
+                            color: cfg.color || THEME.accent,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: cfg.color || '#52525b',
                         }}>
-                            {React.createElement(Truck, { size: 18 })}
+                            <Truck size={18} />
                         </div>
                         <div>
                             <div style={{
-                                color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 800,
-                                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
+                                color: THEME.text, fontSize: '0.88rem', fontWeight: 800,
+                                fontFamily: "'SF Mono', 'Fira Code', monospace",
                                 letterSpacing: '0.02em',
                             }}>
                                 {genId(b.booking_id)}
                             </div>
                             <div style={{
-                                fontSize: '0.7rem', color: '#52525b',
-                                marginTop: '3px', fontWeight: 500,
+                                fontSize: '0.68rem', color: THEME.textMuted, marginTop: 2,
                             }}>
                                 {fmtDate(b.created_at)} · {fmtTime(b.created_at)}
                             </div>
                         </div>
                     </div>
-                    <StatusBadge status={b.status} />
+                    <StatusPill status={b.status} />
                 </div>
 
-                {/* Client */}
+                {/* Client info */}
                 <div style={{
-                    marginBottom: '20px', padding: '16px 18px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    borderRadius: '16px',
+                    marginBottom: 16, padding: '14px 16px',
+                    background: THEME.bgInput, borderRadius: 14,
+                    border: `1px solid ${THEME.borderLight}`,
                 }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fafafa', marginBottom: '8px' }}>
-                        {b.client_name}
-                    </div>
                     <div style={{
-                        fontSize: '0.85rem', color: '#71717a',
-                        display: 'flex', alignItems: 'center', gap: '10px',
+                        display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center',
                     }}>
-                        <Phone size={13} style={{ color: '#3f3f46' }} />
-                        {b.client_phone || 'No phone'}
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: THEME.text, marginBottom: 5 }}>
+                                {b.client_name}
+                            </div>
+                            <div style={{
+                                fontSize: '0.8rem', color: THEME.textSecondary,
+                                display: 'flex', alignItems: 'center', gap: 8,
+                            }}>
+                                <Phone size={13} style={{ color: THEME.textMuted }} />
+                                {b.client_phone || 'No phone'}
+                            </div>
+                        </div>
+                        <div style={{
+                            width: 38, height: 38, borderRadius: 12,
+                            background: THEME.accentLight,
+                            border: `1px solid ${THEME.accentBorder}`,
+                            color: THEME.accent,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <User size={16} />
+                        </div>
                     </div>
                 </div>
 
-                {/* Route Visualization */}
+                {/* Route + Vehicle */}
                 <div style={{
-                    display: 'flex', gap: '16px', marginBottom: '24px',
-                    padding: '16px 18px',
-                    background: 'rgba(255,255,255,0.015)',
-                    border: '1px solid rgba(255,255,255,0.03)',
-                    borderRadius: '16px',
-                    position: 'relative',
+                    marginBottom: 20, padding: '16px',
+                    background: THEME.bgInput, borderRadius: 14,
+                    border: `1px solid ${THEME.borderLight}`,
                 }}>
-                    {/* Route line */}
-                    <div style={{
-                        position: 'absolute', left: '29px', top: '38px', bottom: '38px', width: '2px',
-                        background: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 4px, transparent 4px, transparent 8px)',
-                    }} />
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    {/* Route */}
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                        {/* Dotted line */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 2 }}>
                             <div style={{
-                                width: '28px', height: '28px', borderRadius: '50%',
-                                background: 'rgba(248,113,113,0.12)', border: '2px solid rgba(248,113,113,0.3)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0, position: 'relative', zIndex: 1,
+                                width: 22, height: 22, borderRadius: '50%',
+                                background: 'rgba(248,113,113,0.12)', border: '2px solid rgba(248,113,113,0.35)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                             }}>
-                                <MapPin size={13} style={{ color: '#f87171' }} />
+                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#f87171' }} />
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.65rem', color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Pickup</div>
-                                <div style={{ fontSize: '0.88rem', color: '#d4d4d8', fontWeight: 600 }}>
+                            <div style={{
+                                width: 2, flex: 1, minHeight: 30, margin: '4px 0',
+                                background: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 3px, transparent 3px, transparent 7px)',
+                            }} />
+                            <div style={{
+                                width: 22, height: 22, borderRadius: '50%',
+                                background: 'rgba(52,211,153,0.12)', border: '2px solid rgba(52,211,153,0.35)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                            }}>
+                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#34d399' }} />
+                            </div>
+                        </div>
+
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                            <div>
+                                <div style={{ fontSize: '0.6rem', color: THEME.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                                    Pickup
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: THEME.text, fontWeight: 600 }}>
                                     {b.from_location || b.destination || 'N/A'}
                                 </div>
                             </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{
-                                width: '28px', height: '28px', borderRadius: '50%',
-                                background: 'rgba(74,222,128,0.12)', border: '2px solid rgba(74,222,128,0.3)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0, position: 'relative', zIndex: 1,
-                            }}>
-                                <MapPin size={13} style={{ color: '#4ade80' }} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.65rem', color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Destination</div>
-                                <div style={{ fontSize: '0.88rem', color: '#d4d4d8', fontWeight: 600 }}>
+                            <div>
+                                <div style={{ fontSize: '0.6rem', color: THEME.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                                    Destination
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: THEME.text, fontWeight: 600 }}>
                                     {b.destination || 'N/A'}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Vehicle info */}
+                    {/* Vehicle / Plate divider */}
                     <div style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        justifyContent: 'center', padding: '0 8px',
-                        borderLeft: '1px solid rgba(255,255,255,0.04)',
-                        minWidth: '70px',
+                        height: 1, background: THEME.border, marginBottom: 14,
+                    }} />
+
+                    {/* Vehicle info row */}
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                        <div style={{
-                            width: '36px', height: '36px', borderRadius: '10px',
-                            background: `${cfg.color}12`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: cfg.color || '#52525b', marginBottom: '6px',
-                        }}>
-                            <Car size={17} />
-                        </div>
-                        <div style={{
-                            fontSize: '0.68rem', fontWeight: 700, color: '#d4d4d8',
-                            textAlign: 'center', lineHeight: 1.3,
-                        }}>
-                            {b.plate_number || b.number_plate || '—'}
-                        </div>
-                        {b.model && (
-                            <div style={{ fontSize: '0.6rem', color: '#3f3f46', marginTop: '2px' }}>
-                                {b.model}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                                width: 34, height: 34, borderRadius: 10,
+                                background: THEME.accentLight,
+                                border: `1px solid ${THEME.accentBorder}`,
+                                color: THEME.accent,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                                <Car size={16} />
                             </div>
-                        )}
+                            <div>
+                                <div style={{ fontSize: '0.6rem', color: THEME.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                    Assigned Vehicle
+                                </div>
+                                <div style={{ fontSize: '0.82rem', color: THEME.text, fontWeight: 700, marginTop: 2 }}>
+                                    {b.vehicle_name || b.model || 'Vehicle'}
+                                </div>
+                            </div>
+                        </div>
+                        <LicensePlate number={b.plate_number || b.number_plate} model={b.model} />
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '10px' }}>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 10 }}>
                     {b.status === 'booked' && (
                         <button
                             onClick={() => onStatusChange(b.booking_id, 'in_transit')}
-                            className="btn-press"
                             style={{
-                                flex: 1, padding: '16px', border: 'none', borderRadius: '16px',
+                                flex: 1, padding: '14px', border: 'none', borderRadius: 14,
                                 cursor: 'pointer',
-                                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)',
-                                color: '#ffffff', fontWeight: 700, fontSize: '0.88rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                boxShadow: '0 8px 28px -4px rgba(220, 38, 38, 0.4)',
+                                background: THEME.accent,
+                                color: '#1a1a2e', fontWeight: 800, fontSize: '0.85rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                boxShadow: `0 6px 24px -4px ${THEME.accent}40`,
                                 transition: 'all 0.25s ease',
                                 letterSpacing: '0.01em',
-                                position: 'relative', overflow: 'hidden',
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 12px 36px -6px rgba(220, 38, 38, 0.5)';
+                                e.currentTarget.style.filter = 'brightness(1.1)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
                             }}
                             onMouseLeave={e => {
+                                e.currentTarget.style.filter = 'none';
                                 e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 8px 28px -4px rgba(220, 38, 38, 0.4)';
                             }}
                         >
-                            <Zap size={20} />
+                            <Zap size={18} />
                             Accept Trip
-                            <ArrowRight size={16} style={{ opacity: 0.7 }} />
+                            <ArrowRight size={15} style={{ opacity: 0.6 }} />
                         </button>
                     )}
                     {b.status === 'in_transit' && (
                         <button
                             onClick={() => onStatusChange(b.booking_id, 'completed')}
-                            className="btn-press"
                             style={{
-                                flex: 1, padding: '16px', border: 'none', borderRadius: '16px',
+                                flex: 1, padding: '14px', border: 'none', borderRadius: 14,
                                 cursor: 'pointer',
-                                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
-                                color: '#ffffff', fontWeight: 700, fontSize: '0.88rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                boxShadow: '0 8px 28px -4px rgba(22, 163, 74, 0.4)',
+                                background: THEME.success,
+                                color: '#0f1117', fontWeight: 800, fontSize: '0.85rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                boxShadow: `0 6px 24px -4px ${THEME.success}40`,
                                 transition: 'all 0.25s ease',
                                 letterSpacing: '0.01em',
-                                position: 'relative', overflow: 'hidden',
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 12px 36px -6px rgba(22, 163, 74, 0.5)';
+                                e.currentTarget.style.filter = 'brightness(1.1)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
                             }}
                             onMouseLeave={e => {
+                                e.currentTarget.style.filter = 'none';
                                 e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 8px 28px -4px rgba(22, 163, 74, 0.4)';
                             }}
                         >
-                            <CheckCircle size={20} />
+                            <CheckCircle size={18} />
                             Complete Trip
                         </button>
                     )}
@@ -571,50 +521,57 @@ const BookingCard = ({ booking, onStatusChange, index }) => {
     );
 };
 
-// Leave Card
+/* ─── Leave Card ──────────────────────────────────────────────── */
 const LeaveCard = ({ leave }) => {
     const s = (leave.status || 'pending').toLowerCase();
     const cfg = LEAVE_STATUS[s] || LEAVE_STATUS.pending;
 
     return (
-        <div className="glass card-hover" style={{
-            borderRadius: '18px', padding: '18px 22px', marginBottom: '12px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        <div style={{
+            background: THEME.bgCard, borderRadius: 16, padding: '16px 18px',
+            marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            border: `1px solid ${THEME.border}`,
+            transition: 'all 0.2s ease',
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
-                    width: '40px', height: '40px', borderRadius: '12px',
+                    width: 40, height: 40, borderRadius: 12,
                     background: cfg.bg, border: `1px solid ${cfg.border}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: cfg.color,
+                    color: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                    {React.createElement(Calendar, { size: 18 })}
+                    <Calendar size={18} />
                 </div>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f1f5f9', marginBottom: '5px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: THEME.text, marginBottom: 4 }}>
                         {leave.leave_type || 'Leave'}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#52525b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Clock size={13} />
-                        {leave.start_date ? new Date(leave.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                    <div style={{ fontSize: '0.75rem', color: THEME.textMuted, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Clock size={12} />
+                        {leave.start_date
+                            ? new Date(leave.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            : 'N/A'}
                         {' — '}
-                        {leave.end_date ? new Date(leave.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                        {leave.end_date
+                            ? new Date(leave.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                            : 'N/A'}
                     </div>
                 </div>
             </div>
-            <div style={{
-                padding: '4px 14px', borderRadius: '100px',
+            <span style={{
+                padding: '4px 14px', borderRadius: 100,
                 background: cfg.bg, border: `1px solid ${cfg.border}`,
-                color: cfg.color, fontSize: '0.68rem', fontWeight: 700,
-                letterSpacing: '0.03em', textTransform: 'uppercase',
+                color: cfg.color, fontSize: '0.65rem', fontWeight: 700,
+                letterSpacing: '0.04em', textTransform: 'uppercase',
             }}>
-                {s}
-            </div>
+                {cfg.label}
+            </span>
         </div>
     );
 };
 
-// ─── MAIN DRIVER PORTAL ────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+   MAIN DRIVER PORTAL
+   ═══════════════════════════════════════════════════════════════ */
 const DriverPortal = () => {
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
@@ -628,6 +585,8 @@ const DriverPortal = () => {
 
     const slug = getTenantSlug();
     const user = getUser();
+    const greeting = getGreeting();
+    const GreetingIcon = greeting.icon;
 
     const loadBookings = useCallback(async (silent = false) => {
         if (silent) setRefreshing(true); else setLoadingBookings(true);
@@ -670,9 +629,9 @@ const DriverPortal = () => {
             });
             if (!res.ok) throw new Error('Update failed');
             setSuccess(`Trip ${STATUS[status]?.label || status}`);
-            setTimeout(() => setSuccess(''), 3200);
+            setTimeout(() => setSuccess(''), 3000);
             loadBookings(true);
-        } catch { setError('Failed to update status.'); setTimeout(() => setError(''), 4000); }
+        } catch { setError('Failed to update status.'); setTimeout(() => setError(''), 3500); }
     };
 
     const handleLogout = () => {
@@ -689,51 +648,32 @@ const DriverPortal = () => {
         ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
         : 'DR';
 
+    const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
     return (
         <div style={{
             minHeight: '100vh',
-            background: '#07070a',
-            fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            position: 'relative',
-            overflow: 'hidden',
-            color: '#f1f5f9',
+            background: THEME.bg,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+            color: THEME.text,
+            position: 'relative', overflow: 'hidden',
         }}>
             <style>{globalStyles}</style>
 
-            {/* ═══ Premium Ambient Background ═══ */}
-            <div style={{
-                position: 'fixed', top: '-20%', right: '-15%',
-                width: '900px', height: '900px', borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(220,38,38,0.06) 0%, transparent 70%)',
-                filter: 'blur(120px)', pointerEvents: 'none', zIndex: 0,
-                animation: 'pulseGlow 12s ease-in-out infinite',
+            {/* Subtle ambient glow */}
+            <div className="glow-anim" style={{
+                position: 'fixed', top: '-30%', right: '-20%',
+                width: 700, height: 700, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(232,168,56,0.04) 0%, transparent 65%)',
+                filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0,
             }} />
-            <div style={{
-                position: 'fixed', bottom: '-25%', left: '-15%',
-                width: '800px', height: '800px', borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(34,197,94,0.04) 0%, transparent 70%)',
-                filter: 'blur(120px)', pointerEvents: 'none', zIndex: 0,
-                animation: 'pulseGlow 14s ease-in-out infinite 3s',
-            }} />
-            <div style={{
-                position: 'fixed', top: '50%', left: '50%',
-                width: '600px', height: '600px', borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(250,204,21,0.015) 0%, transparent 70%)',
-                filter: 'blur(100px)', pointerEvents: 'none', zIndex: 0,
-                transform: 'translate(-50%, -50%)',
-                animation: 'pulseGlow 16s ease-in-out infinite 6s',
-            }} />
-
-            {/* Grid overlay */}
-            <div style={{
-                position: 'fixed', inset: 0,
-                backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)
-                `,
-                backgroundSize: '60px 60px',
-                pointerEvents: 'none', zIndex: 0,
-                opacity: 0.4,
+            <div className="glow-anim" style={{
+                position: 'fixed', bottom: '-20%', left: '-15%',
+                width: 600, height: 600, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(96,165,250,0.03) 0%, transparent 65%)',
+                filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0,
+                animationDelay: '2s',
             }} />
 
             {/* Toast */}
@@ -742,181 +682,202 @@ const DriverPortal = () => {
 
             <div style={{ position: 'relative', zIndex: 1 }}>
 
-                {/* ═══════ PREMIUM HEADER ═══════ */}
+                {/* ═══ HEADER ═══ */}
                 <header style={{
                     position: 'sticky', top: 0, zIndex: 50,
-                    background: 'rgba(7, 7, 10, 0.8)',
-                    backdropFilter: 'blur(50px) saturate(200%)',
-                    WebkitBackdropFilter: 'blur(50px) saturate(200%)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                    background: 'rgba(15,17,23,0.85)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    borderBottom: `1px solid ${THEME.border}`,
                 }}>
                     <div style={{
-                        maxWidth: '640px', margin: '0 auto',
-                        padding: '16px 24px',
+                        maxWidth: 580, margin: '0 auto',
+                        padding: '14px 20px',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{
-                                width: '42px', height: '42px', borderRadius: '14px',
-                                background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+                                width: 40, height: 40, borderRadius: 12,
+                                background: THEME.accent,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 8px 24px -4px rgba(220, 38, 38, 0.4)',
-                                position: 'relative',
+                                boxShadow: `0 4px 16px -2px ${THEME.accent}35`,
                             }}>
-                                <Car size={20} color="#fff" />
-                                <span style={{
-                                    position: 'absolute', top: '-3px', right: '-3px',
-                                    width: '10px', height: '10px', borderRadius: '50%',
-                                    background: '#4ade80',
-                                    border: '2px solid #07070a',
-                                    boxShadow: '0 0 16px rgba(74,222,128,0.5)',
-                                }} />
+                                <Car size={19} color="#1a1a2e" strokeWidth={2.5} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#fafafa', letterSpacing: '-0.02em' }}>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: THEME.text, letterSpacing: '-0.01em' }}>
                                     DriverHub
                                 </div>
-                                <div style={{ fontSize: '0.55rem', color: '#3f3f46', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                                <div style={{ fontSize: '0.55rem', color: THEME.textMuted, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                                     {slug}
                                 </div>
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <button
                                 onClick={() => loadBookings(true)}
                                 disabled={refreshing}
                                 style={{
-                                    width: '38px', height: '38px', borderRadius: '12px',
-                                    background: 'rgba(255,255,255,0.03)',
-                                    border: '1px solid rgba(255,255,255,0.06)',
-                                    color: '#52525b', display: 'flex',
+                                    width: 36, height: 36, borderRadius: 10,
+                                    background: THEME.bgCard, border: `1px solid ${THEME.border}`,
+                                    color: THEME.textSecondary, display: 'flex',
                                     alignItems: 'center', justifyContent: 'center',
                                     cursor: 'pointer', transition: 'all 0.2s',
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = THEME.accentBorder}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = THEME.border}
                             >
-                                <RefreshCw size={15} className={refreshing ? 'spin' : ''} />
+                                <RefreshCw size={14} className={refreshing ? 'spin' : ''} />
                             </button>
-
                             <button
                                 onClick={handleLogout}
                                 style={{
-                                    padding: '9px 18px', borderRadius: '12px',
-                                    background: 'rgba(248,113,113,0.06)',
-                                    border: '1px solid rgba(248,113,113,0.12)',
-                                    color: '#f87171', fontSize: '0.78rem', fontWeight: 700,
-                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '8px 16px', borderRadius: 10,
+                                    background: THEME.dangerLight,
+                                    border: `1px solid ${THEME.dangerBorder}`,
+                                    color: THEME.danger, fontSize: '0.75rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: 6,
                                     cursor: 'pointer', transition: 'all 0.2s',
                                 }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(248,113,113,0.1)';
-                                    e.currentTarget.style.borderColor = 'rgba(248,113,113,0.2)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'rgba(248,113,113,0.06)';
-                                    e.currentTarget.style.borderColor = 'rgba(248,113,113,0.12)';
-                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,113,113,0.16)'}
+                                onMouseLeave={e => e.currentTarget.style.background = THEME.dangerLight}
                             >
-                                <LogOut size={14} />
-                                Exit
+                                <LogOut size={13} /> Exit
                             </button>
                         </div>
                     </div>
                 </header>
 
-                <main style={{ maxWidth: '640px', margin: '0 auto', padding: '32px 20px 100px' }}>
+                <main style={{ maxWidth: 580, margin: '0 auto', padding: '28px 20px 100px' }}>
 
-                    {/* ═══════ WELCOME SECTION ═══════ */}
-                    <div className="slide-up" style={{ marginBottom: '32px' }}>
-                        <div style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-                        }}>
-                            <div>
+                    {/* ═══ GREETING SECTION ═══ */}
+                    <div className="fade-up" style={{ marginBottom: 28 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                                {/* Time & Date */}
                                 <div style={{
-                                    fontSize: '0.72rem', color: '#52525b', fontWeight: 700,
-                                    marginBottom: '10px', textTransform: 'uppercase',
-                                    letterSpacing: '0.14em',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    marginBottom: 14,
                                 }}>
-                                    {getGreeting()}
+                                    <div style={{
+                                        padding: '5px 12px', borderRadius: 8,
+                                        background: THEME.accentLight,
+                                        border: `1px solid ${THEME.accentBorder}`,
+                                        color: THEME.accent,
+                                        fontSize: '0.7rem', fontWeight: 700,
+                                        display: 'flex', alignItems: 'center', gap: 6,
+                                    }}>
+                                        <GreetingIcon size={13} />
+                                        {greeting.text}
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', color: THEME.textMuted, fontWeight: 600 }}>
+                                        {currentTime}
+                                    </span>
                                 </div>
+
+                                {/* Driver name */}
                                 <h1 style={{
-                                    margin: 0, fontSize: '2.2rem', fontWeight: 800,
-                                    lineHeight: 1, letterSpacing: '-0.03em',
-                                    color: '#fafafa',
+                                    margin: 0, fontSize: '2rem', fontWeight: 800,
+                                    lineHeight: 1.1, letterSpacing: '-0.03em',
+                                    color: THEME.text, marginBottom: 6,
                                 }}>
                                     {user?.name || 'Driver'}
                                 </h1>
-                                <p style={{ margin: '12px 0 0', fontSize: '0.85rem', color: '#52525b', fontWeight: 500 }}>
+
+                                {/* Date line */}
+                                <div style={{ fontSize: '0.8rem', color: THEME.textMuted, fontWeight: 500, marginBottom: 10 }}>
+                                    {currentDate}
+                                </div>
+
+                                {/* Trip summary */}
+                                <div style={{
+                                    fontSize: '0.82rem', color: THEME.textSecondary, fontWeight: 500,
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                }}>
                                     {activeBookings.length > 0 ? (
-                                        <>You have <span style={{ color: '#f87171', fontWeight: 700 }}>{activeBookings.length} active trip{activeBookings.length !== 1 ? 's' : ''}</span></>
+                                        <>
+                                            <span className="pulse-dot" style={{
+                                                width: 7, height: 7, borderRadius: '50%',
+                                                background: THEME.accent, display: 'inline-block',
+                                            }} />
+                                            <span style={{ color: THEME.accent, fontWeight: 700 }}>
+                                                {activeBookings.length} active trip{activeBookings.length !== 1 ? 's' : ''}
+                                            </span>
+                                            {' waiting for you'}
+                                        </>
                                     ) : (
-                                        <>No active trips — you're all clear</>
+                                        'No active trips — all clear'
                                     )}
-                                </p>
+                                </div>
                             </div>
 
-                            {/* Premium Avatar */}
-                            <div style={{ position: 'relative' }}>
+                            {/* Avatar */}
+                            <div style={{
+                                width: 56, height: 56, borderRadius: 16,
+                                background: `linear-gradient(135deg, ${THEME.accent}, #d97706)`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#1a1a2e', fontSize: '1.05rem', fontWeight: 800,
+                                boxShadow: `0 8px 28px -4px ${THEME.accent}30`,
+                                flexShrink: 0, marginLeft: 16,
+                                position: 'relative',
+                            }}>
+                                {initials}
                                 <div style={{
-                                    width: '60px', height: '60px', borderRadius: '18px',
-                                    background: 'linear-gradient(135deg, #dc2626 0%, #16a34a 100%)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: '#ffffff', fontSize: '1.1rem', fontWeight: 800,
-                                    boxShadow: '0 16px 36px -8px rgba(0,0,0,0.6), 0 0 40px rgba(220,38,38,0.08)',
-                                    border: '2px solid rgba(255,255,255,0.06)',
-                                    position: 'relative',
-                                }}>
-                                    {initials}
-                                </div>
-                                <div style={{
-                                    position: 'absolute', bottom: '-2px', right: '-2px',
-                                    width: '20px', height: '20px', borderRadius: '50%',
-                                    background: '#4ade80',
-                                    border: '3px solid #07070a',
-                                    boxShadow: '0 0 20px rgba(74, 222, 128, 0.5)',
+                                    position: 'absolute', bottom: -2, right: -2,
+                                    width: 16, height: 16, borderRadius: '50%',
+                                    background: THEME.success, border: '3px solid ' + THEME.bg,
+                                    boxShadow: `0 0 12px ${THEME.success}60`,
                                 }} />
                             </div>
                         </div>
                     </div>
 
-                    {/* ═══════ STATS ROW ═══════ */}
-                    <div className="slide-up" style={{
-                        display: 'flex', gap: '10px', marginBottom: '32px',
+                    {/* ═══ DRIVER INFO STRIP ═══ */}
+                    {user?.phone && (
+                        <div className="fade-up" style={{
+                            animationDelay: '0.05s',
+                            display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap',
+                        }}>
+                            <div style={{
+                                padding: '10px 16px', borderRadius: 12,
+                                background: THEME.bgCard, border: `1px solid ${THEME.border}`,
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                fontSize: '0.78rem',
+                            }}>
+                                <Phone size={14} style={{ color: THEME.textMuted }} />
+                                <span style={{ color: THEME.textSecondary, fontWeight: 600 }}>{user.phone}</span>
+                            </div>
+                            {user?.vehicle_number && (
+                                <div style={{
+                                    padding: '10px 16px', borderRadius: 12,
+                                    background: THEME.bgCard, border: `1px solid ${THEME.border}`,
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    fontSize: '0.78rem',
+                                }}>
+                                    <Car size={14} style={{ color: THEME.textMuted }} />
+                                    <span style={{ color: THEME.textSecondary, fontWeight: 600 }}>{user.vehicle_number}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ═══ STATS ═══ */}
+                    <div className="fade-up" style={{
+                        display: 'flex', gap: 8, marginBottom: 28,
                         animationDelay: '0.08s',
                     }}>
-                        <StatCard
-                            value={activeBookings.length}
-                            label="Active"
-                            color="#f87171"
-                            icon={Zap}
-                            gradient="linear-gradient(135deg, #ef4444, #f97316)"
-                        />
-                        <StatCard
-                            value={inTransitCount}
-                            label="In Transit"
-                            color="#4ade80"
-                            icon={Navigation}
-                            gradient="linear-gradient(135deg, #22c55e, #10b981)"
-                        />
-                        <StatCard
-                            value={completedCount}
-                            label="Completed"
-                            color="#34d399"
-                            icon={CheckCircle}
-                            gradient="linear-gradient(135deg, #10b981, #14b8a6)"
-                        />
+                        <StatBox value={activeBookings.length} label="Active" color={THEME.accent} icon={Zap} />
+                        <StatBox value={inTransitCount} label="In Transit" color={THEME.info} icon={Navigation} />
+                        <StatBox value={completedCount} label="Done" color={THEME.success} icon={CheckCircle} />
                     </div>
 
-                    {/* ═══════ PREMIUM TAB BAR ═══════ */}
-                    <div className="slide-up" style={{
-                        display: 'flex', gap: '4px', marginBottom: '24px',
-                        padding: '4px',
-                        background: 'rgba(255,255,255,0.02)',
-                        borderRadius: '18px',
-                        border: '1px solid rgba(255,255,255,0.04)',
-                        animationDelay: '0.12s',
+                    {/* ═══ TABS ═══ */}
+                    <div className="fade-up" style={{
+                        display: 'flex', gap: 4, marginBottom: 20,
+                        padding: 4, background: THEME.bgCard,
+                        borderRadius: 14, border: `1px solid ${THEME.border}`,
+                        animationDelay: '0.1s',
                     }}>
                         {[
                             { key: 'bookings', label: 'Trips', icon: Route, count: activeBookings.length },
@@ -924,33 +885,30 @@ const DriverPortal = () => {
                         ].map(tab => {
                             const isActive = activeTab === tab.key;
                             const Icon = tab.icon;
-                            const tabColor = tab.key === 'bookings' ? '#f87171' : '#4ade80';
+                            const tabColor = tab.key === 'bookings' ? THEME.accent : THEME.success;
                             return (
                                 <button
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key)}
                                     style={{
-                                        flex: 1, padding: '14px 10px', border: 'none', borderRadius: '15px',
-                                        background: isActive
-                                            ? 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
-                                            : 'transparent',
-                                        color: isActive ? '#f1f5f9' : '#3f3f46',
-                                        fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        gap: '8px',
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        border: isActive ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
-                                        position: 'relative',
+                                        flex: 1, padding: '12px 8px', borderRadius: 11,
+                                        background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                        border: isActive ? `1px solid ${tabColor}25` : '1px solid transparent',
+                                        color: isActive ? THEME.text : THEME.textMuted,
+                                        fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                                        transition: 'all 0.25s ease',
+                                        fontFamily: 'inherit',
                                     }}
                                 >
-                                    <Icon size={15} style={{ color: isActive ? tabColor : undefined }} />
+                                    <Icon size={14} style={{ color: isActive ? tabColor : undefined }} />
                                     {tab.label}
                                     {tab.count > 0 && (
                                         <span style={{
-                                            fontSize: '0.62rem', fontWeight: 800,
-                                            padding: '2px 8px', borderRadius: '8px',
+                                            fontSize: '0.6rem', fontWeight: 800,
+                                            padding: '2px 7px', borderRadius: 6,
                                             background: isActive ? `${tabColor}15` : 'rgba(255,255,255,0.03)',
-                                            color: isActive ? tabColor : '#3f3f46',
+                                            color: isActive ? tabColor : THEME.textMuted,
                                         }}>
                                             {tab.count}
                                         </span>
@@ -960,146 +918,118 @@ const DriverPortal = () => {
                         })}
                     </div>
 
-                    {/* ═══════ CONTENT ═══════ */}
-                    <div className="slide-up" style={{ animationDelay: '0.16s' }}>
+                    {/* ═══ CONTENT ═══ */}
+                    <div className="fade-up" style={{ animationDelay: '0.14s' }}>
                         {activeTab === 'bookings' ? (
                             loadingBookings ? (
-                                <div style={{ textAlign: 'center', padding: '90px 20px', color: '#3f3f46' }}>
+                                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                                     <div style={{
-                                        width: '56px', height: '56px', margin: '0 auto 22px',
-                                        borderRadius: '18px',
-                                        background: 'rgba(255,255,255,0.02)',
-                                        border: '1px solid rgba(255,255,255,0.04)',
+                                        width: 48, height: 48, margin: '0 auto 18px',
+                                        borderRadius: 14, background: THEME.bgCard,
+                                        border: `1px solid ${THEME.border}`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     }}>
-                                        <Loader2 size={28} className="spin" style={{ color: '#52525b' }} />
+                                        <Loader2 size={24} className="spin" style={{ color: THEME.textMuted }} />
                                     </div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#52525b' }}>
-                                        Loading your trips...
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: THEME.textSecondary }}>
+                                        Loading trips...
                                     </div>
                                 </div>
                             ) : activeBookings.length === 0 ? (
-                                <div className="glass" style={{
-                                    textAlign: 'center', padding: '80px 24px',
-                                    borderRadius: '24px',
-                                    border: '1px dashed rgba(255,255,255,0.05)',
+                                <div style={{
+                                    textAlign: 'center', padding: '70px 24px',
+                                    background: THEME.bgCard, borderRadius: 20,
+                                    border: `1px dashed ${THEME.border}`,
                                 }}>
                                     <div style={{
-                                        width: '80px', height: '80px', borderRadius: '50%',
-                                        background: 'rgba(255,255,255,0.015)',
-                                        border: '1px solid rgba(255,255,255,0.04)',
+                                        width: 64, height: 64, borderRadius: '50%',
+                                        background: 'rgba(255,255,255,0.02)',
+                                        border: `1px solid ${THEME.border}`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        margin: '0 auto 24px',
+                                        margin: '0 auto 20px',
                                     }}>
-                                        <Car size={36} style={{ color: '#27272a' }} />
+                                        <Car size={28} style={{ color: THEME.textMuted }} />
                                     </div>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#71717a', marginBottom: '10px', letterSpacing: '-0.02em' }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: THEME.textSecondary, marginBottom: 8, letterSpacing: '-0.01em' }}>
                                         All Clear
                                     </div>
-                                    <div style={{ fontSize: '0.88rem', color: '#3f3f46', fontWeight: 500 }}>
-                                        No active trips right now. <br />You'll be notified when a new booking arrives.
+                                    <div style={{ fontSize: '0.82rem', color: THEME.textMuted, lineHeight: 1.6 }}>
+                                        No active trips right now.<br />You'll be notified when a new booking arrives.
                                     </div>
                                 </div>
                             ) : (
                                 activeBookings.map((b, i) => (
-                                    <div key={b.booking_id} className="slide-up" style={{ animationDelay: `${i * 0.06}s` }}>
+                                    <div key={b.booking_id} className="fade-up" style={{ animationDelay: `${i * 0.05}s` }}>
                                         <BookingCard booking={b} onStatusChange={handleStatusChange} index={i} />
                                     </div>
                                 ))
                             )
                         ) : (
                             loadingLeaves ? (
-                                <div style={{ textAlign: 'center', padding: '90px 20px', color: '#3f3f46' }}>
+                                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                                     <div style={{
-                                        width: '56px', height: '56px', margin: '0 auto 22px',
-                                        borderRadius: '18px',
-                                        background: 'rgba(255,255,255,0.02)',
-                                        border: '1px solid rgba(255,255,255,0.04)',
+                                        width: 48, height: 48, margin: '0 auto 18px',
+                                        borderRadius: 14, background: THEME.bgCard,
+                                        border: `1px solid ${THEME.border}`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     }}>
-                                        <Loader2 size={28} className="spin" style={{ color: '#52525b' }} />
+                                        <Loader2 size={24} className="spin" style={{ color: THEME.textMuted }} />
                                     </div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#52525b' }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: THEME.textSecondary }}>
                                         Loading leaves...
                                     </div>
                                 </div>
                             ) : leaves.length === 0 ? (
-                                <div className="glass" style={{
+                                <div style={{
                                     textAlign: 'center', padding: '70px 24px',
-                                    borderRadius: '24px',
-                                    border: '1px dashed rgba(255,255,255,0.05)',
+                                    background: THEME.bgCard, borderRadius: 20,
+                                    border: `1px dashed ${THEME.border}`,
                                 }}>
                                     <div style={{
-                                        width: '68px', height: '68px', borderRadius: '50%',
-                                        background: 'rgba(255,255,255,0.015)',
-                                        border: '1px solid rgba(255,255,255,0.04)',
+                                        width: 64, height: 64, borderRadius: '50%',
+                                        background: 'rgba(255,255,255,0.02)',
+                                        border: `1px solid ${THEME.border}`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         margin: '0 auto 20px',
                                     }}>
-                                        <Calendar size={30} style={{ color: '#27272a' }} />
+                                        <Calendar size={28} style={{ color: THEME.textMuted }} />
                                     </div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#71717a', marginBottom: '16px', letterSpacing: '-0.02em' }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: THEME.textSecondary, marginBottom: 8 }}>
                                         No Leaves
                                     </div>
-                                    <button
-                                        onClick={() => navigate(`/tenant/${slug}/leaves/apply`)}
-                                        className="btn-press"
-                                        style={{
-                                            padding: '14px 32px', borderRadius: '16px',
-                                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                            color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.85rem',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 8px 24px -4px rgba(220,38,38,0.35)',
-                                            transition: 'all 0.25s ease',
-                                            display: 'inline-flex', alignItems: 'center', gap: '8px',
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                            e.currentTarget.style.boxShadow = '0 12px 32px -6px rgba(220,38,38,0.45)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.transform = 'translateY(0)';
-                                            e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(220,38,38,0.35)';
-                                        }}
-                                    >
-                                        <Calendar size={16} />
-                                        Apply for Leave
-                                    </button>
+                                    <div style={{ fontSize: '0.82rem', color: THEME.textMuted }}>
+                                        You haven't submitted any leave requests yet.
+                                    </div>
                                 </div>
                             ) : (
-                                <div>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                                        <button
-                                            onClick={() => navigate(`/tenant/${slug}/leaves/apply`)}
-                                            className="btn-press"
-                                            style={{
-                                                padding: '12px 22px', borderRadius: '14px',
-                                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                                color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.8rem',
-                                                cursor: 'pointer',
-                                                display: 'flex', alignItems: 'center', gap: '8px',
-                                                boxShadow: '0 6px 20px -4px rgba(220,38,38,0.3)',
-                                                transition: 'all 0.25s ease',
-                                            }}
-                                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                                        >
-                                            <Calendar size={15} /> New Leave
-                                        </button>
+                                leaves.map((leave, i) => (
+                                    <div key={leave.id || i} className="fade-up" style={{ animationDelay: `${i * 0.04}s` }}>
+                                        <LeaveCard leave={leave} />
                                     </div>
-                                    {leaves.map((l, i) => (
-                                        <div key={l.id || i} className="slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
-                                            <LeaveCard leave={l} />
-                                        </div>
-                                    ))}
-                                </div>
+                                ))
                             )
                         )}
                     </div>
 
-                    {/* ═══════ BOTTOM PADDING ═══════ */}
-                    <div style={{ height: '40px' }} />
-
+                    {/* ═══ FOOTER ═══ */}
+                    <div style={{
+                        textAlign: 'center', padding: '40px 0 0',
+                        borderTop: `1px solid ${THEME.borderLight}`,
+                        marginTop: 40,
+                    }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            marginBottom: 6,
+                        }}>
+                            <Shield size={12} style={{ color: THEME.textMuted }} />
+                            <span style={{ fontSize: '0.68rem', color: THEME.textMuted, fontWeight: 600 }}>
+                                Secure Driver Portal
+                            </span>
+                        </div>
+                        <div style={{ fontSize: '0.6rem', color: THEME.textMuted, fontWeight: 500, opacity: 0.6 }}>
+                            DriverHub v2.0 · {slug}
+                        </div>
+                    </div>
                 </main>
             </div>
         </div>

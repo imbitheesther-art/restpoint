@@ -1,4 +1,4 @@
-/* ===== HEARSE BOOKINGS — CLEAN & SIMPLE ===== */
+/* ===== HEARSE BOOKINGS — FULLY MOBILE RESPONSIVE ===== */
 :root {
     --hbg-primary: #0A2463;
     --hbg-secondary: #1A3A7A;
@@ -19,6 +19,16 @@
     --hshadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --hshadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
     --htransition: all 0.2s ease;
+    --hb-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Utility: show/hide by breakpoint */
+.hb-desktop-only {
+    display: block;
+}
+
+.hb-mobile-only {
+    display: none;
 }
 
 /* Page wrapper */
@@ -28,16 +38,17 @@
     padding: 1.5rem;
     max-width: var(--app-max-width, 96vw);
     margin: 0 auto;
+    position: relative;
 }
 
-/* Header */
+/* ===================== HEADER ===================== */
 .hb-header {
     background: var(--hbg-card);
     border-radius: var(--hradius);
     box-shadow: var(--hshadow-sm);
     border: 1px solid var(--hborder);
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .hb-header-top {
@@ -46,6 +57,11 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
+}
+
+.hb-header-info {
+    flex: 1;
+    min-width: 0;
 }
 
 .hb-header-title {
@@ -67,22 +83,24 @@
     align-items: center;
     justify-content: center;
     color: white;
+    flex-shrink: 0;
 }
 
 .hb-header-meta {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-top: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .hb-live-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
     border-radius: var(--hradius-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -129,21 +147,27 @@
 
 .hb-header-actions {
     display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.6rem;
+    flex-shrink: 0;
 }
 
 .hb-btn-header {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.6rem 1.1rem;
-    font-size: 0.875rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
     font-weight: 600;
     border: none;
     border-radius: var(--hradius-sm);
     cursor: pointer;
     transition: var(--htransition);
+    white-space: nowrap;
+    min-height: 40px;
+}
+
+.hb-btn-header span {
+    display: inline;
 }
 
 .hb-btn-header.ghost {
@@ -175,14 +199,14 @@
     background: #059669;
 }
 
-/* Filter Bar */
+/* ===================== FILTER BAR ===================== */
 .hb-filter-bar {
     background: var(--hbg-card);
     border-radius: var(--hradius);
     box-shadow: var(--hshadow-sm);
     border: 1px solid var(--hborder);
     padding: 1rem 1.5rem;
-    margin-bottom: 1rem;
+    margin-top: 1rem;
 }
 
 .hb-filter-row {
@@ -200,14 +224,21 @@
     flex-wrap: wrap;
 }
 
+.hb-avail-check {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
 .hb-input-sm {
     padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     border: 1px solid var(--hborder);
     border-radius: var(--hradius-sm);
     background: white;
     color: var(--htext-primary);
     transition: var(--htransition);
+    min-height: 40px;
 }
 
 .hb-input-sm:focus {
@@ -221,7 +252,7 @@
     align-items: center;
     gap: 0.35rem;
     padding: 0.5rem 0.85rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
     border: 1px solid var(--hborder);
     border-radius: var(--hradius-sm);
@@ -229,6 +260,7 @@
     color: var(--htext-primary);
     cursor: pointer;
     transition: var(--htransition);
+    min-height: 40px;
 }
 
 .hb-btn-filter:hover {
@@ -255,8 +287,9 @@
 .hb-avail-badge {
     padding: 0.25rem 0.65rem;
     border-radius: var(--hradius-xs);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .hb-avail-badge.green {
@@ -269,14 +302,15 @@
     color: #991B1B;
 }
 
-/* Status filter pills */
+/* Status pills */
 .hb-filter-pills {
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
-    padding-bottom: 0.15rem;
+    padding-bottom: 0.25rem;
     margin-top: 0.85rem;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .hb-filter-pills::-webkit-scrollbar {
@@ -288,7 +322,7 @@
     align-items: center;
     gap: 0.35rem;
     padding: 0.45rem 0.85rem;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     border-radius: var(--hradius-sm);
     border: none;
@@ -298,10 +332,11 @@
     letter-spacing: 0.02em;
     text-transform: uppercase;
     flex-shrink: 0;
+    min-height: 36px;
 }
 
 .hb-pill .pill-count {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     padding: 0.1rem 0.4rem;
     border-radius: var(--hradius-xs);
@@ -313,7 +348,6 @@
     filter: brightness(0.95);
 }
 
-/* Navy — ALL */
 .hb-pill[data-color="navy"] {
     background: #6B7280;
     color: white;
@@ -324,7 +358,6 @@
     color: white;
 }
 
-/* Blue — BOOKED */
 .hb-pill[data-color="blue"] {
     background: #DBEAFE;
     color: #1E40AF;
@@ -335,7 +368,6 @@
     color: white;
 }
 
-/* Cyan — IN TRANSIT */
 .hb-pill[data-color="cyan"] {
     background: #CFFAFE;
     color: #155E75;
@@ -346,7 +378,6 @@
     color: white;
 }
 
-/* Green — COMPLETED */
 .hb-pill[data-color="green"] {
     background: #D1FAE5;
     color: #065F46;
@@ -357,7 +388,6 @@
     color: white;
 }
 
-/* Red — CANCELLED */
 .hb-pill[data-color="red"] {
     background: #FEE2E2;
     color: #991B1B;
@@ -368,7 +398,6 @@
     color: white;
 }
 
-/* Amber — POSTPONED */
 .hb-pill[data-color="amber"] {
     background: #FEF3C7;
     color: #92400E;
@@ -379,78 +408,111 @@
     color: white;
 }
 
-/* Branch dropdown */
-.hb-branch-dropdown .dropdown-toggle {
+/* Custom branch dropdown (replaces BS Dropdown for mobile) */
+.hb-branch-filter-wrapper {
+    position: relative;
+}
+
+.hb-branch-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     padding: 0.5rem 0.85rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    border: 1px solid var(--hborder);
+    border: 1.5px solid var(--hborder);
     border-radius: var(--hradius-sm);
     background: white;
     color: var(--htext-primary);
-    transition: var(--htransition);
     cursor: pointer;
+    transition: var(--htransition);
+    min-height: 40px;
+    white-space: nowrap;
 }
 
-.hb-branch-dropdown .dropdown-toggle:hover {
+.hb-branch-btn:hover {
     border-color: var(--haccent);
     color: var(--haccent);
 }
 
-.hb-branch-dropdown .dropdown-menu {
+.hb-branch-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+}
+
+.hb-branch-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 1050;
+    background: white;
     border: 1px solid var(--hborder);
     border-radius: var(--hradius-sm);
     box-shadow: var(--hshadow-lg);
     padding: 0.35rem;
-    min-width: 200px;
-    max-height: 300px;
+    min-width: 210px;
+    max-height: 280px;
     overflow-y: auto;
 }
 
-.hb-branch-dropdown .dropdown-item {
-    border-radius: var(--hradius-xs);
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+.hb-branch-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: var(--htext-primary);
+    border-radius: var(--hradius-xs);
+    cursor: pointer;
     transition: var(--htransition);
 }
 
-.hb-branch-dropdown .dropdown-item:hover {
+.hb-branch-item:hover {
     background: var(--hbg-surface);
     color: var(--haccent);
 }
 
-.hb-branch-dropdown .dropdown-item.active {
+.hb-branch-item.active {
     background: var(--haccent);
     color: white;
 }
 
-/* Table */
+.hb-branch-item.active .hb-count-badge.dark {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.hb-branch-divider {
+    height: 1px;
+    background: var(--hborder-light);
+    margin: 0.25rem 0.4rem;
+}
+
+/* ===================== DESKTOP TABLE ===================== */
 .hb-table-card {
     background: var(--hbg-card);
     border-radius: var(--hradius);
     box-shadow: var(--hshadow-sm);
     overflow: hidden;
     border: 1px solid var(--hborder);
+    margin-top: 1rem;
 }
 
 .hb-table {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .hb-table thead th {
     background: var(--hbg-surface);
     color: var(--htext-secondary);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.85rem 1.25rem;
+    padding: 0.8rem 1.15rem;
     border-bottom: 1px solid var(--hborder);
     white-space: nowrap;
 }
@@ -469,7 +531,7 @@
 }
 
 .hb-table tbody td {
-    padding: 1rem 1.25rem;
+    padding: 0.85rem 1.15rem;
     vertical-align: middle;
     color: var(--htext-primary);
 }
@@ -477,12 +539,12 @@
 .hb-table .booking-id {
     font-weight: 700;
     color: var(--haccent);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
 }
 
 .hb-table .booking-date-sub {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--htext-muted);
     margin-top: 0.15rem;
 }
@@ -490,23 +552,22 @@
 .hb-table .client-name {
     font-weight: 600;
     color: var(--htext-primary);
-    font-size: 0.9rem;
 }
 
 .hb-table .hearse-plate {
     display: inline-block;
-    padding: 0.2rem 0.6rem;
+    padding: 0.2rem 0.55rem;
     background: var(--hbg-primary);
     color: white;
     border-radius: var(--hradius-xs);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.03em;
     font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
 }
 
 .hb-table .hearse-sub {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--htext-muted);
     margin-top: 0.2rem;
 }
@@ -517,7 +578,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--htext-secondary);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
 }
 
 /* Status Badges */
@@ -525,9 +586,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.3rem 0.7rem;
+    padding: 0.28rem 0.65rem;
     border-radius: 20px;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -541,7 +602,6 @@
     flex-shrink: 0;
 }
 
-/* BOOKED — Blue */
 .hb-status.booked {
     background: #DBEAFE;
     color: #1E40AF;
@@ -551,7 +611,6 @@
     background: #2563EB;
 }
 
-/* IN TRANSIT — Orange */
 .hb-status.in_transit {
     background: #FEF3C7;
     color: #92400E;
@@ -562,7 +621,6 @@
     animation: hb-pulse-dot 1.5s ease-in-out infinite;
 }
 
-/* COMPLETED — Green */
 .hb-status.completed {
     background: #D1FAE5;
     color: #065F46;
@@ -572,7 +630,6 @@
     background: #10B981;
 }
 
-/* CANCELLED — Red */
 .hb-status.cancelled {
     background: #FEE2E2;
     color: #991B1B;
@@ -582,7 +639,6 @@
     background: #EF4444;
 }
 
-/* POSTPONED — Purple */
 .hb-status.postponed {
     background: #EDE9FE;
     color: #5B21B6;
@@ -592,10 +648,19 @@
     background: #7C3AED;
 }
 
+.hb-status.maintenance {
+    background: #F3E8FF;
+    color: #6B21A8;
+}
+
+.hb-status.maintenance .hb-status-dot {
+    background: #9333EA;
+}
+
 /* Action dropdown */
 .hb-action-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -614,17 +679,17 @@
 }
 
 .hb-action-menu {
-    border: 1px solid var(--hborder);
+    border: 1px solid var(--hborder) !important;
     border-radius: var(--hradius-sm) !important;
     box-shadow: var(--hshadow-lg) !important;
-    padding: 0.35rem;
-    min-width: 180px;
+    padding: 0.35rem !important;
+    min-width: 190px;
 }
 
 .hb-action-menu .dropdown-item {
     border-radius: var(--hradius-xs);
     padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: var(--htext-primary);
     display: flex;
@@ -639,7 +704,7 @@
 }
 
 .hb-action-menu .dropdown-divider {
-    margin: 0.3rem 0.4rem;
+    margin: 0.25rem 0.4rem;
     border-color: var(--hborder-light);
 }
 
@@ -673,7 +738,7 @@
     font-size: 0.875rem;
 }
 
-/* Loading state */
+/* Loading */
 .hb-loading {
     display: flex;
     justify-content: center;
@@ -693,6 +758,17 @@
     border-radius: 50%;
     animation: hb-spin 0.7s linear infinite;
     margin: 0 auto 1rem;
+    display: block;
+}
+
+.hb-spinner-sm {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+    margin: 0;
+    margin-right: 8px;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 @keyframes hb-spin {
@@ -707,7 +783,271 @@
     font-size: 0.9rem;
 }
 
-/* ===== MODALS ===== */
+/* ===================== MOBILE BOOKING CARDS ===================== */
+.hb-booking-card {
+    background: var(--hbg-card);
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius-sm);
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: var(--hshadow-sm);
+}
+
+.hb-booking-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--hborder-light);
+}
+
+.hb-booking-card-id {
+    font-weight: 700;
+    color: var(--haccent);
+    font-size: 0.82rem;
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+}
+
+.hb-booking-card-date {
+    font-size: 0.68rem;
+    color: var(--htext-muted);
+    margin-top: 2px;
+}
+
+.hb-booking-card-client {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.hb-booking-card-client-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--hbg-surface);
+    border: 1px solid var(--hborder);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--htext-secondary);
+    flex-shrink: 0;
+}
+
+.hb-booking-card-client-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--htext-primary);
+}
+
+.hb-booking-card-client-phone {
+    font-size: 0.75rem;
+    color: var(--htext-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.hb-booking-card-route {
+    margin-bottom: 0.65rem;
+}
+
+.hb-route-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hb-route-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.hb-route-dot-red {
+    background: #EF4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.hb-route-text {
+    font-size: 0.82rem;
+    color: var(--htext-secondary);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hb-booking-card-vehicle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--htext-muted);
+}
+
+.hb-booking-card-hearse-name {
+    font-size: 0.72rem;
+    color: var(--htext-muted);
+    margin-left: 0.25rem;
+}
+
+.hb-booking-card-date-mobile {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: var(--htext-muted);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--hborder-light);
+}
+
+.hb-booking-card-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.hb-card-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius-xs);
+    background: white;
+    color: var(--htext-secondary);
+    cursor: pointer;
+    transition: var(--htransition);
+    min-height: 38px;
+}
+
+.hb-card-action:hover {
+    background: var(--hbg-surface);
+    color: var(--htext-primary);
+    border-color: var(--haccent);
+}
+
+.hb-card-action-primary {
+    background: var(--haccent);
+    color: white;
+    border-color: var(--haccent);
+}
+
+.hb-card-action-primary:hover {
+    background: var(--haccent-hover);
+    color: white;
+    border-color: var(--haccent-hover);
+}
+
+.hb-card-action-success {
+    background: #10B981;
+    color: white;
+    border-color: #10B981;
+}
+
+.hb-card-action-success:hover {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+}
+
+.hb-card-action-more {
+    padding: 0.5rem;
+    min-width: 38px;
+    justify-content: center;
+}
+
+/* Hearse card (in modals on mobile) */
+.hb-hearse-card {
+    background: var(--hbg-surface);
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius-sm);
+    padding: 0.85rem;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+    transition: var(--htransition);
+}
+
+.hb-hearse-card:hover {
+    border-color: var(--haccent);
+    background: white;
+}
+
+.hb-hearse-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.hb-hearse-card-name {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--htext-primary);
+}
+
+.hb-hearse-card-model {
+    font-size: 0.75rem;
+    color: var(--htext-muted);
+    margin-top: 2px;
+}
+
+.hb-hearse-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hb-hearse-card-branch {
+    font-size: 0.75rem;
+    color: var(--htext-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hb-hearse-card-book {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #10B981;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Floating action button for mobile */
+.hb-mobile-fab {
+    display: none;
+    position: fixed;
+    bottom: calc(1.25rem + var(--hb-safe-bottom));
+    right: 1.25rem;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--hbg-primary);
+    color: white;
+    border: none;
+    box-shadow: 0 6px 24px rgba(10, 36, 99, 0.35);
+    cursor: pointer;
+    z-index: 40;
+    align-items: center;
+    justify-content: center;
+    transition: var(--htransition);
+}
+
+.hb-mobile-fab:hover {
+    background: var(--hbg-secondary);
+    transform: scale(1.05);
+}
+
+/* ===================== MODALS ===================== */
 .hb-modal .modal-content {
     border: 1px solid var(--hborder);
     border-radius: var(--hradius);
@@ -717,7 +1057,7 @@
 
 .hb-modal .modal-header {
     border: none;
-    padding: 1.1rem 1.5rem;
+    padding: 1rem 1.5rem;
     background: var(--hbg-primary);
 }
 
@@ -771,6 +1111,8 @@
     padding: 1rem 1.5rem;
     background: var(--hbg-surface);
     border-top: 1px solid var(--hborder);
+    display: flex;
+    gap: 0.5rem;
 }
 
 /* Selected hearse info */
@@ -808,15 +1150,40 @@
     font-weight: 700;
 }
 
+.hb-plate-inline {
+    margin-left: 0.5rem;
+}
+
 .hb-selected-details .sub {
     color: var(--htext-secondary);
     font-size: 0.8rem;
     margin-top: 0.15rem;
 }
 
-/* Form styling */
+.hb-change-btn {
+    font-size: 0.82rem !important;
+    text-decoration: none !important;
+    color: var(--htext-secondary) !important;
+    padding: 0 !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.hb-change-btn:hover {
+    color: var(--haccent) !important;
+}
+
+/* Modal actions (stacked on mobile) */
+.hb-modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* Form */
 .hb-form-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     color: var(--htext-secondary);
     margin-bottom: 0.4rem;
@@ -832,6 +1199,7 @@
     background: white;
     color: var(--htext-primary);
     transition: var(--htransition);
+    min-height: 44px;
 }
 
 .hb-form-control:focus {
@@ -857,6 +1225,8 @@
     border-radius: var(--hradius-sm);
     cursor: pointer;
     transition: var(--htransition);
+    min-height: 44px;
+    white-space: nowrap;
 }
 
 .hb-btn:disabled {
@@ -873,15 +1243,6 @@
 .hb-btn-ghost:hover {
     background: var(--hbg-surface);
     color: var(--htext-primary);
-}
-
-.hb-btn-accent {
-    background: var(--haccent);
-    color: white;
-}
-
-.hb-btn-accent:hover {
-    background: var(--haccent-hover);
 }
 
 .hb-btn-green {
@@ -902,7 +1263,7 @@
     background: #D97706;
 }
 
-/* Detail cards in modal */
+/* Detail cards */
 .hb-detail-card {
     border: 1px solid var(--hborder);
     border-radius: var(--hradius-sm);
@@ -911,11 +1272,11 @@
 }
 
 .hb-detail-card-header {
-    padding: 0.65rem 1rem;
+    padding: 0.6rem 1rem;
     background: var(--hbg-surface);
     border-bottom: 1px solid var(--hborder);
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--htext-secondary);
     display: flex;
     align-items: center;
@@ -925,15 +1286,16 @@
 }
 
 .hb-detail-card-body {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
 }
 
 .hb-detail-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 0.6rem 0;
-    font-size: 0.875rem;
+    padding: 0.55rem 0;
+    font-size: 0.85rem;
+    gap: 0.75rem;
 }
 
 .hb-detail-row+.hb-detail-row {
@@ -944,7 +1306,6 @@
     color: var(--htext-muted);
     font-weight: 500;
     flex-shrink: 0;
-    margin-right: 1rem;
 }
 
 .hb-detail-row .value {
@@ -957,17 +1318,17 @@
 /* Modal table */
 .hb-modal-table {
     margin: 0;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 .hb-modal-table thead th {
     background: var(--hbg-surface);
     color: var(--htext-secondary);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.65rem 0.9rem;
+    padding: 0.6rem 0.85rem;
     border-bottom: 1px solid var(--hborder);
 }
 
@@ -985,7 +1346,7 @@
 }
 
 .hb-modal-table tbody td {
-    padding: 0.65rem 0.9rem;
+    padding: 0.6rem 0.85rem;
     vertical-align: middle;
 }
 
@@ -993,8 +1354,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.78rem;
     font-weight: 600;
     border: none;
     border-radius: var(--hradius-xs);
@@ -1002,29 +1363,24 @@
     color: white;
     cursor: pointer;
     transition: var(--htransition);
+    min-height: 34px;
 }
 
 .hb-btn-book-sm:hover {
     background: #059669;
 }
 
-/* Alert/Notice */
+/* Notice */
 .hb-notice {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     padding: 0.75rem 1rem;
     border-radius: var(--hradius-sm);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 500;
     margin-bottom: 1.25rem;
     border-left: 3px solid;
-}
-
-.hb-notice.info {
-    background: #EFF6FF;
-    border-color: #3B82F6;
-    color: #1E40AF;
 }
 
 .hb-notice.warning {
@@ -1033,30 +1389,32 @@
     color: #92400E;
 }
 
-/* Toast notifications */
+/* Toast */
 .hb-toast-container {
     position: fixed;
-    top: 1.5rem;
-    right: 1.5rem;
+    top: 1rem;
+    right: 1rem;
     z-index: 9999;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    pointer-events: none;
 }
 
 .hb-toast {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.75rem 1.1rem;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
     border-radius: var(--hradius-sm);
-    font-size: 0.875rem;
+    font-size: 0.82rem;
     font-weight: 600;
     box-shadow: var(--hshadow-lg);
-    animation: hb-toast-in 0.2s ease;
-    min-width: 300px;
-    max-width: 400px;
+    animation: hb-toast-in 0.25s ease;
+    min-width: 260px;
+    max-width: 380px;
     border: 1px solid;
+    pointer-events: auto;
 }
 
 .hb-toast.success {
@@ -1071,10 +1429,6 @@
     border-color: #FCA5A5;
 }
 
-.hb-toast.leaving {
-    animation: hb-toast-out 0.15s ease forwards;
-}
-
 @keyframes hb-toast-in {
     from {
         opacity: 0;
@@ -1087,26 +1441,14 @@
     }
 }
 
-@keyframes hb-toast-out {
-    from {
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    to {
-        opacity: 0;
-        transform: translateX(20px);
-    }
-}
-
-/* Plate badge in modal table */
+/* Plate badge */
 .hb-plate-badge {
     display: inline-block;
-    padding: 0.2rem 0.6rem;
+    padding: 0.2rem 0.55rem;
     background: var(--hbg-primary);
     color: white;
     border-radius: var(--hradius-xs);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.03em;
     font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
@@ -1114,7 +1456,7 @@
 
 /* Section label */
 .hb-section-label {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--htext-primary);
     margin-bottom: 1rem;
@@ -1131,7 +1473,7 @@
     margin-left: 0.5rem;
 }
 
-/* Modal empty state */
+/* Modal empty */
 .hb-modal-empty {
     text-align: center;
     padding: 2.5rem 1.5rem;
@@ -1155,16 +1497,16 @@
     font-size: 1rem;
 }
 
-/* Badge count in dropdown */
+/* Count badge */
 .hb-count-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
+    min-width: 20px;
     height: 18px;
-    padding: 0 0.4rem;
+    padding: 0 0.35rem;
     border-radius: var(--hradius-xs);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     margin-left: 0.4rem;
 }
@@ -1179,26 +1521,66 @@
     color: white;
 }
 
-/* Mobile-First Responsive */
-@media (max-width: 767.98px) {
+/* ===================== TABLET (768px–1024px) ===================== */
+@media (max-width: 1023.98px) {
     .hb-page {
-        padding: 0.75rem;
+        padding: 1rem;
+    }
+
+    .hb-header {
+        padding: 1.15rem;
+    }
+
+    .hb-btn-header {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.82rem;
+    }
+
+    .hb-header-actions {
+        gap: 0.4rem;
+    }
+
+    .hb-table thead th,
+    .hb-table tbody td {
+        padding: 0.7rem 0.9rem;
+    }
+
+    .hb-filter-bar {
+        padding: 0.85rem 1.15rem;
+    }
+}
+
+/* ===================== MOBILE (< 768px) ===================== */
+@media (max-width: 767.98px) {
+    .hb-desktop-only {
+        display: none !important;
+    }
+
+    .hb-mobile-only {
+        display: block !important;
+    }
+
+    .hb-page {
+        padding: 0;
+        background: var(--hbg-surface);
     }
 
     .hb-header {
         padding: 1rem;
-        border-radius: var(--hradius-sm);
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid var(--hborder);
+        margin-bottom: 0;
     }
 
     .hb-header-top {
-        padding: 0;
         flex-direction: column;
         align-items: stretch;
-        gap: 0.75rem;
+        gap: 0.85rem;
     }
 
     .hb-header-title {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
     }
 
     .hb-header-title .icon-wrap {
@@ -1207,140 +1589,154 @@
     }
 
     .hb-header-meta {
-        flex-wrap: wrap;
         gap: 0.5rem;
     }
 
     .hb-header-actions {
-        flex-direction: column;
+        flex-direction: row;
         gap: 0.5rem;
     }
 
     .hb-btn-header {
+        flex: 1;
         justify-content: center;
-        padding: 0.75rem 1rem;
-        width: 100%;
+        padding: 0.65rem 0.5rem;
+        font-size: 0.78rem;
+        min-height: 44px;
+    }
+
+    .hb-btn-header span {
+        display: none;
+    }
+
+    .hb-btn-header.primary span,
+    .hb-btn-header.success span {
+        display: inline;
     }
 
     .hb-filter-bar {
-        padding: 0.75rem;
-        border-radius: var(--hradius-sm);
+        padding: 0.85rem 1rem;
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid var(--hborder);
+        margin-top: 0;
     }
 
     .hb-filter-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.5rem;
+        gap: 0.65rem;
     }
 
     .hb-filter-left {
         flex-direction: column;
-        gap: 0.4rem;
+        gap: 0.5rem;
     }
 
-    .hb-filter-left input,
-    .hb-filter-left select {
+    .hb-avail-check {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .hb-avail-check .hb-input-sm,
+    .hb-avail-check .hb-btn-filter {
         width: 100%;
-    }
-
-    .hb-input-sm,
-    .hb-btn-filter {
-        padding: 0.7rem 0.85rem;
-        font-size: 0.9rem;
-    }
-
-    .hb-btn-filter {
         justify-content: center;
     }
 
+    .hb-btn-filter {
+        width: 100%;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    .hb-avail-badges {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hb-branch-filter-wrapper {
+        width: 100%;
+    }
+
+    .hb-branch-btn {
+        width: 100%;
+        justify-content: space-between;
+        min-height: 44px;
+    }
+
+    .hb-branch-menu {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: var(--hradius) var(--hradius) 0 0;
+        max-height: 50vh;
+        z-index: 1050;
+        animation: hb-sheet-up 0.25s ease;
+    }
+
+    @keyframes hb-sheet-up {
+        from {
+            transform: translateY(100%);
+        }
+
+        to {
+            transform: translateY(0);
+        }
+    }
+
     .hb-filter-pills {
-        gap: 0.35rem;
-        margin-top: 0.65rem;
+        gap: 0.4rem;
+        margin-top: 0.75rem;
+        padding: 0 1rem 0.5rem;
+        margin-left: -1rem;
+        margin-right: -1rem;
     }
 
     .hb-pill {
         padding: 0.4rem 0.65rem;
         font-size: 0.65rem;
+        min-height: 34px;
     }
 
-    /* Convert table to cards on mobile */
-    .hb-table thead {
-        display: none;
+    /* Mobile booking cards */
+    .hb-mobile-only {
+        padding: 0.75rem;
     }
 
-    .hb-table tbody tr {
+    .hb-booking-card {
+        border-radius: 12px;
+    }
+
+    .hb-card-action {
+        flex: 1;
+        justify-content: center;
+        min-height: 42px;
+    }
+
+    .hb-card-action-more {
+        flex: 0;
+        min-width: 42px;
+    }
+
+    /* FAB */
+    .hb-mobile-fab {
         display: flex;
-        flex-direction: column;
-        padding: 0.85rem;
-        border-bottom: 1px solid var(--hborder);
-        margin-bottom: 0;
     }
 
-    .hb-table tbody td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.35rem 0;
-        border: none;
-    }
-
-    .hb-table tbody td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--htext-muted);
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        margin-right: 0.5rem;
-        flex-shrink: 0;
-    }
-
-    .hb-table .booking-id {
-        font-size: 0.8rem;
-    }
-
-    .hb-table .dest-text {
-        max-width: 160px;
-        font-size: 0.8rem;
-    }
-
-    .hb-table .client-name {
-        font-size: 0.85rem;
-    }
-
-    .hb-table tbody td:last-child {
-        padding-bottom: 0;
-    }
-
-    .hb-table tbody td:first-child {
-        padding-top: 0;
-    }
-
-    .hb-status {
-        font-size: 0.65rem;
-        padding: 0.25rem 0.55rem;
-    }
-
-    .hb-table tbody td[data-label="Actions"] {
-        justify-content: flex-start;
-        gap: 0.5rem;
-        padding-top: 0.5rem;
-        border-top: 1px solid var(--hborder-light);
-        margin-top: 0.3rem;
-    }
-
-    .hb-action-btn {
-        width: 36px;
-        height: 36px;
-    }
-
-    /* Modal mobile styles */
+    /* Modal fullscreen on small screens */
     .hb-modal .modal-dialog {
-        margin: 0.5rem;
+        margin: 0;
+        max-width: 100%;
     }
 
     .hb-modal .modal-content {
-        border-radius: 12px;
+        border-radius: 0;
+        border: none;
+        min-height: 100vh;
+        min-height: 100dvh;
     }
 
     .hb-modal .modal-header {
@@ -1354,90 +1750,110 @@
 
     .hb-modal .modal-body {
         padding: 1rem;
+        overflow-y: auto;
+        flex: 1;
     }
 
     .hb-modal .modal-footer {
         padding: 0.75rem 1rem;
+        flex-direction: column;
+        border-radius: 0;
+        padding-bottom: calc(0.75rem + var(--hb-safe-bottom));
     }
 
     .hb-selected-info {
         padding: 0.75rem;
-        gap: 0.75rem;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .hb-selected-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .hb-plate-inline {
+        margin-left: 0;
+        margin-top: 4px;
+        display: inline-block;
+    }
+
+    .hb-change-btn {
+        width: 100%;
+        text-align: left;
+        margin-top: 0.25rem;
+    }
+
+    .hb-form-label {
+        font-size: 0.68rem;
+    }
+
+    .hb-form-control {
+        padding: 0.65rem 0.75rem;
+        font-size: 16px;
+        /* Prevents iOS zoom */
+        min-height: 48px;
+    }
+
+    .hb-modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .hb-modal-actions .hb-btn {
+        width: 100%;
+    }
+
+    .hb-btn {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        min-height: 48px;
+        font-size: 0.875rem;
+    }
+
+    .hb-modal-actions .hb-btn-ghost {
+        order: 2;
+    }
+
+    .hb-detail-card {
+        margin-bottom: 0.75rem;
+    }
+
+    .hb-detail-card-body {
+        padding: 0.65rem 0.75rem;
     }
 
     .hb-detail-row {
         font-size: 0.8rem;
         padding: 0.5rem 0;
+        gap: 0.5rem;
     }
 
-    .hb-form-control {
-        padding: 0.65rem 0.75rem;
-        font-size: 0.9rem;
+    .hb-detail-row .label {
+        font-size: 0.72rem;
     }
 
-    .hb-btn {
-        padding: 0.7rem 1rem;
-        font-size: 0.875rem;
-        width: 100%;
+    .hb-notice {
+        font-size: 0.8rem;
+        padding: 0.65rem 0.85rem;
     }
 
-    .hb-btn:not(:last-child) {
-        margin-bottom: 0.35rem;
+    .hb-hearse-card {
+        padding: 0.75rem;
+    }
+
+    /* Toast mobile */
+    .hb-toast-container {
+        top: 0.5rem;
+        right: 0.5rem;
+        left: 0.5rem;
     }
 
     .hb-toast {
         min-width: unset;
-        max-width: calc(100vw - 2rem);
-        font-size: 0.8rem;
-    }
-
-    .hb-toast-container {
-        top: 0.75rem;
-        right: 0.75rem;
-        left: 0.75rem;
-    }
-
-    .hb-table-card {
-        border-radius: var(--hradius-sm);
-    }
-
-    /* Modal table card view */
-    .hb-modal-table thead {
-        display: none;
-    }
-
-    .hb-modal-table tbody tr {
-        display: flex;
-        flex-wrap: wrap;
-        padding: 0.75rem;
-        gap: 0.35rem;
-        border-bottom: 1px solid var(--hborder);
-    }
-
-    .hb-modal-table tbody td {
-        display: flex;
-        align-items: center;
-        padding: 0.25rem 0;
-        border: none;
-        font-size: 0.8rem;
-    }
-
-    .hb-modal-table tbody td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--htext-muted);
-        font-size: 0.65rem;
-        text-transform: uppercase;
-        margin-right: 0.4rem;
-    }
-
-    .hb-avail-badges {
-        flex-wrap: wrap;
-    }
-
-    .hb-branch-dropdown .dropdown-toggle {
-        width: 100%;
-        justify-content: center;
+        max-width: 100%;
+        font-size: 0.78rem;
+        padding: 0.6rem 0.85rem;
     }
 
     .hb-count-badge {
@@ -1447,60 +1863,146 @@
     }
 
     .hb-modal-empty {
-        padding: 1.5rem 1rem;
-    }
-
-    /* Register form */
-    .hb-form-label {
-        font-size: 0.7rem;
-    }
-
-    /* Detail cards */
-    .hb-detail-card {
-        margin-bottom: 0.75rem;
-    }
-
-    .hb-detail-card-body {
-        padding: 0.75rem;
+        padding: 2rem 1rem;
     }
 }
 
-/* Tablet responsive */
-@media (min-width: 768px) and (max-width: 991.98px) {
-    .hb-page {
-        padding: 1rem;
+/* ===================== SMALL PHONES (< 380px) ===================== */
+@media (max-width: 379.98px) {
+    .hb-header-title {
+        font-size: 1.05rem;
     }
 
-    .hb-table thead th,
-    .hb-table tbody td {
-        padding: 0.75rem 1rem;
-    }
-
-    .hb-header-actions {
-        gap: 0.5rem;
+    .hb-header-title .icon-wrap {
+        width: 30px;
+        height: 30px;
     }
 
     .hb-btn-header {
-        padding: 0.5rem 0.85rem;
-        font-size: 0.8rem;
-    }
-}
-
-/* Large phones landscape */
-@media (max-width: 480px) {
-    .hb-table tbody td::before {
-        font-size: 0.65rem;
+        font-size: 0.72rem;
+        padding: 0.6rem 0.4rem;
     }
 
-    .hb-table tbody td {
-        font-size: 0.8rem;
+    .hb-booking-card {
+        padding: 0.85rem;
+    }
+
+    .hb-booking-card-client-name {
+        font-size: 0.85rem;
+    }
+
+    .hb-card-action {
+        font-size: 0.72rem;
+        padding: 0.45rem 0.55rem;
+        min-height: 38px;
+    }
+
+    .hb-pill {
+        font-size: 0.6rem;
+        padding: 0.35rem 0.5rem;
     }
 
     .hb-plate-badge {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
+        padding: 0.15rem 0.45rem;
     }
 
-    .hb-header-title {
-        font-size: 1rem;
+    .hb-status {
+        font-size: 0.62rem;
+        padding: 0.22rem 0.5rem;
     }
 }
+
+/* ===================== LARGE DESKTOP ===================== */
+@media (min-width: 1400px) {
+    .hb-table .dest-text {
+        max-width: 280px;
+    }
+}
+
+/* ===================== BRANCH BADGE ===================== */
+.hb-branch-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    background: #EEF2FF;
+    color: #3730A3;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+/* Branch context badge shown in the page title */
+.hb-branch-context-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    background: #8B5CF6;
+    color: white;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+/* ===================== BRANCH TABS (in modals) ===================== */
+.hb-branch-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    background: var(--hbg-surface);
+    border-radius: var(--hradius-sm);
+    border: 1px solid var(--hborder-light);
+}
+
+.hb-branch-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1.5px solid var(--hborder);
+    border-radius: var(--hradius-xs);
+    background: white;
+    color: var(--htext-secondary);
+    cursor: pointer;
+    transition: var(--htransition);
+    white-space: nowrap;
+}
+
+.hb-branch-tab:hover {
+    border-color: var(--haccent);
+    color: var(--haccent);
+    background: var(--haccent-glow);
+}
+
+.hb-branch-tab.active {
+    background: var(--hbg-primary);
+    color: white;
+    border-color: var(--hbg-primary);
+}
+
+.hb-branch-tab .pill-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.05rem 0.35rem;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.25);
+    color: inherit;
+}
+
+/* Form select styling (for branch dropdown in register modal) */
+.hb-form-control.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+    appearance: none;
+}
