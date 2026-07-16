@@ -215,6 +215,68 @@ const RecommendationsCard = ({ recommendations }) => {
   );
 };
 
+// ============================================
+// ⭐ FIXED: Safe chart data helper functions
+// ============================================
+
+// Safe function to create pie/doughnut chart data with fallback
+const createRadialChartData = (labels, dataValues, colors) => {
+  // Ensure labels is always an array
+  const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
+  // Ensure dataValues is always an array of numbers
+  const safeData = Array.isArray(dataValues) && dataValues.length > 0
+    ? dataValues.map(v => typeof v === 'number' ? v : 0)
+    : [1]; // Fallback with 1 to show "No Data"
+
+  // Ensure colors match data length
+  const safeColors = Array.isArray(colors) && colors.length >= safeData.length
+    ? colors.slice(0, safeData.length)
+    : ['#cccccc'];
+
+  return {
+    labels: safeLabels,
+    datasets: [{
+      data: safeData,
+      backgroundColor: safeColors,
+      borderWidth: 2,
+      borderColor: '#ffffff'
+    }]
+  };
+};
+
+// Safe function to create line/bar chart data
+const createCartesianChartData = (labels, datasets) => {
+  // Ensure labels is always an array
+  const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
+
+  // Ensure datasets is always an array with proper structure
+  const safeDatasets = Array.isArray(datasets) && datasets.length > 0
+    ? datasets.map(ds => ({
+      label: ds.label || 'Data',
+      data: Array.isArray(ds.data) && ds.data.length > 0
+        ? ds.data.map(v => typeof v === 'number' ? v : 0)
+        : [0],
+      borderColor: ds.borderColor || COLORS.chart1,
+      backgroundColor: ds.backgroundColor || COLORS.chart1 + '20',
+      ...ds
+    }))
+    : [{
+      label: 'No Data',
+      data: [0],
+      borderColor: '#cccccc',
+      backgroundColor: '#cccccc20'
+    }];
+
+  return {
+    labels: safeLabels,
+    datasets: safeDatasets
+  };
+};
+
+// ============================================
+// ⭐ MAIN DASHBOARD COMPONENT
+// ============================================
+
 const ComprehensiveDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -314,7 +376,6 @@ const ComprehensiveDashboard = () => {
       const branchId = selectedBranch?.id || selectedBranch?.branch_id;
       const branchHeaders = branchId ? { ...headers, "x-branch-id": branchId } : headers;
 
-      // Use the comprehensive dashboard endpoint
       const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/comprehensive`, { headers: branchHeaders });
       if (r.ok) {
         const result = await r.json();
@@ -378,6 +439,53 @@ const ComprehensiveDashboard = () => {
   const branchCompare = comparisonData?.branches;
   const insights = comparisonData?.insights;
 
+  // ============================================
+  // ⭐ FIXED: Chart data with safe fallbacks
+  // ============================================
+
+  // Case Status Pie Chart Data
+  const caseStatusData = createRadialChartData(
+    caseStatus.map(c => c.status || "Unknown"),
+    caseStatus.map(c => c.count || 0),
+    chartColors
+  );
+
+  // Fleet Doughnut Chart Data
+  const fleetData = createRadialChartData(
+    ["Available", "Booked", "Maintenance"],
+    [
+      bookings.fleet?.available || 0,
+      bookings.fleet?.booked || 0,
+      bookings.fleet?.maintenance || 0
+    ],
+    [COLORS.success, COLORS.warning, COLORS.danger]
+  );
+
+  // Deceased Trends Line Chart Data
+  const deceasedTrendsData = createCartesianChartData(
+    deceasedTrends.map(d => d.month || d.month_label || ""),
+    [{
+      label: "Cases",
+      data: deceasedTrends.map(d => d.count || 0),
+      borderColor: COLORS.chart1,
+      backgroundColor: COLORS.chart1 + "20",
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
+    }]
+  );
+
+  // Coffin Sales Bar Chart Data
+  const coffinSalesChartData = createCartesianChartData(
+    coffinSalesData.map(c => c.type || ""),
+    [{
+      label: "Sold",
+      data: coffinSalesData.map(c => c.sold || 0),
+      backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
+    }]
+  );
+
   return (
     <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
       {/* HEADER */}
@@ -436,58 +544,17 @@ const ComprehensiveDashboard = () => {
           <Row className="g-4">
             <Col lg={6}>
               <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                {deceasedTrends.length > 0 ? (
-                  <Line data={{
-                    labels: deceasedTrends.map(d => d.month || d.month_label || ""),
-                    datasets: [{
-                      label: "Cases",
-                      data: deceasedTrends.map(d => d.count || 0),
-                      borderColor: COLORS.chart1,
-                      backgroundColor: COLORS.chart1 + "20",
-                      borderWidth: 3, fill: true, tension: 0.4,
-                      pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
-                    }]
-                  }} options={cartesianChartOptions} />
-                ) : (
-                  <div className="text-center py-4 text-muted">
-                    <p className="mb-0 small">No trend data available</p>
-                  </div>
-                )}
+                <Line data={deceasedTrendsData} options={cartesianChartOptions} />
               </ChartCard>
             </Col>
             <Col lg={3}>
               <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
-                {caseStatus.length > 0 ? (
-                  <Pie data={{
-                    labels: caseStatus.map(c => c.status || "Unknown"),
-                    datasets: [{ data: caseStatus.map(c => c.count || 0), backgroundColor: chartColors }]
-                  }} options={radialChartOptions} />
-                ) : (
-                  <div className="text-center py-4 text-muted">
-                    <p className="mb-0 small">No status data available</p>
-                  </div>
-                )}
+                <Pie data={caseStatusData} options={radialChartOptions} />
               </ChartCard>
             </Col>
             <Col lg={3}>
               <ChartCard title="Hearse Fleet" icon={Car} color={COLORS.success} height="280px">
-                {bookings.fleet ? (
-                  <Doughnut data={{
-                    labels: ["Available", "Booked", "Maintenance"],
-                    datasets: [{
-                      data: [
-                        bookings.fleet?.available || 0,
-                        bookings.fleet?.booked || 0,
-                        bookings.fleet?.maintenance || 0
-                      ],
-                      backgroundColor: [COLORS.success, COLORS.warning, COLORS.danger]
-                    }]
-                  }} options={radialChartOptions} />
-                ) : (
-                  <div className="text-center py-4 text-muted">
-                    <p className="mb-0 small">No fleet data available</p>
-                  </div>
-                )}
+                <Doughnut data={fleetData} options={radialChartOptions} />
               </ChartCard>
             </Col>
           </Row>
@@ -554,20 +621,7 @@ const ComprehensiveDashboard = () => {
           <Row className="g-4">
             <Col lg={6}>
               <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
-                {coffinSalesData.length > 0 ? (
-                  <Bar data={{
-                    labels: coffinSalesData.map(c => c.type || ""),
-                    datasets: [{
-                      label: "Sold",
-                      data: coffinSalesData.map(c => c.sold || 0),
-                      backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
-                    }]
-                  }} options={cartesianChartOptions} />
-                ) : (
-                  <div className="text-center py-4 text-muted">
-                    <p className="mb-0 small">No sales data available</p>
-                  </div>
-                )}
+                <Bar data={coffinSalesChartData} options={cartesianChartOptions} />
               </ChartCard>
             </Col>
             <Col lg={6}>
