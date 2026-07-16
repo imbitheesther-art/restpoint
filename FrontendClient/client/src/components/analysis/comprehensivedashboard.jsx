@@ -229,7 +229,8 @@ const ComprehensiveDashboard = () => {
 
   const chartColors = [COLORS.chart1, COLORS.chart2, COLORS.chart3, COLORS.chart4, COLORS.chart5, COLORS.chart6, COLORS.chart7, COLORS.chart8];
 
-  const chartOptions = {
+  // Options for cartesian charts (Line, Bar) - have x/y scales
+  const cartesianChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -259,6 +260,30 @@ const ComprehensiveDashboard = () => {
         grid: { color: COLORS.light },
         ticks: { color: COLORS.gray },
         beginAtZero: true
+      }
+    }
+  };
+
+  // Options for radial charts (Pie, Doughnut) - NO scales (causes "labels" error in Chart.js 4)
+  const radialChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: { size: 11 },
+          color: COLORS.gray
+        }
+      },
+      tooltip: {
+        backgroundColor: COLORS.dark,
+        titleColor: COLORS.white,
+        bodyColor: COLORS.white,
+        cornerRadius: 8,
+        padding: 12
       }
     }
   };
@@ -349,6 +374,7 @@ const ComprehensiveDashboard = () => {
   const caseStatus = Array.isArray(deceased.caseStatus) ? deceased.caseStatus : [];
   const deceasedTrends = Array.isArray(deceased.monthlyTrends) ? deceased.monthlyTrends : [];
   const coffinSalesData = Array.isArray(coffins.sales) ? coffins.sales : [];
+  const ppeRequests = dd.ppeRequests || dd.ppe_requests || [];
   const branchCompare = comparisonData?.branches;
   const insights = comparisonData?.insights;
 
@@ -421,7 +447,7 @@ const ComprehensiveDashboard = () => {
                       borderWidth: 3, fill: true, tension: 0.4,
                       pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
                     }]
-                  }} options={chartOptions} />
+                  }} options={cartesianChartOptions} />
                 ) : (
                   <div className="text-center py-4 text-muted">
                     <p className="mb-0 small">No trend data available</p>
@@ -435,7 +461,7 @@ const ComprehensiveDashboard = () => {
                   <Pie data={{
                     labels: caseStatus.map(c => c.status || "Unknown"),
                     datasets: [{ data: caseStatus.map(c => c.count || 0), backgroundColor: chartColors }]
-                  }} options={chartOptions} />
+                  }} options={radialChartOptions} />
                 ) : (
                   <div className="text-center py-4 text-muted">
                     <p className="mb-0 small">No status data available</p>
@@ -456,7 +482,7 @@ const ComprehensiveDashboard = () => {
                       ],
                       backgroundColor: [COLORS.success, COLORS.warning, COLORS.danger]
                     }]
-                  }} options={chartOptions} />
+                  }} options={radialChartOptions} />
                 ) : (
                   <div className="text-center py-4 text-muted">
                     <p className="mb-0 small">No fleet data available</p>
@@ -536,7 +562,7 @@ const ComprehensiveDashboard = () => {
                       data: coffinSalesData.map(c => c.sold || 0),
                       backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
                     }]
-                  }} options={chartOptions} />
+                  }} options={cartesianChartOptions} />
                 ) : (
                   <div className="text-center py-4 text-muted">
                     <p className="mb-0 small">No sales data available</p>
@@ -679,7 +705,7 @@ const ComprehensiveDashboard = () => {
                         <span className={`badge bg-${req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'info' : req.status === 'fulfilled' ? 'success' : 'danger'}`}>
                           {req.status}
                         </span>
-                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>{fmtDate(req.created_at)}</div>
+                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>{req.created_at ? new Date(req.created_at).toLocaleDateString() : '-'}</div>
                       </div>
                     </div>
                   ))}
