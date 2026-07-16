@@ -1,49 +1,126 @@
-const { safeQuery } = require('../../../../shared/config/db');
+const { safeQuery, getTenantDB } = require('../../../../shared/config/db');
 const { getKenyaTimeISO } = require('../../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableHearses, upload } = require('../registerHearse');
 
 /**
  * Get available hearses across all branches for cross-branch booking
- * Simplified - no branch table joins
+ * Each branch has its own database, so we query each sibling branch and union results.
  */
 const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
     try {
-
+        const tenantSlug = req.tenantSlug;
+        if (!tenantSlug) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant slug is required'
+            });
+        }
 
         const { branch_id } = req.query;
+        const allBranchDbs = req.allBranchDbs || [req.tenant?.db_name].filter(Boolean);
+        const currentDbName = req.currentDbName || req.tenant?.db_name;
 
-        // Get all available hearses (simplified - no branch table)
-        const availableHearses = await safeQuery(
-            `SELECT 
-                h.id,
-                h.hearse_code,
-                h.plate_number,
-                h.model,
-                h.capacity,
-                h.status,
-                h.branch_id,
-                h.image,
-                h.created_at,
-                h.updated_at,
-                h.min_charge_ksh,
-                h.max_charge_ksh,
-                0 as is_own_branch,
-                (SELECT COUNT(*) FROM hearse_bookings hb 
-                 WHERE hb.hearse_id = h.id 
-                 AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
-            FROM hearses h
-            WHERE h.status = 'available'
-            AND h.id NOT IN (
-                SELECT hearse_id FROM hearse_bookings 
-                WHERE hearse_id IS NOT NULL 
-                AND status NOT IN ('completed', 'cancelled')
-            )
-            ORDER BY h.branch_id ASC, h.created_at DESC`
-        );
+        // If single branch or no sibling branches, query only current database
+        if (!allBranchDbs || allBranchDbs.length <= 1) {
+            const availableHearses = await safeQuery(
+                `SELECT 
+                    h.id,
+                    h.hearse_code,
+                    h.plate_number,
+                    h.model,
+                    h.capacity,
+                    h.status,
+                    h.branch_id,
+                    h.image,
+                    h.created_at,
+                    h.updated_at,
+                    h.min_charge_ksh,
+                    h.max_charge_ksh,
+                    1 as is_own_branch,
+                    (SELECT COUNT(*) FROM hearse_bookings hb 
+                     WHERE hb.hearse_id = h.id 
+                     AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
+                FROM hearses h
+                WHERE h.status = 'available'
+                AND h.id NOT IN (
+                    SELECT hearse_id FROM hearse_bookings 
+                    WHERE hearse_id IS NOT NULL 
+                    AND status NOT IN ('completed', 'cancelled')
+                )
+                ORDER BY h.branch_id ASC, h.created_at DESC`,
+                [],
+                tenantSlug
+            );
+
+            const groupedByBranch = availableHearses.reduce((acc, hearse) => {
+                const branchKey = hearse.branch_id;
+                if (!acc[branchKey]) {
+                    acc[branchKey] = {
+                        branch_id: hearse.branch_id,
+                        branch_name: `Branch ${hearse.branch_id}`,
+                        branch_location: 'N/A',
+                        branch_phone: 'N/A',
+                        hearses: []
+                    };
+                }
+                acc[branchKey].hearses.push(hearse);
+                return acc;
+            }, {});
+
+            const branches = Object.values(groupedByBranch);
+
+            return res.json({
+                success: true,
+                total_available: availableHearses.length,
+                total_branches: branches.length,
+                branches,
+                hearses: availableHearses
+            });
+        }
+
+        // Multi-branch: query each branch database separately
+        const allHearses = [];
+        for (const branchDb of allBranchDbs) {
+            try {
+                const pool = await getTenantDB(branchDb);
+                const isCurrentBranch = branchDb === currentDbName;
+                const [rows] = await pool.query(
+                    `SELECT 
+                        h.id,
+                        h.hearse_code,
+                        h.plate_number,
+                        h.model,
+                        h.capacity,
+                        h.status,
+                        h.branch_id,
+                        h.image,
+                        h.created_at,
+                        h.updated_at,
+                        h.min_charge_ksh,
+                        h.max_charge_ksh,
+                        ? as is_own_branch,
+                        (SELECT COUNT(*) FROM hearse_bookings hb 
+                         WHERE hb.hearse_id = h.id 
+                         AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
+                    FROM hearses h
+                    WHERE h.status = 'available'
+                    AND h.id NOT IN (
+                        SELECT hearse_id FROM hearse_bookings 
+                        WHERE hearse_id IS NOT NULL 
+                        AND status NOT IN ('completed', 'cancelled')
+                    )
+                    ORDER BY h.created_at DESC`,
+                    [isCurrentBranch ? 1 : 0]
+                );
+                allHearses.push(...rows);
+            } catch (dbErr) {
+                console.warn(`[HEARSE] Could not query branch db ${branchDb}: ${dbErr.message}`);
+            }
+        }
 
         // Group by branch for better organization
-        const groupedByBranch = availableHearses.reduce((acc, hearse) => {
+        const groupedByBranch = allHearses.reduce((acc, hearse) => {
             const branchKey = hearse.branch_id;
             if (!acc[branchKey]) {
                 acc[branchKey] = {
@@ -59,7 +136,7 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
         }, {});
 
         const branches = Object.values(groupedByBranch);
-        const totalAvailable = availableHearses.length;
+        const totalAvailable = allHearses.length;
 
         console.log(` Found ${totalAvailable} available hearses across ${branches.length} branches`);
 
@@ -68,7 +145,7 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
             total_available: totalAvailable,
             total_branches: branches.length,
             branches,
-            hearses: availableHearses
+            hearses: allHearses
         });
     } catch (error) {
         console.error('❌ [CrossBranchAvailability Error]:', error);

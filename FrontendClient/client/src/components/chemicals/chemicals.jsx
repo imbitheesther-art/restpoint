@@ -48,11 +48,12 @@ const pulseSoft = keyframes`
    ═══════════════════════════════════════════════════════════ */
 
 const Page = styled.div`
-  padding: 16px;
+  padding: 12px;
   background: ${COLORS.light};
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: ${COLORS.textPrimary};
+  box-sizing: border-box;
 
   @media (min-width: 768px) {
     padding: 28px 32px;

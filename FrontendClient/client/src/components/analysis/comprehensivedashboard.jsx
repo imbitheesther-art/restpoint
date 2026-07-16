@@ -611,6 +611,85 @@ const ComprehensiveDashboard = () => {
         </Card>
       )}
 
+      {/* CHEMICALS & PPE SECTION */}
+      {(chemicals.recent?.length > 0 || chemicals.lowStock?.length > 0 || ppeRequests?.length > 0) && (
+        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+          <Card.Body className="p-4">
+            <SectionHeader title="Chemicals & PPE" icon={FlaskConical} color={COLORS.info} />
+            <Row className="g-3">
+              <Col xs={6} md={3}>
+                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.infoLight }}>
+                  <h5 className="fw-bold mb-0" style={{ color: COLORS.info }}>{chemicals.recent?.length || 0}</h5>
+                  <small className="text-muted">Recent Chemicals</small>
+                </div>
+              </Col>
+              <Col xs={6} md={3}>
+                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.dangerLight }}>
+                  <h5 className="fw-bold mb-0" style={{ color: COLORS.danger }}>{chemicals.lowStock?.length || 0}</h5>
+                  <small className="text-muted">Low Stock Alerts</small>
+                </div>
+              </Col>
+              <Col xs={6} md={3}>
+                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.warningLight }}>
+                  <h5 className="fw-bold mb-0" style={{ color: COLORS.warning }}>{ppeRequests?.length || 0}</h5>
+                  <small className="text-muted">PPE Requests</small>
+                </div>
+              </Col>
+              <Col xs={6} md={3}>
+                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.successLight }}>
+                  <h5 className="fw-bold mb-0" style={{ color: COLORS.success }}>{chemicals.topUsed?.length || 0}</h5>
+                  <small className="text-muted">Top Used Items</small>
+                </div>
+              </Col>
+            </Row>
+
+            {/* Low Stock Chemicals List */}
+            {chemicals.lowStock?.length > 0 && (
+              <div className="mt-3">
+                <h6 className="fw-bold mb-2 text-danger">⚠️ Low Stock Chemicals</h6>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {chemicals.lowStock.slice(0, 5).map((chem, i) => (
+                    <div key={i} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded" style={{ backgroundColor: COLORS.light }}>
+                      <div>
+                        <div className="fw-semibold small">{chem.name}</div>
+                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>{chem.category}</div>
+                      </div>
+                      <div className="text-end">
+                        <div className="fw-bold text-danger small">{chem.currentStock} / {chem.minLevel} {chem.unit}</div>
+                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>Deficit: {chem.deficit}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent PPE Requests */}
+            {ppeRequests?.length > 0 && (
+              <div className="mt-3">
+                <h6 className="fw-bold mb-2 text-warning">🛡️ Recent PPE Requests</h6>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {ppeRequests.slice(0, 5).map((req, i) => (
+                    <div key={i} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded" style={{ backgroundColor: COLORS.light }}>
+                      <div>
+                        <div className="fw-semibold small">{req.item_name}</div>
+                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>Qty: {req.quantity_requested}</div>
+                      </div>
+                      <div className="text-end">
+                        <span className={`badge bg-${req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'info' : req.status === 'fulfilled' ? 'success' : 'danger'}`}>
+                          {req.status}
+                        </span>
+                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>{fmtDate(req.created_at)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card.Body>
+        </Card>
+      )}
+
       {/* BRANCH COMPARISON SECTION */}
       <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
         <Card.Body className="p-4">

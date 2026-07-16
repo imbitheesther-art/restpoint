@@ -65,6 +65,13 @@ const bookingService = {
     createBooking: async (data) => {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
+
+        // Add branch tracking headers
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : {};
+        if (user?.branch_id) headers['x-branch-id'] = user.branch_id;
+        if (user?.branch_code) headers['x-branch-code'] = user.branch_code;
+
         const r = await fetch(`${API_BASE_URL}/hearse-bookings`, {
             method: 'POST', headers, body: JSON.stringify(data)
         });
@@ -191,6 +198,11 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
         try {
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : {};
+
+            // Get current user's branch information
+            const userBranchId = user?.branch_id || selected?.branch_id || '';
+            const userBranchCode = user?.branch_code || selected?.branch_code || '';
+
             await bookingService.createBooking({
                 hearse_id: selected.id,
                 client_name: clientName,
@@ -198,7 +210,9 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                 destination: `${fromLocation} to ${toLocation}`,
                 from_timestamp: bookingDate,
                 to_timestamp: bookingDate,
-                booked_by: user?.user_slug || user?.username || user?.full_name || 'unknown'
+                booked_by: user?.user_slug || user?.username || user?.full_name || 'unknown',
+                branch_id: userBranchId,
+                branch_code: userBranchCode
             });
             onBookingCreated(); onHide();
         } catch (e) { setErrorMessage(e.message || 'Failed to create booking.'); }
