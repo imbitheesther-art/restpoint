@@ -388,25 +388,37 @@ const ComprehensiveDashboard = () => {
           <Row className="g-4">
             <Col lg={6}>
               <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                <Line data={{
-                  labels: deceasedTrends.map(d => d.month || d.month_label || "") || [],
-                  datasets: [{
-                    label: "Cases",
-                    data: deceasedTrends.map(d => d.count || 0) || [],
-                    borderColor: COLORS.chart1,
-                    backgroundColor: COLORS.chart1 + "20",
-                    borderWidth: 3, fill: true, tension: 0.4,
-                    pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
-                  }]
-                }} options={chartOptions} />
+                {deceasedTrends.length > 0 ? (
+                  <Line data={{
+                    labels: deceasedTrends.map(d => d.month || d.month_label || ""),
+                    datasets: [{
+                      label: "Cases",
+                      data: deceasedTrends.map(d => d.count || 0),
+                      borderColor: COLORS.chart1,
+                      backgroundColor: COLORS.chart1 + "20",
+                      borderWidth: 3, fill: true, tension: 0.4,
+                      pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
+                    }]
+                  }} options={chartOptions} />
+                ) : (
+                  <div className="text-center py-4 text-muted">
+                    <p className="mb-0 small">No trend data available</p>
+                  </div>
+                )}
               </ChartCard>
             </Col>
             <Col lg={3}>
               <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
-                <Pie data={{
-                  labels: caseStatus.map(c => c.status || "Unknown") || [],
-                  datasets: [{ data: caseStatus.map(c => c.count || 0) || [], backgroundColor: chartColors }]
-                }} options={chartOptions} />
+                {caseStatus.length > 0 ? (
+                  <Pie data={{
+                    labels: caseStatus.map(c => c.status || "Unknown"),
+                    datasets: [{ data: caseStatus.map(c => c.count || 0), backgroundColor: chartColors }]
+                  }} options={chartOptions} />
+                ) : (
+                  <div className="text-center py-4 text-muted">
+                    <p className="mb-0 small">No status data available</p>
+                  </div>
+                )}
               </ChartCard>
             </Col>
             <Col lg={3}>
@@ -488,14 +500,20 @@ const ComprehensiveDashboard = () => {
           <Row className="g-4">
             <Col lg={6}>
               <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
-                <Bar data={{
-                  labels: coffinSalesData.map(c => c.type || "") || [],
-                  datasets: [{
-                    label: "Sold",
-                    data: coffinSalesData.map(c => c.sold || 0) || [],
-                    backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
-                  }]
-                }} options={chartOptions} />
+                {coffinSalesData.length > 0 ? (
+                  <Bar data={{
+                    labels: coffinSalesData.map(c => c.type || ""),
+                    datasets: [{
+                      label: "Sold",
+                      data: coffinSalesData.map(c => c.sold || 0),
+                      backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
+                    }]
+                  }} options={chartOptions} />
+                ) : (
+                  <div className="text-center py-4 text-muted">
+                    <p className="mb-0 small">No sales data available</p>
+                  </div>
+                )}
               </ChartCard>
             </Col>
             <Col lg={6}>
