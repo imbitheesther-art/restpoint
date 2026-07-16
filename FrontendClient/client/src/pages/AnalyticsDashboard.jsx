@@ -7,7 +7,7 @@ import { KPICards, DateRangeSelector, ExportButtons, NavigationTabs } from '../.
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #e1e3e9 0%, #efecf1 100%);
   padding: 20px;
   font-family: 'Inter', sans-serif;
 `;
@@ -97,7 +97,12 @@ const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b'
 
 const AnalyticsDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    kpis: null,
+    revenueByCategory: [],
+    caseDistribution: [],
+    dailyTrends: []
+  });
   const [monthlyData, setMonthlyData] = useState(null);
   const [yearlyData, setYearlyData] = useState(null);
   const [loading, setLoading] = useState(true);

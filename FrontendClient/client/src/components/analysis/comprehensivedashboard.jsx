@@ -350,6 +350,64 @@ const ComprehensiveDashboard = () => {
     }
   };
 
+  // ============================================
+  // ⭐ FIXED: Safe chart data helper functions
+  // ============================================
+
+  // Safe function to create pie/doughnut chart data with fallback
+  const createRadialChartData = (labels, dataValues, colors) => {
+    // Ensure labels is always an array
+    const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
+    // Ensure dataValues is always an array of numbers
+    const safeData = Array.isArray(dataValues) && dataValues.length > 0
+      ? dataValues.map(v => typeof v === 'number' ? v : 0)
+      : [1]; // Fallback with 1 to show "No Data"
+
+    // Ensure colors match data length
+    const safeColors = Array.isArray(colors) && colors.length >= safeData.length
+      ? colors.slice(0, safeData.length)
+      : ['#cccccc'];
+
+    return {
+      labels: safeLabels,
+      datasets: [{
+        data: safeData,
+        backgroundColor: safeColors,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    };
+  };
+
+  // Safe function to create line/bar chart data
+  const createCartesianChartData = (labels, datasets) => {
+    // Ensure labels is always an array
+    const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
+
+    // Ensure datasets is always an array with proper structure
+    const safeDatasets = Array.isArray(datasets) && datasets.length > 0
+      ? datasets.map(ds => ({
+        label: ds.label || 'Data',
+        data: Array.isArray(ds.data) && ds.data.length > 0
+          ? ds.data.map(v => typeof v === 'number' ? v : 0)
+          : [0],
+        borderColor: ds.borderColor || COLORS.chart1,
+        backgroundColor: ds.backgroundColor || COLORS.chart1 + '20',
+        ...ds
+      }))
+      : [{
+        label: 'No Data',
+        data: [0],
+        borderColor: '#cccccc',
+        backgroundColor: '#cccccc20'
+      }];
+
+    return {
+      labels: safeLabels,
+      datasets: safeDatasets
+    };
+  };
+
   const getTenantSlug = () => localStorage.getItem("tenantSlug") || "";
 
   const fetchBranches = useCallback(async () => {
@@ -440,18 +498,17 @@ const ComprehensiveDashboard = () => {
   const insights = comparisonData?.insights;
 
   // ============================================
-  // ⭐ FIXED: Chart data with safe fallbacks
+  // ⭐ FIXED: Chart data with safe fallbacks (defined AFTER data extraction)
   // ============================================
 
-  // Case Status Pie Chart Data
-  const caseStatusData = createRadialChartData(
+  // Safe chart data with guaranteed labels array
+  const safeCaseStatusData = createRadialChartData(
     caseStatus.map(c => c.status || "Unknown"),
     caseStatus.map(c => c.count || 0),
     chartColors
   );
 
-  // Fleet Doughnut Chart Data
-  const fleetData = createRadialChartData(
+  const safeFleetData = createRadialChartData(
     ["Available", "Booked", "Maintenance"],
     [
       bookings.fleet?.available || 0,
@@ -461,8 +518,7 @@ const ComprehensiveDashboard = () => {
     [COLORS.success, COLORS.warning, COLORS.danger]
   );
 
-  // Deceased Trends Line Chart Data
-  const deceasedTrendsData = createCartesianChartData(
+  const safeDeceasedTrendsData = createCartesianChartData(
     deceasedTrends.map(d => d.month || d.month_label || ""),
     [{
       label: "Cases",
@@ -476,8 +532,7 @@ const ComprehensiveDashboard = () => {
     }]
   );
 
-  // Coffin Sales Bar Chart Data
-  const coffinSalesChartData = createCartesianChartData(
+  const safeCoffinSalesData = createCartesianChartData(
     coffinSalesData.map(c => c.type || ""),
     [{
       label: "Sold",
@@ -549,12 +604,12 @@ const ComprehensiveDashboard = () => {
             </Col>
             <Col lg={3}>
               <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
-                <Pie data={caseStatusData} options={radialChartOptions} />
+                <Pie data={safeCaseStatusData} options={radialChartOptions} />
               </ChartCard>
             </Col>
             <Col lg={3}>
               <ChartCard title="Hearse Fleet" icon={Car} color={COLORS.success} height="280px">
-                <Doughnut data={fleetData} options={radialChartOptions} />
+                <Doughnut data={safeFleetData} options={radialChartOptions} />
               </ChartCard>
             </Col>
           </Row>
@@ -620,8 +675,13 @@ const ComprehensiveDashboard = () => {
           <SectionHeader title="Inventory Management" icon={Box} color={COLORS.warning} />
           <Row className="g-4">
             <Col lg={6}>
+              <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
+                <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
+              </ChartCard>
+            </Col>
+            <Col lg={6}>
               <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
-                <Bar data={coffinSalesChartData} options={cartesianChartOptions} />
+                <Bar data={safeCoffinSalesData} options={cartesianChartOptions} />
               </ChartCard>
             </Col>
             <Col lg={6}>

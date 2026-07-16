@@ -65,11 +65,6 @@ const UserProfile = () => {
         return dt.toLocaleDateString();
     };
 
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : {};
-    const name = user?.full_name || user?.name || 'User';
-    const role = user?.role || 'User';
-
     return (
         <div style={{
             position: 'fixed',
@@ -248,37 +243,6 @@ const UserProfile = () => {
                         </div>
                     </div>
                 )}
-            </div>
-
-            {/* User Info */}
-            <div style={{
-                background: 'white',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid #E8ECF0',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-            }}>
-                <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    background: '#3D4F47',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: 600
-                }}>
-                    {name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                    <div style={{ fontWeight: 600, color: '#1A1D24', fontSize: '12px', lineHeight: 1.2 }}>{name}</div>
-                    <div style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'capitalize' }}>{role}</div>
-                </div>
             </div>
         </div>
     );
