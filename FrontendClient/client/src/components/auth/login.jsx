@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle, AlertCircle
 } from 'lucide-react';
-import { authApi } from '../../api/authApi';
+import { useAuth } from '../../context/AuthContext';
 
 const C = {
   ink: '#15171A',
@@ -59,6 +59,7 @@ const AlertMessage = ({ type, text }) => {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -99,75 +100,42 @@ export default function LoginPage() {
     setMessage({ type: '', text: '' });
 
     try {
-      const data = await authApi.login({
-        email: email.trim(),
+      // Use AuthContext's login which stores tokens AND updates React state
+      // This ensures ProtectedRoute sees the authenticated user immediately
+      const result = await authLogin({
+        identifier: email.trim(),
         password: password.trim(),
       });
 
-      if (data && data.success) {
-        const token = data.accessToken || data.token;
-        if (!token) throw new Error('No token received');
-
-        // Store in BOTH localStorage and sessionStorage for cross-compatibility
-        localStorage.setItem('authToken', token);
-        sessionStorage.setItem('authToken', token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        sessionStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('loginTime', new Date().toISOString());
-
-        if (data.tenant) {
-          localStorage.setItem('tenant', JSON.stringify(data.tenant));
-          if (data.tenant.tenantSlug) {
-            localStorage.setItem('tenantSlug', data.tenant.tenantSlug);
-            sessionStorage.setItem('tenantSlug', data.tenant.tenantSlug);
-          }
-          if (data.tenant.tenantId) {
-            localStorage.setItem('tenantId', data.tenant.tenantId.toString());
-          }
-        }
-        if (data.user?.dbName) {
-          localStorage.setItem('dbName', data.user.dbName);
-          sessionStorage.setItem('dbName', data.user.dbName);
-        }
-        if (data.deploymentType) localStorage.setItem('deploymentType', data.deploymentType);
-        if (data.user?.role) {
-          localStorage.setItem('userRole', data.user.role);
-          sessionStorage.setItem('userRole', data.user.role);
-        }
-        if (data.accessToken) sessionStorage.setItem('authToken', data.accessToken);
-        if (data.refreshToken) sessionStorage.setItem('refreshToken', data.refreshToken);
+      if (result && result.success) {
+        // AuthContext already stored tokens and setUser() - just read back for UI
+        const data = result;
+        const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug;
 
         setSuccessName(data.user?.fullName || 'Director');
         setShowSuccess(true);
 
-        // Navigate immediately after a brief success animation (reduced from 1600ms)
+        // Navigate immediately after a brief success animation
         setTimeout(() => {
-          // Check if user is system admin - redirect to system admin dashboard
           if (data.user?.role === 'systemadmin') {
             localStorage.setItem('systemAdmin', 'true');
             navigate('/system-admin', { replace: true });
-          } else {
-            // Normal tenant flow - use REAL tenant slug, NEVER 'default'
-            const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug;
-
-            if (tenantSlug) {
-              localStorage.setItem('tenantSlug', tenantSlug);
-              // Redirect based on user role
-              const userRole = data.user?.role;
-              if (userRole === 'driver') {
-                navigate(`/tenant/${tenantSlug}/driver-portal`, { replace: true });
-              } else {
-                navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
-              }
+          } else if (tenantSlug) {
+            localStorage.setItem('tenantSlug', tenantSlug);
+            const userRole = data.user?.role;
+            if (userRole === 'driver') {
+              navigate(`/tenant/${tenantSlug}/driver-portal`, { replace: true });
             } else {
-              console.error('No tenant slug in login response!', data);
+              navigate(`/tenant/${tenantSlug}/all-deceased`, { replace: true });
             }
+          } else {
+            console.error('No tenant slug in login response!', data);
           }
-        }, 400); // Reduced from 1600ms to 400ms for faster login
+        }, 400);
       } else {
         setMessage({
           type: 'error',
-          text: data?.message || 'Invalid credentials. Please try again.'
+          text: result?.message || 'Invalid credentials. Please try again.'
         });
       }
     } catch (err) {
@@ -179,7 +147,7 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  }, [email, password, navigate]);
+  }, [email, password, navigate, authLogin]);
 
   const hasError = message.type === 'error';
 

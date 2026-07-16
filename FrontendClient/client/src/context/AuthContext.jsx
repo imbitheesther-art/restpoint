@@ -1,37 +1,63 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 
 const AuthContext = createContext(null);
 
+/**
+ * Read user state from storage synchronously.
+ * Checks both localStorage and sessionStorage for cross-compatibility.
+ */
+const restoreUserFromStorage = () => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
+
+    if (token && token !== 'undefined' && token !== 'null' && userData) {
+        try {
+            const parsedUser = JSON.parse(userData);
+            return {
+                token,
+                isAuthenticated: true,
+                ...parsedUser
+            };
+        } catch (error) {
+            // Invalid stored data
+        }
+    }
+    return null;
+};
+
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // Initialize state synchronously from storage so ProtectedRoute
+    // sees the correct user state on first render (not deferred via useEffect)
+    const [user, setUser] = useState(() => restoreUserFromStorage());
+    const [loading, setLoading] = useState(false);
 
+    // Re-check storage on mount (catches cases where storage was updated
+    // after initial render, e.g. by authApi.login() called from login.jsx)
     useEffect(() => {
-        // Restore user from localStorage without validation
-        // The API interceptor will handle token refresh automatically when needed
-        const token = localStorage.getItem('authToken');
-        const userData = localStorage.getItem('user');
-
-        if (token && userData) {
-            try {
-                const parsedUser = JSON.parse(userData);
-                setUser({
-                    token,
-                    isAuthenticated: true,
-                    ...parsedUser
-                });
-            } catch (error) {
-                // Invalid stored data, clear it
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('user');
-            }
+        const restored = restoreUserFromStorage();
+        if (restored && !user) {
+            setUser(restored);
         }
         setLoading(false);
-    }, []);
 
-    const login = async (credentials) => {
+        // Listen for storage changes (authApi/login.jsx stores tokens directly)
+        // This ensures AuthContext stays in sync when login happens outside this context
+        const handleStorageChange = (event) => {
+            if (event.key === 'authToken' || event.key === 'user' || event.key === null) {
+                const restored = restoreUserFromStorage();
+                if (restored) {
+                    setUser(restored);
+                } else {
+                    setUser(null);
+                }
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const login = useCallback(async (credentials) => {
         try {
             const response = await api.post('/auth/login', credentials);
             const data = response.data;
@@ -63,7 +89,8 @@ export const AuthProvider = ({ children }) => {
                     ...userData
                 });
 
-                return { success: true };
+                // Return the full data object so login page can extract tenantSlug, user, etc.
+                return data;
             }
             return { success: false, message: data?.message || 'Login failed' };
         } catch (error) {
@@ -72,9 +99,9 @@ export const AuthProvider = ({ children }) => {
                 message: error.response?.data?.message || 'Login failed'
             };
         }
-    };
+    }, []);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             // Call logout endpoint to invalidate refresh token on server
             await api.post('/auth/logout');
@@ -90,7 +117,7 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.removeItem('user');
             setUser(null);
         }
-    };
+    }, []);
 
     return (
         <AuthContext.Provider value={{ user, loading, login, logout }}>
