@@ -18,12 +18,12 @@ const AnalyticsDashboard = () => {
       const carResponse = await fetch('/api/policies/car');
       const healthResponse = await fetch('/api/policies/health');
       const studentResponse = await fetch('/api/policies/student');
-      
+
       setCarData(await carResponse.json());
       setHealthData(await healthResponse.json());
       setStudentData(await studentResponse.json());
     };
-    
+
     fetchData();
   }, []);
 
@@ -43,7 +43,7 @@ const AnalyticsDashboard = () => {
     labels: Array.from(new Set(carData.map(p => p.carDetails.bodyType))),
     datasets: [{
       label: 'Body Type Distribution',
-      data: Array.from(new Set(carData.map(p => p.carDetails.bodyType))).map(bodyType => 
+      data: Array.from(new Set(carData.map(p => p.carDetails.bodyType))).map(bodyType =>
         carData.filter(p => p.carDetails.bodyType === bodyType).length
       ),
       backgroundColor: '#4BC0C0'
@@ -55,7 +55,7 @@ const AnalyticsDashboard = () => {
     labels: Array.from(new Set(healthData.map(p => p.healthDetails.coverageType))),
     datasets: [{
       label: 'Coverage Types',
-      data: Array.from(new Set(healthData.map(p => p.healthDetails.coverageType))).map(type => 
+      data: Array.from(new Set(healthData.map(p => p.healthDetails.coverageType))).map(type =>
         healthData.filter(p => p.healthDetails.coverageType === type).length
       ),
       backgroundColor: '#FF6384'
@@ -76,7 +76,7 @@ const AnalyticsDashboard = () => {
     labels: Array.from(new Set(studentData.map(p => p.studentDetails.school))),
     datasets: [{
       label: 'Schools Distribution',
-      data: Array.from(new Set(studentData.map(p => p.studentDetails.school))).map(school => 
+      data: Array.from(new Set(studentData.map(p => p.studentDetails.school))).map(school =>
         studentData.filter(p => p.studentDetails.school === school).length
       ),
       backgroundColor: '#FFCE56'
@@ -87,7 +87,7 @@ const AnalyticsDashboard = () => {
     labels: Array.from(new Set(studentData.map(p => p.studentDetails.course))),
     datasets: [{
       label: 'Courses Distribution',
-      data: Array.from(new Set(studentData.map(p => p.studentDetails.course))).map(course => 
+      data: Array.from(new Set(studentData.map(p => p.studentDetails.course))).map(course =>
         studentData.filter(p => p.studentDetails.course === course).length
       ),
       backgroundColor: '#4BC0C0'
@@ -97,7 +97,7 @@ const AnalyticsDashboard = () => {
   return (
     <Container fluid>
       <h2 className="my-4">Insurance Analytics Dashboard</h2>
-      
+
       <Tabs defaultActiveKey="car" className="mb-3">
         {/* Car Insurance Tab */}
         <Tab eventKey="car" title="Car Insurance">
@@ -125,7 +125,7 @@ const AnalyticsDashboard = () => {
                   <Pie data={{
                     labels: Array.from(new Set(carData.map(p => p.carDetails.color))),
                     datasets: [{
-                      data: Array.from(new Set(carData.map(p => p.carDetails.color))).map(color => 
+                      data: Array.from(new Set(carData.map(p => p.carDetails.color))).map(color =>
                         carData.filter(p => p.carDetails.color === color).length
                       ),
                       backgroundColor: Array.from(new Set(carData.map(p => p.carDetails.color)))
@@ -196,25 +196,25 @@ const AnalyticsDashboard = () => {
               </Card>
             </Col>
             <Col md={6}>
-  <Card>
-    <Card.Body>
-      <Card.Title>Admission Trends</Card.Title>
-      <Line 
-        data={{
-          labels: Array.from(new Set(studentData.map(p => new Date(p.startDate).getFullYear()))), // Fixed closing bracket
-          datasets: [{
-            label: 'Admissions per Year',
-            data: Array.from(new Set(studentData.map(p => new Date(p.startDate).getFullYear()))).map(year => 
-              studentData.filter(p => new Date(p.startDate).getFullYear() === year).length
-            ),
-            borderColor: '#4BC0C0',
-            tension: 0.1
-          }]
-        }} 
-      />
-    </Card.Body>
-  </Card>
-</Col>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Admission Trends</Card.Title>
+                  <Line
+                    data={{
+                      labels: Array.from(new Set(studentData.map(p => new Date(p.startDate).getFullYear()))), // Fixed closing bracket
+                      datasets: [{
+                        label: 'Admissions per Year',
+                        data: Array.from(new Set(studentData.map(p => new Date(p.startDate).getFullYear()))).map(year =>
+                          studentData.filter(p => new Date(p.startDate).getFullYear() === year).length
+                        ),
+                        borderColor: '#4BC0C0',
+                        tension: 0.1
+                      }]
+                    }}
+                  />
+                </Card.Body>
+              </Card>
+            </Col>
 
           </Row>
         </Tab>

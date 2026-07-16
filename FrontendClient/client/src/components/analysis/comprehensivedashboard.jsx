@@ -423,17 +423,23 @@ const ComprehensiveDashboard = () => {
             </Col>
             <Col lg={3}>
               <ChartCard title="Hearse Fleet" icon={Car} color={COLORS.success} height="280px">
-                <Doughnut data={{
-                  labels: ["Available", "Booked", "Maintenance"],
-                  datasets: [{
-                    data: [
-                      bookings.fleet?.available || 0,
-                      bookings.fleet?.booked || 0,
-                      bookings.fleet?.maintenance || 0
-                    ],
-                    backgroundColor: [COLORS.success, COLORS.warning, COLORS.danger]
-                  }]
-                }} options={chartOptions} />
+                {bookings.fleet ? (
+                  <Doughnut data={{
+                    labels: ["Available", "Booked", "Maintenance"],
+                    datasets: [{
+                      data: [
+                        bookings.fleet?.available || 0,
+                        bookings.fleet?.booked || 0,
+                        bookings.fleet?.maintenance || 0
+                      ],
+                      backgroundColor: [COLORS.success, COLORS.warning, COLORS.danger]
+                    }]
+                  }} options={chartOptions} />
+                ) : (
+                  <div className="text-center py-4 text-muted">
+                    <p className="mb-0 small">No fleet data available</p>
+                  </div>
+                )}
               </ChartCard>
             </Col>
           </Row>
