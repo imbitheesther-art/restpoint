@@ -534,9 +534,27 @@ exports.refresh = asyncHandler(async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, GLOBAL_REFRESH_SECRET);
-    const { jwtSecret, refreshSecret } = await getTenantJwtSecret(decoded.tenantId);
-    const verified = jwt.verify(refreshToken, refreshSecret);
+    // Try GLOBAL refresh secret first, then fallback to per-tenant secret
+    let verified;
+    let jwtSecret, refreshSecret;
+
+    try {
+      // First attempt: verify with global secret
+      verified = jwt.verify(refreshToken, GLOBAL_REFRESH_SECRET);
+      const tenantSecret = await getTenantJwtSecret(verified.tenantId);
+      jwtSecret = tenantSecret.jwtSecret;
+      refreshSecret = tenantSecret.refreshSecret;
+    } catch (globalErr) {
+      // Second attempt: decode payload, then verify with per-tenant secret
+      const payload = jwt.decode(refreshToken);
+      if (!payload || !payload.tenantId) {
+        throw new Error('Invalid refresh token payload');
+      }
+      const tenantSecret = await getTenantJwtSecret(payload.tenantId);
+      jwtSecret = tenantSecret.jwtSecret;
+      refreshSecret = tenantSecret.refreshSecret;
+      verified = jwt.verify(refreshToken, refreshSecret);
+    }
 
     const [tenants] = await pool.query(
       `SELECT * FROM tenant_tracking.tenants WHERE id = ? AND status = 'active'`,
