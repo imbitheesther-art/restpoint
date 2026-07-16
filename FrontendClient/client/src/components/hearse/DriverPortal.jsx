@@ -60,67 +60,66 @@ const useGreeting = () => {
     };
 };
 
-/* ─── Palette ──────────────────────────────────────────────────── */
+/* ─── CLEAN PALETTE — White BG, Black Cards, Warm Orange Accent ─── */
 const T = {
-    bg: '#0C0E12',
-    card: '#14161C',
-    raised: '#1A1D24',
-    border: '#252830',
-    text: '#E4E6EB',
-    textSec: '#8B909A',
-    textDim: '#51565F',
-    accent: '#34D399',
-    blue: '#60A5FA',
-    amber: '#FBBF24',
-    rose: '#F87171',
-    violet: '#A78BFA',
+    bg: '#F4F4F5',
+    card: '#111113',
+    raised: '#1C1C1F',
+    border: '#2C2C30',
+    text: '#FFFFFF',
+    textSec: '#A1A1AA',
+    textDim: '#63636E',
+    /* single hero accent */
+    accent: '#FF6A28',
+    /* supporting — same warmth family */
+    green: '#30D158',
+    blue: '#0A84FF',
+    amber: '#FFD60A',
+    rose: '#FF453A',
+    violet: '#BF5AF2',
 };
 
-/* Stat card backgrounds — rich but tasteful */
-const STAT_BG = {
-    amber: { bg: 'linear-gradient(145deg, #2A2208 0%, #1A1706 100%)', border: 'rgba(251,191,36,0.12)', iconBg: 'rgba(251,191,36,0.12)', iconBorder: 'rgba(251,191,36,0.2)' },
-    blue: { bg: 'linear-gradient(145deg, #0F1E38 0%, #0A1628 100%)', border: 'rgba(96,165,250,0.12)', iconBg: 'rgba(96,165,250,0.12)', iconBorder: 'rgba(96,165,250,0.2)' },
-    green: { bg: 'linear-gradient(145deg, #0A2620 0%, #081C16 100%)', border: 'rgba(52,211,153,0.12)', iconBg: 'rgba(52,211,153,0.12)', iconBorder: 'rgba(52,211,153,0.2)' },
-};
-
-/* ─── Status ────────────────────────────────────────────────────── */
+/* ─── Status colors mapped to the new palette ──────────────────── */
 const STATUS = {
-    booked: { label: 'Booked', color: T.amber, dot: '#FBBF24' },
-    in_transit: { label: 'In Transit', color: T.blue, dot: '#60A5FA' },
-    completed: { label: 'Completed', color: T.accent, dot: '#34D399' },
-    cancelled: { label: 'Cancelled', color: T.rose, dot: '#F87171' },
-    postponed: { label: 'Postponed', color: T.violet, dot: '#A78BFA' },
+    booked: { label: 'Booked', color: T.amber, dot: T.amber },
+    in_transit: { label: 'In Transit', color: T.blue, dot: T.blue },
+    completed: { label: 'Completed', color: T.green, dot: T.green },
+    cancelled: { label: 'Cancelled', color: T.rose, dot: T.rose },
+    postponed: { label: 'Postponed', color: T.violet, dot: T.violet },
 };
 
 const LEAVE = {
-    approved: { color: T.accent, dim: '#0F2A1F', label: 'Approved' },
-    rejected: { color: T.rose, dim: '#2A0F10', label: 'Rejected' },
-    pending: { color: T.amber, dim: '#2A1F0A', label: 'Pending' },
+    approved: { color: T.green, label: 'Approved' },
+    rejected: { color: T.rose, label: 'Rejected' },
+    pending: { color: T.amber, label: 'Pending' },
 };
 
 /* ─── Animations ──────────────────────────────────────────────── */
 const css = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,500&display=swap');
 
-@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.65)}}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,106,40,0)}50%{box-shadow:0 0 0 8px rgba(255,106,40,.12)}}
 
 *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;margin:0;padding:0}
-.a-up{animation:up .45s cubic-bezier(.22,1,.36,1) forwards;opacity:0}
-.a-spin{animation:spin .75s linear infinite}
-.a-pulse{animation:pulse 1.5s ease-in-out infinite}
+.a-up{animation:up .4s cubic-bezier(.22,1,.36,1) forwards;opacity:0}
+.a-spin{animation:spin .7s linear infinite}
+.a-pulse{animation:pulse 1.4s ease-in-out infinite}
 .a-toast{animation:toastIn .3s ease forwards}
+.a-glow{animation:glow 2s ease-in-out infinite}
 input,select,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:0;display:none}
 `;
 
 /* ─── Toast ───────────────────────────────────────────────────── */
 const Toast = ({ type, message, onClose }) => {
     if (!message) return null;
     const err = type === 'error';
-    const c = err ? T.rose : T.accent;
-    const bg = err ? '#2A0F10' : '#0F2A1F';
+    const c = err ? T.rose : T.green;
+    const bg = err ? '#3A1515' : '#153A1E';
     const Icon = err ? AlertCircle : CheckCircle;
 
     useEffect(() => {
@@ -131,14 +130,14 @@ const Toast = ({ type, message, onClose }) => {
     return (
         <div className="a-toast" style={{
             position: 'fixed', top: 14, left: 14, right: 14, zIndex: 9999,
-            padding: '12px 16px', borderRadius: 12,
-            background: bg, border: `1px solid ${c}25`,
+            padding: '13px 16px', borderRadius: 14,
+            background: bg, border: `1px solid ${c}30`,
             color: c, fontSize: '.84rem', fontWeight: 600,
             display: 'flex', alignItems: 'center', gap: 9,
-            boxShadow: '0 10px 30px rgba(0,0,0,.5)',
-            fontFamily: "'DM Sans',sans-serif", maxWidth: 380, margin: '0 auto',
+            boxShadow: '0 12px 40px rgba(0,0,0,.35)',
+            fontFamily: "'DM Sans',sans-serif", maxWidth: 400, margin: '0 auto',
         }}>
-            <Icon size={18} strokeWidth={2.5} />
+            <Icon size={17} strokeWidth={2.5} />
             <span style={{ flex: 1 }}>{message}</span>
         </div>
     );
@@ -152,26 +151,23 @@ const Plate = ({ number, model }) => {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <div style={{
                 background: '#E8ECF0', border: '1.5px solid #94A3B8',
-                borderRadius: 4, padding: '3px 10px', position: 'relative',
-                boxShadow: '0 1px 4px rgba(0,0,0,.3)',
+                borderRadius: 5, padding: '3px 10px', position: 'relative',
+                boxShadow: '0 1px 3px rgba(0,0,0,.15)',
             }}>
                 {[['t', 'l'], ['t', 'r'], ['b', 'l'], ['b', 'r']].map(([v, h], i) => (
                     <div key={i} style={{
                         position: 'absolute',
-                        [v === 't' ? 'top' : 'bottom']: 3,
-                        [h === 'l' ? 'left' : 'right']: 4,
-                        width: 3, height: 3, borderRadius: '50%',
-                        background: '#94A3B8',
-                        boxShadow: 'inset 0 .5px 1px rgba(0,0,0,.25)',
+                        [v === 't' ? 'top' : 'bottom']: 3, [h === 'l' ? 'left' : 'right']: 4,
+                        width: 3, height: 3, borderRadius: '50%', background: '#94A3B8',
                     }} />
                 ))}
                 <div style={{
-                    fontFamily: "Arial,sans-serif", fontSize: '.78rem',
+                    fontFamily: "Arial,sans-serif", fontSize: '.76rem',
                     fontWeight: 900, color: '#1E293B', letterSpacing: '.1em',
-                    textAlign: 'center', minWidth: 46,
+                    textAlign: 'center', minWidth: 44,
                 }}>{n}</div>
             </div>
-            {model && <span style={{ fontSize: '.56rem', color: T.textDim, fontWeight: 600 }}>{model}</span>}
+            {model && <span style={{ fontSize: '.55rem', color: T.textDim, fontWeight: 600 }}>{model}</span>}
         </div>
     );
 };
@@ -182,15 +178,15 @@ const Pill = ({ status }) => {
     return (
         <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '3px 11px', borderRadius: 100,
-            background: `${s.color}10`, border: `1px solid ${s.color}20`,
+            padding: '4px 11px', borderRadius: 100,
+            background: `${s.color}18`, border: `1px solid ${s.color}25`,
             color: s.color, fontSize: '.6rem', fontWeight: 700,
-            letterSpacing: '.04em', textTransform: 'uppercase',
+            letterSpacing: '.05em', textTransform: 'uppercase',
         }}>
             <span style={{
                 width: 5, height: 5, borderRadius: '50%',
                 background: s.dot,
-                boxShadow: `0 0 6px ${s.dot}40`,
+                boxShadow: `0 0 6px ${s.dot}50`,
                 className: status === 'in_transit' ? 'a-pulse' : undefined,
             }} />
             {s.label}
@@ -198,43 +194,40 @@ const Pill = ({ status }) => {
     );
 };
 
-/* ─── Stat card with colored background ────────────────────────── */
-const Stat = ({ value, label, color, icon: Icon, theme, pulse }) => {
-    const th = STAT_BG[theme] || STAT_BG.green;
-    return (
+/* ─── Stat card — clean dark with single accent icon ──────────── */
+const Stat = ({ value, label, color, icon: Icon, pulse }) => (
+    <div style={{
+        flex: 1, padding: '18px 8px', textAlign: 'center',
+        background: T.card, borderRadius: 16,
+        border: `1px solid ${T.border}`,
+        position: 'relative',
+    }}>
         <div style={{
-            flex: 1, padding: '16px 10px', textAlign: 'center',
-            background: th.bg, borderRadius: 14,
-            border: `1px solid ${th.border}`,
-            position: 'relative',
+            width: 40, height: 40, borderRadius: 12,
+            background: `${color}14`, border: `1px solid ${color}22`,
+            color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 12px', position: 'relative',
         }}>
-            <div style={{
-                width: 38, height: 38, borderRadius: 11,
-                background: th.iconBg, border: `1px solid ${th.iconBorder}`,
-                color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 10px', position: 'relative',
-            }}>
-                <Icon size={17} strokeWidth={2} />
-                {pulse && (
-                    <span className="a-pulse" style={{
-                        position: 'absolute', top: -2, right: -2,
-                        width: 9, height: 9, borderRadius: '50%',
-                        background: color, border: '2px solid ' + th.bg,
-                    }} />
-                )}
-            </div>
-            <div style={{
-                fontSize: '1.5rem', fontWeight: 800, color: T.text,
-                lineHeight: 1, marginBottom: 4,
-                fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em',
-            }}>{value}</div>
-            <div style={{
-                fontSize: '.54rem', color: T.textDim, fontWeight: 700,
-                letterSpacing: '.1em', textTransform: 'uppercase',
-            }}>{label}</div>
+            <Icon size={17} strokeWidth={2} />
+            {pulse && (
+                <span className="a-pulse" style={{
+                    position: 'absolute', top: -2, right: -2,
+                    width: 9, height: 9, borderRadius: '50%',
+                    background: color, border: '2px solid ' + T.card,
+                }} />
+            )}
         </div>
-    );
-};
+        <div style={{
+            fontSize: '1.65rem', fontWeight: 900, color: T.text,
+            lineHeight: 1, marginBottom: 5,
+            fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em',
+        }}>{value}</div>
+        <div style={{
+            fontSize: '.52rem', color: T.textDim, fontWeight: 700,
+            letterSpacing: '.12em', textTransform: 'uppercase',
+        }}>{label}</div>
+    </div>
+);
 
 /* ─── Trip card ───────────────────────────────────────────────── */
 const TripCard = ({ booking, onStatusChange, i }) => {
@@ -244,23 +237,25 @@ const TripCard = ({ booking, onStatusChange, i }) => {
 
     return (
         <div className="a-up" style={{
-            background: T.card, borderRadius: 16,
-            marginBottom: 12, overflow: 'hidden',
+            background: T.card, borderRadius: 20,
+            marginBottom: 14, overflow: 'hidden',
             border: `1px solid ${T.border}`,
             animationDelay: `${(i || 0) * .05}s`,
+            boxShadow: '0 2px 12px rgba(0,0,0,.08)',
         }}>
-            <div style={{ height: 2.5, background: accent, opacity: .65 }} />
+            {/* top accent line */}
+            <div style={{ height: 3, background: `linear-gradient(90deg, ${accent}, ${accent}60)` }} />
 
-            <div style={{ padding: '16px 16px 18px' }}>
+            <div style={{ padding: '18px 18px 20px' }}>
                 {/* header */}
                 <div style={{
                     display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: 14,
+                    alignItems: 'center', marginBottom: 16,
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                         <div style={{
-                            width: 34, height: 34, borderRadius: 9,
-                            background: `${accent}10`, border: `1px solid ${accent}18`,
+                            width: 36, height: 36, borderRadius: 10,
+                            background: `${accent}15`, border: `1px solid ${accent}20`,
                             color: accent,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
@@ -268,7 +263,7 @@ const TripCard = ({ booking, onStatusChange, i }) => {
                         </div>
                         <div>
                             <div style={{
-                                color: T.text, fontSize: '.8rem', fontWeight: 800,
+                                color: T.text, fontSize: '.82rem', fontWeight: 800,
                                 fontFamily: "'SF Mono','Fira Code',monospace", letterSpacing: '.02em',
                             }}>{genId(b.booking_id)}</div>
                             <div style={{ fontSize: '.6rem', color: T.textDim, marginTop: 1 }}>
@@ -281,13 +276,13 @@ const TripCard = ({ booking, onStatusChange, i }) => {
 
                 {/* client */}
                 <div style={{
-                    marginBottom: 12, padding: '11px 13px',
-                    background: T.raised, borderRadius: 11,
+                    marginBottom: 14, padding: '12px 14px',
+                    background: T.raised, borderRadius: 14,
                     border: `1px solid ${T.border}`,
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: '.95rem', color: T.text, marginBottom: 2 }}>
+                        <div style={{ fontWeight: 800, fontSize: '.96rem', color: T.text, marginBottom: 3 }}>
                             {b.client_name}
                         </div>
                         {b.client_phone && (
@@ -300,8 +295,8 @@ const TripCard = ({ booking, onStatusChange, i }) => {
                         )}
                     </div>
                     <div style={{
-                        width: 34, height: 34, borderRadius: 50,
-                        background: `${accent}10`, border: `1px solid ${accent}15`,
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: `${accent}12`, border: `1px solid ${accent}18`,
                         color: accent,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
@@ -311,95 +306,99 @@ const TripCard = ({ booking, onStatusChange, i }) => {
 
                 {/* route */}
                 <div style={{
-                    marginBottom: 12, padding: '13px',
-                    background: T.raised, borderRadius: 11,
+                    marginBottom: 14, padding: '14px',
+                    background: T.raised, borderRadius: 14,
                     border: `1px solid ${T.border}`,
                 }}>
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 11 }}>
                         <div style={{
                             display: 'flex', flexDirection: 'column',
                             alignItems: 'center', paddingTop: 1,
                         }}>
                             <div style={{
                                 width: 16, height: 16, borderRadius: '50%',
-                                background: 'rgba(248,113,113,0.1)',
-                                border: '1.5px solid rgba(248,113,113,0.25)',
+                                background: `${T.rose}15`,
+                                border: '1.5px solid ' + `${T.rose}30`,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0,
                             }}>
                                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: T.rose }} />
                             </div>
                             <div style={{
-                                width: 1.5, flex: 1, minHeight: 24, margin: '3px 0',
+                                width: 1.5, flex: 1, minHeight: 26, margin: '4px 0',
                                 background: `repeating-linear-gradient(to bottom,${T.border} 0px,${T.border} 3px,transparent 3px,transparent 7px)`,
                             }} />
                             <div style={{
                                 width: 16, height: 16, borderRadius: '50%',
-                                background: 'rgba(52,211,153,0.1)',
-                                border: '1.5px solid rgba(52,211,153,0.25)',
+                                background: `${T.green}15`,
+                                border: '1.5px solid ' + `${T.green}30`,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0,
                             }}>
-                                <div style={{ width: 5, height: 5, borderRadius: '50%', background: T.accent }} />
+                                <div style={{ width: 5, height: 5, borderRadius: '50%', background: T.green }} />
                             </div>
                         </div>
                         <div style={{
                             flex: 1, display: 'flex', flexDirection: 'column',
-                            justifyContent: 'space-between', gap: 8,
+                            justifyContent: 'space-between', gap: 10,
                         }}>
                             <div>
-                                <div style={{ fontSize: '.52rem', color: T.textDim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 1 }}>Pickup</div>
-                                <div style={{ fontSize: '.78rem', color: T.text, fontWeight: 600 }}>{b.from_location || b.destination || 'N/A'}</div>
+                                <div style={{ fontSize: '.5rem', color: T.textDim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>Pickup</div>
+                                <div style={{ fontSize: '.8rem', color: T.text, fontWeight: 600 }}>{b.from_location || b.destination || 'N/A'}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: '.52rem', color: T.textDim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 1 }}>Destination</div>
-                                <div style={{ fontSize: '.78rem', color: T.text, fontWeight: 600 }}>{b.destination || 'N/A'}</div>
+                                <div style={{ fontSize: '.5rem', color: T.textDim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>Destination</div>
+                                <div style={{ fontSize: '.8rem', color: T.text, fontWeight: 600 }}>{b.destination || 'N/A'}</div>
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ height: 1, background: T.border, margin: '10px 0' }} />
+                    <div style={{ height: 1, background: T.border, margin: '12px 0' }} />
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                             <div style={{
-                                width: 28, height: 28, borderRadius: 7,
-                                background: `${accent}08`, border: `1px solid ${accent}12`,
+                                width: 30, height: 30, borderRadius: 8,
+                                background: `${accent}10`, border: `1px solid ${accent}15`,
                                 color: accent,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
                                 <Car size={13} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '.48rem', color: T.textDim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>Vehicle</div>
-                                <div style={{ fontSize: '.74rem', color: T.text, fontWeight: 700, marginTop: 1 }}>{b.vehicle_name || b.model || 'Assigned'}</div>
+                                <div style={{ fontSize: '.46rem', color: T.textDim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>Vehicle</div>
+                                <div style={{ fontSize: '.76rem', color: T.text, fontWeight: 700, marginTop: 1 }}>{b.vehicle_name || b.model || 'Assigned'}</div>
                             </div>
                         </div>
                         <Plate number={b.plate_number || b.number_plate} model={b.model} />
                     </div>
                 </div>
 
-                {/* action */}
+                {/* action buttons */}
                 {b.status === 'booked' && (
-                    <button onClick={() => onStatusChange(b.booking_id, 'in_transit')} style={{
-                        width: '100%', padding: '14px', border: 'none', borderRadius: 12,
-                        cursor: 'pointer', background: accent, color: '#0C0E12',
-                        fontWeight: 800, fontSize: '.86rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                        boxShadow: `0 4px 16px -2px ${accent}35`,
+                    <button onClick={() => onStatusChange(b.booking_id, 'in_transit')} className="a-glow" style={{
+                        width: '100%', padding: '15px', border: 'none', borderRadius: 14,
+                        cursor: 'pointer',
+                        background: `linear-gradient(135deg, ${T.accent}, ${T.accent}DD)`,
+                        color: '#FFFFFF',
+                        fontWeight: 800, fontSize: '.88rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        boxShadow: `0 6px 24px -4px ${T.accent}40`,
                         transition: 'all .15s', fontFamily: "'DM Sans',sans-serif",
                     }}>
                         <Zap size={17} strokeWidth={2.5} /> Accept Trip
-                        <ArrowRight size={14} style={{ opacity: .4 }} />
+                        <ArrowRight size={14} style={{ opacity: .5 }} />
                     </button>
                 )}
                 {b.status === 'in_transit' && (
                     <button onClick={() => onStatusChange(b.booking_id, 'completed')} style={{
-                        width: '100%', padding: '14px', border: 'none', borderRadius: 12,
-                        cursor: 'pointer', background: T.accent, color: '#0C0E12',
-                        fontWeight: 800, fontSize: '.86rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                        boxShadow: `0 4px 16px -2px ${T.accent}35`,
+                        width: '100%', padding: '15px', border: 'none', borderRadius: 14,
+                        cursor: 'pointer',
+                        background: `linear-gradient(135deg, ${T.green}, ${T.green}DD)`,
+                        color: '#FFFFFF',
+                        fontWeight: 800, fontSize: '.88rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        boxShadow: `0 6px 24px -4px ${T.green}35`,
                         transition: 'all .15s', fontFamily: "'DM Sans',sans-serif",
                     }}>
                         <CheckCircle size={17} strokeWidth={2.5} /> Complete Trip
@@ -416,21 +415,22 @@ const LeaveCard = ({ leave }) => {
     const c = LEAVE[s] || LEAVE.pending;
     return (
         <div style={{
-            background: T.card, borderRadius: 12, padding: '13px 15px',
-            marginBottom: 8, display: 'flex', justifyContent: 'space-between',
+            background: T.card, borderRadius: 16, padding: '14px 16px',
+            marginBottom: 10, display: 'flex', justifyContent: 'space-between',
             alignItems: 'center', border: `1px solid ${T.border}`,
+            boxShadow: '0 1px 6px rgba(0,0,0,.06)',
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: `${c.color}10`, border: `1px solid ${c.color}18`,
+                    width: 38, height: 38, borderRadius: 11,
+                    background: `${c.color}12`, border: `1px solid ${c.color}20`,
                     color: c.color,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                     <Calendar size={16} />
                 </div>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: '.82rem', color: T.text, marginBottom: 2 }}>
+                    <div style={{ fontWeight: 700, fontSize: '.84rem', color: T.text, marginBottom: 2 }}>
                         {leave.leave_type || 'Leave'}
                     </div>
                     <div style={{ fontSize: '.68rem', color: T.textDim, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -442,40 +442,42 @@ const LeaveCard = ({ leave }) => {
                 </div>
             </div>
             <span style={{
-                padding: '2px 10px', borderRadius: 100,
-                background: `${c.color}10`, border: `1px solid ${c.color}18`,
+                padding: '3px 11px', borderRadius: 100,
+                background: `${c.color}12`, border: `1px solid ${c.color}22`,
                 color: c.color, fontSize: '.56rem', fontWeight: 700,
-                letterSpacing: '.04em', textTransform: 'uppercase',
+                letterSpacing: '.05em', textTransform: 'uppercase',
             }}>{c.label}</span>
         </div>
     );
 };
 
-/* ─── Empty ───────────────────────────────────────────────────── */
+/* ─── Empty state ─────────────────────────────────────────────── */
 const Empty = ({ icon: Icon, title, sub }) => (
     <div style={{
-        textAlign: 'center', padding: '56px 24px',
-        background: T.card, borderRadius: 16, border: `1px dashed ${T.border}`,
+        textAlign: 'center', padding: '60px 28px',
+        background: T.card, borderRadius: 20,
+        border: `1px dashed ${T.border}`,
     }}>
         <div style={{
-            width: 50, height: 50, borderRadius: '50%',
+            width: 52, height: 52, borderRadius: '50%',
             background: T.raised, border: `1px solid ${T.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px', color: T.textDim,
+            margin: '0 auto 18px', color: T.textDim,
         }}><Icon size={22} /></div>
-        <div style={{ fontSize: '.95rem', fontWeight: 800, color: T.textSec, marginBottom: 5 }}>{title}</div>
-        <div style={{ fontSize: '.78rem', color: T.textDim, lineHeight: 1.5 }}>{sub}</div>
+        <div style={{ fontSize: '.96rem', fontWeight: 800, color: T.textSec, marginBottom: 6 }}>{title}</div>
+        <div style={{ fontSize: '.78rem', color: T.textDim, lineHeight: 1.6 }}>{sub}</div>
     </div>
 );
 
 const Loading = ({ text }) => (
     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
         <div style={{
-            width: 40, height: 40, margin: '0 auto 14px',
-            borderRadius: 12, background: T.raised, border: `1px solid ${T.border}`,
+            width: 42, height: 42, margin: '0 auto 16px',
+            borderRadius: 14, background: T.card, border: `1px solid ${T.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}><Loader2 size={20} className="a-spin" style={{ color: T.textDim }} /></div>
-        <div style={{ fontSize: '.82rem', fontWeight: 600, color: T.textSec, fontFamily: "'DM Sans',sans-serif" }}>{text}</div>
+            boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+        }}><Loader2 size={20} className="a-spin" style={{ color: T.accent }} /></div>
+        <div style={{ fontSize: '.82rem', fontWeight: 600, color: '#71717A', fontFamily: "'DM Sans',sans-serif" }}>{text}</div>
     </div>
 );
 
@@ -557,138 +559,144 @@ const DriverPortal = () => {
             minHeight: '100vh', minHeight: '100dvh',
             background: T.bg,
             fontFamily: "'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-            color: T.text, WebkitFontSmoothing: 'antialiased',
+            color: '#18181B', WebkitFontSmoothing: 'antialiased',
         }}>
             <style>{css}</style>
             <Toast type="error" message={error} onClose={() => setError('')} />
             <Toast type="success" message={success} onClose={() => setSuccess('')} />
 
-            {/* header */}
+            {/* ─── HEADER — white, clean ─── */}
             <header style={{
                 position: 'sticky', top: 0, zIndex: 50,
-                background: 'rgba(12,14,18,.85)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                borderBottom: `1px solid ${T.border}`,
+                background: 'rgba(244,244,245,.82)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                borderBottom: '1px solid rgba(0,0,0,.06)',
             }}>
                 <div style={{
-                    maxWidth: 500, margin: '0 auto', padding: '11px 16px',
+                    maxWidth: 520, margin: '0 auto', padding: '12px 18px',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                         <div style={{
-                            width: 34, height: 34, borderRadius: 9,
-                            background: T.accent,
+                            width: 36, height: 36, borderRadius: 10,
+                            background: T.card,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: `0 2px 10px ${T.accent}25`,
+                            boxShadow: '0 2px 8px rgba(0,0,0,.12)',
                         }}>
-                            <Car size={16} color="#0C0E12" strokeWidth={2.5} />
+                            <Car size={16} color={T.accent} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '.86rem', fontWeight: 800, color: T.text, letterSpacing: '-.01em' }}>RestPoint</div>
-                            <div style={{ fontSize: '.48rem', color: T.textDim, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' }}>Nairobi · Driver</div>
+                            <div style={{ fontSize: '.88rem', fontWeight: 900, color: '#18181B', letterSpacing: '-.01em' }}>RestPoint</div>
+                            <div style={{ fontSize: '.48rem', color: '#A1A1AA', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase' }}>Driver Portal</div>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button onClick={() => loadB(true)} disabled={refreshing} style={{
-                            width: 34, height: 34, borderRadius: 9,
-                            background: T.raised, border: `1px solid ${T.border}`,
-                            color: T.textSec, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer',
+                            width: 36, height: 36, borderRadius: 10,
+                            background: '#FFFFFF', border: '1px solid rgba(0,0,0,.08)',
+                            color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,.04)',
                         }}>
                             <RefreshCw size={14} className={refreshing ? 'a-spin' : ''} />
                         </button>
                         <button onClick={logout} style={{
-                            padding: '7px 12px', borderRadius: 9,
-                            background: '#2A0F10', border: `1px solid ${T.rose}20`,
+                            padding: '8px 14px', borderRadius: 10,
+                            background: '#FFFFFF', border: '1px solid rgba(255,69,58,.15)',
                             color: T.rose, fontSize: '.68rem', fontWeight: 700,
-                            display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
                         }}>
-                            <LogOut size={12} /><span className="dp-logout-text">Exit</span>
+                            <LogOut size={12} /><span>Exit</span>
                         </button>
                     </div>
                 </div>
             </header>
 
-            <main style={{ maxWidth: 500, margin: '0 auto', padding: '20px 16px 110px' }}>
+            <main style={{ maxWidth: 520, margin: '0 auto', padding: '22px 18px 120px' }}>
 
-                {/* greeting */}
-                <div className="a-up" style={{ marginBottom: 22 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+                {/* ─── GREETING ─── */}
+                <div className="a-up" style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
                         <div style={{
-                            padding: '4px 10px', borderRadius: 8,
-                            background: `${T.accent}10`, border: `1px solid ${T.accent}18`,
+                            padding: '5px 11px', borderRadius: 9,
+                            background: '#FFFFFF', border: '1px solid rgba(0,0,0,.06)',
                             color: T.accent, fontSize: '.66rem', fontWeight: 700,
                             display: 'flex', alignItems: 'center', gap: 5,
+                            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
                         }}>
                             <GI size={12} />{g.text}
                         </div>
                         <div style={{
-                            padding: '4px 9px', borderRadius: 8,
-                            background: T.raised, border: `1px solid ${T.border}`,
-                            color: T.textSec, fontSize: '.66rem', fontWeight: 650,
+                            padding: '5px 10px', borderRadius: 9,
+                            background: '#FFFFFF', border: '1px solid rgba(0,0,0,.06)',
+                            color: '#71717A', fontSize: '.66rem', fontWeight: 650,
+                            boxShadow: '0 1px 3px rgba(0,0,0,.04)',
                         }}>
-                            {g.timeStr} EAT
+                            {g.timeStr}
                         </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                             <h1 style={{
-                                margin: 0, fontSize: '1.7rem', fontWeight: 800,
-                                lineHeight: 1.1, letterSpacing: '-.03em', color: T.text, marginBottom: 4,
+                                margin: 0, fontSize: '1.85rem', fontWeight: 900,
+                                lineHeight: 1.1, letterSpacing: '-.035em', color: '#18181B', marginBottom: 5,
                             }}>{first}</h1>
-                            <div style={{ fontSize: '.74rem', color: T.textDim, fontWeight: 500, marginBottom: 4 }}>{g.dateStr}</div>
-                            <div style={{ fontSize: '.72rem', color: T.textSec, fontWeight: 500, fontStyle: 'italic', opacity: .7 }}>{g.sub}</div>
+                            <div style={{ fontSize: '.76rem', color: '#A1A1AA', fontWeight: 500, marginBottom: 4 }}>{g.dateStr}</div>
+                            <div style={{ fontSize: '.72rem', color: '#71717A', fontWeight: 500, fontStyle: 'italic', opacity: .8 }}>{g.sub}</div>
                         </div>
                         <div style={{
-                            width: 48, height: 48, borderRadius: 14,
-                            background: `linear-gradient(145deg,${T.accent},${T.accent}AA)`,
+                            width: 52, height: 52, borderRadius: 16,
+                            background: `linear-gradient(145deg, ${T.accent}, #E05520)`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#0C0E12', fontSize: '.92rem', fontWeight: 800,
-                            boxShadow: `0 4px 14px ${T.accent}20`,
+                            color: '#FFFFFF', fontSize: '.95rem', fontWeight: 900,
+                            boxShadow: `0 6px 20px ${T.accent}30`,
                             flexShrink: 0, marginLeft: 14, position: 'relative',
                         }}>
                             {ini}
                             <div style={{
                                 position: 'absolute', bottom: -1, right: -1,
-                                width: 13, height: 13, borderRadius: '50%',
-                                background: T.accent, border: '2px solid ' + T.bg,
+                                width: 14, height: 14, borderRadius: '50%',
+                                background: T.green, border: '2.5px solid ' + T.bg,
                             }} />
                         </div>
                     </div>
 
                     {active.length > 0 && (
                         <div style={{
-                            marginTop: 14, padding: '10px 13px',
-                            background: '#2A1F0A', border: `1px solid rgba(251,191,36,0.12)`,
-                            borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8,
+                            marginTop: 16, padding: '11px 14px',
+                            background: T.card, border: `1px solid ${T.border}`,
+                            borderRadius: 12, display: 'flex', alignItems: 'center', gap: 9,
+                            boxShadow: '0 2px 8px rgba(0,0,0,.08)',
                         }}>
                             <span className="a-pulse" style={{
-                                width: 7, height: 7, borderRadius: '50%',
+                                width: 8, height: 8, borderRadius: '50%',
                                 background: T.amber, flexShrink: 0,
-                                boxShadow: `0 0 8px ${T.amber}40`,
+                                boxShadow: `0 0 10px ${T.amber}50`,
                             }} />
-                            <span style={{ fontSize: '.74rem', color: T.amber, fontWeight: 650 }}>
-                                <strong>{active.length}</strong> trip{active.length !== 1 ? 's' : ''} waiting
+                            <span style={{ fontSize: '.76rem', color: T.amber, fontWeight: 700 }}>
+                                <strong>{active.length}</strong> trip{active.length !== 1 ? 's' : ''} waiting for you
                             </span>
                         </div>
                     )}
                 </div>
 
-                {/* stats — colored dark backgrounds */}
+                {/* ─── STATS — black cards on light bg ─── */}
                 <div className="a-up" style={{
-                    display: 'flex', gap: 7, marginBottom: 22, animationDelay: '.06s',
+                    display: 'flex', gap: 10, marginBottom: 24, animationDelay: '.06s',
                 }}>
-                    <Stat value={active.length} label="Active" color={T.amber} icon={Zap} theme="amber" pulse={active.length > 0} />
-                    <Stat value={transit} label="En Route" color={T.blue} icon={Navigation} theme="blue" />
-                    <Stat value={done} label="Done" color={T.accent} icon={CheckCircle} theme="green" />
+                    <Stat value={active.length} label="Active" color={T.accent} icon={Zap} pulse={active.length > 0} />
+                    <Stat value={transit} label="En Route" color={T.blue} icon={Navigation} />
+                    <Stat value={done} label="Done" color={T.green} icon={CheckCircle} />
                 </div>
 
-                {/* tabs */}
+                {/* ─── TABS — clean pill style ─── */}
                 <div className="a-up" style={{
-                    display: 'flex', gap: 2, marginBottom: 16,
-                    padding: 3, background: T.card, borderRadius: 12, border: `1px solid ${T.border}`,
+                    display: 'flex', gap: 4, marginBottom: 18,
+                    padding: 4, background: '#FFFFFF', borderRadius: 14,
+                    border: '1px solid rgba(0,0,0,.06)',
+                    boxShadow: '0 1px 4px rgba(0,0,0,.04)',
                     animationDelay: '.09s',
                 }}>
                     {[
@@ -699,21 +707,22 @@ const DriverPortal = () => {
                         const Icon = t.icon;
                         return (
                             <button key={t.k} onClick={() => setTab(t.k)} style={{
-                                flex: 1, padding: '10px 5px', borderRadius: 10,
-                                background: on ? T.raised : 'transparent',
-                                border: on ? `1px solid ${t.c}20` : '1px solid transparent',
-                                color: on ? T.text : T.textDim,
-                                fontWeight: 700, fontSize: '.74rem', cursor: 'pointer',
+                                flex: 1, padding: '11px 6px', borderRadius: 11,
+                                background: on ? T.card : 'transparent',
+                                border: on ? '1px solid transparent' : '1px solid transparent',
+                                color: on ? T.text : '#A1A1AA',
+                                fontWeight: 700, fontSize: '.76rem', cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                                transition: 'all .15s', fontFamily: "'DM Sans',sans-serif",
+                                transition: 'all .2s', fontFamily: "'DM Sans',sans-serif",
+                                boxShadow: on ? '0 2px 8px rgba(0,0,0,.12)' : 'none',
                             }}>
                                 <Icon size={13} style={{ color: on ? t.c : undefined }} />
                                 {t.l}
                                 {t.n > 0 && (
                                     <span style={{
-                                        fontSize: '.54rem', fontWeight: 800, padding: '1px 5px',
-                                        borderRadius: 5, background: on ? `${t.c}12` : 'rgba(255,255,255,.02)',
-                                        color: on ? t.c : T.textDim,
+                                        fontSize: '.54rem', fontWeight: 800, padding: '1px 6px',
+                                        borderRadius: 6, background: on ? `${t.c}20` : 'rgba(0,0,0,.04)',
+                                        color: on ? t.c : '#A1A1AA',
                                     }}>{t.n}</span>
                                 )}
                             </button>
@@ -721,11 +730,11 @@ const DriverPortal = () => {
                     })}
                 </div>
 
-                {/* content */}
+                {/* ─── CONTENT ─── */}
                 <div className="a-up" style={{ animationDelay: '.12s' }}>
                     {tab === 'bookings' ? (
                         loadingB ? <Loading text="Loading trips..." /> :
-                            active.length === 0 ? <Empty icon={Car} title="All Clear" sub="No active trips. You'll be notified when one arrives." /> :
+                            active.length === 0 ? <Empty icon={Car} title="All Clear" sub="No active trips right now. You'll be notified when one arrives." /> :
                                 active.map((b, i) => <TripCard key={b.booking_id} booking={b} onStatusChange={changeStatus} i={i} />)
                     ) : (
                         loadingL ? <Loading text="Loading leaves..." /> :
@@ -738,18 +747,18 @@ const DriverPortal = () => {
                     )}
                 </div>
 
-                {/* footer */}
+                {/* ─── FOOTER ─── */}
                 <div style={{
-                    textAlign: 'center', padding: '32px 0 0',
-                    borderTop: `1px solid ${T.border}`, marginTop: 28,
+                    textAlign: 'center', padding: '36px 0 0',
+                    borderTop: '1px solid rgba(0,0,0,.06)', marginTop: 32,
                 }}>
                     <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 4,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 5,
                     }}>
-                        <Shield size={10} style={{ color: T.textDim }} />
-                        <span style={{ fontSize: '.58rem', color: T.textDim, fontWeight: 600 }}>Secure · Encrypted</span>
+                        <Shield size={10} style={{ color: '#A1A1AA' }} />
+                        <span style={{ fontSize: '.58rem', color: '#A1A1AA', fontWeight: 600 }}>Secure · Encrypted</span>
                     </div>
-                    <div style={{ fontSize: '.48rem', color: T.textDim, fontWeight: 500, opacity: .4 }}>
+                    <div style={{ fontSize: '.48rem', color: '#D4D4D8', fontWeight: 500 }}>
                         RestPoint v2.0 · {slug} · Nairobi
                     </div>
                 </div>

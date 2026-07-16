@@ -1,4 +1,4 @@
-const { safeQuery, getConnection } = require('../../../shared/config/db');
+const { safeQuery, getConnection, getTenantPool } = require('../../../shared/config/db');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 
@@ -774,10 +774,14 @@ const getBookingsByDriver = asyncHandler(async (req, res) => {
 
 /**
  * Get availability across branches (tenant-aware)
+ * Uses tenant slug directly as database name for better reliability
  */
 const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
     try {
-        const bookings = await safeQuery(`
+        // Use tenant slug directly as database name
+        const pool = await getTenantPool(req.tenantSlug);
+
+        const [bookings] = await pool.query(`
             SELECT 
                 hb.id AS booking_id,
                 hb.status,
@@ -793,7 +797,7 @@ const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
             LEFT JOIN hearses h ON hb.hearse_id = h.id
             WHERE hb.status NOT IN ('completed', 'cancelled')
             ORDER BY hb.created_at DESC
-        `, [], req.tenantSlug);
+        `);
 
         res.status(200).json({
             status: 'success',
@@ -804,7 +808,8 @@ const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
         console.error('❌ Availability Across Branches Error:', error);
         res.status(500).json({
             status: 'error',
-            message: 'Failed to fetch availability across branches.'
+            message: 'Failed to fetch availability across branches.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
