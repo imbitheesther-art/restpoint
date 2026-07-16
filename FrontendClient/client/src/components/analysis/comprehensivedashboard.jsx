@@ -599,7 +599,7 @@ const ComprehensiveDashboard = () => {
           <Row className="g-4">
             <Col lg={6}>
               <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                <Line data={deceasedTrendsData} options={cartesianChartOptions} />
+                <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
               </ChartCard>
             </Col>
             <Col lg={3}>
