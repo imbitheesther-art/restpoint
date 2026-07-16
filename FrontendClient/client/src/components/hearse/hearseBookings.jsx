@@ -66,11 +66,14 @@ const bookingService = {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
 
-        // Add branch tracking headers
+        // Add user info headers
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : {};
         if (user?.branch_id) headers['x-branch-id'] = user.branch_id;
         if (user?.branch_code) headers['x-branch-code'] = user.branch_code;
+        if (user?.email) headers['x-user-email'] = user.email;
+        if (user?.user_id) headers['x-user-id'] = user.user_id;
+        if (user?.full_name || user?.username) headers['x-user-name'] = user.full_name || user.username;
 
         const r = await fetch(`${API_BASE_URL}/hearse-bookings`, {
             method: 'POST', headers, body: JSON.stringify(data)
@@ -115,6 +118,9 @@ const bookingService = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (d) => d
     ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : 'N/A';
+const fmtDateOnly = (d) => d
+    ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'N/A';
 const genId = (id) => id ? (id.toString().startsWith('BK-') ? id : `BK-${String(id).padStart(4, '0')}`) : 'N/A';
 
@@ -208,8 +214,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                 client_name: clientName,
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
-                from_timestamp: bookingDate,
-                to_timestamp: bookingDate,
+                from_timestamp: bookingDate, // Date only, no time
                 booked_by: user?.user_slug || user?.username || user?.full_name || 'unknown',
                 branch_id: userBranchId,
                 branch_code: userBranchCode
@@ -668,7 +673,19 @@ const DetailsModal = ({ show, onHide, booking }) => {
                             <div className="hb-detail-card-body">
                                 <div className="hb-detail-row"><span className="label">Name</span><span className="value">{b.client_name}</span></div>
                                 <div className="hb-detail-row"><span className="label">Phone</span><span className="value">{b.client_phone || 'N/A'}</span></div>
-                                <div className="hb-detail-row"><span className="label">Booked By</span><span className="value">{b.booked_by || 'N/A'}</span></div>
+                                {b.client_email && (
+                                    <div className="hb-detail-row"><span className="label">Email</span><span className="value">{b.client_email}</span></div>
+                                )}
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xs={12} md={6}>
+                        <div className="hb-detail-card">
+                            <div className="hb-detail-card-header"><User size={14} />Booked By</div>
+                            <div className="hb-detail-card-body">
+                                <div className="hb-detail-row"><span className="label">Name</span><span className="value">{b.booked_by_name || b.booked_by || 'N/A'}</span></div>
+                                <div className="hb-detail-row"><span className="label">Email</span><span className="value">{b.booked_by_email || 'N/A'}</span></div>
+                                <div className="hb-detail-row"><span className="label">Branch</span><span className="value"><BranchBadge name={b.branch_name} code={b.branch_code} /></span></div>
                             </div>
                         </div>
                     </Col>
@@ -677,7 +694,7 @@ const DetailsModal = ({ show, onHide, booking }) => {
                             <div className="hb-detail-card-header"><Truck size={14} />Trip Details</div>
                             <div className="hb-detail-card-body">
                                 <div className="hb-detail-row"><span className="label">Destination</span><span className="value">{b.destination || 'N/A'}</span></div>
-                                <div className="hb-detail-row"><span className="label">Date</span><span className="value">{fmtDate(b.booking_date || b.estimated_departure_time)}</span></div>
+                                <div className="hb-detail-row"><span className="label">Date</span><span className="value">{fmtDateOnly(b.booking_date || b.estimated_departure_time)}</span></div>
                                 <div className="hb-detail-row"><span className="label">Status</span><span className="value"><StatusBadge status={b.status} /></span></div>
                             </div>
                         </div>
@@ -749,7 +766,7 @@ const BookingCard = ({ b, onStatus, onView, onPostpone }) => (
         </div>
 
         <div className="hb-booking-card-date-mobile">
-            <Clock size={12} />{fmtDate(b.booking_date || b.estimated_departure_time)}
+            <Clock size={12} />{fmtDateOnly(b.booking_date || b.estimated_departure_time)}
         </div>
 
         <div className="hb-booking-card-actions">
@@ -1100,7 +1117,7 @@ const BookingSystem = () => {
                                             <BranchBadge name={b.branch_name} code={b.branch_code} />
                                         </td>
                                         <td className="text-muted" style={{ fontSize: '0.84rem' }}>
-                                            {fmtDate(b.booking_date || b.estimated_departure_time)}
+                                            {fmtDateOnly(b.booking_date || b.estimated_departure_time)}
                                         </td>
                                         <td><StatusBadge status={b.status} /></td>
                                         <td className="text-center">

@@ -119,9 +119,22 @@ const AnalyticsDashboard = () => {
     try {
       setLoading(true);
       const data = await AnalyticsService.getDashboard(dateRange.startDate, dateRange.endDate);
-      setDashboardData(data);
+      // Ensure data structure is always valid to prevent chart crashes
+      setDashboardData({
+        kpis: data?.kpis || null,
+        revenueByCategory: Array.isArray(data?.revenueByCategory) ? data.revenueByCategory : [],
+        caseDistribution: Array.isArray(data?.caseDistribution) ? data.caseDistribution : [],
+        dailyTrends: Array.isArray(data?.dailyTrends) ? data.dailyTrends : []
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set safe defaults on error
+      setDashboardData({
+        kpis: null,
+        revenueByCategory: [],
+        caseDistribution: [],
+        dailyTrends: []
+      });
     } finally {
       setLoading(false);
     }
@@ -130,18 +143,26 @@ const AnalyticsDashboard = () => {
   const fetchMonthlyData = async () => {
     try {
       const data = await AnalyticsService.getMonthlyAnalytics();
-      setMonthlyData(data);
+      // Ensure data structure is valid
+      setMonthlyData({
+        trends: Array.isArray(data?.trends) ? data.trends : []
+      });
     } catch (error) {
       console.error('Error fetching monthly data:', error);
+      setMonthlyData({ trends: [] });
     }
   };
 
   const fetchYearlyData = async () => {
     try {
       const data = await AnalyticsService.getYearlyAnalytics();
-      setYearlyData(data);
+      // Ensure data structure is valid
+      setYearlyData({
+        monthlyBreakdown: Array.isArray(data?.monthlyBreakdown) ? data.monthlyBreakdown : []
+      });
     } catch (error) {
       console.error('Error fetching yearly data:', error);
+      setYearlyData({ monthlyBreakdown: [] });
     }
   };
 
@@ -267,7 +288,7 @@ const AnalyticsDashboard = () => {
           </>
         )}
 
-        {activeTab === 'monthly' && monthlyData && (
+        {activeTab === 'monthly' && monthlyData && monthlyData.trends && monthlyData.trends.length > 0 ? (
           <GridLayout>
             <FullWidthChart>
               <h3>Monthly Trends</h3>
@@ -284,9 +305,18 @@ const AnalyticsDashboard = () => {
               </ResponsiveContainer>
             </FullWidthChart>
           </GridLayout>
-        )}
+        ) : activeTab === 'monthly' ? (
+          <GridLayout>
+            <FullWidthChart>
+              <h3>Monthly Trends</h3>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+                <p>No monthly data available</p>
+              </div>
+            </FullWidthChart>
+          </GridLayout>
+        ) : null}
 
-        {activeTab === 'yearly' && yearlyData && (
+        {activeTab === 'yearly' && yearlyData && yearlyData.monthlyBreakdown && yearlyData.monthlyBreakdown.length > 0 ? (
           <GridLayout>
             <FullWidthChart>
               <h3>Yearly Overview</h3>
@@ -302,7 +332,16 @@ const AnalyticsDashboard = () => {
               </ResponsiveContainer>
             </FullWidthChart>
           </GridLayout>
-        )}
+        ) : activeTab === 'yearly' ? (
+          <GridLayout>
+            <FullWidthChart>
+              <h3>Yearly Overview</h3>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+                <p>No yearly data available</p>
+              </div>
+            </FullWidthChart>
+          </GridLayout>
+        ) : null}
       </MainContent>
     </DashboardContainer>
   );

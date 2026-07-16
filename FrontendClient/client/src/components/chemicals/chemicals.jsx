@@ -19,6 +19,7 @@ const COLORS = {
   light: '#F8FAFC',
   cardBg: '#FFFFFF',
   border: '#E2E8F0',
+  borderLight: '#F1F5F9',
   textPrimary: '#1E293B',
   textSecondary: '#64748B',
   textTertiary: '#94A3B8',

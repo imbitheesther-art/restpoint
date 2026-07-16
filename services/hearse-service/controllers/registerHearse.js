@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
-const { safeTenantQuery, safeTenantExecute } = require('../../../shared/dbConfig');
+const { getHearsePool } = require('../../config/database');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 
@@ -75,15 +75,16 @@ const registerHearse = asyncHandler(async (req, res) => {
         }
 
         const now = getKenyaTimeISO();
+        const pool = await getHearsePool();
 
         // Resolve branch_code from branches table using the selected branch_id
         let resolvedBranchCode = branch_code || null;
         try {
-            const [branchRow] = await safeTenantQuery(
-                dbName,
+            const [branchRows] = await pool.query(
                 'SELECT branch_code, branch_name FROM branches WHERE branch_id = ? AND is_active = TRUE',
                 [branch_id]
             );
+            const branchRow = branchRows[0];
             if (branchRow) {
                 resolvedBranchCode = branchRow.branch_code || `BRANCH-${branch_id}`;
                 console.log(`✅ Resolved branch_code: ${resolvedBranchCode} for branch_id: ${branch_id}`);
@@ -99,70 +100,29 @@ const registerHearse = asyncHandler(async (req, res) => {
         let assigned_branch_id = parseInt(branch_id) || 1;
 
         // Generate hearse code
-        const [countResult] = await safeTenantQuery(
-            dbName,
-            'SELECT COUNT(*) as count FROM hearses',
-            []
-        );
-        const hearseNumber = String((countResult?.count || 0) + 1).padStart(3, '0');
+        const [countResult] = await pool.query('SELECT COUNT(*) as count FROM hearses');
+        const hearseNumber = String((countResult[0]?.count || 0) + 1).padStart(3, '0');
         const hearse_code = `HRS-${hearseNumber}`;
 
-        // Check which columns exist in the hearses table
-        let columnRows = [];
-        try {
-            const result = await safeTenantQuery(
-                dbName,
-                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'hearses'",
-                [dbName]
-            );
-            // Handle various response formats from safeTenantQuery
-            if (Array.isArray(result)) {
-                columnRows = result;
-            } else if (result && typeof result === 'object') {
-                if (Array.isArray(result.data)) {
-                    columnRows = result.data;
-                } else if (Array.isArray(result.rows)) {
-                    columnRows = result.rows;
-                } else if (result[0]) {
-                    columnRows = [result[0]];
-                }
-            }
-        } catch (e) {
-            console.log('⚠️ Could not fetch column info:', e.message);
-        }
-
-        // Ensure columnRows is always an array before mapping
-        if (!Array.isArray(columnRows)) {
-            columnRows = [];
-        }
-
-        const existingColumns = new Set(columnRows.map(col => col.COLUMN_NAME || col.column_name || col));
-        console.log('📋 Existing columns in hearses:', Array.from(existingColumns).join(', '));
-
-        // Build dynamic INSERT query based on existing columns
-        const insertFields = ['hearse_name', 'plate_number'];
-        const insertValues = [hearse_name || null, plate_number.trim()];
-
-        // Only include hearse_code if the column exists in the table
-        if (existingColumns.has('hearse_code')) {
-            insertFields.push('hearse_code');
-            insertValues.push(hearse_code);
-        }
-
-        if (existingColumns.has('model')) { insertFields.push('model'); insertValues.push(model || null); }
-        if (existingColumns.has('capacity')) { insertFields.push('capacity'); insertValues.push(capacity || null); }
-        if (existingColumns.has('status')) { insertFields.push('status'); insertValues.push(status || 'available'); }
-        if (existingColumns.has('branch_id')) { insertFields.push('branch_id'); insertValues.push(assigned_branch_id); }
-        // Only insert branch_code if we have a valid value (column may be NOT NULL)
-        if (existingColumns.has('branch_code') && (branch_code || assigned_branch_id)) {
-            insertFields.push('branch_code');
-            // Use the provided branch_code, or look it up from branch_id
-            const branchCodeValue = branch_code || `BRANCH-${assigned_branch_id}`;
-            insertValues.push(branchCodeValue);
-        }
-        if (existingColumns.has('driver_id')) { insertFields.push('driver_id'); insertValues.push(driver_id || null); }
-        if (existingColumns.has('created_at')) { insertFields.push('created_at'); insertValues.push(now); }
-        if (existingColumns.has('updated_at')) { insertFields.push('updated_at'); insertValues.push(now); }
+        // Build INSERT query with all known columns
+        const insertFields = ['hearse_code', 'hearse_name', 'plate_number', 'model', 'capacity', 'status', 'branch_id', 'branch_name', 'branch_code', 'min_charge_ksh', 'max_charge_ksh', 'is_own_branch', 'active_bookings', 'created_at', 'updated_at'];
+        const insertValues = [
+            hearse_code,
+            hearse_name || null,
+            plate_number.trim(),
+            model || null,
+            capacity || 8,
+            status || 'available',
+            assigned_branch_id,
+            resolvedBranchCode ? `Branch ${assigned_branch_id}` : `Branch ${assigned_branch_id}`,
+            resolvedBranchCode || `BRANCH-${assigned_branch_id}`,
+            0.00,
+            0.00,
+            1,
+            0,
+            now,
+            now
+        ];
 
         const placeholders = insertValues.map(() => '?').join(', ');
         const escapedFields = insertFields.map(f => `\`${f}\``).join(', ');
@@ -171,7 +131,7 @@ const registerHearse = asyncHandler(async (req, res) => {
         console.log('🧠 Executing SQL:', query);
         console.log('🧩 Parameters:', insertValues);
 
-        const result = await safeTenantExecute(dbName, query, insertValues);
+        const [result] = await pool.query(query, insertValues);
 
         console.log('✅ Hearse Insert Result:', result);
 
@@ -205,14 +165,7 @@ const updateHearse = asyncHandler(async (req, res) => {
     try {
         console.log('\n🔧 [UpdateHearse] Updating hearse ID:', req.params.id);
         const { id } = req.params;
-        const dbName = req.tenant?.db_name;
-
-        if (!dbName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Tenant database not found'
-            });
-        }
+        const pool = await getHearsePool();
 
         const {
             plate_number,
@@ -330,7 +283,7 @@ const updateHearse = asyncHandler(async (req, res) => {
         console.log('🧠 Update SQL:', query);
         console.log('🧩 Params:', values);
 
-        await safeTenantExecute(dbName, query, values);
+        await pool.query(query, values);
 
         return res.json({
             success: true,
@@ -353,21 +306,11 @@ const deleteHearse = asyncHandler(async (req, res) => {
     try {
         console.log('\n🗑️ [DeleteHearse] Deleting hearse ID:', req.params.id);
         const { id } = req.params;
-        const dbName = req.tenant?.db_name;
-
-        if (!dbName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Tenant database not found'
-            });
-        }
+        const pool = await getHearsePool();
 
         // Get image path before deleting
-        const [hearse] = await safeTenantQuery(
-            dbName,
-            'SELECT image FROM hearses WHERE id = ?',
-            [id]
-        );
+        const [hearseRows] = await pool.query('SELECT image FROM hearses WHERE id = ?', [id]);
+        const hearse = hearseRows[0];
 
         console.log('🖼️ Hearse found for deletion:', hearse);
 
@@ -380,7 +323,7 @@ const deleteHearse = asyncHandler(async (req, res) => {
             }
         }
 
-        await safeTenantExecute(dbName, 'DELETE FROM hearses WHERE id = ?', [id]);
+        await pool.query('DELETE FROM hearses WHERE id = ?', [id]);
         console.log('✅ Hearse deleted successfully.');
 
         return res.json({
@@ -403,46 +346,17 @@ const deleteHearse = asyncHandler(async (req, res) => {
 const getAllHearses = asyncHandler(async (req, res) => {
     try {
         console.log('\n🚚 [GetAllHearses] Fetching all hearses...');
-        const dbName = req.tenant?.db_name;
+        const pool = await getHearsePool();
 
-        if (!dbName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Tenant database not found'
-            });
-        }
-
-        // Check if branch_code column exists in branches table for safe querying
-        let branchCodeExists = false;
-        try {
-            const colResult = await safeTenantQuery(
-                dbName,
-                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'branches' AND COLUMN_NAME = 'branch_code'",
-                [dbName]
-            );
-            branchCodeExists = Array.isArray(colResult) && colResult.length > 0;
-        } catch (e) {
-            // Default to false if we can't check
-        }
-
-        const sql = branchCodeExists
-            ? `SELECT 
+        const [hearses] = await pool.query(`
+            SELECT 
                 h.*,
-                b.branch_name,
+                h.branch_name,
                 h.branch_code,
-                b.branch_location as location
+                h.image
             FROM hearses h
-            LEFT JOIN branches b ON h.branch_id = b.branch_id
-            ORDER BY h.created_at DESC`
-            : `SELECT 
-                h.*,
-                b.branch_name,
-                b.branch_location as location
-            FROM hearses h
-            LEFT JOIN branches b ON h.branch_id = b.branch_id
-            ORDER BY h.created_at DESC`;
-
-        const hearses = await safeTenantQuery(dbName, sql, []);
+            ORDER BY h.created_at DESC
+        `);
 
         // No caching - always return fresh data
         res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -471,59 +385,22 @@ const getAllHearses = asyncHandler(async (req, res) => {
 const getAvailableHearses = asyncHandler(async (req, res) => {
     try {
         console.log('\n🚛 [GetAvailableHearses] Fetching only available hearses...');
-        const dbName = req.tenant?.db_name;
+        const pool = await getHearsePool();
 
-        if (!dbName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Tenant database not found'
-            });
-        }
-
-        // Only return hearses that are truly available
-        // Check if branch_code column exists in branches table for safe querying
-        let branchCodeExists = false;
-        try {
-            const colResult = await safeTenantQuery(
-                dbName,
-                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'branches' AND COLUMN_NAME = 'branch_code'",
-                [dbName]
-            );
-            branchCodeExists = Array.isArray(colResult) && colResult.length > 0;
-        } catch (e) {
-            // Default to false if we can't check
-        }
-
-        const sql = branchCodeExists
-            ? `SELECT 
+        const [hearses] = await pool.query(`
+            SELECT 
                 h.*,
-                b.branch_name,
-                h.branch_code,
-                b.branch_location as location
+                h.branch_name,
+                h.branch_code
             FROM hearses h
-            LEFT JOIN branches b ON h.branch_id = b.branch_id
             WHERE h.status = 'available'
             AND h.id NOT IN (
                 SELECT hearse_id FROM hearse_bookings 
                 WHERE hearse_id IS NOT NULL 
                 AND status NOT IN ('completed', 'cancelled')
             )
-            ORDER BY h.created_at DESC`
-            : `SELECT 
-                h.*,
-                b.branch_name,
-                b.branch_location as location
-            FROM hearses h
-            LEFT JOIN branches b ON h.branch_id = b.branch_id
-            WHERE h.status = 'available'
-            AND h.id NOT IN (
-                SELECT hearse_id FROM hearse_bookings 
-                WHERE hearse_id IS NOT NULL 
-                AND status NOT IN ('completed', 'cancelled')
-            )
-            ORDER BY h.created_at DESC`;
-
-        const hearses = await safeTenantQuery(dbName, sql, []);
+            ORDER BY h.created_at DESC
+        `);
 
         // No caching - always return fresh data
         res.set('Cache-Control', 'no-cache, no-store, must-revalidate');

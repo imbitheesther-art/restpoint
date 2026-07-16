@@ -163,24 +163,27 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             var booking_code = `BK-${Date.now().toString().slice(-6)}`;
         }
 
-        // ✅ Get user ID from headers if logged in
+        // ✅ Get user info from headers if logged in
         const userId = req.headers['x-user-id'];
+        const userEmail = req.headers['x-user-email'] || req.headers['x-email'] || null;
+        const userName = req.headers['x-user-name'] || null;
         const createdBy = userId ? parseInt(userId) : null;
 
         // ✅ Get branch tracking info from request headers
         // branch_code tells us which branch/Department this booking originated from
         const branchCode = req.headers['x-branch-code'] || req.headers['x-branch-id'] || null;
+        const branchSlug = req.headers['x-branch-slug'] || null;
 
         // ✅ Determine booking status - use 'booked' since it's now in ENUM
         const bookingStatus = 'booked';
 
-        // ✅ Insert booking — match frontend data structure (minimal fields)
+        // ✅ Insert booking — date only, no time
         const insertQuery = `
             INSERT INTO hearse_bookings
-            (booking_code, hearse_id, tenant_db_name, client_name, client_phone, destination,
-             from_timestamp, to_timestamp, booking_date, status, created_at, updated_at,
-             branch_id, branch_code, booked_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (booking_code, hearse_id, tenant_db_name, client_name, client_phone, client_email, destination,
+             booking_date, status, created_at, updated_at,
+             branch_id, branch_code, booked_by, booked_by_email, booked_by_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const insertParams = [
@@ -189,16 +192,17 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             req.tenantSlug, // tenant_db_name - shared across all branches
             client_name.trim(),
             client_phone.trim(),
+            client_email || null,
             destination.trim(),
-            from_timestamp || null,
-            to_timestamp || null,
-            from_timestamp || now, // booking_date
+            from_timestamp || now, // booking_date (date only)
             bookingStatus, // 'booked'
             now,
             now,
             req.headers['x-branch-id'] || null, // branch_id from header
             req.headers['x-branch-code'] || req.headers['x-branch-id'] || null, // branch_code from header
-            createdBy ? parseInt(createdBy) : null // booked_by user ID
+            createdBy ? parseInt(createdBy) : null, // booked_by user ID
+            userEmail, // booked_by_email
+            userName // booked_by_name
         ];
 
         console.log('📝 Inserting booking with params:', insertParams);

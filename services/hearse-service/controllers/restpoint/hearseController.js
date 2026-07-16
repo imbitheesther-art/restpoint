@@ -1,32 +1,17 @@
-const { safeQuery, getTenantDB } = require('../../../../shared/config/db');
+const { getHearsePool } = require('../../../config/database');
 const { getKenyaTimeISO } = require('../../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableHearses, upload } = require('../registerHearse');
 
 /**
  * Get available hearses across all branches for cross-branch booking
- * Each branch has its own database, so we query each sibling branch and union results.
+ * Uses the dedicated shared hearse database - simplified!
  */
 const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
     try {
-        const tenantSlug = req.tenantSlug;
-        if (!tenantSlug) {
-            return res.status(400).json({
-                success: false,
-                message: 'Tenant slug is required'
-            });
-        }
+        const pool = await getHearsePool();
 
-        const { branch_id } = req.query;
-        const currentDbName = req.currentDbName || req.tenant?.db_name;
-
-        // Build list of databases to query: always include main tenant DB + all branch DBs
-        const branchDbs = req.allBranchDbs || [];
-        const allBranchDbs = [currentDbName, ...branchDbs].filter(Boolean);
-
-        // Always query all databases (main + branches) to ensure hearses are found
-        // Hearses are registered in main tenant DB, so we must check it even for single-branch tenants
-        const availableHearses = await safeQuery(
+        const availableHearses = await pool.query(
             `SELECT 
                 h.id,
                 h.hearse_code,
@@ -35,12 +20,14 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
                 h.capacity,
                 h.status,
                 h.branch_id,
+                h.branch_name,
+                h.branch_code,
                 h.image,
                 h.created_at,
                 h.updated_at,
                 h.min_charge_ksh,
                 h.max_charge_ksh,
-                1 as is_own_branch,
+                h.is_own_branch,
                 (SELECT COUNT(*) FROM hearse_bookings hb 
                  WHERE hb.hearse_id = h.id 
                  AND hb.status NOT IN ('completed', 'cancelled')) as active_bookings
@@ -51,17 +38,17 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
                 WHERE hearse_id IS NOT NULL 
                 AND status NOT IN ('completed', 'cancelled')
             )
-            ORDER BY h.branch_id ASC, h.created_at DESC`,
-            [],
-            tenantSlug
+            ORDER BY h.branch_id ASC, h.created_at DESC`
         );
 
-        const groupedByBranch = availableHearses.reduce((acc, hearse) => {
+        const [rows] = availableHearses;
+
+        const groupedByBranch = rows.reduce((acc, hearse) => {
             const branchKey = hearse.branch_id;
             if (!acc[branchKey]) {
                 acc[branchKey] = {
                     branch_id: hearse.branch_id,
-                    branch_name: `Branch ${hearse.branch_id}`,
+                    branch_name: hearse.branch_name,
                     branch_location: 'N/A',
                     branch_phone: 'N/A',
                     hearses: []
@@ -75,10 +62,10 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
 
         return res.json({
             success: true,
-            total_available: availableHearses.length,
+            total_available: rows.length,
             total_branches: branches.length,
             branches,
-            hearses: availableHearses
+            hearses: rows
         });
     } catch (error) {
         console.error('❌ [CrossBranchAvailability Error]:', error);

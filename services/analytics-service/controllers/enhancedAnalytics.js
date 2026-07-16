@@ -33,12 +33,15 @@ exports.getMonthlyAnalytics = asyncHandler(async (req, res) => {
   const monthlyData = await AnalyticsService.calculateMonthlyStats(tenantId, currentMonth, currentYear);
   const monthlyTrends = await AnalyticsService.getMonthlyTrends(tenantId, currentYear);
 
+  // Ensure trends is always an array to prevent frontend chart crashes
+  const safeTrends = Array.isArray(monthlyTrends) ? monthlyTrends : [];
+
   res.status(200).json({
     success: true,
     message: 'Monthly analytics retrieved successfully',
     data: {
-      summary: monthlyData,
-      trends: monthlyTrends,
+      summary: monthlyData || {},
+      trends: safeTrends,
       month: currentMonth,
       year: currentYear
     }
@@ -53,11 +56,14 @@ exports.getYearlyAnalytics = asyncHandler(async (req, res) => {
   const currentYear = year ? parseInt(year) : new Date().getFullYear();
   const yearlyData = await AnalyticsService.calculateYearlyStats(tenantId, currentYear);
 
+  // Ensure monthlyBreakdown is always an array to prevent frontend chart crashes
+  const safeMonthlyBreakdown = Array.isArray(yearlyData) ? yearlyData : [];
+
   res.status(200).json({
     success: true,
     message: 'Yearly analytics retrieved successfully',
     data: {
-      monthlyBreakdown: yearlyData,
+      monthlyBreakdown: safeMonthlyBreakdown,
       year: currentYear
     }
   });

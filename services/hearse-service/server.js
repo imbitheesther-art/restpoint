@@ -28,6 +28,12 @@ const io = new Server(server, {
 
 app.set('io', io);
 
+// Initialize hearse database on startup
+const { initializeHearseDatabase } = require('./config/database');
+initializeHearseDatabase().catch(err => {
+    console.error('⚠️  Failed to initialize hearse database:', err);
+});
+
 // Middleware
 const corsOptions = {
     origin: true,
