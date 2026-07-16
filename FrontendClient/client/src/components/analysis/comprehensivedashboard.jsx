@@ -283,7 +283,7 @@ const ComprehensiveDashboard = () => {
   const [error, setError] = useState(null);
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({});
   const [comparisonData, setComparisonData] = useState(null);
   const [selectedBranches, setSelectedBranches] = useState([]);
   const [loadingComparison, setLoadingComparison] = useState(false);
@@ -501,14 +501,14 @@ const ComprehensiveDashboard = () => {
   // ⭐ FIXED: Chart data with safe fallbacks (defined AFTER data extraction)
   // ============================================
 
-  // Safe chart data with guaranteed labels array
-  const safeCaseStatusData = createRadialChartData(
+  // Only create chart data if we have actual data
+  const safeCaseStatusData = caseStatus.length > 0 ? createRadialChartData(
     caseStatus.map(c => c.status || "Unknown"),
     caseStatus.map(c => c.count || 0),
     chartColors
-  );
+  ) : null;
 
-  const safeFleetData = createRadialChartData(
+  const safeFleetData = (bookings.fleet?.total > 0 || bookings.fleet?.available > 0) ? createRadialChartData(
     ["Available", "Booked", "Maintenance"],
     [
       bookings.fleet?.available || 0,
@@ -516,9 +516,9 @@ const ComprehensiveDashboard = () => {
       bookings.fleet?.maintenance || 0
     ],
     [COLORS.success, COLORS.warning, COLORS.danger]
-  );
+  ) : null;
 
-  const safeDeceasedTrendsData = createCartesianChartData(
+  const safeDeceasedTrendsData = deceasedTrends.length > 0 ? createCartesianChartData(
     deceasedTrends.map(d => d.month || d.month_label || ""),
     [{
       label: "Cases",
@@ -530,16 +530,16 @@ const ComprehensiveDashboard = () => {
       tension: 0.4,
       pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
     }]
-  );
+  ) : null;
 
-  const safeCoffinSalesData = createCartesianChartData(
+  const safeCoffinSalesData = coffinSalesData.length > 0 ? createCartesianChartData(
     coffinSalesData.map(c => c.type || ""),
     [{
       label: "Sold",
       data: coffinSalesData.map(c => c.sold || 0),
       backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
     }]
-  );
+  ) : null;
 
   return (
     <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
@@ -593,28 +593,36 @@ const ComprehensiveDashboard = () => {
       </Row>
 
       {/* DECEASED SECTION - Charts */}
-      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
-        <Card.Body className="p-4">
-          <SectionHeader title="Deceased Management" icon={Users} color={COLORS.primary} />
-          <Row className="g-4">
-            <Col lg={6}>
-              <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
-              </ChartCard>
-            </Col>
-            <Col lg={3}>
-              <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
-                <Pie data={safeCaseStatusData} options={radialChartOptions} />
-              </ChartCard>
-            </Col>
-            <Col lg={3}>
-              <ChartCard title="Hearse Fleet" icon={Car} color={COLORS.success} height="280px">
-                <Doughnut data={safeFleetData} options={radialChartOptions} />
-              </ChartCard>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+      {(deceasedTrends.length > 0 || caseStatus.length > 0 || bookings.fleet?.total > 0) && (
+        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+          <Card.Body className="p-4">
+            <SectionHeader title="Deceased Management" icon={Users} color={COLORS.primary} />
+            <Row className="g-4">
+              {safeDeceasedTrendsData && (
+                <Col lg={6}>
+                  <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
+                    <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
+                  </ChartCard>
+                </Col>
+              )}
+              {safeCaseStatusData && (
+                <Col lg={safeDeceasedTrendsData ? 3 : 6}>
+                  <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
+                    <Pie data={safeCaseStatusData} options={radialChartOptions} />
+                  </ChartCard>
+                </Col>
+              )}
+              {safeFleetData && (
+                <Col lg={safeDeceasedTrendsData && safeCaseStatusData ? 3 : safeDeceasedTrendsData || safeCaseStatusData ? 6 : 12}>
+                  <ChartCard title="Hearse Fleet" icon={Car} color={COLORS.success} height="280px">
+                    <Doughnut data={safeFleetData} options={radialChartOptions} />
+                  </ChartCard>
+                </Col>
+              )}
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* BOOKINGS + MOST BOOKED HEARSES */}
       <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
@@ -670,51 +678,57 @@ const ComprehensiveDashboard = () => {
       </Card>
 
       {/* INVENTORY SECTION */}
-      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
-        <Card.Body className="p-4">
-          <SectionHeader title="Inventory Management" icon={Box} color={COLORS.warning} />
-          <Row className="g-4">
-            <Col lg={6}>
-              <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
-              </ChartCard>
-            </Col>
-            <Col lg={6}>
-              <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
-                <Bar data={safeCoffinSalesData} options={cartesianChartOptions} />
-              </ChartCard>
-            </Col>
-            <Col lg={6}>
-              <ChartCard title="Low Stock Chemicals" icon={FlaskConical} color={COLORS.danger} height="280px">
-                {chemicals.lowStock?.length > 0 ? (
-                  <div style={{ overflowY: "auto", height: "100%" }}>
-                    {chemicals.lowStock.map((c, i) => {
-                      const pct = c.minLevel > 0 ? Math.min(100, (c.currentStock / c.minLevel) * 100) : 0;
-                      const barColor = pct < 50 ? COLORS.danger : pct < 80 ? COLORS.warning : COLORS.success;
-                      return (
-                        <div key={i} className="mb-2">
-                          <div className="d-flex justify-content-between small">
-                            <span>{c.name}</span>
-                            <Badge bg={pct < 50 ? "danger" : "warning"}>{c.currentStock}/{c.minLevel} {c.unit}</Badge>
+      {(safeDeceasedTrendsData || safeCoffinSalesData || chemicals.lowStock?.length > 0) && (
+        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+          <Card.Body className="p-4">
+            <SectionHeader title="Inventory Management" icon={Box} color={COLORS.warning} />
+            <Row className="g-4">
+              {safeDeceasedTrendsData && (
+                <Col lg={6}>
+                  <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
+                    <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
+                  </ChartCard>
+                </Col>
+              )}
+              {safeCoffinSalesData && (
+                <Col lg={safeDeceasedTrendsData ? 6 : 12}>
+                  <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
+                    <Bar data={safeCoffinSalesData} options={cartesianChartOptions} />
+                  </ChartCard>
+                </Col>
+              )}
+              <Col lg={safeDeceasedTrendsData || safeCoffinSalesData ? 6 : 12}>
+                <ChartCard title="Low Stock Chemicals" icon={FlaskConical} color={COLORS.danger} height="280px">
+                  {chemicals.lowStock?.length > 0 ? (
+                    <div style={{ overflowY: "auto", height: "100%" }}>
+                      {chemicals.lowStock.map((c, i) => {
+                        const pct = c.minLevel > 0 ? Math.min(100, (c.currentStock / c.minLevel) * 100) : 0;
+                        const barColor = pct < 50 ? COLORS.danger : pct < 80 ? COLORS.warning : COLORS.success;
+                        return (
+                          <div key={i} className="mb-2">
+                            <div className="d-flex justify-content-between small">
+                              <span>{c.name}</span>
+                              <Badge bg={pct < 50 ? "danger" : "warning"}>{c.currentStock}/{c.minLevel} {c.unit}</Badge>
+                            </div>
+                            <div style={{ height: "8px", borderRadius: "4px", background: COLORS.light, overflow: "hidden" }}>
+                              <div style={{ width: `${pct}%`, height: "100%", borderRadius: "4px", background: barColor }} />
+                            </div>
                           </div>
-                          <div style={{ height: "8px", borderRadius: "4px", background: COLORS.light, overflow: "hidden" }}>
-                            <div style={{ width: `${pct}%`, height: "100%", borderRadius: "4px", background: barColor }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-success">
-                    <CheckCircle size={32} className="mb-1" />
-                    <p className="mb-0 small">All chemicals above minimum stock</p>
-                  </div>
-                )}
-              </ChartCard>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-success">
+                      <CheckCircle size={32} className="mb-1" />
+                      <p className="mb-0 small">All chemicals above minimum stock</p>
+                    </div>
+                  )}
+                </ChartCard>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* WORKSHOP SECTION */}
       {workshop.orders?.total > 0 && (
