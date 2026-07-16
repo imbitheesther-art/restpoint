@@ -70,7 +70,7 @@ app.use(async (req, res, next) => {
 
         if (tenantSlug === 'system_shared') {
             req.tenant = {
-                db_name: process.env.DB_NAME || 'restpoint_db',
+                db_name: process.env.DB_NAME || 'restpoint_main',
                 tenant_id: 1,
                 name: 'System Shared'
             };

@@ -65,20 +65,50 @@ app.use(express.urlencoded({ extended: true }));
 
 logger.info('Middleware configured');
 
-// Simple tenant middleware - just pass through the slug, no validation
+// Simple tenant middleware - resolve database from tenant slug
 app.use(async (req, res, next) => {
   try {
     const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-slug'] || 'system_shared';
 
     req.tenantSlug = tenantSlug;
-    req.tenant = {
-      db_name: tenantSlug === 'system_shared' ? (process.env.DB_NAME || 'restpoint_main') : tenantSlug,
-      tenant_id: tenantSlug === 'system_shared' ? 1 : 0,
-      tenant_name: tenantSlug,
-      tenant_slug: tenantSlug
-    };
 
-    logger.info(`${req.method} ${req.path} - Tenant: ${tenantSlug} → DB: ${req.tenant.db_name}`);
+    // For system_shared, use default DB
+    if (tenantSlug === 'system_shared') {
+      req.tenant = {
+        db_name: process.env.DB_NAME || 'restpoint_main',
+        tenant_id: 1,
+        tenant_name: 'System Shared',
+        tenant_slug: tenantSlug
+      };
+      logger.info(`${req.method} ${req.path} - Tenant: ${tenantSlug} → DB: ${req.tenant.db_name}`);
+      return next();
+    }
+
+    // For non-system tenants — resolve database from tenant_tracking
+    try {
+      const { resolveDatabase } = require('../../shared/dbConfig');
+      let dbName = await resolveDatabase(tenantSlug);
+
+      // Fallback: convert slug to db name pattern
+      if (!dbName) {
+        dbName = tenantSlug.replace(/-/g, '_');
+      }
+
+      req.tenant = {
+        db_name: dbName,
+        tenant_slug: tenantSlug,
+        tenant_name: tenantSlug
+      };
+      logger.info(`${req.method} ${req.path} - Tenant: ${tenantSlug} → DB: ${dbName}`);
+    } catch (err) {
+      logger.error('[COFFIN] Tenant resolution error:', err.message);
+      // Fall back to default DB rather than blocking
+      req.tenant = {
+        db_name: process.env.DB_NAME || 'restpoint_main',
+        tenant_slug: tenantSlug,
+        tenant_name: tenantSlug
+      };
+    }
 
     next();
   } catch (error) {

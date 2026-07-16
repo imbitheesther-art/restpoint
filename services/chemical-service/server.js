@@ -59,7 +59,7 @@ app.use(async (req, res, next) => {
   // For non-system tenants — resolve database directly (no active-status blocking)
   try {
     console.log(`[CHEMICAL] Validating tenant: ${tenantSlug}`);
-    const { resolveDatabase, getTenantDB } = require('../../shared/dbConfig');
+    const { resolveDatabase } = require('../../shared/dbConfig');
 
     let dbName = await resolveDatabase(tenantSlug);
 

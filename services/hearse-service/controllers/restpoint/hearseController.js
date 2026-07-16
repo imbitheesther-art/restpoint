@@ -1,4 +1,4 @@
-const { safeQuery } = require('../../../../configurations/sqlConfig/db');
+const { safeQuery } = require('../../../../shared/config/db');
 const { getKenyaTimeISO } = require('../../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableHearses, upload } = require('../registerHearse');

@@ -56,5 +56,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 # Start application with dumb-init
+# Initialize database first, then start the server
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "services/support-service/server.js"]
+CMD ["sh", "-c", "node services/support-service/init-db.js && node services/support-service/server.js"]
