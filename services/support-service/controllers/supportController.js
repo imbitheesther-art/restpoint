@@ -5,12 +5,23 @@ dotenv.config();
 
 // Database migrations are handled by services/support-service/init-db.js
 // using centralized migrations from services/tenant-service/migrations/support/
+
+// GSSAPI auth plugin fix for MariaDB 10.11+
+const auth_gssapi_client = function () {
+    return function () {
+        throw new Error('GSSAPI not supported - use mysql_native_password');
+    };
+};
+
 const pool = mysql.createPool({
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'restpoint_user',
     password: process.env.DB_PASSWORD || '',
     database: process.env.SUPPORT_DB_NAME || 'support_db',
+    authPlugins: { auth_gssapi_client },
+    connectTimeout: 10000,
+    acquireTimeout: 10000,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,

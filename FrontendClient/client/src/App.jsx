@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { TenantProvider } from './context/TenantContext';
 import { UserProvider } from './context/userContext';
 import { SocketProvider } from './context/socketContext';
+import InstallPrompt from './components/pwa/InstallPrompt';
 import './index.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
             <UserProvider>
               <SocketProvider>
                 <AppRoutes />
+                <InstallPrompt />
               </SocketProvider>
             </UserProvider>
           </TenantProvider>

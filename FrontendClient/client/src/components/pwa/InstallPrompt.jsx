@@ -4,8 +4,21 @@ import { Download, X, Smartphone } from 'lucide-react';
 const InstallPrompt = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [showPrompt, setShowPrompt] = useState(false);
+    const [isStandalone, setIsStandalone] = useState(false);
 
     useEffect(() => {
+        // Check if already installed (standalone mode)
+        const standalone = window.matchMedia('(display-mode: standalone)').matches;
+        const iosStandalone = window.navigator.standalone === true;
+        const alreadyInstalled = standalone || iosStandalone;
+
+        setIsStandalone(alreadyInstalled);
+
+        // Don't show if already installed or dismissed this session
+        if (alreadyInstalled || sessionStorage.getItem('pwa-install-dismissed')) {
+            return;
+        }
+
         const handler = (e) => {
             e.preventDefault();
             setDeferredPrompt(e);
@@ -14,7 +27,16 @@ const InstallPrompt = () => {
 
         window.addEventListener('beforeinstallprompt', handler);
 
-        return () => window.removeEventListener('beforeinstallprompt', handler);
+        // Listen for app installed event
+        window.addEventListener('appinstalled', () => {
+            setIsStandalone(true);
+            setShowPrompt(false);
+            setDeferredPrompt(null);
+        });
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handler);
+        };
     }, []);
 
     const handleInstall = async () => {
@@ -29,9 +51,11 @@ const InstallPrompt = () => {
 
     const handleDismiss = () => {
         setShowPrompt(false);
+        sessionStorage.setItem('pwa-install-dismissed', 'true');
     };
 
-    if (!showPrompt) return null;
+    // Don't render if already installed or prompt should not show
+    if (isStandalone || !showPrompt) return null;
 
     return (
         <div className="install-wrapper">

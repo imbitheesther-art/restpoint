@@ -306,6 +306,13 @@ CREATE TABLE IF NOT EXISTS chemical_transfers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 `;
 
+// GSSAPI auth plugin fix for MariaDB 10.11+
+const auth_gssapi_client = function () {
+  return function () {
+    throw new Error('GSSAPI not supported - use mysql_native_password');
+  };
+};
+
 async function ensureChemicalTables(dbName) {
   let connection;
   try {
@@ -315,6 +322,11 @@ async function ensureChemicalTables(dbName) {
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: dbName,
+      authPlugins: {
+        auth_gssapi_client,
+      },
+      connectTimeout: 10000,
+      acquireTimeout: 10000,
     });
 
     // Extract individual CREATE TABLE statements using regex (skips comments)

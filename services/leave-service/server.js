@@ -124,6 +124,15 @@ async function ensureLeaveTables(dbName) {
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: dbName,
+      authPlugins: {
+        auth_gssapi_client: function () {
+          return function () {
+            throw new Error('GSSAPI not supported - use mysql_native_password');
+          };
+        },
+      },
+      connectTimeout: 10000,
+      acquireTimeout: 10000,
     });
 
     await migrateTenantTables(dbName);

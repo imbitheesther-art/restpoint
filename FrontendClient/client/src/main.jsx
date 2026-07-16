@@ -7,21 +7,20 @@ import './index.css'
 
 
 // Register Service Worker for PWA functionality
+// Register immediately (not on load) to capture beforeinstallprompt event early
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('[PWA] Service Worker registered successfully:', registration.scope);
+  navigator.serviceWorker.register('/sw.js')
+    .then((registration) => {
+      console.log('[PWA] Service Worker registered successfully:', registration.scope);
 
-        // Check for updates every hour
-        setInterval(() => {
-          registration.update();
-        }, 3600000);
-      })
-      .catch((error) => {
-        console.error('[PWA] Service Worker registration failed:', error);
-      });
-  });
+      // Check for updates every hour
+      setInterval(() => {
+        registration.update();
+      }, 3600000);
+    })
+    .catch((error) => {
+      console.error('[PWA] Service Worker registration failed:', error);
+    });
 
   // Listen for service worker updates
   navigator.serviceWorker.addEventListener('controllerchange', () => {
