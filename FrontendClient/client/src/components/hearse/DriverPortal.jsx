@@ -678,6 +678,37 @@ const DriverPortal = () => {
         loadB(); loadL();
     }, [slug, loadB, loadL]);
 
+    // Real-time socket updates for bookings
+    useEffect(() => {
+        const { socket, connected } = useSocket();
+        if (!socket || !connected) return;
+
+        const handleNewBooking = (data) => {
+            console.log('🔔 New booking received:', data);
+            loadB(true);
+        };
+
+        const handleStatusUpdate = (data) => {
+            console.log('🔔 Booking status updated:', data);
+            loadB(true);
+        };
+
+        const handleBookingPostponed = (data) => {
+            console.log('🔔 Booking postponed:', data);
+            loadB(true);
+        };
+
+        socket.on('new_booking', handleNewBooking);
+        socket.on('booking_status_updated', handleStatusUpdate);
+        socket.on('booking_postponed', handleBookingPostponed);
+
+        return () => {
+            socket.off('new_booking', handleNewBooking);
+            socket.off('booking_status_updated', handleStatusUpdate);
+            socket.off('booking_postponed', handleBookingPostponed);
+        };
+    }, [loadB]);
+
     const changeStatus = async (id, s) => {
         try {
             const h = { ...getAuthHeaders(), 'Content-Type': 'application/json' };

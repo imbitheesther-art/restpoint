@@ -60,7 +60,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         // ✅ Check if hearse is already booked (double-booking prevention)
         if (hearse_id) {
             // Use transaction with row locking to prevent race conditions
-            const connection = await getConnection(req.tenantSlug);
+            const connection = await getConnection(req.tenant?.db_name || req.currentDbName);
             try {
                 await connection.beginTransaction();
 

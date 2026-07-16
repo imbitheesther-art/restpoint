@@ -84,6 +84,9 @@ router.get('/alerts/low-stock', chemicalController.getLowStockAlerts);
 // Create PPE request
 router.post('/ppe-requests', chemicalController.createPPERequest);
 
+// Get PPE requests by branch (specific path for frontend)
+router.get('/ppe-requests/branch/:branchId', chemicalController.getPPERequests);
+
 // Get PPE requests (optionally by branch)
 router.get('/ppe-requests/:branchId', chemicalController.getPPERequests);
 

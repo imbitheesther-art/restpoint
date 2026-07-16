@@ -127,7 +127,15 @@ app.use(async (req, res, next) => {
                             [row.tenant_id]
                         );
                         allBranchDbs = siblingRows.map(r => r.branch_db_name).filter(Boolean);
-                        Logger.info(`[HEARSE] Branch slug ${tenantSlug} resolved to tenant ${resolvedTenantSlug}, ${allBranchDbs.length} branches`);
+                        // Also include the main tenant database (where hearses are registered)
+                        const [tenantRow] = await rootPool.query(
+                            'SELECT db_name FROM tenant_tracking.tenants WHERE id = ?',
+                            [row.tenant_id]
+                        );
+                        if (tenantRow && tenantRow.db_name) {
+                            allBranchDbs.unshift(tenantRow.db_name);
+                        }
+                        Logger.info(`[HEARSE] Branch slug ${tenantSlug} resolved to tenant ${resolvedTenantSlug}, ${allBranchDbs.length} databases (including main)`);
                     }
                 }
             } catch (e) {

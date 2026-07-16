@@ -50,6 +50,7 @@ const Colors = {
   statusUnderCare: '#F39C12',
   statusReady: '#1DB954',
   statusCompleted: '#C0392B',
+  red: '#dc3545',
 };
 
 const spin = keyframes`
