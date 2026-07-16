@@ -230,14 +230,36 @@ const ComprehensiveDashboard = () => {
   const chartColors = [COLORS.chart1, COLORS.chart2, COLORS.chart3, COLORS.chart4, COLORS.chart5, COLORS.chart6, COLORS.chart7, COLORS.chart8];
 
   const chartOptions = {
-    responsive: true, maintainAspectRatio: false,
+    responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { position: "bottom", labels: { usePointStyle: true, padding: 15, font: { size: 11 }, color: COLORS.gray } },
-      tooltip: { backgroundColor: COLORS.dark, titleColor: COLORS.white, bodyColor: COLORS.white, cornerRadius: 8, padding: 12 }
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: { size: 11 },
+          color: COLORS.gray
+        }
+      },
+      tooltip: {
+        backgroundColor: COLORS.dark,
+        titleColor: COLORS.white,
+        bodyColor: COLORS.white,
+        cornerRadius: 8,
+        padding: 12
+      }
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: COLORS.gray } },
-      y: { grid: { color: COLORS.light }, ticks: { color: COLORS.gray }, beginAtZero: true }
+      x: {
+        grid: { display: false },
+        ticks: { color: COLORS.gray }
+      },
+      y: {
+        grid: { color: COLORS.light },
+        ticks: { color: COLORS.gray },
+        beginAtZero: true
+      }
     }
   };
 

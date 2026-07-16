@@ -181,56 +181,83 @@ const AnalyticsDashboard = () => {
             <KPICards data={dashboardData.kpis} />
 
             <GridLayout>
-              <ChartCard>
-                <h3>Revenue by Category</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={dashboardData.revenueByCategory}
-                      dataKey="amount"
-                      nameKey="category"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label
-                    >
-                      {dashboardData.revenueByCategory?.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartCard>
+              {dashboardData.revenueByCategory && dashboardData.revenueByCategory.length > 0 ? (
+                <ChartCard>
+                  <h3>Revenue by Category</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={dashboardData.revenueByCategory}
+                        dataKey="amount"
+                        nameKey="category"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label
+                      >
+                        {dashboardData.revenueByCategory?.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              ) : (
+                <ChartCard>
+                  <h3>Revenue by Category</h3>
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+                    <p>No revenue data available</p>
+                  </div>
+                </ChartCard>
+              )}
 
-              <ChartCard>
-                <h3>Case Distribution</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dashboardData.caseDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="status" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#667eea" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
+              {dashboardData.caseDistribution && dashboardData.caseDistribution.length > 0 ? (
+                <ChartCard>
+                  <h3>Case Distribution</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={dashboardData.caseDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="status" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#667eea" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              ) : (
+                <ChartCard>
+                  <h3>Case Distribution</h3>
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+                    <p>No case distribution data available</p>
+                  </div>
+                </ChartCard>
+              )}
 
-              <FullWidthChart>
-                <h3>Daily Trends</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dashboardData.dailyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="cases" stroke="#667eea" strokeWidth={2} />
-                    <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#764ba2" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </FullWidthChart>
+              {dashboardData.dailyTrends && dashboardData.dailyTrends.length > 0 ? (
+                <FullWidthChart>
+                  <h3>Daily Trends</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={dashboardData.dailyTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" />
+                      <Tooltip />
+                      <Legend />
+                      <Line yAxisId="left" type="monotone" dataKey="cases" stroke="#667eea" strokeWidth={2} />
+                      <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#764ba2" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </FullWidthChart>
+              ) : (
+                <FullWidthChart>
+                  <h3>Daily Trends</h3>
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+                    <p>No daily trends data available</p>
+                  </div>
+                </FullWidthChart>
+              )}
             </GridLayout>
           </>
         )}
