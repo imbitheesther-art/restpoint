@@ -61,12 +61,11 @@ app.get('/health/db', async (req, res) => {
 });
 
 // =============================================================================
-// FIX 2: CLEAN ROOT MOUNTING FOR THE GATEWAY
+// FIX 2: MOUNT ROUTES WITH /auth PREFIX FOR GATEWAY
 // =============================================================================
-// Your Gateway sends clean rewritten paths (e.g., '/auth/login').
-// To avoid path doubling errors (like '/auth/auth/login'), we mount the router 
-// at the root domain '/' path level as a catch-all fallback handler.
-app.use('/', authRoutes);
+// The Gateway sends requests with /auth prefix (e.g., '/auth/login')
+// Mount the router at /auth to match these paths
+app.use('/auth', authRoutes);
 
 // 404 handler
 app.use((req, res) => {
