@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Car, RefreshCw, CheckCircle, Phone, MapPin, LogOut, Calendar,
     Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ArrowRight,
-    Route, Sun, Moon, CloudSun, User, Shield, Star, Coffee, Flame, Wind, Eye
+    Route, Sun, Moon, CloudSun, User, Shield
 } from 'lucide-react';
 import env from '../../config/env';
 
@@ -33,14 +33,12 @@ const getAuthHeaders = () => {
     return headers;
 };
 
-/* ─── Nairobi time ────────────────────────────────────────────── */
 function getNairobiNow() {
     return new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }));
 }
 
 const useGreeting = () => {
     const [now, setNow] = useState(() => getNairobiNow());
-
     useEffect(() => {
         const i = setInterval(() => setNow(getNairobiNow()), 20000);
         return () => clearInterval(i);
@@ -48,7 +46,6 @@ const useGreeting = () => {
 
     const h = now.getHours();
     let text, icon, sub;
-
     if (h >= 5 && h < 12) { text = 'Good Morning'; icon = Sun; sub = 'Rise and drive safe today'; }
     else if (h >= 12 && h < 14) { text = 'Good Afternoon'; icon = Sun; sub = 'Hope the roads are kind'; }
     else if (h >= 14 && h < 17) { text = 'Good Afternoon'; icon = CloudSun; sub = 'Almost there, stay strong'; }
@@ -63,30 +60,30 @@ const useGreeting = () => {
     };
 };
 
-/* ─── Minimal dark palette ───────────────────────────────────── */
+/* ─── Palette ──────────────────────────────────────────────────── */
 const T = {
     bg: '#0C0E12',
     card: '#14161C',
     raised: '#1A1D24',
-    surface: '#1F2229',
     border: '#252830',
-    borderHi: '#2E323C',
     text: '#E4E6EB',
     textSec: '#8B909A',
     textDim: '#51565F',
     accent: '#34D399',
-    accentDim: '#1A3D2F',
     blue: '#60A5FA',
-    blueDim: '#1A2E4A',
     amber: '#FBBF24',
-    amberDim: '#3A2E0A',
     rose: '#F87171',
-    roseDim: '#3A1515',
     violet: '#A78BFA',
-    violetDim: '#2A1F4A',
 };
 
-/* ─── Status colors (only for small indicators) ───────────────── */
+/* Stat card backgrounds — rich but tasteful */
+const STAT_BG = {
+    amber: { bg: 'linear-gradient(145deg, #2A2208 0%, #1A1706 100%)', border: 'rgba(251,191,36,0.12)', iconBg: 'rgba(251,191,36,0.12)', iconBorder: 'rgba(251,191,36,0.2)' },
+    blue: { bg: 'linear-gradient(145deg, #0F1E38 0%, #0A1628 100%)', border: 'rgba(96,165,250,0.12)', iconBg: 'rgba(96,165,250,0.12)', iconBorder: 'rgba(96,165,250,0.2)' },
+    green: { bg: 'linear-gradient(145deg, #0A2620 0%, #081C16 100%)', border: 'rgba(52,211,153,0.12)', iconBg: 'rgba(52,211,153,0.12)', iconBorder: 'rgba(52,211,153,0.2)' },
+};
+
+/* ─── Status ────────────────────────────────────────────────────── */
 const STATUS = {
     booked: { label: 'Booked', color: T.amber, dot: '#FBBF24' },
     in_transit: { label: 'In Transit', color: T.blue, dot: '#60A5FA' },
@@ -96,9 +93,9 @@ const STATUS = {
 };
 
 const LEAVE = {
-    approved: { color: T.accent, dim: T.accentDim, label: 'Approved' },
-    rejected: { color: T.rose, dim: T.roseDim, label: 'Rejected' },
-    pending: { color: T.amber, dim: T.amberDim, label: 'Pending' },
+    approved: { color: T.accent, dim: '#0F2A1F', label: 'Approved' },
+    rejected: { color: T.rose, dim: '#2A0F10', label: 'Rejected' },
+    pending: { color: T.amber, dim: '#2A1F0A', label: 'Pending' },
 };
 
 /* ─── Animations ──────────────────────────────────────────────── */
@@ -115,7 +112,6 @@ const css = `
 .a-spin{animation:spin .75s linear infinite}
 .a-pulse{animation:pulse 1.5s ease-in-out infinite}
 .a-toast{animation:toastIn .3s ease forwards}
-
 input,select,textarea,button{font-family:inherit}
 `;
 
@@ -124,7 +120,7 @@ const Toast = ({ type, message, onClose }) => {
     if (!message) return null;
     const err = type === 'error';
     const c = err ? T.rose : T.accent;
-    const bg = err ? T.roseDim : T.accentDim;
+    const bg = err ? '#2A0F10' : '#0F2A1F';
     const Icon = err ? AlertCircle : CheckCircle;
 
     useEffect(() => {
@@ -161,10 +157,12 @@ const Plate = ({ number, model }) => {
             }}>
                 {[['t', 'l'], ['t', 'r'], ['b', 'l'], ['b', 'r']].map(([v, h], i) => (
                     <div key={i} style={{
-                        position: 'absolute', [v === 't' ? 'top' : 'bottom']: 3,
+                        position: 'absolute',
+                        [v === 't' ? 'top' : 'bottom']: 3,
                         [h === 'l' ? 'left' : 'right']: 4,
                         width: 3, height: 3, borderRadius: '50%',
-                        background: '#94A3B8', boxShadow: 'inset 0 .5px 1px rgba(0,0,0,.25)',
+                        background: '#94A3B8',
+                        boxShadow: 'inset 0 .5px 1px rgba(0,0,0,.25)',
                     }} />
                 ))}
                 <div style={{
@@ -200,37 +198,43 @@ const Pill = ({ status }) => {
     );
 };
 
-/* ─── Stat ────────────────────────────────────────────────────── */
-const Stat = ({ value, label, color, icon: Icon, pulse }) => (
-    <div style={{
-        flex: 1, padding: '16px 10px', textAlign: 'center',
-        background: T.card, borderRadius: 14, border: `1px solid ${T.border}`,
-        position: 'relative',
-    }}>
+/* ─── Stat card with colored background ────────────────────────── */
+const Stat = ({ value, label, color, icon: Icon, theme, pulse }) => {
+    const th = STAT_BG[theme] || STAT_BG.green;
+    return (
         <div style={{
-            width: 16, height: 16, borderRadius: '50%',
-            background: `${T.rose}12`, border: `1.5px solid ${T.rose}30`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
+            flex: 1, padding: '16px 10px', textAlign: 'center',
+            background: th.bg, borderRadius: 14,
+            border: `1px solid ${th.border}`,
+            position: 'relative',
         }}>
-            <Icon size={16} strokeWidth={2} />
-            {pulse && <span className="a-pulse" style={{
-                position: 'absolute', top: -2, right: -2,
-                width: 8, height: 8, borderRadius: '50%',
-                background: color, border: '2px solid ' + T.card,
-            }} />}
+            <div style={{
+                width: 38, height: 38, borderRadius: 11,
+                background: th.iconBg, border: `1px solid ${th.iconBorder}`,
+                color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 10px', position: 'relative',
+            }}>
+                <Icon size={17} strokeWidth={2} />
+                {pulse && (
+                    <span className="a-pulse" style={{
+                        position: 'absolute', top: -2, right: -2,
+                        width: 9, height: 9, borderRadius: '50%',
+                        background: color, border: '2px solid ' + th.bg,
+                    }} />
+                )}
+            </div>
+            <div style={{
+                fontSize: '1.5rem', fontWeight: 800, color: T.text,
+                lineHeight: 1, marginBottom: 4,
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em',
+            }}>{value}</div>
+            <div style={{
+                fontSize: '.54rem', color: T.textDim, fontWeight: 700,
+                letterSpacing: '.1em', textTransform: 'uppercase',
+            }}>{label}</div>
         </div>
-        <div style={{
-            fontSize: '1.5rem', fontWeight: 800, color: T.text,
-            lineHeight: 1, marginBottom: 4,
-            fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em',
-        }}>{value}</div>
-        <div style={{
-            fontSize: '.54rem', color: T.textDim, fontWeight: 700,
-            letterSpacing: '.1em', textTransform: 'uppercase',
-        }}>{label}</div>
-    </div>
-);
+    );
+};
 
 /* ─── Trip card ───────────────────────────────────────────────── */
 const TripCard = ({ booking, onStatusChange, i }) => {
@@ -245,8 +249,7 @@ const TripCard = ({ booking, onStatusChange, i }) => {
             border: `1px solid ${T.border}`,
             animationDelay: `${(i || 0) * .05}s`,
         }}>
-            {/* thin accent line */}
-            <div style={{ height: 2.5, background: accent, opacity: .7 }} />
+            <div style={{ height: 2.5, background: accent, opacity: .65 }} />
 
             <div style={{ padding: '16px 16px 18px' }}>
                 {/* header */}
@@ -256,10 +259,10 @@ const TripCard = ({ booking, onStatusChange, i }) => {
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
-                            width: 16, height: 16, borderRadius: '50%',
-                            background: `${T.accent}12`, border: `1.5px solid ${T.accent}30`,
+                            width: 34, height: 34, borderRadius: 9,
+                            background: `${accent}10`, border: `1px solid ${accent}18`,
+                            color: accent,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0,
                         }}>
                             <Truck size={16} strokeWidth={2} />
                         </div>
@@ -319,7 +322,8 @@ const TripCard = ({ booking, onStatusChange, i }) => {
                         }}>
                             <div style={{
                                 width: 16, height: 16, borderRadius: '50%',
-                                background: `${T.rose}12`, border: '1.5px solid ${T.rose}30`,
+                                background: 'rgba(248,113,113,0.1)',
+                                border: '1.5px solid rgba(248,113,113,0.25)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0,
                             }}>
@@ -331,7 +335,8 @@ const TripCard = ({ booking, onStatusChange, i }) => {
                             }} />
                             <div style={{
                                 width: 16, height: 16, borderRadius: '50%',
-                                background: `${T.accent}12`, border: '1.5px solid ${T.accent}30`,
+                                background: 'rgba(52,211,153,0.1)',
+                                border: '1.5px solid rgba(52,211,153,0.25)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0,
                             }}>
@@ -595,7 +600,7 @@ const DriverPortal = () => {
                         </button>
                         <button onClick={logout} style={{
                             padding: '7px 12px', borderRadius: 9,
-                            background: T.roseDim, border: `1px solid ${T.rose}20`,
+                            background: '#2A0F10', border: `1px solid ${T.rose}20`,
                             color: T.rose, fontSize: '.68rem', fontWeight: 700,
                             display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
                         }}>
@@ -656,7 +661,7 @@ const DriverPortal = () => {
                     {active.length > 0 && (
                         <div style={{
                             marginTop: 14, padding: '10px 13px',
-                            background: T.amberDim, border: `1px solid ${T.amber}18`,
+                            background: '#2A1F0A', border: `1px solid rgba(251,191,36,0.12)`,
                             borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8,
                         }}>
                             <span className="a-pulse" style={{
@@ -671,13 +676,13 @@ const DriverPortal = () => {
                     )}
                 </div>
 
-                {/* stats */}
+                {/* stats — colored dark backgrounds */}
                 <div className="a-up" style={{
                     display: 'flex', gap: 7, marginBottom: 22, animationDelay: '.06s',
                 }}>
-                    <Stat value={active.length} label="Active" color={T.amber} icon={Zap} pulse={active.length > 0} />
-                    <Stat value={transit} label="En Route" color={T.blue} icon={Navigation} />
-                    <Stat value={done} label="Done" color={T.accent} icon={CheckCircle} />
+                    <Stat value={active.length} label="Active" color={T.amber} icon={Zap} theme="amber" pulse={active.length > 0} />
+                    <Stat value={transit} label="En Route" color={T.blue} icon={Navigation} theme="blue" />
+                    <Stat value={done} label="Done" color={T.accent} icon={CheckCircle} theme="green" />
                 </div>
 
                 {/* tabs */}

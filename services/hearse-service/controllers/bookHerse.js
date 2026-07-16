@@ -793,7 +793,7 @@ const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
             LEFT JOIN hearses h ON hb.hearse_id = h.id
             WHERE hb.status NOT IN ('completed', 'cancelled')
             ORDER BY hb.created_at DESC
-        `, [], req.tenant?.db_name || req.tenantSlug);
+        `, [], req.tenantSlug);
 
         res.status(200).json({
             status: 'success',
@@ -827,7 +827,7 @@ const checkAvailabilityByDate = asyncHandler(async (req, res) => {
         const allHearses = await safeQuery(
             'SELECT id, hearse_code, hearse_name, plate_number, status FROM hearses',
             [],
-            req.tenant?.db_name || req.tenantSlug
+            req.tenantSlug
         );
 
         // Get bookings for the specific date
@@ -839,7 +839,7 @@ const checkAvailabilityByDate = asyncHandler(async (req, res) => {
              WHERE DATE(hb.booking_date) = ? 
              AND hb.status NOT IN ('cancelled', 'completed')`,
             [date],
-            req.tenant?.db_name || req.tenantSlug
+            req.tenantSlug
         );
 
         // Get available hearses (not booked on that date)
