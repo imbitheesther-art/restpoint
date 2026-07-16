@@ -294,6 +294,69 @@ const StatusBadge = styled.span`
   white-space: nowrap;
 `;
 
+const StockHealthBar = styled.div`
+  margin: 12px 0;
+  padding: 0;
+`;
+
+const StockHealthTrack = styled.div`
+  width: 100%;
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+`;
+
+const StockHealthFill = styled.div`
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease, background 0.6s ease;
+  width: ${props => Math.min(100, Math.max(0, props.percentage))}%;
+  background: ${props => {
+    const pct = props.percentage;
+    if (pct >= 80) return '#10B981';
+    if (pct >= 60) return '#22C55E';
+    if (pct >= 40) return '#F59E0B';
+    if (pct >= 20) return '#F97316';
+    return '#EF4444';
+  }};
+  box-shadow: ${props => props.percentage < 20 ? '0 0 8px rgba(239,68,68,0.5)' : 'none'};
+`;
+
+const StockHealthLabel = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+`;
+
+const StockHealthPct = styled.span`
+  color: ${props => {
+    const pct = props.percentage;
+    if (pct >= 60) return '#10B981';
+    if (pct >= 40) return '#F59E0B';
+    if (pct >= 20) return '#F97316';
+    return '#EF4444';
+  }};
+  font-weight: 700;
+`;
+
+const StockHealthStatus = styled.span`
+  color: ${props => {
+    const pct = props.percentage;
+    if (pct >= 80) return '#10B981';
+    if (pct >= 60) return '#22C55E';
+    if (pct >= 40) return '#F59E0B';
+    if (pct >= 20) return '#F97316';
+    return '#EF4444';
+  }};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
 const StockInfo = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1038,6 +1101,35 @@ const ChemicalManagementDashboard = () => {
                     </StockItem>
                   )}
                 </StockInfo>
+
+                {/* Stock Health Bar */}
+                <StockHealthBar>
+                  <StockHealthTrack>
+                    <StockHealthFill percentage={chemical.min_stock_level > 0
+                      ? Math.round((chemical.quantity_available / chemical.min_stock_level) * 100)
+                      : chemical.quantity_available > 0 ? 100 : 0} />
+                  </StockHealthTrack>
+                  <StockHealthLabel>
+                    <StockHealthPct percentage={chemical.min_stock_level > 0
+                      ? Math.round((chemical.quantity_available / chemical.min_stock_level) * 100)
+                      : chemical.quantity_available > 0 ? 100 : 0}>
+                      {chemical.min_stock_level > 0
+                        ? `${Math.round((chemical.quantity_available / chemical.min_stock_level) * 100)}%`
+                        : 'N/A'}
+                    </StockHealthPct>
+                    <StockHealthStatus percentage={chemical.min_stock_level > 0
+                      ? Math.round((chemical.quantity_available / chemical.min_stock_level) * 100)
+                      : chemical.quantity_available > 0 ? 100 : 0}>
+                      {chemical.min_stock_level > 0
+                        ? chemical.quantity_available >= chemical.min_stock_level * 2 ? 'Excellent'
+                          : chemical.quantity_available >= chemical.min_stock_level * 1.5 ? 'Good'
+                            : chemical.quantity_available >= chemical.min_stock_level ? 'Adequate'
+                              : chemical.quantity_available >= chemical.min_stock_level * 0.5 ? 'Low'
+                                : 'Critical'
+                        : chemical.quantity_available > 0 ? 'Healthy' : 'Empty'}
+                    </StockHealthStatus>
+                  </StockHealthLabel>
+                </StockHealthBar>
 
                 {/* Usage Line */}
                 <div style={{

@@ -96,16 +96,22 @@ const CREATE_ALERTS = `CREATE TABLE IF NOT EXISTS chemical_alerts (
 
 const CREATE_PPE = `CREATE TABLE IF NOT EXISTS ppe_requests (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL DEFAULT 1,
   item_name VARCHAR(255) NOT NULL,
   quantity_requested INT NOT NULL DEFAULT 1,
   quantity_approved INT DEFAULT NULL,
+  urgency ENUM('normal', 'urgent', 'emergency') DEFAULT 'normal',
   status ENUM('pending', 'approved', 'rejected', 'fulfilled') DEFAULT 'pending',
   requested_by VARCHAR(255) NOT NULL,
   approved_by INT DEFAULT NULL,
+  approved_at TIMESTAMP NULL DEFAULT NULL,
+  fulfilled_at TIMESTAMP NULL DEFAULT NULL,
   notes TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_ppe_status (status)
+  INDEX idx_ppe_branch (branch_id),
+  INDEX idx_ppe_status (status),
+  INDEX idx_urgency (urgency)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 
 const CREATE_TRANSFERS = `CREATE TABLE IF NOT EXISTS chemical_transfers (

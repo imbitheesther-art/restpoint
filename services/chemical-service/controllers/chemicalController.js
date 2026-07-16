@@ -417,14 +417,14 @@ exports.createPPERequest = async (req, res) => {
     if (!tenantDb) return res.status(400).json({ success: false, message: 'Tenant database not resolved' });
 
     const { item_name, quantity_requested, requested_by } = req.body;
-    if (!item_name || !quantity_requested || !requested_by) {
-      return res.status(400).json({ success: false, message: 'item_name, quantity_requested, and requested_by are required' });
+    if (!item_name || !quantity_requested) {
+      return res.status(400).json({ success: false, message: 'item_name and quantity_requested are required' });
     }
 
     const result = await safeTenantExecute(tenantDb,
-      `INSERT INTO ppe_requests (item_name, quantity_requested, requested_by)
-       VALUES (?, ?, ?)`,
-      [item_name, parseInt(quantity_requested), requested_by]
+      `INSERT INTO ppe_requests (item_name, quantity_requested, requested_by, branch_id)
+       VALUES (?, ?, ?, 1)`,
+      [item_name, parseInt(quantity_requested), requested_by || 'Staff']
     );
 
     res.status(201).json({ success: true, message: 'PPE request submitted successfully', id: result.insertId });
