@@ -296,6 +296,7 @@ const RemoveButton = styled.button`
 
 const ApplyLeave = () => {
     const navigate = useNavigate();
+    const tenantSlug = localStorage.getItem('tenantSlug') || 'system_shared';
     const [formData, setFormData] = useState({
         leave_type: 'annual',
         priority: 'medium',
@@ -354,7 +355,11 @@ const ApplyLeave = () => {
                 user_id: getUserId()
             };
 
-            const response = await api.post(ENDPOINTS.LEAVE.APPLY, submitData);
+            // ENDPOINTS.LEAVE.APPLY is a function: (slug) => `/leaves/${slug}/apply`
+            const endpoint = typeof ENDPOINTS.LEAVE.APPLY === 'function'
+                ? ENDPOINTS.LEAVE.APPLY(tenantSlug)
+                : ENDPOINTS.LEAVE.APPLY;
+            const response = await api.post(endpoint, submitData);
 
             if (response?.data?.status === 'success') {
                 setSuccess('Leave request submitted successfully!');

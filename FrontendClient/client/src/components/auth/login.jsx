@@ -140,6 +140,7 @@ export default function LoginPage() {
         setSuccessName(data.user?.fullName || 'Director');
         setShowSuccess(true);
 
+        // Navigate immediately after a brief success animation (reduced from 1600ms)
         setTimeout(() => {
           // Check if user is system admin - redirect to system admin dashboard
           if (data.user?.role === 'systemadmin') {
@@ -162,7 +163,7 @@ export default function LoginPage() {
               console.error('No tenant slug in login response!', data);
             }
           }
-        }, 1600);
+        }, 400); // Reduced from 1600ms to 400ms for faster login
       } else {
         setMessage({
           type: 'error',

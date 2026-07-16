@@ -24,13 +24,15 @@ export const authApi = {
     const data = response.data;
 
     if (data?.accessToken) {
-      // Use sessionStorage only (cleared when browser tab closes)
+      // Store in BOTH storages for cross-compatibility
+      // sessionStorage for tab isolation, localStorage for page refresh persistence
       sessionStorage.setItem('authToken', data.accessToken);
       sessionStorage.setItem('user', JSON.stringify(data.user || {}));
 
-      // Store refresh token in sessionStorage
+      // Store refresh token in BOTH storages for consistency
       if (data.refreshToken) {
         sessionStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
       }
 
       // Non-sensitive metadata in localStorage
@@ -60,12 +62,14 @@ export const authApi = {
       sessionStorage.removeItem('authToken');
       sessionStorage.removeItem('refreshToken');
       sessionStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('tenantSlug');
       localStorage.removeItem('tenantId');
       localStorage.removeItem('dbName');
 
       // Stop auto-refresh
-      const { stopTokenRefresh } = await import('./axios');
+      const { stopTokenRefresh, forceLogout } = await import('./axios');
       stopTokenRefresh();
 
       // Update store
@@ -87,11 +91,12 @@ export const authApi = {
    * Sends refresh token in request body
    */
   refresh: async () => {
-    const refreshToken = sessionStorage.getItem('refreshToken');
+    const refreshToken = sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken');
     const response = await api.post(ENDPOINTS.AUTH.REFRESH, { refreshToken });
     const data = response.data;
     if (data?.accessToken) {
       sessionStorage.setItem('authToken', data.accessToken);
+      localStorage.setItem('authToken', data.accessToken);
     }
     return data;
   },

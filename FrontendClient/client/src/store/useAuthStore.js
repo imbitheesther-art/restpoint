@@ -1,7 +1,7 @@
 // ============================================
 // AUTH STORE
 // Uses sessionStorage for access token (cleared on tab close)
-// Uses httpOnly cookies for refresh token via withCredentials
+// Uses localStorage for refresh token (persists across page refreshes)
 // Auto-refresh every 10 minutes
 // ============================================
 import { create } from 'zustand';
@@ -15,7 +15,9 @@ const useAuthStore = create((set, get) => ({
     error: null,
 
     login: (userData, token) => {
-        // Store in sessionStorage only (cleared on tab close)
+        // authApi.login() already stores tokens and calls startTokenRefresh()
+        // So this store method should NOT call startTokenRefresh() again
+        // to avoid duplicate interval creation.
         if (token) sessionStorage.setItem('authToken', token);
         sessionStorage.setItem('user', JSON.stringify(userData));
         if (userData.tenantSlug) localStorage.setItem('tenantSlug', userData.tenantSlug);
@@ -29,9 +31,8 @@ const useAuthStore = create((set, get) => ({
             isLoading: false,
             error: null,
         });
-
-        // Start auto-refresh every 10 minutes
-        startTokenRefresh();
+        // NOTE: startTokenRefresh() is called by authApi.login() before this method,
+        // so we don't call it here to avoid the "already running" guard message.
     },
 
     logout: () => {
@@ -40,9 +41,12 @@ const useAuthStore = create((set, get) => ({
 
         // Clear sessionStorage (access token, user data)
         sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('refreshToken');
         sessionStorage.removeItem('user');
 
         // Clear localStorage (non-sensitive metadata only)
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('tenantSlug');
         localStorage.removeItem('branchSlug');
         localStorage.removeItem('branchId');
@@ -61,13 +65,21 @@ const useAuthStore = create((set, get) => ({
     setError: (error) => set({ error, isLoading: false }),
 
     // Initialize from sessionStorage (called on app startup)
+    // Also checks localStorage as fallback for refresh token persistence
     initialize: () => {
         try {
-            const token = sessionStorage.getItem('authToken');
-            const userStr = sessionStorage.getItem('user');
+            const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+            const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
 
             if (token && userStr) {
                 const user = JSON.parse(userStr);
+                // Sync token to sessionStorage if it came from localStorage
+                sessionStorage.setItem('authToken', token);
+                sessionStorage.setItem('user', userStr);
+                // Sync refreshToken to sessionStorage if present in localStorage
+                const rt = localStorage.getItem('refreshToken');
+                if (rt) sessionStorage.setItem('refreshToken', rt);
+
                 set({
                     user,
                     token,
@@ -75,7 +87,7 @@ const useAuthStore = create((set, get) => ({
                     isLoading: false,
                 });
 
-                // Start auto-refresh every 10 minutes
+                // Start auto-refresh every 10 minutes (guard prevents duplicate)
                 startTokenRefresh();
             } else {
                 set({ isLoading: false });

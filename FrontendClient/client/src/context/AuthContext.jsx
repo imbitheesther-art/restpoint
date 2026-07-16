@@ -45,12 +45,16 @@ export const AuthProvider = ({ children }) => {
                     return { success: false, message: 'No token received from server' };
                 }
 
+                // Store in BOTH storages for cross-compatibility
                 localStorage.setItem('authToken', accessToken);
+                sessionStorage.setItem('authToken', accessToken);
                 if (refreshTokenVal) {
                     localStorage.setItem('refreshToken', refreshTokenVal);
+                    sessionStorage.setItem('refreshToken', refreshTokenVal);
                 }
                 if (userData) {
                     localStorage.setItem('user', JSON.stringify(userData));
+                    sessionStorage.setItem('user', JSON.stringify(userData));
                 }
 
                 setUser({
@@ -81,6 +85,9 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('authToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('refreshToken');
+            sessionStorage.removeItem('user');
             setUser(null);
         }
     };

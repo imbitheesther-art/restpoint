@@ -20,8 +20,7 @@ workshopApi.interceptors.request.use((config) => {
 }, (error) => Promise.reject(error));
 
 // ─── Shared Auth Token (single source of truth) ──────────────────────────
-// Uses sessionStorage for access token (cleared on tab close for security)
-// Uses httpOnly cookie for refresh token via withCredentials
+// Uses localStorage (primary) with sessionStorage as fallback
 // Auto-refreshes every 10 minutes
 
 let cachedToken = null;
@@ -29,12 +28,32 @@ let cachedSlug = null;
 let refreshIntervalId = null;
 let isRefreshing = false; // Prevent concurrent refresh calls
 
-const getToken = () => cachedToken || sessionStorage.getItem('authToken');
+const getToken = () => cachedToken || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 const setToken = (token) => {
   cachedToken = token;
-  if (token) sessionStorage.setItem('authToken', token);
-  else sessionStorage.removeItem('authToken');
+  if (token) {
+    localStorage.setItem('authToken', token);
+    sessionStorage.setItem('authToken', token);
+  } else {
+    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
+  }
 };
+
+/** Get refresh token from sessionStorage first (where authApi stores it), fallback to localStorage */
+const getRefreshToken = () => sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken');
+
+/** Store refresh token in both storages for consistency */
+const setRefreshToken = (token) => {
+  if (token) {
+    localStorage.setItem('refreshToken', token);
+    sessionStorage.setItem('refreshToken', token);
+  } else {
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('refreshToken');
+  }
+};
+
 const getSlug = () => cachedSlug || localStorage.getItem('tenantSlug');
 
 // ─── Token Refresh (every 10 minutes) ────────────────────────────────────
@@ -54,7 +73,7 @@ export const startTokenRefresh = () => {
 
     isRefreshing = true;
     try {
-      const refreshToken = sessionStorage.getItem('refreshToken');
+      const refreshToken = getRefreshToken();
       if (!refreshToken) {
         console.warn('[Auth] No refresh token available');
         return;
@@ -76,7 +95,7 @@ export const startTokenRefresh = () => {
       if (error.response?.status === 401) {
         setTimeout(async () => {
           try {
-            const refreshToken = sessionStorage.getItem('refreshToken');
+            const refreshToken = getRefreshToken();
             if (!refreshToken) {
               forceLogout();
               return;
@@ -117,6 +136,10 @@ const forceLogout = () => {
     const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     Object.keys(user).forEach(key => sessionStorage.removeItem(key));
   } catch { }
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  sessionStorage.removeItem('refreshToken');
   sessionStorage.removeItem('user');
   // Preserve tenantSlug so we don't redirect to 'default'
   // window.location.href = '/login';
@@ -162,8 +185,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // Try refresh using refresh token
-        const refreshToken = sessionStorage.getItem('refreshToken');
+        // Try refresh using refresh token from sessionStorage first, fallback to localStorage
+        const refreshToken = getRefreshToken();
         const response = await axios.post(
           env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
           { refreshToken },
