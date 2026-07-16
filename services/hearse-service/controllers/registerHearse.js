@@ -67,12 +67,36 @@ const registerHearse = asyncHandler(async (req, res) => {
             });
         }
 
+        if (!branch_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Branch selection is required. Please select a branch.',
+            });
+        }
+
         const now = getKenyaTimeISO();
 
-        // Auto-assign branch_id (default to 1 if not provided)
-        // NOTE: branch_code is just a user-entered label for hearses - don't try to resolve it
-        // Users can enter any code (MKS, ABC, XYZ, etc.) and it should be stored as-is
-        let assigned_branch_id = branch_id || 1;
+        // Resolve branch_code from branches table using the selected branch_id
+        let resolvedBranchCode = branch_code || null;
+        try {
+            const [branchRow] = await safeTenantQuery(
+                dbName,
+                'SELECT branch_code, branch_name FROM branches WHERE branch_id = ? AND is_active = TRUE',
+                [branch_id]
+            );
+            if (branchRow) {
+                resolvedBranchCode = branchRow.branch_code || `BRANCH-${branch_id}`;
+                console.log(`✅ Resolved branch_code: ${resolvedBranchCode} for branch_id: ${branch_id}`);
+            } else {
+                resolvedBranchCode = `BRANCH-${branch_id}`;
+                console.log(`⚠️ Branch ID ${branch_id} not found, using default code: ${resolvedBranchCode}`);
+            }
+        } catch (e) {
+            resolvedBranchCode = branch_code || `BRANCH-${branch_id}`;
+            console.log(`⚠️ Could not query branches table, using code: ${resolvedBranchCode}`);
+        }
+
+        let assigned_branch_id = parseInt(branch_id) || 1;
 
         // Generate hearse code
         const [countResult] = await safeTenantQuery(

@@ -34,26 +34,34 @@ export const AuthProvider = ({ children }) => {
     const login = async (credentials) => {
         try {
             const response = await api.post('/auth/login', credentials);
-            if (response.data?.success) {
-                const { token, refreshToken, user: userData } = response.data.data || response.data;
+            const data = response.data;
+            if (data?.success) {
+                // Backend returns: { accessToken, refreshToken, user: {...}, ... }
+                const accessToken = data.accessToken || data.token;
+                const refreshTokenVal = data.refreshToken;
+                const userData = data.user;
 
-                localStorage.setItem('authToken', token);
-                if (refreshToken) {
-                    localStorage.setItem('refreshToken', refreshToken);
+                if (!accessToken) {
+                    return { success: false, message: 'No token received from server' };
+                }
+
+                localStorage.setItem('authToken', accessToken);
+                if (refreshTokenVal) {
+                    localStorage.setItem('refreshToken', refreshTokenVal);
                 }
                 if (userData) {
                     localStorage.setItem('user', JSON.stringify(userData));
                 }
 
                 setUser({
-                    token,
+                    token: accessToken,
                     isAuthenticated: true,
                     ...userData
                 });
 
                 return { success: true };
             }
-            return { success: false, message: response.data?.message || 'Login failed' };
+            return { success: false, message: data?.message || 'Login failed' };
         } catch (error) {
             return {
                 success: false,

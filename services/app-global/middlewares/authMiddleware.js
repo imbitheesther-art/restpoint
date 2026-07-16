@@ -1,28 +1,81 @@
-/**
- * Shared Authentication Middleware
- * Use this in ALL microservices to protect routes
- * 
- * Usage:
- *   const { protect, authorize } = require('../../global/middlewares/authMiddleware');
- *   
- *   // Protect a route (requires valid JWT)
- *   router.get('/profile', protect, getProfile);
- *   
- *   // Authorize specific roles
- *   router.delete('/user/:id', protect, authorize('admin', 'superadmin'), deleteUser);
- */
+
 
 const jwt = require('jsonwebtoken');
+const mysql = require('mysql2/promise');
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRET_KEY;
-if (!JWT_SECRET) {
+const GLOBAL_JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRET_KEY;
+if (!GLOBAL_JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET environment variable is required');
 }
 
 const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
+// Create a root pool for tenant secret lookups (lazy init)
+let rootPool = null;
+const getRootPool = () => {
+  if (!rootPool) {
+    rootPool = mysql.createPool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '3306'),
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+    });
+  }
+  return rootPool;
+};
+
+/**
+ * Try to verify a JWT token, falling back through multiple secrets
+ * @param {string} token - The JWT token to verify
+ * @returns {{ decoded: Object|null, error: string|null }}
+ */
+const verifyTokenWithFallback = async (token) => {
+  // First try: global JWT_SECRET
+  try {
+    const decoded = jwt.verify(token, GLOBAL_JWT_SECRET);
+    return { decoded, error: null };
+  } catch (e) {
+    // Continue to try tenant-specific secrets
+  }
+
+  // Second try: decode without verification to get tenantId, then look up tenant secret
+  try {
+    const payload = jwt.decode(token);
+    if (payload && payload.tenantId) {
+      const pool = getRootPool();
+      const [columns] = await pool.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = 'tenant_tracking' AND TABLE_NAME = 'tenants' AND COLUMN_NAME = 'jwt_secret'`
+      );
+
+      if (columns && columns.length > 0) {
+        const [tenants] = await pool.query(
+          'SELECT jwt_secret FROM tenant_tracking.tenants WHERE id = ?',
+          [payload.tenantId]
+        );
+        if (tenants.length > 0 && tenants[0].jwt_secret) {
+          try {
+            const decoded = jwt.verify(token, tenants[0].jwt_secret);
+            return { decoded, error: null };
+          } catch (e) {
+            // Tenant secret also failed
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Could not decode token
+  }
+
+  return { decoded: null, error: 'Token invalid or expired' };
+};
+
 /**
  * Protect middleware - verifies JWT token from Authorization header or cookie
+ * Tries global JWT_SECRET first, then per-tenant secrets
  * Attaches user payload to req.user
  */
 const protect = async (req, res, next) => {
@@ -45,13 +98,20 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
+    const { decoded, error } = await verifyTokenWithFallback(token);
+    if (decoded) {
+      req.user = decoded;
+      return next();
+    }
+
     return res.status(401).json({
       success: false,
       message: 'Not authorized, token is invalid or expired'
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Not authorized, token verification failed'
     });
   }
 };
