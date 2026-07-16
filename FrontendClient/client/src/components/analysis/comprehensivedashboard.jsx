@@ -1,89 +1,80 @@
+// src/components/analysis/comprehensivedashboard.jsx
+// Professional Dashboard - Fetches from working individual analytics endpoints
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Container, Row, Col, Card, Spinner, Button, Dropdown, Form, Badge } from "react-bootstrap";
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement,
-  ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
+  Container, Row, Col, Card, Spinner, Alert, Button, Badge, Dropdown
+} from "react-bootstrap";
+import {
+  Chart as ChartJS,
+  CategoryScale, LinearScale, BarElement, LineElement,
+  PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
 } from "chart.js";
 import { Line, Pie, Bar, Doughnut } from "react-chartjs-2";
 import {
-  TrendingUp, Users, ShoppingCart, Truck, CheckCircle, Activity, FlaskConical,
-  Box, MapPin, RotateCw, Calendar, Cpu, GitMerge, FileText
+  TrendingUp, Zap, Users, ShoppingCart, Truck, AlertTriangle,
+  Clock, CheckCircle, Activity, FlaskConical, Box, MapPin, RotateCw, Calendar
 } from "lucide-react";
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../config/env";
-import './comprehensiveDashboard.css';
 
 ChartJS.register(
-  CategoryScale, LinearScale, BarElement, LineElement, PointElement,
-  ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
+  CategoryScale, LinearScale, BarElement, LineElement,
+  PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
 );
 
-// Expanded colors array for N branches
-const BRANCH_COLORS = [
-  "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4"
-];
-const getBranchColor = (index) => BRANCH_COLORS[index % BRANCH_COLORS.length];
-const getBranchLightColor = (index) => {
-  const c = getBranchColor(index);
-  return `${c}33`; // 20% opacity hex
-};
-
 const COLORS = {
-  primary: "#1e3a8a", dark: "#1f2937", gray: "#6b7280", border: "#e5e7eb",
-  white: "#ffffff",
-  success: "#10b981", successLight: "#d1fae5",
-  warning: "#f59e0b", warningLight: "#fef3c7",
-  danger: "#ef4444", dangerLight: "#fee2e2",
-  info: "#06b6d4", infoLight: "#cffafe",
+  primary: "#df2117ff", primaryLight: "#3b82f6",
+  secondary: "#64748b", success: "#10b981", successLight: "#d1fae5",
+  warning: "#f59e0b", warningLight: "#fef3c7", danger: "#ef4444",
+  dangerLight: "#fee2e2", info: "#06b6d4", infoLight: "#cffafe",
+  purple: "#8b5cf6", purpleLight: "#ede9fe", dark: "#1f2937",
+  gray: "#6b7280", light: "#f3f4f6", white: "#ffffff", border: "#e5e7eb",
+  chart1: "#3b82f6", chart2: "#10b981", chart3: "#f59e0b", chart4: "#ef4444",
+  chart5: "#8b5cf6", chart6: "#06b6d4"
 };
 
-const StatCard = ({ title, value, icon: Icon, color }) => (
-  <Card className="h-100 border-0 shadow-sm cd-stat-card">
+const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
+  <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
     <Card.Body className="p-3">
       <div className="d-flex justify-content-between align-items-start mb-2">
-        <div className="cd-icon-box" style={{ background: COLORS[`${color}Light`], color: COLORS[color] }}>
-          <Icon size={20} />
-        </div>
+        <Icon size={24} style={{ color: COLORS[color] || COLORS.primary }} />
         <span className="fw-bold" style={{ color: COLORS.dark, fontSize: "1.5rem" }}>{value}</span>
       </div>
       <small className="text-muted d-block">{title}</small>
+      {subtitle && <small className="text-muted d-block" style={{ fontSize: "0.8rem" }}>{subtitle}</small>}
     </Card.Body>
   </Card>
 );
 
-const ChartCard = ({ title, children, height = "300px" }) => (
-  <Card className="h-100 border-0 shadow-sm cd-chart-card">
+const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => (
+  <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
     <Card.Body className="p-4">
-      <h6 className="mb-3 fw-semibold text-muted" style={{ fontSize: "0.9rem" }}>{title}</h6>
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <Icon size={20} style={{ color }} />
+        <h6 className="mb-0 fw-semibold">{title}</h6>
+      </div>
       <div style={{ height, position: "relative" }}>{children}</div>
     </Card.Body>
   </Card>
 );
 
-const BatteryGauge = ({ label, percentage, color }) => (
-  <div className="cd-battery-container mb-3">
-    <div className="cd-battery-label">{label}</div>
-    <div className="cd-battery-outer">
-      <div className="cd-battery-inner" style={{ width: `${Math.min(100, Math.max(0, percentage))}%`, backgroundColor: color }}></div>
+const SectionHeader = ({ title, icon: Icon, color }) => (
+  <div className="d-flex align-items-center gap-3 mb-4 pb-3" style={{ borderBottom: `2px solid ${COLORS.border}` }}>
+    <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: color + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Icon size={20} style={{ color }} />
     </div>
-    <div className="cd-battery-pct">{percentage}%</div>
+    <h5 className="mb-0 fw-bold" style={{ color: COLORS.dark }}>{title}</h5>
   </div>
 );
 
 const ComprehensiveDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const [branches, setBranches] = useState([]);
-  
-  const [isCompareMode, setIsCompareMode] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState(null); // standard mode
-  const [selectedCompareBranches, setSelectedCompareBranches] = useState([]); // Array of branch IDs
-  
-  const [standardData, setStandardData] = useState(null);
-  const [compareData, setCompareData] = useState(null);
-
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [data, setData] = useState(null);
   const lastFetchRef = useRef(0);
-  const getTenantSlug = () => localStorage.getItem("tenantSlug") || "";
 
   const chartOptions = {
     responsive: true, maintainAspectRatio: false,
@@ -93,338 +84,324 @@ const ComprehensiveDashboard = () => {
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: COLORS.gray } },
-      y: { grid: { color: COLORS.border, borderDash: [5, 5] }, ticks: { color: COLORS.gray }, beginAtZero: true }
+      y: { grid: { color: COLORS.light }, ticks: { color: COLORS.gray }, beginAtZero: true }
     }
   };
 
-  const noGridOptions = { ...chartOptions, scales: { x: { display: false }, y: { display: false } } };
+  const getTenantSlug = () => localStorage.getItem("tenantSlug") || "";
 
   const fetchBranches = useCallback(async () => {
     try {
+      const tenantSlug = getTenantSlug();
       const headers = getTenantHeaders();
-      const res = await fetch(`${env.FULL_API_URL}/tenant/${getTenantSlug()}/branches`, { headers });
+      const url = `${env.FULL_API_URL}/tenant/${tenantSlug}/branches`;
+      console.log("Fetching branches from:", url);
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const result = await res.json();
-        const b = Array.isArray(result?.data) ? result.data : [];
-        setBranches(b);
-        if (b.length > 0) {
-          setSelectedBranch(b[0]);
-          setSelectedCompareBranches([b[0].id, b[1]?.id || b[0].id]);
+        const branchesArray = Array.isArray(result?.data) ? result.data : [];
+        setBranches(branchesArray);
+        if (branchesArray.length > 0 && !selectedBranch) {
+          setSelectedBranch(branchesArray[0]);
         }
       }
-    } catch (err) { console.error(err); }
-  }, []);
+    } catch (err) {
+      console.error("Error fetching branches:", err);
+    }
+  }, [selectedBranch]);
 
-  const fetchStandardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastFetchRef.current < 2000) return;
+    lastFetchRef.current = now;
+
     try {
       setRefreshing(true);
       const headers = getTenantHeaders();
       const branchId = selectedBranch?.id || selectedBranch?.branch_id;
-      const bHeaders = branchId ? { ...headers, "x-branch-id": branchId } : headers;
+      const branchHeaders = branchId ? { ...headers, "x-branch-id": branchId } : headers;
+
+      console.log("Fetching analytics data for branch:", branchId);
 
       const endpoints = [
-        `/analytics/deceased/count`, `/analytics/deceased/trends`,
-        `/analytics/bookings/counts`, `/analytics/hearse/fleet`,
-        `/analytics/coffins/inventory`, `/analytics/workshop/summary`
+        `/analytics/deceased/count`,
+        `/analytics/deceased/status`,
+        `/analytics/deceased/trends`,
+        `/analytics/bookings/counts`,
+        `/analytics/hearse/fleet`,
+        `/analytics/coffins/inventory`,
+        `/analytics/coffins/sales`,
+        `/analytics/chemicals/stock`,
+        `/analytics/chemicals/trends`,
+        `/analytics/workshop/summary`,
+        `/analytics/workshop/production`
       ];
 
-      const results = await Promise.allSettled(endpoints.map(e => fetch(`${env.FULL_API_URL}${e}`, { headers: bHeaders }).then(res => res.json())));
+      const results = await Promise.allSettled(
+        endpoints.map(endpoint =>
+          fetch(`${env.FULL_API_URL}${endpoint}`, { headers: branchHeaders })
+            .then(res => res.json())
+            .catch(() => ({}))
+        )
+      );
+
+      const [
+        deceasedCount, caseStatus, deceasedTrends,
+        bookingCounts, hearseFleet,
+        coffinInventory, coffinSales,
+        chemicalStock, chemicalTrends,
+        workshopSummary, workshopProduction
+      ] = results;
+
       const getValue = (result) => result.status === "fulfilled" ? result.value?.data || {} : {};
-      
-      setStandardData({
-        deceased: getValue(results[0]), deceasedTrends: results[1].status === 'fulfilled' ? results[1].value?.data || [] : [],
-        bookings: getValue(results[2]), fleet: getValue(results[3]), coffins: getValue(results[4]), workshop: getValue(results[5])
+
+      setData({
+        deceased: getValue(deceasedCount),
+        caseStatus: getValue(caseStatus),
+        deceasedTrends: getValue(deceasedTrends),
+        bookings: getValue(bookingCounts),
+        fleet: getValue(hearseFleet),
+        coffins: getValue(coffinInventory),
+        coffinSales: getValue(coffinSales),
+        chemicals: getValue(chemicalStock),
+        chemicalTrends: getValue(chemicalTrends),
+        workshop: getValue(workshopSummary),
+        workshipProduction: getValue(workshopProduction)
       });
-    } catch (err) { console.error(err); }
-    finally { setRefreshing(false); setLoading(false); }
-  };
 
-  const fetchCompareData = async () => {
-    if (selectedCompareBranches.length < 2) return;
-    try {
-      setRefreshing(true);
-      const headers = getTenantHeaders();
-      const ids = selectedCompareBranches.join(',');
-      const res = await fetch(`${env.FULL_API_URL}/analytics/dashboard/compare?branches=${ids}`, { headers });
-      if (res.ok) {
-        const result = await res.json();
-        setCompareData(result.data);
-      }
-    } catch (err) { console.error(err); }
-    finally { setRefreshing(false); setLoading(false); }
-  };
-
-  const loadData = useCallback(() => {
-    const now = Date.now();
-    if (now - lastFetchRef.current < 2000) return;
-    lastFetchRef.current = now;
-    if (isCompareMode) fetchCompareData(); else fetchStandardData();
-  }, [isCompareMode, selectedBranch, selectedCompareBranches]);
-
-  useEffect(() => { fetchBranches(); }, [fetchBranches]);
-  useEffect(() => { if (branches.length > 0) loadData(); }, [isCompareMode, selectedBranch, selectedCompareBranches, branches, loadData]);
-
-  const toggleCompareBranch = (branchId) => {
-    if (selectedCompareBranches.includes(branchId)) {
-      if (selectedCompareBranches.length > 2) {
-        setSelectedCompareBranches(prev => prev.filter(id => id !== branchId));
-      }
-    } else {
-      setSelectedCompareBranches(prev => [...prev, branchId]);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError(err.message);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
     }
-  };
+  }, [selectedBranch]);
 
-  if (loading) return (
-    <div className="cd-loader-container"><Spinner animation="grow" variant="primary" /><h5 className="mt-3">Loading Analytics...</h5></div>
-  );
+  useEffect(() => {
+    fetchBranches();
+  }, [fetchBranches]);
 
-  const renderStandardDashboard = () => {
-    const data = standardData || {};
-    const dec = Array.isArray(data.deceased) ? data.deceased[0] || {} : data.deceased || {};
-    const trends = data.deceasedTrends || [];
-    
+  useEffect(() => {
+    if (selectedBranch) {
+      setLoading(true);
+      fetchDashboardData();
+    }
+  }, [selectedBranch]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (selectedBranch) fetchDashboardData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
     return (
-      <>
-        <Row className="g-3 mb-4">
-          <Col xs={6} lg={3}><StatCard title="Total Deceased" value={dec.total || 0} icon={Users} color="primary" /></Col>
-          <Col xs={6} lg={3}><StatCard title="Bookings (Week)" value={data.bookings?.thisWeek || 0} icon={Calendar} color="info" /></Col>
-          <Col xs={6} lg={3}><StatCard title="Active Hearses" value={data.fleet?.available || 0} icon={Truck} color="success" /></Col>
-          <Col xs={6} lg={3}><StatCard title="Coffins In Stock" value={data.coffins?.totalStock || 0} icon={Box} color="warning" /></Col>
-        </Row>
-        <Row className="g-4 mb-4">
-          <Col lg={8}>
-            <ChartCard title="Deceased Intake (12 Months)">
-              <Line data={{
-                labels: trends.map(t => t.month_label || t.month || ''),
-                datasets: [{ label: "Cases", data: trends.map(t => t.count || 0), borderColor: COLORS.primary, backgroundColor: COLORS.primary + "20", fill: true, tension: 0.4 }]
-              }} options={chartOptions} />
-            </ChartCard>
-          </Col>
-          <Col lg={4}>
-            <ChartCard title="Coffin Status">
-              <Doughnut data={{
-                labels: ['Available', 'Reserved', 'In-Use'],
-                datasets: [{ data: [data.coffins?.totalStock || 0, 0, 0], backgroundColor: [COLORS.success, COLORS.warning, COLORS.danger] }]
-              }} options={noGridOptions} />
-            </ChartCard>
-          </Col>
-        </Row>
-      </>
-    );
-  };
-
-  const renderCompareDashboard = () => {
-    if (!compareData || !compareData.branches) return <div>Select branches to compare.</div>;
-    const { branches: compBranches, insights } = compareData;
-    
-    const activeIds = Object.keys(compBranches);
-    if (activeIds.length === 0) return <div>No data found for selected branches.</div>;
-
-    const bNames = activeIds.map(id => branches.find(b => String(b.id) === id || String(b.branch_id) === id)?.name || `Branch ${id}`);
-
-    // Compile Line Chart Data (Deceased)
-    const allMonthsSet = new Set();
-    activeIds.forEach(id => { (compBranches[id].deceased.monthly || []).forEach(m => allMonthsSet.add(m.month)); });
-    const allMonths = [...allMonthsSet].sort();
-
-    const lineDatasets = activeIds.map((id, index) => {
-      const bMonthly = compBranches[id].deceased.monthly || [];
-      const data = allMonths.map(m => {
-        const f = bMonthly.find(x => x.month === m);
-        return f ? f.count : 0;
-      });
-      return {
-        label: bNames[index], data,
-        borderColor: getBranchColor(index), backgroundColor: getBranchLightColor(index),
-        borderWidth: 3, fill: true, tension: 0.4
-      };
-    });
-
-    // Compile Age Group Bar Data
-    const ageGroups = ['0-18', '19-35', '36-50', '51-65', '65+'];
-    const ageDatasets = activeIds.map((id, index) => {
-      const data = ageGroups.map(a => compBranches[id].deceased.byAgeGroup[a] || 0);
-      return { label: bNames[index], data, backgroundColor: getBranchColor(index) };
-    });
-
-    // Compile Chemicals Data
-    const chemDatasets = activeIds.map((id, index) => {
-      return {
-        label: bNames[index],
-        data: [compBranches[id].chemicals.formaldehyde || 0, compBranches[id].chemicals.disinfectant || 0],
-        backgroundColor: getBranchColor(index),
-        barPercentage: 0.6
-      };
-    });
-
-    return (
-      <div className="cd-compare-wrapper">
-        <div className="cd-vs-banner mb-4">
-          <span className="fw-bold fs-5 text-white">Comparing {activeIds.length} Branches</span>
+      <div className="d-flex justify-content-center align-items-center vh-100" style={{ background: COLORS.light }}>
+        <div className="text-center">
+          <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
+          <h5 className="text-muted mt-3">Loading Dashboard</h5>
         </div>
-
-        {/* CHARTS ROW 1 */}
-        <Row className="g-4 mb-4">
-          <Col lg={8}>
-            <ChartCard title="DECEASED TRENDS (12 Months)">
-              <Line data={{ labels: allMonths.length > 0 ? allMonths : ['Jan', 'Feb', 'Mar'], datasets: lineDatasets }} options={chartOptions} />
-            </ChartCard>
-          </Col>
-          <Col lg={4}>
-            <Card className="h-100 border-0 shadow-sm cd-ai-card">
-              <Card.Body className="p-4">
-                <div className="d-flex align-items-center gap-2 mb-3">
-                  <Cpu size={20} className="cd-ai-icon" />
-                  <h6 className="mb-0 fw-bold cd-ai-title">AI INSIGHTS & RANKINGS</h6>
-                </div>
-                <div className="cd-insight-box winner-box mb-3">
-                  <strong>🏆 {insights.winner}</strong>
-                </div>
-                <div className="mb-3 small">
-                  <div><strong>Top Volume:</strong> {insights.topPerformers.deceasedVolume}</div>
-                </div>
-                <div className="cd-recommendations mt-3">
-                  {insights.recommendations.map((rec, i) => (
-                    <div key={i} className="cd-rec-item"><span className="bullet">💡</span> {rec}</div>
-                  ))}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* CHARTS ROW 2 */}
-        <Row className="g-4 mb-4">
-          <Col lg={12}>
-            <ChartCard title="DECEASED BY AGE GROUP">
-              <Bar data={{ labels: ageGroups, datasets: ageDatasets }} options={chartOptions} />
-            </ChartCard>
-          </Col>
-        </Row>
-
-        {/* ASSETS ROW */}
-        <Row className="g-4 mb-4">
-          <Col lg={4}>
-            <ChartCard title="HEARSE FUEL LEVELS">
-              <div className="d-flex flex-column gap-2 mt-2">
-                {activeIds.map((id, index) => (
-                  <BatteryGauge key={id} label={bNames[index]} percentage={compBranches[id].hearses.fuelAvg} color={getBranchColor(index)} />
-                ))}
-              </div>
-            </ChartCard>
-          </Col>
-          <Col lg={4}>
-            <ChartCard title="CHEMICAL STOCK (Avg %)">
-              <Bar data={{ labels: ['Formaldehyde', 'Disinfectant'], datasets: chemDatasets }} options={{ ...chartOptions, indexAxis: 'y' }} />
-            </ChartCard>
-          </Col>
-          <Col lg={4}>
-            <ChartCard title="COFFIN INVENTORY">
-               <div className="row g-2">
-                 {activeIds.map((id, index) => (
-                    <div key={id} className={`col-${activeIds.length > 2 ? '6' : '6'} mb-3`}>
-                      <Doughnut data={{
-                        labels: ['Avail', 'Rsvd', 'InUse'],
-                        datasets: [{ data: [compBranches[id].coffins.available, compBranches[id].coffins.reserved, compBranches[id].coffins.inUse], backgroundColor: [getBranchColor(index), COLORS.gray, COLORS.danger] }]
-                      }} options={noGridOptions} />
-                      <div className="text-center mt-2 fw-bold text-truncate small" style={{color: getBranchColor(index)}}>{bNames[index]}</div>
-                    </div>
-                 ))}
-               </div>
-            </ChartCard>
-          </Col>
-        </Row>
-
-        {/* DYNAMIC SUMMARY TABLE */}
-        <Card className="border-0 shadow-sm cd-summary-card">
-          <Card.Body className="p-0">
-            <div className="table-responsive">
-              <table className="table cd-summary-table mb-0">
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    {activeIds.map((id, index) => (
-                      <th key={id} className="text-end" style={{ color: getBranchColor(index) }}>{bNames[index]}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Deceased Volume</strong></td>
-                    {activeIds.map(id => <td key={id} className="text-end">{compBranches[id].deceased.total}</td>)}
-                  </tr>
-                  <tr>
-                    <td><strong>Coffins Available</strong></td>
-                    {activeIds.map(id => <td key={id} className="text-end">{compBranches[id].coffins.available}</td>)}
-                  </tr>
-                  <tr>
-                    <td><strong>Hearse Available</strong></td>
-                    {activeIds.map(id => <td key={id} className="text-end">{compBranches[id].hearses.available}/{compBranches[id].hearses.total}</td>)}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </Card.Body>
-        </Card>
       </div>
     );
-  };
+  }
+
+  const dashboardData = data || {};
+  const deceased = Array.isArray(dashboardData.deceased) ? dashboardData.deceased[0] || {} : dashboardData.deceased || {};
+  const bookings = dashboardData.bookings || {};
+  const fleet = dashboardData.fleet || {};
+  const coffins = dashboardData.coffins || {};
+  const workshop = dashboardData.workshop || {};
+  const caseStatus = (Array.isArray(dashboardData.caseStatus) ? dashboardData.caseStatus : []);
+  const deceasedTrends = (Array.isArray(dashboardData.deceasedTrends) ? dashboardData.deceasedTrends : []);
+  const coffinSalesData = (Array.isArray(dashboardData.coffinSales) ? dashboardData.coffinSales : []);
+  const chemicalData = (Array.isArray(dashboardData.chemicals) ? dashboardData.chemicals : []);
 
   return (
-    <Container fluid className="cd-page">
-      <div className="cd-header mb-4">
-        <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-          <div>
-            <h3 className="cd-title fw-bold mb-1">Advanced Analytics {isCompareMode && <Badge bg="primary" className="ms-2">COMPARE MODE</Badge>}</h3>
-            <p className="text-muted mb-0 small">Real-time business intelligence for RestPoint</p>
-          </div>
-          <div className="d-flex flex-wrap gap-2 align-items-center">
-            
-            <Button variant={isCompareMode ? "primary" : "outline-primary"} size="sm" className="d-flex align-items-center gap-2 cd-btn" onClick={() => setIsCompareMode(!isCompareMode)}>
-              <GitMerge size={16} /> {isCompareMode ? "Exit Compare" : "Compare Branches"}
-            </Button>
-
-            {!isCompareMode ? (
+    <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
+      {/* HEADER */}
+      <Card className="border-0 shadow-sm mb-4" style={{
+        borderRadius: "12px",
+        background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%)`
+      }}>
+        <Card.Body className="p-4">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <h2 className="text-white fw-bold mb-1">Mortuary Dashboard</h2>
+              <p className="text-white-50 mb-0 small">Real-time analytics & operations</p>
+            </div>
+            <div className="d-flex gap-2">
               <Dropdown>
-                <Dropdown.Toggle variant="white" size="sm" className="d-flex align-items-center gap-2 cd-select">
-                  <MapPin size={16} /> {selectedBranch?.name || "Select Branch"}
+                <Dropdown.Toggle variant="light" size="sm" className="d-flex align-items-center gap-2">
+                  <MapPin size={18} />
+                  {selectedBranch?.name || "Select Branch"}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   {branches.map(b => (
-                    <Dropdown.Item key={b.id} onClick={() => setSelectedBranch(b)} active={selectedBranch?.id === b.id}>{b.name}</Dropdown.Item>
+                    <Dropdown.Item key={b.id} onClick={() => setSelectedBranch(b)} active={selectedBranch?.id === b.id}>
+                      {b.name}
+                    </Dropdown.Item>
                   ))}
                 </Dropdown.Menu>
               </Dropdown>
-            ) : (
-              <Dropdown>
-                <Dropdown.Toggle variant="white" size="sm" className="d-flex align-items-center gap-2 cd-select">
-                  <GitMerge size={16} /> {selectedCompareBranches.length} Selected
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="p-2 shadow-sm" style={{ minWidth: '200px' }}>
-                  <div className="text-muted small fw-bold mb-2 px-2">Select branches (min 2)</div>
-                  {branches.map(b => {
-                     const isSel = selectedCompareBranches.includes(b.id || b.branch_id);
-                     return (
-                        <div key={b.id} className="form-check mb-2 px-3">
-                          <input className="form-check-input" type="checkbox" id={`chk-${b.id}`} checked={isSel} onChange={() => toggleCompareBranch(b.id || b.branch_id)} />
-                          <label className="form-check-label" htmlFor={`chk-${b.id}`}>{b.name}</label>
-                        </div>
-                     )
-                  })}
-                </Dropdown.Menu>
-              </Dropdown>
-            )}
-            
-            <Button variant="white" size="sm" onClick={loadData} disabled={refreshing} className="d-flex align-items-center gap-2 border shadow-sm">
-              <RotateCw size={16} className={refreshing ? "cd-spin" : ""} />
-            </Button>
-            <Button variant="dark" size="sm" className="d-flex align-items-center gap-2 cd-btn shadow-sm">
-              <FileText size={16} /> Export
-            </Button>
+              <Button variant="light" size="sm" onClick={fetchDashboardData} disabled={refreshing} className="d-flex align-items-center gap-2">
+                <RotateCw size={18} />
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
-      {isCompareMode ? renderCompareDashboard() : renderStandardDashboard()}
+        </Card.Body>
+      </Card>
+
+      {/* KEY METRICS */}
+      <Row className="g-3 mb-4">
+        <Col xs={6} lg={3}><StatCard title="Total Deceased" value={deceased.total || "-"} icon={Users} color="primary" /></Col>
+        <Col xs={6} lg={3}><StatCard title="Active Cases" value={deceased.active || "-"} icon={CheckCircle} color="success" /></Col>
+        <Col xs={6} lg={3}><StatCard title="This Month" value={deceased.this_month || "-"} icon={Calendar} color="warning" /></Col>
+        <Col xs={6} lg={3}><StatCard title="This Week" value={deceased.this_week || "-"} icon={TrendingUp} color="info" /></Col>
+      </Row>
+
+      <Row className="g-3 mb-4">
+        <Col xs={6} md={3}><StatCard title="Bookings (Week)" value={bookings.thisWeek || "0"} icon={Truck} color="purple" /></Col>
+        <Col xs={6} md={3}><StatCard title="Fleet Available" value={`${fleet.available || 0}/${fleet.total || 0}`} icon={Truck} color="success" /></Col>
+        <Col xs={6} md={3}><StatCard title="Coffin Stock" value={coffins.totalStock || "0"} icon={Box} color="warning" /></Col>
+        <Col xs={6} md={3}><StatCard title="Workshop Orders" value={workshop.total_orders || "0"} icon={Activity} color="primary" /></Col>
+      </Row>
+
+      {/* DECEASED SECTION */}
+      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Deceased Management" icon={Users} color={COLORS.primary} />
+          <Row className="g-4">
+            <Col lg={6}>
+              <ChartCard title="Cases (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
+                <Line data={{
+                  labels: deceasedTrends.map(d => d.month_label || "") || [],
+                  datasets: [{
+                    label: "Cases",
+                    data: deceasedTrends.map(d => d.count || 0) || [],
+                    borderColor: COLORS.chart1,
+                    backgroundColor: COLORS.chart1 + "20",
+                    borderWidth: 3, fill: true, tension: 0.4
+                  }]
+                }} options={chartOptions} />
+              </ChartCard>
+            </Col>
+            <Col lg={6}>
+              <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
+                <Pie data={{
+                  labels: caseStatus.map(c => c.status || "Unknown") || [],
+                  datasets: [{
+                    data: caseStatus.map(c => c.count || 0) || [],
+                    backgroundColor: [COLORS.chart1, COLORS.chart2, COLORS.chart3, COLORS.chart4, COLORS.chart5]
+                  }]
+                }} options={chartOptions} />
+              </ChartCard>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* BOOKINGS SECTION - LINE CHART WITH CHARGES */}
+      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Hearse Bookings & Charges" icon={Truck} color={COLORS.purple} />
+          <Row className="g-3 mb-3">
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.purpleLight }}>
+                <small className="text-muted">Total Bookings</small>
+                <h5 className="fw-bold mb-0" style={{ color: COLORS.purple }}>{bookings.total || 0}</h5>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.successLight }}>
+                <small className="text-muted">Completed</small>
+                <h5 className="fw-bold mb-0" style={{ color: COLORS.success }}>{bookings.completed || 0}</h5>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.warningLight }}>
+                <small className="text-muted">In Progress</small>
+                <h5 className="fw-bold mb-0" style={{ color: "#92400e" }}>{bookings.booked || 0}</h5>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.dangerLight }}>
+                <small className="text-muted">Fleet</small>
+                <h5 className="fw-bold mb-0" style={{ color: COLORS.danger }}>{fleet.available || 0} ready</h5>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* INVENTORY SECTION */}
+      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Inventory Management" icon={Box} color={COLORS.warning} />
+          <Row className="g-4">
+            <Col lg={6}>
+              <ChartCard title="Coffin Sales" icon={ShoppingCart} color={COLORS.warning} height="280px">
+                <Bar data={{
+                  labels: coffinSalesData.map(c => c.type || "") || [],
+                  datasets: [{
+                    label: "Sold",
+                    data: coffinSalesData.map(c => c.sold || 0) || [],
+                    backgroundColor: COLORS.chart3
+                  }]
+                }} options={chartOptions} />
+              </ChartCard>
+            </Col>
+            <Col lg={6}>
+              <ChartCard title="Chemical Usage" icon={FlaskConical} color={COLORS.danger} height="280px">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
+                  {chemicalData.slice(0, 4).map((chem, i) => (
+                    <div key={i} className="text-center p-3 rounded-3" style={{ backgroundColor: COLORS.dangerLight }}>
+                      <small className="text-muted d-block">{chem.chemical}</small>
+                      <h6 className="fw-bold mb-0" style={{ color: COLORS.danger }}>{chem.totalUsed} {chem.unit}</h6>
+                    </div>
+                  ))}
+                </div>
+              </ChartCard>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* WORKSHOP SECTION */}
+      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Workshop Production" icon={Activity} color={COLORS.purple} />
+          <Row className="g-3">
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.purpleLight }}>
+                <h5 className="fw-bold mb-0" style={{ color: COLORS.purple }}>{workshop.total_orders || 0}</h5>
+                <small className="text-muted">Total Orders</small>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.successLight }}>
+                <h5 className="fw-bold mb-0" style={{ color: COLORS.success }}>{workshop.completed || 0}</h5>
+                <small className="text-muted">Completed</small>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.warningLight }}>
+                <h5 className="fw-bold mb-0" style={{ color: "#92400e" }}>{workshop.pending || 0}</h5>
+                <small className="text-muted">Pending</small>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.infoLight }}>
+                <h5 className="fw-bold mb-0" style={{ color: COLORS.info }}>0</h5>
+                <small className="text-muted">Workers</small>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
     </Container>
   );
 };
