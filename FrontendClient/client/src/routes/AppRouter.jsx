@@ -3,6 +3,7 @@ import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 're
 
 import { tenantApi } from '../api/tenant.api';
 import { useTenantStore } from '../modules/seo/useTenantStore';
+import { useAuth } from '../context/AuthContext';
 import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
@@ -107,10 +108,21 @@ const RouteLoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('authToken');
-  const user = localStorage.getItem('user');
+  const { user, loading } = useAuth();
   const location = useLocation();
-  if (!token || !user || token === 'undefined' || token === 'null') {
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F7F9FB' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '40px', height: '40px', border: '3px solid #E5E7EB', borderTop: '3px solid #C9A84C', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+          <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>Validating session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !user.isAuthenticated) {
     // Preserve tenantSlug so we don't redirect to 'default'
     const slug = localStorage.getItem('tenantSlug');
     localStorage.removeItem('authToken');

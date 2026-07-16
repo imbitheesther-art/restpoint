@@ -43,6 +43,7 @@ const DashboardContainer = styled.div`
   background: ${COLORS.light};
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
   
   @media (min-width: 768px) {
     padding: 24px;
@@ -667,7 +668,6 @@ const ChemicalManagementDashboard = () => {
     reorder_level: '',
     unit_cost: '',
     hazard_level: 'low',
-    expiry_date: '',
     notes: '',
     jerican_capacity: '',
     jericans_received: ''
@@ -762,7 +762,6 @@ const ChemicalManagementDashboard = () => {
         reorder_level: parseFloat(formData.reorder_level) || 0,
         unit_cost: parseFloat(formData.unit_cost) || 0,
         hazard_level: formData.hazard_level.toLowerCase(),
-        expiry_date: formData.expiry_date || null,
         notes: formData.notes || null,
         branch_id: 1,
         initial_quantity: parseFloat(formData.current_stock) || 0,
@@ -858,7 +857,6 @@ const ChemicalManagementDashboard = () => {
       reorder_level: '',
       unit_cost: '',
       hazard_level: 'low',
-      expiry_date: '',
       notes: '',
       jerican_capacity: '',
       jericans_received: ''
@@ -1095,25 +1093,25 @@ const ChemicalManagementDashboard = () => {
               <EmptyDescription>Usage history will appear here after recording chemical usage</EmptyDescription>
             </EmptyState>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ overflowX: 'hidden' }}>
               <UsageTable>
                 <thead>
                   <tr style={{ borderBottom: `2px solid ${COLORS.border}` }}>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Date</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Chemical</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Quantity</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Used By</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Notes</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Date</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Chemical</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Quantity</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Used By</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {usageData.slice(0, 20).map(usage => (
                     <UsageRow key={usage.usage_id}>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{fmtDate(usage.used_at)}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 600 }}>{usage.chemical_name}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{usage.quantity_used} {usage.unit}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{usage.used_by || 'N/A'}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px', color: COLORS.textSecondary }}>{usage.usage_notes || '-'}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>{fmtDate(usage.used_at)}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{usage.chemical_name}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>{usage.quantity_used} {usage.unit}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>{usage.used_by || 'N/A'}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', color: COLORS.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{usage.usage_notes || '-'}</td>
                     </UsageRow>
                   ))}
                 </tbody>
@@ -1144,25 +1142,25 @@ const ChemicalManagementDashboard = () => {
               </EmptyDescription>
             </EmptyState>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ overflowX: 'hidden' }}>
               <UsageTable>
                 <thead>
                   <tr style={{ borderBottom: `2px solid ${COLORS.border}` }}>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Date</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Item</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Quantity</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Requested By</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary }}>Status</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Date</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Item</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Quantity</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Requested By</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ppeRequests.map(request => (
                     <UsageRow key={request.id}>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{fmtDate(request.created_at)}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 600 }}>{request.item_name}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{request.quantity_requested}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>{request.requested_by}</td>
-                      <td style={{ padding: '12px 8px', fontSize: '13px' }}>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>{fmtDate(request.created_at)}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{request.item_name}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>{request.quantity_requested}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>{request.requested_by}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '13px', whiteSpace: 'nowrap' }}>
                         <StatusBadge lowStock={request.status === 'pending'}>
                           {request.status}
                         </StatusBadge>
@@ -1258,14 +1256,6 @@ const ChemicalManagementDashboard = () => {
                       placeholder="low, medium, high"
                       value={formData.hazard_level}
                       onChange={(e) => setFormData({ ...formData, hazard_level: e.target.value })}
-                    />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Expiry Date</Label>
-                    <Input
-                      type="date"
-                      value={formData.expiry_date}
-                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
                     />
                   </FormGroup>
                   {/* Only show jerican fields if unit is NOT liters */}

@@ -3,6 +3,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 /* Hero Section */
@@ -11,6 +12,7 @@
     color: white;
     padding: 6rem 0 4rem;
     text-align: center;
+    overflow: hidden;
 }
 
 .hero h1 {
@@ -77,6 +79,7 @@
 .features {
     padding: 5rem 0;
     background: #F5F7FA;
+    overflow: hidden;
 }
 
 .features h2 {
@@ -127,6 +130,7 @@
     color: white;
     padding: 4rem 0;
     text-align: center;
+    overflow: hidden;
 }
 
 .cta h2 {
@@ -159,6 +163,7 @@
     padding: 2rem 0;
     text-align: center;
     margin-top: auto;
+    overflow: hidden;
 }
 
 .footer p {
@@ -171,6 +176,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1.5rem;
+    overflow: hidden;
 }
 
 /* Responsive */

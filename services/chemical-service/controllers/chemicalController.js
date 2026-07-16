@@ -42,7 +42,6 @@ exports.getAll = async (req, res) => {
       hazard_level: r.hazard_level || 'low',
       supplier: r.supplier,
       batch_number: r.batch_number,
-      expiry_date: r.expiry_date,
       total_used: r.total_used_30d,
       used_today: r.used_today,
       is_low_stock: r.is_low_stock,
@@ -86,7 +85,7 @@ exports.create = async (req, res) => {
     const tenantDb = req.tenant?.db_name;
     if (!tenantDb) return res.status(400).json({ success: false, message: 'Tenant database not resolved' });
 
-    const { name, category, unit, current_stock, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, expiry_date, notes } = req.body;
+    const { name, category, unit, current_stock, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, notes } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Chemical name is required' });
 
     const effectiveCategory = category ? category.toLowerCase() : 'embalming';
@@ -95,9 +94,9 @@ exports.create = async (req, res) => {
     const initialQty = parseFloat(current_stock) || 0;
 
     const result = await safeTenantExecute(tenantDb,
-      `INSERT INTO chemicals (name, category, unit, current_stock, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, expiry_date, notes) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, effectiveCategory, effectiveUnit, initialQty, min_stock_level || 0, reorder_level || 0, unit_cost || 0, effectiveHazard, supplier || null, batch_number || null, expiry_date || null, notes || null]
+      `INSERT INTO chemicals (name, category, unit, current_stock, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, notes) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, effectiveCategory, effectiveUnit, initialQty, min_stock_level || 0, reorder_level || 0, unit_cost || 0, effectiveHazard, supplier || null, batch_number || null, notes || null]
     );
 
     // Log initial stock as received transaction if quantity > 0
@@ -124,16 +123,16 @@ exports.update = async (req, res) => {
     const tenantDb = req.tenant?.db_name;
     if (!tenantDb) return res.status(400).json({ success: false, message: 'Tenant database not resolved' });
 
-    const { name, category, unit, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, expiry_date, notes } = req.body;
+    const { name, category, unit, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, notes } = req.body;
 
     await safeTenantExecute(tenantDb,
       `UPDATE chemicals SET name=COALESCE(?,name), category=COALESCE(?,category), unit=COALESCE(?,unit),
        min_stock_level=COALESCE(?,min_stock_level), reorder_level=COALESCE(?,reorder_level), 
        unit_cost=COALESCE(?,unit_cost), hazard_level=COALESCE(?,hazard_level),
        supplier=COALESCE(?,supplier), batch_number=COALESCE(?,batch_number),
-       expiry_date=COALESCE(?,expiry_date), notes=COALESCE(?,notes)
+       notes=COALESCE(?,notes)
        WHERE id=? AND is_active=1`,
-      [name, category, unit, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, expiry_date, notes, req.params.id]
+      [name, category, unit, min_stock_level, reorder_level, unit_cost, hazard_level, supplier, batch_number, notes, req.params.id]
     );
 
     res.json({ success: true, message: 'Chemical updated successfully' });
