@@ -88,43 +88,6 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
   </Card>
 );
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || (
-        <div style={{
-          padding: '1rem',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '8px',
-          color: COLORS.danger,
-          textAlign: 'center'
-        }}>
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>
-            {this.props.errorMessage || 'Something went wrong loading this component.'}
-          </p>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
 const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => {
   const [error, setError] = React.useState(null);
 
