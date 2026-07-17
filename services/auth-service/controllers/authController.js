@@ -262,20 +262,10 @@ exports.login = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!password || password.length < 8) {
-    console.log('Invalid password length');
+  if (!password) {
     return res.status(400).json({
       success: false,
-      message: 'Password is required and must be at least 8 characters'
-    });
-  }
-
-  // Password strength validation
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (!passwordRegex.test(password)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)'
+      message: 'Password is required'
     });
   }
 
