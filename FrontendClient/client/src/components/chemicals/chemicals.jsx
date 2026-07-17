@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import {
   Package, TrendingUp, AlertTriangle, CheckCircle, Search,
   Beaker, Plus, X, Save, History, Shield, FlaskConical,
@@ -352,7 +352,7 @@ const Badge = styled.span`
     height: 5px;
     border-radius: 50%;
     background: currentColor;
-    ${({ $low }) => $low && `animation: ${pulseSoft} 1.4s ease-in-out infinite;`}
+    ${({ $low }) => $low && css`animation: ${pulseSoft} 1.4s ease-in-out infinite;`}
   }
 `;
 
@@ -832,8 +832,7 @@ const PPEBadge = ({ status }) => {
       <span className="dot" style={{
         width: 5, height: 5, borderRadius: '50%',
         background: 'currentColor',
-        ...(status === 'pending' ? { animation: `${pulseSoft} 1.4s ease-in-out infinite` } : {}),
-      }} />
+        }} />
       {status || 'Unknown'}
     </span>
   );
