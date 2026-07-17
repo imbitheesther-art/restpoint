@@ -634,6 +634,7 @@ const Loading = ({ text }) => (
    ═══════════════════════════════════════════════════════════════ */
 const DriverPortal = () => {
     const navigate = useNavigate();
+    const { socket, connected } = useSocket();
     const [bookings, setBookings] = useState([]);
     const [leaves, setLeaves] = useState([]);
     const [loadingB, setLoadingB] = useState(true);
@@ -681,7 +682,6 @@ const DriverPortal = () => {
 
     // Real-time socket updates for bookings
     useEffect(() => {
-        const { socket, connected } = useSocket();
         if (!socket || !connected) return;
 
         const handleNewBooking = (data) => {
@@ -708,7 +708,7 @@ const DriverPortal = () => {
             socket.off('booking_status_updated', handleStatusUpdate);
             socket.off('booking_postponed', handleBookingPostponed);
         };
-    }, [loadB]);
+    }, [loadB, socket, connected]);
 
     const changeStatus = async (id, s) => {
         try {
