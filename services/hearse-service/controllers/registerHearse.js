@@ -135,6 +135,33 @@ const registerHearse = asyncHandler(async (req, res) => {
 
         console.log('✅ Hearse Insert Result:', result);
 
+        // ✅ Emit real-time update via Socket.IO
+        const io = req.app.get('io');
+        if (io) {
+            const newHearse = {
+                id: result.insertId,
+                hearse_code,
+                hearse_name: hearse_name || null,
+                plate_number: plate_number.trim(),
+                model: model || null,
+                capacity: capacity || 8,
+                status: status || 'available',
+                branch_id: assigned_branch_id,
+                branch_name: resolvedBranchCode ? `Branch ${assigned_branch_id}` : `Branch ${assigned_branch_id}`,
+                branch_code: resolvedBranchCode || `BRANCH-${assigned_branch_id}`,
+                image: image,
+                created_at: now,
+                updated_at: now
+            };
+            io.emit('hearse_registered', {
+                type: 'HEARSE_REGISTERED',
+                hearse: newHearse,
+                timestamp: now,
+                message: `New hearse registered: ${hearse_name || plate_number}`
+            });
+            console.log('📡 [Socket] Emitted hearse_registered event');
+        }
+
         return res.status(201).json({
             success: true,
             message: 'Hearse registered successfully.',

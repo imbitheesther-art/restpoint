@@ -15,6 +15,7 @@ const getAvailableHearsesCrossBranch = asyncHandler(async (req, res) => {
             `SELECT 
                 h.id,
                 h.hearse_code,
+                h.hearse_name,
                 h.plate_number,
                 h.model,
                 h.capacity,

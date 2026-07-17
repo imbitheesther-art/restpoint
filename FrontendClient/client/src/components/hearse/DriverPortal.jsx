@@ -680,18 +680,34 @@ const DriverPortal = () => {
         loadB(); loadL();
     }, [slug, loadB, loadL]);
 
-    // Real-time socket updates for bookings
+    // Real-time socket updates for bookings — live UI updates
     useEffect(() => {
         if (!socket || !connected) return;
 
         const handleNewBooking = (data) => {
             console.log('🔔 New booking received:', data);
-            loadB(true);
+            // Add the new booking to state instantly if it has booking data
+            if (data.booking) {
+                setBookings(prev => [data.booking, ...prev]);
+            } else {
+                loadB(true);
+            }
+            setRefreshing(false);
         };
 
         const handleStatusUpdate = (data) => {
             console.log('🔔 Booking status updated:', data);
-            loadB(true);
+            // Update the booking in state instantly without reload
+            if (data.booking_id && data.status) {
+                setBookings(prev => prev.map(b =>
+                    b.booking_id === data.booking_id
+                        ? { ...b, status: data.status, ...(data.booking || {}) }
+                        : b
+                ));
+            } else {
+                loadB(true);
+            }
+            setRefreshing(false);
         };
 
         const handleBookingPostponed = (data) => {
@@ -699,14 +715,20 @@ const DriverPortal = () => {
             loadB(true);
         };
 
+        const handleHearseRegistered = (data) => {
+            console.log('🔔 New hearse registered:', data);
+        };
+
         socket.on('new_booking', handleNewBooking);
         socket.on('booking_status_updated', handleStatusUpdate);
         socket.on('booking_postponed', handleBookingPostponed);
+        socket.on('hearse_registered', handleHearseRegistered);
 
         return () => {
             socket.off('new_booking', handleNewBooking);
             socket.off('booking_status_updated', handleStatusUpdate);
             socket.off('booking_postponed', handleBookingPostponed);
+            socket.off('hearse_registered', handleHearseRegistered);
         };
     }, [loadB, socket, connected]);
 

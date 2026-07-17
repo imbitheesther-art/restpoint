@@ -850,7 +850,20 @@ const BookingSystem = () => {
         socket.on('booking_status_updated', (d) => {
             setBookings(p => p.map(b => b.booking_id === d.booking_id ? { ...b, status: d.status, ...d.booking } : b));
         });
-        return () => { socket.off('new_booking'); socket.off('booking_status_updated'); };
+        socket.on('booking_postponed', (d) => {
+            addToast(`Booking ${d.booking_id} postponed`, 'warning');
+            loadData();
+        });
+        socket.on('hearse_registered', (d) => {
+            addToast(d.message || 'New hearse registered!');
+            loadHearses();
+        });
+        return () => {
+            socket.off('new_booking');
+            socket.off('booking_status_updated');
+            socket.off('booking_postponed');
+            socket.off('hearse_registered');
+        };
     }, [socket, addToast]);
 
     const loadData = async () => {

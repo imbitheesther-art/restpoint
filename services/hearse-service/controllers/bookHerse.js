@@ -246,7 +246,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             [bookingDbId]
         );
 
-        //  Emit real-time updates via Socket.IO
+        //  Emit real-time updates via Socket.IO — global to ALL connected clients
         if (io && booking) {
             io.emit('new_booking', {
                 type: 'NEW_BOOKING',
@@ -254,13 +254,6 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
                 booking: booking,
                 timestamp: now,
                 message: `New booking created for ${booking.client_name}`
-            });
-
-            io.to('admin').emit('booking_update', {
-                type: 'BOOKING_CREATED',
-                booking_id: booking.booking_id,
-                booking: booking,
-                timestamp: now
             });
         }
 
@@ -516,6 +509,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
                 hb.created_at,
                 h.id AS hearse_id, 
                 h.plate_number, 
+                h.hearse_name,
                 h.model, 
                 h.status AS hearse_status, 
                 h.capacity
