@@ -11,7 +11,7 @@ import {
 } from "chart.js";
 import { Line, Pie, Bar, Doughnut } from "react-chartjs-2";
 import {
-  TrendingUp, Zap, Users, ShoppingCart, Truck, AlertTriangle,
+  TrendingUp, Zap, Shield, Target, Users, ShoppingCart, Truck, AlertTriangle,
   Clock, CheckCircle, Activity, FlaskConical, Box, MapPin, RotateCw, Calendar,
   Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star, BarChart3
 } from "lucide-react";
@@ -455,6 +455,23 @@ const ComprehensiveDashboard = () => {
 
   const getTenantSlug = () => localStorage.getItem("tenantSlug") || "";
 
+  const getBranchIdentifier = (branch) => {
+    if (!branch) return "";
+    return branch.branch_slug || branch.slug || branch.branch_code || branch.branch_id || branch.id || "";
+  };
+
+  const buildBranchHeaders = (branch) => {
+    const headers = getTenantHeaders();
+    const branchSlug = branch?.branch_slug || branch?.slug || branch?.branch_code;
+    const branchId = branch?.branch_id || branch?.id;
+    if (branchSlug) {
+      headers['x-branch-slug'] = branchSlug;
+    } else if (branchId) {
+      headers['x-branch-id'] = branchId;
+    }
+    return headers;
+  };
+
   const fetchBranches = useCallback(async () => {
     try {
       const tenantSlug = getTenantSlug();
@@ -476,9 +493,7 @@ const ComprehensiveDashboard = () => {
     try {
       setRefreshing(true);
       setError(null);
-      const headers = getTenantHeaders();
-      const branchId = selectedBranch?.id || selectedBranch?.branch_id;
-      const branchHeaders = branchId ? { ...headers, "x-branch-id": branchId } : headers;
+      const branchHeaders = buildBranchHeaders(selectedBranch);
 
       const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/comprehensive`, { headers: branchHeaders });
       if (r.ok) {
@@ -533,10 +548,11 @@ const ComprehensiveDashboard = () => {
   }, [selectedBranch]);
 
   const fetchComparison = useCallback(async (ids) => {
-    if (ids.length < 2) return;
+    const validIds = ids.filter(Boolean);
+    if (validIds.length < 2) return;
     setLoadingComparison(true);
     try {
-      const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/compare?branches=${ids.join(",")}`, { headers: getTenantHeaders() });
+      const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/compare?branches=${validIds.join(",")}`, { headers: getTenantHeaders() });
       if (r.ok) { const d = await r.json(); setComparisonData(d.data); }
     } catch (e) { console.error("Comparison error:", e); }
     finally { setLoadingComparison(false); }
@@ -549,7 +565,8 @@ const ComprehensiveDashboard = () => {
     return () => clearInterval(interval);
   }, [selectedBranch, fetchDashboardData]);
 
-  const toggleBranch = (bid) => {
+  const toggleBranch = (branch) => {
+    const bid = getBranchIdentifier(branch);
     setSelectedBranches(prev => prev.includes(bid) ? prev.filter(x => x !== bid) : [...prev, bid]);
   };
 
@@ -640,6 +657,81 @@ const ComprehensiveDashboard = () => {
     }]
   ), "CoffinSales") : null;
 
+  const safeChemicalUsageTrendsData = Array.isArray(chemicals.usageTrends) && chemicals.usageTrends.length > 0 ? validateChartData(createCartesianChartData(
+    chemicals.usageTrends.map(item => item.month || item.month_label || item.chemical || 'Unknown'),
+    [{
+      label: "Usage",
+      data: chemicals.usageTrends.map(item => parseFloat(item.quantity || item.qty || 0) || 0),
+      borderColor: COLORS.info,
+      backgroundColor: COLORS.info + "20",
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: chemicals.usageTrends.map(item => (parseFloat(item.quantity || item.qty || 0) > 0 ? COLORS.info : "transparent"))
+    }]
+  ), "ChemicalUsageTrends") : null;
+
+  const ppeStatusCounts = (ppeRequests || []).reduce((acc, req) => {
+    const status = req.status || 'unknown';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const ppeStatusEntries = Object.entries(ppeStatusCounts);
+  const safePPEStatusData = ppeStatusEntries.length > 0 ? validateChartData(createRadialChartData(
+    ppeStatusEntries.map(([status]) => status),
+    ppeStatusEntries.map(([, count]) => count),
+    [COLORS.warning, COLORS.info, COLORS.success, COLORS.danger, COLORS.secondary]
+  ), "PPEStatus") : null;
+
+  const safeTopUsedChemicalsData = Array.isArray(chemicals.topUsed) && chemicals.topUsed.length > 0 ? validateChartData(createCartesianChartData(
+    chemicals.topUsed.map(item => item.name || item.chemical || 'Unknown'),
+    [{
+      label: "Top Usage",
+      data: chemicals.topUsed.map(item => parseFloat(item.totalUsed || item.total_used || 0) || 0),
+      backgroundColor: chemicals.topUsed.map((_, i) => chartColors[i % chartColors.length])
+    }]
+  ), "TopUsedChemicals") : null;
+
+  const workshopStages = Array.isArray(workshop.production) ? workshop.production : [];
+  const safeWorkshopProductionData = workshopStages.length > 0 ? validateChartData(createCartesianChartData(
+    workshopStages.map(stage => stage.stage || 'Stage'),
+    [
+      {
+        label: 'Completed',
+        data: workshopStages.map(stage => stage.completed || 0),
+        backgroundColor: COLORS.success
+      },
+      {
+        label: 'In Progress',
+        data: workshopStages.map(stage => stage.inProgress || 0),
+        backgroundColor: COLORS.warning
+      }
+    ]
+  ), 'WorkshopProduction') : null;
+
+  const branchCompareArr = branchCompare ? Object.values(branchCompare) : [];
+  const safeBranchComparisonChartData = branchCompareArr.length > 0 ? validateChartData(createCartesianChartData(
+    branchCompareArr.map(b => b.branchName || `Branch ${b.branchId}`),
+    [
+      {
+        label: 'Deceased',
+        data: branchCompareArr.map(b => b.deceased?.total || 0),
+        backgroundColor: COLORS.primary + '60'
+      },
+      {
+        label: 'Bookings',
+        data: branchCompareArr.map(b => b.bookings?.total || 0),
+        backgroundColor: COLORS.warning + '60'
+      },
+      {
+        label: 'Revenue',
+        data: branchCompareArr.map(b => parseFloat(b.revenue?.total30d || 0) || 0),
+        backgroundColor: COLORS.success + '60'
+      }
+    ]
+  ), 'BranchComparison') : null;
+
   return (
     <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
       {/* HEADER */}
@@ -656,12 +748,15 @@ const ComprehensiveDashboard = () => {
                   <MapPin size={18} />{selectedBranch?.branch_name || selectedBranch?.name || "Select Branch"}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
-                  {branches.map(b => (
-                    <Dropdown.Item key={b.id || b.branch_id} onClick={() => setSelectedBranch(b)}
-                      active={(selectedBranch?.id || selectedBranch?.branch_id) === (b.id || b.branch_id)}>
-                      {b.branch_name || b.name}
-                    </Dropdown.Item>
-                  ))}
+                  {branches.map(b => {
+                    const bid = getBranchIdentifier(b);
+                    return (
+                      <Dropdown.Item key={bid || b.id || b.branch_id} onClick={() => setSelectedBranch(b)}
+                        active={getBranchIdentifier(selectedBranch) === bid}>
+                        {b.branch_name || b.name}
+                      </Dropdown.Item>
+                    );
+                  })}
                 </Dropdown.Menu>
               </Dropdown>
               <Button variant="light" size="sm" onClick={fetchDashboardData} disabled={refreshing} className="d-flex align-items-center gap-2">
@@ -834,7 +929,7 @@ const ComprehensiveDashboard = () => {
         <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
           <Card.Body className="p-4">
             <SectionHeader title="Workshop Production" icon={Activity} color={COLORS.purple} />
-            <Row className="g-3">
+            <Row className="g-3 mb-3">
               <Col xs={6} md={3}>
                 <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.purpleLight }}>
                   <h5 className="fw-bold mb-0" style={{ color: COLORS.purple }}>{workshop.orders?.total || 0}</h5>
@@ -860,6 +955,35 @@ const ComprehensiveDashboard = () => {
                 </div>
               </Col>
             </Row>
+            <Row className="g-4">
+              <Col lg={8}>
+                <ChartCard title="Workshop Stage Performance" icon={BarChart3} color={COLORS.purple} height="320px">
+                  {safeWorkshopProductionData ? (
+                    <SafeChart ChartComponent={Bar} data={safeWorkshopProductionData} options={cartesianChartOptions} chartName="WorkshopProduction" />
+                  ) : (
+                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                      <small>No workshop stage data available for this branch.</small>
+                    </div>
+                  )}
+                </ChartCard>
+              </Col>
+              <Col lg={4}>
+                <ChartCard title="Workshop Efficiency" icon={Target} color={COLORS.success} height="320px">
+                  <div className="d-flex flex-column justify-content-center align-items-center h-100 text-center">
+                    <h2 className="fw-bold" style={{ color: COLORS.success }}>{Math.round(workshop.orders?.completed / Math.max(1, workshop.orders?.total) * 100)}%</h2>
+                    <p className="text-muted mb-0">Order completion rate</p>
+                    <div style={{ width: '120px', height: '120px', position: 'relative', marginTop: '1rem' }}>
+                      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: COLORS.light }} />
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: COLORS.purple }}>{Math.round(workshop.orders?.completed / Math.max(1, workshop.orders?.total) * 100)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ChartCard>
+              </Col>
+            </Row>
           </Card.Body>
         </Card>
       )}
@@ -869,76 +993,103 @@ const ComprehensiveDashboard = () => {
         <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
           <Card.Body className="p-4">
             <SectionHeader title="Chemicals & PPE" icon={FlaskConical} color={COLORS.info} />
-            <Row className="g-3">
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.infoLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.info }}>{chemicals.recent?.length || 0}</h5>
-                  <small className="text-muted">Recent Chemicals</small>
-                </div>
+            <Row className="g-4 mb-4">
+              <Col lg={4}>
+                <ChartCard title="Chemical Usage Trend" icon={TrendingUp} color={COLORS.info} height="280px">
+                  {safeChemicalUsageTrendsData ? (
+                    <SafeChart ChartComponent={Line} data={safeChemicalUsageTrendsData} options={cartesianChartOptions} chartName="ChemicalUsageTrend" />
+                  ) : (
+                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                      <small>No chemical usage trend data available</small>
+                    </div>
+                  )}
+                </ChartCard>
               </Col>
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.dangerLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.danger }}>{chemicals.lowStock?.length || 0}</h5>
-                  <small className="text-muted">Low Stock Alerts</small>
-                </div>
+              <Col lg={4}>
+                <ChartCard title="PPE Request Status" icon={Shield} color={COLORS.warning} height="280px">
+                  {safePPEStatusData ? (
+                    <SafeChart ChartComponent={Doughnut} data={safePPEStatusData} options={radialChartOptions} chartName="PPEStatus" />
+                  ) : (
+                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                      <small>No PPE request data to display</small>
+                    </div>
+                  )}
+                </ChartCard>
               </Col>
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.warningLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.warning }}>{ppeRequests?.length || 0}</h5>
-                  <small className="text-muted">PPE Requests</small>
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.successLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.success }}>{chemicals.topUsed?.length || 0}</h5>
-                  <small className="text-muted">Top Used Items</small>
-                </div>
+              <Col lg={4}>
+                <ChartCard title="Top Used Chemicals" icon={Zap} color={COLORS.danger} height="280px">
+                  {safeTopUsedChemicalsData ? (
+                    <SafeChart ChartComponent={Bar} data={safeTopUsedChemicalsData} options={cartesianChartOptions} chartName="TopUsedChemicals" />
+                  ) : (
+                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                      <small>No top usage data available</small>
+                    </div>
+                  )}
+                </ChartCard>
               </Col>
             </Row>
 
-            {/* Low Stock Chemicals List */}
-            {chemicals.lowStock?.length > 0 && (
-              <div className="mt-3">
-                <h6 className="fw-bold mb-2 text-danger">⚠️ Low Stock Chemicals</h6>
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {chemicals.lowStock.slice(0, 5).map((chem, i) => (
-                    <div key={i} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded" style={{ backgroundColor: COLORS.light }}>
-                      <div>
-                        <div className="fw-semibold small">{chem.name}</div>
-                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>{chem.category}</div>
-                      </div>
-                      <div className="text-end">
-                        <div className="fw-bold text-danger small">{chem.currentStock} / {chem.minLevel} {chem.unit}</div>
-                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>Deficit: {chem.deficit}</div>
-                      </div>
+            <Row className="g-3">
+              <Col lg={6}>
+                <div className="p-4 rounded-3" style={{ backgroundColor: COLORS.light }}>
+                  <h6 className="fw-semibold mb-3">Low Stock Chemicals</h6>
+                  {chemicals.lowStock?.length > 0 ? (
+                    chemicals.lowStock.slice(0, 5).map((chem, i) => {
+                      const pct = chem.minLevel > 0 ? Math.min(100, (chem.currentStock / chem.minLevel) * 100) : 0;
+                      const barColor = pct < 40 ? COLORS.danger : pct < 70 ? COLORS.warning : COLORS.success;
+                      return (
+                        <div key={i} className="mb-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                              <div className="fw-semibold small">{chem.name}</div>
+                              <div className="text-muted small">{chem.category}</div>
+                            </div>
+                            <div className="text-end">
+                              <div className="fw-bold small" style={{ color: barColor }}>{chem.currentStock}/{chem.minLevel} {chem.unit}</div>
+                              <div className="text-muted small">Deficit: {chem.deficit}</div>
+                            </div>
+                          </div>
+                          <div style={{ height: 8, borderRadius: 6, background: COLORS.border, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: barColor, transition: 'width 0.4s ease' }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-4 text-muted">
+                      <small>All chemicals are stocked above minimum levels.</small>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Recent PPE Requests */}
-            {ppeRequests?.length > 0 && (
-              <div className="mt-3">
-                <h6 className="fw-bold mb-2 text-warning">🛡️ Recent PPE Requests</h6>
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {ppeRequests.slice(0, 5).map((req, i) => (
-                    <div key={i} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded" style={{ backgroundColor: COLORS.light }}>
-                      <div>
-                        <div className="fw-semibold small">{req.item_name}</div>
-                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>Qty: {req.quantity_requested}</div>
-                      </div>
-                      <div className="text-end">
-                        <span className={`badge bg-${req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'info' : req.status === 'fulfilled' ? 'success' : 'danger'}`}>
-                          {req.status}
-                        </span>
-                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>{req.created_at ? new Date(req.created_at).toLocaleDateString() : '-'}</div>
-                      </div>
+              </Col>
+              <Col lg={6}>
+                <div className="p-4 rounded-3" style={{ backgroundColor: COLORS.light }}>
+                  <h6 className="fw-semibold mb-3">Recent PPE Requests</h6>
+                  {ppeRequests?.length > 0 ? (
+                    <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                      {ppeRequests.slice(0, 5).map((req, i) => (
+                        <div key={i} className="d-flex justify-content-between align-items-center p-3 mb-2 rounded" style={{ backgroundColor: '#FFFFFF' }}>
+                          <div>
+                            <div className="fw-semibold small">{req.item_name}</div>
+                            <div className="text-muted small">Qty: {req.quantity_requested}</div>
+                          </div>
+                          <div className="text-end">
+                            <span className={`badge bg-${req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'info' : req.status === 'fulfilled' ? 'success' : 'danger'}`}>
+                              {req.status}
+                            </span>
+                            <div className="text-muted small">{req.created_at ? new Date(req.created_at).toLocaleDateString() : '-'}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <div className="text-center py-5 text-muted">
+                      <small>No recent PPE requests found.</small>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              </Col>
+            </Row>
           </Card.Body>
         </Card>
       )}
@@ -954,15 +1105,15 @@ const ComprehensiveDashboard = () => {
                   <p className="text-muted small mb-3">Select branches (minimum 2) to compare metrics side-by-side:</p>
                   <div className="d-flex flex-wrap gap-3 mb-3">
                     {branches.map(b => {
-                      const bid = b.id || b.branch_id;
+                      const bid = getBranchIdentifier(b);
                       return (
                         <Form.Check
-                          key={bid}
+                          key={bid || b.id || b.branch_id}
                           type="switch"
                           id={`br-${bid}`}
                           label={`${b.branch_name || b.name} ${b.branch_location ? `(${b.branch_location})` : ""}`}
                           checked={selectedBranches.includes(bid)}
-                          onChange={() => toggleBranch(bid)}
+                          onChange={() => toggleBranch(b)}
                         />
                       );
                     })}
@@ -975,7 +1126,7 @@ const ComprehensiveDashboard = () => {
                     </Button>
                     {branches.length >= 2 && (
                       <Button variant="outline-primary" size="sm" onClick={() => {
-                        const allIds = branches.map(b => b.id || b.branch_id);
+                        const allIds = branches.map(b => getBranchIdentifier(b)).filter(Boolean);
                         setSelectedBranches(allIds);
                         fetchComparison(allIds);
                       }}>
