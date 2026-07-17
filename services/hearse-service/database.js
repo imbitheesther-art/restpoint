@@ -35,6 +35,11 @@ const getHearsePool = async () => {
     return hearsePool;
 };
 
+const getHearseConnection = async () => {
+    const pool = await getHearsePool();
+    return pool.getConnection();
+};
+
 const safeQuery = async (sql, params = []) => {
     const pool = await getHearsePool();
     const [rows] = await pool.query(sql, params);

@@ -1,4 +1,4 @@
-const { safeQuery, getConnection, getTenantPool } = require('../../../shared/config/db');
+const { safeQuery, getHearseConnection } = require('../database');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 
@@ -60,7 +60,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         // ✅ Check if hearse is already booked (double-booking prevention)
         if (hearse_id) {
             // Use transaction with row locking to prevent race conditions
-            const connection = await getConnection(req.tenant?.db_name || req.currentDbName);
+            const connection = await getHearseConnection();
             try {
                 await connection.beginTransaction();
 
@@ -130,8 +130,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             try {
                 const [deceased] = await safeQuery(
                     'SELECT deceased_id FROM deceased WHERE deceased_id = ? LIMIT 1',
-                    [deceased_id.trim()],
-                    req.tenantSlug
+                    [deceased_id.trim()]
                 );
                 if (!deceased) {
                     deceasedNote = `Provided deceased ID (${deceased_id}) not found — booking saved anyway.`;
@@ -153,8 +152,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         try {
             const [idResult] = await safeQuery(
                 'SELECT COUNT(*) as count FROM hearse_bookings',
-                [],
-                req.tenantSlug
+                []
             );
             const bookingNumber = String((idResult.count || 0) + 1).padStart(3, '0');
             var booking_code = `BK-${bookingNumber}`;
@@ -173,6 +171,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         // branch_code tells us which branch/Department this booking originated from
         const branchCode = req.headers['x-branch-code'] || req.headers['x-branch-id'] || null;
         const branchSlug = req.headers['x-branch-slug'] || null;
+        const tenantDbName = branchCode || branchSlug || req.tenantSlug || null;
 
         // ✅ Determine booking status - use 'booked' since it's now in ENUM
         const bookingStatus = 'booked';
@@ -189,7 +188,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
         const insertParams = [
             booking_code,
             hearse_id || null,
-            req.tenantSlug, // tenant_db_name - shared across all branches
+            tenantDbName,
             client_name.trim(),
             client_phone.trim(),
             client_email || null,
@@ -199,7 +198,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             now,
             now,
             req.headers['x-branch-id'] || null, // branch_id from header
-            req.headers['x-branch-code'] || req.headers['x-branch-id'] || null, // branch_code from header
+            branchCode, // branch_code from header
             createdBy ? parseInt(createdBy) : null, // booked_by user ID
             userEmail, // booked_by_email
             userName // booked_by_name
@@ -207,15 +206,14 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
 
         console.log('📝 Inserting booking with params:', insertParams);
 
-        const result = await safeQuery(insertQuery, insertParams, req.tenantSlug);
+        const result = await safeQuery(insertQuery, insertParams);
         const bookingDbId = result.insertId;
 
         // ✅ Update hearse status if assigned
         if (hearse_id) {
             await safeQuery(
                 'UPDATE hearses SET status = ?, updated_at = ? WHERE id = ?',
-                ['booked', now, hearse_id],
-                req.tenantSlug
+                ['booked', now, hearse_id]
             );
             console.log(`✅ Hearse ${hearse_id} status updated to 'booked'`);
         }
@@ -247,8 +245,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             LEFT JOIN hearses h ON hb.hearse_id = h.id
             WHERE hb.id = ?
             `,
-            [bookingDbId],
-            req.tenantSlug
+            [bookingDbId]
         );
 
         //  Emit real-time updates via Socket.IO
@@ -303,8 +300,6 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
 const getAllHearseBookings = asyncHandler(async (req, res) => {
     try {
         const { branch_id, status } = req.query;
-        const tenantSlug = req.tenantSlug;
-        const dbName = req.tenant?.db_name;
 
         // Build WHERE clauses
         const whereClauses = [];
@@ -321,23 +316,6 @@ const getAllHearseBookings = asyncHandler(async (req, res) => {
         }
 
         const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-        // Check whether branches table has branch_code column
-        let hasBranchCode = false;
-        try {
-            const { safeTenantQuery } = require('../../../shared/dbConfig');
-            const colResult = await safeTenantQuery(
-                dbName,
-                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'branches' AND COLUMN_NAME = 'branch_code'",
-                [dbName]
-            );
-            hasBranchCode = Array.isArray(colResult) && colResult.length > 0;
-        } catch (e) { /* ignore */ }
-
-        const branchCodeSel = hasBranchCode
-            ? 'COALESCE(h.branch_code, b.branch_code) AS branch_code,'
-            : 'h.branch_code AS branch_code,';
-
         const query = `
             SELECT 
                 hb.id AS booking_id,
@@ -360,28 +338,21 @@ const getAllHearseBookings = asyncHandler(async (req, res) => {
                 h.status AS hearse_status,
                 h.capacity,
                 h.branch_id,
-                ${branchCodeSel}
-                b.branch_name,
-                b.branch_location
+                h.branch_code AS branch_code,
+                h.branch_name AS branch_name
             FROM hearse_bookings hb
             LEFT JOIN hearses h ON hb.hearse_id = h.id
-            LEFT JOIN branches b ON h.branch_id = b.branch_id
             ${whereSQL}
             ORDER BY hb.created_at DESC
         `;
 
-        const bookings = await safeQuery(query, params, tenantSlug);
-
-        // Also return all known branches for the tenant (for filter dropdowns in UI)
-        let allBranches = [];
-        try {
-            const { safeTenantQuery } = require('../../../shared/dbConfig');
-            allBranches = await safeTenantQuery(
-                dbName,
-                'SELECT branch_id, branch_name, branch_slug, branch_location FROM branches WHERE is_active = TRUE ORDER BY branch_name ASC',
-                []
-            );
-        } catch (e) { /* branches table may not exist in older tenants */ }
+        const bookings = await safeQuery(query, params);
+        const allBranches = await safeQuery(
+            `SELECT DISTINCT branch_id, branch_code, branch_name
+             FROM hearses
+             WHERE branch_id IS NOT NULL
+             ORDER BY branch_name ASC`
+        );
 
         res.status(200).json({
             status: 'success',
@@ -417,8 +388,7 @@ const assignDriverToBooking = asyncHandler(async (req, res) => {
         // ✅ Step 1: Check if booking exists
         const [booking] = await safeQuery(
             'SELECT hearse_id FROM hearse_bookings WHERE id = ?',
-            [booking_id],
-            req.tenantSlug
+            [booking_id]
         );
 
         if (!booking) {
@@ -433,8 +403,7 @@ const assignDriverToBooking = asyncHandler(async (req, res) => {
         try {
             const [driver] = await safeQuery(
                 'SELECT id, driver_name FROM drivers WHERE id = ?',
-                [driver_id],
-                req.tenantSlug
+                [driver_id]
             );
 
             if (!driver) {
@@ -452,8 +421,7 @@ const assignDriverToBooking = asyncHandler(async (req, res) => {
         // ✅ Step 3: Assign driver to hearse
         await safeQuery(
             'UPDATE hearses SET driver_id = ?, updated_at = ? WHERE id = ?',
-            [driver_id, getKenyaTimeISO(), booking.hearse_id],
-            req.tenantSlug
+            [driver_id, getKenyaTimeISO(), booking.hearse_id]
         );
 
         // ✅ Log the action
@@ -504,8 +472,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
         // ✅ Check if booking exists
         const [booking] = await safeQuery(
             'SELECT * FROM hearse_bookings WHERE id = ?',
-            [booking_id],
-            req.tenantSlug
+            [booking_id]
         );
 
         if (!booking) {
@@ -519,8 +486,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
         const now = getKenyaTimeISO();
         await safeQuery(
             'UPDATE hearse_bookings SET status = ?, updated_at = ? WHERE id = ?',
-            [status, now, booking_id],
-            req.tenantSlug
+            [status, now, booking_id]
         );
 
         // ✅ Free hearse when booking is completed or cancelled
@@ -528,15 +494,13 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
             console.log(`[UpdateStatus] Freeing hearse ${booking.hearse_id} - booking ${booking_id} status: ${status}`);
             await safeQuery(
                 'UPDATE hearses SET status = ?, updated_at = ? WHERE id = ?',
-                ['available', now, booking.hearse_id],
-                req.tenantSlug
+                ['available', now, booking.hearse_id]
             );
 
             // Verify the update
             const [hearseCheck] = await safeQuery(
                 'SELECT id, status FROM hearses WHERE id = ?',
-                [booking.hearse_id],
-                req.tenantSlug
+                [booking.hearse_id]
             );
             console.log(`[UpdateStatus] Hearse ${booking.hearse_id} status after update:`, hearseCheck?.status);
         }
@@ -563,8 +527,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
             LEFT JOIN hearses h ON hb.hearse_id = h.id
             WHERE hb.id = ?
             `,
-            [booking_id],
-            req.tenantSlug
+            [booking_id]
         );
 
         // ✅ Emit real-time update
@@ -615,8 +578,7 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
         //  Check if booking exists
         const [booking] = await safeQuery(
             'SELECT * FROM hearse_bookings WHERE id = ?',
-            [booking_id],
-            req.tenantSlug
+            [booking_id]
         );
 
         if (!booking) {
@@ -644,16 +606,14 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
                 'pending', // Reset to pending after postponement
                 now,
                 booking_id
-            ],
-            req.tenantSlug
+            ]
         );
 
         // Free the hearse
         if (booking.hearse_id) {
             await safeQuery(
                 'UPDATE hearses SET status = ?, updated_at = ? WHERE id = ?',
-                ['available', now, booking.hearse_id],
-                req.tenantSlug
+                ['available', now, booking.hearse_id]
             );
         }
 
@@ -708,7 +668,7 @@ const getAllDrivers = asyncHandler(async (req, res) => {
                     created_at
                 FROM drivers
                 ORDER BY driver_name ASC
-            `, [], req.tenantSlug);
+            `, []);
         } catch (driverErr) {
             console.warn(' Drivers table not available, returning empty:', driverErr.message);
             drivers = [];
@@ -765,7 +725,7 @@ const getBookingsByDriver = asyncHandler(async (req, res) => {
             ORDER BY hb.created_at DESC
         `;
 
-        const bookings = await safeQuery(query, [driver_id], req.tenantSlug);
+        const bookings = await safeQuery(query, [driver_id]);
 
         res.status(200).json({
             status: 'success',
@@ -782,8 +742,8 @@ const getBookingsByDriver = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get availability across branches (tenant-aware)
- * Uses tenant slug directly as database name for better reliability
+ * Get availability across branches (hearser database only)
+ * Reads booking and hearse availability directly from the local hearse database.
  */
 const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
     try {
@@ -804,7 +764,7 @@ const getAvailabilityAcrossBranches = asyncHandler(async (req, res) => {
             LEFT JOIN hearses h ON hb.hearse_id = h.id
             WHERE hb.status NOT IN ('completed', 'cancelled')
             ORDER BY hb.created_at DESC
-        `, [], req.tenantSlug);
+        `, []);
 
         res.status(200).json({
             status: 'success',
@@ -838,8 +798,7 @@ const checkAvailabilityByDate = asyncHandler(async (req, res) => {
         // Get all hearses
         const allHearses = await safeQuery(
             'SELECT id, hearse_code, hearse_name, plate_number, status FROM hearses',
-            [],
-            req.tenantSlug
+            []
         );
 
         // Get bookings for the specific date
@@ -850,8 +809,7 @@ const checkAvailabilityByDate = asyncHandler(async (req, res) => {
              LEFT JOIN hearses h ON hb.hearse_id = h.id
              WHERE DATE(hb.booking_date) = ? 
              AND hb.status NOT IN ('cancelled', 'completed')`,
-            [date],
-            req.tenantSlug
+            [date]
         );
 
         // Get available hearses (not booked on that date)
@@ -889,8 +847,7 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
         try {
             const [driver] = await safeQuery(
                 'SELECT * FROM drivers WHERE id = ?',
-                [driver_id],
-                req.tenantSlug
+                [driver_id]
             );
 
             if (!driver) {
@@ -913,7 +870,7 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
                 FROM hearse_bookings hb
                 LEFT JOIN hearses h ON hb.hearse_id = h.id
                 WHERE h.driver_id = ?
-            `, [driver_id], req.tenantSlug);
+            `, [driver_id]);
 
             // ✅ Fetch recent bookings
             const recentBookings = await safeQuery(`
@@ -932,7 +889,7 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
                 WHERE h.driver_id = ?
                 ORDER BY hb.created_at DESC
                 LIMIT 5
-            `, [driver_id], req.tenantSlug);
+            `, [driver_id]);
 
             // ✅ Calculate metrics
             const completionRate = overview.total_bookings > 0

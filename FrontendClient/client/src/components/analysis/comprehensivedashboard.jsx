@@ -13,7 +13,7 @@ import { Line, Pie, Bar, Doughnut } from "react-chartjs-2";
 import {
   TrendingUp, Zap, Users, ShoppingCart, Truck, AlertTriangle,
   Clock, CheckCircle, Activity, FlaskConical, Box, MapPin, RotateCw, Calendar,
-  Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star
+  Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star, BarChart3
 } from "lucide-react";
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../config/env";
@@ -118,29 +118,37 @@ const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => 
 const SafeChart = ({ ChartComponent, data, options, chartName = "Chart" }) => {
   const [error, setError] = React.useState(null);
 
-  React.useEffect(() => {
-    if (!data) {
-      console.warn(`[SafeChart] ${chartName}: data is null/undefined`);
-      return;
+  const isValidChartData = React.useCallback((chartData) => {
+    if (!chartData || typeof chartData !== 'object') {
+      console.warn(`[SafeChart] ${chartName}: data is null/undefined or not an object`, chartData);
+      return false;
     }
-    if (!data.labels || !Array.isArray(data.labels) || data.labels.length === 0) {
-      console.warn(`[SafeChart] ${chartName}: invalid labels`, data.labels);
-      return;
+    if (!Array.isArray(chartData.labels) || chartData.labels.length === 0) {
+      console.warn(`[SafeChart] ${chartName}: invalid labels`, chartData.labels);
+      return false;
     }
-    if (!data.datasets || !Array.isArray(data.datasets) || data.datasets.length === 0) {
-      console.warn(`[SafeChart] ${chartName}: invalid datasets`, data.datasets);
-      return;
+    if (!Array.isArray(chartData.datasets) || chartData.datasets.length === 0) {
+      console.warn(`[SafeChart] ${chartName}: invalid datasets`, chartData.datasets);
+      return false;
     }
-    for (let i = 0; i < data.datasets.length; i++) {
-      if (!Array.isArray(data.datasets[i].data)) {
-        console.error(`[SafeChart] ${chartName}: dataset[${i}].data is not an array`, data.datasets[i]);
-        setError(`Invalid dataset ${i}`);
-        return;
+    for (let i = 0; i < chartData.datasets.length; i++) {
+      if (!Array.isArray(chartData.datasets[i]?.data)) {
+        console.error(`[SafeChart] ${chartName}: dataset[${i}].data is not an array`, chartData.datasets[i]);
+        return false;
       }
     }
-  }, [data, chartName]);
+    return true;
+  }, [chartName]);
 
-  if (error || !data) {
+  React.useEffect(() => {
+    if (!isValidChartData(data)) {
+      setError(`Invalid data for ${chartName}`);
+    } else {
+      setError(null);
+    }
+  }, [data, chartName, isValidChartData]);
+
+  if (error || !isValidChartData(data)) {
     return (
       <div className="d-flex align-items-center justify-content-center h-100 text-muted">
         <small>No data to display</small>
@@ -962,7 +970,7 @@ const ComprehensiveDashboard = () => {
                   <div className="d-flex gap-2">
                     <Button variant="primary" size="sm" onClick={() => fetchComparison(selectedBranches)}
                       disabled={loadingComparison || selectedBranches.length < 2}>
-                      {loadingComparison ? <Spinner size="sm" className="me-1" /> : <Bar size={14} className="me-1" />}
+                      {loadingComparison ? <Spinner size="sm" className="me-1" /> : <BarChart3 size={14} className="me-1" />}
                       Compare Selected
                     </Button>
                     {branches.length >= 2 && (

@@ -84,97 +84,107 @@ app.use(async (req, res, next) => {
             return next();
         }
 
-        // Resolve database directly — no active-status blocking
-        let dbName = await resolveDatabase(tenantSlug);
+        // Only resolve tenant metadata for tenant config endpoints.
+        // For hearse data operations, use the dedicated local hearse database directly.
+        if (req.path.startsWith('/tenants') || req.path.startsWith('/tenant')) {
+            // Resolve database directly — no active-status blocking
+            let dbName = await resolveDatabase(tenantSlug);
 
-        // Fallback: try converting slug to db name (e.g. mumo-feuneral-nairobi → mumo_feuneral_nairobi)
-        if (!dbName) {
-            dbName = tenantSlug.replace(/-/g, '_');
-        }
+            // Fallback: try converting slug to db name (e.g. mumo-feuneral-nairobi → mumo_feuneral_nairobi)
+            if (!dbName) {
+                dbName = tenantSlug.replace(/-/g, '_');
+            }
 
-        // For branch-level slugs (e.g. mumo-feuneral-machakos), resolve the parent tenant slug
-        // so that safeQuery() and other tenant-aware functions work correctly.
-        // We also store the list of ALL branch database names for this tenant (for cross-branch queries).
-        let resolvedTenantSlug = tenantSlug;
-        let allBranchDbs = null;
-        if (dbName && tenantSlug !== 'system_shared') {
-            try {
-                const rootPool = await getRootPool();
-                // First try direct lookup in tenants table (main branch)
-                const [tenantRows] = await rootPool.query(
-                    'SELECT tenant_slug, id FROM tenant_tracking.tenants WHERE db_name = ? AND status = "active" LIMIT 1',
-                    [dbName]
-                );
-                if (tenantRows && tenantRows.length > 0) {
-                    resolvedTenantSlug = tenantRows[0].tenant_slug;
-                    const tenantId = tenantRows[0].id;
-                    // Get all branch databases for this tenant
-                    const [branchRows] = await rootPool.query(
-                        'SELECT branch_slug, branch_db_name FROM tenant_tracking.branch_tracking WHERE tenant_id = ?',
-                        [tenantId]
+            // For branch-level slugs (e.g. mumo-feuneral-machakos), resolve the parent tenant slug
+            // so that safeQuery() and other tenant-aware functions work correctly.
+            let resolvedTenantSlug = tenantSlug;
+            let allBranchDbs = null;
+            if (dbName && tenantSlug !== 'system_shared') {
+                try {
+                    const rootPool = await getRootPool();
+                    // First try direct lookup in tenants table (main branch)
+                    const [tenantRows] = await rootPool.query(
+                        'SELECT tenant_slug, id FROM tenant_tracking.tenants WHERE db_name = ? AND status = "active" LIMIT 1',
+                        [dbName]
                     );
-                    allBranchDbs = branchRows.map(r => r.branch_db_name).filter(Boolean);
-                    Logger.info(`[HEARSE] Found ${allBranchDbs.length} branch databases for tenant ${resolvedTenantSlug}`);
-                } else {
-                    // Fallback: check if this slug is a branch slug in branch_tracking
-                    const [branchRows] = await rootPool.query(
-                        `SELECT bt.branch_db_name, bt.tenant_id, t.tenant_slug 
-                         FROM tenant_tracking.branch_tracking bt
-                         JOIN tenant_tracking.tenants t ON bt.tenant_id = t.id
-                         WHERE bt.branch_slug = ?`,
-                        [tenantSlug]
-                    );
-                    if (branchRows && branchRows.length > 0) {
-                        const row = branchRows[0];
-                        resolvedTenantSlug = row.tenant_slug;
-                        // Get all sibling branch databases
-                        const [siblingRows] = await rootPool.query(
+                    if (tenantRows && tenantRows.length > 0) {
+                        resolvedTenantSlug = tenantRows[0].tenant_slug;
+                        const tenantId = tenantRows[0].id;
+                        // Get all branch databases for this tenant
+                        const [branchRows] = await rootPool.query(
                             'SELECT branch_slug, branch_db_name FROM tenant_tracking.branch_tracking WHERE tenant_id = ?',
-                            [row.tenant_id]
+                            [tenantId]
                         );
-                        allBranchDbs = siblingRows.map(r => r.branch_db_name).filter(Boolean);
-                        // Also include the main tenant database (where hearses are registered)
-                        const [tenantRow] = await rootPool.query(
-                            'SELECT db_name FROM tenant_tracking.tenants WHERE id = ?',
-                            [row.tenant_id]
+                        allBranchDbs = branchRows.map(r => r.branch_db_name).filter(Boolean);
+                        Logger.info(`[HEARSE] Found ${allBranchDbs.length} branch databases for tenant ${resolvedTenantSlug}`);
+                    } else {
+                        // Fallback: check if this slug is a branch slug in branch_tracking
+                        const [branchRows] = await rootPool.query(
+                            `SELECT bt.branch_db_name, bt.tenant_id, t.tenant_slug 
+                             FROM tenant_tracking.branch_tracking bt
+                             JOIN tenant_tracking.tenants t ON bt.tenant_id = t.id
+                             WHERE bt.branch_slug = ?`,
+                            [tenantSlug]
                         );
-                        if (tenantRow && tenantRow.db_name) {
-                            allBranchDbs.unshift(tenantRow.db_name);
+                        if (branchRows && branchRows.length > 0) {
+                            const row = branchRows[0];
+                            resolvedTenantSlug = row.tenant_slug;
+                            // Get all sibling branch databases
+                            const [siblingRows] = await rootPool.query(
+                                'SELECT branch_slug, branch_db_name FROM tenant_tracking.branch_tracking WHERE tenant_id = ?',
+                                [row.tenant_id]
+                            );
+                            allBranchDbs = siblingRows.map(r => r.branch_db_name).filter(Boolean);
+                            // Also include the main tenant database (where hearses are registered)
+                            const [tenantRow] = await rootPool.query(
+                                'SELECT db_name FROM tenant_tracking.tenants WHERE id = ?',
+                                [row.tenant_id]
+                            );
+                            if (tenantRow && tenantRow.db_name) {
+                                allBranchDbs.unshift(tenantRow.db_name);
+                            }
+                            Logger.info(`[HEARSE] Branch slug ${tenantSlug} resolved to tenant ${resolvedTenantSlug}, ${allBranchDbs.length} databases (including main)`);
                         }
-                        Logger.info(`[HEARSE] Branch slug ${tenantSlug} resolved to tenant ${resolvedTenantSlug}, ${allBranchDbs.length} databases (including main)`);
                     }
+                } catch (e) {
+                    Logger.warn(`[HEARSE] Could not resolve parent tenant: ${e.message}`);
                 }
-            } catch (e) {
-                Logger.warn(`[HEARSE] Could not resolve parent tenant: ${e.message}`);
             }
-        }
 
-        req.tenantSlug = resolvedTenantSlug;
-        req.currentDbName = dbName;
-        req.allBranchDbs = allBranchDbs;
-        req.tenant = {
-            db_name: dbName,
-            tenant_slug: resolvedTenantSlug,
-            name: resolvedTenantSlug,
-            all_branch_dbs: allBranchDbs
-        };
+            req.tenantSlug = resolvedTenantSlug;
+            req.currentDbName = dbName;
+            req.allBranchDbs = allBranchDbs;
+            req.tenant = {
+                db_name: dbName,
+                tenant_slug: resolvedTenantSlug,
+                name: resolvedTenantSlug,
+                all_branch_dbs: allBranchDbs
+            };
 
-        Logger.info(`[HEARSE] Tenant resolved: ${dbName} (slug: ${resolvedTenantSlug})`);
+            Logger.info(`[HEARSE] Tenant resolved: ${dbName} (slug: ${resolvedTenantSlug})`);
 
-        // Resolve branch if not provided
-        if (!req.branchId && dbName) {
-            try {
-                const branches = await safeTenantQuery(
-                    dbName,
-                    'SELECT branch_id FROM branches LIMIT 1'
-                );
-                if (branches.length > 0) {
-                    req.branchId = branches[0].branch_id.toString();
-                    Logger.info(`[HEARSE] Branch resolved: ${req.branchId}`);
+            // Resolve branch if not provided
+            if (!req.branchId && dbName) {
+                try {
+                    const branches = await safeTenantQuery(
+                        dbName,
+                        'SELECT branch_id FROM branches LIMIT 1'
+                    );
+                    if (branches.length > 0) {
+                        req.branchId = branches[0].branch_id.toString();
+                        Logger.info(`[HEARSE] Branch resolved: ${req.branchId}`);
+                    }
+                } catch (e) {
+                    Logger.error(`[HEARSE] Branch resolution skipped: ${e.message}`);
                 }
-            } catch (e) {
-                Logger.error(`[HEARSE] Branch resolution skipped: ${e.message}`);
             }
+        } else {
+            // For hearse operations, skip tenant DB resolution and rely on the shared hearse database only.
+            req.tenant = {
+                db_name: tenantSlug,
+                tenant_slug: tenantSlug,
+                name: tenantSlug
+            };
         }
 
         next();
