@@ -34,7 +34,7 @@ const env = {
   WORKSHOP_API_URL: import.meta.env.VITE_WORKSHOP_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint' : 'http://localhost:5000/api/v1/restpoint'),
 
   // WebSocket URL for real-time features (hearse service port 5002)
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5002'),
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_SOCKETIO_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5013'),
 
   // Feature flags
   FEATURES: {

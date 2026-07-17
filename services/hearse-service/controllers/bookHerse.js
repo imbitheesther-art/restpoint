@@ -246,7 +246,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             [bookingDbId]
         );
 
-        //  Emit real-time updates via Socket.IO — global to ALL connected clients
+        //  Emit real-time updates via Socket.IO — local to this service
         if (io && booking) {
             io.emit('new_booking', {
                 type: 'NEW_BOOKING',
@@ -255,6 +255,23 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
                 timestamp: now,
                 message: `New booking created for ${booking.client_name}`
             });
+
+            // Also forward to central socketio-service if available so clients connected to central hub receive it
+            try {
+                const central = req.app.get('centralSocketClient') || global.centralSocketClient || null;
+                if (central && central.connected) {
+                    central.emit('new_booking', {
+                        source: 'hearse-service',
+                        tenant: req.tenantSlug,
+                        branch_id: req.headers['x-branch-id'] || null,
+                        booking_id: booking.booking_id,
+                        booking,
+                        timestamp: now
+                    });
+                }
+            } catch (e) {
+                console.warn('Forward to central socket failed', e && e.message);
+            }
         }
 
         //  Log successful booking creation
@@ -416,6 +433,26 @@ const assignDriverToBooking = asyncHandler(async (req, res) => {
         // ✅ Log the action
         console.log(`[ActionLog] ✅ Driver ${driverName} (ID: ${driver_id}) assigned to booking ${booking_id} by ${userInfo}`);
 
+        // Emit driver assignment event
+        try {
+            const payload = {
+                booking_id,
+                driver_id,
+                driver_name: driverName,
+                performed_by: userInfo,
+                timestamp: getKenyaTimeISO()
+            };
+            if (io) io.emit('driver_assigned', payload);
+
+            // Forward to central socket
+            try {
+                const central = req.app.get('centralSocketClient') || global.centralSocketClient || null;
+                if (central && central.connected) {
+                    central.emit('driver_assigned', Object.assign({}, payload, { source: 'hearse-service', tenant: req.tenantSlug, branch_id: req.headers['x-branch-id'] || null }));
+                }
+            } catch (e) { console.warn('Forward driver_assigned to central socket failed', e && e.message); }
+        } catch (e) { console.warn('Emit driver_assigned failed', e && e.message); }
+
         res.status(200).json({
             status: 'success',
             message: `Driver ${driverName} assigned successfully to the hearse.`,
@@ -522,14 +559,25 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
 
         // ✅ Emit real-time update
         if (io && updatedBooking) {
-            io.emit('booking_status_updated', {
+            const payload = {
                 type: 'STATUS_UPDATE',
                 booking_id: parseInt(booking_id),
                 status,
                 booking: updatedBooking,
                 timestamp: now,
                 message: `Booking status updated to ${status}`
-            });
+            };
+            io.emit('booking_status_updated', payload);
+
+            // Forward to central socketio-service if available
+            try {
+                const central = req.app.get('centralSocketClient') || global.centralSocketClient || null;
+                if (central && central.connected) {
+                    central.emit('booking_status_updated', Object.assign({}, payload, { source: 'hearse-service', tenant: req.tenantSlug, branch_id: req.headers['x-branch-id'] || null }));
+                }
+            } catch (e) {
+                console.warn('Forward booking_status_updated to central socket failed', e && e.message);
+            }
         }
 
         // ✅ Success response
@@ -613,12 +661,23 @@ const postponeHearseBooking = asyncHandler(async (req, res) => {
 
         // Notify clients (Socket)
         if (io) {
-            io.emit('booking_postponed', {
+            const payload = {
                 booking_id,
                 new_departure_time,
                 reason,
                 performed_by: userInfo
-            });
+            };
+            io.emit('booking_postponed', payload);
+
+            // Forward to central socketio-service
+            try {
+                const central = req.app.get('centralSocketClient') || global.centralSocketClient || null;
+                if (central && central.connected) {
+                    central.emit('booking_postponed', Object.assign({}, payload, { source: 'hearse-service', tenant: req.tenantSlug, branch_id: req.headers['x-branch-id'] || null }));
+                }
+            } catch (e) {
+                console.warn('Forward booking_postponed to central socket failed', e && e.message);
+            }
         }
 
         res.status(200).json({

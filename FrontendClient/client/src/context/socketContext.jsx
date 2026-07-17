@@ -44,16 +44,41 @@ export const SocketProvider = ({ children }) => {
             console.log('🔌 Socket connected:', socketInstance.id);
             setConnected(true);
 
-            // Join tenant room
+            // Tenant info
             const tenantSlug = localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
-            socketInstance.emit('join_tenant', tenantSlug);
-            console.log('[Socket] Joined tenant room:', tenantSlug);
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : {};
+            const userId = user?.user_id || user?.userId || null;
+            const userRole = user?.role || null;
 
-            // Join branch room if available
+            // Emit both modern and legacy join events to support mixed server implementations
+            // Modern central socket service expects kebab-case joining with payload
+            try {
+                socketInstance.emit('join-tenant', { tenantSlug, userId, userRole });
+                console.log('[Socket] Emitted join-tenant to central socket service', { tenantSlug, userId });
+            } catch (e) { console.warn('Failed to emit join-tenant', e); }
+
+            // Legacy services (some microservices) still listen for underscore events — emit those too
+            try {
+                socketInstance.emit('join_tenant', tenantSlug);
+                console.log('[Socket] Emitted legacy join_tenant', tenantSlug);
+            } catch (e) { /* ignore */ }
+
+            // Join branch rooms (both kebab-case and underscore) so branch-scoped updates are received
             const branchId = localStorage.getItem('branchId') || localStorage.getItem('branch_id');
             if (branchId) {
-                socketInstance.emit('join_branch', branchId);
-                console.log('[Socket] Joined branch room:', branchId);
+                try {
+                    socketInstance.emit('join-branch', { tenantSlug, branchId });
+                } catch (e) { /* ignore */ }
+                try {
+                    socketInstance.emit('join_branch', branchId);
+                    console.log('[Socket] Joined branch room (legacy):', branchId);
+                } catch (e) { /* ignore */ }
+            }
+
+            // Also request to join admin room if user role indicates admin
+            if (userRole && String(userRole).toLowerCase().includes('admin')) {
+                try { socketInstance.emit('join-admin'); } catch (e) { }
             }
         });
 

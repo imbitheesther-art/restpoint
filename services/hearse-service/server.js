@@ -27,6 +27,11 @@ const io = new Server(server, {
 });
 
 app.set('io', io);
+// Also expose the central socket client (if created) to request handlers via app.get('centralSocketClient')
+if (centralSocketClient) {
+    global.centralSocketClient = centralSocketClient;
+    app.set('centralSocketClient', centralSocketClient);
+}
 
 // Initialize hearse database on startup using knex migrations
 const { runMigrations } = require('./database');
@@ -63,6 +68,25 @@ io.on('connection', (socket) => {
         Logger.info(`Socket disconnected: ${socket.id}`);
     });
 });
+
+// --- Forward important emits to central socketio-service when configured ---
+// This helps ensure events reach clients connected to the central socket hub (Redis adapter)
+const CENTRAL_SOCKET_URL = process.env.CENTRAL_SOCKET_URL || `http://localhost:${process.env.SOCKETIO_SERVICE_EXTERNAL_PORT || 5013}`;
+let centralSocketClient = null;
+try {
+    // lazy-require to avoid startup error if socket.io-client is not installed
+    const { io: clientIo } = require('socket.io-client');
+    centralSocketClient = clientIo(CENTRAL_SOCKET_URL, { transports: ['websocket'], reconnection: true });
+
+    centralSocketClient.on('connect', () => {
+        Logger.info(`Connected to central socketio at ${CENTRAL_SOCKET_URL} as ${centralSocketClient.id}`);
+    });
+    centralSocketClient.on('connect_error', (err) => {
+        Logger.warn('Central socket connect_error', err.message);
+    });
+} catch (e) {
+    Logger.warn('socket.io-client not available, central forwarding disabled');
+}
 
 // Tenant Middleware - supports both tenant slugs and branch database name slugs
 app.use(async (req, res, next) => {
