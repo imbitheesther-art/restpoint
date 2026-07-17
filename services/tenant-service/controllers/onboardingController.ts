@@ -179,7 +179,7 @@ export class OnboardingController {
 
               // Insert system shared tenant if it doesn't exist
               await serverConn.query(`
-                INSERT IGNORE INTO tenants (tenant_slug, db_name, organization_name, status)
+                INSERT IGNORE INTO tenants (tenant_slug, db_name, tenant_name, status)
                 VALUES ('system_shared', 'restpoint_main', 'System Shared Database', 'active')
               `);
 

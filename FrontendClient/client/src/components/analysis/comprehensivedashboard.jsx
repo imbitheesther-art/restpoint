@@ -864,11 +864,11 @@ const ComprehensiveDashboard = () => {
   return (
     <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
       {/* HEADER */}
-      <Card className="border-0 mb-4" style={{ borderRadius: "16px", background: `linear-gradient(135deg, ${COLORS.primary} 0%, #1e3a5f 50%, ${COLORS.primaryLight} 100%)`, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
+      <Card className="border-0 mb-4" style={{ borderRadius: "16px", background: "#111113", boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
         <Card.Body className="p-4">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-              <h2 className="text-white fw-bold mb-1" style={{ fontSize: "1.4rem", letterSpacing: "-0.02em" }}>Mortuary Analytics Dashboard</h2>
+              <h2 className="text-white fw-bold mb-1" style={{ fontSize: "1.4rem", letterSpacing: "-0.02em" }}>Analytics</h2>
               <p className="text-white-50 mb-0" style={{ fontSize: "0.8rem" }}>Real-time branch comparison & intelligent insights</p>
             </div>
             <div className="d-flex gap-2 align-items-center flex-wrap">
