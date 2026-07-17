@@ -24,8 +24,8 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             booked_by
         } = req.body;
 
-        // ✅ Basic validation - only destination is required
-        console.log('📝 Booking request body:', {
+        //  Basic validation - only destination is required
+        console.log(' Booking request body:', {
             hearse_id,
             client_name,
             destination,

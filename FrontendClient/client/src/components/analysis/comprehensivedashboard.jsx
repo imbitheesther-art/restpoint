@@ -34,6 +34,47 @@ const COLORS = {
   chart5: "#8b5cf6", chart6: "#06b6d4", chart7: "#ec4899", chart8: "#14b8a6"
 };
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught error:', error, errorInfo);
+    if (this.props.onError) {
+      this.props.onError(error);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div style={{
+          padding: '1.5rem',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '12px',
+          color: COLORS.danger,
+          textAlign: 'center'
+        }}>
+          <AlertTriangle size={24} style={{ marginBottom: '0.5rem' }} />
+          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+            {this.props.errorMessage || 'Something went wrong loading this component.'}
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
   <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
     <Card.Body className="p-3">
@@ -46,6 +87,43 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
     </Card.Body>
   </Card>
 );
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div style={{
+          padding: '1rem',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '8px',
+          color: COLORS.danger,
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+            {this.props.errorMessage || 'Something went wrong loading this component.'}
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => {
   const [error, setError] = React.useState(null);
@@ -331,7 +409,7 @@ const ComprehensiveDashboard = () => {
     }
   };
 
-  // Options for radial charts (Pie, Doughnut) - NO scales (causes "labels" error in Chart.js 4)
+  // Options for radial charts (Pie, Doughnut) - NO scales to prevent "labels" error
   const radialChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -352,7 +430,9 @@ const ComprehensiveDashboard = () => {
         cornerRadius: 8,
         padding: 12
       }
-    }
+    },
+    // Explicitly set scales to undefined for radial charts to prevent Chart.js error
+    scales: undefined
   };
 
   // ============================================
