@@ -379,7 +379,41 @@ const ComprehensiveDashboard = () => {
       }
     }
   };
-
+ 
+  const chartComparisonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          padding: 12,
+          font: { size: 11 },
+          color: COLORS.gray
+        }
+      },
+      tooltip: {
+        backgroundColor: COLORS.dark,
+        titleColor: COLORS.white,
+        bodyColor: COLORS.white,
+        cornerRadius: 8,
+        padding: 12
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: COLORS.gray }
+      },
+      y: {
+        grid: { color: COLORS.light },
+        ticks: { color: COLORS.gray },
+        beginAtZero: true
+      }
+    }
+  };
+ 
   // Options for radial charts (Pie, Doughnut) - NO scales to prevent "labels" error
   const radialChartOptions = {
     responsive: true,
@@ -742,8 +776,8 @@ const ComprehensiveDashboard = () => {
               <h2 className="text-white fw-bold mb-1">Mortuary Analytics Dashboard</h2>
               <p className="text-white-50 mb-0 small">Real-time branch comparison & intelligent insights</p>
             </div>
-            <div className="d-flex gap-2">
-              <Dropdown>
+            <div className="d-flex gap-2 align-items-center flex-wrap">
+              <Dropdown autoClose="outside">
                 <Dropdown.Toggle variant="light" size="sm" className="d-flex align-items-center gap-2">
                   <MapPin size={18} />{selectedBranch?.branch_name || selectedBranch?.name || "Select Branch"}
                 </Dropdown.Toggle>
@@ -759,6 +793,50 @@ const ComprehensiveDashboard = () => {
                   })}
                 </Dropdown.Menu>
               </Dropdown>
+              <Dropdown autoClose="outside">
+                <Dropdown.Toggle variant="light" size="sm" className="d-flex align-items-center gap-2">
+                  <BarChart3 size={18} /> Compare branches {selectedBranches.length > 0 && <Badge bg="secondary">{selectedBranches.length}</Badge>}
+                </Dropdown.Toggle>
+                <Dropdown.Menu style={{ minWidth: 320, maxWidth: 360, padding: 0 }}>
+                  <div className="p-3">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div>
+                        <div className="fw-bold">Compare Branches</div>
+                        <small className="text-muted">Select at least 2 branches</small>
+                      </div>
+                      <Badge bg={selectedBranches.length >= 2 ? "success" : "warning"}>{selectedBranches.length} selected</Badge>
+                    </div>
+                    <div style={{ maxHeight: 240, overflowY: "auto" }}>
+                      {branches.map(b => {
+                        const bid = getBranchIdentifier(b);
+                        return (
+                          <Form.Check
+                            key={bid || b.id || b.branch_id}
+                            type="checkbox"
+                            id={`cmp-${bid}`}
+                            label={b.branch_name || b.name}
+                            checked={selectedBranches.includes(bid)}
+                            onChange={() => toggleBranch(b)}
+                            className="mb-2"
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="d-flex justify-content-between gap-2 mt-3">
+                      <Button variant="outline-primary" size="sm" onClick={() => {
+                        const allIds = branches.map(b => getBranchIdentifier(b)).filter(Boolean);
+                        setSelectedBranches(allIds);
+                        fetchComparison(allIds);
+                      }}>
+                        Select All
+                      </Button>
+                      <Button variant="primary" size="sm" onClick={() => fetchComparison(selectedBranches)} disabled={loadingComparison || selectedBranches.length < 2}>
+                        {loadingComparison ? <Spinner size="sm" className="me-1" /> : <BarChart3 size={14} className="me-1" />} Compare
+                      </Button>
+                    </div>
+                  </div>
+                </Dropdown.Menu>
+              </Dropdown>
               <Button variant="light" size="sm" onClick={fetchDashboardData} disabled={refreshing} className="d-flex align-items-center gap-2">
                 <RefreshCw size={18} />{refreshing ? "Refreshing..." : "Refresh"}
               </Button>
@@ -767,9 +845,36 @@ const ComprehensiveDashboard = () => {
         </Card.Body>
       </Card>
 
+      {/* Branch Comparison Panel */}
+      {(branches.length > 0) && (
+        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+          <Card.Body className="p-4">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3">
+              <div>
+                <h5 className="fw-bold mb-1">Branch Comparison</h5>
+                <p className="text-muted mb-0 small">Use the Compare branches dropdown above to choose branches and visualize branch performance quickly.</p>
+              </div>
+              <div className="d-flex flex-wrap gap-2">
+                <span className="badge bg-primary">Branches found: {branches.length}</span>
+                <span className={`badge ${selectedBranches.length >= 2 ? 'bg-success' : 'bg-warning text-dark'}`}>{selectedBranches.length} selected</span>
+              </div>
+            </div>
+            {safeBranchComparisonChartData ? (
+              <SafeChart ChartComponent={Bar} data={safeBranchComparisonChartData} options={chartComparisonOptions} chartName="BranchComparisonTop" />
+            ) : (
+              <div className="d-flex align-items-center justify-content-center py-5 text-muted" style={{ minHeight: 140 }}>
+                <small>Select 2 or more branches from the compare dropdown to view comparison charts.</small>
+              </div>
+            )}
+          </Card.Body>
+        </Card>
+      )}
+ 
+      {branchCompare && <BranchComparisonTable branches={branchCompare} />}
+ 
       {/* Branch of the Month */}
       {insights && <BranchOfMonthBanner insights={insights} />}
-
+ 
       {/* KEY METRICS - ROW 1 */}
       <Row className="g-3 mb-4">
         <Col xs={6} lg={3}><StatCard title="Total Deceased" value={deceased.total || "-"} subtitle={`${deceased.thisMonth || 0} this month`} icon={Users} color="primary" /></Col>
@@ -1094,55 +1199,6 @@ const ComprehensiveDashboard = () => {
         </Card>
       )}
 
-      {/* BRANCH COMPARISON SECTION */}
-      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
-        <Card.Body className="p-4">
-          <SectionHeader title="Branch Comparison" icon={Building2} color={COLORS.purple} />
-          <Row className="mb-3">
-            <Col>
-              {branches.length > 0 ? (
-                <>
-                  <p className="text-muted small mb-3">Select branches (minimum 2) to compare metrics side-by-side:</p>
-                  <div className="d-flex flex-wrap gap-3 mb-3">
-                    {branches.map(b => {
-                      const bid = getBranchIdentifier(b);
-                      return (
-                        <Form.Check
-                          key={bid || b.id || b.branch_id}
-                          type="switch"
-                          id={`br-${bid}`}
-                          label={`${b.branch_name || b.name} ${b.branch_location ? `(${b.branch_location})` : ""}`}
-                          checked={selectedBranches.includes(bid)}
-                          onChange={() => toggleBranch(b)}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="d-flex gap-2">
-                    <Button variant="primary" size="sm" onClick={() => fetchComparison(selectedBranches)}
-                      disabled={loadingComparison || selectedBranches.length < 2}>
-                      {loadingComparison ? <Spinner size="sm" className="me-1" /> : <BarChart3 size={14} className="me-1" />}
-                      Compare Selected
-                    </Button>
-                    {branches.length >= 2 && (
-                      <Button variant="outline-primary" size="sm" onClick={() => {
-                        const allIds = branches.map(b => getBranchIdentifier(b)).filter(Boolean);
-                        setSelectedBranches(allIds);
-                        fetchComparison(allIds);
-                      }}>
-                        <Trophy size={14} className="me-1" />Compare All Branches
-                      </Button>
-                    )}
-                  </div>
-                </>
-              ) : <p className="text-muted">No branches found.</p>}
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      {/* Comparison Results */}
-      {branchCompare && <BranchComparisonTable branches={branchCompare} />}
 
       {/* AI Recommendations */}
       {insights?.recommendations && <RecommendationsCard recommendations={insights.recommendations} />}
