@@ -143,7 +143,7 @@ export class OnboardingController {
                   id INT AUTO_INCREMENT PRIMARY KEY,
                   tenant_slug VARCHAR(255) NOT NULL UNIQUE,
                   db_name VARCHAR(255) NOT NULL,
-                  organization_name VARCHAR(255) NOT NULL,
+                  tenant_name VARCHAR(255) NOT NULL,
                   email VARCHAR(255),
                   phone VARCHAR(50),
                   address TEXT,
