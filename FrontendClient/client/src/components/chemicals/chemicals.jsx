@@ -832,7 +832,7 @@ const PPEBadge = ({ status }) => {
       <span className="dot" style={{
         width: 5, height: 5, borderRadius: '50%',
         background: 'currentColor',
-        }} />
+      }} />
       {status || 'Unknown'}
     </span>
   );

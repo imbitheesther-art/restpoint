@@ -140,6 +140,21 @@ const ALL_STATEMENTS = [
     { name: 'chemical_transfers', sql: CREATE_TRANSFERS },
 ];
 
+async function normalizePPERequestsSchema(connection, tenantDbName) {
+    try {
+        const [tableRows] = await connection.query("SHOW TABLES LIKE 'ppe_requests'");
+        if (!tableRows.length) return;
+
+        const [columnRows] = await connection.query("SHOW COLUMNS FROM ppe_requests LIKE 'requester_id'");
+        if (!columnRows.length) return;
+
+        await connection.query('ALTER TABLE ppe_requests DROP COLUMN requester_id');
+        console.log(`  ✅ Removed legacy requester_id column from ppe_requests in ${tenantDbName}`);
+    } catch (error) {
+        console.warn(`  ⚠️ PPE schema normalization warning for ${tenantDbName}: ${error.message}`);
+    }
+}
+
 async function migrateTenantDatabase(tenantDbName) {
     console.log(`\n🔧 Migrating tenant database: ${tenantDbName}`);
 
@@ -157,6 +172,8 @@ async function migrateTenantDatabase(tenantDbName) {
                 console.error(`  ❌ Error creating table '${stmt.name}': ${err.message}`);
             }
         }
+
+        await normalizePPERequestsSchema(connection, tenantDbName);
 
         console.log(`✅ Migration complete for: ${tenantDbName}`);
         return { success: true, database: tenantDbName };

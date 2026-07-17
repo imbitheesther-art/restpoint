@@ -312,6 +312,22 @@ const updateHearse = asyncHandler(async (req, res) => {
 
         await pool.query(query, values);
 
+        // ✅ Emit real-time update via Socket.IO
+        const io = req.app.get('io');
+        if (io) {
+            const [updatedRows] = await pool.query('SELECT * FROM hearses WHERE id = ?', [id]);
+            const updatedHearse = updatedRows[0];
+            if (updatedHearse) {
+                io.emit('hearse_updated', {
+                    type: 'HEARSE_UPDATED',
+                    hearse: updatedHearse,
+                    timestamp: now,
+                    message: `Hearse ${plate_number || id} updated`
+                });
+                console.log('📡 [Socket] Emitted hearse_updated event');
+            }
+        }
+
         return res.json({
             success: true,
             message: 'Hearse updated successfully.',

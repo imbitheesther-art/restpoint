@@ -861,11 +861,16 @@ const BookingSystem = () => {
             addToast(d.message || 'New hearse registered!');
             loadHearses();
         });
+        socket.on('hearse_updated', (d) => {
+            addToast(d.message || 'Hearse updated');
+            loadHearses();
+        });
         return () => {
             socket.off('new_booking');
             socket.off('booking_status_updated');
             socket.off('booking_postponed');
             socket.off('hearse_registered');
+            socket.off('hearse_updated');
         };
     }, [socket, addToast]);
 

@@ -553,17 +553,24 @@ const ComprehensiveDashboard = () => {
 
   const getBranchIdentifier = (branch) => {
     if (!branch) return "";
-    return branch.branch_slug || branch.slug || branch.branch_code || branch.branch_id || branch.id || "";
+    // Prefer slug/code, fall back to numeric id. Normalize to string so comparisons are consistent.
+    const id = branch.branch_slug || branch.slug || branch.branch_code || branch.branch_id || branch.id || branch.branchId || branch.branchName || branch.name || "";
+    // If it's a number, convert to string. Trim whitespace.
+    try {
+      return id === undefined || id === null ? "" : String(id).trim();
+    } catch (e) {
+      return "";
+    }
   };
 
   const buildBranchHeaders = (branch) => {
     const headers = getTenantHeaders();
     const branchSlug = branch?.branch_slug || branch?.slug || branch?.branch_code;
-    const branchId = branch?.branch_id || branch?.id;
+    const branchId = branch?.branch_id || branch?.id || branch?.branchId;
     if (branchSlug) {
-      headers['x-branch-slug'] = branchSlug;
+      headers['x-branch-slug'] = String(branchSlug).trim();
     } else if (branchId) {
-      headers['x-branch-id'] = branchId;
+      headers['x-branch-id'] = String(branchId).trim();
     }
     return headers;
   };
@@ -648,12 +655,17 @@ const ComprehensiveDashboard = () => {
   }, [selectedBranch]);
 
   const fetchComparison = useCallback(async (ids) => {
-    const validIds = ids.filter(Boolean);
+    const validIds = Array.isArray(ids) ? ids.map(id => id && String(id).trim()).filter(Boolean) : [];
     if (validIds.length < 2) return;
     setLoadingComparison(true);
     try {
-      const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/compare?branches=${validIds.join(",")}`, { headers: getTenantHeaders() });
+      // Ensure ids are safely encoded in the query string
+      const encoded = validIds.map(i => encodeURIComponent(i)).join(',');
+      const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/compare?branches=${encoded}`, { headers: getTenantHeaders() });
       if (r.ok) { const d = await r.json(); setComparisonData(d.data); }
+      else {
+        console.warn('Comparison API returned', r.status);
+      }
     } catch (e) { console.error("Comparison error:", e); }
     finally { setLoadingComparison(false); }
   }, []);
@@ -670,6 +682,7 @@ const ComprehensiveDashboard = () => {
 
   const toggleBranch = (branch) => {
     const bid = getBranchIdentifier(branch);
+    if (!bid) return; // ignore branches without a usable identifier
     setSelectedBranches(prev => prev.includes(bid) ? prev.filter(x => x !== bid) : [...prev, bid]);
   };
 
@@ -874,6 +887,38 @@ const ComprehensiveDashboard = () => {
   // Branch comparison array for the split mini-charts
   const branchCompareArr = branchCompare ? Object.values(branchCompare) : [];
 
+  // Bookings breakdown (Active/Booked, Completed, Cancelled)
+  const totalBookings = Number(bookings.total) || (Number(bookings.booked) || Number(bookings.completed) || 0);
+  const activeBooked = Number(bookings.booked) || 0;
+  const completedCount = Number(bookings.completed) || 0;
+  const cancelledCount = Math.max(0, totalBookings - activeBooked - completedCount);
+  const rawBookingsDataset = [{
+    label: 'Bookings',
+    data: [activeBooked, completedCount, cancelledCount],
+    backgroundColor: [COLORS.chart3 + 'bb', COLORS.success + 'bb', COLORS.danger + 'bb'],
+    borderColor: [COLORS.chart3, COLORS.success, COLORS.danger],
+    borderWidth: 2,
+    borderRadius: 6,
+    borderSkipped: false
+  }];
+  const safeBookingsChartData = validateChartData(createCartesianChartData(['Active', 'Completed', 'Cancelled'], rawBookingsDataset), 'BookingsBreakdown');
+
+  // Fleet utilization gauge
+  const fleetAvailable = Number(bookings.fleet?.available) || 0;
+  const fleetTotal = Number(bookings.fleet?.total) || Math.max(fleetAvailable, Number(bookings.fleet?.booked) || 0);
+  const fleetUsed = Math.max(0, (fleetTotal || 0) - fleetAvailable);
+  const safeFleetUtilData = validateChartData(createRadialChartData(['Available', 'Used'], fleetTotal > 0 ? [fleetAvailable, fleetUsed] : [1, 0], [COLORS.success, COLORS.danger]), 'FleetUtil');
+
+  // Coffin inventory by branch (use comparison data if available)
+  const coffinsByBranchLabels = branchCompareArr.length > 0 ? branchCompareArr.map(b => (b.branchName || `B${b.branchId}`).length > 12 ? (b.branchName || `B${b.branchId}`).substring(0, 11) + '…' : (b.branchName || `B${b.branchId}`)) : [selectedBranch?.branch_name || selectedBranch?.name || 'Branch'];
+  const coffinsByBranchValues = branchCompareArr.length > 0 ? branchCompareArr.map(b => Number(b.coffins?.totalStock || 0)) : [Number(coffins.totalStock || 0)];
+  const safeCoffinsByBranchData = validateChartData(createCartesianChartData(coffinsByBranchLabels, [{ label: 'Coffin Stock', data: coffinsByBranchValues, backgroundColor: coffinsByBranchLabels.map((_, i) => chartColors[i % chartColors.length] + 'bb'), borderColor: coffinsByBranchLabels.map((_, i) => chartColors[i % chartColors.length]), borderWidth: 2, borderRadius: 6, borderSkipped: false }]), 'CoffinsByBranch');
+
+  // Chemicals per branch (low stock count or usage)
+  const chemicalsByBranchLabels = branchCompareArr.length > 0 ? branchCompareArr.map(b => (b.branchName || `B${b.branchId}`).length > 12 ? (b.branchName || `B${b.branchId}`).substring(0, 11) + '…' : (b.branchName || `B${b.branchId}`)) : [selectedBranch?.branch_name || selectedBranch?.name || 'Branch'];
+  const chemicalsByBranchValues = branchCompareArr.length > 0 ? branchCompareArr.map(b => Number(b.chemicals?.lowStockCount || b.chemicals?.totalUsed30d || 0)) : [Number(chemicals.totalUsed30d || chemicals.lowStock?.length || 0)];
+  const safeChemicalsByBranchData = validateChartData(createCartesianChartData(chemicalsByBranchLabels, [{ label: 'Chemicals', data: chemicalsByBranchValues, backgroundColor: chemicalsByBranchLabels.map((_, i) => chartColors[i % chartColors.length] + 'bb'), borderColor: chemicalsByBranchLabels.map((_, i) => chartColors[i % chartColors.length]), borderWidth: 2, borderRadius: 6, borderSkipped: false }]), 'ChemicalsByBranch');
+
   // Helper to build a single-metric comparison dataset
   const buildComparisonDataset = (metricKey) => {
     if (branchCompareArr.length === 0) return null;
@@ -926,10 +971,11 @@ const ComprehensiveDashboard = () => {
                   <MapPin size={16} />{selectedBranch?.branch_name || selectedBranch?.name || "Select Branch"}
                 </Dropdown.Toggle>
                 <Dropdown.Menu style={{ borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 10px 40px rgba(0,0,0,0.2)" }}>
-                  {branches.map(b => {
+                  {branches.map((b, idx) => {
                     const bid = getBranchIdentifier(b);
+                    const itemKey = bid || b.id || b.branch_id || b.branchId || b.branch_name || b.name || `br-${idx}`;
                     return (
-                      <Dropdown.Item key={bid || b.id || b.branch_id} onClick={() => setSelectedBranch(b)}
+                      <Dropdown.Item key={itemKey} onClick={() => setSelectedBranch(b)}
                         active={getBranchIdentifier(selectedBranch) === bid}
                         style={{ fontSize: "0.8125rem" }}>
                         {b.branch_name || b.name}
@@ -975,12 +1021,13 @@ const ComprehensiveDashboard = () => {
 
                   {/* Branch list with custom checkboxes */}
                   <div style={{ maxHeight: 200, overflowY: "auto", padding: "6px 10px" }}>
-                    {branches.map(b => {
+                    {branches.map((b, idx) => {
                       const bid = getBranchIdentifier(b);
-                      const isSelected = selectedBranches.includes(bid);
+                      const isSelected = bid && selectedBranches.includes(bid);
+                      const itemKey = bid || b.id || b.branch_id || b.branchId || b.branch_name || b.name || `br-${idx}`;
                       return (
                         <div
-                          key={bid || b.id || b.branch_id}
+                          key={itemKey}
                           onClick={() => toggleBranch(b)}
                           className="d-flex align-items-center gap-2 px-2 py-2 rounded-lg mb-1"
                           style={{
@@ -1216,19 +1263,36 @@ const ComprehensiveDashboard = () => {
         <Card.Body className="p-4">
           <SectionHeader title="Hearse Bookings & Fleet Performance" icon={Truck} color={COLORS.purple} />
           <Row className="g-3 mb-3">
-            {[
-              { label: "Total Bookings", value: bookings.total || 0, bg: COLORS.purpleLight, color: COLORS.purple },
-              { label: "Completed", value: bookings.completed || 0, bg: COLORS.successLight, color: COLORS.success },
-              { label: "This Week", value: bookings.thisWeek || 0, bg: COLORS.warningLight, color: COLORS.warning },
-              { label: "Today", value: bookings.today || 0, bg: COLORS.dangerLight, color: COLORS.danger },
-            ].map((item, i) => (
-              <Col xs={6} md={3} key={i}>
-                <div className="p-3 rounded-3" style={{ backgroundColor: item.bg, border: "1px solid " + item.color + "20" }}>
-                  <small className="text-muted" style={{ fontSize: "0.75rem", fontWeight: "500" }}>{item.label}</small>
-                  <h5 className="fw-bold mb-0 mt-1" style={{ color: item.color, fontSize: "1.3rem" }}>{item.value}</h5>
-                </div>
-              </Col>
-            ))}
+            <Col lg={5} md={12}>
+              <ChartCard title="Bookings Breakdown" icon={Calendar} color={COLORS.chart3} height="220px">
+                {safeBookingsChartData ? (
+                  <SafeChart ChartComponent={Bar} data={safeBookingsChartData} options={comparisonChartOptions} chartName="BookingsBreakdown" />
+                ) : (
+                  <div className="d-flex align-items-center justify-content-center h-100 text-muted"><small>No bookings data</small></div>
+                )}
+              </ChartCard>
+            </Col>
+
+            <Col lg={3} md={6}>
+              <ChartCard title="Fleet Utilization" icon={Car} color={COLORS.success} height="220px">
+                {safeFleetUtilData ? (
+                  <SafeChart ChartComponent={Doughnut} data={safeFleetUtilData} options={radialChartOptions} chartName="FleetUtil" />
+                ) : (
+                  <div className="d-flex align-items-center justify-content-center h-100 text-muted"><small>No fleet data</small></div>
+                )}
+                <div className="mt-2 small text-muted text-center">Available: {fleetAvailable}/{fleetTotal || 0}</div>
+              </ChartCard>
+            </Col>
+
+            <Col lg={4} md={6}>
+              <ChartCard title="Coffin Inventory (per branch)" icon={Box} color={COLORS.warning} height="220px">
+                {safeCoffinsByBranchData ? (
+                  <SafeChart ChartComponent={Bar} data={safeCoffinsByBranchData} options={comparisonChartOptions} chartName="CoffinsByBranch" />
+                ) : (
+                  <div className="d-flex align-items-center justify-content-center h-100 text-muted"><small>No coffin inventory</small></div>
+                )}
+              </ChartCard>
+            </Col>
           </Row>
           {hearses.mostBooked?.length > 0 && (
             <div className="mt-3">
@@ -1271,14 +1335,28 @@ const ComprehensiveDashboard = () => {
             <SectionHeader title="Inventory Management" icon={Box} color={COLORS.warning} />
             <Row className="g-4">
               {safeCoffinSalesData && (
-                <Col lg={6}>
-                  <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
+                <Col lg={4} md={12}>
+                  <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="240px">
                     <SafeChart ChartComponent={Bar} data={safeCoffinSalesData} options={cartesianChartOptions} chartName="CoffinSales" />
                   </ChartCard>
                 </Col>
               )}
-              <Col lg={safeCoffinSalesData ? 6 : 12}>
-                <ChartCard title="Low Stock Chemicals" icon={FlaskConical} color={COLORS.danger} height="280px">
+
+              <Col lg={4} md={12}>
+                <ChartCard title="Coffin Inventory by Branch" icon={Box} color={COLORS.warning} height="240px">
+                  {safeCoffinsByBranchData ? (
+                    <SafeChart ChartComponent={Bar} data={safeCoffinsByBranchData} options={comparisonChartOptions} chartName="CoffinsByBranch" />
+                  ) : (
+                    <div className="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                      <small>No coffin inventory available</small>
+                      <div className="fw-bold mt-2" style={{ fontSize: '1.25rem' }}>{coffins.totalStock || 0}</div>
+                    </div>
+                  )}
+                </ChartCard>
+              </Col>
+
+              <Col lg={4} md={12}>
+                <ChartCard title="Low Stock Chemicals" icon={FlaskConical} color={COLORS.danger} height="240px">
                   {chemicals.lowStock?.length > 0 ? (
                     <div style={{ overflowY: "auto", height: "100%", paddingRight: "4px" }}>
                       {chemicals.lowStock.map((c, i) => {

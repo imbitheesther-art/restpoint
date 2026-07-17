@@ -114,7 +114,6 @@ const DB_CONFIG = {
     password: process.env.DB_PASSWORD || '',
     authPlugins: { auth_gssapi_client },
     connectTimeout: 10000,
-    acquireTimeout: 10000,
 };
 
 // Pool limits to prevent memory leaks

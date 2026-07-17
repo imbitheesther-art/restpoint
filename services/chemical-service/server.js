@@ -313,6 +313,21 @@ const auth_gssapi_client = function () {
   };
 };
 
+async function normalizePPERequestsSchema(connection, dbName) {
+  try {
+    const [tableRows] = await connection.query("SHOW TABLES LIKE 'ppe_requests'");
+    if (!tableRows.length) return;
+
+    const [columnRows] = await connection.query("SHOW COLUMNS FROM ppe_requests LIKE 'requester_id'");
+    if (!columnRows.length) return;
+
+    await connection.query('ALTER TABLE ppe_requests DROP COLUMN requester_id');
+    console.log(`  ✅ Removed legacy requester_id column from ppe_requests in ${dbName}`);
+  } catch (error) {
+    console.warn(`  ⚠️ PPE schema normalization warning for ${dbName}: ${error.message}`);
+  }
+}
+
 async function ensureChemicalTables(dbName) {
   let connection;
   try {
@@ -326,7 +341,6 @@ async function ensureChemicalTables(dbName) {
         auth_gssapi_client,
       },
       connectTimeout: 10000,
-      acquireTimeout: 10000,
     });
 
     // Extract individual CREATE TABLE statements using regex (skips comments)
@@ -343,6 +357,8 @@ async function ensureChemicalTables(dbName) {
         console.warn(`  ⚠️ Table creation warning: ${err.message}`);
       }
     }
+
+    await normalizePPERequestsSchema(connection, dbName);
 
     console.log(`✅ Chemical tables ensured in database: ${dbName} (${count} tables)`);
     return true;

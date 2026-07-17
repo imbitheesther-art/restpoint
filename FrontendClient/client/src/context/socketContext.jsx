@@ -18,9 +18,9 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         // Use centralized env config for socket URL
-        // Default to workshop service on port 6969 for workshop features
-        // Other services (call, hearse) connect to their own sockets
-        const socketUrl = env.SOCKET_URL || 'http://localhost:6969';
+        // Default to hearse service on port 5002 for real-time hearse updates
+        // Falls back to workshop service if SOCKET_URL is explicitly set
+        const socketUrl = env.SOCKET_URL || 'http://localhost:5002';
 
         console.log('[Socket] Connecting to:', socketUrl);
 
