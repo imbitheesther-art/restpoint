@@ -66,14 +66,17 @@ const bookingService = {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
 
-        // Add user info headers
+        // Add user info headers from localStorage user object
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : {};
         if (user?.branch_id) headers['x-branch-id'] = user.branch_id;
         if (user?.branch_code) headers['x-branch-code'] = user.branch_code;
         if (user?.email) headers['x-user-email'] = user.email;
-        if (user?.user_id) headers['x-user-id'] = user.user_id;
-        if (user?.full_name || user?.username) headers['x-user-name'] = user.full_name || user.username;
+        // Support both camelCase (userId) and snake_case (user_id) from JWT
+        if (user?.user_id || user?.userId) headers['x-user-id'] = user.user_id || user.userId;
+        // Use full_name, username, email, or role as fallback for display name
+        const displayName = user?.full_name || user?.username || user?.name || user?.email || user?.role || 'System';
+        headers['x-user-name'] = displayName;
 
         const r = await fetch(`${API_BASE_URL}/hearse-bookings`, {
             method: 'POST', headers, body: JSON.stringify(data)
@@ -215,7 +218,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
                 from_timestamp: bookingDate, // Date only, no time
-                booked_by: user?.user_slug || user?.username || user?.full_name || 'unknown',
+                booked_by: user?.email || user?.userId || user?.role || 'unknown',
                 branch_id: userBranchId,
                 branch_code: userBranchCode
             });
