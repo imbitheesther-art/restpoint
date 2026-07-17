@@ -13,7 +13,8 @@ import { Line, Pie, Bar, Doughnut } from "react-chartjs-2";
 import {
   TrendingUp, Zap, Shield, Target, Users, ShoppingCart, Truck, AlertTriangle,
   Clock, CheckCircle, Activity, FlaskConical, Box, MapPin, RotateCw, Calendar,
-  Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star, BarChart3
+  Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star, BarChart3,
+  GitCompareArrows, X, ChevronDown
 } from "lucide-react";
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../config/env";
@@ -76,14 +77,20 @@ class ErrorBoundary extends React.Component {
 }
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
-  <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
+  <Card className="h-100 border-0" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}>
     <Card.Body className="p-3">
       <div className="d-flex justify-content-between align-items-start mb-2">
-        <Icon size={24} style={{ color: COLORS[color] || COLORS.primary }} />
-        <span className="fw-bold" style={{ color: COLORS.dark, fontSize: "1.5rem" }}>{value}</span>
+        <div style={{
+          width: "42px", height: "42px", borderRadius: "12px",
+          background: (COLORS[color] || COLORS.primary) + "12",
+          display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <Icon size={20} style={{ color: COLORS[color] || COLORS.primary }} />
+        </div>
+        <span className="fw-bold" style={{ color: COLORS.dark, fontSize: "1.35rem", letterSpacing: "-0.02em" }}>{value}</span>
       </div>
-      <small className="text-muted d-block">{title}</small>
-      {subtitle && <small className="text-muted d-block" style={{ fontSize: "0.8rem" }}>{subtitle}</small>}
+      <small className="text-muted d-block" style={{ fontSize: "0.78rem", fontWeight: "500" }}>{title}</small>
+      {subtitle && <small className="text-muted d-block" style={{ fontSize: "0.72rem", opacity: 0.7 }}>{subtitle}</small>}
     </Card.Body>
   </Card>
 );
@@ -92,11 +99,17 @@ const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => 
   const [error, setError] = React.useState(null);
 
   return (
-    <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
+    <Card className="h-100 border-0" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
       <Card.Body className="p-4">
         <div className="d-flex align-items-center gap-2 mb-3">
-          <Icon size={20} style={{ color }} />
-          <h6 className="mb-0 fw-semibold">{title}</h6>
+          <div style={{
+            width: "30px", height: "30px", borderRadius: "8px",
+            background: color + "12",
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
+            <Icon size={15} style={{ color }} />
+          </div>
+          <h6 className="mb-0 fw-semibold" style={{ fontSize: "0.85rem", color: COLORS.dark }}>{title}</h6>
         </div>
         <div style={{ height, position: "relative" }}>
           <ErrorBoundary onError={(e) => { setError(e); console.error(`ChartCard Error [${title}]:`, e); }}>
@@ -170,10 +183,10 @@ const SafeChart = ({ ChartComponent, data, options, chartName = "Chart" }) => {
 
 const SectionHeader = ({ title, icon: Icon, color }) => (
   <div className="d-flex align-items-center gap-3 mb-4 pb-3" style={{ borderBottom: `2px solid ${COLORS.border}` }}>
-    <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: color + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: color + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Icon size={20} style={{ color }} />
     </div>
-    <h5 className="mb-0 fw-bold" style={{ color: COLORS.dark }}>{title}</h5>
+    <h5 className="mb-0 fw-bold" style={{ color: COLORS.dark, fontSize: "1rem" }}>{title}</h5>
   </div>
 );
 
@@ -183,11 +196,11 @@ const BatteryGauge = ({ value, max, label }) => {
   return (
     <div className="mb-2">
       <div className="d-flex justify-content-between small mb-1">
-        <span>{label}</span>
-        <span style={{ color: barColor }}>{value}/{max} ({pct}%)</span>
+        <span style={{ fontWeight: "500" }}>{label}</span>
+        <span style={{ color: barColor, fontWeight: "600" }}>{value}/{max} ({pct}%)</span>
       </div>
-      <div style={{ height: "12px", borderRadius: "6px", background: COLORS.light, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", borderRadius: "6px", background: `linear-gradient(90deg, ${barColor}, ${barColor}dd)`, transition: "width 0.5s ease" }} />
+      <div style={{ height: "10px", borderRadius: "5px", background: COLORS.light, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", borderRadius: "5px", background: `linear-gradient(90deg, ${barColor}, ${barColor}bb)`, transition: "width 0.5s ease" }} />
       </div>
     </div>
   );
@@ -197,63 +210,67 @@ const BranchComparisonTable = ({ branches }) => {
   if (!branches || Object.keys(branches).length === 0) return null;
   const arr = Object.values(branches);
   return (
-    <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+    <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
       <Card.Body className="p-4">
         <SectionHeader title="Branch Comparison" icon={Building2} color={COLORS.purple} />
-        <Table responsive hover size="sm">
-          <thead>
-            <tr>
-              <th>Metric</th>
-              {arr.map(b => <th key={b.branchId} className="text-center">{b.branchName}</th>)}
-              <th className="text-center text-muted">Average</th>
-            </tr>
-          </thead>
-          <tbody>
-            {["deceased", "bookings", "revenue"].map(metric => {
-              const labels = { deceased: "Deceased Cases", bookings: "Bookings", revenue: "Revenue (30d)" };
-              const units = { deceased: "", bookings: "", revenue: "KES " };
-              return (
-                <tr key={metric}>
-                  <td><strong>{labels[metric]}</strong></td>
-                  {arr.map(b => {
-                    const val = metric === "revenue" ? (b.revenue?.total30d || 0) : metric === "deceased" ? (b.deceased?.total || 0) : (b.bookings?.total || 0);
-                    const avg = arr.reduce((s, x) => s + (metric === "revenue" ? (x.revenue?.total30d || 0) : metric === "deceased" ? (x.deceased?.total || 0) : (x.bookings?.total || 0)), 0) / arr.length;
-                    const above = val > avg;
-                    return (
-                      <td key={b.branchId} className="text-center">
-                        {units[metric]}{typeof val === "number" ? val.toLocaleString() : val}
-                        <span className={above ? "text-success ms-1" : "text-danger ms-1"}>
-                          {above ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                        </span>
-                      </td>
-                    );
-                  })}
-                  <td className="text-center text-muted">
-                    {units[metric]}{(arr.reduce((s, x) => s + (metric === "revenue" ? (x.revenue?.total30d || 0) : metric === "deceased" ? (x.deceased?.total || 0) : (x.bookings?.total || 0)), 0) / arr.length).toLocaleString()}
-                  </td>
-                </tr>
-              );
-            })}
-            <tr>
-              <td><strong>Hearse Fleet</strong></td>
-              {arr.map(b => <td key={b.branchId} className="text-center">{b.hearses?.available || 0}/{b.hearses?.total || 0} avail</td>)}
-              <td className="text-center text-muted">-</td>
-            </tr>
-            <tr>
-              <td><strong>Coffin Stock</strong></td>
-              {arr.map(b => <td key={b.branchId} className="text-center">{b.coffins?.totalStock || 0}</td>)}
-              <td className="text-center text-muted">{Math.round(arr.reduce((s, x) => s + (x.coffins?.totalStock || 0), 0) / arr.length)}</td>
-            </tr>
-          </tbody>
-        </Table>
-        <Row className="g-3">
+        <div style={{ overflowX: "auto" }}>
+          <Table responsive hover size="sm" style={{ fontSize: "0.85rem" }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                <th style={{ borderRadius: "8px 0 0 0", fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Metric</th>
+                {arr.map(b => <th key={b.branchId} className="text-center" style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>{b.branchName}</th>)}
+                <th className="text-center" style={{ borderRadius: "0 8px 0 0", fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Average</th>
+              </tr>
+            </thead>
+            <tbody>
+              {["deceased", "bookings", "revenue"].map(metric => {
+                const labels = { deceased: "Deceased Cases", bookings: "Bookings", revenue: "Revenue (30d)" };
+                const units = { deceased: "", bookings: "", revenue: "KES " };
+                return (
+                  <tr key={metric}>
+                    <td><strong>{labels[metric]}</strong></td>
+                    {arr.map(b => {
+                      const val = metric === "revenue" ? (b.revenue?.total30d || 0) : metric === "deceased" ? (b.deceased?.total || 0) : (b.bookings?.total || 0);
+                      const avg = arr.reduce((s, x) => s + (metric === "revenue" ? (x.revenue?.total30d || 0) : metric === "deceased" ? (x.deceased?.total || 0) : (x.bookings?.total || 0)), 0) / arr.length;
+                      const above = val > avg;
+                      return (
+                        <td key={b.branchId} className="text-center">
+                          {units[metric]}{typeof val === "number" ? val.toLocaleString() : val}
+                          <span className={above ? "text-success ms-1" : "text-danger ms-1"}>
+                            {above ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td className="text-center text-muted">
+                      {units[metric]}{(arr.reduce((s, x) => s + (metric === "revenue" ? (x.revenue?.total30d || 0) : metric === "deceased" ? (x.deceased?.total || 0) : (x.bookings?.total || 0)), 0) / arr.length).toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td><strong>Hearse Fleet</strong></td>
+                {arr.map(b => <td key={b.branchId} className="text-center">{b.hearses?.available || 0}/{b.hearses?.total || 0} avail</td>)}
+                <td className="text-center text-muted">-</td>
+              </tr>
+              <tr>
+                <td><strong>Coffin Stock</strong></td>
+                {arr.map(b => <td key={b.branchId} className="text-center">{b.coffins?.totalStock || 0}</td>)}
+                <td className="text-center text-muted">{Math.round(arr.reduce((s, x) => s + (x.coffins?.totalStock || 0), 0) / arr.length)}</td>
+              </tr>
+            </tbody>
+          </Table>
+        </div>
+        <Row className="g-3 mt-1">
           {arr.map(b => (
             <Col md={6} key={b.branchId}>
-              <div className="p-3 rounded-3" style={{ background: COLORS.light }}>
-                <h6 className="fw-bold mb-2">{b.branchName} <Badge bg={b.hearses?.available === 0 ? "danger" : "success"}>{b.hearses?.available}/{b.hearses?.total}</Badge></h6>
+              <div className="p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <h6 className="fw-bold mb-2" style={{ fontSize: "0.85rem" }}>
+                  {b.branchName} <Badge bg={b.hearses?.available === 0 ? "danger" : "success"} pill>{b.hearses?.available}/{b.hearses?.total}</Badge>
+                </h6>
                 <BatteryGauge value={b.hearses?.available || 0} max={b.hearses?.total || 1} label="Hearse Available" />
                 <div className="d-flex justify-content-between small mt-2">
-                  <span>Low Stock: <Badge bg={b.chemicals?.lowStockCount > 3 ? "danger" : "warning"}>{b.chemicals?.lowStockCount || 0}</Badge></span>
+                  <span>Low Stock: <Badge bg={b.chemicals?.lowStockCount > 3 ? "danger" : "warning"} pill>{b.chemicals?.lowStockCount || 0}</Badge></span>
                   <span>Chem Used: {b.chemicals?.totalUsed30d || 0}</span>
                 </div>
                 {b.hearses?.mostBooked?.[0] && (
@@ -271,31 +288,49 @@ const BranchComparisonTable = ({ branches }) => {
 const BranchOfMonthBanner = ({ insights }) => {
   if (!insights?.topPerformer) return null;
   return (
-    <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px", background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", color: "white" }}>
+    <Card className="border-0 mb-4" style={{ borderRadius: "14px", background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)", color: "white", boxShadow: '0 4px 20px rgba(15, 52, 96, 0.3)' }}>
       <Card.Body className="p-4">
         <Row className="align-items-center">
           <Col md={3}>
             <div className="d-flex align-items-center gap-3">
-              <Trophy size={36} className="text-warning" />
+              <div style={{
+                width: "52px", height: "52px", borderRadius: "14px",
+                background: "rgba(245, 158, 11, 0.15)",
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}>
+                <Trophy size={28} className="text-warning" />
+              </div>
               <div>
-                <h5 className="mb-0 text-warning fw-bold">Branch of the Month</h5>
-                <small className="text-white-50">Top performer across metrics</small>
+                <h5 className="mb-0 text-warning fw-bold" style={{ fontSize: "0.95rem" }}>Branch of the Month</h5>
+                <small className="text-white-50" style={{ fontSize: "0.75rem" }}>Top performer across metrics</small>
               </div>
             </div>
           </Col>
           <Col md={9}>
             <div className="d-flex flex-wrap gap-4">
-              <div><div className="fw-bold text-warning">{insights.topPerformer.deceasedVolume}</div><small className="text-white-50">Top Deceased Volume</small></div>
-              <div><div className="fw-bold text-warning">{insights.topPerformer.bookingVolume}</div><small className="text-white-50">Top Bookings</small></div>
-              <div><div className="fw-bold text-warning">{insights.topPerformer.revenue}</div><small className="text-white-50">Top Revenue</small></div>
+              <div>
+                <div className="fw-bold text-warning" style={{ fontSize: "1.1rem" }}>{insights.topPerformer.deceasedVolume}</div>
+                <small className="text-white-50" style={{ fontSize: "0.72rem" }}>Top Deceased Volume</small>
+              </div>
+              <div>
+                <div className="fw-bold text-warning" style={{ fontSize: "1.1rem" }}>{insights.topPerformer.bookingVolume}</div>
+                <small className="text-white-50" style={{ fontSize: "0.72rem" }}>Top Bookings</small>
+              </div>
+              <div>
+                <div className="fw-bold text-warning" style={{ fontSize: "1.1rem" }}>{insights.topPerformer.revenue}</div>
+                <small className="text-white-50" style={{ fontSize: "0.72rem" }}>Top Revenue</small>
+              </div>
               {insights.topPerformer.mostBookedHearse !== "N/A" && (
-                <div><div className="fw-bold text-warning small">{insights.topPerformer.mostBookedHearse}</div><small className="text-white-50">Most Booked Hearse</small></div>
+                <div>
+                  <div className="fw-bold text-warning" style={{ fontSize: "0.85rem" }}>{insights.topPerformer.mostBookedHearse}</div>
+                  <small className="text-white-50" style={{ fontSize: "0.72rem" }}>Most Booked Hearse</small>
+                </div>
               )}
             </div>
           </Col>
         </Row>
         {insights.winner && (
-          <div className="mt-2 p-2 rounded" style={{ background: "rgba(255,255,255,0.1)" }}>
+          <div className="mt-3 p-2 rounded-3" style={{ background: "rgba(255,255,255,0.08)" }}>
             <small><Star size={14} className="me-1 text-warning" />{insights.winner}</small>
           </div>
         )}
@@ -307,16 +342,19 @@ const BranchOfMonthBanner = ({ insights }) => {
 const RecommendationsCard = ({ recommendations }) => {
   if (!recommendations?.length) return null;
   return (
-    <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+    <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
       <Card.Body className="p-4">
         <SectionHeader title="AI Insights & Recommendations" icon={AlertTriangle} color={COLORS.warning} />
         {recommendations.map((rec, i) => (
-          <div key={i} className={`p-3 rounded-3 mb-2 d-flex align-items-start gap-2 ${i === 0 ? "bg-primary bg-opacity-10" : i === 1 ? "bg-warning bg-opacity-10" : "bg-light"}`}>
-            {rec.includes("⚠️") ? <AlertTriangle size={18} className="text-warning flex-shrink-0 mt-1" /> :
-              rec.includes("🔴") ? <AlertTriangle size={18} className="text-danger flex-shrink-0 mt-1" /> :
-                rec.includes("📈") ? <TrendingUp size={18} className="text-success flex-shrink-0 mt-1" /> :
-                  <Zap size={18} className="text-primary flex-shrink-0 mt-1" />}
-            <small>{rec.replace(/[⚠️🔴📈✅]/g, "")}</small>
+          <div key={i} className={`p-3 rounded-3 mb-2 d-flex align-items-start gap-2`} style={{
+            background: i === 0 ? "rgba(59, 130, 246, 0.06)" : i === 1 ? "rgba(245, 158, 11, 0.06)" : "#f8fafc",
+            border: i === 0 ? "1px solid rgba(59, 130, 246, 0.12)" : i === 1 ? "1px solid rgba(245, 158, 11, 0.12)" : "1px solid #e2e8f0"
+          }}>
+            {rec.includes("⚠️") ? <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-1" /> :
+              rec.includes("🔴") ? <AlertTriangle size={16} className="text-danger flex-shrink-0 mt-1" /> :
+                rec.includes("📈") ? <TrendingUp size={16} className="text-success flex-shrink-0 mt-1" /> :
+                  <Zap size={16} className="text-primary flex-shrink-0 mt-1" />}
+            <small style={{ lineHeight: "1.5" }}>{rec.replace(/[⚠️🔴📈✅]/g, "")}</small>
           </div>
         ))}
       </Card.Body>
@@ -324,11 +362,8 @@ const RecommendationsCard = ({ recommendations }) => {
   );
 };
 
-// Chart data helpers are defined inside the component below
-// (duplicate external definitions removed to prevent confusion)
-
 // ============================================
-// ⭐ MAIN DASHBOARD COMPONENT
+// MAIN DASHBOARD COMPONENT
 // ============================================
 
 const ComprehensiveDashboard = () => {
@@ -345,103 +380,121 @@ const ComprehensiveDashboard = () => {
 
   const chartColors = [COLORS.chart1, COLORS.chart2, COLORS.chart3, COLORS.chart4, COLORS.chart5, COLORS.chart6, COLORS.chart7, COLORS.chart8];
 
-  // Options for cartesian charts (Line, Bar) - have x/y scales
+  // ============================================
+  // BEAUTIFUL CHART OPTIONS
+  // ============================================
+
   const cartesianChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 800, easing: 'easeOutQuart' },
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
         position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 15,
-          font: { size: 11 },
+          pointStyle: 'circle',
+          padding: 20,
+          font: { size: 11, weight: '500' },
           color: COLORS.gray
         }
       },
       tooltip: {
-        backgroundColor: COLORS.dark,
-        titleColor: COLORS.white,
-        bodyColor: COLORS.white,
-        cornerRadius: 8,
-        padding: 12
+        backgroundColor: 'rgba(31, 41, 55, 0.95)',
+        titleColor: '#f9fafb',
+        bodyColor: '#d1d5db',
+        cornerRadius: 10,
+        padding: { top: 10, bottom: 10, left: 14, right: 14 },
+        titleFont: { size: 13, weight: '600' },
+        bodyFont: { size: 12 },
+        displayColors: true,
+        boxPadding: 6,
+        borderColor: 'rgba(255,255,255,0.08)',
+        borderWidth: 1,
+        usePointStyle: true,
       }
     },
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: COLORS.gray }
+        ticks: { color: COLORS.gray, font: { size: 11 }, padding: 8 },
+        border: { display: false }
       },
       y: {
-        grid: { color: COLORS.light },
-        ticks: { color: COLORS.gray },
+        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+        ticks: { color: COLORS.gray, font: { size: 11 }, padding: 12 },
+        border: { display: false },
         beginAtZero: true
       }
     }
   };
- 
-  const chartComparisonOptions = {
+
+  // Compact options for comparison mini-charts
+  const comparisonChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 600, easing: 'easeOutQuart' },
     plugins: {
-      legend: {
-        position: "bottom",
-        labels: {
-          usePointStyle: true,
-          padding: 12,
-          font: { size: 11 },
-          color: COLORS.gray
-        }
-      },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: COLORS.dark,
-        titleColor: COLORS.white,
-        bodyColor: COLORS.white,
+        backgroundColor: 'rgba(31, 41, 55, 0.95)',
+        titleColor: '#f9fafb',
+        bodyColor: '#d1d5db',
         cornerRadius: 8,
-        padding: 12
+        padding: { top: 8, bottom: 8, left: 12, right: 12 },
+        bodyFont: { size: 12 },
+        displayColors: true,
+        boxPadding: 4,
       }
     },
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: COLORS.gray }
+        ticks: { color: COLORS.gray, font: { size: 9 }, maxRotation: 45 },
+        border: { display: false }
       },
       y: {
-        grid: { color: COLORS.light },
-        ticks: { color: COLORS.gray },
+        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+        ticks: { color: COLORS.gray, font: { size: 9 }, padding: 8 },
+        border: { display: false },
         beginAtZero: true
       }
     }
   };
- 
-  // Options for radial charts (Pie, Doughnut) - NO scales to prevent "labels" error
+
   const radialChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 800, easing: 'easeOutQuart', animateRotate: true, animateScale: true },
+    cutout: '62%',
     plugins: {
       legend: {
         position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 15,
-          font: { size: 11 },
+          pointStyle: 'circle',
+          padding: 16,
+          font: { size: 11, weight: '500' },
           color: COLORS.gray
         }
       },
       tooltip: {
-        backgroundColor: COLORS.dark,
-        titleColor: COLORS.white,
-        bodyColor: COLORS.white,
+        backgroundColor: 'rgba(31, 41, 55, 0.95)',
+        titleColor: '#f9fafb',
+        bodyColor: '#d1d5db',
         cornerRadius: 8,
-        padding: 12
+        padding: { top: 8, bottom: 8, left: 12, right: 12 },
+        bodyFont: { size: 12 },
+        displayColors: true,
+        boxPadding: 4,
       }
     },
-    // Explicitly set scales to undefined for radial charts to prevent Chart.js error
     scales: undefined
   };
 
   // ============================================
-  // ⭐ SAFE CHART DATA HELPERS (with fallbacks)
+  // SAFE CHART DATA HELPERS (with fallbacks)
   // ============================================
 
   const createRadialChartData = (labels, dataValues, colors) => {
@@ -456,9 +509,11 @@ const ComprehensiveDashboard = () => {
       labels: safeLabels,
       datasets: [{
         data: safeData,
-        backgroundColor: safeColors,
+        backgroundColor: safeColors.map(c => c + 'cc'),
+        hoverBackgroundColor: safeColors,
         borderWidth: 2,
-        borderColor: '#ffffff'
+        borderColor: '#ffffff',
+        hoverOffset: 6
       }]
     };
   };
@@ -533,7 +588,6 @@ const ComprehensiveDashboard = () => {
       if (r.ok) {
         const result = await r.json();
         if (result.data) {
-          // Ensure all properties exist with default values
           const safeData = {
             deceased: result.data.deceased || { total: 0, thisMonth: 0, thisWeek: 0, today: 0, active: 0, released: 0, caseStatus: [], monthlyTrends: [] },
             bookings: result.data.bookings || { total: 0, thisWeek: 0, today: 0, booked: 0, completed: 0, fleet: { available: 0, booked: 0, maintenance: 0, total: 0 } },
@@ -546,7 +600,6 @@ const ComprehensiveDashboard = () => {
           };
           setData(safeData);
         } else {
-          // Provide default empty data structure
           setData({
             deceased: { total: 0, thisMonth: 0, thisWeek: 0, today: 0, active: 0, released: 0, caseStatus: [], monthlyTrends: [] },
             bookings: { total: 0, thisWeek: 0, today: 0, booked: 0, completed: 0, fleet: { available: 0, booked: 0, maintenance: 0, total: 0 } },
@@ -564,7 +617,6 @@ const ComprehensiveDashboard = () => {
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError(err.message || "Failed to load dashboard data");
-      // Set default data on error
       setData({
         deceased: { total: 0, thisMonth: 0, thisWeek: 0, today: 0, active: 0, released: 0, caseStatus: [], monthlyTrends: [] },
         bookings: { total: 0, thisWeek: 0, today: 0, booked: 0, completed: 0, fleet: { available: 0, booked: 0, maintenance: 0, total: 0 } },
@@ -631,10 +683,9 @@ const ComprehensiveDashboard = () => {
   const insights = comparisonData?.insights;
 
   // ============================================
-  // ⭐ CHART DATA VALIDATION AND CREATION
+  // CHART DATA VALIDATION AND CREATION
   // ============================================
 
-  // Validation function to ensure chart data is valid
   const validateChartData = (data, chartName) => {
     if (!data) {
       console.warn(`[Chart Validation] ${chartName}: data is null/undefined`);
@@ -651,7 +702,6 @@ const ComprehensiveDashboard = () => {
     return data;
   };
 
-  // Only create chart data if we have actual data
   const safeCaseStatusData = caseStatus.length > 0 ? validateChartData(createRadialChartData(
     caseStatus.map(c => c.status || "Unknown"),
     caseStatus.map(c => c.count || 0),
@@ -674,11 +724,16 @@ const ComprehensiveDashboard = () => {
       label: "Cases",
       data: deceasedTrends.map(d => d.count || 0),
       borderColor: COLORS.chart1,
-      backgroundColor: COLORS.chart1 + "20",
-      borderWidth: 3,
+      backgroundColor: 'rgba(59, 130, 246, 0.07)',
+      borderWidth: 2.5,
       fill: true,
       tension: 0.4,
-      pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      pointBackgroundColor: COLORS.chart1,
+      pointBorderColor: '#ffffff',
+      pointBorderWidth: 2,
+      pointHoverBorderWidth: 3,
     }]
   ), "DeceasedTrends") : null;
 
@@ -687,7 +742,12 @@ const ComprehensiveDashboard = () => {
     [{
       label: "Sold",
       data: coffinSalesData.map(c => c.sold || 0),
-      backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
+      backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length] + 'bb'),
+      borderColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length]),
+      borderWidth: 2,
+      borderRadius: 8,
+      borderSkipped: false,
+      hoverBackgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length]),
     }]
   ), "CoffinSales") : null;
 
@@ -697,11 +757,16 @@ const ComprehensiveDashboard = () => {
       label: "Usage",
       data: chemicals.usageTrends.map(item => parseFloat(item.quantity || item.qty || 0) || 0),
       borderColor: COLORS.info,
-      backgroundColor: COLORS.info + "20",
-      borderWidth: 3,
+      backgroundColor: 'rgba(6, 182, 212, 0.07)',
+      borderWidth: 2.5,
       fill: true,
       tension: 0.4,
-      pointBackgroundColor: chemicals.usageTrends.map(item => (parseFloat(item.quantity || item.qty || 0) > 0 ? COLORS.info : "transparent"))
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      pointBackgroundColor: COLORS.info,
+      pointBorderColor: '#ffffff',
+      pointBorderWidth: 2,
+      pointHoverBorderWidth: 3,
     }]
   ), "ChemicalUsageTrends") : null;
 
@@ -723,7 +788,12 @@ const ComprehensiveDashboard = () => {
     [{
       label: "Top Usage",
       data: chemicals.topUsed.map(item => parseFloat(item.totalUsed || item.total_used || 0) || 0),
-      backgroundColor: chemicals.topUsed.map((_, i) => chartColors[i % chartColors.length])
+      backgroundColor: chemicals.topUsed.map((_, i) => chartColors[i % chartColors.length] + 'bb'),
+      borderColor: chemicals.topUsed.map((_, i) => chartColors[i % chartColors.length]),
+      borderWidth: 2,
+      borderRadius: 8,
+      borderSkipped: false,
+      hoverBackgroundColor: chemicals.topUsed.map((_, i) => chartColors[i % chartColors.length]),
     }]
   ), "TopUsedChemicals") : null;
 
@@ -734,147 +804,316 @@ const ComprehensiveDashboard = () => {
       {
         label: 'Completed',
         data: workshopStages.map(stage => stage.completed || 0),
-        backgroundColor: COLORS.success
+        backgroundColor: COLORS.success + 'bb',
+        borderColor: COLORS.success,
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
       },
       {
         label: 'In Progress',
         data: workshopStages.map(stage => stage.inProgress || 0),
-        backgroundColor: COLORS.warning
+        backgroundColor: COLORS.warning + 'bb',
+        borderColor: COLORS.warning,
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
       }
     ]
   ), 'WorkshopProduction') : null;
 
+  // Branch comparison array for the split mini-charts
   const branchCompareArr = branchCompare ? Object.values(branchCompare) : [];
-  const safeBranchComparisonChartData = branchCompareArr.length > 0 ? validateChartData(createCartesianChartData(
-    branchCompareArr.map(b => b.branchName || `Branch ${b.branchId}`),
-    [
-      {
-        label: 'Deceased',
-        data: branchCompareArr.map(b => b.deceased?.total || 0),
-        backgroundColor: COLORS.primary + '60'
-      },
-      {
-        label: 'Bookings',
-        data: branchCompareArr.map(b => b.bookings?.total || 0),
-        backgroundColor: COLORS.warning + '60'
-      },
-      {
-        label: 'Revenue',
-        data: branchCompareArr.map(b => parseFloat(b.revenue?.total30d || 0) || 0),
-        backgroundColor: COLORS.success + '60'
-      }
-    ]
-  ), 'BranchComparison') : null;
+
+  // Helper to build a single-metric comparison dataset
+  const buildComparisonDataset = (metricKey) => {
+    if (branchCompareArr.length === 0) return null;
+    let dataValues;
+    if (metricKey === 'deceased') {
+      dataValues = branchCompareArr.map(b => b.deceased?.total || 0);
+    } else if (metricKey === 'bookings') {
+      dataValues = branchCompareArr.map(b => b.bookings?.total || 0);
+    } else if (metricKey === 'revenue') {
+      dataValues = branchCompareArr.map(b => parseFloat(b.revenue?.total30d || 0) || 0);
+    } else {
+      dataValues = branchCompareArr.map(() => 0);
+    }
+    return validateChartData(createCartesianChartData(
+      branchCompareArr.map(b => {
+        const name = b.branchName || `Branch ${b.branchId}`;
+        // Shorten long branch names for compact charts
+        return name.length > 12 ? name.substring(0, 11) + '…' : name;
+      }),
+      [{
+        label: metricKey.charAt(0).toUpperCase() + metricKey.slice(1),
+        data: dataValues,
+        backgroundColor: branchCompareArr.map((_, i) => chartColors[i % chartColors.length] + 'cc'),
+        borderColor: branchCompareArr.map((_, i) => chartColors[i % chartColors.length]),
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
+        hoverBackgroundColor: branchCompareArr.map((_, i) => chartColors[i % chartColors.length]),
+      }]
+    ), `Comp${metricKey}`);
+  };
+
+  const safeCompDeceased = buildComparisonDataset('deceased');
+  const safeCompBookings = buildComparisonDataset('bookings');
+  const safeCompRevenue = buildComparisonDataset('revenue');
 
   return (
     <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
       {/* HEADER */}
-      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px", background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%)` }}>
+      <Card className="border-0 mb-4" style={{ borderRadius: "16px", background: `linear-gradient(135deg, ${COLORS.primary} 0%, #1e3a5f 50%, ${COLORS.primaryLight} 100%)`, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
         <Card.Body className="p-4">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-              <h2 className="text-white fw-bold mb-1">Mortuary Analytics Dashboard</h2>
-              <p className="text-white-50 mb-0 small">Real-time branch comparison & intelligent insights</p>
+              <h2 className="text-white fw-bold mb-1" style={{ fontSize: "1.4rem", letterSpacing: "-0.02em" }}>Mortuary Analytics Dashboard</h2>
+              <p className="text-white-50 mb-0" style={{ fontSize: "0.8rem" }}>Real-time branch comparison & intelligent insights</p>
             </div>
             <div className="d-flex gap-2 align-items-center flex-wrap">
               <Dropdown autoClose="outside">
-                <Dropdown.Toggle variant="light" size="sm" className="d-flex align-items-center gap-2">
-                  <MapPin size={18} />{selectedBranch?.branch_name || selectedBranch?.name || "Select Branch"}
+                <Dropdown.Toggle variant="light" size="sm" className="d-flex align-items-center gap-2 border-0 shadow-sm" style={{ borderRadius: "10px", fontWeight: "500", fontSize: "0.8125rem" }}>
+                  <MapPin size={16} />{selectedBranch?.branch_name || selectedBranch?.name || "Select Branch"}
                 </Dropdown.Toggle>
-                <Dropdown.Menu>
+                <Dropdown.Menu style={{ borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 10px 40px rgba(0,0,0,0.2)" }}>
                   {branches.map(b => {
                     const bid = getBranchIdentifier(b);
                     return (
                       <Dropdown.Item key={bid || b.id || b.branch_id} onClick={() => setSelectedBranch(b)}
-                        active={getBranchIdentifier(selectedBranch) === bid}>
+                        active={getBranchIdentifier(selectedBranch) === bid}
+                        style={{ fontSize: "0.8125rem" }}>
                         {b.branch_name || b.name}
                       </Dropdown.Item>
                     );
                   })}
                 </Dropdown.Menu>
               </Dropdown>
-              <Dropdown autoClose="outside">
-                <Dropdown.Toggle variant="light" size="sm" className="d-flex align-items-center gap-2">
-                  <BarChart3 size={18} /> Compare branches {selectedBranches.length > 0 && <Badge bg="secondary">{selectedBranches.length}</Badge>}
+
+              {/* REDESIGNED Compare Dropdown */}
+              <Dropdown autoClose="outside" align="end">
+                <Dropdown.Toggle
+                  variant="light"
+                  size="sm"
+                  className="d-flex align-items-center gap-2 border-0 shadow-sm"
+                  style={{ borderRadius: "10px", fontWeight: "500", fontSize: "0.8125rem" }}
+                >
+                  <GitCompareArrows size={16} />
+                  Compare
+                  {selectedBranches.length > 0 && (
+                    <Badge pill style={{ fontSize: "0.6rem", background: COLORS.primaryLight, border: "none" }}>{selectedBranches.length}</Badge>
+                  )}
+                  <ChevronDown size={13} style={{ opacity: 0.5 }} />
                 </Dropdown.Toggle>
-                <Dropdown.Menu style={{ minWidth: 320, maxWidth: 360, padding: 0 }}>
-                  <div className="p-3">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <div>
-                        <div className="fw-bold">Compare Branches</div>
-                        <small className="text-muted">Select at least 2 branches</small>
-                      </div>
-                      <Badge bg={selectedBranches.length >= 2 ? "success" : "warning"}>{selectedBranches.length} selected</Badge>
+                <Dropdown.Menu
+                  style={{
+                    minWidth: 300, maxWidth: 340, padding: 0,
+                    borderRadius: "14px", border: "1px solid #e2e8f0",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.03)",
+                    overflow: "hidden"
+                  }}
+                >
+                  {/* Dropdown header */}
+                  <div className="px-3 pt-3 pb-2" style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div className="fw-bold" style={{ fontSize: "0.85rem", color: COLORS.dark }}>Compare Branches</div>
+                      <Badge pill bg={selectedBranches.length >= 2 ? "success" : "secondary"} style={{ fontSize: "0.65rem" }}>
+                        {selectedBranches.length} selected
+                      </Badge>
                     </div>
-                    <div style={{ maxHeight: 240, overflowY: "auto" }}>
-                      {branches.map(b => {
-                        const bid = getBranchIdentifier(b);
-                        return (
-                          <Form.Check
-                            key={bid || b.id || b.branch_id}
-                            type="checkbox"
-                            id={`cmp-${bid}`}
-                            label={b.branch_name || b.name}
-                            checked={selectedBranches.includes(bid)}
-                            onChange={() => toggleBranch(b)}
-                            className="mb-2"
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="d-flex justify-content-between gap-2 mt-3">
-                      <Button variant="outline-primary" size="sm" onClick={() => {
+                    <small className="text-muted" style={{ fontSize: "0.72rem" }}>Pick 2 or more to compare</small>
+                  </div>
+
+                  {/* Branch list with custom checkboxes */}
+                  <div style={{ maxHeight: 200, overflowY: "auto", padding: "6px 10px" }}>
+                    {branches.map(b => {
+                      const bid = getBranchIdentifier(b);
+                      const isSelected = selectedBranches.includes(bid);
+                      return (
+                        <div
+                          key={bid || b.id || b.branch_id}
+                          onClick={() => toggleBranch(b)}
+                          className="d-flex align-items-center gap-2 px-2 py-2 rounded-lg mb-1"
+                          style={{
+                            cursor: "pointer",
+                            background: isSelected ? "rgba(59, 130, 246, 0.06)" : "transparent",
+                            border: isSelected ? "1px solid rgba(59, 130, 246, 0.15)" : "1px solid transparent",
+                            transition: "all 0.15s ease",
+                            borderRadius: "8px"
+                          }}
+                        >
+                          <div style={{
+                            width: "18px", height: "18px", borderRadius: "5px",
+                            border: isSelected ? "none" : "2px solid #d1d5db",
+                            background: isSelected ? COLORS.primaryLight : "transparent",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0, transition: "all 0.15s ease"
+                          }}>
+                            {isSelected && <CheckCircle size={13} color="white" strokeWidth={3} />}
+                          </div>
+                          <span style={{
+                            fontSize: "0.8125rem",
+                            fontWeight: isSelected ? "600" : "400",
+                            color: isSelected ? COLORS.dark : COLORS.gray
+                          }}>
+                            {b.branch_name || b.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Dropdown footer with actions */}
+                  <div className="p-3 d-flex gap-2" style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      className="flex-fill"
+                      style={{ borderRadius: "8px", fontSize: "0.8rem", fontWeight: "500" }}
+                      onClick={() => {
                         const allIds = branches.map(b => getBranchIdentifier(b)).filter(Boolean);
                         setSelectedBranches(allIds);
                         fetchComparison(allIds);
-                      }}>
-                        Select All
+                      }}
+                    >
+                      All
+                    </Button>
+                    {selectedBranches.length > 0 && (
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        style={{ borderRadius: "8px", fontSize: "0.8rem", padding: "0.25rem 0.5rem" }}
+                        onClick={() => { setSelectedBranches([]); setComparisonData(null); }}
+                        title="Clear selection"
+                      >
+                        <X size={14} />
                       </Button>
-                      <Button variant="primary" size="sm" onClick={() => fetchComparison(selectedBranches)} disabled={loadingComparison || selectedBranches.length < 2}>
-                        {loadingComparison ? <Spinner size="sm" className="me-1" /> : <BarChart3 size={14} className="me-1" />} Compare
-                      </Button>
-                    </div>
+                    )}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="flex-fill"
+                      style={{ borderRadius: "8px", fontSize: "0.8rem", fontWeight: "600", background: COLORS.primaryLight, border: "none" }}
+                      onClick={() => fetchComparison(selectedBranches)}
+                      disabled={loadingComparison || selectedBranches.length < 2}
+                    >
+                      {loadingComparison ? <><Spinner size="sm" className="me-1" />Loading</> : "Compare"}
+                    </Button>
                   </div>
                 </Dropdown.Menu>
               </Dropdown>
-              <Button variant="light" size="sm" onClick={fetchDashboardData} disabled={refreshing} className="d-flex align-items-center gap-2">
-                <RefreshCw size={18} />{refreshing ? "Refreshing..." : "Refresh"}
+
+              <Button variant="light" size="sm" onClick={fetchDashboardData} disabled={refreshing} className="d-flex align-items-center gap-2 border-0 shadow-sm" style={{ borderRadius: "10px", fontWeight: "500", fontSize: "0.8125rem" }}>
+                <RefreshCw size={16} className={refreshing ? "spin" : ""} />{refreshing ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
           </div>
         </Card.Body>
       </Card>
 
-      {/* Branch Comparison Panel */}
-      {(branches.length > 0) && (
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)} className="mb-4" style={{ borderRadius: "12px", border: "none", fontWeight: "500" }}>
+          <AlertTriangle size={16} className="me-2" />{error}
+        </Alert>
+      )}
+
+      {/* BRANCH COMPARISON PANEL — 3 separate mini-charts instead of 1 ugly mixed chart */}
+      {branches.length > 0 && (
+        <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
           <Card.Body className="p-4">
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3">
               <div>
-                <h5 className="fw-bold mb-1">Branch Comparison</h5>
-                <p className="text-muted mb-0 small">Use the Compare branches dropdown above to choose branches and visualize branch performance quickly.</p>
+                <h5 className="fw-bold mb-1" style={{ fontSize: "1rem" }}>Branch Comparison</h5>
+                <p className="text-muted mb-0" style={{ fontSize: "0.78rem" }}>Use the Compare dropdown above to select branches and visualize performance</p>
               </div>
-              <div className="d-flex flex-wrap gap-2">
-                <span className="badge bg-primary">Branches found: {branches.length}</span>
-                <span className={`badge ${selectedBranches.length >= 2 ? 'bg-success' : 'bg-warning text-dark'}`}>{selectedBranches.length} selected</span>
-              </div>
+              {selectedBranches.length > 0 && (
+                <div className="d-flex flex-wrap gap-2 align-items-center">
+                  {selectedBranches.slice(0, 3).map(bid => {
+                    const b = branches.find(br => getBranchIdentifier(br) === bid);
+                    return b ? (
+                      <Badge key={bid} pill bg="light" text="dark" className="px-3 py-2" style={{ fontSize: "0.72rem", fontWeight: "500", border: "1px solid #e2e8f0" }}>
+                        {b.branch_name || b.name}
+                      </Badge>
+                    ) : null;
+                  })}
+                  {selectedBranches.length > 3 && (
+                    <Badge pill bg="secondary" className="px-3 py-2" style={{ fontSize: "0.72rem" }}>+{selectedBranches.length - 3} more</Badge>
+                  )}
+                </div>
+              )}
             </div>
-            {safeBranchComparisonChartData ? (
-              <SafeChart ChartComponent={Bar} data={safeBranchComparisonChartData} options={chartComparisonOptions} chartName="BranchComparisonTop" />
+
+            {safeCompDeceased || safeCompBookings || safeCompRevenue ? (
+              <Row className="g-3">
+                <Col md={4}>
+                  {safeCompDeceased ? (
+                    <div className="p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", height: "210px" }}>
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: COLORS.chart1 + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Users size={13} style={{ color: COLORS.chart1 }} />
+                        </div>
+                        <small className="fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Deceased Cases</small>
+                      </div>
+                      <div style={{ height: "155px" }}>
+                        <SafeChart ChartComponent={Bar} data={safeCompDeceased} options={comparisonChartOptions} chartName="CompDeceased" />
+                      </div>
+                    </div>
+                  ) : null}
+                </Col>
+                <Col md={4}>
+                  {safeCompBookings ? (
+                    <div className="p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", height: "210px" }}>
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: COLORS.chart3 + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Calendar size={13} style={{ color: COLORS.chart3 }} />
+                        </div>
+                        <small className="fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Bookings</small>
+                      </div>
+                      <div style={{ height: "155px" }}>
+                        <SafeChart ChartComponent={Bar} data={safeCompBookings} options={comparisonChartOptions} chartName="CompBookings" />
+                      </div>
+                    </div>
+                  ) : null}
+                </Col>
+                <Col md={4}>
+                  {safeCompRevenue ? (
+                    <div className="p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", height: "210px" }}>
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: COLORS.chart2 + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <DollarSign size={13} style={{ color: COLORS.chart2 }} />
+                        </div>
+                        <small className="fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Revenue (30d)</small>
+                      </div>
+                      <div style={{ height: "155px" }}>
+                        <SafeChart ChartComponent={Bar} data={safeCompRevenue} options={comparisonChartOptions} chartName="CompRevenue" />
+                      </div>
+                    </div>
+                  ) : null}
+                </Col>
+              </Row>
             ) : (
-              <div className="d-flex align-items-center justify-content-center py-5 text-muted" style={{ minHeight: 140 }}>
-                <small>Select 2 or more branches from the compare dropdown to view comparison charts.</small>
+              <div className="d-flex flex-column align-items-center justify-content-center py-5 text-muted" style={{ minHeight: 140 }}>
+                <div style={{
+                  width: "56px", height: "56px", borderRadius: "16px",
+                  background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: "0.75rem"
+                }}>
+                  <GitCompareArrows size={24} style={{ color: "#cbd5e1" }} />
+                </div>
+                <small style={{ fontWeight: "500" }}>Select 2 or more branches to compare</small>
+                <small style={{ fontSize: "0.72rem", opacity: 0.6, marginTop: "2px" }}>Use the Compare dropdown in the header above</small>
               </div>
             )}
           </Card.Body>
         </Card>
       )}
- 
+
       {branchCompare && <BranchComparisonTable branches={branchCompare} />}
- 
+
       {/* Branch of the Month */}
       {insights && <BranchOfMonthBanner insights={insights} />}
- 
+
       {/* KEY METRICS - ROW 1 */}
       <Row className="g-3 mb-4">
         <Col xs={6} lg={3}><StatCard title="Total Deceased" value={deceased.total || "-"} subtitle={`${deceased.thisMonth || 0} this month`} icon={Users} color="primary" /></Col>
@@ -893,7 +1132,7 @@ const ComprehensiveDashboard = () => {
 
       {/* DECEASED SECTION - Charts */}
       {(deceasedTrends.length > 0 || caseStatus.length > 0 || bookings.fleet?.total > 0) && (
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+        <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
           <Card.Body className="p-4">
             <SectionHeader title="Deceased Management" icon={Users} color={COLORS.primary} />
             <Row className="g-4">
@@ -924,102 +1163,97 @@ const ComprehensiveDashboard = () => {
       )}
 
       {/* BOOKINGS + MOST BOOKED HEARSES */}
-      <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+      <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
         <Card.Body className="p-4">
           <SectionHeader title="Hearse Bookings & Fleet Performance" icon={Truck} color={COLORS.purple} />
           <Row className="g-3 mb-3">
-            <Col xs={6} md={3}>
-              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.purpleLight }}>
-                <small className="text-muted">Total Bookings</small>
-                <h5 className="fw-bold mb-0" style={{ color: COLORS.purple }}>{bookings.total || 0}</h5>
-              </div>
-            </Col>
-            <Col xs={6} md={3}>
-              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.successLight }}>
-                <small className="text-muted">Completed</small>
-                <h5 className="fw-bold mb-0" style={{ color: COLORS.success }}>{bookings.completed || 0}</h5>
-              </div>
-            </Col>
-            <Col xs={6} md={3}>
-              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.warningLight }}>
-                <small className="text-muted">This Week</small>
-                <h5 className="fw-bold mb-0" style={{ color: COLORS.warning }}>{bookings.thisWeek || 0}</h5>
-              </div>
-            </Col>
-            <Col xs={6} md={3}>
-              <div className="p-3 rounded-3" style={{ backgroundColor: COLORS.dangerLight }}>
-                <small className="text-muted">Today</small>
-                <h5 className="fw-bold mb-0" style={{ color: COLORS.danger }}>{bookings.today || 0}</h5>
-              </div>
-            </Col>
+            {[
+              { label: "Total Bookings", value: bookings.total || 0, bg: COLORS.purpleLight, color: COLORS.purple },
+              { label: "Completed", value: bookings.completed || 0, bg: COLORS.successLight, color: COLORS.success },
+              { label: "This Week", value: bookings.thisWeek || 0, bg: COLORS.warningLight, color: COLORS.warning },
+              { label: "Today", value: bookings.today || 0, bg: COLORS.dangerLight, color: COLORS.danger },
+            ].map((item, i) => (
+              <Col xs={6} md={3} key={i}>
+                <div className="p-3 rounded-3" style={{ backgroundColor: item.bg, border: "1px solid " + item.color + "20" }}>
+                  <small className="text-muted" style={{ fontSize: "0.75rem", fontWeight: "500" }}>{item.label}</small>
+                  <h5 className="fw-bold mb-0 mt-1" style={{ color: item.color, fontSize: "1.3rem" }}>{item.value}</h5>
+                </div>
+              </Col>
+            ))}
           </Row>
           {hearses.mostBooked?.length > 0 && (
             <div className="mt-3">
-              <h6 className="fw-bold mb-2">Most Booked Hearses</h6>
-              <Table responsive hover size="sm">
-                <thead><tr><th>#</th><th>Hearse</th><th>Plate</th><th>Branch</th><th>Bookings</th><th>Trips Completed</th></tr></thead>
-                <tbody>
-                  {hearses.mostBooked.slice(0, 5).map((h, i) => (
-                    <tr key={h.id}>
-                      <td>{i + 1}</td>
-                      <td>{h.name}</td>
-                      <td><code>{h.plate}</code></td>
-                      <td><Badge bg="secondary">{h.branchName}</Badge></td>
-                      <td><Badge bg="primary">{h.totalBookings}</Badge></td>
-                      <td>{h.completedTrips}</td>
+              <h6 className="fw-bold mb-2" style={{ fontSize: "0.85rem" }}>Most Booked Hearses</h6>
+              <div style={{ overflowX: "auto" }}>
+                <Table responsive hover size="sm" style={{ fontSize: "0.8125rem" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc" }}>
+                      <th style={{ borderRadius: "8px 0 0 0", fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>#</th>
+                      <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Hearse</th>
+                      <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Plate</th>
+                      <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Branch</th>
+                      <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Bookings</th>
+                      <th style={{ borderRadius: "0 8px 0 0", fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Trips Completed</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
+                  </thead>
+                  <tbody>
+                    {hearses.mostBooked.slice(0, 5).map((h, i) => (
+                      <tr key={h.id}>
+                        <td><span className="fw-bold text-muted">{i + 1}</span></td>
+                        <td className="fw-medium">{h.name}</td>
+                        <td><code style={{ background: "#f1f5f9", padding: "2px 8px", borderRadius: "6px", fontSize: "0.78rem" }}>{h.plate}</code></td>
+                        <td><Badge bg="light" text="dark" pill style={{ fontSize: "0.7rem", border: "1px solid #e2e8f0" }}>{h.branchName}</Badge></td>
+                        <td><Badge bg="primary" pill style={{ fontSize: "0.7rem" }}>{h.totalBookings}</Badge></td>
+                        <td className="fw-medium">{h.completedTrips}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
             </div>
           )}
         </Card.Body>
       </Card>
 
       {/* INVENTORY SECTION */}
-      {(safeDeceasedTrendsData || safeCoffinSalesData || chemicals.lowStock?.length > 0) && (
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+      {(safeCoffinSalesData || chemicals.lowStock?.length > 0) && (
+        <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
           <Card.Body className="p-4">
             <SectionHeader title="Inventory Management" icon={Box} color={COLORS.warning} />
             <Row className="g-4">
-              {safeDeceasedTrendsData && (
-                <Col lg={6}>
-                  <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                    <SafeChart ChartComponent={Line} data={safeDeceasedTrendsData} options={cartesianChartOptions} chartName="InventoryDeceasedTrends" />
-                  </ChartCard>
-                </Col>
-              )}
               {safeCoffinSalesData && (
-                <Col lg={safeDeceasedTrendsData ? 6 : 12}>
+                <Col lg={6}>
                   <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
                     <SafeChart ChartComponent={Bar} data={safeCoffinSalesData} options={cartesianChartOptions} chartName="CoffinSales" />
                   </ChartCard>
                 </Col>
               )}
-              <Col lg={safeDeceasedTrendsData || safeCoffinSalesData ? 6 : 12}>
+              <Col lg={safeCoffinSalesData ? 6 : 12}>
                 <ChartCard title="Low Stock Chemicals" icon={FlaskConical} color={COLORS.danger} height="280px">
                   {chemicals.lowStock?.length > 0 ? (
-                    <div style={{ overflowY: "auto", height: "100%" }}>
+                    <div style={{ overflowY: "auto", height: "100%", paddingRight: "4px" }}>
                       {chemicals.lowStock.map((c, i) => {
                         const pct = c.minLevel > 0 ? Math.min(100, (c.currentStock / c.minLevel) * 100) : 0;
                         const barColor = pct < 50 ? COLORS.danger : pct < 80 ? COLORS.warning : COLORS.success;
                         return (
-                          <div key={i} className="mb-2">
-                            <div className="d-flex justify-content-between small">
-                              <span>{c.name}</span>
-                              <Badge bg={pct < 50 ? "danger" : "warning"}>{c.currentStock}/{c.minLevel} {c.unit}</Badge>
+                          <div key={i} className="mb-3">
+                            <div className="d-flex justify-content-between align-items-center small mb-1">
+                              <span className="fw-medium" style={{ fontSize: "0.8rem" }}>{c.name}</span>
+                              <Badge pill bg={pct < 50 ? "danger" : "warning"} style={{ fontSize: "0.65rem" }}>{c.currentStock}/{c.minLevel} {c.unit}</Badge>
                             </div>
-                            <div style={{ height: "8px", borderRadius: "4px", background: COLORS.light, overflow: "hidden" }}>
-                              <div style={{ width: `${pct}%`, height: "100%", borderRadius: "4px", background: barColor }} />
+                            <div style={{ height: "8px", borderRadius: "4px", background: "#f1f5f9", overflow: "hidden" }}>
+                              <div style={{ width: `${pct}%`, height: "100%", borderRadius: "4px", background: `linear-gradient(90deg, ${barColor}, ${barColor}aa)`, transition: "width 0.4s ease" }} />
                             </div>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-success">
-                      <CheckCircle size={32} className="mb-1" />
-                      <p className="mb-0 small">All chemicals above minimum stock</p>
+                    <div className="d-flex flex-column align-items-center justify-content-center h-100 text-success">
+                      <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: COLORS.successLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.5rem" }}>
+                        <CheckCircle size={24} />
+                      </div>
+                      <p className="mb-0 small fw-medium">All chemicals above minimum stock</p>
                     </div>
                   )}
                 </ChartCard>
@@ -1031,34 +1265,23 @@ const ComprehensiveDashboard = () => {
 
       {/* WORKSHOP SECTION */}
       {workshop.orders?.total > 0 && (
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+        <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
           <Card.Body className="p-4">
             <SectionHeader title="Workshop Production" icon={Activity} color={COLORS.purple} />
             <Row className="g-3 mb-3">
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.purpleLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.purple }}>{workshop.orders?.total || 0}</h5>
-                  <small className="text-muted">Total Orders</small>
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.successLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.success }}>{workshop.orders?.completed || 0}</h5>
-                  <small className="text-muted">Completed</small>
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.warningLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.warning }}>{workshop.orders?.pending || 0}</h5>
-                  <small className="text-muted">Pending</small>
-                </div>
-              </Col>
-              <Col xs={6} md={3}>
-                <div className="p-3 rounded-3 text-center" style={{ backgroundColor: COLORS.infoLight }}>
-                  <h5 className="fw-bold mb-0" style={{ color: COLORS.info }}>KES {parseFloat(workshop.orders?.profit || 0).toLocaleString()}</h5>
-                  <small className="text-muted">Profit</small>
-                </div>
-              </Col>
+              {[
+                { label: "Total Orders", value: workshop.orders?.total || 0, bg: COLORS.purpleLight, color: COLORS.purple },
+                { label: "Completed", value: workshop.orders?.completed || 0, bg: COLORS.successLight, color: COLORS.success },
+                { label: "Pending", value: workshop.orders?.pending || 0, bg: COLORS.warningLight, color: COLORS.warning },
+                { label: "Profit", value: `KES ${parseFloat(workshop.orders?.profit || 0).toLocaleString()}`, bg: COLORS.infoLight, color: COLORS.info },
+              ].map((item, i) => (
+                <Col xs={6} md={3} key={i}>
+                  <div className="p-3 rounded-3 text-center" style={{ backgroundColor: item.bg, border: "1px solid " + item.color + "20" }}>
+                    <h5 className="fw-bold mb-0" style={{ color: item.color, fontSize: "1.3rem" }}>{item.value}</h5>
+                    <small className="text-muted" style={{ fontSize: "0.75rem", fontWeight: "500" }}>{item.label}</small>
+                  </div>
+                </Col>
+              ))}
             </Row>
             <Row className="g-4">
               <Col lg={8}>
@@ -1067,22 +1290,37 @@ const ComprehensiveDashboard = () => {
                     <SafeChart ChartComponent={Bar} data={safeWorkshopProductionData} options={cartesianChartOptions} chartName="WorkshopProduction" />
                   ) : (
                     <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                      <small>No workshop stage data available for this branch.</small>
+                      <small>No production data available</small>
                     </div>
                   )}
                 </ChartCard>
               </Col>
               <Col lg={4}>
-                <ChartCard title="Workshop Efficiency" icon={Target} color={COLORS.success} height="320px">
-                  <div className="d-flex flex-column justify-content-center align-items-center h-100 text-center">
-                    <h2 className="fw-bold" style={{ color: COLORS.success }}>{Math.round(workshop.orders?.completed / Math.max(1, workshop.orders?.total) * 100)}%</h2>
-                    <p className="text-muted mb-0">Order completion rate</p>
-                    <div style={{ width: '120px', height: '120px', position: 'relative', marginTop: '1rem' }}>
-                      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: COLORS.light }} />
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }}>
-                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: COLORS.purple }}>{Math.round(workshop.orders?.completed / Math.max(1, workshop.orders?.total) * 100)}%</span>
-                        </div>
+                <ChartCard title="Workshop Summary" icon={Activity} color={COLORS.purple} height="320px">
+                  <div className="d-flex flex-column justify-content-center h-100 gap-3">
+                    <div className="text-center p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                      <div className="fw-bold" style={{ fontSize: "2rem", color: COLORS.purple }}>
+                        {workshop.orders?.total ? Math.round(((workshop.orders?.completed || 0) / workshop.orders.total) * 100) : 0}%
+                      </div>
+                      <small className="text-muted" style={{ fontSize: "0.78rem" }}>Completion Rate</small>
+                      <div className="mt-2" style={{ height: "6px", borderRadius: "3px", background: "#e2e8f0", overflow: "hidden" }}>
+                        <div style={{
+                          width: `${workshop.orders?.total ? Math.round(((workshop.orders?.completed || 0) / workshop.orders.total) * 100) : 0}%`,
+                          height: "100%", borderRadius: "3px",
+                          background: `linear-gradient(90deg, ${COLORS.purple}, ${COLORS.purple}aa)`,
+                          transition: "width 0.5s ease"
+                        }} />
+                      </div>
+                    </div>
+                    <div className="d-flex justify-content-between p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                      <div className="text-center">
+                        <div className="fw-bold" style={{ color: COLORS.success }}>{workshop.orders?.completed || 0}</div>
+                        <small className="text-muted" style={{ fontSize: "0.7rem" }}>Done</small>
+                      </div>
+                      <div style={{ width: "1px", background: "#e2e8f0" }} />
+                      <div className="text-center">
+                        <div className="fw-bold" style={{ color: COLORS.warning }}>{workshop.orders?.pending || 0}</div>
+                        <small className="text-muted" style={{ fontSize: "0.7rem" }}>Pending</small>
                       </div>
                     </div>
                   </div>
@@ -1093,105 +1331,87 @@ const ComprehensiveDashboard = () => {
         </Card>
       )}
 
-      {/* CHEMICALS & PPE SECTION */}
-      {(chemicals.recent?.length > 0 || chemicals.lowStock?.length > 0 || ppeRequests?.length > 0) && (
-        <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: "12px" }}>
+      {/* CHEMICALS SECTION */}
+      {(safeChemicalUsageTrendsData || safeTopUsedChemicalsData || chemicals.expiringSoon?.length > 0) && (
+        <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
           <Card.Body className="p-4">
-            <SectionHeader title="Chemicals & PPE" icon={FlaskConical} color={COLORS.info} />
-            <Row className="g-4 mb-4">
-              <Col lg={4}>
-                <ChartCard title="Chemical Usage Trend" icon={TrendingUp} color={COLORS.info} height="280px">
-                  {safeChemicalUsageTrendsData ? (
-                    <SafeChart ChartComponent={Line} data={safeChemicalUsageTrendsData} options={cartesianChartOptions} chartName="ChemicalUsageTrend" />
-                  ) : (
-                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                      <small>No chemical usage trend data available</small>
-                    </div>
-                  )}
-                </ChartCard>
-              </Col>
-              <Col lg={4}>
-                <ChartCard title="PPE Request Status" icon={Shield} color={COLORS.warning} height="280px">
-                  {safePPEStatusData ? (
-                    <SafeChart ChartComponent={Doughnut} data={safePPEStatusData} options={radialChartOptions} chartName="PPEStatus" />
-                  ) : (
-                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                      <small>No PPE request data to display</small>
-                    </div>
-                  )}
-                </ChartCard>
-              </Col>
-              <Col lg={4}>
-                <ChartCard title="Top Used Chemicals" icon={Zap} color={COLORS.danger} height="280px">
-                  {safeTopUsedChemicalsData ? (
+            <SectionHeader title="Chemicals & Consumables" icon={FlaskConical} color={COLORS.info} />
+            <Row className="g-4">
+              {safeChemicalUsageTrendsData && (
+                <Col lg={6}>
+                  <ChartCard title="Chemical Usage Trends" icon={TrendingUp} color={COLORS.info} height="280px">
+                    <SafeChart ChartComponent={Line} data={safeChemicalUsageTrendsData} options={cartesianChartOptions} chartName="ChemicalUsageTrends" />
+                  </ChartCard>
+                </Col>
+              )}
+              {safeTopUsedChemicalsData && (
+                <Col lg={safeChemicalUsageTrendsData ? 6 : 12}>
+                  <ChartCard title="Top Used Chemicals" icon={FlaskConical} color={COLORS.chart5} height="280px">
                     <SafeChart ChartComponent={Bar} data={safeTopUsedChemicalsData} options={cartesianChartOptions} chartName="TopUsedChemicals" />
-                  ) : (
-                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                      <small>No top usage data available</small>
+                  </ChartCard>
+                </Col>
+              )}
+              {chemicals.expiringSoon?.length > 0 && (
+                <Col lg={12}>
+                  <div className="p-3 rounded-3" style={{ background: COLORS.dangerLight, border: "1px solid rgba(239, 68, 68, 0.2)" }}>
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <AlertTriangle size={16} style={{ color: COLORS.danger }} />
+                      <strong style={{ fontSize: "0.85rem", color: COLORS.danger }}>Expiring Soon</strong>
                     </div>
-                  )}
-                </ChartCard>
-              </Col>
-            </Row>
-
-            <Row className="g-3">
-              <Col lg={6}>
-                <div className="p-4 rounded-3" style={{ backgroundColor: COLORS.light }}>
-                  <h6 className="fw-semibold mb-3">Low Stock Chemicals</h6>
-                  {chemicals.lowStock?.length > 0 ? (
-                    chemicals.lowStock.slice(0, 5).map((chem, i) => {
-                      const pct = chem.minLevel > 0 ? Math.min(100, (chem.currentStock / chem.minLevel) * 100) : 0;
-                      const barColor = pct < 40 ? COLORS.danger : pct < 70 ? COLORS.warning : COLORS.success;
-                      return (
-                        <div key={i} className="mb-3">
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                              <div className="fw-semibold small">{chem.name}</div>
-                              <div className="text-muted small">{chem.category}</div>
-                            </div>
-                            <div className="text-end">
-                              <div className="fw-bold small" style={{ color: barColor }}>{chem.currentStock}/{chem.minLevel} {chem.unit}</div>
-                              <div className="text-muted small">Deficit: {chem.deficit}</div>
-                            </div>
-                          </div>
-                          <div style={{ height: 8, borderRadius: 6, background: COLORS.border, overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: barColor, transition: 'width 0.4s ease' }} />
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-4 text-muted">
-                      <small>All chemicals are stocked above minimum levels.</small>
-                    </div>
-                  )}
-                </div>
-              </Col>
-              <Col lg={6}>
-                <div className="p-4 rounded-3" style={{ backgroundColor: COLORS.light }}>
-                  <h6 className="fw-semibold mb-3">Recent PPE Requests</h6>
-                  {ppeRequests?.length > 0 ? (
-                    <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
-                      {ppeRequests.slice(0, 5).map((req, i) => (
-                        <div key={i} className="d-flex justify-content-between align-items-center p-3 mb-2 rounded" style={{ backgroundColor: '#FFFFFF' }}>
-                          <div>
-                            <div className="fw-semibold small">{req.item_name}</div>
-                            <div className="text-muted small">Qty: {req.quantity_requested}</div>
-                          </div>
-                          <div className="text-end">
-                            <span className={`badge bg-${req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'info' : req.status === 'fulfilled' ? 'success' : 'danger'}`}>
-                              {req.status}
-                            </span>
-                            <div className="text-muted small">{req.created_at ? new Date(req.created_at).toLocaleDateString() : '-'}</div>
-                          </div>
-                        </div>
+                    <div className="d-flex flex-wrap gap-2">
+                      {chemicals.expiringSoon.map((c, i) => (
+                        <Badge key={i} bg="danger" pill style={{ fontSize: "0.72rem", fontWeight: "500" }}>
+                          {c.name} — {c.expiryDate || c.expiry || "N/A"}
+                        </Badge>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-5 text-muted">
-                      <small>No recent PPE requests found.</small>
-                    </div>
-                  )}
+                  </div>
+                </Col>
+              )}
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
+
+      {/* PPE REQUESTS SECTION */}
+      {safePPEStatusData && (
+        <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
+          <Card.Body className="p-4">
+            <SectionHeader title="PPE Requests" icon={Shield} color={COLORS.warning} />
+            <Row className="g-4">
+              <Col md={4}>
+                <ChartCard title="Request Status" icon={Shield} color={COLORS.warning} height="280px">
+                  <SafeChart ChartComponent={Doughnut} data={safePPEStatusData} options={radialChartOptions} chartName="PPEStatus" />
+                </ChartCard>
+              </Col>
+              <Col md={8}>
+                <div className="p-3 rounded-3 h-100" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <h6 className="fw-bold mb-3" style={{ fontSize: "0.85rem" }}>Recent PPE Requests</h6>
+                  <div style={{ overflowY: "auto", maxHeight: "240px" }}>
+                    <Table responsive hover size="sm" style={{ fontSize: "0.8rem" }}>
+                      <thead>
+                        <tr style={{ background: "#f1f5f9" }}>
+                          <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Item</th>
+                          <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Qty</th>
+                          <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Status</th>
+                          <th style={{ fontWeight: "600", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(ppeRequests || []).slice(0, 8).map((req, i) => {
+                          const statusColor = req.status === 'approved' ? 'success' : req.status === 'pending' ? 'warning' : req.status === 'rejected' ? 'danger' : 'secondary';
+                          return (
+                            <tr key={i}>
+                              <td className="fw-medium">{req.item || req.name || `PPE #${i + 1}`}</td>
+                              <td>{req.quantity || req.qty || '-'}</td>
+                              <td><Badge pill bg={statusColor} style={{ fontSize: "0.65rem", textTransform: "capitalize" }}>{req.status || 'unknown'}</Badge></td>
+                              <td className="text-muted">{req.date || req.createdAt || '-'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </Table>
+                  </div>
                 </div>
               </Col>
             </Row>
@@ -1199,16 +1419,13 @@ const ComprehensiveDashboard = () => {
         </Card>
       )}
 
-
-      {/* AI Recommendations */}
-      {insights?.recommendations && <RecommendationsCard recommendations={insights.recommendations} />}
-
-      {/* Error Banner */}
-      {error && (
-        <Alert variant="danger" className="border-0 shadow-sm" style={{ borderRadius: "12px" }}>
-          <AlertTriangle size={18} className="me-2" />{error}
-        </Alert>
+      {/* RECOMMENDATIONS */}
+      {comparisonData?.insights?.recommendations && (
+        <RecommendationsCard recommendations={comparisonData.insights.recommendations} />
       )}
+
+      {/* Footer spacer */}
+      <div style={{ height: "2rem" }} />
     </Container>
   );
 };
