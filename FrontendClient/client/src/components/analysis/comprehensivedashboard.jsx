@@ -47,17 +47,77 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
   </Card>
 );
 
-const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => (
-  <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
-    <Card.Body className="p-4">
-      <div className="d-flex align-items-center gap-2 mb-3">
-        <Icon size={20} style={{ color }} />
-        <h6 className="mb-0 fw-semibold">{title}</h6>
+const ChartCard = ({ title, icon: Icon, color, children, height = "300px" }) => {
+  const [error, setError] = React.useState(null);
+
+  return (
+    <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: "12px" }}>
+      <Card.Body className="p-4">
+        <div className="d-flex align-items-center gap-2 mb-3">
+          <Icon size={20} style={{ color }} />
+          <h6 className="mb-0 fw-semibold">{title}</h6>
+        </div>
+        <div style={{ height, position: "relative" }}>
+          <ErrorBoundary onError={(e) => { setError(e); console.error(`ChartCard Error [${title}]:`, e); }}>
+            {error ? (
+              <div className="d-flex align-items-center justify-content-center h-100 text-danger">
+                <small>Chart data unavailable</small>
+              </div>
+            ) : (
+              children
+            )}
+          </ErrorBoundary>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+};
+
+// Safe Chart Wrapper Component
+const SafeChart = ({ ChartComponent, data, options, chartName = "Chart" }) => {
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!data) {
+      console.warn(`[SafeChart] ${chartName}: data is null/undefined`);
+      return;
+    }
+    if (!data.labels || !Array.isArray(data.labels) || data.labels.length === 0) {
+      console.warn(`[SafeChart] ${chartName}: invalid labels`, data.labels);
+      return;
+    }
+    if (!data.datasets || !Array.isArray(data.datasets) || data.datasets.length === 0) {
+      console.warn(`[SafeChart] ${chartName}: invalid datasets`, data.datasets);
+      return;
+    }
+    for (let i = 0; i < data.datasets.length; i++) {
+      if (!Array.isArray(data.datasets[i].data)) {
+        console.error(`[SafeChart] ${chartName}: dataset[${i}].data is not an array`, data.datasets[i]);
+        setError(`Invalid dataset ${i}`);
+        return;
+      }
+    }
+  }, [data, chartName]);
+
+  if (error || !data) {
+    return (
+      <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+        <small>No data to display</small>
       </div>
-      <div style={{ height, position: "relative" }}>{children}</div>
-    </Card.Body>
-  </Card>
-);
+    );
+  }
+
+  try {
+    return <ChartComponent data={data} options={options} />;
+  } catch (err) {
+    console.error(`[SafeChart] Error rendering ${chartName}:`, err);
+    return (
+      <div className="d-flex align-items-center justify-content-center h-100 text-danger">
+        <small>Chart rendering error</small>
+      </div>
+    );
+  }
+};
 
 const SectionHeader = ({ title, icon: Icon, color }) => (
   <div className="d-flex align-items-center gap-3 mb-4 pb-3" style={{ borderBottom: `2px solid ${COLORS.border}` }}>
@@ -469,17 +529,34 @@ const ComprehensiveDashboard = () => {
   const insights = comparisonData?.insights;
 
   // ============================================
-  // ⭐ FIXED: Chart data with safe fallbacks (defined AFTER data extraction)
+  // ⭐ CHART DATA VALIDATION AND CREATION
   // ============================================
 
+  // Validation function to ensure chart data is valid
+  const validateChartData = (data, chartName) => {
+    if (!data) {
+      console.warn(`[Chart Validation] ${chartName}: data is null/undefined`);
+      return null;
+    }
+    if (!data.labels || !Array.isArray(data.labels)) {
+      console.error(`[Chart Validation] ${chartName}: missing or invalid labels`, data);
+      return null;
+    }
+    if (!data.datasets || !Array.isArray(data.datasets)) {
+      console.error(`[Chart Validation] ${chartName}: missing or invalid datasets`, data);
+      return null;
+    }
+    return data;
+  };
+
   // Only create chart data if we have actual data
-  const safeCaseStatusData = caseStatus.length > 0 ? createRadialChartData(
+  const safeCaseStatusData = caseStatus.length > 0 ? validateChartData(createRadialChartData(
     caseStatus.map(c => c.status || "Unknown"),
     caseStatus.map(c => c.count || 0),
     chartColors
-  ) : null;
+  ), "CaseStatus") : null;
 
-  const safeFleetData = (bookings.fleet?.total > 0 || bookings.fleet?.available > 0) ? createRadialChartData(
+  const safeFleetData = (bookings.fleet?.total > 0 || bookings.fleet?.available > 0) ? validateChartData(createRadialChartData(
     ["Available", "Booked", "Maintenance"],
     [
       bookings.fleet?.available || 0,
@@ -487,9 +564,9 @@ const ComprehensiveDashboard = () => {
       bookings.fleet?.maintenance || 0
     ],
     [COLORS.success, COLORS.warning, COLORS.danger]
-  ) : null;
+  ), "FleetData") : null;
 
-  const safeDeceasedTrendsData = deceasedTrends.length > 0 ? createCartesianChartData(
+  const safeDeceasedTrendsData = deceasedTrends.length > 0 ? validateChartData(createCartesianChartData(
     deceasedTrends.map(d => d.month || d.month_label || ""),
     [{
       label: "Cases",
@@ -501,16 +578,16 @@ const ComprehensiveDashboard = () => {
       tension: 0.4,
       pointBackgroundColor: deceasedTrends.map(d => d.count > 0 ? COLORS.chart1 : "transparent")
     }]
-  ) : null;
+  ), "DeceasedTrends") : null;
 
-  const safeCoffinSalesData = coffinSalesData.length > 0 ? createCartesianChartData(
+  const safeCoffinSalesData = coffinSalesData.length > 0 ? validateChartData(createCartesianChartData(
     coffinSalesData.map(c => c.type || ""),
     [{
       label: "Sold",
       data: coffinSalesData.map(c => c.sold || 0),
       backgroundColor: coffinSalesData.map((_, i) => chartColors[i % chartColors.length])
     }]
-  ) : null;
+  ), "CoffinSales") : null;
 
   return (
     <Container fluid className="py-4" style={{ background: COLORS.light, minHeight: "100vh" }}>
@@ -572,21 +649,21 @@ const ComprehensiveDashboard = () => {
               {safeDeceasedTrendsData && (
                 <Col lg={6}>
                   <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                    <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
+                    <SafeChart ChartComponent={Line} data={safeDeceasedTrendsData} options={cartesianChartOptions} chartName="DeceasedTrends" />
                   </ChartCard>
                 </Col>
               )}
               {safeCaseStatusData && (
                 <Col lg={safeDeceasedTrendsData ? 3 : 6}>
                   <ChartCard title="Case Status" icon={CheckCircle} color={COLORS.info} height="280px">
-                    <Pie data={safeCaseStatusData} options={radialChartOptions} />
+                    <SafeChart ChartComponent={Pie} data={safeCaseStatusData} options={radialChartOptions} chartName="CaseStatus" />
                   </ChartCard>
                 </Col>
               )}
               {safeFleetData && (
                 <Col lg={safeDeceasedTrendsData && safeCaseStatusData ? 3 : safeDeceasedTrendsData || safeCaseStatusData ? 6 : 12}>
                   <ChartCard title="Hearse Fleet" icon={Car} color={COLORS.success} height="280px">
-                    <Doughnut data={safeFleetData} options={radialChartOptions} />
+                    <SafeChart ChartComponent={Doughnut} data={safeFleetData} options={radialChartOptions} chartName="FleetData" />
                   </ChartCard>
                 </Col>
               )}
@@ -657,14 +734,14 @@ const ComprehensiveDashboard = () => {
               {safeDeceasedTrendsData && (
                 <Col lg={6}>
                   <ChartCard title="Cases Trend (12 Months)" icon={TrendingUp} color={COLORS.primary} height="280px">
-                    <Line data={safeDeceasedTrendsData} options={cartesianChartOptions} />
+                    <SafeChart ChartComponent={Line} data={safeDeceasedTrendsData} options={cartesianChartOptions} chartName="InventoryDeceasedTrends" />
                   </ChartCard>
                 </Col>
               )}
               {safeCoffinSalesData && (
                 <Col lg={safeDeceasedTrendsData ? 6 : 12}>
                   <ChartCard title="Coffin Sales by Type" icon={ShoppingCart} color={COLORS.warning} height="280px">
-                    <Bar data={safeCoffinSalesData} options={cartesianChartOptions} />
+                    <SafeChart ChartComponent={Bar} data={safeCoffinSalesData} options={cartesianChartOptions} chartName="CoffinSales" />
                   </ChartCard>
                 </Col>
               )}

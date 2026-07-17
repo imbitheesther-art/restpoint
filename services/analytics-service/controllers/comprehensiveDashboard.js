@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { safeTenantQuery, resolveDatabase, lookupTenantDatabase } = require('../../../shared/dbConfig');
+const serviceClient = require('../../../shared/services/serviceClient');
 
 // Simple inline logger (avoid external dependency)
 const logger = { error: (...args) => console.error('[Dashboard]', ...args), warn: (...args) => console.warn('[Dashboard]', ...args), info: (...args) => console.log('[Dashboard]', ...args) };
@@ -20,9 +21,11 @@ const getComprehensiveDashboard = asyncHandler(async (req, res) => {
     }
 
     const startTime = Date.now();
+    console.log(`[Dashboard ${requestId}] Request started for tenant: ${tenantSlug}, branch: ${branchId}, dbName: ${dbName}`);
 
     // If DB is not available (Docker not running), return empty data structure
     if (!dbName) {
+        console.log(`[Dashboard ${requestId}] No database found, returning empty data`);
         return res.status(200).json({
             success: true,
             data: {
@@ -41,43 +44,46 @@ const getComprehensiveDashboard = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Run all analytics queries in parallel for speed
+        // Fetch hearse analytics from independent hearse-service (no tenant database dependency)
+        let hearseAnalytics = { fleet: {}, fleetStats: [] };
+        try {
+            const hearseResponse = await serviceClient.get('hearse-service', '/analytics/hearse-fleet', {}, 60); // Cache for 60 seconds
+            if (hearseResponse && hearseResponse.data) {
+                hearseAnalytics = hearseResponse.data;
+            }
+        } catch (err) {
+            logger.warn('Failed to fetch hearse analytics from hearse-service, using empty defaults:', err.message);
+        }
+
+        // Run all tenant-specific analytics queries in parallel for speed
         const [
             deceasedCount,
             caseStatus,
             deceasedTrends,
             bookingCounts,
-            hearseFleet,
             coffinInventory,
             coffinSales,
             chemicalStock,
             chemicalTrends,
             workshopSummary,
             workshopProduction,
-            mostBookedHearses,
             lowStockChemicals,
             expiringChemicals,
             revenueData,
-            chemicalUsageByBranch,
-            hearseUsageStats
+            chemicalUsageByBranch
         ] = await Promise.allSettled([
             safeTenantQuery(dbName, `SELECT COUNT(*) as total, COUNT(CASE WHEN MONTH(date_admitted)=MONTH(CURDATE()) AND YEAR(date_admitted)=YEAR(CURDATE()) THEN 1 END) as this_month, COUNT(CASE WHEN WEEK(date_admitted)=WEEK(CURDATE()) AND YEAR(date_admitted)=YEAR(CURDATE()) THEN 1 END) as this_week, COUNT(CASE WHEN DATE(date_admitted)=CURDATE() THEN 1 END) as today, COUNT(CASE WHEN status IN ('Under Care','Admitted','Received') THEN 1 END) as active, COUNT(CASE WHEN status IN ('Released','Dispatched','Completed') THEN 1 END) as released FROM deceased`),
             safeTenantQuery(dbName, `SELECT COALESCE(status,'Unknown') as status, COUNT(*) as count FROM deceased GROUP BY status ORDER BY count DESC`),
             safeTenantQuery(dbName, `SELECT DATE_FORMAT(date_admitted,'%b %Y') as month_label, COUNT(*) as count FROM deceased WHERE date_admitted >= DATE_SUB(NOW(), INTERVAL 12 MONTH) GROUP BY DATE_FORMAT(date_admitted,'%Y-%m'), DATE_FORMAT(date_admitted,'%b %Y') ORDER BY DATE_FORMAT(date_admitted,'%Y-%m') ASC`),
-            safeTenantQuery(dbName, `SELECT COUNT(*) as total, COUNT(CASE WHEN WEEK(booking_date)=WEEK(CURDATE()) AND YEAR(booking_date)=YEAR(CURDATE()) THEN 1 END) as this_week, COUNT(CASE WHEN DATE(booking_date)=CURDATE() THEN 1 END) as today, COUNT(CASE WHEN status='booked' THEN 1 END) as booked, COUNT(CASE WHEN status='completed' THEN 1 END) as completed FROM hearse_bookings`),
-            safeTenantQuery(dbName, `SELECT COALESCE(status,'unknown') as status, COUNT(*) as count FROM hearses GROUP BY status`),
             safeTenantQuery(dbName, `SELECT COUNT(*) as total_types, COALESCE(SUM(COALESCE(quantity,0)),0) as total_stock, COALESCE(SUM(COALESCE(exact_price,0)*COALESCE(quantity,0)),0) as total_value FROM coffins`),
             safeTenantQuery(dbName, `SELECT c.type, COUNT(dc.coffin_id) as sold, COALESCE(SUM(c.exact_price),0) as revenue FROM coffins c LEFT JOIN deceased_coffin dc ON c.coffin_id=dc.coffin_id GROUP BY c.coffin_id, c.type ORDER BY sold DESC LIMIT 10`),
             safeTenantQuery(dbName, `SELECT COALESCE(name,'Unknown') as chemical, COALESCE(current_stock,0) as available, COALESCE(min_stock_level,0) as min_level, COALESCE(unit,'units') as unit FROM chemicals WHERE is_active = 1 ORDER BY available ASC LIMIT 10`),
             safeTenantQuery(dbName, `SELECT COALESCE(name,'Unknown') as chemical, MONTH(created_at) as month_num, DATE_FORMAT(created_at,'%b') as month, COALESCE(SUM(COALESCE(quantity_used,0)),0) as qty FROM deceased_chemical_usage dcu JOIN chemicals c ON c.id = dcu.chemical_id WHERE dcu.created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH) GROUP BY c.name, MONTH(dcu.created_at), DATE_FORMAT(dcu.created_at,'%b') ORDER BY c.name, month_num`),
             safeTenantQuery(dbName, `SELECT COUNT(*) as total_orders, SUM(CASE WHEN status IN ('completed','delivered') THEN 1 ELSE 0 END) as completed, COALESCE(SUM(profit),0) as profit FROM coffin_orders`),
             safeTenantQuery(dbName, `SELECT stage, COUNT(*) as total, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed, SUM(CASE WHEN status='in_progress' THEN 1 ELSE 0 END) as in_progress FROM production_stages GROUP BY stage ORDER BY FIELD(stage,'design','cutting','assembly','polishing','finishing')`),
-            safeTenantQuery(dbName, `SELECT h.id, h.hearse_name, h.plate_number, h.branch_id, b.branch_name, COUNT(hb.id) as total_bookings, SUM(CASE WHEN hb.status='completed' THEN 1 ELSE 0 END) as completed_trips FROM hearses h LEFT JOIN hearse_bookings hb ON hb.hearse_id = h.id LEFT JOIN branches b ON h.branch_id = b.branch_id GROUP BY h.id, h.hearse_name, h.plate_number, h.branch_id, b.branch_name ORDER BY total_bookings DESC LIMIT 10`),
             safeTenantQuery(dbName, `SELECT id, name, category, unit, current_stock, min_stock_level, (current_stock - min_stock_level) as deficit FROM chemicals WHERE is_active = 1 AND current_stock <= min_stock_level ORDER BY (current_stock / min_stock_level) ASC LIMIT 10`),
             safeTenantQuery(dbName, `SELECT id, name, unit, current_stock, min_stock_level, created_at FROM chemicals WHERE is_active = 1 AND DATEDIFF(NOW(), created_at) >= 180 ORDER BY created_at ASC LIMIT 10`),
-            safeTenantQuery(dbName, `SELECT COALESCE(SUM(total_charge),0) as total_revenue, COALESCE(SUM(paid_amount),0) as total_collected FROM hearse_bookings WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`),
-            safeTenantQuery(dbName, `SELECT c.name, c.category, c.unit, COALESCE(SUM(dcu.quantity_used),0) as total_used, COUNT(DISTINCT dcu.deceased_id) as patient_count FROM chemicals c JOIN deceased_chemical_usage dcu ON dcu.chemical_id = c.id WHERE dcu.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY c.id, c.name, c.category, c.unit ORDER BY total_used DESC LIMIT 10`),
-            safeTenantQuery(dbName, `SELECT h.id, h.hearse_name, h.plate_number, h.status, DATEDIFF(NOW(), COALESCE(h.service_due_date, h.created_at)) as days_since_service, (SELECT COUNT(*) FROM hearse_bookings WHERE hearse_id = h.id) as total_trips, (SELECT COUNT(*) FROM hearse_bookings WHERE hearse_id = h.id AND status='completed') as completed_trips FROM hearses h ORDER BY completed_trips DESC LIMIT 10`)
+            safeTenantQuery(dbName, `SELECT c.name, c.category, c.unit, COALESCE(SUM(dcu.quantity_used),0) as total_used, COUNT(DISTINCT dcu.deceased_id) as patient_count FROM chemicals c JOIN deceased_chemical_usage dcu ON dcu.chemical_id = c.id WHERE dcu.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY c.id, c.name, c.category, c.unit ORDER BY total_used DESC LIMIT 10`)
         ]);
 
         // Safely extract values from Promise.allSettled results
@@ -106,29 +112,20 @@ const getComprehensiveDashboard = asyncHandler(async (req, res) => {
         const cs = extractArray(caseStatus);
         const dt = extractArray(deceasedTrends);
         const bc = extractValue(bookingCounts, 0);
-        const hf = extractArray(hearseFleet);
         const ci = extractValue(coffinInventory, 0);
         const csl = extractArray(coffinSales);
         const chs = extractArray(chemicalStock);
         const cht = extractArray(chemicalTrends);
         const ws = extractValue(workshopSummary, 0);
         const wp = extractArray(workshopProduction);
-        const mbh = extractArray(mostBookedHearses);
         const lsc = extractArray(lowStockChemicals);
         const expc = extractArray(expiringChemicals);
-        const rd = extractValue(revenueData, 0);
         const cub = extractArray(chemicalUsageByBranch);
-        const hus = extractArray(hearseUsageStats);
 
-        // Build fleet status map
-        const fleetMap = {};
-        if (hf && Array.isArray(hf)) {
-            hf.forEach(r => {
-                if (r && r.status !== undefined) {
-                    fleetMap[r.status] = r.count || 0;
-                }
-            });
-        }
+        // Extract hearse data from independent hearse-service analytics
+        const fleetMap = hearseAnalytics.fleet || {};
+        const hearseStats = hearseAnalytics.fleetStats || [];
+        const hearseRevenue = hearseAnalytics.revenue || { total30d: 0, collected30d: 0, outstanding30d: 0 };
 
         // Build response
         const data = {
@@ -179,34 +176,35 @@ const getComprehensiveDashboard = asyncHandler(async (req, res) => {
                 production: Array.isArray(wp) ? wp.map(r => ({ stage: r.stage || 'Unknown', total: r.total || 0, completed: r.completed || 0, inProgress: r.in_progress || 0 })) : []
             },
             hearses: {
-                mostBooked: Array.isArray(mbh) ? mbh.map(r => ({
+                mostBooked: Array.isArray(hearseStats) ? hearseStats.slice(0, 10).map(r => ({
                     id: r.id,
-                    name: r.hearse_name || 'Unnamed',
-                    plate: r.plate_number || 'N/A',
-                    branchId: r.branch_id,
-                    branchName: r.branch_name || `Branch ${r.branch_id}`,
-                    totalBookings: parseInt(r.total_bookings) || 0,
-                    completedTrips: parseInt(r.completed_trips) || 0
+                    name: r.name || 'Unnamed',
+                    plate: r.plate || 'N/A',
+                    branchId: r.branchId,
+                    branchName: r.branchName || `Branch ${r.branchId}`,
+                    totalBookings: parseInt(r.totalBookings) || 0,
+                    completedTrips: parseInt(r.completedTrips) || 0
                 })) : [],
-                usageStats: Array.isArray(hus) ? hus.map(r => ({
+                usageStats: Array.isArray(hearseStats) ? hearseStats.map(r => ({
                     id: r.id,
-                    name: r.hearse_name || 'Unnamed',
-                    plate: r.plate_number || 'N/A',
+                    name: r.name || 'Unnamed',
+                    plate: r.plate || 'N/A',
                     status: r.status || 'unknown',
-                    daysSinceService: parseInt(r.days_since_service) || 0,
-                    totalTrips: parseInt(r.total_trips) || 0,
-                    completedTrips: parseInt(r.completed_trips) || 0
+                    daysSinceService: parseInt(r.daysSinceService) || 0,
+                    totalTrips: parseInt(r.totalTrips) || 0,
+                    completedTrips: parseInt(r.completedTrips) || 0
                 })) : []
             },
             revenue: {
-                total30d: parseFloat(rd?.total_revenue || 0).toFixed(2),
-                collected30d: parseFloat(rd?.total_collected || 0).toFixed(2),
-                outstanding30d: (parseFloat(rd?.total_revenue || 0) - parseFloat(rd?.total_collected || 0)).toFixed(2)
+                total30d: parseFloat(hearseRevenue.total30d || 0).toFixed(2),
+                collected30d: parseFloat(hearseRevenue.collected30d || 0).toFixed(2),
+                outstanding30d: parseFloat(hearseRevenue.outstanding30d || 0).toFixed(2)
             },
             metadata: {
                 currency: 'KES',
                 executionTime: Date.now() - startTime,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                dataSource: { hearses: 'independent hearse-service' }
             }
         };
 

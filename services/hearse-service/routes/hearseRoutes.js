@@ -52,4 +52,12 @@ router.get('/all-drivers', hearseBookingController.getAllDrivers);
 router.get('/drivers/:driver_id/bookings', hearseBookingController.getBookingsByDriver);
 router.get('/drivers/:driver_id/dashboard', hearseBookingController.getDriverDashboard);
 
+// ============================================================
+// HEARSE ANALYTICS (Independent - from hearse service database)
+// ============================================================
+const hearseAnalyticsController = require('../controllers/hearseAnalytics');
+
+router.get('/analytics/hearse-fleet', hearseAnalyticsController.getHearseFleetAnalytics);
+router.get('/analytics/hearse-period', hearseAnalyticsController.getHearsePeriodAnalytics);
+
 module.exports = router;
