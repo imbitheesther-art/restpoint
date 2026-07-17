@@ -1,6 +1,6 @@
-const { getHearsePool } = require('../../../config/database');
 const { getKenyaTimeISO } = require('../../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
+const { getHearsePool, safeQuery } = require('../../database');
 const { registerHearse, updateHearse, deleteHearse, getAllHearses, getAvailableHearses, upload } = require('../registerHearse');
 
 /**

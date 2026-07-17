@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
-const { getHearsePool } = require('../../config/database');
+const { getHearsePool } = require('../database');
 const { getKenyaTimeISO } = require('../../../packages/shared-utils/dist/timestamps');
 const asyncHandler = require('express-async-handler');
 

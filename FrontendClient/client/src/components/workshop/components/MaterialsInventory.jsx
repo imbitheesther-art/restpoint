@@ -158,7 +158,7 @@ const MaterialsInventory = ({ materials: propMaterials }) => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
                     {[
                         { title: 'Total Materials', value: totalMaterials, accent: '#eef2ff', color: '#0f172a', icon: Package },
-                        { title: 'Inventory Value', value: `₹${totalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, accent: '#edf4ff', color: '#1d4ed8', icon: DollarSign },
+                        { title: 'Inventory Value', value: `KES ${totalValue.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`, accent: '#edf4ff', color: '#1d4ed8', icon: DollarSign },
                         { title: 'Low Stock', value: lowStockCount, accent: '#fef3c7', color: '#b45309', icon: AlertTriangle },
                         { title: 'Out of Stock', value: outOfStockCount, accent: '#fee2e2', color: '#991b1b', icon: TrendingDown }
                     ].map((stat) => (
@@ -186,8 +186,8 @@ const MaterialsInventory = ({ materials: propMaterials }) => {
 
             {lowStockAlerts.length > 0 && (
                 <div style={{
-                        margin: '1rem 1rem 0 1rem',
-                        padding: '0.85rem 1rem',
+                    margin: '1rem 1rem 0 1rem',
+                    padding: '0.85rem 1rem',
                     background: 'linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)',
                     border: '1px solid #f59e0b',
                     borderRadius: '14px',
@@ -324,8 +324,8 @@ const MaterialsInventory = ({ materials: propMaterials }) => {
                                     </td>
                                     <td style={{ padding: '1rem 1.25rem', color: '#475569' }}>{material.category || 'General'}</td>
                                     <td style={{ padding: '1rem 1.25rem', textAlign: 'right', color: lowStock ? '#b91c1c' : '#0f172a', fontWeight: 700 }}>{material.quantity} {material.unit}</td>
-                                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right', color: '#475569' }}>₹{Number(material.unit_price || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-                                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>₹{totalValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right', color: '#475569' }}>KES {Number(material.unit_price || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}</td>
+                                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>KES {totalValue.toLocaleString('en-KE', { maximumFractionDigits: 2 })}</td>
                                     <td style={{ padding: '1rem 1.25rem' }}>
                                         <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
                                             <div style={{ width: `${stockPercent}%`, height: '100%', background: lowStock ? '#ef4444' : '#22c55e', transition: 'width 0.35s ease' }} />

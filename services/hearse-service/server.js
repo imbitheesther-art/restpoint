@@ -28,10 +28,10 @@ const io = new Server(server, {
 
 app.set('io', io);
 
-// Initialize hearse database on startup
-const { initializeHearseDatabase } = require('./config/database');
-initializeHearseDatabase().catch(err => {
-    console.error('⚠️  Failed to initialize hearse database:', err);
+// Initialize hearse database on startup using knex migrations
+const { runMigrations } = require('./database');
+runMigrations().catch(err => {
+    console.error('⚠️  Failed to run hearse database migrations:', err);
 });
 
 // Middleware

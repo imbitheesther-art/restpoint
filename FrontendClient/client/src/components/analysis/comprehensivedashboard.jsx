@@ -215,63 +215,8 @@ const RecommendationsCard = ({ recommendations }) => {
   );
 };
 
-// ============================================
-// ⭐ FIXED: Safe chart data helper functions
-// ============================================
-
-// Safe function to create pie/doughnut chart data with fallback
-const createRadialChartData = (labels, dataValues, colors) => {
-  // Ensure labels is always an array
-  const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
-  // Ensure dataValues is always an array of numbers
-  const safeData = Array.isArray(dataValues) && dataValues.length > 0
-    ? dataValues.map(v => typeof v === 'number' ? v : 0)
-    : [1]; // Fallback with 1 to show "No Data"
-
-  // Ensure colors match data length
-  const safeColors = Array.isArray(colors) && colors.length >= safeData.length
-    ? colors.slice(0, safeData.length)
-    : ['#cccccc'];
-
-  return {
-    labels: safeLabels,
-    datasets: [{
-      data: safeData,
-      backgroundColor: safeColors,
-      borderWidth: 2,
-      borderColor: '#ffffff'
-    }]
-  };
-};
-
-// Safe function to create line/bar chart data
-const createCartesianChartData = (labels, datasets) => {
-  // Ensure labels is always an array
-  const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
-
-  // Ensure datasets is always an array with proper structure
-  const safeDatasets = Array.isArray(datasets) && datasets.length > 0
-    ? datasets.map(ds => ({
-      label: ds.label || 'Data',
-      data: Array.isArray(ds.data) && ds.data.length > 0
-        ? ds.data.map(v => typeof v === 'number' ? v : 0)
-        : [0],
-      borderColor: ds.borderColor || COLORS.chart1,
-      backgroundColor: ds.backgroundColor || COLORS.chart1 + '20',
-      ...ds
-    }))
-    : [{
-      label: 'No Data',
-      data: [0],
-      borderColor: '#cccccc',
-      backgroundColor: '#cccccc20'
-    }];
-
-  return {
-    labels: safeLabels,
-    datasets: safeDatasets
-  };
-};
+// Chart data helpers are defined inside the component below
+// (duplicate external definitions removed to prevent confusion)
 
 // ============================================
 // ⭐ MAIN DASHBOARD COMPONENT
@@ -351,23 +296,17 @@ const ComprehensiveDashboard = () => {
   };
 
   // ============================================
-  // ⭐ FIXED: Safe chart data helper functions
+  // ⭐ SAFE CHART DATA HELPERS (with fallbacks)
   // ============================================
 
-  // Safe function to create pie/doughnut chart data with fallback
   const createRadialChartData = (labels, dataValues, colors) => {
-    // Ensure labels is always an array
     const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
-    // Ensure dataValues is always an array of numbers
     const safeData = Array.isArray(dataValues) && dataValues.length > 0
       ? dataValues.map(v => typeof v === 'number' ? v : 0)
-      : [1]; // Fallback with 1 to show "No Data"
-
-    // Ensure colors match data length
+      : [1];
     const safeColors = Array.isArray(colors) && colors.length >= safeData.length
       ? colors.slice(0, safeData.length)
       : ['#cccccc'];
-
     return {
       labels: safeLabels,
       datasets: [{
@@ -379,12 +318,8 @@ const ComprehensiveDashboard = () => {
     };
   };
 
-  // Safe function to create line/bar chart data
   const createCartesianChartData = (labels, datasets) => {
-    // Ensure labels is always an array
     const safeLabels = Array.isArray(labels) && labels.length > 0 ? labels : ['No Data'];
-
-    // Ensure datasets is always an array with proper structure
     const safeDatasets = Array.isArray(datasets) && datasets.length > 0
       ? datasets.map(ds => ({
         label: ds.label || 'Data',
@@ -401,7 +336,6 @@ const ComprehensiveDashboard = () => {
         borderColor: '#cccccc',
         backgroundColor: '#cccccc20'
       }];
-
     return {
       labels: safeLabels,
       datasets: safeDatasets
