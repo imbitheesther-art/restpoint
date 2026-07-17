@@ -921,6 +921,29 @@ const ChemicalManagementDashboard = () => {
   const handleAddChemical = async (e) => {
     e.preventDefault();
     try {
+      if (selectedChemical) {
+        const quantityToAdd = parseFloat(formData.current_stock) || 0;
+        if (quantityToAdd <= 0) {
+          toast.error('Please enter a valid quantity to add.');
+          return;
+        }
+
+        const payload = {
+          quantity: quantityToAdd,
+          notes: formData.notes || `Added stock to ${selectedChemical.chemical_name}`
+        };
+
+        const r = await api.post(`/chemicals/${selectedChemical.chemical_id}/receive`, payload);
+        if (r.data.success) {
+          toast.success('Stock added successfully');
+          setShowAddModal(false);
+          resetForms();
+          await fetchChemicals();
+          await fetchDashboardStats();
+        }
+        return;
+      }
+
       const payload = {
         name: formData.name,
         category: formData.category.toLowerCase(),
@@ -931,12 +954,6 @@ const ChemicalManagementDashboard = () => {
         unit_cost: parseFloat(formData.unit_cost) || 0,
         hazard_level: formData.hazard_level.toLowerCase(),
         notes: formData.notes || null,
-        branch_id: 1,
-        initial_quantity: parseFloat(formData.current_stock) || 0,
-        ...(formData.unit.toLowerCase() !== 'liters' && {
-          jerican_capacity: formData.jerican_capacity ? parseFloat(formData.jerican_capacity) : null,
-          jericans_received: formData.jericans_received ? parseInt(formData.jericans_received) : 0,
-        }),
       };
 
       const r = await api.post('/chemicals', payload);
@@ -1337,7 +1354,8 @@ const ChemicalManagementDashboard = () => {
                       placeholder="e.g., Formaldehyde Solution"
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      required
+                      required={!selectedChemical}
+                      disabled={!!selectedChemical}
                     />
                   </Field>
                   <Field>
@@ -1346,7 +1364,8 @@ const ChemicalManagementDashboard = () => {
                       placeholder="e.g., embalming, disinfectant"
                       value={formData.category}
                       onChange={e => setFormData({ ...formData, category: e.target.value })}
-                      required
+                      required={!selectedChemical}
+                      disabled={!!selectedChemical}
                     />
                   </Field>
                   <Field>
@@ -1355,7 +1374,8 @@ const ChemicalManagementDashboard = () => {
                       placeholder="e.g., liters, kg, ml"
                       value={formData.unit}
                       onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                      required
+                      required={!selectedChemical}
+                      disabled={!!selectedChemical}
                     />
                   </Field>
                   <Field>
