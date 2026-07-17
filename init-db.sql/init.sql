@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS branches (
 -- =====================================================
 -- SYSTEM SHARED TENANT - Default tenant for system operations
 -- =====================================================
-INSERT IGNORE INTO tenants (tenant_slug, db_name, organization_name, status)
+INSERT IGNORE INTO tenants (tenant_slug, db_name, tenant_name, status)
 VALUES ('system_shared', 'restpoint_main', 'System Shared Database', 'active');
 
 -- =====================================================
