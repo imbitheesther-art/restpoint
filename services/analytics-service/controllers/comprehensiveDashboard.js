@@ -2,6 +2,32 @@ const asyncHandler = require('express-async-handler');
 const { safeTenantQuery, resolveDatabase, lookupTenantDatabase } = require('../../../shared/dbConfig');
 const serviceClient = require('../../../shared/services/serviceClient');
 
+const resolveBranchDatabaseForTenant = async (tenantSlug, branchIdentifier) => {
+    if (!tenantSlug || !branchIdentifier) return null;
+    try {
+        const tenantDbName = await lookupTenantDatabase(tenantSlug);
+        if (!tenantDbName) return null;
+
+        const normalizedId = String(branchIdentifier).trim();
+        const parseId = Number(normalizedId);
+        const params = [normalizedId, normalizedId];
+        let query = `SELECT branch_db_name FROM branches WHERE is_active = TRUE AND (branch_slug = ? OR branch_code = ?`;
+        if (!Number.isNaN(parseId)) {
+            query += ` OR branch_id = ?`;
+            params.push(parseId);
+        }
+        query += `) LIMIT 1`;
+
+        const rows = await safeTenantQuery(tenantDbName, query, params);
+        if (Array.isArray(rows) && rows.length > 0 && rows[0].branch_db_name) {
+            return rows[0].branch_db_name;
+        }
+    } catch (error) {
+        console.warn('[Dashboard] Branch database lookup failed', { tenantSlug, branchIdentifier, error: error.message });
+    }
+    return null;
+};
+
 // Simple inline logger (avoid external dependency)
 const logger = { error: (...args) => console.error('[Dashboard]', ...args), warn: (...args) => console.warn('[Dashboard]', ...args), info: (...args) => console.log('[Dashboard]', ...args) };
 
@@ -11,11 +37,12 @@ const logger = { error: (...args) => console.error('[Dashboard]', ...args), warn
 const getComprehensiveDashboard = asyncHandler(async (req, res) => {
     const requestId = Math.random().toString(36).substring(7);
     const tenantSlug = req.headers['x-tenant-slug'] || req.headers['x-tenant-id'] || 'system_shared';
-    const branchId = req.headers['x-branch-id'] || req.query.branchId || null;
+    const branchId = req.headers['x-branch-id'] || req.headers['x-branch-slug'] || req.query.branchId || req.query.branchSlug || null;
+    const branchDb = branchId ? await resolveBranchDatabaseForTenant(tenantSlug, branchId) : null;
     const resolveSlug = branchId ? `${tenantSlug}-${branchId}` : tenantSlug;
     let dbName;
     try {
-        dbName = await resolveDatabase(resolveSlug) || await lookupTenantDatabase(tenantSlug);
+        dbName = branchDb || await resolveDatabase(resolveSlug) || await lookupTenantDatabase(tenantSlug);
     } catch (err) {
         console.warn(`[Dashboard] DB unavailable for ${tenantSlug}, returning empty data`);
     }
@@ -265,10 +292,11 @@ const getComparisonDashboard = asyncHandler(async (req, res) => {
     const startTime = Date.now();
 
     const fetchBranchData = async (branchId) => {
+        const branchDb = await resolveBranchDatabaseForTenant(tenantSlug, branchId);
         const resolveSlug = tenantSlug + '-' + branchId;
         let dbName;
         try {
-            dbName = await resolveDatabase(resolveSlug) || await lookupTenantDatabase(tenantSlug);
+            dbName = branchDb || await resolveDatabase(resolveSlug) || await lookupTenantDatabase(tenantSlug);
         } catch (err) {
             console.warn('[Dashboard] DB unavailable for comparison ' + resolveSlug);
         }

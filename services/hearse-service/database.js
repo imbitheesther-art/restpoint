@@ -106,6 +106,7 @@ const runMigrations = async () => {
 
 module.exports = {
     getHearsePool,
+    getHearseConnection,
     safeQuery,
     runMigrations,
     HEARSE_DB_CONFIG

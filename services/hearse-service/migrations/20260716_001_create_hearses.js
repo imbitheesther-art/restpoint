@@ -10,7 +10,7 @@ exports.up = function (knex) {
             table.string('plate_number', 50).unique().notNullable();
             table.string('model', 100).notNullable();
             table.integer('capacity').defaultTo(8);
-            table.enu('status', ['available', 'booked', 'in_transit', 'completed', 'cancelled', 'maintenance', 'out_of_service']).defaultTo('available');
+            table.enu('status', ['available', 'booked', 'in_transit', 'postponed', 'completed', 'cancelled', 'maintenance', 'out_of_service']).defaultTo('available');
             table.integer('branch_id').notNullable();
             table.string('branch_name', 100).notNullable();
             table.string('branch_code', 50);
