@@ -364,6 +364,7 @@ const ComprehensiveDashboard = () => {
     lastFetchRef.current = now;
     try {
       setRefreshing(true);
+      setError(null);
       const headers = getTenantHeaders();
       const branchId = selectedBranch?.id || selectedBranch?.branch_id;
       const branchHeaders = branchId ? { ...headers, "x-branch-id": branchId } : headers;
@@ -371,13 +372,49 @@ const ComprehensiveDashboard = () => {
       const r = await fetch(`${env.FULL_API_URL}/analytics/dashboard/comprehensive`, { headers: branchHeaders });
       if (r.ok) {
         const result = await r.json();
-        setData(result.data || {});
+        if (result.data) {
+          // Ensure all properties exist with default values
+          const safeData = {
+            deceased: result.data.deceased || { total: 0, thisMonth: 0, thisWeek: 0, today: 0, active: 0, released: 0, caseStatus: [], monthlyTrends: [] },
+            bookings: result.data.bookings || { total: 0, thisWeek: 0, today: 0, booked: 0, completed: 0, fleet: { available: 0, booked: 0, maintenance: 0, total: 0 } },
+            coffins: result.data.coffins || { totalTypes: 0, totalStock: 0, totalValue: '0.00', sales: [] },
+            chemicals: result.data.chemicals || { recent: [], usageTrends: [], lowStock: [], expiringSoon: [], topUsed: [] },
+            workshop: result.data.workshop || { orders: { total: 0, completed: 0, pending: 0, profit: '0.00' }, production: [] },
+            hearses: result.data.hearses || { mostBooked: [], usageStats: [] },
+            revenue: result.data.revenue || { total30d: '0.00', collected30d: '0.00', outstanding30d: '0.00' },
+            ppeRequests: result.data.ppeRequests || []
+          };
+          setData(safeData);
+        } else {
+          // Provide default empty data structure
+          setData({
+            deceased: { total: 0, thisMonth: 0, thisWeek: 0, today: 0, active: 0, released: 0, caseStatus: [], monthlyTrends: [] },
+            bookings: { total: 0, thisWeek: 0, today: 0, booked: 0, completed: 0, fleet: { available: 0, booked: 0, maintenance: 0, total: 0 } },
+            coffins: { totalTypes: 0, totalStock: 0, totalValue: '0.00', sales: [] },
+            chemicals: { recent: [], usageTrends: [], lowStock: [], expiringSoon: [], topUsed: [] },
+            workshop: { orders: { total: 0, completed: 0, pending: 0, profit: '0.00' }, production: [] },
+            hearses: { mostBooked: [], usageStats: [] },
+            revenue: { total30d: '0.00', collected30d: '0.00', outstanding30d: '0.00' },
+            ppeRequests: []
+          });
+        }
+      } else {
+        throw new Error(`API returned status ${r.status}`);
       }
-
-      setError(null);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
-      setError(err.message);
+      setError(err.message || "Failed to load dashboard data");
+      // Set default data on error
+      setData({
+        deceased: { total: 0, thisMonth: 0, thisWeek: 0, today: 0, active: 0, released: 0, caseStatus: [], monthlyTrends: [] },
+        bookings: { total: 0, thisWeek: 0, today: 0, booked: 0, completed: 0, fleet: { available: 0, booked: 0, maintenance: 0, total: 0 } },
+        coffins: { totalTypes: 0, totalStock: 0, totalValue: '0.00', sales: [] },
+        chemicals: { recent: [], usageTrends: [], lowStock: [], expiringSoon: [], topUsed: [] },
+        workshop: { orders: { total: 0, completed: 0, pending: 0, profit: '0.00' }, production: [] },
+        hearses: { mostBooked: [], usageStats: [] },
+        revenue: { total30d: '0.00', collected30d: '0.00', outstanding30d: '0.00' },
+        ppeRequests: []
+      });
     } finally {
       setRefreshing(false);
       setLoading(false);
@@ -394,12 +431,12 @@ const ComprehensiveDashboard = () => {
     finally { setLoadingComparison(false); }
   }, []);
 
-  useEffect(() => { fetchBranches(); }, [fetchBranches]);
-  useEffect(() => { if (selectedBranch) { setLoading(true); fetchDashboardData(); } }, [selectedBranch]);
+  useEffect(() => { fetchBranches(); }, []);
+  useEffect(() => { if (selectedBranch) { setLoading(true); fetchDashboardData(); } }, [selectedBranch, fetchDashboardData]);
   useEffect(() => {
     const interval = setInterval(() => { if (selectedBranch) fetchDashboardData(); }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedBranch, fetchDashboardData]);
 
   const toggleBranch = (bid) => {
     setSelectedBranches(prev => prev.includes(bid) ? prev.filter(x => x !== bid) : [...prev, bid]);
