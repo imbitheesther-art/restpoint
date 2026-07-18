@@ -14,7 +14,7 @@ import {
   TrendingUp, Zap, Shield, Target, Users, ShoppingCart, Truck, AlertTriangle,
   Clock, CheckCircle, Activity, FlaskConical, Box, MapPin, RotateCw, Calendar,
   Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star, BarChart3,
-  GitCompareArrows, X, ChevronDown
+  GitCompareArrows, X, ChevronDown, Flower2, User, Phone, Mail
 } from "lucide-react";
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../utils/config/env";
@@ -709,8 +709,26 @@ const ComprehensiveDashboard = () => {
   const deceasedTrends = Array.isArray(deceased.monthlyTrends) ? deceased.monthlyTrends : [];
   const coffinSalesData = Array.isArray(coffins.sales) ? coffins.sales : [];
   const ppeRequests = dd.ppeRequests || dd.ppe_requests || [];
+  const flowerBookings = dd.flowerBookings || [];
   const branchCompare = comparisonData?.branches;
   const insights = comparisonData?.insights;
+
+  // Dummy data for demonstration
+  const dummyDeceasedCases = [
+    { id: 1, name: 'James Ochieng', age: 67, branch: 'Nairobi Main', date: '2025-06-15', status: 'completed', cause: 'Natural causes', nextOfKin: 'Mary Ochieng', phone: '+254 722 3344', admissionNo: 'ADM-2401' },
+    { id: 2, name: 'Mary Wanjiku', age: 45, branch: 'Nairobi Main', date: '2025-06-14', status: 'active', cause: 'Cardiac arrest', nextOfKin: 'Peter Wanjiku', phone: '+254 733 4455', admissionNo: 'ADM-2402' },
+    { id: 3, name: 'Susan Auma', age: 81, branch: 'Mombasa Branch', date: '2025-06-13', status: 'in-transit', cause: 'N/A', nextOfKin: 'John Auma', phone: '+254 744 5566', admissionNo: 'ADM-2403' },
+    { id: 4, name: 'Peter Mwangi', age: 72, branch: 'Nairobi Main', date: '2025-06-12', status: 'released', cause: 'N/A', nextOfKin: 'Grace Mwangi', phone: '+254 755 6677', admissionNo: 'ADM-2404' },
+    { id: 5, name: 'Grace Akinyi', age: 58, branch: 'Kisumu Branch', date: '2025-06-11', status: 'completed', cause: 'Respiratory failure', nextOfKin: 'Joseph Akinyi', phone: '+254 766 7788', admissionNo: 'ADM-2405' },
+    { id: 6, name: 'Daniel Kiptoo', age: 39, branch: 'Nakuru Branch', date: '2025-06-10', status: 'active', cause: 'Road traffic accident', nextOfKin: 'Jane Kiptoo', phone: '+254 777 8899', admissionNo: 'ADM-2406' },
+  ];
+
+  const dummyFlowerBookings = [
+    { id: 1, bookingCode: 'FLW-1001', clientName: 'Alice Wanjiku', phone: '+254 722 1111', flowerType: 'Rose Bouquet', color: 'Red', quantity: 12, eventDate: '2025-06-17', status: 'confirmed', amount: 4500, notes: 'For memorial service' },
+    { id: 2, bookingCode: 'FLW-1002', clientName: 'John Kamau', phone: '+254 733 2222', flowerType: 'Lily Arrangement', color: 'White', quantity: 8, eventDate: '2025-06-16', status: 'completed', amount: 3200, notes: 'Delivered to Nairobi Main' },
+    { id: 3, bookingCode: 'FLW-1003', clientName: 'Mary Muthoni', phone: '+254 744 3333', flowerType: 'Mixed Flowers', color: 'Mixed', quantity: 15, eventDate: '2025-06-18', status: 'confirmed', amount: 8500, notes: 'VIP - premium arrangement' },
+    { id: 4, bookingCode: 'FLW-1004', clientName: 'Peter Otieno', phone: '+254 755 4444', flowerType: 'White Chrysanthemum', color: 'White', quantity: 20, eventDate: '2025-06-19', status: 'pending', amount: 6000, notes: 'Urgent delivery needed' },
+  ];
 
   // ============================================
   // CHART DATA VALIDATION AND CREATION
@@ -1222,9 +1240,93 @@ const ComprehensiveDashboard = () => {
       <Row className="g-3 mb-4">
         <Col xs={6} md={3}><StatCard title="Hearse Fleet" value={`${bookings.fleet?.available || 0}/${bookings.fleet?.total || 0}`} subtitle={`${bookings.fleet?.booked || 0} currently booked`} icon={Car} color="info" /></Col>
         <Col xs={6} md={3}><StatCard title="Coffin Stock" value={coffins.totalStock || "0"} subtitle={`KES ${parseFloat(coffins.totalValue || 0).toLocaleString()}`} icon={Box} color="warning" /></Col>
+        <Col xs={6} md={3}><StatCard title="Flower Bookings" value={flowerBookings.length || dummyFlowerBookings.length} subtitle={`KES ${(flowerBookings || dummyFlowerBookings).reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} revenue`} icon={Flower2} color="danger" /></Col>
         <Col xs={6} md={3}><StatCard title="Low Stock Chemicals" value={chemicals.lowStock?.length || 0} subtitle={`${chemicals.topUsed?.length || 0} chemicals in top usage`} icon={FlaskConical} color="danger" /></Col>
-        <Col xs={6} md={3}><StatCard title="Workshop Orders" value={workshop.orders?.total || 0} subtitle={`${workshop.orders?.completed || 0} completed`} icon={Activity} color="primary" /></Col>
       </Row>
+
+      {/* DECEASED RECORDS SECTION */}
+      <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Deceased Records" icon={User} color={COLORS.primary} />
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive hover size="sm" style={{ fontSize: "0.85rem" }}>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Admission No.</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Name</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Age</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Branch</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Status</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Cause of Death</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Next of Kin</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dummyDeceasedCases.map((c, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td><span style={{ fontFamily: "monospace", fontSize: "0.78rem", color: COLORS.primary }}>{c.admissionNo}</span></td>
+                    <td><strong>{c.name}</strong></td>
+                    <td>{c.age}</td>
+                    <td>{c.branch}</td>
+                    <td>
+                      <Badge bg={c.status === 'active' ? 'primary' : c.status === 'completed' ? 'success' : c.status === 'in-transit' ? 'warning' : c.status === 'released' ? 'secondary' : 'light'} pill style={{ fontSize: "0.68rem", fontWeight: "500" }}>
+                        {c.status}
+                      </Badge>
+                    </td>
+                    <td style={{ fontSize: "0.78rem", color: COLORS.gray }}>{c.cause}</td>
+                    <td style={{ fontSize: "0.78rem" }}>{c.nextOfKin}</td>
+                    <td style={{ fontSize: "0.78rem", color: COLORS.gray }}>{c.phone}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* FLOWER BOOKINGS SECTION */}
+      <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Flower Bookings" icon={Flower2} color="#ec4899" />
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive hover size="sm" style={{ fontSize: "0.85rem" }}>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Booking Code</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Client</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Phone</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Flower Type</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Color</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Qty</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Event Date</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Amount</th>
+                  <th style={{ fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.gray }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dummyFlowerBookings.map((fb, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td><span style={{ fontFamily: "monospace", fontSize: "0.78rem", color: COLORS.danger }}>{fb.bookingCode}</span></td>
+                    <td><strong>{fb.clientName}</strong></td>
+                    <td style={{ fontSize: "0.78rem", color: COLORS.gray }}>{fb.phone}</td>
+                    <td style={{ fontSize: "0.78rem" }}>{fb.flowerType}</td>
+                    <td><Badge bg={fb.color === 'Red' ? 'danger' : fb.color === 'White' ? 'light' : fb.color === 'Yellow' ? 'warning' : 'secondary'} pill style={{ fontSize: "0.68rem" }}>{fb.color}</Badge></td>
+                    <td>{fb.quantity}</td>
+                    <td style={{ fontSize: "0.78rem" }}>{fb.eventDate}</td>
+                    <td style={{ fontWeight: "600", color: COLORS.success }}>KES {fb.amount.toLocaleString()}</td>
+                    <td>
+                      <Badge bg={fb.status === 'confirmed' ? 'success' : fb.status === 'pending' ? 'warning' : fb.status === 'completed' ? 'primary' : 'secondary'} pill style={{ fontSize: "0.68rem", fontWeight: "500" }}>
+                        {fb.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* DECEASED SECTION - Charts */}
       {(safeDeceasedTrendsData || safeCaseStatusData || safeFleetData) && (
@@ -1550,6 +1652,23 @@ const ComprehensiveDashboard = () => {
       {comparisonData?.insights?.recommendations && (
         <RecommendationsCard recommendations={comparisonData.insights.recommendations} />
       )}
+
+      {/* ADDITIONAL INSIGHTS */}
+      <Card className="border-0 mb-4" style={{ borderRadius: "14px", boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)' }}>
+        <Card.Body className="p-4">
+          <SectionHeader title="Additional Insights" icon={Zap} color={COLORS.warning} />
+          <div className="d-flex flex-column gap-2">
+            <div className="p-3 rounded-3 d-flex align-items-start gap-2" style={{ background: "rgba(236, 72, 153, 0.06)", border: "1px solid rgba(236, 72, 153, 0.12)" }}>
+              <Flower2 size={16} className="flex-shrink-0 mt-1" style={{ color: '#ec4899' }} />
+              <small style={{ lineHeight: "1.5" }}>Flower bookings: {flowerBookings.length || dummyFlowerBookings.length} bookings this month with KES {(flowerBookings || dummyFlowerBookings).reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} revenue. {(flowerBookings || dummyFlowerBookings).filter(fb => fb.status === 'pending').length} pending delivery.</small>
+            </div>
+            <div className="p-3 rounded-3 d-flex align-items-start gap-2" style={{ background: "rgba(59, 130, 246, 0.06)", border: "1px solid rgba(59, 130, 246, 0.12)" }}>
+              <User size={16} className="flex-shrink-0 mt-1" style={{ color: COLORS.primary }} />
+              <small style={{ lineHeight: "1.5" }}>Deceased records: {dummyDeceasedCases.length} recent cases. {dummyDeceasedCases.filter(c => c.status === 'active').length} active, {dummyDeceasedCases.filter(c => c.status === 'completed').length} completed, {dummyDeceasedCases.filter(c => c.status === 'in-transit').length} in transit.</small>
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* Footer spacer */}
       <div style={{ height: "2rem" }} />
