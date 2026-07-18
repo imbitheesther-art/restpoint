@@ -10,6 +10,7 @@ import {
   Eye,
   Search,
   Users,
+  User,
   Microscope,
   AlertTriangle,
   ChevronLeft,
@@ -293,31 +294,37 @@ const DrawerHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem;
   border-bottom: 1px solid ${Colors.tableBorder};
   flex-shrink: 0;
+  background: linear-gradient(135deg, ${Colors.primaryDark} 0%, ${Colors.accentBlue} 100%);
 `;
 
 const DrawerTitle = styled.h2`
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: ${Colors.primaryDark};
-  margin: 0 0 0.25rem;
+  color: ${Colors.white};
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 `;
 
 const DrawerSubtitle = styled.div`
-  font-size: 0.82rem;
-  color: ${Colors.darkGray};
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
   margin: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 `;
 
 const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
+  background: ${Colors.white};
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -345,16 +352,17 @@ const DrawerIconBtn = styled.button`
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: ${Colors.darkGray};
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: ${Colors.white};
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
 
   &:hover {
-    background: ${Colors.lightGray};
-    color: ${Colors.primaryDark};
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(90deg);
   }
 `;
 
@@ -362,19 +370,20 @@ const DrawerSection = styled.div`
   background: ${Colors.lightGray};
   border-radius: 0.75rem;
   padding: 1.25rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid ${Colors.tableBorder};
 `;
 
 const DrawerSectionTitle = styled.h3`
   margin: 0 0 1rem 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: ${Colors.primaryDark};
   display: flex;
   align-items: center;
   gap: 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 `;
 
 const DrawerDetailGrid = styled.div`
@@ -390,7 +399,17 @@ const DrawerDetailGrid = styled.div`
 const DrawerDetailItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  background: ${Colors.white};
+  border-radius: 0.5rem;
+  border: 1px solid ${Colors.tableBorder};
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: ${Colors.accentBlue};
+    box-shadow: 0 2px 8px rgba(5, 102, 141, 0.08);
+  }
 `;
 
 const DrawerDetailLabel = styled.div`
@@ -398,15 +417,18 @@ const DrawerDetailLabel = styled.div`
   font-weight: 600;
   color: ${Colors.darkGray};
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 `;
 
 const DrawerDetailValue = styled.div`
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: ${Colors.primaryDark};
   word-break: break-word;
+  line-height: 1.4;
 `;
 
 const DrawerActions = styled.div`
@@ -415,13 +437,14 @@ const DrawerActions = styled.div`
   flex-wrap: wrap;
   padding-top: 1.25rem;
   border-top: 1px solid ${Colors.tableBorder};
+  margin-top: 1rem;
 `;
 
 const DrawerButton = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.1rem;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
   border-radius: 0.5rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -429,7 +452,8 @@ const DrawerButton = styled.button`
   transition: all 0.2s ease;
   border: none;
   white-space: nowrap;
-  min-height: 40px;
+  min-height: 44px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   ${(props) =>
     props.$primary
@@ -439,8 +463,8 @@ const DrawerButton = styled.button`
 
           &:hover:not(:disabled) {
             background: #04597b;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(5, 102, 141, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(5, 102, 141, 0.25);
           }
         `
       : css`
@@ -451,6 +475,7 @@ const DrawerButton = styled.button`
           &:hover:not(:disabled) {
             background: ${Colors.lightGray};
             border-color: ${Colors.accentBlue};
+            transform: translateY(-1px);
           }
         `}
 
@@ -463,6 +488,136 @@ const DrawerButton = styled.button`
   svg {
     width: 1rem;
     height: 1rem;
+  }
+`;
+
+const DrawerProfileCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, ${Colors.lightGray} 0%, ${Colors.white} 100%);
+  border-radius: 0.75rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid ${Colors.tableBorder};
+`;
+
+const DrawerProfileAvatar = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: ${Colors.accentBlue};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${Colors.white};
+  font-size: 1.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(5, 102, 141, 0.2);
+`;
+
+const DrawerProfileInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const DrawerProfileName = styled.div`
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: ${Colors.primaryDark};
+  margin-bottom: 0.25rem;
+`;
+
+const DrawerProfileMeta = styled.div`
+  font-size: 0.85rem;
+  color: ${Colors.darkGray};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+`;
+
+const DrawerTabs = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem;
+  background: ${Colors.lightGray};
+  border-radius: 0.75rem;
+  border: 1px solid ${Colors.tableBorder};
+`;
+
+const DrawerTab = styled.button`
+  flex: 1;
+  border: none;
+  background: ${props => props.$active ? Colors.white : 'transparent'};
+  color: ${props => props.$active ? Colors.accentBlue : Colors.darkGray};
+  padding: 0.65rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: ${props => props.$active ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none'};
+
+  &:hover {
+    background: ${props => props.$active ? Colors.white : 'rgba(255, 255, 255, 0.5)'};
+  }
+`;
+
+const DrawerTabContent = styled.div`
+  animation: ${fadeIn} 0.3s ease-out;
+`;
+
+const DrawerInfoRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid ${Colors.tableBorder};
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: ${Colors.darkGray};
+  }
+
+  .value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: ${Colors.primaryDark};
+    text-align: right;
+  }
+`;
+
+const DrawerEmptyState = styled.div`
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: ${Colors.darkGray};
+
+  svg {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.4;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: ${Colors.primaryDark};
+  }
+
+  p {
+    font-size: 0.85rem;
+    margin: 0;
+    color: ${Colors.darkGray};
   }
 `;
 
