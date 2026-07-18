@@ -728,6 +728,7 @@ const CoffinInventory = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCoffinDetailModal, setShowCoffinDetailModal] = useState(false);
+  const [showNewBookingModal, setShowNewBookingModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [registerFormData, setRegisterFormData] = useState({
     type: '', material: '', size: '', color: '', quantity: '',
@@ -737,6 +738,12 @@ const CoffinInventory = () => {
   const [bookingFormData, setBookingFormData] = useState({
     client_name: '', client_phone: '', client_email: '', client_address: '',
     coffin_id: '', booking_date: '', event_date: '', special_requirements: '', notes: ''
+  });
+  const [newBookingFormData, setNewBookingFormData] = useState({
+    client_name: '', client_phone: '', client_email: '', client_address: '',
+    booking_type: 'inventory', // 'inventory' or 'external'
+    coffin_id: '', coffin_type: '', coffin_material: '', coffin_price: '',
+    booking_date: '', event_date: '', special_requirements: '', notes: ''
   });
   const [registerImageFiles, setRegisterImageFiles] = useState([]);
   const [registerImagePreviews, setRegisterImagePreviews] = useState([]);
@@ -764,7 +771,7 @@ const CoffinInventory = () => {
   const fetchCoffins = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${env.FULL_API_URL}/api/v1/restpoint/coffins`, {
+      const response = await fetch(`${env.FULL_API_URL}/coffins`, {
         headers: getTenantHeaders()
       });
       const result = await response.json();
@@ -784,7 +791,7 @@ const CoffinInventory = () => {
   // Fetch bookings
   const fetchBookings = useCallback(async () => {
     try {
-      const response = await fetch(`${env.FULL_API_URL}/api/v1/restpoint/coffin-bookings`, {
+      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings`, {
         headers: getTenantHeaders()
       });
       const result = await response.json();
@@ -881,7 +888,7 @@ const CoffinInventory = () => {
       });
       registerImageFiles.forEach(file => formData.append('images', file));
 
-      const response = await fetch(`${env.FULL_API_URL}/api/v1/restpoint/coffins/register`, {
+      const response = await fetch(`${env.FULL_API_URL}/coffins/register`, {
         method: 'POST',
         headers: getTenantHeaders(),
         body: formData
@@ -910,12 +917,21 @@ const CoffinInventory = () => {
     setShowBookingModal(true);
   };
 
+  const handleNewBooking = () => {
+    setNewBookingFormData({
+      client_name: '', client_phone: '', client_email: '', client_address: '',
+      booking_type: 'inventory', coffin_id: '', coffin_type: '', coffin_material: '', coffin_price: '',
+      booking_date: new Date().toISOString().split('T')[0], event_date: '', special_requirements: '', notes: ''
+    });
+    setShowNewBookingModal(true);
+  };
+
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     setBookingLoading(true);
 
     try {
-      const response = await fetch(`${env.FULL_API_URL}/api/v1/restpoint/coffin-bookings`, {
+      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings`, {
         method: 'POST',
         headers: {
           ...getTenantHeaders(),
@@ -938,6 +954,42 @@ const CoffinInventory = () => {
     }
   };
 
+  const handleNewBookingSubmit = async (e) => {
+    e.preventDefault();
+    setBookingLoading(true);
+
+    try {
+      const payload = {
+        ...newBookingFormData,
+        coffin_id: newBookingFormData.booking_type === 'inventory' ? newBookingFormData.coffin_id : null,
+        coffin_type: newBookingFormData.booking_type === 'external' ? newBookingFormData.coffin_type : null,
+        coffin_material: newBookingFormData.booking_type === 'external' ? newBookingFormData.coffin_material : null,
+        coffin_price: newBookingFormData.booking_type === 'external' ? newBookingFormData.coffin_price : null,
+      };
+
+      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings`, {
+        method: 'POST',
+        headers: {
+          ...getTenantHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'Booking failed');
+
+      showToast('Booking created successfully!', 'success');
+      setShowNewBookingModal(false);
+      fetchBookings();
+      fetchCoffins();
+    } catch (err) {
+      showToast(err.message || 'Booking failed', 'error');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
   const handleDelete = (coffin) => {
     setSelectedCoffin(coffin);
     setShowDeleteModal(true);
@@ -945,7 +997,7 @@ const CoffinInventory = () => {
 
   const confirmDelete = async () => {
     try {
-      const response = await fetch(`${env.FULL_API_URL}/api/v1/restpoint/coffins/${selectedCoffin.coffin_id}`, {
+      const response = await fetch(`${env.FULL_API_URL}/coffins/${selectedCoffin.coffin_id}`, {
         method: 'DELETE',
         headers: getTenantHeaders()
       });
@@ -980,7 +1032,7 @@ const CoffinInventory = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${env.FULL_API_URL}/api/v1/restpoint/coffins/${selectedCoffin.coffin_id}`, {
+      const response = await fetch(`${env.FULL_API_URL}/coffins/${selectedCoffin.coffin_id}`, {
         method: 'PUT',
         headers: {
           ...getTenantHeaders(),
@@ -1252,6 +1304,9 @@ const CoffinInventory = () => {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <PrimaryButton onClick={handleNewBooking}>
+                      <Plus size={15} /> New Booking
+                    </PrimaryButton>
                   </FilterRow>
                 </FilterCard>
 
@@ -1610,6 +1665,129 @@ const CoffinInventory = () => {
                 <Trash2 size={15} /> Delete
               </PrimaryButton>
             </DrawerFooter>
+          </Drawer>
+        </DrawerOverlay>
+      )}
+
+      {/* New Booking Modal (Inventory or External) */}
+      {showNewBookingModal && (
+        <DrawerOverlay onClick={() => setShowNewBookingModal(false)}>
+          <Drawer $open={showNewBookingModal} style={{ width: '650px' }}>
+            <DrawerHeader style={{ background: COLORS.primaryDark }}>
+              <div>
+                <DrawerTitle style={{ color: COLORS.white }}>New Booking</DrawerTitle>
+                <DrawerSubtitle style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Book from inventory or create external booking
+                </DrawerSubtitle>
+              </div>
+              <ActionButton onClick={() => setShowNewBookingModal(false)} style={{ color: COLORS.white }}><XCircle size={20} /></ActionButton>
+            </DrawerHeader>
+            <DrawerBody>
+              <form onSubmit={handleNewBookingSubmit}>
+                {/* Booking Type Selection */}
+                <FormGroup>
+                  <Label>Booking Type <span className="required">*</span></Label>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.75rem', border: '1px solid ' + COLORS.border, borderRadius: COLORS.radiusSm, flex: 1, background: newBookingFormData.booking_type === 'inventory' ? COLORS.primary : COLORS.surface, color: newBookingFormData.booking_type === 'inventory' ? COLORS.white : COLORS.text }}>
+                      <input type="radio" name="booking_type" value="inventory" checked={newBookingFormData.booking_type === 'inventory'} onChange={(e) => setNewBookingFormData(p => ({ ...p, booking_type: e.target.value }))} style={{ accentColor: COLORS.primary }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>From Inventory</div>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Select existing coffin</div>
+                      </div>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.75rem', border: '1px solid ' + COLORS.border, borderRadius: COLORS.radiusSm, flex: 1, background: newBookingFormData.booking_type === 'external' ? COLORS.primary : COLORS.surface, color: newBookingFormData.booking_type === 'external' ? COLORS.white : COLORS.text }}>
+                      <input type="radio" name="booking_type" value="external" checked={newBookingFormData.booking_type === 'external'} onChange={(e) => setNewBookingFormData(p => ({ ...p, booking_type: e.target.value }))} style={{ accentColor: COLORS.primary }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>External Booking</div>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Custom coffin details</div>
+                      </div>
+                    </label>
+                  </div>
+                </FormGroup>
+
+                {/* Client Information */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <FormGroup>
+                    <Label>Client Name <span className="required">*</span></Label>
+                    <Input value={newBookingFormData.client_name} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_name: e.target.value }))} required />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Phone <span className="required">*</span></Label>
+                    <Input value={newBookingFormData.client_phone} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_phone: e.target.value }))} required />
+                  </FormGroup>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <FormGroup>
+                    <Label>Email</Label>
+                    <Input type="email" value={newBookingFormData.client_email} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_email: e.target.value }))} />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Booking Date <span className="required">*</span></Label>
+                    <Input type="date" value={newBookingFormData.booking_date} onChange={(e) => setNewBookingFormData(p => ({ ...p, booking_date: e.target.value }))} required />
+                  </FormGroup>
+                </div>
+
+                <FormGroup>
+                  <Label>Client Address</Label>
+                  <TextArea value={newBookingFormData.client_address} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_address: e.target.value }))} placeholder="Full address..." rows="2" />
+                </FormGroup>
+
+                {/* Coffin Selection based on type */}
+                {newBookingFormData.booking_type === 'inventory' ? (
+                  <FormGroup>
+                    <Label>Select Coffin from Inventory <span className="required">*</span></Label>
+                    <Select value={newBookingFormData.coffin_id} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_id: e.target.value }))} required>
+                      <option value="">-- Select a coffin --</option>
+                      {coffins.filter(c => c.status === 'available' || !c.status).map(coffin => (
+                        <option key={coffin.coffin_id} value={coffin.coffin_id}>
+                          {coffin.type} - {coffin.material} - Ksh {parseInt(coffin.exact_price || 0).toLocaleString()} (Stock: {coffin.quantity || 0})
+                        </option>
+                      ))}
+                    </Select>
+                  </FormGroup>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <FormGroup>
+                        <Label>Coffin Type/Model <span className="required">*</span></Label>
+                        <Input value={newBookingFormData.coffin_type} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_type: e.target.value }))} placeholder="e.g., Premium Oak" required />
+                      </FormGroup>
+                      <FormGroup>
+                        <Label>Material <span className="required">*</span></Label>
+                        <Input value={newBookingFormData.coffin_material} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_material: e.target.value }))} placeholder="e.g., Oak, Pine" required />
+                      </FormGroup>
+                    </div>
+                    <FormGroup>
+                      <Label>Price (KES) <span className="required">*</span></Label>
+                      <Input type="number" value={newBookingFormData.coffin_price} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_price: e.target.value }))} placeholder="0" required />
+                    </FormGroup>
+                  </>
+                )}
+
+                <FormGroup>
+                  <Label>Event Date</Label>
+                  <Input type="date" value={newBookingFormData.event_date} onChange={(e) => setNewBookingFormData(p => ({ ...p, event_date: e.target.value }))} />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Special Requirements</Label>
+                  <TextArea value={newBookingFormData.special_requirements} onChange={(e) => setNewBookingFormData(p => ({ ...p, special_requirements: e.target.value }))} placeholder="Any special requirements or customization..." rows="3" />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Additional Notes</Label>
+                  <TextArea value={newBookingFormData.notes} onChange={(e) => setNewBookingFormData(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." rows="2" />
+                </FormGroup>
+
+                <DrawerFooter>
+                  <SecondaryButton type="button" onClick={() => setShowNewBookingModal(false)}>Cancel</SecondaryButton>
+                  <PrimaryButton type="submit" disabled={bookingLoading}>
+                    {bookingLoading ? 'Creating...' : 'Create Booking'}
+                  </PrimaryButton>
+                </DrawerFooter>
+              </form>
+            </DrawerBody>
           </Drawer>
         </DrawerOverlay>
       )}
