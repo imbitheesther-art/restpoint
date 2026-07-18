@@ -11,6 +11,7 @@ import {
   Search,
   Users,
   User,
+  Info,
   Microscope,
   AlertTriangle,
   ChevronLeft,
@@ -21,6 +22,7 @@ import {
   Filter,
   FileText,
   X,
+  DollarSign,
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
