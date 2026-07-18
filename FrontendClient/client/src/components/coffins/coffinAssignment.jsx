@@ -15,30 +15,35 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CoffinSelectionModal from './coffinselectModal';
 
-// Elegant Vintage Color Palette
+// Professional color scheme matching flower bookings
 const Colors = {
-    colors: {
-        ink: '#15171A',
-        bone: '#FAF8F4',
-        bone2: '#F3EFE6',
-        brass: '#8B7355',
-        brassHover: '#A98F6E',
-        verdigris: '#3D4F47',
-        verdigrisDark: '#2E3F37',
-        line: '#E3DDD0',
-        lineDark: '#2C2F33',
-        gray: '#6B6862',
-        grayLight: 'rgba(250,248,244,0.62)',
-        red: '#9B4A3F',
-        redBg: '#F7ECE9',
-        redLine: '#E8D2CC',
-        white: '#FFFFFF',
-        success: '#475A43',
-        successBg: '#EEF3EC',
-        successLine: '#DCE6D9',
-        shadow: 'rgba(21,23,26,0.12)',
-        overlay: 'rgba(21,23,26,0.88)',
-    }
+    primary: '#0A2463',
+    primaryLight: '#1A3A7A',
+    white: '#FFFFFF',
+    bg: '#F5F7FA',
+    border: '#E8ECF0',
+    borderLight: '#F3F4F6',
+    text: '#1A1D24',
+    textSecondary: '#6B7280',
+    textMuted: '#9CA3AF',
+    success: '#10B981',
+    successLight: '#D1FAE5',
+    warning: '#F59E0B',
+    warningLight: '#FEF3C7',
+    danger: '#E74C3C',
+    dangerLight: '#FEE2E2',
+    info: '#3B82F6',
+    infoLight: '#DBEAFE',
+    accent: '#3B82F6',
+    accentHover: '#2563eb',
+    accentGlow: 'rgba(59, 130, 246, 0.1)',
+    radius: '14px',
+    radiusSm: '8px',
+    radiusXs: '6px',
+    shadowSm: '0 1px 4px rgba(0, 0, 0, 0.06)',
+    shadowMd: '0 4px 12px rgba(0, 0, 0, 0.08)',
+    shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
+    transition: 'all 0.2s ease',
 };
 
 // --- Animations ---
@@ -89,32 +94,29 @@ const spin = keyframes`
 // --- Styled Components with css helper ---
 const Card = styled.div`
     background: ${Colors.white};
-    border-radius: 1.25rem;
-    box-shadow: 
-        0 10px 25px -5px rgba(0, 0, 0, 0.1),
-        0 8px 10px -5px rgba(0, 0, 0, 0.04);
+    border-radius: ${Colors.radius};
+    box-shadow: ${Colors.shadowSm};
     padding: 1.5rem;
     width: 100%;
-    border: 1px solid ${Colors.mediumGray};
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid ${Colors.border};
+    transition: ${COLORS.transition};
     animation: ${fadeIn} 0.8s ease-out;
     position: relative;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
     &:hover {
-        transform: translateY(-3px);
-        box-shadow: 
-            0 20px 40px -12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+        box-shadow: ${Colors.shadowMd};
     }
 
     @media (max-width: 768px) {
         padding: 1rem;
-        border-radius: 1rem;
+        border-radius: ${Colors.radiusSm};
     }
 
     @media (max-width: 576px) {
         padding: 0.75rem;
-        border-radius: 0.875rem;
+        border-radius: ${Colors.radiusXs};
     }
 `;
 
@@ -124,20 +126,20 @@ const CardHeader = styled.div`
     align-items: center;
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid ${Colors.mediumGray};
+    border-bottom: 1px solid ${Colors.border};
 `;
 
 const CardTitle = styled.h3`
     font-size: 1.125rem;
     font-weight: 700;
-    color: ${Colors.primaryDark};
+    color: ${Colors.text};
     display: flex;
     align-items: center;
     gap: 0.5rem;
     margin: 0;
 
     svg {
-        color: ${Colors.accentTeal};
+        color: ${Colors.accent};
         width: 20px;
         height: 20px;
     }
@@ -148,10 +150,10 @@ const CardTitle = styled.h3`
 `;
 
 const StatusBadge = styled.div`
-    background: ${props => props.$variant === 'error' ? '#FEE2E2' : '#ECFDF5'};
-    color: ${props => props.$variant === 'error' ? Colors.dangerRed : Colors.successGreen};
+    background: ${props => props.$variant === 'error' ? Colors.dangerLight : Colors.successLight};
+    color: ${props => props.$variant === 'error' ? Colors.danger : Colors.success};
     padding: 0.35rem 0.85rem;
-    border-radius: 20px;
+    border-radius: ${Colors.radiusSm};
     font-size: 0.75rem;
     font-weight: 600;
     display: flex;
@@ -170,11 +172,11 @@ const SuccessNotification = styled.div`
     top: 1rem;
     left: 1rem;
     right: 1rem;
-    background: ${Colors.successGreen};
+    background: ${Colors.success};
     color: ${Colors.white};
     padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    border-radius: ${Colors.radiusSm};
+    box-shadow: ${Colors.shadowLg};
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -212,7 +214,7 @@ const SuccessNotification = styled.div`
 `;
 
 const ErrorNotification = styled(SuccessNotification)`
-    background: ${Colors.dangerRed};
+    background: ${Colors.danger};
 `;
 
 const LoadingOverlay = styled.div`
@@ -233,8 +235,8 @@ const LoadingOverlay = styled.div`
 const LoadingSpinner = styled.div`
     width: 60px;
     height: 60px;
-    border: 4px solid ${Colors.mediumGray};
-    border-top: 4px solid ${Colors.accentTeal};
+    border: 4px solid ${Colors.border};
+    border-top: 4px solid ${Colors.accent};
     border-radius: 50%;
     animation: ${spin} 1s linear infinite;
 
@@ -261,16 +263,16 @@ const CoffinCard = styled.div`
     grid-template-columns: 100px 1fr auto;
     gap: 1rem;
     padding: 1.25rem;
-    background: linear-gradient(135deg, ${Colors.lightGray} 0%, #f1f5f9 100%);
-    border: 1px solid ${Colors.mediumGray};
-    border-radius: 0.875rem;
+    background: ${Colors.bg};
+    border: 1px solid ${Colors.border};
+    border-radius: ${Colors.radiusSm};
     margin-bottom: 1rem;
     animation: ${slideIn} 0.5s ease-out;
-    transition: all 0.3s ease;
+    transition: ${COLORS.transition};
 
     &:hover {
-        border-color: ${Colors.accentTeal};
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.08);
+        border-color: ${Colors.accent};
+        box-shadow: 0 4px 12px ${COLORS.accentGlow};
     }
 
     @media (max-width: 768px) {
@@ -290,17 +292,17 @@ const CoffinCard = styled.div`
 const CoffinImageWrapper = styled.div`
     width: 100px;
     height: 100px;
-    border-radius: 0.75rem;
+    border-radius: ${Colors.radiusSm};
     overflow: hidden;
-    border: 2px solid ${Colors.mediumGray};
+    border: 2px solid ${Colors.border};
     background: ${Colors.white};
-    transition: all 0.3s ease;
+    transition: ${COLORS.transition};
     cursor: pointer;
 
     &:hover {
-        border-color: ${Colors.accentTeal};
+        border-color: ${Colors.accent};
         transform: scale(1.05);
-        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.2);
+        box-shadow: 0 8px 20px ${COLORS.accentGlow};
     }
 
     @media (max-width: 768px) {
@@ -319,7 +321,7 @@ const CoffinImage = styled.img`
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 0.625rem;
+    border-radius: ${COLORS.radiusXs};
     transition: transform 0.3s ease;
 
     ${CoffinImageWrapper}:hover & {
@@ -330,7 +332,7 @@ const CoffinImage = styled.img`
 const CoffinDetails = styled.div`
     .coffin-type {
         font-weight: 700;
-        color: ${Colors.primaryDark};
+        color: ${Colors.text};
         margin-bottom: 0.5rem;
         font-size: 1.05rem;
         display: flex;
@@ -338,7 +340,7 @@ const CoffinDetails = styled.div`
         gap: 0.5rem;
 
         svg {
-            color: ${Colors.accentTeal};
+            color: ${Colors.accent};
             width: 18px;
             height: 18px;
         }
@@ -371,19 +373,19 @@ const CoffinDetails = styled.div`
         svg {
             width: 14px;
             height: 14px;
-            color: ${Colors.accentTeal};
+            color: ${Colors.accent};
             flex-shrink: 0;
         }
 
         strong {
-            color: ${Colors.darkGray};
+            color: ${Colors.text};
             font-weight: 600;
         }
     }
 
     .coffin-price {
         font-weight: 700;
-        color: ${Colors.successGreen};
+        color: ${Colors.success};
         margin-top: 0.75rem;
         font-size: 1rem;
         display: flex;
@@ -391,8 +393,8 @@ const CoffinDetails = styled.div`
         gap: 0.375rem;
         padding: 0.5rem 0.75rem;
         background: ${Colors.white};
-        border-radius: 0.5rem;
-        border: 1px solid ${Colors.mediumGray};
+        border-radius: ${COLORS.radiusXs};
+        border: 1px solid ${Colors.border};
         display: inline-flex;
 
         @media (max-width: 576px) {
@@ -411,7 +413,7 @@ const AssignmentInfo = styled.div`
     justify-content: center;
     gap: 0.5rem;
     padding: 0.5rem;
-    border-left: 1px solid ${Colors.mediumGray};
+    border-left: 1px solid ${Colors.border};
 
     @media (max-width: 768px) {
         grid-column: 1 / -1;
@@ -419,7 +421,7 @@ const AssignmentInfo = styled.div`
         justify-content: space-around;
         text-align: center;
         border-left: none;
-        border-top: 1px solid ${Colors.mediumGray};
+        border-top: 1px solid ${Colors.border};
         padding: 0.75rem 0 0 0;
         margin-top: 0.25rem;
     }
@@ -430,7 +432,7 @@ const AssignmentItem = styled.div`
     line-height: 1.5;
 
     strong {
-        color: ${Colors.darkGray};
+        color: ${Colors.text};
         display: block;
         font-size: 0.75rem;
         text-transform: uppercase;
@@ -440,7 +442,7 @@ const AssignmentItem = styled.div`
 
     .value {
         font-weight: 600;
-        color: ${Colors.primaryDark};
+        color: ${Colors.text};
     }
 `;
 
@@ -461,20 +463,20 @@ const Button = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1.25rem;
-    border-radius: 0.75rem;
+    border-radius: ${Colors.radiusSm};
     font-size: 0.875rem;
     font-weight: 600;
-    border: 2px solid ${Colors.mediumGray};
+    border: 2px solid ${Colors.border};
     background: ${Colors.white};
-    color: ${Colors.darkGray};
+    color: ${Colors.text};
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: ${COLORS.transition};
     min-height: 40px;
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: ${Colors.accentTeal};
+        box-shadow: ${Colors.shadowMd};
+        border-color: ${Colors.accent};
     }
 
     &:active {
@@ -493,41 +495,38 @@ const Button = styled.button`
     }
 
     &.primary {
-        background: linear-gradient(135deg, ${Colors.accentTeal} 0%, ${Colors.infoBlue} 100%);
+        background: ${Colors.accent};
         color: ${Colors.white};
         border-color: transparent;
-        box-shadow: 
-            0 4px 6px -1px rgba(0, 0, 0, 0.1),
-            0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        box-shadow: ${Colors.shadowSm};
 
         &:hover {
-            box-shadow: 
-                0 10px 20px -5px rgba(14, 165, 233, 0.25),
-                0 6px 10px -5px rgba(0, 0, 0, 0.1);
+            background: ${Colors.accentHover};
+            box-shadow: ${Colors.shadowMd};
             border-color: transparent;
         }
     }
 
     &.danger {
-        background: linear-gradient(135deg, ${Colors.dangerRed} 0%, #dc2626 100%);
+        background: ${Colors.danger};
         color: white;
         border-color: transparent;
 
         &:hover {
-            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.25);
+            box-shadow: ${Colors.shadowMd};
             border-color: transparent;
         }
     }
 
     &.outline {
-        background: ${Colors.lightGray};
-        border-color: ${Colors.mediumGray};
-        color: ${Colors.darkGray};
+        background: ${Colors.bg};
+        border-color: ${Colors.border};
+        color: ${Colors.text};
 
         &:hover {
             background: ${Colors.white};
-            border-color: ${Colors.accentTeal};
-            color: ${Colors.accentTeal};
+            border-color: ${Colors.accent};
+            color: ${Colors.accent};
         }
     }
 
@@ -552,7 +551,7 @@ const NoAssignment = styled.div`
 
     .no-assignment-icon {
         font-size: 3rem;
-        color: ${Colors.mediumGray};
+        color: ${Colors.border};
         margin-bottom: 1rem;
         animation: ${pulse} 2s infinite;
     }
@@ -563,7 +562,7 @@ const NoAssignment = styled.div`
 
         &.main-text {
             font-weight: 600;
-            color: ${Colors.darkGray};
+            color: ${Colors.text};
             font-size: 1.1rem;
         }
 
@@ -594,7 +593,7 @@ const Loader = styled.div`
     align-items: center;
     justify-content: center;
     padding: 3rem 2rem;
-    color: ${Colors.accentTeal};
+    color: ${Colors.accent};
     animation: ${fadeIn} 0.5s ease-out;
 
     .loader-text {
@@ -637,8 +636,8 @@ const ModalImage = styled.img`
     max-width: 100%;
     max-height: 80vh;
     object-fit: contain;
-    border-radius: 0.75rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border-radius: ${Colors.radiusSm};
+    box-shadow: ${Colors.shadowLg};
 `;
 
 const CloseButton = styled.button`
@@ -659,7 +658,7 @@ const CloseButton = styled.button`
     transition: all 0.3s ease;
 
     &:hover {
-        background: ${Colors.dangerRed};
+        background: ${Colors.danger};
         transform: scale(1.1);
     }
 `;

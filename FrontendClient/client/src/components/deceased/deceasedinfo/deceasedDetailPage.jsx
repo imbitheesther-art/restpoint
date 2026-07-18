@@ -44,12 +44,28 @@ const COLORS = {
   white: '#FFFFFF',
   bg: '#F5F7FA',
   border: '#E8ECF0',
+  borderLight: '#F3F4F6',
   text: '#1A1D24',
   textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
   success: '#10B981',
+  successLight: '#D1FAE5',
   warning: '#F59E0B',
+  warningLight: '#FEF3C7',
   danger: '#E74C3C',
+  dangerLight: '#FEE2E2',
   info: '#3B82F6',
+  infoLight: '#DBEAFE',
+  accent: '#3B82F6',
+  accentHover: '#2563eb',
+  accentGlow: 'rgba(59, 130, 246, 0.1)',
+  radius: '14px',
+  radiusSm: '8px',
+  radiusXs: '6px',
+  shadowSm: '0 1px 4px rgba(0, 0, 0, 0.06)',
+  shadowMd: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
+  transition: 'all 0.2s ease',
 };
 
 const spin = keyframes`
@@ -77,7 +93,7 @@ const Header = styled.div`
   background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%);
   color: ${COLORS.white};
   padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: ${COLORS.shadowMd};
 `;
 
 const HeaderContent = styled.div`
@@ -120,7 +136,7 @@ const ActionButton = styled.button`
   background: rgba(255, 255, 255, 0.15);
   color: ${COLORS.white};
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: ${COLORS.radiusSm};
   padding: 0.75rem 1.25rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -128,7 +144,7 @@ const ActionButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s;
+  transition: ${COLORS.transition};
   backdrop-filter: blur(10px);
 
   &:hover {
@@ -141,7 +157,7 @@ const BackButton = styled.button`
   background: ${COLORS.white};
   color: ${COLORS.primary};
   border: none;
-  border-radius: 8px;
+  border-radius: ${COLORS.radiusSm};
   padding: 0.75rem 1.25rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -149,7 +165,7 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s;
+  transition: ${COLORS.transition};
 
   &:hover {
     background: ${COLORS.bg};
@@ -188,8 +204,8 @@ const Sidebar = styled.div`
 
 const Card = styled.div`
   background: ${COLORS.white};
-  border-radius: 14px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-radius: ${COLORS.radius};
+  box-shadow: ${COLORS.shadowSm};
   border: 1px solid ${COLORS.border};
   overflow: hidden;
 `;
@@ -220,9 +236,9 @@ const ProfileCard = styled.div`
   background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%);
   color: ${COLORS.white};
   padding: 2rem;
-  border-radius: 14px;
+  border-radius: ${COLORS.radius};
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(10, 36, 99, 0.2);
+  box-shadow: ${COLORS.shadowMd};
 `;
 
 const ProfileHeader = styled.div`
@@ -272,7 +288,7 @@ const StatusBadge = styled.span`
   align-items: center;
   gap: 0.375rem;
   padding: 0.5rem 0.875rem;
-  border-radius: 8px;
+  border-radius: ${COLORS.radiusSm};
   font-size: 0.875rem;
   font-weight: 500;
   background: ${props => props.$bgColor || COLORS.success};
@@ -288,7 +304,7 @@ const QuickStats = styled.div`
 const QuickStatItem = styled.div`
   background: rgba(255, 255, 255, 0.1);
   padding: 1rem;
-  border-radius: 10px;
+  border-radius: ${COLORS.radiusSm};
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 `;
@@ -311,7 +327,7 @@ const TabsContainer = styled.div`
   gap: 0.5rem;
   padding: 0.5rem;
   background: ${COLORS.bg};
-  border-radius: 12px;
+  border-radius: ${COLORS.radius};
   margin-bottom: 1.5rem;
 `;
 
@@ -321,12 +337,12 @@ const Tab = styled.button`
   background: ${props => props.$active ? COLORS.white : 'transparent'};
   color: ${props => props.$active ? COLORS.primary : COLORS.textSecondary};
   padding: 0.75rem 1rem;
-  border-radius: 10px;
+  border-radius: ${COLORS.radiusSm};
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: ${props => props.$active ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none'};
+  transition: ${COLORS.transition};
+  box-shadow: ${props => props.$active ? COLORS.shadowSm : 'none'};
 
   &:hover {
     background: ${props => props.$active ? COLORS.white : 'rgba(255, 255, 255, 0.5)'};
@@ -350,9 +366,9 @@ const InfoGrid = styled.div`
 const InfoItem = styled.div`
   padding: 1rem;
   background: ${COLORS.bg};
-  border-radius: 10px;
+  border-radius: ${COLORS.radiusSm};
   border: 1px solid ${COLORS.border};
-  transition: all 0.2s;
+  transition: ${COLORS.transition};
 
   &:hover {
     border-color: ${COLORS.primary};
@@ -418,7 +434,7 @@ const ContactItem = styled.div`
   gap: 0.75rem;
   padding: 0.75rem;
   background: ${COLORS.bg};
-  border-radius: 8px;
+  border-radius: ${COLORS.radiusXs};
   margin-bottom: 0.5rem;
   border: 1px solid ${COLORS.border};
 `;
@@ -426,7 +442,7 @@ const ContactItem = styled.div`
 const ContactIcon = styled.div`
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: ${COLORS.radiusXs};
   background: ${COLORS.primary};
   color: ${COLORS.white};
   display: flex;
@@ -466,8 +482,8 @@ const ModalOverlay = styled.div`
 
 const ModalContent = styled.div`
   background: ${COLORS.white};
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: ${COLORS.radius};
+  box-shadow: ${COLORS.shadowLg};
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
@@ -502,8 +518,8 @@ const ModalButton = styled.button`
   color: ${COLORS.textSecondary};
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 8px;
-  transition: all 0.2s;
+  border-radius: ${COLORS.radiusXs};
+  transition: ${COLORS.transition};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -589,6 +605,12 @@ const CoffinAssignment = lazy(() =>
 
 const DispatchSection = lazy(() =>
   import('../../dispatch/dispatchSection')
+);
+
+const PostmortemSection = lazy(() =>
+  import('./PostmortemSection').catch(() => ({
+    default: () => <div>Postmortem component not available</div>,
+  }))
 );
 
 const DocumentUpload = lazy(() =>
@@ -762,7 +784,8 @@ const DeceasedDetails = () => {
         localStorage.setItem('tenantSlug', tenantSlug);
       }
 
-      const response = await apiClient.get(`/deceased/${id}`, {
+      // Use direct axios with the correct endpoint
+      const response = await axios.get(`${BASE_URL}/deceased/${id}`, {
         headers: {
           'x-tenant-slug': tenantSlug,
         },
@@ -988,6 +1011,9 @@ const DeceasedDetails = () => {
             <Tab $active={activeSection === 'financials'} onClick={() => setActiveSection('financials')}>
               Financials
             </Tab>
+            <Tab $active={activeSection === 'postmortem'} onClick={() => setActiveSection('postmortem')}>
+              Postmortem
+            </Tab>
             <Tab $active={activeSection === 'dispatch'} onClick={() => setActiveSection('dispatch')}>
               Dispatch
             </Tab>
@@ -1102,6 +1128,28 @@ const DeceasedDetails = () => {
                         key={`dispatch-${refreshKey}`}
                         deceasedId={currentDeceasedId}
                         dispatchData={deceasedData?.dispatch}
+                        onUpdate={fetchDeceasedData}
+                      />
+                    </ErrorBoundary>
+                  </Suspense>
+                </CardBody>
+              </Card>
+            )}
+
+            {activeSection === 'postmortem' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle><Activity size={20} /> Postmortem Examination</CardTitle>
+                  <ActionButton onClick={() => setShowPostmortemRequestModal(true)} style={{ background: COLORS.primary }}>
+                    <PlusCircle size={16} /> Request Postmortem
+                  </ActionButton>
+                </CardHeader>
+                <CardBody>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ErrorBoundary fallback={<div>Failed to load Postmortem data</div>}>
+                      <PostmortemSection
+                        deceasedId={currentDeceasedId}
+                        deceasedData={deceasedData}
                         onUpdate={fetchDeceasedData}
                       />
                     </ErrorBoundary>
