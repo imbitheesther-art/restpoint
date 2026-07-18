@@ -302,23 +302,6 @@ const SearchInput = styled.input`
   }
 `;
 
-const Select = styled.select`
-  padding: 0.5rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-  background: ${COLORS.surface};
-  cursor: pointer;
-  transition: ${COLORS.transition};
-
-  &:focus {
-    outline: none;
-    border-color: ${COLORS.primary};
-    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
-  }
-`;
-
 const PillGroup = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -665,23 +648,6 @@ const TextArea = styled.textarea`
   transition: ${COLORS.transition};
   min-height: 80px;
   resize: vertical;
-
-  &:focus {
-    outline: none;
-    border-color: ${COLORS.primary};
-    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
-  }
-`;
-
-const Select = styled.select`
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-  background: ${COLORS.surface};
-  transition: ${COLORS.transition};
 
   &:focus {
     outline: none;

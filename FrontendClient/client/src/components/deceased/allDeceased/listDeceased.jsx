@@ -21,8 +21,10 @@ import {
   QrCode,
   MoreVertical,
   ChevronDown,
+  FileSpreadsheet,
 } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
+import ExportModal from '../ExportModal';
 
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
@@ -357,6 +359,8 @@ const DeceasedList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteId, setDeleteId] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchDeceasedList = useCallback(async () => {
     try {
@@ -401,6 +405,50 @@ const DeceasedList = () => {
 
     setFilteredList(filtered);
   }, [searchTerm, statusFilter, deceasedList]);
+
+  const handleExport = async (exportOptions) => {
+    setIsExporting(true);
+    try {
+      const tenantSlug = getTenantSlug();
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (exportOptions.startDate) params.append('startDate', exportOptions.startDate);
+      if (exportOptions.endDate) params.append('endDate', exportOptions.endDate);
+      if (exportOptions.format) params.append('format', exportOptions.format);
+      if (exportOptions.columns && exportOptions.columns.length > 0) {
+        params.append('columns', exportOptions.columns.join(','));
+      }
+      if (exportOptions.includeFilters) {
+        if (searchTerm) params.append('search', searchTerm);
+        if (statusFilter !== 'all') params.append('status', statusFilter);
+      }
+
+      const response = await axios.get(`${BASE_URL}/deceased/export?${params.toString()}`, {
+        headers: {
+          'x-tenant-slug': tenantSlug,
+        },
+        responseType: 'blob',
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `deceased_report_${new Date().toISOString().split('T')[0]}.${exportOptions.format || 'xlsx'}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this record?')) {
@@ -460,6 +508,9 @@ const DeceasedList = () => {
           <HeaderActions>
             <SecondaryButton onClick={fetchDeceasedList}>
               <RefreshCw size={15} /> Refresh
+            </SecondaryButton>
+            <SecondaryButton onClick={() => setShowExportModal(true)}>
+              <FileSpreadsheet size={15} /> Export
             </SecondaryButton>
             <PrimaryButton as={Link} to="/deceased/new">
               <Plus size={15} /> New Record
@@ -601,6 +652,20 @@ const DeceasedList = () => {
           </CardBody>
         </Card>
       </MainContent>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExport}
+          isExporting={isExporting}
+          filters={{
+            search: searchTerm,
+            status: statusFilter,
+          }}
+        />
+      )}
     </Container>
   );
 };
