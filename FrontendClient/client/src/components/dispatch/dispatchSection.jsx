@@ -26,57 +26,70 @@ import { useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
-// Professional color scheme matching flower bookings
+// Bootstrap-inspired professional color scheme
 const COLORS = {
-  primary: '#0A2463',
-  primaryLight: '#1A3A7A',
+  primary: '#1a5f7a',
+  primaryLight: '#2c8ac9',
+  primaryDark: '#134b5f',
   white: '#FFFFFF',
-  bg: '#F5F7FA',
-  border: '#E8ECF0',
-  borderLight: '#F3F4F6',
-  text: '#1A1D24',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  success: '#10B981',
-  successLight: '#D1FAE5',
-  warning: '#F59E0B',
-  warningLight: '#FEF3C7',
-  danger: '#E74C3C',
-  dangerLight: '#FEE2E2',
-  info: '#3B82F6',
-  infoLight: '#DBEAFE',
-  accent: '#3B82F6',
+  bg: '#f5f7fa',
+  surface: '#ffffff',
+  border: '#d1d5db',
+  borderLight: '#e5e7eb',
+  text: '#111827',
+  textSecondary: '#6b7280',
+  textMuted: '#9ca3af',
+  success: '#10b981',
+  successLight: '#d1fae5',
+  successDark: '#059669',
+  warning: '#f59e0b',
+  warningLight: '#fef3c7',
+  warningDark: '#d97706',
+  danger: '#ef4444',
+  dangerLight: '#fee2e2',
+  dangerDark: '#dc2626',
+  info: '#3b82f6',
+  infoLight: '#dbeafe',
+  infoDark: '#2563eb',
+  accent: '#3b82f6',
   accentHover: '#2563eb',
   accentGlow: 'rgba(59, 130, 246, 0.1)',
-  radius: '14px',
-  radiusSm: '8px',
-  radiusXs: '6px',
-  shadowSm: '0 1px 4px rgba(0, 0, 0, 0.06)',
-  shadowMd: '0 4px 12px rgba(0, 0, 0, 0.08)',
-  shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
-  transition: 'all 0.2s ease',
+  radius: '8px',
+  radiusSm: '6px',
+  radiusXs: '4px',
+  shadowSm: '0 1px 2px rgba(0, 0, 0, 0.04)',
+  shadowMd: '0 4px 6px rgba(0, 0, 0, 0.06)',
+  shadowLg: '0 10px 15px rgba(0, 0, 0, 0.08)',
+  transition: 'all 0.15s ease',
 };
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 // --- Styled Components ---
 const DispatchContainer = styled.div`
-  background-color: ${COLORS.white};
+  background: ${COLORS.surface};
   border-radius: ${COLORS.radius};
-  padding: 1.5rem;
   box-shadow: ${COLORS.shadowSm};
   border: 1px solid ${COLORS.border};
+  overflow: hidden;
 `;
 
 const Header = styled.div`
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid ${COLORS.border};
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  background: ${COLORS.bg};
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 `;
 
 const Title = styled.h4`
-  font-size: 1.1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -85,79 +98,132 @@ const Title = styled.h4`
   color: ${COLORS.text};
 
   svg {
-    color: ${COLORS.accent};
+    color: ${COLORS.primary};
     width: 18px;
     height: 18px;
   }
 `;
 
-const StyledButton = styled.button`
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+`;
+
+const PrimaryButton = styled.button`
+  background: ${COLORS.primary};
+  color: ${COLORS.white};
+  border: none;
+  border-radius: ${COLORS.radiusSm};
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: ${COLORS.radiusSm};
-  font-weight: 600;
-  cursor: pointer;
-  border: 2px solid ${COLORS.border};
-  background-color: ${COLORS.accent};
-  color: white;
+  gap: 0.375rem;
   transition: ${COLORS.transition};
-  font-size: 0.875rem;
-  min-height: 40px;
+  box-shadow: ${COLORS.shadowSm};
 
   &:hover {
-    background-color: ${COLORS.accentHover};
-    transform: translateY(-2px);
+    background: ${COLORS.primaryDark};
+    transform: translateY(-1px);
     box-shadow: ${COLORS.shadowMd};
-    border-color: transparent;
   }
 
   &:disabled {
-    background-color: ${COLORS.textMuted};
+    background: ${COLORS.textMuted};
     cursor: not-allowed;
     transform: none;
   }
 `;
 
-const SendButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+const SecondaryButton = styled.button`
+  background: ${COLORS.surface};
+  color: ${COLORS.text};
+  border: 1px solid ${COLORS.border};
   border-radius: ${COLORS.radiusSm};
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  border: none;
-  background-color: ${COLORS.accent};
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   transition: ${COLORS.transition};
-  font-size: 0.875rem;
-  min-height: 36px;
 
   &:hover {
-    background-color: ${COLORS.accentHover};
-    transform: translateY(-1px);
+    background: ${COLORS.bg};
+    border-color: ${COLORS.textSecondary};
   }
 
   &:disabled {
-    background-color: ${COLORS.textMuted};
+    background: ${COLORS.textMuted};
     cursor: not-allowed;
   }
 `;
 
+const AlertBox = styled.div`
+  padding: 0.75rem 1rem;
+  margin: 1rem;
+  border-radius: ${COLORS.radiusSm};
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: center;
+  background: ${props => {
+    if (props.$type === 'error') return COLORS.dangerLight;
+    if (props.$type === 'success') return COLORS.successLight;
+    return COLORS.infoLight;
+  }};
+  color: ${props => {
+    if (props.$type === 'error') return COLORS.danger;
+    if (props.$type === 'success') return COLORS.success;
+    return COLORS.info;
+  }};
+  border: 1px solid ${props => {
+    if (props.$type === 'error') return 'rgba(239, 68, 68, 0.2)';
+    if (props.$type === 'success') return 'rgba(16, 185, 129, 0.2)';
+    return 'rgba(59, 130, 246, 0.2)';
+  }};
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 2rem 1.5rem;
+  color: ${COLORS.textSecondary};
+
+  svg {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.4;
+  }
+
+  h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 0.375rem;
+    color: ${COLORS.text};
+  }
+
+  p {
+    font-size: 0.8125rem;
+    margin: 0;
+    color: ${COLORS.textSecondary};
+  }
+`;
+
 const TripCard = styled.div`
-  background: ${COLORS.white};
+  background: ${COLORS.surface};
   border: 1px solid ${COLORS.border};
   border-radius: ${COLORS.radiusSm};
-  padding: 1.25rem;
-  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  margin: 0 1rem 1rem;
   transition: ${COLORS.transition};
 
   &:hover {
     box-shadow: ${COLORS.shadowMd};
-    border-color: ${COLORS.accent};
-    transform: translateY(-2px);
+    border-color: ${COLORS.primary};
   }
 `;
 
@@ -165,7 +231,7 @@ const TripHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
   gap: 0.5rem;
 `;
@@ -173,232 +239,170 @@ const TripHeader = styled.div`
 const TripLabel = styled.div`
   background: ${COLORS.primary};
   color: white;
-  padding: 0.35rem 1rem;
+  padding: 0.3rem 0.875rem;
   border-radius: 2rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
 `;
 
-const DateBadge = styled.div`
-  display: flex;
+const Badge = styled.div`
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  color: ${COLORS.textSecondary};
-  font-size: 0.875rem;
-  background: ${COLORS.bg};
-  padding: 0.35rem 0.875rem;
-  border-radius: 2rem;
-`;
-
-const StatusBadge = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.35rem 0.875rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
   border-radius: 2rem;
-  background: ${(props) => {
-    switch (props.status) {
-      case 'Assigned':
-        return COLORS.infoLight;
-      case 'In Transit':
-        return COLORS.warningLight;
-      case 'Completed':
-        return COLORS.successLight;
-      case 'Cancelled':
-        return COLORS.dangerLight;
-      default:
-        return COLORS.borderLight;
+  background: ${props => {
+    switch (props.$variant) {
+      case 'success': return COLORS.successLight;
+      case 'warning': return COLORS.warningLight;
+      case 'danger': return COLORS.dangerLight;
+      case 'info': return COLORS.infoLight;
+      default: return COLORS.borderLight;
     }
   }};
-  color: ${(props) => {
-    switch (props.status) {
-      case 'Assigned':
-        return COLORS.info;
-      case 'In Transit':
-        return COLORS.warning;
-      case 'Completed':
-        return COLORS.success;
-      case 'Cancelled':
-        return COLORS.danger;
-      default:
-        return COLORS.textSecondary;
+  color: ${props => {
+    switch (props.$variant) {
+      case 'success': return COLORS.successDark;
+      case 'warning': return COLORS.warningDark;
+      case 'danger': return COLORS.dangerDark;
+      case 'info': return COLORS.infoDark;
+      default: return COLORS.textSecondary;
     }
   }};
 `;
 
-const VehicleInfo = styled.div`
+const InfoRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 1rem 0;
-  flex-wrap: wrap;
-`;
-
-const VehicleTag = styled.span`
-  background: ${COLORS.bg};
-  padding: 0.25rem 0.75rem;
-  border-radius: 2rem;
-  font-size: 0.875rem;
-  color: ${COLORS.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-`;
-
-const DriverInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: ${COLORS.text};
-  margin: 0.5rem 0;
-  padding: 0.75rem;
-  background: ${COLORS.infoLight};
-  border-radius: ${COLORS.radiusSm};
-  border-left: 3px solid ${COLORS.accent};
-`;
-
-const RouteInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: ${COLORS.bg};
-  padding: 0.75rem 1rem;
-  border-radius: ${COLORS.radiusSm};
-  margin: 1rem 0;
-  flex-wrap: wrap;
-`;
-
-const Location = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.875rem;
+  gap: 0.625rem;
+  padding: 0.5rem 0;
+  font-size: 0.8125rem;
   color: ${COLORS.text};
 `;
 
-const Arrow = styled.span`
+const InfoLabel = styled.span`
   color: ${COLORS.textSecondary};
-  font-size: 1rem;
+  font-weight: 500;
+  min-width: 80px;
 `;
 
-const StatsRow = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin: 1rem 0;
-  flex-wrap: wrap;
-`;
-
-const Stat = styled.div`
-  font-size: 0.875rem;
-  color: ${COLORS.textSecondary};
-
-  strong {
-    color: ${COLORS.text};
-    margin-right: 0.25rem;
-    font-weight: 600;
-  }
-`;
-
-const FuelEstimate = styled.div`
-  background: ${COLORS.successLight};
-  padding: 0.5rem 0.75rem;
-  border-radius: ${COLORS.radiusSm};
-  margin: 0.75rem 0;
-  font-size: 0.875rem;
-  color: ${COLORS.success};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+const InfoValue = styled.span`
+  flex: 1;
+  font-weight: 500;
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid ${COLORS.border};
   flex-wrap: wrap;
 `;
 
-const ActionButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.5rem 0.875rem;
+const IconButton = styled.button`
+  background: ${COLORS.surface};
+  color: ${COLORS.text};
   border: 1px solid ${COLORS.border};
   border-radius: ${COLORS.radiusXs};
-  background: ${COLORS.white};
-  cursor: pointer;
-  font-size: 0.875rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   transition: ${COLORS.transition};
-  min-height: 36px;
 
   &:hover {
-    background: ${(props) => (props.danger ? COLORS.danger : COLORS.accent)};
-    color: white;
-    border-color: ${(props) => (props.danger ? COLORS.danger : COLORS.accent)};
+    background: ${props => props.$danger ? COLORS.danger : COLORS.primary};
+    color: ${COLORS.white};
+    border-color: ${props => props.$danger ? COLORS.danger : COLORS.primary};
+  }
+`;
+
+const SendButton = styled.button`
+  background: ${COLORS.info};
+  color: ${COLORS.white};
+  border: none;
+  border-radius: ${COLORS.radiusXs};
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: ${COLORS.transition};
+
+  &:hover {
+    background: ${COLORS.infoDark};
+  }
+
+  &:disabled {
+    background: ${COLORS.textMuted};
+    cursor: not-allowed;
   }
 `;
 
 // Modal Components
 const ModalOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
-  padding: 2rem;
-  backdrop-filter: blur(4px);
+  justify-content: center;
+  padding: 1.5rem;
+  animation: ${fadeIn} 0.12s ease-out;
+  backdrop-filter: blur(3px);
 `;
 
 const ModalContent = styled.div`
-  background: ${COLORS.white};
-  padding: 2rem;
+  background: ${COLORS.surface};
   border-radius: ${COLORS.radius};
-  width: 100%;
-  max-width: 950px;
-  max-height: 90vh;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
   box-shadow: ${COLORS.shadowLg};
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    padding: 1.5rem;
-  }
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const ModalHeader = styled.div`
-  grid-column: 1 / -1;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid ${COLORS.border};
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid ${COLORS.border};
+  background: ${COLORS.bg};
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: ${COLORS.text};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 `;
 
-const CloseButton = styled.button`
-  background: none;
+const ModalButton = styled.button`
+  background: transparent;
   border: none;
-  cursor: pointer;
   color: ${COLORS.textSecondary};
-  padding: 0.5rem;
+  cursor: pointer;
+  padding: 0.375rem;
   border-radius: ${COLORS.radiusXs};
   transition: ${COLORS.transition};
   display: flex;
@@ -407,58 +411,74 @@ const CloseButton = styled.button`
 
   &:hover {
     background: ${COLORS.border};
-    color: ${COLORS.danger};
+    color: ${COLORS.text};
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+`;
+
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
   }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 `;
 
 const Label = styled.label`
   display: block;
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
   color: ${COLORS.text};
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.625rem 0.875rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid ${COLORS.border};
   border-radius: ${COLORS.radiusSm};
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: ${COLORS.text};
   transition: ${COLORS.transition};
-  background: ${COLORS.white};
+  background: ${COLORS.surface};
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.accent};
+    border-color: ${COLORS.primary};
     box-shadow: 0 0 0 3px ${COLORS.accentGlow};
   }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.625rem 0.875rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid ${COLORS.border};
   border-radius: ${COLORS.radiusSm};
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: ${COLORS.text};
-  background: ${COLORS.white};
+  background: ${COLORS.surface};
   transition: ${COLORS.transition};
 
   &:focus {
     outline: none;
-    border-color: ${COLORS.accent};
+    border-color: ${COLORS.primary};
     box-shadow: 0 0 0 3px ${COLORS.accentGlow};
   }
 `;
 
 const MapContainer = styled.div`
-  height: 250px;
+  height: 200px;
   width: 100%;
   border-radius: ${COLORS.radiusSm};
   overflow: hidden;
@@ -473,80 +493,24 @@ const MapContainer = styled.div`
   }
 `;
 
-const SearchResults = styled.div`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: ${COLORS.white};
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100;
-  box-shadow: ${COLORS.shadowMd};
-`;
-
-const SearchResultItem = styled.div`
-  padding: 0.75rem;
-  cursor: pointer;
-  border-bottom: 1px solid ${COLORS.border};
-  font-size: 0.875rem;
-  transition: ${COLORS.transition};
-
-  &:hover {
-    background: ${COLORS.bg};
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
 const SummaryBox = styled.div`
   background: ${COLORS.bg};
   padding: 1rem;
   border-radius: ${COLORS.radiusSm};
   margin: 1rem 0;
   border: 1px solid ${COLORS.border};
-
-  p {
-    margin: 0.5rem 0;
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.875rem;
-  }
-
-  strong {
-    color: ${COLORS.accent};
-  }
 `;
 
-const RateInput = styled.div`
+const SummaryRow = styled.div`
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  justify-content: space-between;
+  padding: 0.375rem 0;
+  font-size: 0.8125rem;
+  color: ${COLORS.textSecondary};
 
-  input {
-    flex: 1;
-    padding: 0.625rem 0.875rem;
-    border: 1px solid ${COLORS.border};
-    border-radius: ${COLORS.radiusSm};
-    font-size: 0.875rem;
-    transition: ${COLORS.transition};
-
-    &:focus {
-      outline: none;
-      border-color: ${COLORS.accent};
-      box-shadow: 0 0 0 3px ${COLORS.accentGlow};
-    }
-  }
-
-  span {
-    color: ${COLORS.textSecondary};
-    font-weight: 500;
-    font-size: 0.875rem;
+  strong {
+    color: ${COLORS.text};
+    font-weight: 600;
   }
 `;
 
@@ -554,25 +518,21 @@ const RouteStep = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.4rem 0;
-  font-size: 0.875rem;
+  padding: 0.375rem 0;
+  font-size: 0.8125rem;
   color: ${COLORS.textSecondary};
 
   .step-number {
-    background: ${COLORS.accent};
+    background: ${COLORS.primary};
     color: white;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     flex-shrink: 0;
-  }
-
-  .step-text {
-    flex: 1;
   }
 `;
 
@@ -580,20 +540,15 @@ const RouteStep = styled.div`
 // OPEN SOURCE ROUTING UTILITIES (No TomTom)
 // ============================================
 
-// Default mortuary location (Lee Funeral Services, Nairobi)
 const DEFAULT_MORTUARY = {
   lat: -1.2921,
   lon: 36.8219,
   address: 'LEE FUNERAL SERVICES',
 };
 
-// Nominatim (OSM) API for geocoding - FREE
 const NOMINATIM_API = 'https://nominatim.openstreetmap.org';
-
-// OSRM (Open Source Routing Machine) for routing - FREE
 const OSRM_API = 'https://router.project-osrm.org/route/v1';
 
-// OpenStreetMap static map embed
 const getOSMMapUrl = (originLat, originLon, destLat, destLon) => {
   if (!destLat || !destLon) {
     return `https://www.openstreetmap.org/export/embed.html?bbox=36.7,-1.4,37.0,-1.2&layer=mapnik&marker=${originLat},${originLon}`;
@@ -607,7 +562,6 @@ const getOSMMapUrl = (originLat, originLon, destLat, destLon) => {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${minLon},${minLat},${maxLon},${maxLat}&layer=mapnik&marker=${originLat},${originLon}&marker=${destLat},${destLon}`;
 };
 
-// Geocode address using Nominatim
 const geocodeAddress = async (query) => {
   if (query.length < 3) return [];
 
@@ -635,7 +589,6 @@ const geocodeAddress = async (query) => {
   }
 };
 
-// Calculate route using OSRM (Open Source Routing Machine)
 const calculateRouteOSRM = async (originLat, originLon, destLat, destLon) => {
   try {
     const response = await fetch(
@@ -651,7 +604,6 @@ const calculateRouteOSRM = async (originLat, originLon, destLat, destLon) => {
       const minutes = Math.floor((timeInSeconds % 3600) / 60);
       const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-      // Extract turn-by-turn directions
       const legs = route.legs[0];
       const steps = legs.steps.map((step, index) => ({
         instruction: step.maneuver.modifier || step.maneuver.type || 'Continue',
@@ -688,7 +640,6 @@ const calculateRouteOSRM = async (originLat, originLon, destLat, destLon) => {
   }
 };
 
-// Haversine formula for distance calculation
 const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -702,10 +653,6 @@ const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
-
-// ============================================
-// VEHICLE/DRIVER OPTIMIZATION
-// ============================================
 
 const calculateVehicleScore = (vehicle, tripRequirements) => {
   let score = 100;
@@ -736,10 +683,6 @@ const optimizeDispatch = (availableVehicles, tripData) => {
   scoredVehicles.sort((a, b) => b.score - a.score);
   return scoredVehicles;
 };
-
-// ============================================
-// BILLING CALCULATION SERVICE
-// ============================================
 
 const calculateBillingUpToDay = (dispatchDate, ratePerDay = 5000) => {
   const today = new Date();
@@ -773,10 +716,6 @@ const updateDeceasedBilling = async (deceasedId, dispatchData, tenantSlug) => {
     return null;
   }
 };
-
-// ============================================
-// SEND NOTIFICATION SERVICE (WhatsApp removed)
-// ============================================
 
 const sendDispatchNotification = async (driverPhone, dispatchData) => {
   try {
@@ -819,7 +758,6 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [routeSteps, setRouteSteps] = useState([]);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
 
-  // Form state
   const [tripName, setTripName] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
   const [vehicleName, setVehicleName] = useState('');
@@ -832,7 +770,6 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [driverPhone, setDriverPhone] = useState('');
   const [driverContact, setDriverContact] = useState('');
 
-  // Location state
   const [destination, setDestination] = useState('');
   const [destinationLat, setDestinationLat] = useState(null);
   const [destinationLon, setDestinationLon] = useState(null);
@@ -841,15 +778,11 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Calculations
   const [fuelCost, setFuelCost] = useState(null);
   const [fuelEstimate, setFuelEstimate] = useState(null);
   const [transportCost, setTransportCost] = useState(null);
   const [totalCost, setTotalCost] = useState(null);
 
-  // Using centralized API client (api) and ENDPOINTS
-
-  // Helper to get tenant slug
   const getTenantSlug = () => {
     return localStorage.getItem('tenantSlug') ||
       localStorage.getItem('tenant_slug') ||
@@ -1083,10 +1016,6 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
     try {
       const tenantSlug = getTenantSlug();
-      const headers = {
-        'Content-Type': 'application/json',
-        'x-tenant-slug': tenantSlug,
-      };
 
       let dispatchResponse;
       if (editingId) {
@@ -1185,10 +1114,10 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
       };
 
       await sendDispatchNotification(trip.driver_contact, dispatchData);
-      setMessage('✅ Dispatch details sent to driver successfully!');
+      setMessage('Dispatch details sent to driver successfully!');
     } catch (error) {
       console.error('Notification error:', error);
-      setMessage('❌ Failed to send notification: ' + (error.response?.data?.message || error.message));
+      setMessage('Failed to send notification: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSendingNotification(false);
       setTimeout(() => setMessage(''), 5000);
@@ -1226,66 +1155,44 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
           <Truck size={18} />
           Vehicle Dispatch
         </Title>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <ButtonGroup>
           {availableVehicles.length > 0 && (
-            <StyledButton
-              onClick={autoAssignVehicle}
-              style={{ backgroundColor: COLORS.warning }}
-            >
+            <SecondaryButton onClick={autoAssignVehicle}>
               <Navigation size={14} /> Auto-Assign
-            </StyledButton>
+            </SecondaryButton>
           )}
-          <StyledButton
+          <PrimaryButton
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
           >
             <PlusCircle size={14} /> New Dispatch
-          </StyledButton>
-        </div>
+          </PrimaryButton>
+        </ButtonGroup>
       </Header>
 
       {message && (
-        <div
-          style={{
-            padding: '0.75rem',
-            marginBottom: '1rem',
-            background: message.includes('Error') || message.includes('❌')
-              ? COLORS.dangerLight
-              : message.includes('✅')
-                ? COLORS.successLight
-                : COLORS.infoLight,
-            color: message.includes('Error') || message.includes('❌')
-              ? COLORS.danger
-              : message.includes('✅')
-                ? COLORS.success
-                : COLORS.info,
-            borderRadius: COLORS.radiusSm,
-            fontSize: '0.875rem',
-            textAlign: 'center',
-            fontWeight: '500',
-          }}
-        >
+        <AlertBox $type={message.includes('Error') || message.includes('❌') ? 'error' : message.includes('✅') ? 'success' : 'info'}>
           {message}
-        </div>
+        </AlertBox>
       )}
 
       {trips.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: COLORS.textSecondary }}>
+        <EmptyState>
           {isLoadingTrips ? (
             <>
-              <Loader2 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} className="animate-spin" />
-              <p style={{ margin: 0, fontSize: '0.9rem' }}>Loading dispatch trips...</p>
-            </>) : (
+              <Loader2 size={48} className="animate-spin" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+              <h4>Loading dispatch trips...</h4>
+            </>
+          ) : (
             <>
-              <Truck size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-              <p style={{ margin: 0, fontSize: '0.9rem' }}>No dispatch trips added yet</p>
-              <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: COLORS.textSecondary }}>
-                Click "New Dispatch" to create your first trip
-              </p>
-            </>)}
-        </div>
+              <Truck size={48} />
+              <h4>No dispatch trips added yet</h4>
+              <p>Click "New Dispatch" to create your first trip</p>
+            </>
+          )}
+        </EmptyState>
       ) : (
         trips.map((trip) => {
           const displayPrice = trip.negotiated_price || trip.total_cost || 0;
@@ -1298,412 +1205,404 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                   {trip.trip_name || 'Dispatch Trip'}
                 </TripLabel>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <StatusBadge status={trip.status || 'Assigned'}>
+                  <Badge $variant={
+                    trip.status === 'Completed' ? 'success' :
+                      trip.status === 'In Transit' ? 'warning' :
+                        trip.status === 'Cancelled' ? 'danger' : 'info'
+                  }>
                     {trip.status || 'Assigned'}
-                  </StatusBadge>
-                  <DateBadge>
-                    <Calendar size={14} />
+                  </Badge>
+                  <Badge $variant="info">
+                    <Calendar size={12} />
                     {new Date(trip.dispatch_date).toLocaleDateString()}
-                  </DateBadge>
+                  </Badge>
                 </div>
               </TripHeader>
 
-              <VehicleInfo>
-                <Car size={16} color={COLORS.accent} />
-                <strong style={{ fontSize: '0.9rem' }}>{trip.vehicle_plate}</strong>
-                {trip.vehicle_name && (
-                  <VehicleTag>
-                    <Car size={12} /> {trip.vehicle_name}
-                  </VehicleTag>
-                )}
-                {trip.vehicle_cc && (
-                  <VehicleTag>
-                    <Gauge size={12} /> {trip.vehicle_cc}CC
-                  </VehicleTag>
-                )}
-              </VehicleInfo>
+              <InfoRow>
+                <InfoLabel>Vehicle:</InfoLabel>
+                <InfoValue>
+                  <strong>{trip.vehicle_plate}</strong>
+                  {trip.vehicle_name && <span style={{ color: COLORS.textSecondary, marginLeft: '0.5rem' }}>({trip.vehicle_name})</span>}
+                  {trip.vehicle_cc && <span style={{ color: COLORS.textSecondary, marginLeft: '0.5rem' }}>{trip.vehicle_cc}CC</span>}
+                </InfoValue>
+              </InfoRow>
 
               {trip.driver_name && (
-                <DriverInfo>
-                  <Users size={16} color={COLORS.accent} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{trip.driver_name}</div>
-                    <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
+                <InfoRow>
+                  <InfoLabel>Driver:</InfoLabel>
+                  <InfoValue>
+                    <strong>{trip.driver_name}</strong>
+                    <span style={{ color: COLORS.textSecondary, marginLeft: '0.5rem' }}>
                       📞 {trip.driver_contact || trip.driver_phone}
-                    </div>
-                  </div>
-                </DriverInfo>
+                    </span>
+                  </InfoValue>
+                </InfoRow>
               )}
 
-              <RouteInfo>
-                <Location>
-                  <MapPin size={14} color={COLORS.success} />
-                  <span style={{ fontSize: '0.85rem' }}>{trip.origin_address}</span>
-                </Location>
-                <Arrow>→</Arrow>
-                <Location>
-                  <MapPin size={14} color={COLORS.danger} />
-                  <span style={{ fontSize: '0.85rem' }}>{trip.destination_address}</span>
-                </Location>
-              </RouteInfo>
+              <InfoRow>
+                <InfoLabel>Route:</InfoLabel>
+                <InfoValue style={{ fontSize: '0.75rem' }}>
+                  <span style={{ color: COLORS.success }}>●</span> {trip.origin_address?.substring(0, 40)}...
+                  <br />
+                  <span style={{ color: COLORS.danger }}>●</span> {trip.destination_address?.substring(0, 40)}...
+                </InfoValue>
+              </InfoRow>
 
-              <StatsRow>
-                <Stat>
-                  <strong>{trip.distance_km || 0}</strong> km one way
-                </Stat>
-                <Stat>
-                  <strong>
-                    {trip.round_trip_km ||
-                      (trip.distance_km ? (trip.distance_km * 2).toFixed(1) : 0)}
-                  </strong>{' '}
-                  km round trip
-                </Stat>
-                {trip.travel_time && (
-                  <Stat>
-                    <Clock size={12} style={{ display: 'inline', marginRight: '2px' }} />
-                    {trip.travel_time}
-                  </Stat>
-                )}
-                {trip.rate_per_km && (
-                  <Stat>
-                    <Settings size={12} style={{ display: 'inline', marginRight: '2px' }} />
-                    KES {trip.rate_per_km}/km
-                  </Stat>
-                )}
-              </StatsRow>
+              <InfoRow>
+                <InfoLabel>Distance:</InfoLabel>
+                <InfoValue>
+                  {trip.distance_km || 0} km one way • {(trip.round_trip_km || (trip.distance_km ? (trip.distance_km * 2).toFixed(1) : 0))} km round trip
+                  {trip.travel_time && <span style={{ marginLeft: '0.5rem', color: COLORS.textSecondary }}>⏱️ {trip.travel_time}</span>}
+                </InfoValue>
+              </InfoRow>
 
               {trip.fuel_cost && (
-                <FuelEstimate>
-                  <Fuel size={14} />
-                  <span>
-                    Fuel: {trip.fuel_estimate}L (KES {trip.fuel_cost})
-                  </span>
-                </FuelEstimate>
+                <InfoRow>
+                  <InfoLabel>Fuel:</InfoLabel>
+                  <InfoValue style={{ color: COLORS.success }}>
+                    {trip.fuel_estimate}L (KES {trip.fuel_cost})
+                  </InfoValue>
+                </InfoRow>
               )}
 
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}
-              >
-                <Stat style={{ fontWeight: 500, fontSize: '0.9rem' }}>
-                  <DollarSign size={14} style={{ display: 'inline', marginRight: '2px' }} />
-                  {displayPrice.toLocaleString()}
-                  <span
-                    style={{ color: COLORS.textSecondary, marginLeft: '4px', fontSize: '0.75rem' }}
-                  >
+              <InfoRow>
+                <InfoLabel>Price:</InfoLabel>
+                <InfoValue>
+                  <strong style={{ fontSize: '0.9375rem' }}>KES {displayPrice.toLocaleString()}</strong>
+                  <span style={{ color: COLORS.textSecondary, marginLeft: '0.5rem', fontSize: '0.75rem' }}>
                     {trip.negotiated_price ? '(final)' : '(est.)'}
                   </span>
-                </Stat>
+                </InfoValue>
+              </InfoRow>
 
-                <ActionButtons>
-                  {trip.driver_contact && (
-                    <SendButton onClick={() => sendToDriverNotification(trip)} disabled={isSendingNotification}>
-                      {isSendingNotification ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Send size={14} />
-                      )}
-                      Send to Driver
-                    </SendButton>
-                  )}
-                  <ActionButton onClick={() => handleEdit(trip)}>
-                    <Edit size={14} /> Edit
-                  </ActionButton>
-                  <ActionButton danger onClick={() => handleDelete(trip.dispatch_id)}>
-                    <Trash2 size={14} /> Delete
-                  </ActionButton>
-                </ActionButtons>
-              </div>
+              <ActionButtons>
+                {trip.driver_contact && (
+                  <SendButton onClick={() => sendToDriverNotification(trip)} disabled={isSendingNotification}>
+                    {isSendingNotification ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
+                    Send to Driver
+                  </SendButton>
+                )}
+                <IconButton onClick={() => handleEdit(trip)}>
+                  <Edit size={14} /> Edit
+                </IconButton>
+                <IconButton $danger onClick={() => handleDelete(trip.dispatch_id)}>
+                  <Trash2 size={14} /> Delete
+                </IconButton>
+              </ActionButtons>
             </TripCard>
           );
         })
       )}
 
-      <ModalOverlay style={{ display: showModal ? 'flex' : 'none' }}>
-        <ModalContent>
-          <ModalHeader>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>
-              {editingId ? 'Edit Dispatch' : 'New Vehicle Dispatch'}
-            </h3>
-            <CloseButton
-              onClick={() => {
-                setShowModal(false);
-                resetForm();
-              }}
-            >
-              <X size={18} />
-            </CloseButton>
-          </ModalHeader>
+      {showModal && (
+        <ModalOverlay onClick={() => { setShowModal(false); resetForm(); }}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h3>
+                {editingId ? <Edit size={18} /> : <PlusCircle size={18} />}
+                {editingId ? 'Edit Dispatch' : 'New Vehicle Dispatch'}
+              </h3>
+              <ModalButton onClick={() => { setShowModal(false); resetForm(); }}>
+                <X size={18} />
+              </ModalButton>
+            </ModalHeader>
 
-          {/* Left Column - Trip Details */}
-          <div>
-            <FormGroup>
-              <Label>Trip Name</Label>
-              <Input
-                value={tripName}
-                onChange={(e) => setTripName(e.target.value)}
-                placeholder="e.g., Funeral Day, Body Collection"
-              />
-            </FormGroup>
+            <ModalBody>
+              <form onSubmit={handleSubmit}>
+                <FormGrid>
+                  <FormGroup>
+                    <Label>Trip Name</Label>
+                    <Input
+                      value={tripName}
+                      onChange={(e) => setTripName(e.target.value)}
+                      placeholder="e.g., Funeral Day, Body Collection"
+                    />
+                  </FormGroup>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <FormGroup>
-                <Label>Dispatch Date *</Label>
-                <Input
-                  type="date"
-                  value={dispatchDate}
-                  onChange={(e) => setDispatchDate(e.target.value)}
-                  required
-                />
-              </FormGroup>
-              <FormGroup>
-                <Label>Dispatch Time</Label>
-                <Input
-                  type="time"
-                  value={dispatchTime}
-                  onChange={(e) => setDispatchTime(e.target.value)}
-                  defaultValue="09:00"
-                />
-              </FormGroup>
-            </div>
+                  <FormGroup>
+                    <Label>Vehicle Plate *</Label>
+                    <Input
+                      value={vehiclePlate}
+                      onChange={(e) => setVehiclePlate(e.target.value)}
+                      placeholder="KCA 123A"
+                      required
+                    />
+                  </FormGroup>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <FormGroup>
-                <Label>Vehicle Plate *</Label>
-                <Input
-                  value={vehiclePlate}
-                  onChange={(e) => setVehiclePlate(e.target.value)}
-                  placeholder="KCA 123A"
-                  required
-                />
-              </FormGroup>
-              <FormGroup>
-                <Label>Vehicle Name</Label>
-                <Input
-                  value={vehicleName}
-                  onChange={(e) => setVehicleName(e.target.value)}
-                  placeholder="e.g., Mercedes Hearse"
-                />
-              </FormGroup>
-            </div>
+                  <FormGroup>
+                    <Label>Vehicle Name</Label>
+                    <Input
+                      value={vehicleName}
+                      onChange={(e) => setVehicleName(e.target.value)}
+                      placeholder="e.g., Mercedes Hearse"
+                    />
+                  </FormGroup>
 
-            <FormGroup>
-              <Label>Engine CC</Label>
-              <Input
-                value={vehicleCC}
-                onChange={(e) => setVehicleCC(e.target.value)}
-                placeholder="e.g., 2000"
-              />
-            </FormGroup>
+                  <FormGroup>
+                    <Label>Engine CC</Label>
+                    <Input
+                      value={vehicleCC}
+                      onChange={(e) => setVehicleCC(e.target.value)}
+                      placeholder="e.g., 2000"
+                    />
+                  </FormGroup>
 
-            <FormGroup>
-              <Label>Rate per Kilometer (KES) *</Label>
-              <RateInput>
-                <Input
-                  type="number"
-                  value={ratePerKm}
-                  onChange={(e) => setRatePerKm(parseFloat(e.target.value) || 0)}
-                  min="1"
-                  step="1"
-                  required
-                />
-                <span>/km</span>
-              </RateInput>
-            </FormGroup>
+                  <FormGroup>
+                    <Label>Dispatch Date *</Label>
+                    <Input
+                      type="date"
+                      value={dispatchDate}
+                      onChange={(e) => setDispatchDate(e.target.value)}
+                      required
+                    />
+                  </FormGroup>
 
-            {/* Driver Information */}
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: `${COLORS.infoLight}20`, borderRadius: COLORS.radiusSm, border: `1px solid ${COLORS.info}30` }}>
-              <Label style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Users size={14} /> Driver Information
-              </Label>
+                  <FormGroup>
+                    <Label>Dispatch Time</Label>
+                    <Input
+                      type="time"
+                      value={dispatchTime}
+                      onChange={(e) => setDispatchTime(e.target.value)}
+                    />
+                  </FormGroup>
 
-              <FormGroup>
-                <Label>Driver Name *</Label>
-                <Input
-                  value={driverName}
-                  onChange={(e) => setDriverName(e.target.value)}
-                  placeholder="Driver full name"
-                  required
-                />
-              </FormGroup>
+                  <FormGroup>
+                    <Label>Rate per Kilometer (KES) *</Label>
+                    <Input
+                      type="number"
+                      value={ratePerKm}
+                      onChange={(e) => setRatePerKm(parseFloat(e.target.value) || 0)}
+                      min="1"
+                      step="1"
+                      required
+                    />
+                  </FormGroup>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <FormGroup>
-                  <Label>Driver Phone *</Label>
+                  <FormGroup>
+                    <Label>Final Price (Optional)</Label>
+                    <Input
+                      type="number"
+                      value={negotiatedPrice}
+                      onChange={(e) => setNegotiatedPrice(e.target.value)}
+                      placeholder="Enter agreed price"
+                    />
+                  </FormGroup>
+                </FormGrid>
+
+                <div style={{ marginTop: '1.25rem', padding: '1rem', background: COLORS.infoLight, borderRadius: COLORS.radiusSm, border: `1px solid ${COLORS.info}30` }}>
+                  <Label style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Users size={14} /> Driver Information
+                  </Label>
+
+                  <FormGrid>
+                    <FormGroup>
+                      <Label>Driver Name *</Label>
+                      <Input
+                        value={driverName}
+                        onChange={(e) => setDriverName(e.target.value)}
+                        placeholder="Driver full name"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Driver Phone *</Label>
+                      <Input
+                        value={driverContact}
+                        onChange={(e) => setDriverContact(e.target.value)}
+                        placeholder="+2547XXXXXXXX"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup style={{ gridColumn: '1 / -1' }}>
+                      <Label>Alt. Phone</Label>
+                      <Input
+                        value={driverPhone}
+                        onChange={(e) => setDriverPhone(e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </FormGroup>
+                  </FormGrid>
+                </div>
+
+                <FormGroup style={{ marginTop: '1.25rem', position: 'relative' }}>
+                  <Label>Destination *</Label>
                   <Input
-                    value={driverContact}
-                    onChange={(e) => setDriverContact(e.target.value)}
-                    placeholder="+2547XXXXXXXX"
+                    value={destination}
+                    onChange={(e) => {
+                      setDestination(e.target.value);
+                      searchLocation(e.target.value);
+                    }}
+                    placeholder="Search destination address"
                     required
                   />
+                  {isSearching && (
+                    <div style={{ position: 'absolute', right: '10px', top: '35px' }}>
+                      <Loader2 size={16} className="animate-spin" />
+                    </div>
+                  )}
+                  {searchResults.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: COLORS.surface,
+                      border: `1px solid ${COLORS.border}`,
+                      borderRadius: COLORS.radiusSm,
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      zIndex: 100,
+                      boxShadow: COLORS.shadowMd,
+                      marginTop: '0.25rem'
+                    }}>
+                      {searchResults.map((result, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => handleDestinationSelect(result)}
+                          style={{
+                            padding: '0.75rem',
+                            cursor: 'pointer',
+                            borderBottom: `1px solid ${COLORS.border}`,
+                            fontSize: '0.8125rem',
+                            transition: COLORS.transition
+                          }}
+                        >
+                          <div style={{ fontWeight: 500 }}>{result.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
+                            {result.address}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </FormGroup>
-                <FormGroup>
-                  <Label>Alt. Phone</Label>
-                  <Input
-                    value={driverPhone}
-                    onChange={(e) => setDriverPhone(e.target.value)}
-                    placeholder="Optional"
-                  />
-                </FormGroup>
-              </div>
-            </div>
 
-            <FormGroup style={{ position: 'relative', marginTop: '1rem' }}>
-              <Label>Destination *</Label>
-              <Input
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value);
-                  searchLocation(e.target.value);
-                }}
-                placeholder="Search destination address"
-                required
-              />
-              {isSearching && (
-                <div style={{ position: 'absolute', right: '10px', top: '35px' }}>
-                  <Loader2 size={16} className="animate-spin" />
-                </div>
-              )}
-              {searchResults.length > 0 && (
-                <SearchResults>
-                  {searchResults.map((result, idx) => (
-                    <SearchResultItem key={idx} onClick={() => handleDestinationSelect(result)}>
-                      <div style={{ fontWeight: 500 }}>{result.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
-                        {result.address}
-                      </div>
-                    </SearchResultItem>
-                  ))}
-                </SearchResults>
-              )}
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Final Price (Optional)</Label>
-              <Input
-                type="number"
-                value={negotiatedPrice}
-                onChange={(e) => setNegotiatedPrice(e.target.value)}
-                placeholder="Enter agreed price"
-              />
-              <small
-                style={{ color: COLORS.textSecondary, marginTop: '0.25rem', display: 'block', fontSize: '0.75rem' }}
-              >
-                This will override the calculated estimate
-              </small>
-            </FormGroup>
-          </div>
-
-          {/* Right Column - Map & Summary */}
-          <div>
-            <MapContainer>
-              <iframe src={getMapUrl()} title="Route Map" loading="lazy" />
-              {distance && routeSteps.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '10px',
-                  left: '10px',
-                  background: 'white',
-                  padding: '0.5rem',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.7rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                }}>
-                  🗺️ Powered by OpenStreetMap & OSRM
-                </div>
-              )}
-            </MapContainer>
-
-            {distance && (
-              <SummaryBox>
-                <p>
-                  <span>📍 One way:</span> <strong>{distance} km</strong>
-                </p>
-                <p>
-                  <span>🔄 Round trip:</span> <strong>{(distance * 2).toFixed(1)} km</strong>
-                </p>
-                <p>
-                  <span>⏱️ Travel time:</span> <strong>{travelTime}</strong>
-                </p>
-                <p>
-                  <span>💰 Transport ({ratePerKm}/km):</span> <strong>KES {transportCost}</strong>
-                </p>
-                {fuelCost && (
-                  <>
-                    <p>
-                      <span>⛽ Fuel:</span>{' '}
-                      <strong>
-                        {fuelEstimate}L (KES {fuelCost})
-                      </strong>
-                    </p>
-                    <p
-                      style={{
-                        borderTop: `1px solid ${COLORS.border}`,
-                        marginTop: '0.5rem',
-                        paddingTop: '0.5rem',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      <span>💰 Total estimate:</span>
-                      <strong style={{ color: COLORS.success }}>KES {totalCost}</strong>
-                    </p>
-                  </>
+                {distance && (
+                  <SummaryBox>
+                    <SummaryRow>
+                      <span>📍 One way:</span>
+                      <strong>{distance} km</strong>
+                    </SummaryRow>
+                    <SummaryRow>
+                      <span>🔄 Round trip:</span>
+                      <strong>{(distance * 2).toFixed(1)} km</strong>
+                    </SummaryRow>
+                    <SummaryRow>
+                      <span>⏱️ Travel time:</span>
+                      <strong>{travelTime}</strong>
+                    </SummaryRow>
+                    <SummaryRow>
+                      <span>💰 Transport ({ratePerKm}/km):</span>
+                      <strong>KES {transportCost}</strong>
+                    </SummaryRow>
+                    {fuelCost && (
+                      <>
+                        <SummaryRow>
+                          <span>⛽ Fuel:</span>
+                          <strong>{fuelEstimate}L (KES {fuelCost})</strong>
+                        </SummaryRow>
+                        <SummaryRow style={{ borderTop: `1px solid ${COLORS.border}`, marginTop: '0.5rem', paddingTop: '0.5rem', fontWeight: 600 }}>
+                          <span>💰 Total estimate:</span>
+                          <strong style={{ color: COLORS.success }}>KES {totalCost}</strong>
+                        </SummaryRow>
+                      </>
+                    )}
+                  </SummaryBox>
                 )}
-              </SummaryBox>
-            )}
 
-            {routeSteps.length > 0 && (
-              <div style={{
-                background: COLORS.bg,
-                padding: '1rem',
-                borderRadius: COLORS.radiusSm,
-                marginBottom: '1rem',
-                maxHeight: '150px',
-                overflowY: 'auto',
-              }}>
-                <Label style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Navigation size={14} /> Route Directions
-                </Label>
-                {routeSteps.map((step, index) => (
-                  <RouteStep key={index}>
-                    <span className="step-number">{index + 1}</span>
-                    <span className="step-text">
-                      {step.instruction} {step.name && `onto ${step.name}`}
-                      {step.distance && ` (${step.distance} km)`}
-                    </span>
-                  </RouteStep>
-                ))}
-              </div>
-            )}
+                {routeSteps.length > 0 && (
+                  <div style={{
+                    background: COLORS.bg,
+                    padding: '1rem',
+                    borderRadius: COLORS.radiusSm,
+                    marginBottom: '1rem',
+                    maxHeight: '150px',
+                    overflowY: 'auto'
+                  }}>
+                    <Label style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Navigation size={14} /> Route Directions
+                    </Label>
+                    {routeSteps.map((step, index) => (
+                      <RouteStep key={index}>
+                        <span className="step-number">{index + 1}</span>
+                        <span className="step-text">
+                          {step.instruction} {step.name && `onto ${step.name}`}
+                          {step.distance && ` (${step.distance} km)`}
+                        </span>
+                      </RouteStep>
+                    ))}
+                  </div>
+                )}
 
-            <StyledButton
-              onClick={handleSubmit}
-              disabled={
-                isLoading ||
-                !destinationLat ||
-                !vehiclePlate ||
-                !dispatchDate ||
-                !ratePerKm ||
-                !driverName ||
-                !driverContact
-              }
-              style={{ width: '100%', marginTop: '1rem' }}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Processing...
-                </>) : (
-                <>
-                  <CheckCircle size={16} /> {editingId ? 'Update' : 'Create'} Dispatch
-                </>)}
-            </StyledButton>
+                <MapContainer>
+                  <iframe src={getMapUrl()} title="Route Map" loading="lazy" />
+                  {distance && routeSteps.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      left: '10px',
+                      background: 'white',
+                      padding: '0.5rem',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.7rem',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    }}>
+                      🗺️ Powered by OpenStreetMap & OSRM
+                    </div>
+                  )}
+                </MapContainer>
 
-            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: `${COLORS.warningLight}20`, borderRadius: COLORS.radiusSm, fontSize: '0.75rem', color: COLORS.textSecondary, border: `1px solid ${COLORS.warning}30` }}>
-              <AlertCircle size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-              Routes calculated using OpenStreetMap & OSRM (free, open-source)
-            </div>
-          </div>
-        </ModalContent>
-      </ModalOverlay>
+                <PrimaryButton
+                  type="submit"
+                  disabled={
+                    isLoading ||
+                    !destinationLat ||
+                    !vehiclePlate ||
+                    !dispatchDate ||
+                    !ratePerKm ||
+                    !driverName ||
+                    !driverContact
+                  }
+                  style={{ width: '100%', marginTop: '1rem' }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} /> {editingId ? 'Update' : 'Create'} Dispatch
+                    </>
+                  )}
+                </PrimaryButton>
+
+                <div style={{
+                  marginTop: '0.75rem',
+                  padding: '0.75rem',
+                  background: `${COLORS.warningLight}20`,
+                  borderRadius: COLORS.radiusSm,
+                  fontSize: '0.75rem',
+                  color: COLORS.textSecondary,
+                  border: `1px solid ${COLORS.warning}30`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <AlertCircle size={14} />
+                  Routes calculated using OpenStreetMap & OSRM (free, open-source)
+                </div>
+              </form>
+            </ModalBody>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </DispatchContainer>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense, Component, useCallback, useRef } from 'react';
+import React, { useState, useEffect, lazy, Suspense, Component, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -15,85 +15,87 @@ import {
   FileText,
   Box,
   Truck,
-  Menu,
-  X,
   Activity,
-  LogOut,
-  Settings,
   Download,
-  Printer,
   Calendar,
-  MapPin,
   Phone,
   Mail,
   Clock,
-  Heart,
-  Building2,
+  PlusCircle,
+  Eye,
+  Trash2,
+  Edit,
+  Send,
+  Stethoscope,
+  ClipboardList,
+  X,
 } from 'lucide-react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 import ScannerComponent from '../../scanner/ScannerComponent';
 
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
 
-// Professional color scheme matching flower bookings
+// Professional color scheme inspired by Bootstrap/POS
 const COLORS = {
-  primary: '#0A2463',
-  primaryLight: '#1A3A7A',
+  primary: '#1a5f7a',
+  primaryLight: '#2c8ac9',
+  primaryDark: '#134b5f',
   white: '#FFFFFF',
-  bg: '#F5F7FA',
-  border: '#E8ECF0',
-  borderLight: '#F3F4F6',
-  text: '#1A1D24',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  success: '#10B981',
-  successLight: '#D1FAE5',
-  warning: '#F59E0B',
-  warningLight: '#FEF3C7',
-  danger: '#E74C3C',
-  dangerLight: '#FEE2E2',
-  info: '#3B82F6',
-  infoLight: '#DBEAFE',
-  accent: '#3B82F6',
+  bg: '#f5f7fa',
+  surface: '#ffffff',
+  border: '#d1d5db',
+  borderLight: '#e5e7eb',
+  text: '#111827',
+  textSecondary: '#6b7280',
+  textMuted: '#9ca3af',
+  success: '#10b981',
+  successLight: '#d1fae5',
+  successDark: '#059669',
+  warning: '#f59e0b',
+  warningLight: '#fef3c7',
+  warningDark: '#d97706',
+  danger: '#ef4444',
+  dangerLight: '#fee2e2',
+  dangerDark: '#dc2626',
+  info: '#3b82f6',
+  infoLight: '#dbeafe',
+  infoDark: '#2563eb',
+  accent: '#3b82f6',
   accentHover: '#2563eb',
   accentGlow: 'rgba(59, 130, 246, 0.1)',
-  radius: '14px',
-  radiusSm: '8px',
-  radiusXs: '6px',
-  shadowSm: '0 1px 4px rgba(0, 0, 0, 0.06)',
-  shadowMd: '0 4px 12px rgba(0, 0, 0, 0.08)',
-  shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
-  transition: 'all 0.2s ease',
+  radius: '8px',
+  radiusSm: '6px',
+  radiusXs: '4px',
+  shadowSm: '0 1px 2px rgba(0, 0, 0, 0.04)',
+  shadowMd: '0 4px 6px rgba(0, 0, 0, 0.06)',
+  shadowLg: '0 10px 15px rgba(0, 0, 0, 0.08)',
+  transition: 'all 0.15s ease',
 };
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 `;
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const slideUp = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
 const Container = styled.div`
   min-height: 100vh;
   background: ${COLORS.bg};
-  font-family: 'Inter', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: ${COLORS.text};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%);
-  color: ${COLORS.white};
-  padding: 2rem;
-  box-shadow: ${COLORS.shadowMd};
+  background: ${COLORS.surface};
+  border-bottom: 1px solid ${COLORS.border};
+  padding: 1.25rem 2rem;
+  box-shadow: ${COLORS.shadowSm};
 `;
 
 const HeaderContent = styled.div`
@@ -112,74 +114,96 @@ const HeaderTitle = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem;
+  font-size: 1.375rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
+  color: ${COLORS.text};
 `;
 
 const Subtitle = styled.p`
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.9rem;
+  color: ${COLORS.textSecondary};
+  font-size: 0.8125rem;
   margin: 0;
 `;
 
 const HeaderActions = styled.div`
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 `;
 
 const ActionButton = styled.button`
-  background: rgba(255, 255, 255, 0.15);
+  background: ${COLORS.primary};
   color: ${COLORS.white};
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: none;
   border-radius: ${COLORS.radiusSm};
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   transition: ${COLORS.transition};
-  backdrop-filter: blur(10px);
+  box-shadow: ${COLORS.shadowSm};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: ${COLORS.primaryDark};
     transform: translateY(-1px);
+    box-shadow: ${COLORS.shadowMd};
   }
 `;
 
-const BackButton = styled.button`
-  background: ${COLORS.white};
-  color: ${COLORS.primary};
-  border: none;
+const SecondaryButton = styled.button`
+  background: ${COLORS.surface};
+  color: ${COLORS.text};
+  border: 1px solid ${COLORS.border};
   border-radius: ${COLORS.radiusSm};
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   transition: ${COLORS.transition};
 
   &:hover {
     background: ${COLORS.bg};
-    transform: translateY(-1px);
+    border-color: ${COLORS.textSecondary};
+  }
+`;
+
+const BackButton = styled.button`
+  background: ${COLORS.surface};
+  color: ${COLORS.primary};
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusSm};
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: ${COLORS.transition};
+
+  &:hover {
+    background: ${COLORS.bg};
+    border-color: ${COLORS.primary};
   }
 `;
 
 const MainLayout = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem;
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 2rem;
+  grid-template-columns: 1fr 320px;
+  gap: 1.25rem;
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
@@ -189,13 +213,13 @@ const MainLayout = styled.div`
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 `;
 
 const Sidebar = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 
   @media (max-width: 1024px) {
     order: -1;
@@ -203,23 +227,25 @@ const Sidebar = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${COLORS.white};
+  background: ${COLORS.surface};
   border-radius: ${COLORS.radius};
   box-shadow: ${COLORS.shadowSm};
   border: 1px solid ${COLORS.border};
   overflow: hidden;
+  animation: ${fadeIn} 0.25s ease-out;
 `;
 
 const CardHeader = styled.div`
-  padding: 1.25rem 1.5rem;
+  padding: 0.875rem 1.125rem;
   border-bottom: 1px solid ${COLORS.border};
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: ${COLORS.bg};
 `;
 
 const CardTitle = styled.h3`
-  font-size: 1.1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: ${COLORS.text};
   margin: 0;
@@ -229,38 +255,37 @@ const CardTitle = styled.h3`
 `;
 
 const CardBody = styled.div`
-  padding: 1.5rem;
+  padding: 1.125rem;
 `;
 
 const ProfileCard = styled.div`
-  background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%);
+  background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%);
   color: ${COLORS.white};
-  padding: 2rem;
+  padding: 1.25rem;
   border-radius: ${COLORS.radius};
-  margin-bottom: 1.5rem;
   box-shadow: ${COLORS.shadowMd};
 `;
 
 const ProfileHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
 `;
 
 const ProfileAvatar = styled.div`
-  width: 80px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   color: ${COLORS.white};
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 600;
   flex-shrink: 0;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 `;
 
 const ProfileInfo = styled.div`
@@ -269,27 +294,27 @@ const ProfileInfo = styled.div`
 `;
 
 const ProfileName = styled.h2`
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
 `;
 
 const ProfileMeta = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.9);
 `;
 
 const StatusBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.875rem;
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.875rem;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: ${COLORS.radiusXs};
+  font-size: 0.75rem;
   font-weight: 500;
   background: ${props => props.$bgColor || COLORS.success};
   color: ${COLORS.white};
@@ -298,65 +323,65 @@ const StatusBadge = styled.span`
 const QuickStats = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 0.5rem;
 `;
 
 const QuickStatItem = styled.div`
   background: rgba(255, 255, 255, 0.1);
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: ${COLORS.radiusSm};
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 `;
 
 const QuickStatLabel = styled.div`
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 0.25rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 `;
 
 const QuickStatValue = styled.div`
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 600;
 `;
 
 const TabsContainer = styled.div`
   display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  gap: 0.25rem;
+  padding: 0.25rem;
   background: ${COLORS.bg};
   border-radius: ${COLORS.radius};
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid ${COLORS.border};
 `;
 
 const Tab = styled.button`
   flex: 1;
   border: none;
-  background: ${props => props.$active ? COLORS.white : 'transparent'};
+  background: ${props => props.$active ? COLORS.surface : 'transparent'};
   color: ${props => props.$active ? COLORS.primary : COLORS.textSecondary};
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: ${COLORS.radiusSm};
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
   transition: ${COLORS.transition};
   box-shadow: ${props => props.$active ? COLORS.shadowSm : 'none'};
 
   &:hover {
-    background: ${props => props.$active ? COLORS.white : 'rgba(255, 255, 255, 0.5)'};
+    background: ${props => props.$active ? COLORS.surface : 'rgba(255, 255, 255, 0.5)'};
   }
 `;
 
 const TabContent = styled.div`
-  animation: fadeIn 0.3s ease-out;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 0.625rem;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
@@ -364,7 +389,7 @@ const InfoGrid = styled.div`
 `;
 
 const InfoItem = styled.div`
-  padding: 1rem;
+  padding: 0.75rem;
   background: ${COLORS.bg};
   border-radius: ${COLORS.radiusSm};
   border: 1px solid ${COLORS.border};
@@ -372,116 +397,80 @@ const InfoItem = styled.div`
 
   &:hover {
     border-color: ${COLORS.primary};
-    box-shadow: 0 2px 8px rgba(10, 36, 99, 0.08);
+    box-shadow: 0 1px 3px rgba(26, 95, 122, 0.06);
   }
 `;
 
 const InfoLabel = styled.div`
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: ${COLORS.textSecondary};
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 `;
 
 const InfoValue = styled.div`
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: ${COLORS.text};
   word-break: break-word;
 `;
 
 const EmptyState = styled.div`
   text-align: center;
-  padding: 3rem 1.5rem;
+  padding: 1.5rem;
   color: ${COLORS.textSecondary};
 
   svg {
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 1rem;
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 0.5rem;
     opacity: 0.4;
   }
 
   h4 {
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.25rem;
     color: ${COLORS.text};
   }
 
   p {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     margin: 0;
     color: ${COLORS.textSecondary};
   }
 `;
 
 const SectionTitle = styled.h3`
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: ${COLORS.text};
-  margin: 0 0 1rem;
+  margin: 0 0 0.625rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 `;
 
-const ContactItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: ${COLORS.bg};
-  border-radius: ${COLORS.radiusXs};
-  margin-bottom: 0.5rem;
-  border: 1px solid ${COLORS.border};
-`;
-
-const ContactIcon = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: ${COLORS.radiusXs};
-  background: ${COLORS.primary};
-  color: ${COLORS.white};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-`;
-
-const ContactInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const ContactLabel = styled.div`
-  font-size: 0.75rem;
-  color: ${COLORS.textSecondary};
-  margin-bottom: 0.25rem;
-`;
-
-const ContactValue = styled.div`
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: ${COLORS.text};
-`;
-
 const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  animation: fadeIn 0.2s ease-out;
+  padding: 1.5rem;
+  animation: ${fadeIn} 0.12s ease-out;
+  backdrop-filter: blur(3px);
 `;
 
 const ModalContent = styled.div`
-  background: ${COLORS.white};
+  background: ${COLORS.surface};
   border-radius: ${COLORS.radius};
   box-shadow: ${COLORS.shadowLg};
   max-width: 800px;
@@ -490,11 +479,11 @@ const ModalContent = styled.div`
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s ease-out;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const ModalHeader = styled.div`
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid ${COLORS.border};
   display: flex;
   justify-content: space-between;
@@ -503,7 +492,7 @@ const ModalHeader = styled.div`
 
   h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 600;
     color: ${COLORS.text};
     display: flex;
@@ -517,7 +506,7 @@ const ModalButton = styled.button`
   border: none;
   color: ${COLORS.textSecondary};
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.375rem;
   border-radius: ${COLORS.radiusXs};
   transition: ${COLORS.transition};
   display: flex;
@@ -531,7 +520,7 @@ const ModalButton = styled.button`
 `;
 
 const ModalBody = styled.div`
-  padding: 1.5rem;
+  padding: 1.25rem;
   overflow-y: auto;
   flex: 1;
 `;
@@ -669,7 +658,7 @@ const ChargeSettingsModal = lazy(() =>
 
 const LoadingFallback = () => (
   <div style={{ padding: '1rem', textAlign: 'center', color: COLORS.textSecondary }}>
-    <RefreshCw size={20} className="animate-spin" style={{ marginRight: '0.5rem' }} />
+    <RefreshCw size={16} className="animate-spin" style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
     Loading...
   </div>
 );
@@ -692,15 +681,15 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return this.props.fallback || (
         <div style={{
-          padding: '1.5rem',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '14px',
+          padding: '1rem',
+          background: 'rgba(239, 68, 68, 0.08)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          borderRadius: COLORS.radius,
           color: COLORS.danger,
           textAlign: 'center'
         }}>
-          <AlertTriangle size={24} style={{ marginBottom: '0.5rem' }} />
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+          <AlertTriangle size={18} style={{ marginBottom: '0.375rem' }} />
+          <p style={{ margin: 0, fontSize: '0.8125rem' }}>
             {this.props.errorMessage || 'Something went wrong loading this component.'}
           </p>
         </div>
@@ -717,7 +706,6 @@ const DeceasedDetails = () => {
   const [deceasedData, setDeceasedData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [coffins, setCoffins] = useState([]);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [showDeceasedInfoModal, setShowDeceasedInfoModal] = useState(false);
   const [showNextOfKinModal, setShowNextOfKinModal] = useState(false);
@@ -784,7 +772,6 @@ const DeceasedDetails = () => {
         localStorage.setItem('tenantSlug', tenantSlug);
       }
 
-      // Use direct axios with the correct endpoint
       const response = await axios.get(`${BASE_URL}/deceased/${id}`, {
         headers: {
           'x-tenant-slug': tenantSlug,
@@ -946,7 +933,7 @@ const DeceasedDetails = () => {
   if (isLoading && !showLoader) {
     return (
       <Container style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <RefreshCw size={32} color={COLORS.primary} className="animate-spin" />
+        <RefreshCw size={24} color={COLORS.primary} className="animate-spin" />
       </Container>
     );
   }
@@ -955,12 +942,12 @@ const DeceasedDetails = () => {
     return (
       <Container>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <AlertTriangle size={48} color={COLORS.danger} />
-          <h3 style={{ margin: '1rem 0 0.5rem', color: COLORS.text }}>Failed to load details</h3>
-          <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: COLORS.textSecondary }}>
+          <AlertTriangle size={36} color={COLORS.danger} />
+          <h3 style={{ margin: '1rem 0 0.5rem', color: COLORS.text, fontSize: '1.125rem' }}>Failed to load details</h3>
+          <p style={{ margin: '0.25rem 0', fontSize: '0.8125rem', color: COLORS.textSecondary }}>
             ID: {id}
           </p>
-          <BackButton onClick={() => navigate(-1)} style={{ marginTop: '1.5rem' }}>
+          <BackButton onClick={() => navigate(-1)} style={{ marginTop: '1.25rem' }}>
             <ArrowLeft size={16} /> Go Back
           </BackButton>
         </div>
@@ -980,21 +967,21 @@ const DeceasedDetails = () => {
         <HeaderContent>
           <HeaderTitle>
             <Title>
-              <User size={28} />
+              <User size={22} />
               {deceasedData?.full_name || 'Deceased Details'}
             </Title>
             <Subtitle>Ref: {deceasedData?.deceased_id || id} • Total: {deceasedData?.total_mortuary_charge || 0} {deceasedData?.currency || 'KES'}</Subtitle>
           </HeaderTitle>
           <HeaderActions>
             <ActionButton onClick={() => setShowScannerModal(true)}>
-              <QrCode size={16} /> Scan
+              <QrCode size={15} /> Scan
             </ActionButton>
+            <SecondaryButton onClick={handleRefresh}>
+              <RefreshCw size={15} /> Refresh
+            </SecondaryButton>
             <BackButton onClick={() => navigate(-1)}>
-              <ArrowLeft size={16} /> Back
+              <ArrowLeft size={15} /> Back
             </BackButton>
-            <ActionButton onClick={handleRefresh}>
-              <RefreshCw size={16} /> Refresh
-            </ActionButton>
           </HeaderActions>
         </HeaderContent>
       </Header>
@@ -1024,9 +1011,9 @@ const DeceasedDetails = () => {
               <>
                 <Card>
                   <CardHeader>
-                    <CardTitle><Info size={20} /> Personal Information</CardTitle>
+                    <CardTitle><Info size={16} /> Personal Information</CardTitle>
                     <ActionButton onClick={() => setShowDeceasedInfoModal(true)} style={{ background: COLORS.primary }}>
-                      <Download size={16} /> View Full Info
+                      <Download size={15} /> View Full Info
                     </ActionButton>
                   </CardHeader>
                   <CardBody>
@@ -1041,9 +1028,9 @@ const DeceasedDetails = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle><Users size={20} /> Next of Kin</CardTitle>
+                    <CardTitle><Users size={16} /> Next of Kin</CardTitle>
                     <ActionButton onClick={() => setShowNextOfKinModal(true)} style={{ background: COLORS.primary }}>
-                      <Download size={16} /> View All
+                      <Download size={15} /> View All
                     </ActionButton>
                   </CardHeader>
                   <CardBody>
@@ -1061,7 +1048,7 @@ const DeceasedDetails = () => {
             {activeSection === 'documents' && (
               <Card>
                 <CardHeader>
-                  <CardTitle><FileText size={20} /> Documents</CardTitle>
+                  <CardTitle><FileText size={16} /> Documents</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <Suspense fallback={<LoadingFallback />}>
@@ -1079,13 +1066,13 @@ const DeceasedDetails = () => {
             {activeSection === 'financials' && (
               <Card>
                 <CardHeader>
-                  <CardTitle><DollarSign size={20} /> Financial Details</CardTitle>
+                  <CardTitle><DollarSign size={16} /> Financial Details</CardTitle>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <ActionButton onClick={() => setShowPaymentForm(true)} style={{ background: COLORS.success }}>
-                      <Download size={16} /> Add Payment
+                      <Download size={15} /> Add Payment
                     </ActionButton>
                     <ActionButton onClick={() => setShowExtraChargeForm(true)} style={{ background: COLORS.warning }}>
-                      <TrendingUp size={16} /> Add Charge
+                      <TrendingUp size={15} /> Add Charge
                     </ActionButton>
                   </div>
                 </CardHeader>
@@ -1119,7 +1106,7 @@ const DeceasedDetails = () => {
             {activeSection === 'dispatch' && (
               <Card>
                 <CardHeader>
-                  <CardTitle><Truck size={20} /> Dispatch</CardTitle>
+                  <CardTitle><Truck size={16} /> Dispatch</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <Suspense fallback={<LoadingFallback />}>
@@ -1139,9 +1126,9 @@ const DeceasedDetails = () => {
             {activeSection === 'postmortem' && (
               <Card>
                 <CardHeader>
-                  <CardTitle><Activity size={20} /> Postmortem Examination</CardTitle>
+                  <CardTitle><Activity size={16} /> Postmortem Examination</CardTitle>
                   <ActionButton onClick={() => setShowPostmortemRequestModal(true)} style={{ background: COLORS.primary }}>
-                    <PlusCircle size={16} /> Request Postmortem
+                    <PlusCircle size={15} /> Request Postmortem
                   </ActionButton>
                 </CardHeader>
                 <CardBody>
@@ -1170,7 +1157,7 @@ const DeceasedDetails = () => {
                 <ProfileName>{deceasedData?.full_name || 'Unknown'}</ProfileName>
                 <ProfileMeta>
                   <StatusBadge $bgColor={daysInMortuary > 30 ? COLORS.danger : COLORS.success}>
-                    {daysInMortuary > 30 ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
+                    {daysInMortuary > 30 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
                     {deceasedData?.status || 'Active'}
                   </StatusBadge>
                 </ProfileMeta>
@@ -1184,7 +1171,7 @@ const DeceasedDetails = () => {
               </QuickStatItem>
               <QuickStatItem>
                 <QuickStatLabel>Age</QuickStatLabel>
-                <QuickStatValue>{ageInfo.years !== 'N/A' ? `${ageInfo.years} years` : 'N/A'}</QuickStatValue>
+                <QuickStatValue>{ageInfo.years !== 'N/A' ? `${ageInfo.years} yrs` : 'N/A'}</QuickStatValue>
               </QuickStatItem>
               <QuickStatItem>
                 <QuickStatLabel>Total Charges</QuickStatLabel>
@@ -1199,7 +1186,7 @@ const DeceasedDetails = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle><Box size={20} /> Coffin Assignment</CardTitle>
+              <CardTitle><Box size={16} /> Coffin Assignment</CardTitle>
             </CardHeader>
             <CardBody>
               <Suspense fallback={<LoadingFallback />}>
@@ -1216,7 +1203,7 @@ const DeceasedDetails = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle><Activity size={20} /> Mortuary Progress</CardTitle>
+              <CardTitle><Activity size={16} /> Mortuary Progress</CardTitle>
             </CardHeader>
             <CardBody>
               <Suspense fallback={<LoadingFallback />}>
@@ -1238,9 +1225,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowDeceasedInfoModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><Info size={20} /> Personal Information</h3>
+                <h3><Info size={18} /> Personal Information</h3>
                 <ModalButton onClick={() => setShowDeceasedInfoModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1258,9 +1245,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowNextOfKinModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><Users size={20} /> Next of Kin</h3>
+                <h3><Users size={18} /> Next of Kin</h3>
                 <ModalButton onClick={() => setShowNextOfKinModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1277,9 +1264,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowFinancialModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><DollarSign size={20} /> Financial Details</h3>
+                <h3><DollarSign size={18} /> Financial Details</h3>
                 <ModalButton onClick={() => setShowFinancialModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1296,9 +1283,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowPaymentHistoryModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><FileText size={20} /> Payment History</h3>
+                <h3><FileText size={18} /> Payment History</h3>
                 <ModalButton onClick={() => setShowPaymentHistoryModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1315,9 +1302,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowChargeSettingsModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><Settings size={20} /> Charge Settings</h3>
+                <h3><Activity size={18} /> Charge Settings</h3>
                 <ModalButton onClick={() => setShowChargeSettingsModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1335,9 +1322,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowProgressModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><Activity size={20} /> Mortuary Progress</h3>
+                <h3><Activity size={18} /> Mortuary Progress</h3>
                 <ModalButton onClick={() => setShowProgressModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1354,9 +1341,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowExtraChargesModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><TrendingUp size={20} /> Extra Charges</h3>
+                <h3><TrendingUp size={18} /> Extra Charges</h3>
                 <ModalButton onClick={() => setShowExtraChargesModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1375,9 +1362,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowExtraChargeForm(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><TrendingUp size={20} /> Add Extra Charge</h3>
+                <h3><TrendingUp size={18} /> Add Extra Charge</h3>
                 <ModalButton onClick={() => setShowExtraChargeForm(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1394,9 +1381,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowPaymentForm(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><DollarSign size={20} /> Record Payment</h3>
+                <h3><DollarSign size={18} /> Record Payment</h3>
                 <ModalButton onClick={() => setShowPaymentForm(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <Suspense fallback={<LoadingFallback />}>
@@ -1413,9 +1400,9 @@ const DeceasedDetails = () => {
           <ModalOverlay onClick={() => setShowScannerModal(false)}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
-                <h3><QrCode size={20} /> Scan QR Code</h3>
+                <h3><QrCode size={18} /> Scan QR Code</h3>
                 <ModalButton onClick={() => setShowScannerModal(false)}>
-                  <X size={24} />
+                  <X size={18} />
                 </ModalButton>
               </ModalHeader>
               <ScannerComponent
