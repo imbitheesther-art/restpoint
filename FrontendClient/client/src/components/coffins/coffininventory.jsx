@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useSocket } from '../../utils/context/socketContext';
+import ReusableCalendar from '../../utils/calender/calender';
 import {
   Search, Plus, Edit, Trash2, Eye, Package, AlertTriangle,
   Filter, Download, Upload, Box, Database, RotateCw, Settings,
@@ -763,6 +764,7 @@ const CoffinInventory = () => {
   const [toast, setToast] = useState(null);
   const [viewMode, setViewMode] = useState('table');
   const [activeTab, setActiveTab] = useState('inventory');
+  const [selectedDate, setSelectedDate] = useState(null);
   const { socket } = useSocket();
 
   const showToast = useCallback((message, type) => {
@@ -1550,83 +1552,41 @@ const CoffinInventory = () => {
                   </TableCard>
                 ) : (
                   <TableCard>
-                    <div style={{ padding: '2rem', textAlign: 'center', color: COLORS.textSecondary }}>
-                      <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.4 }} />
-                      <h4 style={{ margin: '0 0 0.5rem', color: COLORS.text }}>Calendar View</h4>
-                      <p style={{ margin: 0, fontSize: '0.8125rem' }}>
-                        {bookings.length > 0
-                          ? `${bookings.length} booking${bookings.length !== 1 ? 's' : ''} scheduled`
-                          : 'No bookings to display on calendar'}
-                      </p>
-                      {bookings.length > 0 && (
-                        <div style={{
-                          marginTop: '1.5rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.75rem',
-                          maxWidth: '600px',
-                          margin: '1.5rem auto 0'
-                        }}>
-                          {bookings.slice(0, 5).map((booking) => (
-                            <div key={booking.booking_id || booking.id} style={{
-                              padding: '1rem',
-                              background: COLORS.bg,
-                              border: '1px solid ' + COLORS.border,
-                              borderRadius: COLORS.radiusSm,
-                              textAlign: 'left',
-                              display: 'flex',
-                              gap: '1rem',
-                              alignItems: 'start'
-                            }}>
-                              <div style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: COLORS.radiusSm,
-                                background: COLORS.primaryLight,
-                                color: COLORS.white,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0
-                              }}>
-                                <div style={{ fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase' }}>
-                                  {booking.event_date ? new Date(booking.event_date).toLocaleDateString('en-US', { month: 'short' }) : 'TBD'}
-                                </div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1 }}>
-                                  {booking.event_date ? new Date(booking.event_date).getDate() : '?'}
-                                </div>
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                                  {booking.client_name}
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary, marginBottom: '0.25rem' }}>
-                                  {booking.coffin_type || booking.coffin?.type || 'External coffin'}
-                                </div>
-                                {booking.special_requirements && (
-                                  <div style={{
-                                    fontSize: '0.72rem',
-                                    color: COLORS.warningDark,
-                                    fontStyle: 'italic',
-                                    padding: '0.25rem 0.5rem',
-                                    background: COLORS.warningLight,
-                                    borderRadius: '0.25rem',
-                                    display: 'inline-block'
-                                  }}>
-                                    ⚠️ {booking.special_requirements}
-                                  </div>
-                                )}
-                                <div style={{ marginTop: '0.5rem' }}>
-                                  <StatusBadge $status={booking.status || 'pending'}>
-                                    {booking.status || 'Pending'}
-                                  </StatusBadge>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                    <div style={{ padding: '1rem' }}>
+                      <ReusableCalendar
+                        items={bookings}
+                        dateKey="event_date"
+                        idKey="booking_id"
+                        selectedDate={selectedDate}
+                        onDateSelect={setSelectedDate}
+                        onItemClick={handleBookingClick}
+                        showAddButton={true}
+                        addButtonText="New Booking"
+                        onAddForDate={(dateStr) => {
+                          setNewBookingFormData(p => ({ ...p, event_date: dateStr }));
+                          setShowNewBookingModal(true);
+                        }}
+                        getStatusColor={(item) => {
+                          switch (item.status) {
+                            case 'confirmed': return COLORS.success;
+                            case 'pending': return COLORS.warning;
+                            case 'cancelled': return COLORS.danger;
+                            default: return COLORS.info;
+                          }
+                        }}
+                        getIsUrgent={(item) => {
+                          if (!item.event_date) return false;
+                          const eventDate = new Date(item.event_date);
+                          const today = new Date();
+                          const diffDays = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+                          return diffDays <= 2 && diffDays >= 0;
+                        }}
+                        getItemTitle={(item) => item.client_name}
+                        getItemSubtitle={(item) => item.coffin_type || item.coffin?.type || 'External coffin'}
+                        getItemMeta={(item) => item.client_phone || ''}
+                        getItemStatus={(item) => <StatusBadge $status={item.status || 'pending'}>{item.status || 'Pending'}</StatusBadge>}
+                        accentColor={COLORS.primary}
+                      />
                     </div>
                   </TableCard>
                 )}
