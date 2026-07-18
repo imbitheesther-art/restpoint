@@ -252,126 +252,254 @@ const PageGrid = styled.div`
   }
 `;
 
-const SidePanel = styled.aside`
-  background: ${Colors.white};
-  border: 1px solid ${Colors.tableBorder};
-  border-radius: 1rem;
-  padding: 1rem;
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
-  flex-direction: column;
-  min-height: 560px;
-  position: sticky;
-  top: 1rem;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 1.5rem;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
-const PanelHeader = styled.div`
+const ModalContent = styled.div`
+  background: ${Colors.white};
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: ${fadeIn} 0.3s ease-out;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${Colors.lightGray};
+    border-radius: 0.5rem;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${Colors.mediumGray};
+    border-radius: 0.5rem;
+    
+    &:hover {
+      background: ${Colors.accentBlue};
+    }
+  }
+`;
+
+const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid ${Colors.tableBorder};
 `;
 
-const PanelTitle = styled.h2`
+const ModalTitle = styled.h2`
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: ${Colors.primaryDark};
+  flex: 1;
 `;
 
-const ClosePanelButton = styled.button`
+const ModalSubtitle = styled.div`
+  font-size: 0.85rem;
+  color: ${Colors.darkGray};
+  margin-top: 0.25rem;
+`;
+
+const CloseModalButton = styled.button`
   border: none;
   background: transparent;
   color: ${Colors.darkGray};
   cursor: pointer;
-  font-size: 1.3rem;
+  font-size: 2rem;
   line-height: 1;
   padding: 0.25rem;
-`;
-
-const PanelTabs = styled.div`
+  width: 2.5rem;
+  height: 2.5rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-`;
-
-const PanelTab = styled.button`
-  border: 1px solid ${Colors.tableBorder};
-  background: ${(props) => (props.$active ? Colors.headerBg : Colors.white)};
-  color: ${(props) => (props.$active ? Colors.white : Colors.darkGray)};
-  padding: 0.6rem 0.85rem;
-  border-radius: 0.75rem;
-  font-size: 0.8rem;
-  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
   transition: all 0.2s;
+  flex-shrink: 0;
 
   &:hover {
-    background: ${Colors.hoverGray};
+    background: ${Colors.lightGray};
+    color: ${Colors.dangerRed};
+    transform: rotate(90deg);
   }
 `;
 
-const PanelContent = styled.div`
+const ModalTabs = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid ${Colors.tableBorder};
+  padding-bottom: 0.5rem;
+`;
+
+const ModalTab = styled.button`
+  border: none;
+  background: transparent;
+  color: ${(props) => (props.$active ? Colors.accentBlue : Colors.darkGray)};
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+
+  &:hover {
+    background: ${Colors.lightGray};
+  }
+
+  ${(props) =>
+    props.$active &&
+    css`
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -0.5rem;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: ${Colors.accentBlue};
+        border-radius: 1px;
+      }
+    `}
+`;
+
+const ModalBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  flex: 1;
-  overflow: auto;
+  gap: 1.25rem;
 `;
 
-const PanelSection = styled.div`
+const ModalSection = styled.div`
   background: ${Colors.lightGray};
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
 `;
 
-const PanelSectionHeading = styled.h3`
-  margin: 0 0 0.75rem 0;
-  font-size: 0.95rem;
+const ModalSectionTitle = styled.h3`
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
   font-weight: 700;
   color: ${Colors.primaryDark};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 `;
 
-const PanelDetailRow = styled.div`
+const ModalDetailGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
 
-  span {
-    display: block;
-    font-size: 0.88rem;
-  }
-
-  .label {
-    color: ${Colors.darkGray};
-    font-weight: 600;
-  }
-
-  .value {
-    color: #4b5563;
-    font-weight: 500;
-  }
-
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
 `;
 
-const PanelActionArea = styled.div`
+const ModalDetailItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: auto;
+  gap: 0.25rem;
 `;
 
-const PanelError = styled.div`
-  color: ${Colors.dangerRed};
-  background: #fef2f2;
-  border: 1px solid #f8d7da;
-  border-radius: 0.75rem;
-  padding: 0.85rem;
+const ModalDetailLabel = styled.span`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: ${Colors.darkGray};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+const ModalDetailValue = styled.span`
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: ${Colors.primaryDark};
+  word-break: break-word;
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid ${Colors.tableBorder};
+`;
+
+const ModalButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.5rem;
   font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+
+  ${(props) =>
+    props.$primary
+      ? css`
+          background: ${Colors.accentBlue};
+          color: ${Colors.white};
+
+          &:hover {
+            background: #04597b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(5, 102, 141, 0.2);
+          }
+        `
+      : props.$danger
+        ? css`
+          background: ${Colors.dangerRed};
+          color: ${Colors.white};
+
+          &:hover {
+            background: #a93226;
+          }
+        `
+        : css`
+          background: ${Colors.white};
+          color: ${Colors.darkGray};
+          border: 1px solid ${Colors.tableBorder};
+
+          &:hover {
+            background: ${Colors.lightGray};
+            border-color: ${Colors.accentBlue};
+          }
+        `}
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
 `;
 
 const PrimaryButton = styled.button`
@@ -1124,10 +1252,10 @@ const AllDeceasedPage = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [selectedDeceased, setSelectedDeceased] = useState(null);
   const [selectedDeceasedProfile, setSelectedDeceasedProfile] = useState(null);
-  const [selectedPanelTab, setSelectedPanelTab] = useState('overview');
-  const [panelLoading, setPanelLoading] = useState(false);
-  const [panelError, setPanelError] = useState(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [selectedModalTab, setSelectedModalTab] = useState('overview');
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -1137,9 +1265,9 @@ const AllDeceasedPage = () => {
 
   const fetchSelectedDeceasedProfile = async (record) => {
     const deceasedId = record.deceased_id || record.id;
-    setPanelLoading(true);
-    setPanelError(null);
-    setSelectedPanelTab('overview');
+    setModalLoading(true);
+    setModalError(null);
+    setSelectedModalTab('overview');
     try {
       const response = await api.get(ENDPOINTS.DECEASED.DETAIL(deceasedId));
       const profile = response.data?.data || response.data || record;
@@ -1147,28 +1275,28 @@ const AllDeceasedPage = () => {
     } catch (error) {
       console.error('Error loading deceased profile:', error);
       setSelectedDeceasedProfile(record);
-      setPanelError('Unable to load detailed profile. Showing summary only.');
+      setModalError('Unable to load detailed profile. Showing summary only.');
     } finally {
-      setPanelLoading(false);
+      setModalLoading(false);
     }
   };
 
-  const openProfilePanel = async (record) => {
+  const openProfileModal = async (record) => {
     setSelectedDeceased(record);
-    setPanelOpen(true);
+    setModalOpen(true);
     await fetchSelectedDeceasedProfile(record);
   };
 
-  const closeProfilePanel = () => {
-    setPanelOpen(false);
+  const closeProfileModal = () => {
+    setModalOpen(false);
     setSelectedDeceased(null);
     setSelectedDeceasedProfile(null);
-    setPanelError(null);
+    setModalError(null);
   };
 
   const handleViewDetailsClick = async (record, event) => {
     if (event) event.stopPropagation();
-    await openProfilePanel(record);
+    await openProfileModal(record);
   };
 
   const handleViewMoreClick = () => {
@@ -1177,11 +1305,11 @@ const AllDeceasedPage = () => {
     navigate(`/tenant/${tenantSlug}/deceased/${selectedDeceased.deceased_id || selectedDeceased.id}`);
   };
 
-  const handlePanelTabChange = (tab) => {
-    setSelectedPanelTab(tab);
+  const handleModalTabChange = (tab) => {
+    setSelectedModalTab(tab);
   };
 
-  const getPanelValue = (key) => {
+  const getModalValue = (key) => {
     const record = selectedDeceasedProfile || selectedDeceased;
     return record ? record[key] : 'N/A';
   };
@@ -1396,7 +1524,7 @@ const AllDeceasedPage = () => {
   };
 
   const renderMobileCard = (record) => (
-    <MobileCard key={record.id} onClick={() => openProfilePanel(record)}>
+    <MobileCard key={record.id} onClick={() => openProfileModal(record)}>
       <MobileCardHeader>
         <MobileCardTitle>{record.full_name || 'Unknown'}</MobileCardTitle>
         <StatusPill status={record.status}>{record.status || 'Unknown'}</StatusPill>
@@ -1430,7 +1558,7 @@ const AllDeceasedPage = () => {
   );
 
   const renderTableRow = (record) => (
-    <tr key={record.id} className={selectedDeceased && selectedDeceased.deceased_id === record.deceased_id ? 'selected' : ''} onClick={() => openProfilePanel(record)}>
+    <tr key={record.id} onClick={() => openProfileModal(record)}>
       <td data-label="Full Name">{record.full_name || 'Unknown'}</td>
       <td data-label="Admission No">{record.admission_number || 'N/A'}</td>
       <td data-label="Date of Death">{record.date_of_death ? new Date(record.date_of_death).toLocaleDateString() : 'N/A'}</td>
@@ -1495,245 +1623,326 @@ const AllDeceasedPage = () => {
           </ButtonGroup>
         </HeaderSection>
 
-        <PageGrid $panelOpen={panelOpen}>
+        <PageGrid>
           <div>
             {!loading && !error && filteredDeceasedRecords.length > 0 && (
-          <Paginator>
-            <PaginatorInfo>
-              <span>
-                {indexOfFirstRecord + 1}–{Math.min(indexOfLastRecord, filteredDeceasedRecords.length)} of {filteredDeceasedRecords.length}
-              </span>
-              <ItemsPerPageSelect value={itemsPerPage} onChange={handleItemsPerPageChange}>
-                <option value={5}>5/page</option>
-                <option value={10}>10/page</option>
-                <option value={20}>20/page</option>
-                <option value={50}>50/page</option>
-              </ItemsPerPageSelect>
-            </PaginatorInfo>
-            <PaginationControls>
-              <PaginationButton onClick={() => handlePageChange(1)} disabled={currentPage === 1}>First</PaginationButton>
-              <PaginationButton onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft /></PaginationButton>
-              {generatePaginationButtons()}
-              <PaginationButton onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}><ChevronRight /></PaginationButton>
-              <PaginationButton onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages}>Last</PaginationButton>
-            </PaginationControls>
-          </Paginator>
-        )}
-
-        <MobileFilterToggle onClick={toggleFilters} $open={showFilters}>
-          <span>Filters</span>
-          <Filter />
-        </MobileFilterToggle>
-
-        <FilterContainer $show={showFilters}>
-          <FilterGroup>
-            <FilterLabel><Calendar />Year</FilterLabel>
-            <YearFilterInput>
-              <div className="year-select-container">
-                <input type="text" placeholder="YYYY" value={yearFilter === 'all' ? '' : yearFilter} onChange={(e) => handleYearChange(e.target.value)} maxLength={4} />
-                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
-                  <option value="all">All Years</option>
-                  {uniqueYears.map((year) => <option key={year} value={year}>{year}</option>)}
-                </select>
-              </div>
-            </YearFilterInput>
-          </FilterGroup>
-          <FilterGroup>
-            <FilterLabel><AlertTriangle />Status</FilterLabel>
-            <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Status</option>
-              <option value="received">Received</option>
-              <option value="underCare">Under Care</option>
-              <option value="ready">Ready</option>
-              <option value="completed">Completed</option>
-            </FilterSelect>
-          </FilterGroup>
-          <FilterGroup>
-            <PrimaryButton onClick={clearAllFilters} style={{ fontSize: '0.78rem', padding: '0.4rem 0.65rem', minHeight: 'auto' }}>Clear All</PrimaryButton>
-          </FilterGroup>
-        </FilterContainer>
-
-        {!loading && filteredDeceasedRecords.length > 0 && (
-          <RecordsInfoBar>
-            <span>Showing {filteredDeceasedRecords.length} of {allDeceasedRecords.length} records</span>
-            {filteredDeceasedRecords.length === 0 && allDeceasedRecords.length > 0 && (
-              <WarningMessage><AlertTriangle />No records match your current filters</WarningMessage>
+              <Paginator>
+                <PaginatorInfo>
+                  <span>
+                    {indexOfFirstRecord + 1}–{Math.min(indexOfLastRecord, filteredDeceasedRecords.length)} of {filteredDeceasedRecords.length}
+                  </span>
+                  <ItemsPerPageSelect value={itemsPerPage} onChange={handleItemsPerPageChange}>
+                    <option value={5}>5/page</option>
+                    <option value={10}>10/page</option>
+                    <option value={20}>20/page</option>
+                    <option value={50}>50/page</option>
+                  </ItemsPerPageSelect>
+                </PaginatorInfo>
+                <PaginationControls>
+                  <PaginationButton onClick={() => handlePageChange(1)} disabled={currentPage === 1}>First</PaginationButton>
+                  <PaginationButton onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft /></PaginationButton>
+                  {generatePaginationButtons()}
+                  <PaginationButton onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}><ChevronRight /></PaginationButton>
+                  <PaginationButton onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages}>Last</PaginationButton>
+                </PaginationControls>
+              </Paginator>
             )}
-          </RecordsInfoBar>
-        )}
 
-        {loading && (
-          <CenteredContainer>
-            <AnimatedLoader2 size={36} color={Colors.accentBlue} />
-            <div>Loading deceased records...</div>
-          </CenteredContainer>
-        )}
+            <MobileFilterToggle onClick={toggleFilters} $open={showFilters}>
+              <span>Filters</span>
+              <Filter />
+            </MobileFilterToggle>
 
-        {error && !loading && (
-          <CenteredContainer>
-            <AlertTriangle size={36} color={Colors.dangerRed} />
-            <div>{error}</div>
-            <PrimaryButton onClick={fetchDeceased}><RefreshCw size={16} />Try Again</PrimaryButton>
-          </CenteredContainer>
-        )}
-
-        {!loading && !error && (
-          <>
-            {!isMobile && filteredDeceasedRecords.length > 0 && (
-              <StyledCard>
-                <TableContainer>
-                  <StyledTable>
-                    <thead>
-                      <tr>
-                        <th>Full Name</th><th>Admission No</th><th>Date of Death</th><th>Created</th>
-                        <th className="text-center">Status</th><th className="text-center">Next of Kin</th>
-                        <th className="text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>{currentRecords.map(renderTableRow)}</tbody>
-                  </StyledTable>
-                </TableContainer>
-              </StyledCard>
-            )}
-            {isMobile && filteredDeceasedRecords.length > 0 && <div>{currentRecords.map(renderMobileCard)}</div>}
-            {!loading && filteredDeceasedRecords.length === 0 && allDeceasedRecords.length > 0 && (
-              <CenteredContainer>
-                <ClipboardList size={36} color={Colors.mediumGray} />
-                <div>No records found matching your filters</div>
-                <PrimaryButton onClick={clearAllFilters}>Clear Filters</PrimaryButton>
-              </CenteredContainer>
-            )}
-            {!loading && allDeceasedRecords.length === 0 && (
-              <CenteredContainer>
-                <Users size={36} color={Colors.mediumGray} />
-                <div>No deceased records found</div>
-                <PrimaryButton primary onClick={handleNewRegistrationClick}><PlusCircle size={16} />Add First Record</PrimaryButton>
-              </CenteredContainer>
-            )}
-          </>
-        )}
-          </div>
-
-          {panelOpen && (
-            <SidePanel>
-              <PanelHeader>
-                <div>
-                  <PanelTitle>{selectedDeceased?.full_name || 'Deceased Profile'}</PanelTitle>
-                  <div style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                    Admission: {selectedDeceased?.admission_number || 'N/A'}
+            <FilterContainer $show={showFilters}>
+              <FilterGroup>
+                <FilterLabel><Calendar />Year</FilterLabel>
+                <YearFilterInput>
+                  <div className="year-select-container">
+                    <input type="text" placeholder="YYYY" value={yearFilter === 'all' ? '' : yearFilter} onChange={(e) => handleYearChange(e.target.value)} maxLength={4} />
+                    <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+                      <option value="all">All Years</option>
+                      {uniqueYears.map((year) => <option key={year} value={year}>{year}</option>)}
+                    </select>
                   </div>
-                </div>
-                <ClosePanelButton onClick={closeProfilePanel} aria-label="Close profile panel">×</ClosePanelButton>
-              </PanelHeader>
-              <PanelTabs>
-                <PanelTab $active={selectedPanelTab === 'overview'} onClick={() => handlePanelTabChange('overview')}>Overview</PanelTab>
-                <PanelTab $active={selectedPanelTab === 'financials'} onClick={() => handlePanelTabChange('financials')}>Financials</PanelTab>
-                <PanelTab $active={selectedPanelTab === 'documents'} onClick={() => handlePanelTabChange('documents')}>Documents</PanelTab>
-                <PanelTab $active={selectedPanelTab === 'next_of_kin'} onClick={() => handlePanelTabChange('next_of_kin')}>Next of Kin</PanelTab>
-              </PanelTabs>
-              <PanelContent>
-                {panelLoading && (
+                </YearFilterInput>
+              </FilterGroup>
+              <FilterGroup>
+                <FilterLabel><AlertTriangle />Status</FilterLabel>
+                <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="all">All Status</option>
+                  <option value="received">Received</option>
+                  <option value="underCare">Under Care</option>
+                  <option value="ready">Ready</option>
+                  <option value="completed">Completed</option>
+                </FilterSelect>
+              </FilterGroup>
+              <FilterGroup>
+                <PrimaryButton onClick={clearAllFilters} style={{ fontSize: '0.78rem', padding: '0.4rem 0.65rem', minHeight: 'auto' }}>Clear All</PrimaryButton>
+              </FilterGroup>
+            </FilterContainer>
+
+            {!loading && filteredDeceasedRecords.length > 0 && (
+              <RecordsInfoBar>
+                <span>Showing {filteredDeceasedRecords.length} of {allDeceasedRecords.length} records</span>
+                {filteredDeceasedRecords.length === 0 && allDeceasedRecords.length > 0 && (
+                  <WarningMessage><AlertTriangle />No records match your current filters</WarningMessage>
+                )}
+              </RecordsInfoBar>
+            )}
+
+            {loading && (
+              <CenteredContainer>
+                <AnimatedLoader2 size={36} color={Colors.accentBlue} />
+                <div>Loading deceased records...</div>
+              </CenteredContainer>
+            )}
+
+            {error && !loading && (
+              <CenteredContainer>
+                <AlertTriangle size={36} color={Colors.dangerRed} />
+                <div>{error}</div>
+                <PrimaryButton onClick={fetchDeceased}><RefreshCw size={16} />Try Again</PrimaryButton>
+              </CenteredContainer>
+            )}
+
+            {!loading && !error && (
+              <>
+                {!isMobile && filteredDeceasedRecords.length > 0 && (
+                  <StyledCard>
+                    <TableContainer>
+                      <StyledTable>
+                        <thead>
+                          <tr>
+                            <th>Full Name</th><th>Admission No</th><th>Date of Death</th><th>Created</th>
+                            <th className="text-center">Status</th><th className="text-center">Next of Kin</th>
+                            <th className="text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>{currentRecords.map(renderTableRow)}</tbody>
+                      </StyledTable>
+                    </TableContainer>
+                  </StyledCard>
+                )}
+                {isMobile && filteredDeceasedRecords.length > 0 && <div>{currentRecords.map(renderMobileCard)}</div>}
+                {!loading && filteredDeceasedRecords.length === 0 && allDeceasedRecords.length > 0 && (
                   <CenteredContainer>
-                    <AnimatedLoader2 size={30} color={Colors.accentBlue} />
-                    <div>Loading profile...</div>
+                    <ClipboardList size={36} color={Colors.mediumGray} />
+                    <div>No records found matching your filters</div>
+                    <PrimaryButton onClick={clearAllFilters}>Clear Filters</PrimaryButton>
                   </CenteredContainer>
                 )}
-                {!!panelError && <PanelError>{panelError}</PanelError>}
-
-                {!panelLoading && selectedDeceased && (
-                  <>
-                    {selectedPanelTab === 'overview' && (
-                      <>
-                        <PanelSection>
-                          <PanelSectionHeading>Profile Summary</PanelSectionHeading>
-                          <PanelDetailRow>
-                            <span className="label">Date of Death</span>
-                            <span className="value">{getPanelValue('date_of_death') ? new Date(getPanelValue('date_of_death')).toLocaleDateString() : 'N/A'}</span>
-                          </PanelDetailRow>
-                          <PanelDetailRow>
-                            <span className="label">Created</span>
-                            <span className="value">{getPanelValue('created_at') ? new Date(getPanelValue('created_at')).toLocaleDateString() : 'N/A'}</span>
-                          </PanelDetailRow>
-                          <PanelDetailRow>
-                            <span className="label">Status</span>
-                            <span className="value">{getPanelValue('status') || 'Unknown'}</span>
-                          </PanelDetailRow>
-                          <PanelDetailRow>
-                            <span className="label">Next of Kin</span>
-                            <span className="value">{getPanelValue('has_kin') ? 'Yes' : 'No'}</span>
-                          </PanelDetailRow>
-                          <PanelDetailRow>
-                            <span className="label">Autopsy</span>
-                            <span className="value">{getPanelValue('has_autopsy') ? 'Performed' : 'Not performed'}</span>
-                          </PanelDetailRow>
-                        </PanelSection>
-                        <PanelSection>
-                          <PanelSectionHeading>Quick Details</PanelSectionHeading>
-                          <PanelDetailRow>
-                            <span className="label">Reference ID</span>
-                            <span className="value">{getPanelValue('deceased_id')}</span>
-                          </PanelDetailRow>
-                          <PanelDetailRow>
-                            <span className="label">Year</span>
-                            <span className="value">{getPanelValue('created_at') ? new Date(getPanelValue('created_at')).getFullYear() : 'N/A'}</span>
-                          </PanelDetailRow>
-                        </PanelSection>
-                      </>
-                    )}
-
-                    {selectedPanelTab === 'financials' && (
-                      <PanelSection>
-                        <PanelSectionHeading>Financial Summary</PanelSectionHeading>
-                        <PanelDetailRow>
-                          <span className="label">Total Charges</span>
-                          <span className="value">{getPanelValue('total_mortuary_charge') || 0} KES</span>
-                        </PanelDetailRow>
-                        <PanelDetailRow>
-                          <span className="label">Currency</span>
-                          <span className="value">{getPanelValue('currency') || 'KES'}</span>
-                        </PanelDetailRow>
-                        <PanelDetailRow>
-                          <span className="label">Balance</span>
-                          <span className="value">{getPanelValue('balance') ?? 'N/A'}</span>
-                        </PanelDetailRow>
-                      </PanelSection>
-                    )}
-
-                    {selectedPanelTab === 'documents' && (
-                      <PanelSection>
-                        <PanelSectionHeading>Documents</PanelSectionHeading>
-                        <div style={{ color: '#4b5563', fontSize: '0.9rem' }}>
-                          {selectedDeceasedProfile?.documents?.length > 0
-                            ? `${selectedDeceasedProfile.documents.length} document${selectedDeceasedProfile.documents.length === 1 ? '' : 's'} available.`
-                            : 'No documents attached yet.'}
-                        </div>
-                      </PanelSection>
-                    )}
-
-                    {selectedPanelTab === 'next_of_kin' && (
-                      <PanelSection>
-                        <PanelSectionHeading>Next of Kin</PanelSectionHeading>
-                        {selectedDeceasedProfile?.next_of_kin?.length > 0 ? (
-                          selectedDeceasedProfile.next_of_kin.map((kin, index) => (
-                            <PanelDetailRow key={index}>
-                              <span className="label">{kin.name || `Contact ${index + 1}`}</span>
-                              <span className="value">{kin.phone || kin.relation || 'N/A'}</span>
-                            </PanelDetailRow>
-                          ))
-                        ) : (
-                          <div style={{ color: '#4b5563', fontSize: '0.9rem' }}>No next of kin details available.</div>
-                        )}
-                      </PanelSection>
-                    )}
-
-                    <PanelActionArea>
-                      <PanelActionButton primary onClick={handleViewMoreClick}>View More</PanelActionButton>
-                      <PanelActionButton onClick={closeProfilePanel}>Close</PanelActionButton>
-                    </PanelActionArea>
-                  </>
+                {!loading && allDeceasedRecords.length === 0 && (
+                  <CenteredContainer>
+                    <Users size={36} color={Colors.mediumGray} />
+                    <div>No deceased records found</div>
+                    <PrimaryButton primary onClick={handleNewRegistrationClick}><PlusCircle size={16} />Add First Record</PrimaryButton>
+                  </CenteredContainer>
                 )}
-              </PanelContent>
-            </SidePanel>
+              </>
+            )}
+          </div>
+
+          {modalOpen && selectedDeceased && (
+            <ModalOverlay onClick={closeProfileModal}>
+              <ModalContent onClick={(e) => e.stopPropagation()}>
+                <ModalHeader>
+                  <div>
+                    <ModalTitle>{selectedDeceased?.full_name || 'Deceased Profile'}</ModalTitle>
+                    <ModalSubtitle>
+                      Admission: {selectedDeceased?.admission_number || 'N/A'} • Ref: {selectedDeceased?.deceased_id || 'N/A'}
+                    </ModalSubtitle>
+                  </div>
+                  <CloseModalButton onClick={closeProfileModal} aria-label="Close modal">×</CloseModalButton>
+                </ModalHeader>
+
+                <ModalTabs>
+                  <ModalTab $active={selectedModalTab === 'overview'} onClick={() => handleModalTabChange('overview')}>
+                    Overview
+                  </ModalTab>
+                  <ModalTab $active={selectedModalTab === 'financials'} onClick={() => handleModalTabChange('financials')}>
+                    Financials
+                  </ModalTab>
+                  <ModalTab $active={selectedModalTab === 'documents'} onClick={() => handleModalTabChange('documents')}>
+                    Documents
+                  </ModalTab>
+                  <ModalTab $active={selectedModalTab === 'next_of_kin'} onClick={() => handleModalTabChange('next_of_kin')}>
+                    Next of Kin
+                  </ModalTab>
+                </ModalTabs>
+
+                <ModalBody>
+                  {modalLoading && (
+                    <CenteredContainer>
+                      <AnimatedLoader2 size={40} color={Colors.accentBlue} />
+                      <div>Loading profile...</div>
+                    </CenteredContainer>
+                  )}
+
+                  {!!modalError && <PanelError>{modalError}</PanelError>}
+
+                  {!modalLoading && !modalError && selectedDeceased && (
+                    <>
+                      {selectedModalTab === 'overview' && (
+                        <>
+                          <ModalSection>
+                            <ModalSectionTitle>
+                              <User size={18} />
+                              Profile Summary
+                            </ModalSectionTitle>
+                            <ModalDetailGrid>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Full Name</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('full_name') || 'Unknown'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Reference ID</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('deceased_id') || 'N/A'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Date of Death</ModalDetailLabel>
+                                <ModalDetailValue>
+                                  {getModalValue('date_of_death') ? new Date(getModalValue('date_of_death')).toLocaleDateString() : 'N/A'}
+                                </ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Date Admitted</ModalDetailLabel>
+                                <ModalDetailValue>
+                                  {getModalValue('date_admitted') ? new Date(getModalValue('date_admitted')).toLocaleDateString() : 'N/A'}
+                                </ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Status</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('status') || 'Unknown'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Gender</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('gender') || 'N/A'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Next of Kin</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('has_kin') ? 'Yes' : 'No'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Autopsy</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('has_autopsy') ? 'Performed' : 'Not performed'}</ModalDetailValue>
+                              </ModalDetailItem>
+                            </ModalDetailGrid>
+                          </ModalSection>
+
+                          <ModalSection>
+                            <ModalSectionTitle>
+                              <Info size={18} />
+                              Additional Information
+                            </ModalSectionTitle>
+                            <ModalDetailGrid>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Admission Number</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('admission_number') || 'N/A'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Year</ModalDetailLabel>
+                                <ModalDetailValue>
+                                  {getModalValue('created_at') ? new Date(getModalValue('created_at')).getFullYear() : 'N/A'}
+                                </ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Place of Death</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('place_of_death') || 'N/A'}</ModalDetailValue>
+                              </ModalDetailItem>
+                              <ModalDetailItem>
+                                <ModalDetailLabel>Cause of Death</ModalDetailLabel>
+                                <ModalDetailValue>{getModalValue('cause_of_death') || 'N/A'}</ModalDetailValue>
+                              </ModalDetailItem>
+                            </ModalDetailGrid>
+                          </ModalSection>
+                        </>
+                      )}
+
+                      {selectedModalTab === 'financials' && (
+                        <ModalSection>
+                          <ModalSectionTitle>
+                            <DollarSign size={18} />
+                            Financial Summary
+                          </ModalSectionTitle>
+                          <ModalDetailGrid>
+                            <ModalDetailItem>
+                              <ModalDetailLabel>Total Charges</ModalDetailLabel>
+                              <ModalDetailValue>{getModalValue('total_mortuary_charge') || 0} KES</ModalDetailValue>
+                            </ModalDetailItem>
+                            <ModalDetailItem>
+                              <ModalDetailLabel>Currency</ModalDetailLabel>
+                              <ModalDetailValue>{getModalValue('currency') || 'KES'}</ModalDetailValue>
+                            </ModalDetailItem>
+                            <ModalDetailItem>
+                              <ModalDetailLabel>Balance</ModalDetailLabel>
+                              <ModalDetailValue>{getModalValue('balance') ?? 'N/A'}</ModalDetailValue>
+                            </ModalDetailItem>
+                            <ModalDetailItem>
+                              <ModalDetailLabel>Total Payments</ModalDetailLabel>
+                              <ModalDetailValue>{getModalValue('total_payments') || 0} KES</ModalDetailValue>
+                            </ModalDetailItem>
+                          </ModalDetailGrid>
+                        </ModalSection>
+                      )}
+
+                      {selectedModalTab === 'documents' && (
+                        <ModalSection>
+                          <ModalSectionTitle>
+                            <FileText size={18} />
+                            Documents
+                          </ModalSectionTitle>
+                          <div style={{ color: '#4b5563', fontSize: '0.95rem' }}>
+                            {selectedDeceasedProfile?.documents?.length > 0
+                              ? `${selectedDeceasedProfile.documents.length} document${selectedDeceasedProfile.documents.length === 1 ? '' : 's'} available.`
+                              : 'No documents attached yet.'}
+                          </div>
+                        </ModalSection>
+                      )}
+
+                      {selectedModalTab === 'next_of_kin' && (
+                        <ModalSection>
+                          <ModalSectionTitle>
+                            <Users size={18} />
+                            Next of Kin
+                          </ModalSectionTitle>
+                          {selectedDeceasedProfile?.next_of_kin?.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              {selectedDeceasedProfile.next_of_kin.map((kin, index) => (
+                                <div key={index} style={{
+                                  padding: '0.75rem',
+                                  background: Colors.white,
+                                  borderRadius: '0.5rem',
+                                  border: `1px solid ${Colors.tableBorder}`
+                                }}>
+                                  <div style={{ fontWeight: 600, color: Colors.primaryDark, marginBottom: '0.25rem' }}>
+                                    {kin.name || `Contact ${index + 1}`}
+                                  </div>
+                                  <div style={{ fontSize: '0.85rem', color: Colors.darkGray }}>
+                                    {kin.phone && <div>Phone: {kin.phone}</div>}
+                                    {kin.relation && <div>Relation: {kin.relation}</div>}
+                                    {kin.email && <div>Email: {kin.email}</div>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ color: '#4b5563', fontSize: '0.95rem' }}>No next of kin details available.</div>
+                          )}
+                        </ModalSection>
+                      )}
+
+                      <ModalActions>
+                        <ModalButton $primary onClick={handleViewMoreClick}>
+                          <Eye size={16} />
+                          View Full Details
+                        </ModalButton>
+                        <ModalButton onClick={closeProfileModal}>Close</ModalButton>
+                      </ModalActions>
+                    </>
+                  )}
+                </ModalBody>
+              </ModalContent>
+            </ModalOverlay>
           )}
         </PageGrid>
 
