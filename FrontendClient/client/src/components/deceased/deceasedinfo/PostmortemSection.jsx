@@ -438,6 +438,20 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
         }
     }, [deceasedId]);
 
+    // Reset form when modal opens/closes
+    useEffect(() => {
+        if (!showRequestModal && !postmortemData) {
+            setFormData({
+                doctor_name: '',
+                examination_date: '',
+                findings: '',
+                cause_of_death: '',
+                pathologist_notes: '',
+                status: 'pending',
+            });
+        }
+    }, [showRequestModal, postmortemData]);
+
     const fetchPostmortemData = async () => {
         setIsLoading(true);
         try {

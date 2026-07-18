@@ -26,33 +26,44 @@ import { useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
-// Unified Color Palette (matching deceasedDetailPage.jsx)
-const Colors = {
-  cardBg: '#FFFFFF',
-  textPrimary: '#1F2937',
+// Professional color scheme matching flower bookings
+const COLORS = {
+  primary: '#0A2463',
+  primaryLight: '#1A3A7A',
+  white: '#FFFFFF',
+  bg: '#F5F7FA',
+  border: '#E8ECF0',
+  borderLight: '#F3F4F6',
+  text: '#1A1D24',
   textSecondary: '#6B7280',
-  borderColor: '#E5E7EB',
-  shadow: '0 4px 12px rgba(0,0,0,0.05)',
-  accentBlue: '#3b82f6',
-  primaryDark: '#0f172a',
-  dangerRed: '#dc2626',
-  successGreen: '#10b981',
-  buttonBg: '#3b82f6',
-  buttonHover: '#2563eb',
-  progressBg: '#f8fafc',
-  hoverGray: '#f1f5f9',
-  whatsappGreen: '#25D366',
-  warningOrange: '#f59e0b',
-  accentPurple: '#8b5cf6',
+  textMuted: '#9CA3AF',
+  success: '#10B981',
+  successLight: '#D1FAE5',
+  warning: '#F59E0B',
+  warningLight: '#FEF3C7',
+  danger: '#E74C3C',
+  dangerLight: '#FEE2E2',
+  info: '#3B82F6',
+  infoLight: '#DBEAFE',
+  accent: '#3B82F6',
+  accentHover: '#2563eb',
+  accentGlow: 'rgba(59, 130, 246, 0.1)',
+  radius: '14px',
+  radiusSm: '8px',
+  radiusXs: '6px',
+  shadowSm: '0 1px 4px rgba(0, 0, 0, 0.06)',
+  shadowMd: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
+  transition: 'all 0.2s ease',
 };
 
 // --- Styled Components ---
 const DispatchContainer = styled.div`
-  background-color: ${Colors.cardBg};
-  border-radius: 1rem;
+  background-color: ${COLORS.white};
+  border-radius: ${COLORS.radius};
   padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  border: 1px solid #f1f5f9;
+  box-shadow: ${COLORS.shadowSm};
+  border: 1px solid ${COLORS.border};
 `;
 
 const Header = styled.div`
@@ -66,15 +77,15 @@ const Header = styled.div`
 
 const Title = styled.h4`
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: ${Colors.primaryDark};
+  color: ${COLORS.text};
 
   svg {
-    color: ${Colors.accentBlue};
+    color: ${COLORS.accent};
     width: 18px;
     height: 18px;
   }
@@ -84,24 +95,26 @@ const StyledButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: ${COLORS.radiusSm};
+  font-weight: 600;
   cursor: pointer;
-  border: none;
-  background-color: ${Colors.buttonBg};
+  border: 2px solid ${COLORS.border};
+  background-color: ${COLORS.accent};
   color: white;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
+  transition: ${COLORS.transition};
+  font-size: 0.875rem;
+  min-height: 40px;
 
   &:hover {
-    background-color: ${Colors.buttonHover};
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    background-color: ${COLORS.accentHover};
+    transform: translateY(-2px);
+    box-shadow: ${COLORS.shadowMd};
+    border-color: transparent;
   }
 
   &:disabled {
-    background-color: ${Colors.textSecondary};
+    background-color: ${COLORS.textMuted};
     cursor: not-allowed;
     transform: none;
   }
@@ -112,37 +125,38 @@ const SendButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: ${COLORS.radiusSm};
   font-weight: 500;
   cursor: pointer;
   border: none;
-  background-color: ${Colors.accentBlue};
+  background-color: ${COLORS.accent};
   color: white;
-  transition: all 0.2s ease;
-  font-size: 0.8rem;
+  transition: ${COLORS.transition};
+  font-size: 0.875rem;
+  min-height: 36px;
 
   &:hover {
-    background-color: ${Colors.buttonHover};
+    background-color: ${COLORS.accentHover};
     transform: translateY(-1px);
   }
 
   &:disabled {
-    background-color: ${Colors.textSecondary};
+    background-color: ${COLORS.textMuted};
     cursor: not-allowed;
   }
 `;
 
 const TripCard = styled.div`
-  background: ${Colors.cardBg};
-  border: 1px solid ${Colors.borderColor};
-  border-radius: 0.75rem;
+  background: ${COLORS.white};
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusSm};
   padding: 1.25rem;
   margin-bottom: 1rem;
-  transition: all 0.2s ease;
+  transition: ${COLORS.transition};
 
   &:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    border-color: ${Colors.accentBlue}30;
+    box-shadow: ${COLORS.shadowMd};
+    border-color: ${COLORS.accent};
     transform: translateY(-2px);
   }
 `;
@@ -157,12 +171,12 @@ const TripHeader = styled.div`
 `;
 
 const TripLabel = styled.div`
-  background: ${Colors.primaryDark};
+  background: ${COLORS.primary};
   color: white;
-  padding: 0.3rem 1rem;
+  padding: 0.35rem 1rem;
   border-radius: 2rem;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -172,10 +186,10 @@ const DateBadge = styled.div`
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: ${Colors.textSecondary};
-  font-size: 0.8rem;
-  background: ${Colors.progressBg};
-  padding: 0.3rem 0.8rem;
+  color: ${COLORS.textSecondary};
+  font-size: 0.875rem;
+  background: ${COLORS.bg};
+  padding: 0.35rem 0.875rem;
   border-radius: 2rem;
 `;
 
@@ -185,34 +199,34 @@ const StatusBadge = styled.div`
   gap: 0.3rem;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.3rem 0.8rem;
+  padding: 0.35rem 0.875rem;
   border-radius: 2rem;
   background: ${(props) => {
     switch (props.status) {
       case 'Assigned':
-        return '#DBEAFE';
+        return COLORS.infoLight;
       case 'In Transit':
-        return '#FEF3C7';
+        return COLORS.warningLight;
       case 'Completed':
-        return '#D1FAE5';
+        return COLORS.successLight;
       case 'Cancelled':
-        return '#FEE2E2';
+        return COLORS.dangerLight;
       default:
-        return Colors.progressBg;
+        return COLORS.borderLight;
     }
   }};
   color: ${(props) => {
     switch (props.status) {
       case 'Assigned':
-        return '#1E40AF';
+        return COLORS.info;
       case 'In Transit':
-        return '#92400E';
+        return COLORS.warning;
       case 'Completed':
-        return '#059669';
+        return COLORS.success;
       case 'Cancelled':
-        return '#DC2626';
+        return COLORS.danger;
       default:
-        return Colors.textSecondary;
+        return COLORS.textSecondary;
     }
   }};
 `;
@@ -226,11 +240,11 @@ const VehicleInfo = styled.div`
 `;
 
 const VehicleTag = styled.span`
-  background: ${Colors.progressBg};
-  padding: 0.2rem 0.6rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  color: ${Colors.textSecondary};
+  background: ${COLORS.bg};
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  color: ${COLORS.textSecondary};
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -240,22 +254,22 @@ const DriverInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
-  color: ${Colors.textPrimary};
+  font-size: 0.875rem;
+  color: ${COLORS.text};
   margin: 0.5rem 0;
-  padding: 0.5rem;
-  background: #dbeafe20;
-  border-radius: 0.5rem;
-  border-left: 3px solid ${Colors.accentBlue};
+  padding: 0.75rem;
+  background: ${COLORS.infoLight};
+  border-radius: ${COLORS.radiusSm};
+  border-left: 3px solid ${COLORS.accent};
 `;
 
 const RouteInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: ${Colors.progressBg};
+  background: ${COLORS.bg};
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: ${COLORS.radiusSm};
   margin: 1rem 0;
   flex-wrap: wrap;
 `;
@@ -264,12 +278,12 @@ const Location = styled.div`
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.85rem;
-  color: ${Colors.textPrimary};
+  font-size: 0.875rem;
+  color: ${COLORS.text};
 `;
 
 const Arrow = styled.span`
-  color: ${Colors.textSecondary};
+  color: ${COLORS.textSecondary};
   font-size: 1rem;
 `;
 
@@ -281,23 +295,23 @@ const StatsRow = styled.div`
 `;
 
 const Stat = styled.div`
-  font-size: 0.85rem;
-  color: ${Colors.textSecondary};
+  font-size: 0.875rem;
+  color: ${COLORS.textSecondary};
 
   strong {
-    color: ${Colors.textPrimary};
+    color: ${COLORS.text};
     margin-right: 0.25rem;
     font-weight: 600;
   }
 `;
 
 const FuelEstimate = styled.div`
-  background: #10b98110;
+  background: ${COLORS.successLight};
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: ${COLORS.radiusSm};
   margin: 0.75rem 0;
-  font-size: 0.8rem;
-  color: #059669;
+  font-size: 0.875rem;
+  color: ${COLORS.success};
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -309,7 +323,7 @@ const ActionButtons = styled.div`
   justify-content: flex-end;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid ${Colors.borderColor};
+  border-top: 1px solid ${COLORS.border};
   flex-wrap: wrap;
 `;
 
@@ -317,18 +331,20 @@ const ActionButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid ${Colors.borderColor};
-  border-radius: 0.5rem;
-  background: white;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusXs};
+  background: ${COLORS.white};
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: ${COLORS.transition};
+  min-height: 36px;
 
   &:hover {
-    background: ${(props) => (props.danger ? Colors.dangerRed : Colors.accentBlue)};
+    background: ${(props) => (props.danger ? COLORS.danger : COLORS.accent)};
     color: white;
-    border-color: ${(props) => (props.danger ? Colors.dangerRed : Colors.accentBlue)};
+    border-color: ${(props) => (props.danger ? COLORS.danger : COLORS.accent)};
   }
 `;
 
@@ -344,23 +360,26 @@ const ModalOverlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 2rem;
   backdrop-filter: blur(4px);
 `;
 
 const ModalContent = styled.div`
-  background: white;
+  background: ${COLORS.white};
   padding: 2rem;
-  border-radius: 1rem;
-  width: 90%;
+  border-radius: ${COLORS.radius};
+  width: 100%;
   max-width: 950px;
   max-height: 90vh;
   overflow-y: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
+  box-shadow: ${COLORS.shadowLg};
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    padding: 1.5rem;
   }
 `;
 
@@ -371,67 +390,79 @@ const ModalHeader = styled.div`
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid ${Colors.borderColor};
+  border-bottom: 1px solid ${COLORS.border};
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: ${Colors.textSecondary};
+  color: ${COLORS.textSecondary};
+  padding: 0.5rem;
+  border-radius: ${COLORS.radiusXs};
+  transition: ${COLORS.transition};
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
-    color: ${Colors.dangerRed};
+    background: ${COLORS.border};
+    color: ${COLORS.danger};
   }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 `;
 
 const Label = styled.label`
   display: block;
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-  font-size: 0.85rem;
-  color: ${Colors.textPrimary};
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: ${COLORS.text};
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid ${Colors.borderColor};
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusSm};
+  font-size: 0.875rem;
+  color: ${COLORS.text};
+  transition: ${COLORS.transition};
+  background: ${COLORS.white};
 
   &:focus {
     outline: none;
-    border-color: ${Colors.accentBlue};
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: ${COLORS.accent};
+    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
   }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid ${Colors.borderColor};
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  background: white;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusSm};
+  font-size: 0.875rem;
+  color: ${COLORS.text};
+  background: ${COLORS.white};
+  transition: ${COLORS.transition};
 
   &:focus {
     outline: none;
-    border-color: ${Colors.accentBlue};
+    border-color: ${COLORS.accent};
+    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
   }
 `;
 
 const MapContainer = styled.div`
   height: 250px;
   width: 100%;
-  border-radius: 0.5rem;
+  border-radius: ${COLORS.radiusSm};
   overflow: hidden;
-  border: 1px solid ${Colors.borderColor};
+  border: 1px solid ${COLORS.border};
   margin-bottom: 1rem;
   position: relative;
 
@@ -447,23 +478,24 @@ const SearchResults = styled.div`
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid ${Colors.borderColor};
-  border-radius: 0.5rem;
+  background: ${COLORS.white};
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusSm};
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: ${COLORS.shadowMd};
 `;
 
 const SearchResultItem = styled.div`
-  padding: 0.6rem 0.75rem;
+  padding: 0.75rem;
   cursor: pointer;
-  border-bottom: 1px solid ${Colors.borderColor};
-  font-size: 0.85rem;
+  border-bottom: 1px solid ${COLORS.border};
+  font-size: 0.875rem;
+  transition: ${COLORS.transition};
 
   &:hover {
-    background: ${Colors.hoverGray};
+    background: ${COLORS.bg};
   }
 
   &:last-child {
@@ -472,20 +504,21 @@ const SearchResultItem = styled.div`
 `;
 
 const SummaryBox = styled.div`
-  background: ${Colors.progressBg};
+  background: ${COLORS.bg};
   padding: 1rem;
-  border-radius: 0.75rem;
+  border-radius: ${COLORS.radiusSm};
   margin: 1rem 0;
+  border: 1px solid ${COLORS.border};
 
   p {
     margin: 0.5rem 0;
     display: flex;
     justify-content: space-between;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
   }
 
   strong {
-    color: ${Colors.accentBlue};
+    color: ${COLORS.accent};
   }
 `;
 
@@ -497,16 +530,23 @@ const RateInput = styled.div`
 
   input {
     flex: 1;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid ${Colors.borderColor};
-    border-radius: 0.5rem;
-    font-size: 0.9rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid ${COLORS.border};
+    border-radius: ${COLORS.radiusSm};
+    font-size: 0.875rem;
+    transition: ${COLORS.transition};
+
+    &:focus {
+      outline: none;
+      border-color: ${COLORS.accent};
+      box-shadow: 0 0 0 3px ${COLORS.accentGlow};
+    }
   }
 
   span {
-    color: ${Colors.textSecondary};
+    color: ${COLORS.textSecondary};
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
   }
 `;
 
@@ -515,11 +555,11 @@ const RouteStep = styled.div`
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.4rem 0;
-  font-size: 0.8rem;
-  color: ${Colors.textSecondary};
+  font-size: 0.875rem;
+  color: ${COLORS.textSecondary};
 
   .step-number {
-    background: ${Colors.accentBlue};
+    background: ${COLORS.accent};
     color: white;
     width: 20px;
     height: 20px;
@@ -527,7 +567,7 @@ const RouteStep = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     flex-shrink: 0;
   }
 
@@ -1190,7 +1230,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
           {availableVehicles.length > 0 && (
             <StyledButton
               onClick={autoAssignVehicle}
-              style={{ backgroundColor: Colors.warningOrange }}
+              style={{ backgroundColor: COLORS.warning }}
             >
               <Navigation size={14} /> Auto-Assign
             </StyledButton>
@@ -1212,18 +1252,19 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
             padding: '0.75rem',
             marginBottom: '1rem',
             background: message.includes('Error') || message.includes('❌')
-              ? '#FEE2E2'
+              ? COLORS.dangerLight
               : message.includes('✅')
-                ? '#D1FAE5'
-                : '#DBEAFE',
+                ? COLORS.successLight
+                : COLORS.infoLight,
             color: message.includes('Error') || message.includes('❌')
-              ? '#DC2626'
+              ? COLORS.danger
               : message.includes('✅')
-                ? '#059669'
-                : '#1E40AF',
-            borderRadius: '0.5rem',
-            fontSize: '0.85rem',
+                ? COLORS.success
+                : COLORS.info,
+            borderRadius: COLORS.radiusSm,
+            fontSize: '0.875rem',
             textAlign: 'center',
+            fontWeight: '500',
           }}
         >
           {message}
@@ -1231,21 +1272,19 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
       )}
 
       {trips.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: Colors.textSecondary }}>
+        <div style={{ textAlign: 'center', padding: '2rem', color: COLORS.textSecondary }}>
           {isLoadingTrips ? (
             <>
               <Loader2 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} className="animate-spin" />
               <p style={{ margin: 0, fontSize: '0.9rem' }}>Loading dispatch trips...</p>
-            </>
-          ) : (
+            </>) : (
             <>
               <Truck size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
               <p style={{ margin: 0, fontSize: '0.9rem' }}>No dispatch trips added yet</p>
-              <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: Colors.textSecondary }}>
+              <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: COLORS.textSecondary }}>
                 Click "New Dispatch" to create your first trip
               </p>
-            </>
-          )}
+            </>)}
         </div>
       ) : (
         trips.map((trip) => {
@@ -1270,7 +1309,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
               </TripHeader>
 
               <VehicleInfo>
-                <Car size={16} color={Colors.accentBlue} />
+                <Car size={16} color={COLORS.accent} />
                 <strong style={{ fontSize: '0.9rem' }}>{trip.vehicle_plate}</strong>
                 {trip.vehicle_name && (
                   <VehicleTag>
@@ -1286,10 +1325,10 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
               {trip.driver_name && (
                 <DriverInfo>
-                  <Users size={16} color={Colors.accentBlue} />
+                  <Users size={16} color={COLORS.accent} />
                   <div>
                     <div style={{ fontWeight: 600 }}>{trip.driver_name}</div>
-                    <div style={{ fontSize: '0.75rem', color: Colors.textSecondary }}>
+                    <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
                       📞 {trip.driver_contact || trip.driver_phone}
                     </div>
                   </div>
@@ -1298,12 +1337,12 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
               <RouteInfo>
                 <Location>
-                  <MapPin size={14} color="#10B981" />
+                  <MapPin size={14} color={COLORS.success} />
                   <span style={{ fontSize: '0.85rem' }}>{trip.origin_address}</span>
                 </Location>
                 <Arrow>→</Arrow>
                 <Location>
-                  <MapPin size={14} color="#EF4444" />
+                  <MapPin size={14} color={COLORS.danger} />
                   <span style={{ fontSize: '0.85rem' }}>{trip.destination_address}</span>
                 </Location>
               </RouteInfo>
@@ -1349,7 +1388,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                   <DollarSign size={14} style={{ display: 'inline', marginRight: '2px' }} />
                   {displayPrice.toLocaleString()}
                   <span
-                    style={{ color: Colors.textSecondary, marginLeft: '4px', fontSize: '0.75rem' }}
+                    style={{ color: COLORS.textSecondary, marginLeft: '4px', fontSize: '0.75rem' }}
                   >
                     {trip.negotiated_price ? '(final)' : '(est.)'}
                   </span>
@@ -1472,7 +1511,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
             </FormGroup>
 
             {/* Driver Information */}
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#dbeafe10', borderRadius: '0.5rem', border: `1px solid ${Colors.accentBlue}30` }}>
+            <div style={{ marginTop: '1.5rem', padding: '1rem', background: `${COLORS.infoLight}20`, borderRadius: COLORS.radiusSm, border: `1px solid ${COLORS.info}30` }}>
               <Label style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Users size={14} /> Driver Information
               </Label>
@@ -1529,7 +1568,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                   {searchResults.map((result, idx) => (
                     <SearchResultItem key={idx} onClick={() => handleDestinationSelect(result)}>
                       <div style={{ fontWeight: 500 }}>{result.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: Colors.textSecondary }}>
+                      <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
                         {result.address}
                       </div>
                     </SearchResultItem>
@@ -1547,7 +1586,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                 placeholder="Enter agreed price"
               />
               <small
-                style={{ color: Colors.textSecondary, marginTop: '0.25rem', display: 'block', fontSize: '0.75rem' }}
+                style={{ color: COLORS.textSecondary, marginTop: '0.25rem', display: 'block', fontSize: '0.75rem' }}
               >
                 This will override the calculated estimate
               </small>
@@ -1598,14 +1637,14 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                     </p>
                     <p
                       style={{
-                        borderTop: `1px solid ${Colors.borderColor}`,
+                        borderTop: `1px solid ${COLORS.border}`,
                         marginTop: '0.5rem',
                         paddingTop: '0.5rem',
                         fontWeight: 'bold',
                       }}
                     >
                       <span>💰 Total estimate:</span>
-                      <strong style={{ color: Colors.successGreen }}>KES {totalCost}</strong>
+                      <strong style={{ color: COLORS.success }}>KES {totalCost}</strong>
                     </p>
                   </>
                 )}
@@ -1614,9 +1653,9 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
 
             {routeSteps.length > 0 && (
               <div style={{
-                background: Colors.progressBg,
+                background: COLORS.bg,
                 padding: '1rem',
-                borderRadius: '0.5rem',
+                borderRadius: COLORS.radiusSm,
                 marginBottom: '1rem',
                 maxHeight: '150px',
                 overflowY: 'auto',
@@ -1652,15 +1691,13 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
               {isLoading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" /> Processing...
-                </>
-              ) : (
+                </>) : (
                 <>
                   <CheckCircle size={16} /> {editingId ? 'Update' : 'Create'} Dispatch
-                </>
-              )}
+                </>)}
             </StyledButton>
 
-            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#fef3c720', borderRadius: '0.5rem', fontSize: '0.75rem', color: Colors.textSecondary, border: `1px solid ${Colors.warningOrange}30` }}>
+            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: `${COLORS.warningLight}20`, borderRadius: COLORS.radiusSm, fontSize: '0.75rem', color: COLORS.textSecondary, border: `1px solid ${COLORS.warning}30` }}>
               <AlertCircle size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
               Routes calculated using OpenStreetMap & OSRM (free, open-source)
             </div>
