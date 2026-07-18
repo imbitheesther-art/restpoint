@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
 import ReactSignatureCanvas from 'react-signature-canvas';
 import './SignaturePad.css';
 
@@ -22,35 +22,6 @@ const Icons = {
    COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 
-/**
- * ReusableSignaturePad
- * 
- * Ref API:
- *   .clear()                              — Wipe canvas and history
- *   .isEmpty()                            — Boolean
- *   .toDataURL(mime?, includeBg?)         — Full canvas data URL
- *   .toBlob(callback, mime?, quality?)    — Canvas blob
- *   .getTrimmedCanvas()                   — Canvas element cropped to signature
- *   .fromDataURL(dataURL, options?)       — Load an existing signature
- *   .undo()                               — Remove last stroke
- * 
- * Props:
- *   penColor           — Stroke color (default: '#1c1917')
- *   backgroundColor    — Canvas background (default: 'transparent')
- *   placeholder        — Hint text when empty (default: 'Sign here')
- *   disabled           — Lock drawing (default: false)
- *   showControls       — Show bottom toolbar (default: true)
- *   showUndo           — Show undo button (default: true)
- *   showClear          — Show clear button (default: true)
- *   showSave           — Show save/download button (default: true)
- *   onSave             — (dataURL: string) => void
- *   onChange           — (dataURL: string | null) => void
- *   canvasProps        — Extra props passed to react-signature-canvas
- *   className          — Wrapper class
- *   style              — Wrapper style
- */
-
-
 const ReusableSignaturePad = forwardRef(({
   penColor = '#1c1917',
   backgroundColor = 'transparent',
@@ -66,11 +37,60 @@ const ReusableSignaturePad = forwardRef(({
   className = '',
   style = {},
 }, ref) => {
+  const containerRef = useRef(null);
   const sigCanvas = useRef(null);
-  const historyRef = useRef([]); // Stores data URLs for undo functionality
+  const historyRef = useRef([]);
   const [hasContent, setHasContent] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 600, height: 280 });
 
-  // Expose API to parent via ref
+  // Dynamically measure container and set canvas to EXACT pixel size
+  // This prevents the coordinate mismatch that causes signatures to shift
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const w = Math.floor(rect.width);
+      const h = 280; // Generous height for comfortable signing
+      if (w > 0 && (w !== canvasSize.width || h !== canvasSize.height)) {
+        // Save existing signature before resize
+        let existingData = null;
+        if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+          try { existingData = sigCanvas.current.toDataURL(); } catch (e) { /* ignore */ }
+        }
+        setCanvasSize({ width: w, height: h });
+        // Restore after React re-renders with new size
+        if (existingData) {
+          requestAnimationFrame(() => {
+            try {
+              sigCanvas.current?.fromDataURL(existingData, {
+                width: w,
+                height: h,
+                ratio: 1,
+              });
+            } catch (e) { /* ignore */ }
+          });
+        }
+      }
+    };
+
+    measure();
+
+    // Use ResizeObserver for real-time container size tracking
+    let observer = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => measure());
+      observer.observe(containerRef.current);
+    }
+
+    // Also listen for window resize as fallback
+    window.addEventListener('resize', measure);
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      if (observer) observer.disconnect();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useImperativeHandle(ref, () => ({
     clear: handleClear,
     isEmpty: () => sigCanvas.current?.isEmpty() ?? true,
@@ -84,7 +104,6 @@ const ReusableSignaturePad = forwardRef(({
     undo: handleUndo,
   }));
 
-  // Save state BEFORE a new stroke begins
   const handleBegin = useCallback(() => {
     if (disabled) return;
     try {
@@ -97,7 +116,6 @@ const ReusableSignaturePad = forwardRef(({
     }
   }, [disabled]);
 
-  // Handle stroke completion
   const handleEnd = useCallback(() => {
     if (disabled) return;
     setHasContent(true);
@@ -111,7 +129,6 @@ const ReusableSignaturePad = forwardRef(({
     }
   }, [disabled, onChange]);
 
-  // Clear canvas and reset
   const handleClear = useCallback(() => {
     sigCanvas.current?.clear();
     historyRef.current = [];
@@ -119,7 +136,6 @@ const ReusableSignaturePad = forwardRef(({
     if (onChange) onChange(null);
   }, [onChange]);
 
-  // Undo last stroke
   const handleUndo = useCallback(() => {
     if (historyRef.current.length === 0) {
       handleClear();
@@ -129,9 +145,9 @@ const ReusableSignaturePad = forwardRef(({
     sigCanvas.current?.fromDataURL(prevState, {
       width: sigCanvas.current.getCanvas().width,
       height: sigCanvas.current.getCanvas().height,
+      ratio: 1,
     });
-    
-    // Check if the restored state is actually empty
+
     if (sigCanvas.current?.isEmpty()) {
       setHasContent(false);
       if (onChange) onChange(null);
@@ -140,18 +156,15 @@ const ReusableSignaturePad = forwardRef(({
     }
   }, [handleClear, onChange]);
 
-  // Save (trims whitespace around signature)
   const handleSave = useCallback(() => {
     if (!sigCanvas.current || sigCanvas.current.isEmpty()) return;
-    
+
     try {
-      // getTrimmedCanvas() crops out the empty white/transparent space
       const trimmedCanvas = sigCanvas.current.getTrimmedCanvas();
       const trimmedDataUrl = trimmedCanvas.toDataURL('image/png');
-      
+
       if (onSave) onSave(trimmedDataUrl);
 
-      // Auto-download if no onSave is provided (convenience feature)
       if (!onSave) {
         const link = document.createElement('a');
         link.download = `signature_${Date.now()}.png`;
@@ -164,26 +177,25 @@ const ReusableSignaturePad = forwardRef(({
   }, [onSave]);
 
   return (
-    <div 
+    <div
+      ref={containerRef}
       className={`sp-wrapper ${disabled ? 'sp-disabled' : ''} ${className}`}
       style={style}
     >
-      {/* Canvas Area */}
+      {/* Canvas Area — NO CSS scaling, canvas pixels = display pixels */}
       <div className="sp-canvas-container">
-        {/* Placeholder Text */}
         {!hasContent && (
           <div className="sp-placeholder">
             {Icons.pen}
             <span>{placeholder}</span>
           </div>
         )}
-        
-        {/* Signature Canvas */}
+
         <ReactSignatureCanvas
           ref={sigCanvas}
           canvasProps={{
-            width: 600,
-            height: 200,
+            width: canvasSize.width,
+            height: canvasSize.height,
             className: 'sp-canvas',
             ...canvasProps,
           }}
@@ -194,17 +206,17 @@ const ReusableSignaturePad = forwardRef(({
         />
       </div>
 
-      {/* Signature Line (Visual anchor) */}
+      {/* Signature baseline */}
       <div className="sp-line" />
 
       {/* Toolbar */}
       {showControls && (
         <div className="sp-controls">
           {showUndo && (
-            <button 
-              type="button" 
-              className="sp-btn" 
-              onClick={handleUndo} 
+            <button
+              type="button"
+              className="sp-btn"
+              onClick={handleUndo}
               disabled={!hasContent}
               title="Undo last stroke"
             >
@@ -212,10 +224,10 @@ const ReusableSignaturePad = forwardRef(({
             </button>
           )}
           {showClear && (
-            <button 
-              type="button" 
-              className="sp-btn sp-btn-danger" 
-              onClick={handleClear} 
+            <button
+              type="button"
+              className="sp-btn sp-btn-danger"
+              onClick={handleClear}
               disabled={!hasContent}
               title="Clear signature"
             >
@@ -224,10 +236,10 @@ const ReusableSignaturePad = forwardRef(({
           )}
           <div style={{ flex: 1 }} />
           {showSave && (
-            <button 
-              type="button" 
-              className="sp-btn sp-btn-primary" 
-              onClick={handleSave} 
+            <button
+              type="button"
+              className="sp-btn sp-btn-primary"
+              onClick={handleSave}
               disabled={!hasContent}
               title="Save signature"
             >

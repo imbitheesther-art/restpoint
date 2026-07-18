@@ -41,6 +41,7 @@ const IconPaths = {
   clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
   pin: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></>,
   alert: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
+  road: <><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></>,
 };
 const I = (name, size) => <Ic p={IconPaths[name]} s={size} />;
 
@@ -258,6 +259,55 @@ const ReusableCalendar = ({
     return activeFilter === key;
   };
 
+  /* Get items for current filter period (week/month) when no specific date selected */
+  const getFilterPeriodItems = useCallback(() => {
+    if (activeFilter === 'thisWeek' || activeFilter === 'nextWeek') {
+      const now = new Date();
+      const dow = now.getDay();
+      let monday;
+      if (activeFilter === 'thisWeek') {
+        monday = new Date(now);
+        monday.setDate(now.getDate() - ((dow + 6) % 7));
+      } else {
+        monday = new Date(now);
+        monday.setDate(now.getDate() + (7 - ((dow + 6) % 7)));
+      }
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const items = [];
+      for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate() + 1)) {
+        const ds = toDateString(d);
+        const dayItems = itemsByDate[ds] || [];
+        dayItems.forEach(it => items.push(it));
+      }
+      return items;
+    }
+    if (activeFilter === 'thisMonth' || activeFilter === 'nextMonth') {
+      let mo = viewMonth, yr = viewYear;
+      if (activeFilter === 'nextMonth') {
+        mo = viewMonth === 11 ? 0 : viewMonth + 1;
+        yr = viewMonth === 11 ? viewYear + 1 : viewYear;
+      }
+      const dim = new Date(yr, mo + 1, 0).getDate();
+      const items = [];
+      for (let d = 1; d <= dim; d++) {
+        const ds = `${yr}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayItems = itemsByDate[ds] || [];
+        dayItems.forEach(it => items.push(it));
+      }
+      return items;
+    }
+    if (activeFilter === 'today' || activeFilter === 'tomorrow') {
+      const now = new Date();
+      const ds = activeFilter === 'today' ? toDateString(now) : toDateString(new Date(now.getTime() + 86400000));
+      return itemsByDate[ds] || [];
+    }
+    return null;
+  }, [activeFilter, viewMonth, viewYear, itemsByDate]);
+
+  const filterPeriodItems = useMemo(() => getFilterPeriodItems(), [getFilterPeriodItems]);
+  const showFilterView = activeFilter && !selectedDate && filterPeriodItems !== null;
+
   const selItems = selectedDate
     ? [...(itemsByDate[selectedDate] || [])].sort(
         (a, b) => {
@@ -283,14 +333,27 @@ const ReusableCalendar = ({
     const amount = getItemAmount ? getItemAmount(item) : null;
     const status = getItemStatus ? getItemStatus(item) : null;
     const urgent = getIsUrgent ? getIsUrgent(item) : false;
+    const statusColor = getStatusColor ? getStatusColor(item) : null;
 
     return (
-      <div key={item[idKey] ?? idx} className="rc-day-card" onClick={() => onItemClick?.(item)}>
-        {img && <img src={img} alt="" className="rc-day-card-img" loading="lazy" />}
+      <div 
+        key={item[idKey] ?? idx} 
+        className="rc-day-card" 
+        onClick={() => onItemClick?.(item)}
+        style={statusColor ? { borderLeft: `3px solid ${statusColor}` } : undefined}
+      >
+        <div style={{
+          width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+          background: statusColor ? `${statusColor}22` : '#f1f5f9',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: statusColor || '#64748b', border: `2px solid ${statusColor || '#e2e8f0'}`
+        }}>
+          {I('road', 20)}
+        </div>
         <div className="rc-day-card-body">
           <div className="rc-day-card-top">
             <span className="rc-day-card-title">{title}</span>
-            {urgent && <span className="rc-urgent-tag">Urgent</span>}
+            {urgent && <span className="rc-urgent-tag" style={statusColor ? { background: `linear-gradient(135deg, ${statusColor}22 0%, ${statusColor}44 100%)`, color: statusColor, borderColor: `${statusColor}88` } : undefined}>Urgent</span>}
           </div>
           {subtitle && <div className="rc-day-card-sub">{subtitle}</div>}
           {meta && <div className="rc-day-card-meta">{meta}</div>}
@@ -369,16 +432,19 @@ const ReusableCalendar = ({
         {/* Calendar grid — explicit CSS Grid 7 cols */}
         <div className="rc-grid">
           {cells.map((c, i) => (
-            <div
-              key={i}
-              className={[
-                'rc-cell',
-                c.other && 'rc-cell-other',
-                c.isToday && 'rc-cell-today',
-                c.isSelected && 'rc-cell-sel',
-                c.count > 0 && !c.other && 'rc-cell-has',
-                c.isWeekend && !c.other && 'rc-cell-we',
-              ].filter(Boolean).join(' ')}
+              <div
+                key={i}
+                className={[
+                  'rc-cell',
+                  c.other && 'rc-cell-other',
+                  c.isToday && 'rc-cell-today',
+                  c.isSelected && 'rc-cell-sel',
+                  c.count > 0 && !c.other && 'rc-cell-has',
+                  c.count >= 2 && !c.other && 'rc-cell-has-2',
+                  c.count >= 5 && !c.other && 'rc-cell-has-5',
+                  c.count >= 10 && !c.other && 'rc-cell-has-10',
+                  c.isWeekend && !c.other && 'rc-cell-we',
+                ].filter(Boolean).join(' ')}
               onClick={() => setSelectedDate(c.ds)}
               role="button"
               tabIndex={0}
@@ -409,9 +475,41 @@ const ReusableCalendar = ({
         </div>
       </div>
 
-      {/* ── Right: Day Detail Panel ── */}
+      {/* ── Right: Day Detail / Filter Period Panel ── */}
       <div className="rc-right">
-        {selectedDate ? (
+        {showFilterView ? (
+          <>
+            <div className="rc-day-hdr">
+              <div className="rc-day-hdr-text">
+                <h3 className="rc-day-title">
+                  {activeFilter === 'thisWeek' && 'This Week'}
+                  {activeFilter === 'nextWeek' && 'Next Week'}
+                  {activeFilter === 'thisMonth' && 'This Month'}
+                  {activeFilter === 'nextMonth' && 'Next Month'}
+                  {activeFilter === 'today' && 'Today'}
+                  {activeFilter === 'tomorrow' && 'Tomorrow'}
+                </h3>
+                <p className="rc-day-sub">
+                  {filterPeriodItems.length} {filterPeriodItems.length === 1 ? 'booking' : 'bookings'}
+                </p>
+              </div>
+            </div>
+            {filterPeriodItems.length === 0 ? (
+              <div className="rc-day-empty">
+                <span className="rc-day-empty-icon">{I('calendar', 28)}</span>
+                <p>No bookings for this period</p>
+              </div>
+            ) : (
+              <div className="rc-day-list">
+                {[...filterPeriodItems].sort((a, b) => {
+                  const dA = a[dateKey] || '';
+                  const dB = b[dateKey] || '';
+                  return dA.localeCompare(dB);
+                }).map((item, idx) => renderItem(item, idx))}
+              </div>
+            )}
+          </>
+        ) : selectedDate ? (
           <>
             <div className="rc-day-hdr">
               <div className="rc-day-hdr-text">

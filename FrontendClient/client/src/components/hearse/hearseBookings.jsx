@@ -3,6 +3,7 @@ import './hearseBookings.css';
 import { useSocket } from '../../utils/context/socketContext';
 import env from '../../utils/config/env';
 import ReusableCalendar from '../../utils/calender/calender';
+import useAuthStore from '../../utils/store/useAuthStore';
 
 // Use the API gateway URL with /api/v1/restpoint prefix for all hearse service calls
 // The gateway strips /api/v1/restpoint and routes to the hearse service
@@ -29,7 +30,23 @@ const formatDateStr = (d) => {
 };
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'N/A';
 const fmtDateOnly = (d) => d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'N/A';
-const genId = (id) => id ? (id.toString().startsWith('BK-')? id : `BK-${String(id).padStart(4,'0')}`) : 'N/A';
+const genId = (id, plateNumber) => {
+  if (!id) return 'N/A';
+  const idStr = id.toString();
+  if (idStr.startsWith('BK-')) return idStr;
+  
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+  let baseId;
+  
+  // If plate number exists, use it; otherwise use random number
+  if (plateNumber) {
+    baseId = plateNumber.replace(/[^A-Z0-9]/gi, '').slice(0, 6); // Clean and limit plate number
+  } else {
+    baseId = Math.floor(1000 + Math.random() * 9000).toString();
+  }
+  
+  return `BK-${baseId}${timestamp}`;
+};
 
 const getTenantSlug = () => localStorage.getItem('tenantSlug')||localStorage.getItem('tenant_slug')||'default';
 const getAuthHeaders = () => {
@@ -130,6 +147,7 @@ const HearseBookings = () => {
   const [prefillDate, setPrefillDate] = useState('');
   const [showDashboard, setShowDashboard] = useState(true);
   const { socket } = useSocket();
+  const { user } = useAuthStore();
 
   const [newForm, setNewForm] = useState({
     hearse_id:'', client_name:'', client_phone:'', destination:'', booking_date:'', branch_id:''
@@ -440,7 +458,7 @@ const HearseBookings = () => {
                   <tbody>
                     {pageData.map((b) => (
                       <tr key={b.booking_id||b.id} onClick={() => openDrawer(b)}>
-                        <td><span className="booking-id">{b.booking_code || genId(b.booking_id)}</span></td>
+                        <td><span className="booking-id">{b.booking_code || genId(b.booking_id, b.plate_number || b.number_plate)}</span></td>
                         <td>
                           <div className="client-name">{b.client_name}</div>
                           {b.client_phone && <div style={{fontSize:'0.72rem',color:'var(--htext-muted)',marginTop:'0.15rem'}}>{b.client_phone}</div>}
@@ -531,7 +549,7 @@ const HearseBookings = () => {
           <>
             <div className="fb-drawer-header">
               <div>
-                <h2 className="fb-drawer-title">{selectedBooking.booking_code || genId(selectedBooking.booking_id)}</h2>
+                                <h2 className="fb-drawer-title">{selectedBooking.booking_code || genId(selectedBooking.booking_id, selectedBooking.plate_number || selectedBooking.number_plate)}</h2>
                 <p className="fb-drawer-subtitle"><StatusBadge status={selectedBooking.status} /></p>
               </div>
               <button className="fb-icon-btn" onClick={closeDrawer}>{Icons.x}</button>
@@ -557,11 +575,11 @@ const HearseBookings = () => {
                 <DetailField label="Client">{selectedBooking.client_name}</DetailField>
                 <DetailField label="Phone">{selectedBooking.client_phone || '—'}</DetailField>
                 <DetailField label="Destination">{selectedBooking.destination || '—'}</DetailField>
-                <DetailField label="Branch">{selectedBooking.branch_name || selectedBooking.branch_code || '—'}</DetailField>
+                <DetailField label="Branch">{selectedBooking.branch_name || branchOptions.find(b => String(b.branch_id) === String(selectedBooking.branch_id))?.branch_name || selectedBooking.branch_code || '—'}</DetailField>
                 <DetailField label="Date">{fmtDateOnly(selectedBooking.booking_date||selectedBooking.estimated_departure_time)}</DetailField>
                 <DetailField label="Status"><StatusBadge status={selectedBooking.status} /></DetailField>
                 {selectedBooking.end_date && <DetailField label="End Date">{fmtDateOnly(selectedBooking.end_date)}</DetailField>}
-                <DetailField label="Booked By">{selectedBooking.booked_by_name||selectedBooking.booked_by||'—'}</DetailField>
+                <DetailField label="Booked By">{selectedBooking.booked_by_name || selectedBooking.booked_by || user?.email || '—'}</DetailField>
                 <DetailField label="Created">{fmtDate(selectedBooking.created_at)}</DetailField>
                 {selectedBooking.updated_at && <DetailField label="Updated">{fmtDate(selectedBooking.updated_at)}</DetailField>}
               </div>
