@@ -252,48 +252,217 @@ const PageGrid = styled.div`
   }
 `;
 
-const ModalOverlay = styled.div`
+const DrawerOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
   z-index: 10000;
-  padding: 1.5rem;
-  animation: ${fadeIn} 0.2s ease-out;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 `;
 
-const ModalContent = styled.div`
+const DrawerOverlayOpen = styled(DrawerOverlay)`
+  opacity: 1;
+  pointer-events: auto;
+`;
+
+const Drawer = styled.div`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 520px;
+  max-width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: ${Colors.white};
-  border-radius: 1rem;
-  padding: 2rem;
-  max-width: 800px;
-  width: 100%;
-  max-height: 85vh;
+  z-index: 10001;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const DrawerOpen = styled(Drawer)`
+  transform: translateX(0);
+`;
+
+const DrawerHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid ${Colors.tableBorder};
+  flex-shrink: 0;
+`;
+
+const DrawerTitle = styled.h2`
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: ${Colors.primaryDark};
+  margin: 0 0 0.25rem;
+`;
+
+const DrawerSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${Colors.darkGray};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const DrawerBody = styled.div`
+  flex: 1;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: ${fadeIn} 0.3s ease-out;
-  
+  padding: 1.5rem;
+
   &::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: ${Colors.lightGray};
     border-radius: 0.5rem;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: ${Colors.mediumGray};
     border-radius: 0.5rem;
-    
+
     &:hover {
       background: ${Colors.accentBlue};
     }
+  }
+`;
+
+const DrawerIconBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${Colors.darkGray};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: ${Colors.lightGray};
+    color: ${Colors.primaryDark};
+  }
+`;
+
+const DrawerSection = styled.div`
+  background: ${Colors.lightGray};
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+`;
+
+const DrawerSectionTitle = styled.h3`
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: ${Colors.primaryDark};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const DrawerDetailGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const DrawerDetailItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+`;
+
+const DrawerDetailLabel = styled.div`
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: ${Colors.darkGray};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+`;
+
+const DrawerDetailValue = styled.div`
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: ${Colors.primaryDark};
+  word-break: break-word;
+`;
+
+const DrawerActions = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 1.25rem;
+  border-top: 1px solid ${Colors.tableBorder};
+`;
+
+const DrawerButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  white-space: nowrap;
+  min-height: 40px;
+
+  ${(props) =>
+    props.$primary
+      ? css`
+          background: ${Colors.accentBlue};
+          color: ${Colors.white};
+
+          &:hover:not(:disabled) {
+            background: #04597b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(5, 102, 141, 0.2);
+          }
+        `
+      : css`
+          background: ${Colors.white};
+          color: ${Colors.darkGray};
+          border: 1px solid ${Colors.tableBorder};
+
+          &:hover:not(:disabled) {
+            background: ${Colors.lightGray};
+            border-color: ${Colors.accentBlue};
+          }
+        `}
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
   }
 `;
 
@@ -1311,7 +1480,11 @@ const AllDeceasedPage = () => {
 
   const getModalValue = (key) => {
     const record = selectedDeceasedProfile || selectedDeceased;
-    return record ? record[key] : 'N/A';
+    if (!record) return 'N/A';
+    const value = record[key];
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'string' && value.trim() === '') return 'N/A';
+    return value;
   };
 
   const uniqueYears = useMemo(() => {
@@ -1743,34 +1916,23 @@ const AllDeceasedPage = () => {
           </div>
 
           {modalOpen && selectedDeceased && (
-            <ModalOverlay onClick={closeProfileModal}>
-              <ModalContent onClick={(e) => e.stopPropagation()}>
-                <ModalHeader>
+            <>
+              <DrawerOverlayOpen onClick={closeProfileModal} />
+              <DrawerOpen>
+                <DrawerHeader>
                   <div>
-                    <ModalTitle>{selectedDeceased?.full_name || 'Deceased Profile'}</ModalTitle>
-                    <ModalSubtitle>
-                      Admission: {selectedDeceased?.admission_number || 'N/A'} • Ref: {selectedDeceased?.deceased_id || 'N/A'}
-                    </ModalSubtitle>
+                    <DrawerTitle>{selectedDeceased?.full_name || 'Deceased Profile'}</DrawerTitle>
+                    <DrawerSubtitle>
+                      <StatusPill status={selectedDeceased?.status}>{selectedDeceased?.status || 'Unknown'}</StatusPill>
+                      <span>Admission: {selectedDeceased?.admission_number || 'N/A'} • Ref: {selectedDeceased?.deceased_id || 'N/A'}</span>
+                    </DrawerSubtitle>
                   </div>
-                  <CloseModalButton onClick={closeProfileModal} aria-label="Close modal">×</CloseModalButton>
-                </ModalHeader>
+                  <DrawerIconBtn onClick={closeProfileModal} aria-label="Close drawer">
+                    <X size={20} />
+                  </DrawerIconBtn>
+                </DrawerHeader>
 
-                <ModalTabs>
-                  <ModalTab $active={selectedModalTab === 'overview'} onClick={() => handleModalTabChange('overview')}>
-                    Overview
-                  </ModalTab>
-                  <ModalTab $active={selectedModalTab === 'financials'} onClick={() => handleModalTabChange('financials')}>
-                    Financials
-                  </ModalTab>
-                  <ModalTab $active={selectedModalTab === 'documents'} onClick={() => handleModalTabChange('documents')}>
-                    Documents
-                  </ModalTab>
-                  <ModalTab $active={selectedModalTab === 'next_of_kin'} onClick={() => handleModalTabChange('next_of_kin')}>
-                    Next of Kin
-                  </ModalTab>
-                </ModalTabs>
-
-                <ModalBody>
+                <DrawerBody>
                   {modalLoading && (
                     <CenteredContainer>
                       <AnimatedLoader2 size={40} color={Colors.accentBlue} />
@@ -1778,133 +1940,150 @@ const AllDeceasedPage = () => {
                     </CenteredContainer>
                   )}
 
-                  {!!modalError && <PanelError>{modalError}</PanelError>}
+                  {!!modalError && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.6rem',
+                      padding: '0.75rem 1rem',
+                      background: '#fef3c7',
+                      borderLeft: '3px solid #f59e0b',
+                      borderRadius: '0.5rem',
+                      color: '#92400e',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      marginBottom: '1rem'
+                    }}>
+                      <AlertTriangle size={18} />
+                      {modalError}
+                    </div>
+                  )}
 
                   {!modalLoading && !modalError && selectedDeceased && (
                     <>
                       {selectedModalTab === 'overview' && (
                         <>
-                          <ModalSection>
-                            <ModalSectionTitle>
-                              <User size={18} />
+                          <DrawerSection>
+                            <DrawerSectionTitle>
+                              <User size={16} />
                               Profile Summary
-                            </ModalSectionTitle>
-                            <ModalDetailGrid>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Full Name</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('full_name') || 'Unknown'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Reference ID</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('deceased_id') || 'N/A'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Date of Death</ModalDetailLabel>
-                                <ModalDetailValue>
+                            </DrawerSectionTitle>
+                            <DrawerDetailGrid>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Full Name</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('full_name') || 'Unknown'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Reference ID</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('deceased_id') || 'N/A'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Date of Death</DrawerDetailLabel>
+                                <DrawerDetailValue>
                                   {getModalValue('date_of_death') ? new Date(getModalValue('date_of_death')).toLocaleDateString() : 'N/A'}
-                                </ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Date Admitted</ModalDetailLabel>
-                                <ModalDetailValue>
+                                </DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Date Admitted</DrawerDetailLabel>
+                                <DrawerDetailValue>
                                   {getModalValue('date_admitted') ? new Date(getModalValue('date_admitted')).toLocaleDateString() : 'N/A'}
-                                </ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Status</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('status') || 'Unknown'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Gender</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('gender') || 'N/A'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Next of Kin</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('has_kin') ? 'Yes' : 'No'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Autopsy</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('has_autopsy') ? 'Performed' : 'Not performed'}</ModalDetailValue>
-                              </ModalDetailItem>
-                            </ModalDetailGrid>
-                          </ModalSection>
+                                </DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Status</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('status') || 'Unknown'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Gender</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('gender') || 'N/A'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Next of Kin</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('has_kin') ? 'Yes' : 'No'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Autopsy</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('has_autopsy') ? 'Performed' : 'Not performed'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                            </DrawerDetailGrid>
+                          </DrawerSection>
 
-                          <ModalSection>
-                            <ModalSectionTitle>
-                              <Info size={18} />
+                          <DrawerSection>
+                            <DrawerSectionTitle>
+                              <Info size={16} />
                               Additional Information
-                            </ModalSectionTitle>
-                            <ModalDetailGrid>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Admission Number</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('admission_number') || 'N/A'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Year</ModalDetailLabel>
-                                <ModalDetailValue>
+                            </DrawerSectionTitle>
+                            <DrawerDetailGrid>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Admission Number</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('admission_number') || 'N/A'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Year</DrawerDetailLabel>
+                                <DrawerDetailValue>
                                   {getModalValue('created_at') ? new Date(getModalValue('created_at')).getFullYear() : 'N/A'}
-                                </ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Place of Death</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('place_of_death') || 'N/A'}</ModalDetailValue>
-                              </ModalDetailItem>
-                              <ModalDetailItem>
-                                <ModalDetailLabel>Cause of Death</ModalDetailLabel>
-                                <ModalDetailValue>{getModalValue('cause_of_death') || 'N/A'}</ModalDetailValue>
-                              </ModalDetailItem>
-                            </ModalDetailGrid>
-                          </ModalSection>
+                                </DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Place of Death</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('place_of_death') || 'N/A'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                              <DrawerDetailItem>
+                                <DrawerDetailLabel>Cause of Death</DrawerDetailLabel>
+                                <DrawerDetailValue>{getModalValue('cause_of_death') || 'N/A'}</DrawerDetailValue>
+                              </DrawerDetailItem>
+                            </DrawerDetailGrid>
+                          </DrawerSection>
                         </>
                       )}
 
                       {selectedModalTab === 'financials' && (
-                        <ModalSection>
-                          <ModalSectionTitle>
-                            <DollarSign size={18} />
+                        <DrawerSection>
+                          <DrawerSectionTitle>
+                            <DollarSign size={16} />
                             Financial Summary
-                          </ModalSectionTitle>
-                          <ModalDetailGrid>
-                            <ModalDetailItem>
-                              <ModalDetailLabel>Total Charges</ModalDetailLabel>
-                              <ModalDetailValue>{getModalValue('total_mortuary_charge') || 0} KES</ModalDetailValue>
-                            </ModalDetailItem>
-                            <ModalDetailItem>
-                              <ModalDetailLabel>Currency</ModalDetailLabel>
-                              <ModalDetailValue>{getModalValue('currency') || 'KES'}</ModalDetailValue>
-                            </ModalDetailItem>
-                            <ModalDetailItem>
-                              <ModalDetailLabel>Balance</ModalDetailLabel>
-                              <ModalDetailValue>{getModalValue('balance') ?? 'N/A'}</ModalDetailValue>
-                            </ModalDetailItem>
-                            <ModalDetailItem>
-                              <ModalDetailLabel>Total Payments</ModalDetailLabel>
-                              <ModalDetailValue>{getModalValue('total_payments') || 0} KES</ModalDetailValue>
-                            </ModalDetailItem>
-                          </ModalDetailGrid>
-                        </ModalSection>
+                          </DrawerSectionTitle>
+                          <DrawerDetailGrid>
+                            <DrawerDetailItem>
+                              <DrawerDetailLabel>Total Charges</DrawerDetailLabel>
+                              <DrawerDetailValue>{getModalValue('total_mortuary_charge') || 0} KES</DrawerDetailValue>
+                            </DrawerDetailItem>
+                            <DrawerDetailItem>
+                              <DrawerDetailLabel>Currency</DrawerDetailLabel>
+                              <DrawerDetailValue>{getModalValue('currency') || 'KES'}</DrawerDetailValue>
+                            </DrawerDetailItem>
+                            <DrawerDetailItem>
+                              <DrawerDetailLabel>Balance</DrawerDetailLabel>
+                              <DrawerDetailValue>{getModalValue('balance') ?? 'N/A'}</DrawerDetailValue>
+                            </DrawerDetailItem>
+                            <DrawerDetailItem>
+                              <DrawerDetailLabel>Total Payments</DrawerDetailLabel>
+                              <DrawerDetailValue>{getModalValue('total_payments') || 0} KES</DrawerDetailValue>
+                            </DrawerDetailItem>
+                          </DrawerDetailGrid>
+                        </DrawerSection>
                       )}
 
                       {selectedModalTab === 'documents' && (
-                        <ModalSection>
-                          <ModalSectionTitle>
-                            <FileText size={18} />
+                        <DrawerSection>
+                          <DrawerSectionTitle>
+                            <FileText size={16} />
                             Documents
-                          </ModalSectionTitle>
+                          </DrawerSectionTitle>
                           <div style={{ color: '#4b5563', fontSize: '0.95rem' }}>
                             {selectedDeceasedProfile?.documents?.length > 0
                               ? `${selectedDeceasedProfile.documents.length} document${selectedDeceasedProfile.documents.length === 1 ? '' : 's'} available.`
                               : 'No documents attached yet.'}
                           </div>
-                        </ModalSection>
+                        </DrawerSection>
                       )}
 
                       {selectedModalTab === 'next_of_kin' && (
-                        <ModalSection>
-                          <ModalSectionTitle>
-                            <Users size={18} />
+                        <DrawerSection>
+                          <DrawerSectionTitle>
+                            <Users size={16} />
                             Next of Kin
-                          </ModalSectionTitle>
+                          </DrawerSectionTitle>
                           {selectedDeceasedProfile?.next_of_kin?.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                               {selectedDeceasedProfile.next_of_kin.map((kin, index) => (
@@ -1928,21 +2107,21 @@ const AllDeceasedPage = () => {
                           ) : (
                             <div style={{ color: '#4b5563', fontSize: '0.95rem' }}>No next of kin details available.</div>
                           )}
-                        </ModalSection>
+                        </DrawerSection>
                       )}
 
-                      <ModalActions>
-                        <ModalButton $primary onClick={handleViewMoreClick}>
+                      <DrawerActions>
+                        <DrawerButton $primary onClick={handleViewMoreClick}>
                           <Eye size={16} />
                           View Full Details
-                        </ModalButton>
-                        <ModalButton onClick={closeProfileModal}>Close</ModalButton>
-                      </ModalActions>
+                        </DrawerButton>
+                        <DrawerButton onClick={closeProfileModal}>Close</DrawerButton>
+                      </DrawerActions>
                     </>
                   )}
-                </ModalBody>
-              </ModalContent>
-            </ModalOverlay>
+                </DrawerBody>
+              </DrawerOpen>
+            </>
           )}
         </PageGrid>
 
