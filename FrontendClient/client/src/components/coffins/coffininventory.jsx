@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
+import { useSocket } from '../../utils/context/socketContext';
 import {
   Search, Plus, Edit, Trash2, Eye, Package, AlertTriangle,
   Filter, Download, Upload, Box, Database, RotateCw, Settings,
@@ -754,6 +755,7 @@ const CoffinInventory = () => {
   const [toast, setToast] = useState(null);
   const [viewMode, setViewMode] = useState('table');
   const [activeTab, setActiveTab] = useState('inventory');
+  const { socket } = useSocket();
 
   const showToast = useCallback((message, type) => {
     setToast({ message, type });
@@ -808,6 +810,95 @@ const CoffinInventory = () => {
     fetchCoffins();
     fetchBookings();
   }, [fetchCoffins, fetchBookings]);
+
+  // Add dummy bookings for demonstration if none exist
+  useEffect(() => {
+    if (bookings.length === 0 && coffins.length > 0) {
+      const dummyBookings = [
+        {
+          booking_id: 'dummy-1',
+          booking_code: 'BK-DEMO001',
+          client_name: 'John Kamau',
+          client_phone: '+254 712 345 678',
+          client_email: 'john.kamau@email.com',
+          client_address: '123 Moi Avenue, Nairobi',
+          coffin_id: coffins[0]?.coffin_id,
+          coffin_type: coffins[0]?.type || 'Premium Oak',
+          coffin_material: coffins[0]?.material || 'Oak',
+          coffin_price: coffins[0]?.exact_price || '45000',
+          booking_date: new Date().toISOString().split('T')[0],
+          event_date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+          status: 'confirmed',
+          special_requirements: 'No cross on the coffin - family preference',
+          notes: 'Client requested simple design without religious symbols. Delivery to Karen residence.',
+          created_at: new Date(Date.now() - 86400000).toISOString()
+        },
+        {
+          booking_id: 'dummy-2',
+          booking_code: 'BK-DEMO002',
+          client_name: 'Mary Wanjiku',
+          client_phone: '+254 733 987 654',
+          client_email: 'mary.wanjiku@email.com',
+          client_address: '456 Kenyatta Road, Kiambu',
+          coffin_id: coffins[1]?.coffin_id || coffins[0]?.coffin_id,
+          coffin_type: coffins[1]?.type || 'Classic Pine',
+          coffin_material: coffins[1]?.material || 'Pine',
+          coffin_price: coffins[1]?.exact_price || '35000',
+          booking_date: new Date(Date.now() - 86400000 * 3).toISOString().split('T')[0],
+          event_date: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
+          status: 'pending',
+          special_requirements: 'Add white roses arrangement on top',
+          notes: 'VIP client - needs premium handling. Church service at St. Mary\'s before burial.',
+          created_at: new Date(Date.now() - 86400000 * 2).toISOString()
+        },
+        {
+          booking_id: 'dummy-3',
+          booking_code: 'BK-DEMO003',
+          client_name: 'Peter Mwangi',
+          client_phone: '+254 701 234 567',
+          client_email: 'peter.mwangi@email.com',
+          client_address: '789 Thika Superhighway',
+          coffin_id: coffins[2]?.coffin_id || coffins[0]?.coffin_id,
+          coffin_type: coffins[2]?.type || 'Elegant Mahogany',
+          coffin_material: coffins[2]?.material || 'Mahogany',
+          coffin_price: coffins[2]?.exact_price || '65000',
+          booking_date: new Date(Date.now() - 86400000 * 5).toISOString().split('T')[0],
+          event_date: new Date(Date.now() + 86400000 * 1).toISOString().split('T')[0],
+          status: 'confirmed',
+          special_requirements: 'No cross - humanist ceremony',
+          notes: 'Family prefers secular service. Coffin should be plain with natural finish only.',
+          created_at: new Date(Date.now() - 86400000 * 4).toISOString()
+        }
+      ];
+      setBookings(dummyBookings);
+    }
+  }, [coffins, bookings.length]);
+
+  // Real-time updates with WebSocket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewBooking = (data) => {
+      setBookings(prev => [data.booking, ...prev]);
+      showToast('New coffin booking received!', 'success');
+    };
+
+    const handleBookingUpdated = (data) => {
+      setBookings(prev => prev.map(b =>
+        (b.booking_id === data.booking_id || b.id === data.booking_id)
+          ? { ...b, ...data.booking }
+          : b
+      ));
+    };
+
+    socket.on('coffin_booking_created', handleNewBooking);
+    socket.on('coffin_booking_updated', handleBookingUpdated);
+
+    return () => {
+      socket.off('coffin_booking_created', handleNewBooking);
+      socket.off('coffin_booking_updated', handleBookingUpdated);
+    };
+  }, [socket, showToast]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -1304,21 +1395,41 @@ const CoffinInventory = () => {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <ActionButton
+                        onClick={() => setViewMode('table')}
+                        style={{
+                          background: viewMode === 'table' ? COLORS.primary : COLORS.surface,
+                          color: viewMode === 'table' ? COLORS.white : COLORS.textSecondary
+                        }}
+                      >
+                        <List size={16} />
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => setViewMode('calendar')}
+                        style={{
+                          background: viewMode === 'calendar' ? COLORS.primary : COLORS.surface,
+                          color: viewMode === 'calendar' ? COLORS.white : COLORS.textSecondary
+                        }}
+                      >
+                        <Calendar size={16} />
+                      </ActionButton>
+                    </div>
                     <PrimaryButton onClick={handleNewBooking}>
                       <Plus size={15} /> New Booking
                     </PrimaryButton>
                   </FilterRow>
                 </FilterCard>
 
-                <TableCard>
-                  {bookings.length === 0 ? (
-                    <EmptyState>
-                      <ClipboardList size={48} />
-                      <h4>No bookings yet</h4>
-                      <p>Coffin bookings will appear here</p>
-                    </EmptyState>
-                  ) : (
-                    <>
+                {viewMode === 'table' ? (
+                  <TableCard>
+                    {bookings.length === 0 ? (
+                      <EmptyState>
+                        <ClipboardList size={48} />
+                        <h4>No bookings yet</h4>
+                        <p>Coffin bookings will appear here</p>
+                      </EmptyState>
+                    ) : (
                       <div style={{ overflowX: 'auto' }}>
                         <Table>
                           <TableHead>
@@ -1328,6 +1439,7 @@ const CoffinInventory = () => {
                               <TableHeader>Coffin</TableHeader>
                               <TableHeader>Event Date</TableHeader>
                               <TableHeader>Status</TableHeader>
+                              <TableHeader>Notes</TableHeader>
                               <TableHeader>Booked On</TableHeader>
                             </tr>
                           </TableHead>
@@ -1341,12 +1453,39 @@ const CoffinInventory = () => {
                                   <div style={{ fontWeight: 500 }}>{booking.client_name}</div>
                                   <div style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>{booking.client_phone}</div>
                                 </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>{booking.coffin_type || 'N/A'}</TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>{booking.event_date ? new Date(booking.event_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                <TableCell style={{ fontSize: '0.72rem' }}>
+                                  {booking.coffin_type || booking.coffin?.type || 'N/A'}
+                                  {booking.special_requirements && (
+                                    <div style={{ fontSize: '0.68rem', color: COLORS.warningDark, marginTop: '0.15rem', fontStyle: 'italic' }}>
+                                      ⚠️ {booking.special_requirements}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell style={{ fontSize: '0.72rem' }}>
+                                  {booking.event_date ? new Date(booking.event_date).toLocaleDateString() : 'N/A'}
+                                </TableCell>
                                 <TableCell>
                                   <StatusBadge $status={booking.status || 'pending'}>
                                     {booking.status || 'Pending'}
                                   </StatusBadge>
+                                </TableCell>
+                                <TableCell style={{ fontSize: '0.72rem', maxWidth: '200px' }}>
+                                  {booking.notes ? (
+                                    <div style={{
+                                      padding: '0.25rem 0.5rem',
+                                      background: COLORS.warningLight,
+                                      borderRadius: '0.25rem',
+                                      fontSize: '0.68rem',
+                                      color: COLORS.warningDark,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }} title={booking.notes}>
+                                      📝 {booking.notes}
+                                    </div>
+                                  ) : (
+                                    <span style={{ color: COLORS.textMuted }}>—</span>
+                                  )}
                                 </TableCell>
                                 <TableCell style={{ fontSize: '0.72rem' }}>
                                   {booking.created_at ? new Date(booking.created_at).toLocaleDateString() : 'N/A'}
@@ -1356,9 +1495,90 @@ const CoffinInventory = () => {
                           </tbody>
                         </Table>
                       </div>
-                    </>
-                  )}
-                </TableCard>
+                    )}
+                  </TableCard>
+                ) : (
+                  <TableCard>
+                    <div style={{ padding: '2rem', textAlign: 'center', color: COLORS.textSecondary }}>
+                      <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.4 }} />
+                      <h4 style={{ margin: '0 0 0.5rem', color: COLORS.text }}>Calendar View</h4>
+                      <p style={{ margin: 0, fontSize: '0.8125rem' }}>
+                        {bookings.length > 0
+                          ? `${bookings.length} booking${bookings.length !== 1 ? 's' : ''} scheduled`
+                          : 'No bookings to display on calendar'}
+                      </p>
+                      {bookings.length > 0 && (
+                        <div style={{
+                          marginTop: '1.5rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem',
+                          maxWidth: '600px',
+                          margin: '1.5rem auto 0'
+                        }}>
+                          {bookings.slice(0, 5).map((booking) => (
+                            <div key={booking.booking_id || booking.id} style={{
+                              padding: '1rem',
+                              background: COLORS.bg,
+                              border: '1px solid ' + COLORS.border,
+                              borderRadius: COLORS.radiusSm,
+                              textAlign: 'left',
+                              display: 'flex',
+                              gap: '1rem',
+                              alignItems: 'start'
+                            }}>
+                              <div style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: COLORS.radiusSm,
+                                background: COLORS.primaryLight,
+                                color: COLORS.white,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                                  {booking.event_date ? new Date(booking.event_date).toLocaleDateString('en-US', { month: 'short' }) : 'TBD'}
+                                </div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1 }}>
+                                  {booking.event_date ? new Date(booking.event_date).getDate() : '?'}
+                                </div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                                  {booking.client_name}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary, marginBottom: '0.25rem' }}>
+                                  {booking.coffin_type || booking.coffin?.type || 'External coffin'}
+                                </div>
+                                {booking.special_requirements && (
+                                  <div style={{
+                                    fontSize: '0.72rem',
+                                    color: COLORS.warningDark,
+                                    fontStyle: 'italic',
+                                    padding: '0.25rem 0.5rem',
+                                    background: COLORS.warningLight,
+                                    borderRadius: '0.25rem',
+                                    display: 'inline-block'
+                                  }}>
+                                    ⚠️ {booking.special_requirements}
+                                  </div>
+                                )}
+                                <div style={{ marginTop: '0.5rem' }}>
+                                  <StatusBadge $status={booking.status || 'pending'}>
+                                    {booking.status || 'Pending'}
+                                  </StatusBadge>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </TableCard>
+                )}
               </>
             )}
           </TabContent>
