@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 80" role="img" aria-label="Florist Management Logo">
+  <defs>
+    <linearGradient id="petalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+  </defs>
+  <rect width="260" height="80" rx="16" fill="#FFFFFF" />
+  <g transform="translate(18, 14)">
+    <path d="M28 4 C16 4 8 12 8 24 C8 32 14 40 28 56 C42 40 48 32 48 24 C48 12 40 4 28 4 Z" fill="url(#petalGradient)" />
+    <circle cx="28" cy="24" r="9" fill="#FBBF24" />
+    <path d="M74 9 H82 V71 H74 Z" fill="#10B981" />
+    <path d="M53 28 C53 18 63 10 74 10 C85 10 95 18 95 28 C95 38 85 46 74 46 C63 46 53 38 53 28 Z" fill="#EC4899" />
+  </g>
+  <text x="120" y="45" font-family="Poppins, sans-serif" font-size="26" font-weight="700" fill="#111827">Florist Management</text>
+</svg>

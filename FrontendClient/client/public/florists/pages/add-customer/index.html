@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+<script src="../../js/config.js" ></script> </head>
+<body>
+    <!-- Trigger/Open The Modal -->
+<button id="myBtn">Open Modal</button>
+
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+
+      <div>
+        <button class="delete-image">
+          <img src="../../svg/cross.svg" alt="" srcset="">
+      </button>
+      </div>
+
+      <h2 class="add-new-customer">Add new customer</h2>
+      <div class="input-container">
+        <p>
+          <label for="fullname">Add name</label>
+        </p>
+        <input type="text" id="fullname" placeholder="Type full name of customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="address">Address</label>
+        </p>
+        <input type="text" id="address" placeholder="Enter the Address of the Customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="phone-number">Phone Number</label>
+        </p>
+        <input type="text" id="phone-number" placeholder="Enter the Phone Number of the Customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="abbreviation">Add Abbreviation</label>
+        </p>
+        <input type="text" id="abbreviation" placeholder="Add abbreviation of full name">
+      </div>
+      <button id="addButton">Add</button>
+    </div>
+</div>
+  
+<script src="script.js"></script>
+
+</body>
+</html>

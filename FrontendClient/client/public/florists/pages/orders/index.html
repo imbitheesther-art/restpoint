@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Florist Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css"></link>
+    <link rel="stylesheet" href="css/pagination.css"></link>
+    <script src="../../js/config.js" ></script>
+</head>
+<body>
+
+    <div class="sidebar column-flex">
+        <header>
+            <div class="flex-logo">
+                <img src="../../img/florist-logo.svg" alt="Florist Management Logo" class="logo">
+                <p class="logo-name">Florist Management</p>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <p class="made-by-p">made by</p>
+                <img src="../../img/abreu-gold-logo.png" alt="Florist Management Logo" class="abreu-gold-logo">
+            </div>
+        </header>
+        
+        <div class="navigation">
+            <div id="dashboard-page-btn" class="nav-item selected">
+                <img src="../../svg/orders.svg" alt="Dashboard" class="icon"/>
+                <span>Dashboard</span>
+            </div>
+            <div id="today-orders-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Today's Orders" class="icon"/>
+                <span>Today's Orders</span>
+            </div>
+            <div id="new-order-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="New Order" class="icon"/>
+                <span>New Order</span>
+            </div>
+            <div id="preparing-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Preparing" class="icon"/>
+                <span>Preparing</span>
+            </div>
+            <div id="ready-delivery-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Ready for Delivery" class="icon"/>
+                <span>Ready for Delivery</span>
+            </div>
+            <div id="out-delivery-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Out for Delivery" class="icon"/>
+                <span>Out for Delivery</span>
+            </div>
+            <div id="completed-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Completed" class="icon"/>
+                <span>Completed Orders</span>
+            </div>
+            <div id="cancelled-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Cancelled Orders" class="icon"/>
+                <span>Cancelled Orders</span>
+            </div>
+            <div id="customers-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Customers" class="icon"/>
+                <span>Customers</span>
+            </div>
+            <div id="branches-page-btn" class="nav-item">
+                <img src="../../svg/invoices.svg" alt="Branches" class="icon"/>
+                <span>Branches</span>
+            </div>
+            <div id="calendar-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Calendar" class="icon"/>
+                <span>Calendar</span>
+            </div>
+            <div id="reports-page-btn" class="nav-item">
+                <img src="../../svg/invoices.svg" alt="Reports" class="icon"/>
+                <span>Reports</span>
+            </div>
+            <div id="settings-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Settings" class="icon"/>
+                <span>Settings</span>
+            </div>
+            <div id="profile-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Profile" class="icon"/>
+                <span>Profile</span>
+            </div>
+        </div>
+        <div id="logout-btn" class="nav-item logout">
+            <img src="../../svg/logout.svg" alt="Logout" class="icon"/>
+            <span style="padding-left: 17%;">Log Out</span>
+        </div>
+    </div>
+
+        <div class="main-container">
+            <div class="toolbar">
+                <div id="add-order-btn" class="add-order-btn">
+                    <div>New Order</div>
+                    <div style="padding-bottom: 3px; font-size: 1.7rem;">+</div>
+                </div>
+                <div class="filter-group">
+                    <select class="custom-select" name="filter" id="filter">
+                        <option class="option-padding" value="customer">Filter by customer</option>
+                        <option class="option-padding" value="order_id">Filter by order #</option>
+                        <option class="option-padding" value="status">Filter by status</option>
+                        <option class="option-padding" value="date-range">Select date range</option>
+                    </select>
+                    
+                    <!-- Additional fields for date range, initially hidden -->
+                    <div id="date-range-fields" style="display: none;">
+                        <input type="date" id="start-date" name="start-date">
+                        <input type="date" id="end-date" name="end-date">
+                    </div>
+                    
+                    <input id="search-input" class="search-input" type="search" placeholder="Search">
+                    <button id="search-btn" class="search-btn">
+                        <img src="../../svg/search.svg" alt="" srcset="">
+                    </button>
+                </div>
+            </div>
+            
+            <div>
+                <table>
+                        <thead>
+                            <tr class="table-head-row">
+                                   <th colspan="2">ARRANGEMENT</th>
+                                <th>ORDER #</th>
+                                   <th>BRANCH</th>
+                                <th>CUSTOMER</th>
+                                   <th>DELIVERY DATE</th>
+                                   <th>STATUS</th>
+                            </tr>
+                        </thead>
+                    </table>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <tbody id="table-body">
+                        <!-- Orders list will go here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Operation Buttons -->
+            <div class="action-buttons">
+                <button id="invoice-btn" class="invoice-btn">Create Invoice</button>
+                <button id="print-label-btn" class="sheet-btn">Print Label</button>
+            </div>
+            
+            <!-- Pagination -->
+          <div id="pagination" class="pagination">
+            <div class="out-of-results">1-12 out of 67 orders</div>
+            <div class="pagination-navigate">
+                <div class="pagination-pages-text">Page <span id="current-page">1</span> of <span id="total-pages">5</span></div>
+                <div class="pagination-pages-button">
+                    <button id="first">|&lt;</button>
+                    <button id="prev">&lt;</button>
+                </div>
+                <div class="pagination-pages-text">
+                    <input id="pagination-page-input" value="1" type="number" class="pagination-page-input"></input>
+                </div>
+                <div class="pagination-pages-button">
+                    <button id="next">&gt;</button>
+                    <button id="last">&gt;|</button>
+                </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="confirmation-container" class="confirmation-container">
+            <div class="confirmation-box">
+                <p id="confirmation-message"></p>
+                <button id="confirm-yes">Yes</button>
+                <button id="confirm-no">No</button>
+            </div>
+        </div>  
+        <div id="message-container" style="display: none;"></div>
+    </body>
+
+    <script src="js/print.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/pagination.js"></script>
+    <script src="js/confirmation.js"></script>
+    <script>
+        document.getElementById('filter').addEventListener('change', function() {
+            const dateRangeFields = document.getElementById('date-range-fields');
+            if (this.value === 'date-range') {
+                dateRangeFields.style.display = 'block';
+            } else {
+                dateRangeFields.style.display = 'none';
+            }
+        });
+    </script>
+</html>

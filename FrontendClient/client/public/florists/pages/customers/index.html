@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Florist Management System - Customers</title>
+    <link rel="stylesheet" href="../../css/font-awesome.css">
+    <link rel="stylesheet" href="css/styles.css"></link>
+    <link rel="stylesheet" href="css/pagination.css"></link>
+    <script src="../../js/config.js" ></script> 
+</head>
+<body>
+
+    <div class="sidebar column-flex">
+        <header>
+            <div class="flex-logo">
+                <img src="../../img/florist-logo.svg" alt="Florist Management Logo" class="logo">
+                <p class="logo-name">Florist Management</p>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <p class="made-by-p">made by</p>
+                <img src="../../img/abreu-gold-logo.png" alt="Partner Logo" class="abreu-gold-logo">
+            </div>
+        </header>
+
+        <div class="navigation">
+            <div id="orders-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Orders" class="icon"/>
+                <span>Orders</span>
+            </div>
+            <div id="customers-page-btn" class="nav-item selected">
+                <img src="../../svg/customers.svg" alt="Customers" class="icon"/>
+                <span>Customers</span>
+            </div>
+            <div id="invoices-page-btn" class="nav-item">
+                <img src="../../svg/invoices.svg" alt="Invoices" class="icon"/>
+                <span>Invoices</span>
+            </div>
+        </div>
+        <div id="logout-btn" class="nav-item logout">
+            <img src="../../svg/logout.svg" alt="Orders" class="icon"/>
+            <span style="padding-left: 17%;">Log Out</span>
+        </div>
+    </div>
+
+        <div class="main-container">
+            <div class="toolbar">
+                <div class="btn-container">
+                    <div class="add-customer-btn" id="add-customer-btn">
+                        <div>Add Customer</div>
+                        <div style="padding-bottom: 2.5px; font-size: 1.5rem;">+</div>
+                    </div>
+                    <button id="edit-btn" class="edit-btn">Edit</button>
+                    <button id="delete-btn" class="delete-btn">Delete</button>
+                </div>
+                <div class="filter-group">
+                    <input id="search-input" class="search-input" type="search" placeholder="Search...">
+                    <button id="search-btn" class="search-btn">
+                        <img src="../../svg/search.svg" alt="" srcset="">
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr class="order-head-row">
+                            <th>CUSTOMER NAME</th>
+                            <th>ABBREVIATION</th>
+                            <th>ADDRESS</th>
+                            <th>PHONE NUMBER</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+
+                        <!-- Customer data goes here -->
+
+                    </tbody>
+                </table>
+            </div>
+          <!-- Pagination -->
+          <div id="pagination" class="pagination">
+            <div class="out-of-results">1-12 out of 67 customers</div>
+            <div class="pagination-navigate">
+                <div class="pagination-pages-text">Page <span id="current-page">1</span> of <span id="total-pages">5</span></div>
+                <div class="pagination-pages-button">
+                    <button id="first">|&lt;</button>
+                    <button id="prev">&lt;</button>
+                </div>
+                <div class="pagination-pages-text">
+                    <input id="pagination-page-input" value="1" type="number" class="pagination-page-input"></input>
+                </div>
+                <div class="pagination-pages-button">
+                    <button id="next">&gt;</button>
+                    <button id="last">&gt;|</button>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        
+<div id="myModal" class="modal">
+    <div class="modal-content">
+
+      <div>
+        <button class="delete-image">
+          <img src="../../svg/cross.svg" alt="" srcset="">
+      </button>
+      </div>
+
+      <h2 class="add-new-customer">Add New customer</h2>
+      <div class="input-container">
+        <p>
+          <label for="fullname">Add Name</label>
+        </p>
+        <input type="text" id="fullname" placeholder="Type full name of customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="abbreviation">Add Abbreviation</label>
+        </p>
+        <input type="text" id="abbreviation" placeholder="Add abbreviation of full name">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="address">Add Address</label>
+        </p>
+        <input type="text" id="address" placeholder="Enter the Address of the Customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="phone-number">Phone Add Number</label>
+        </p>
+        <input type="text" id="phone-number" placeholder="Enter the Phone Number of the Customer">
+      </div>
+      <button id="addButton">Add</button>
+    </div>
+</div>
+
+    
+<div id="editModal" class="modal">
+    <div class="modal-content">
+
+      <div>
+        <button class="delete-image">
+          <img src="../../svg/cross.svg" alt="" srcset="">
+      </button>
+      </div>
+
+      <h2 class="add-new-customer">Edit customer</h2>
+      <div class="input-container">
+        <p>
+          <label for="fullname">Edit name</label>
+        </p>
+        <input type="text" id="edit-modal-name" placeholder="Type full name of customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="abbreviation">Edit Abbreviation</label>
+        </p>
+        <input type="text" id="edit-modal-abbreviation" placeholder="Add abbreviation of full name">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="edit-modal-address">Edit Address</label>
+        </p>
+        <input type="text" id="edit-modal-address" placeholder="Enter the Address of the Customer">
+      </div>
+      <div class="input-container">
+        <p>
+          <label for="edit-modal-phone-number">Edit Phone Number</label>
+        </p>
+        <input type="text" id="edit-modal-phone-number" placeholder="Enter the Phone Number of the Customer">
+      </div>
+      <button id="editSaveButton">Save</button>
+    </div>
+</div>
+
+
+<div id="confirmation-container" class="confirmation-container">
+    <div class="confirmation-box">
+      <p id="confirmation-message"></p>
+      <button id="confirm-yes">Yes</button>
+      <button id="confirm-no">No</button>
+    </div>
+</div>  
+
+<div id="message-container" style="display: none;"></div>
+
+<script src="js/confirmation.js"></script>
+<script src="js/script.js"></script>
+<script src="js/pagination.js"></script>
+<script>
+
+    // Function to tell Electron to navigate to another page
+    function navigateTo(page) {
+        ipcRenderer.send('navigate', page);
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        navigateTo('login')
+    })
+    document.getElementById('invoices-page-btn').addEventListener('click', () => {
+        navigateTo('invoices')
+    })
+    document.getElementById('customers-page-btn').addEventListener('click', () => {
+        navigateTo('customers')
+    })
+    document.getElementById('orders-page-btn').addEventListener('click', () => {
+        navigateTo('orders')
+    })
+</script>
+
+</body>
+</html>

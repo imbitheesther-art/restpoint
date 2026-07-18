@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense, Component, useCallback } from 'react';
+import React, { useState, useEffect, lazy, Suspense, Component, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -208,6 +208,29 @@ const Section = styled.div`
   border: 1px solid ${COLORS.border};
   margin-bottom: 1.5rem;
   overflow: hidden;
+`;
+
+const SubNav = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+`;
+
+const SubNavButton = styled.button`
+  padding: 0.75rem 1rem;
+  background: ${(props) => (props.$active ? COLORS.primary : COLORS.white)};
+  color: ${(props) => (props.$active ? COLORS.white : COLORS.text)};
+  border: 1px solid ${COLORS.border};
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${(props) => (props.$active ? COLORS.primary : '#f0f4fb')};
+  }
 `;
 
 const SectionHeader = styled.div`
@@ -475,6 +498,11 @@ const DeceasedDetails = () => {
   const [showExtraChargeForm, setShowExtraChargeForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showScannerModal, setShowScannerModal] = useState(false);
+  const [activeSection, setActiveSection] = useState('overview');
+  const overviewRef = useRef(null);
+  const documentsRef = useRef(null);
+  const financialRef = useRef(null);
+  const dispatchRef = useRef(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [financialData, setFinancialData] = useState({
     payments: [],
@@ -651,6 +679,32 @@ const DeceasedDetails = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  const scrollToSection = (sectionRef) => {
+    if (sectionRef && sectionRef.current) {
+      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+    switch (section) {
+      case 'overview':
+        scrollToSection(overviewRef);
+        break;
+      case 'documents':
+        scrollToSection(documentsRef);
+        break;
+      case 'financials':
+        scrollToSection(financialRef);
+        break;
+      case 'dispatch':
+        scrollToSection(dispatchRef);
+        break;
+      default:
+        break;
+    }
+  };
+
   const handleDocumentUploadSuccess = () => {
     fetchDeceasedData();
   };
@@ -741,8 +795,23 @@ const DeceasedDetails = () => {
         </div>
       </Header>
 
+      <SubNav>
+        <SubNavButton $active={activeSection === 'overview'} onClick={() => handleSectionChange('overview')}>
+          Overview
+        </SubNavButton>
+        <SubNavButton $active={activeSection === 'documents'} onClick={() => handleSectionChange('documents')}>
+          Documents
+        </SubNavButton>
+        <SubNavButton $active={activeSection === 'financials'} onClick={() => handleSectionChange('financials')}>
+          Financials
+        </SubNavButton>
+        <SubNavButton $active={activeSection === 'dispatch'} onClick={() => handleSectionChange('dispatch')}>
+          Dispatch
+        </SubNavButton>
+      </SubNav>
+
       {/* Primary Badges */}
-      <Card style={{ marginBottom: '1.5rem' }}>
+      <Card ref={overviewRef} style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <Badge $bgColor={daysInMortuary > 30 ? COLORS.danger : COLORS.success} onClick={() => setShowDeceasedInfoModal(true)}>
             {daysInMortuary > 30 ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
@@ -781,7 +850,7 @@ const DeceasedDetails = () => {
 
       <ContentGrid>
         <MainContent>
-          <Card>
+          <Card ref={documentsRef}>
             <Suspense fallback={<LoadingFallback />}>
               <DocumentUpload
                 key={`documents-${refreshKey}`}
@@ -791,8 +860,8 @@ const DeceasedDetails = () => {
               />
             </Suspense>
           </Card>
-
-          <Card>
+ 
+          <Card ref={dispatchRef}>
             <Suspense fallback={<LoadingFallback />}>
               <ErrorBoundary fallback={<div>Failed to load Dispatch component</div>}>
                 <DispatchSection
@@ -833,7 +902,7 @@ const DeceasedDetails = () => {
       </ContentGrid>
 
       {/* Financial Details - Full Width */}
-      <Card>
+      <Card ref={financialRef}>
         <Suspense fallback={<LoadingFallback />}>
           <DeceasedFinancialDetails
             key={`financial-${refreshKey}`}

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Florist Management System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    </link>
+    <script src="../../js/jquery.js"></script>
+    <script src="../../js/config.js"></script>
+</head>
+
+<body>
+
+    <div class="sidebar column-flex">
+        <header>
+            <div class="flex-logo">
+                <img src="../../img/florist-logo.svg" alt="Florist Management Logo" class="logo">
+                <label class="logo-name">Florist Management</label>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <p class="made-by-p">made by</p>
+                <img src="../../img/abreu-gold-logo.png" alt="Florist Management Logo" class="abreu-gold-logo">
+            </div>
+
+        </header>
+
+        <div class="navigation">
+            <div id="dashboard-page-btn" class="nav-item selected">
+                <img src="../../svg/orders.svg" alt="Dashboard" class="icon" />
+                <span>Dashboard</span>
+            </div>
+            <div id="today-orders-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Today's Orders" class="icon" />
+                <span>Today's Orders</span>
+            </div>
+            <div id="new-order-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="New Order" class="icon" />
+                <span>New Order</span>
+            </div>
+            <div id="preparing-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Preparing" class="icon" />
+                <span>Preparing</span>
+            </div>
+            <div id="ready-delivery-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Ready for Delivery" class="icon" />
+                <span>Ready for Delivery</span>
+            </div>
+            <div id="out-delivery-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Out for Delivery" class="icon" />
+                <span>Out for Delivery</span>
+            </div>
+            <div id="completed-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Completed Orders" class="icon" />
+                <span>Completed Orders</span>
+            </div>
+            <div id="cancelled-page-btn" class="nav-item">
+                <img src="../../svg/orders.svg" alt="Cancelled Orders" class="icon" />
+                <span>Cancelled Orders</span>
+            </div>
+            <div id="customers-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Customers" class="icon" />
+                <span>Customers</span>
+            </div>
+            <div id="branches-page-btn" class="nav-item">
+                <img src="../../svg/invoices.svg" alt="Branches" class="icon" />
+                <span>Branches</span>
+            </div>
+            <div id="calendar-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Calendar" class="icon" />
+                <span>Calendar</span>
+            </div>
+            <div id="reports-page-btn" class="nav-item">
+                <img src="../../svg/invoices.svg" alt="Reports" class="icon" />
+                <span>Reports</span>
+            </div>
+            <div id="settings-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Settings" class="icon" />
+                <span>Settings</span>
+            </div>
+            <div id="profile-page-btn" class="nav-item">
+                <img src="../../svg/customers.svg" alt="Profile" class="icon" />
+                <span>Profile</span>
+            </div>
+        </div>
+        <div id="logout-btn" class="nav-item logout">
+            <img src="../../svg/logout.svg" alt="Orders" class="icon" />
+            <span style="padding-left: 17%;">Log Out</span>
+        </div>
+    </div>
+
+
+    <div class="main-content">
+        <div class="order-header">
+            <!-- <div class="order-actions">
+                <div id="back-button" class="operation-buttons">
+                    <button class="production-sheet-button">Back</button>    
+                </div>
+            </div> -->
+            <div class="page-navigation">
+                <img src="svg/orders-white.svg" alt="Orders" class="icon" />
+                <h2><span>Orders</span> / Order Detail</h2>
+            </div>
+            <div class="order-actions">
+                <div class="operation-buttons">
+                    <button id="save-and-add-button" class="production-sheet-button">Save & Add</button>
+                    <button id="go-back-button" class="production-sheet-button">Go Back</button>
+                </div>
+            </div>
+            <div class="order-actions">
+                <div id="operation-buttons" class="operation-buttons">
+                    <button id="print-label-button" class="production-sheet-button">Print Label</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="order-detail">
+
+            <div class="order-information">
+                <!-- <div class="input-box">
+                <label for="customer">Customer</label>
+                <input type="text" id="customer">
+            </div>
+         -->
+                <div class="input-box">
+                    <label for="customer">Customer</label>
+                    <select id="customer-select">
+                    </select>
+                </div>
+
+                <div class="input-box">
+                    <label for="size">Size</label>
+                    <input type="text" id="size">
+                </div>
+
+                <div class="input-box">
+                    <label for="resize">Resize</label>
+                    <input type="text" id="resize">
+                </div>
+
+                <div name="order-id-input" class="input-box">
+                    <label for="orderID">Order ID</label>
+                    <input type="text" id="orderID">
+                </div>
+
+                <div name="leave-space-input" class="input-box">
+                    <label for="LeaveSpaceInput">Leave Space For Order ID</label>
+                    <input type="number" id="leave-space-input" min="0">
+                </div>
+
+                <div class="input-box">
+                    <label for="ct">Ribbon Color</label>
+                    <input type="text" id="ct" placeholder="e.g. Red, Gold">
+                </div>
+
+                <div class="input-box">
+                    <label for="jobID">Order Reference</label>
+                    <input type="text" id="jobID" placeholder="Enter order reference">
+                </div>
+
+                <div class="input-box">
+                    <label for="kt">Delivery Method</label>
+                    <input type="text" id="kt" placeholder="Pickup, Normal, Express">
+                </div>
+
+                <div name="date-in-input" class="input-box">
+                    <label for="dateIn">Order Date</label>
+                    <input readonly type="date" id="dateIn">
+                </div>
+
+                <div class="input-box">
+                    <label for="dateDue">Delivery Date*</label>
+                    <input type="date" id="dateDue" name="dateDue">
+                </div>
+
+                <div class="input-box">
+                    <label for="metal">Flower Colors</label>
+                    <input type="text" id="metal" placeholder="Red, White, Pink">
+                </div>
+
+                <div class="input-box">
+                    <label for="setter">Arrangement Type</label>
+                    <input type="text" id="setter" placeholder="Bouquet, Vase, Centerpiece">
+                </div>
+
+                <div class="input-box">
+                    <label for="type">Occasion</label>
+                    <input type="text" id="type" placeholder="Wedding, Anniversary, Birthday">
+                </div>
+
+                <div class="input-box">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" min="1" max="10">
+                </div>
+
+            </div>
+
+            <div class="order-images">
+                <div id="barcode-section" class="barcode-section">
+                    <label>Barcode</label>
+                    <img id="barcode-img" src="img/barcode.png" alt="Barcode">
+                </div>
+
+                <div class="images-section">
+                    <label>Images</label>
+                    <div id="imagesContainer" class="image-container">
+                        <img id="left-arrow-btn" class="navigate-image-btn" src="svg/left-arrow.svg" alt="" srcset="">
+                        <div id="arrangement-images-list">
+                            <video id="webcam-video" style="display: none; position: absolute;" src=""></video>
+                            <img style="display: block;" id="emptyImage" src="img/product-image.png"
+                                alt="Product Image">
+                        </div>
+                        <img id="right-arrow-btn" class="navigate-image-btn" src="svg/right-arrow.svg" alt="" srcset="">
+                        <button id="delete-image" class="delete-image" onclick="deleteImage()">
+                            <img src="../../svg/cross.svg" alt="" srcset="">
+                        </button>
+                    </div>
+                    <div class="upload-webcam-btn-container">
+                        <!-- <img id="capturedImage" style="max-width: 200px; display: none;"> -->
+
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        <button onclick="document.getElementById('imageInput').click()" class="upload-image-btn">Upload
+                            image</button>
+                        <div style="display: flex;">
+                            <img class="webcam-icon" src="img/Webcam.png" alt="" srcset="">
+                            <button onclick='openWebcam()' class="use-webcam-btn">Use webcam</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="specifications-section">
+            <h3>Order Specifications</h3>
+            <div class="checkbox-grid">
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="rush">Rush</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="rush">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="rush-detail" id="rush-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="order">Order</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="order">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="order-detail" id="order-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="clean">Flower Food</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="clean">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="clean-detail" id="clean-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="polish">Ribbon</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="polish">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="polish-detail" id="polish-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="stamp">Gift Card</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="stamp">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="stamp-detail" id="stamp-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="rhodium">Delivery Note</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="rhodium">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="rhodium-detail" id="rhodium-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="set">Special Packaging</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="set">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="set-detail" id="set-detail">
+                </div>
+                <div class="checkbox-with-input">
+                    <label class="specification-name-label" for="repair">Arrange</label>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="checkbox" name="repair">
+                        <span class="checkmark"></span>
+                    </label>
+                    <input type="text" name="repair-detail" id="repair-detail">
+                </div>
+            </div>
+        </div>
+
+
+        <div class="expenses-section">
+            <h3>Order Expenses</h3>
+            <div class="expense-div-grid">
+                <div>
+                    <label for="setting">Gift Wrap</label>
+                    <input class="currency" min="0" type="number" name="setting-input" id="setting-input">
+                </div>
+                <div>
+                    <label for="polish">Ribbon</label>
+                    <input class="currency" min="0" type="number" name="polish-input" id="polish-input">
+                </div>
+                <div>
+                    <label for="rhodium">Delivery Note</label>
+                    <input class="currency" min="0" type="number" name="rhodium-input" id="rhodium-input">
+                </div>
+                <div>
+                    <label for="soldering">Delivery Fee</label>
+                    <input class="currency" min="0" type="number" name="soldering-input" id="soldering-input">
+                </div>
+                <div>
+                    <label for="clean">Flower Food</label>
+                    <input class="currency" min="0" type="number" name="clean-input" id="clean-input">
+                </div>
+                <div>
+                    <label for="miscellaneous">Miscellaneous</label>
+                    <input class="currency" min="0" type="number" name="miscellaneous-input" id="miscellaneous-input">
+                </div>
+                <div>
+                    <label for="color-stone">Flower Color</label>
+                    <input class="currency" min="0" type="number" name="color-stone" id="color-stone">
+                </div>
+                <div>
+                    <label for="finding">Additional Fees</label>
+                    <input class="currency" min="0" type="number" name="finding-input" id="finding-input">
+                </div>
+                <div>
+                    <label for="diamonds">Flower Count</label>
+                    <input class="currency" min="0" type="number" name="diamonds-input" id="diamonds-input">
+                </div>
+                <div>
+                    <label for="diamond-weight">Arrangement Weight</label>
+                    <input class="mass" type="number" name="diamond-weight-input" id="diamond-weight-input">
+                </div>
+                <div>
+                    <label for="dpc">Delivery Charge</label>
+                    <input class="not-currency" type="number" name="dpc-input" id="dpc-input">
+                </div>
+                <div>
+                    <label for="mounting">Arrangement Setup</label>
+                    <input class="currency" min="0" type="number" name="mounting-input" id="mounting-input">
+                </div>
+                <div>
+                    <label for="others">Other Fees</label>
+                    <input class="currency" min="0" type="number" name="others-input" id="others-input">
+                </div>
+                <div>
+                    <label style="color: tomato;" for="total-cost">Total Cost</label>
+                    <input readonly style="border: 1px solid tomato" class="currency" type="number"
+                        name="total-cost-input" id="total-cost-input">
+                </div>
+                <div>
+                    <label style="color: green" for="sale-price">Sale Price</label>
+                    <input style="border: 1px solid green" class="currency" type="number" name="sale-price-input"
+                        id="sale-price-input">
+                </div>
+                <div>
+                    <label for="revenue-percent">Revenue Percent</label>
+                    <input class="percent" type="number" name="revenue-percent-input" id="revenue-percent-input">
+                </div>
+
+            </div>
+        </div>
+
+        <div>
+            <div class="input-box">
+                <label for="invoiceId">Invoice ID</label>
+                <input readonly type="text" id="invoiceId">
+            </div>
+        </div>
+
+        <div class="order-notes">
+            <h3>Shipping Details</h3>
+            <input id="shipping-details" name="shipping_details" rows="3"></input>
+        </div>
+
+        <div class="order-notes">
+            <h3>Order Notes</h3>
+            <textarea id="order-notes" name="order_notes" rows="10"></textarea>
+        </div>
+
+        <div class="stone-specification">
+            <h3>Arrangement details</h3>
+            <table class="table-container">
+                <thead>
+                    <tr class="table-head-row">
+                        <th>FLOWER</th>
+                        <th>STYLE</th>
+                        <th>REFERENCE #</th>
+                        <th>QUANTITY</th>
+                        <th>LENGTH</th>
+                        <th>WIDTH</th>
+                        <th>HEIGHT</th>
+                        <th>SIZE</th>
+                        <th><img id="add-row" src="svg/plus.svg" alt=""></th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <!-- Arrangement details goes here -->
+
+                </tbody>
+            </table>
+        </div>
+
+
+        <div style="height: 5rem;"></div>
+    </div>
+
+    <div id="message-container" style="display: none;"></div>
+
+
+    <div id="confirmation-container" class="confirmation-container">
+        <div class="confirmation-box">
+            <p id="confirmation-message"></p>
+            <button id="confirm-yes">Yes</button>
+            <button id="confirm-no">No</button>
+        </div>
+    </div>
+</body>
+
+<script src="js/utils.js"></script>
+<script src="js/script.js"></script>
+<script src="js/print.js"></script>
+<script>
+
+    // Function to tell Electron to navigate to another page
+    function navigateTo(page, ...args) {
+        ipcRenderer.send('navigate', page, args);
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        navigateTo('login')
+    })
+    document.getElementById('invoices-page-btn').addEventListener('click', () => {
+        navigateTo('invoices')
+    })
+    document.getElementById('customers-page-btn').addEventListener('click', () => {
+        navigateTo('customers')
+    })
+    document.getElementById('orders-page-btn').addEventListener('click', () => {
+        navigateTo('orders')
+    })
+
+</script>
+<script src="js/confirmation.js"></script>
+<script src="js/handler.js"></script>
+
+</html>
