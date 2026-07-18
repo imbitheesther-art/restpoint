@@ -730,6 +730,14 @@ const CoffinInventory = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCoffinDetailModal, setShowCoffinDetailModal] = useState(false);
   const [showNewBookingModal, setShowNewBookingModal] = useState(false);
+  const [showBookingDetailModal, setShowBookingDetailModal] = useState(false);
+  const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
+  const [paymentFormData, setPaymentFormData] = useState({
+    is_paid: false,
+    amount_paid: '',
+    payment_method: 'cash',
+    payment_notes: ''
+  });
   const [editFormData, setEditFormData] = useState({});
   const [registerFormData, setRegisterFormData] = useState({
     type: '', material: '', size: '', color: '', quantity: '',
@@ -1148,6 +1156,49 @@ const CoffinInventory = () => {
     setShowCoffinDetailModal(true);
   };
 
+  const handleBookingClick = (booking) => {
+    setSelectedBookingDetail(booking);
+    setPaymentFormData({
+      is_paid: booking.is_paid || false,
+      amount_paid: booking.amount_paid || '',
+      payment_method: booking.payment_method || 'cash',
+      payment_notes: booking.payment_notes || ''
+    });
+    setShowBookingDetailModal(true);
+  };
+
+  const handlePaymentUpdate = async (e) => {
+    e.preventDefault();
+    if (!selectedBookingDetail) return;
+
+    try {
+      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings/${selectedBookingDetail.booking_id || selectedBookingDetail.id}/payment`, {
+        method: 'PUT',
+        headers: {
+          ...getTenantHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentFormData)
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'Payment update failed');
+
+      showToast('Payment updated successfully!', 'success');
+
+      setBookings(prev => prev.map(b =>
+        (b.booking_id === selectedBookingDetail.booking_id || b.id === selectedBookingDetail.id)
+          ? { ...b, ...paymentFormData }
+          : b
+      ));
+
+      setSelectedBookingDetail(prev => ({ ...prev, ...paymentFormData }));
+      setShowBookingDetailModal(false);
+    } catch (err) {
+      showToast(err.message || 'Failed to update payment', 'error');
+    }
+  };
+
   const renderPagination = () => {
     const btns = [];
     btns.push(
@@ -1445,7 +1496,7 @@ const CoffinInventory = () => {
                           </TableHead>
                           <tbody>
                             {bookings.map((booking) => (
-                              <TableRow key={booking.booking_id || booking.id}>
+                              <TableRow key={booking.booking_id || booking.id} onClick={() => handleBookingClick(booking)} style={{ cursor: 'pointer' }}>
                                 <TableCell style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: COLORS.primary }}>
                                   {booking.booking_code || `BK-${booking.booking_id}`}
                                 </TableCell>
@@ -2004,6 +2055,214 @@ const CoffinInventory = () => {
                   <SecondaryButton type="button" onClick={() => setShowNewBookingModal(false)}>Cancel</SecondaryButton>
                   <PrimaryButton type="submit" disabled={bookingLoading}>
                     {bookingLoading ? 'Creating...' : 'Create Booking'}
+                  </PrimaryButton>
+                </DrawerFooter>
+              </form>
+            </DrawerBody>
+          </Drawer>
+        </DrawerOverlay>
+      )}
+
+      {/* Booking Detail Modal with Payment Update */}
+      {showBookingDetailModal && selectedBookingDetail && (
+        <DrawerOverlay onClick={() => setShowBookingDetailModal(false)}>
+          <Drawer $open={showBookingDetailModal} style={{ width: '650px' }}>
+            <DrawerHeader style={{ background: COLORS.primaryDark }}>
+              <div>
+                <DrawerTitle style={{ color: COLORS.white }}>Booking Details</DrawerTitle>
+                <DrawerSubtitle style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  {selectedBookingDetail.booking_code || `BK-${selectedBookingDetail.booking_id}`}
+                </DrawerSubtitle>
+              </div>
+              <ActionButton onClick={() => setShowBookingDetailModal(false)} style={{ color: COLORS.white }}><XCircle size={20} /></ActionButton>
+            </DrawerHeader>
+            <DrawerBody>
+              <form onSubmit={handlePaymentUpdate}>
+                {/* Client Information */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Client Information
+                  </h3>
+                  <DetailGrid>
+                    <DetailItem>
+                      <DetailLabel>Client Name</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.client_name}</DetailValue>
+                    </DetailItem>
+                    <DetailItem>
+                      <DetailLabel>Phone</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.client_phone}</DetailValue>
+                    </DetailItem>
+                    <DetailItem>
+                      <DetailLabel>Email</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.client_email || 'N/A'}</DetailValue>
+                    </DetailItem>
+                    <DetailItem>
+                      <DetailLabel>Booking Date</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.booking_date ? new Date(selectedBookingDetail.booking_date).toLocaleDateString() : 'N/A'}</DetailValue>
+                    </DetailItem>
+                  </DetailGrid>
+                  {selectedBookingDetail.client_address && (
+                    <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.border, marginBottom: '0.5rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Address
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', color: COLORS.text }}>{selectedBookingDetail.client_address}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Coffin Details */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Coffin Details
+                  </h3>
+                  <DetailGrid>
+                    <DetailItem>
+                      <DetailLabel>Coffin Type</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.coffin_type || selectedBookingDetail.coffin?.type || 'External'}</DetailValue>
+                    </DetailItem>
+                    <DetailItem>
+                      <DetailLabel>Material</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.coffin_material || selectedBookingDetail.coffin?.material || 'N/A'}</DetailValue>
+                    </DetailItem>
+                    <DetailItem>
+                      <DetailLabel>Price</DetailLabel>
+                      <DetailValue style={{ color: COLORS.primary, fontWeight: 600 }}>
+                        Ksh {parseInt(selectedBookingDetail.coffin_price || selectedBookingDetail.coffin?.exact_price || 0).toLocaleString()}
+                      </DetailValue>
+                    </DetailItem>
+                    <DetailItem>
+                      <DetailLabel>Event Date</DetailLabel>
+                      <DetailValue>{selectedBookingDetail.event_date ? new Date(selectedBookingDetail.event_date).toLocaleDateString() : 'TBD'}</DetailValue>
+                    </DetailItem>
+                  </DetailGrid>
+                </div>
+
+                {/* Special Requirements */}
+                {selectedBookingDetail.special_requirements && (
+                  <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: COLORS.warningLight, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.warning }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.warningDark, marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      ⚠️ Special Requirements
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: COLORS.warningDark }}>{selectedBookingDetail.special_requirements}</div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {selectedBookingDetail.notes && (
+                  <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: COLORS.bg, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.border }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      📝 Notes
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: COLORS.text }}>{selectedBookingDetail.notes}</div>
+                  </div>
+                )}
+
+                {/* Payment Information */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Payment Information
+                  </h3>
+
+                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      padding: '0.75rem',
+                      border: '1px solid ' + COLORS.border,
+                      borderRadius: COLORS.radiusSm,
+                      flex: 1,
+                      background: paymentFormData.is_paid ? COLORS.successLight : COLORS.surface
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={paymentFormData.is_paid}
+                        onChange={(e) => setPaymentFormData(p => ({ ...p, is_paid: e.target.checked }))}
+                        style={{ accentColor: COLORS.success, width: '1.25rem', height: '1.25rem' }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.875rem', color: paymentFormData.is_paid ? COLORS.successDark : COLORS.text }}>
+                          Payment Received
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
+                          {paymentFormData.is_paid ? 'Yes' : 'No'}
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <FormGroup>
+                      <Label>Amount Paid (KES) <span className="required">*</span></Label>
+                      <Input
+                        type="number"
+                        value={paymentFormData.amount_paid}
+                        onChange={(e) => setPaymentFormData(p => ({ ...p, amount_paid: e.target.value }))}
+                        placeholder="0"
+                        required
+                      />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>Payment Method</Label>
+                      <Select
+                        value={paymentFormData.payment_method}
+                        onChange={(e) => setPaymentFormData(p => ({ ...p, payment_method: e.target.value }))}
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="other">Other</option>
+                      </Select>
+                    </FormGroup>
+                  </div>
+
+                  <FormGroup>
+                    <Label>Payment Notes</Label>
+                    <TextArea
+                      value={paymentFormData.payment_notes}
+                      onChange={(e) => setPaymentFormData(p => ({ ...p, payment_notes: e.target.value }))}
+                      placeholder="Additional payment notes..."
+                      rows="2"
+                    />
+                  </FormGroup>
+
+                  {/* Payment Summary */}
+                  <div style={{
+                    padding: '1rem',
+                    background: COLORS.bg,
+                    borderRadius: COLORS.radiusSm,
+                    border: '1px solid ' + COLORS.border,
+                    marginBottom: '1rem'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8125rem', color: COLORS.textSecondary }}>Total Amount:</span>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.text }}>
+                        Ksh {parseInt(selectedBookingDetail.coffin_price || selectedBookingDetail.coffin?.exact_price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8125rem', color: COLORS.textSecondary }}>Amount Paid:</span>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.primary }}>
+                        Ksh {parseInt(paymentFormData.amount_paid || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ height: 1, background: COLORS.border, margin: '0.5rem 0' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: COLORS.text }}>Balance:</span>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 700, color: paymentFormData.is_paid ? COLORS.success : COLORS.danger }}>
+                        Ksh {parseInt((selectedBookingDetail.coffin_price || selectedBookingDetail.coffin?.exact_price || 0) - (paymentFormData.amount_paid || 0)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <DrawerFooter>
+                  <SecondaryButton type="button" onClick={() => setShowBookingDetailModal(false)}>Cancel</SecondaryButton>
+                  <PrimaryButton type="submit">
+                    Update Payment
                   </PrimaryButton>
                 </DrawerFooter>
               </form>
