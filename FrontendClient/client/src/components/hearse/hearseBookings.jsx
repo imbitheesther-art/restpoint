@@ -11,7 +11,7 @@ import {
   Check,
   Search,
   Plus,
-  Refresh,
+  RefreshCw,
   MoreVertical,
   ChevronLeft,
   ChevronRight,
@@ -117,7 +117,7 @@ const Icons = {
   car: <Car size={16} />,
   search: <Search size={16} />,
   plus: <Plus size={16} />,
-  refresh: <Refresh size={16} />,
+  refresh: <RefreshCw size={16} />,
   moreV: <MoreVertical size={16} />,
   clock: <Clock size={16} />,
   check: <Check size={16} />,
@@ -945,7 +945,7 @@ const HearseBookings = () => {
 
   if (loading) return (
     <Container style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Refresh size={32} color={COLORS.primary} className="animate-spin" />
+      <RefreshCw size={32} color={COLORS.primary} className="animate-spin" />
     </Container>
   );
 
