@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import api from '../../api/axios';
+import api from '../../../api/axios';
 
 export function useSuggestions() {
   const [suggestions, setSuggestions] = useState<string[]>([]);

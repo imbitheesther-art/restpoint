@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import api from '../../api/axios';
+import api from '../../../api/axios';
 
 export interface SearchResult {
   id: string | number;

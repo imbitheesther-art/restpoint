@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import api from '../../api/axios';
+import api from '../../../api/axios';
 
 export function useRecentSearches() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);

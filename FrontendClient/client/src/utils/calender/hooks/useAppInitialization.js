@@ -4,10 +4,10 @@
 // ============================================
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useDeploymentStore from '../store/useDeploymentStore';
-import useBranchStore from '../store/useBranchStore';
-import useAuthStore from '../store/useAuthStore';
-import { tenantApi } from '../../api/tenant.api';
+import useDeploymentStore from '../../store/useDeploymentStore';
+import useBranchStore from '../../store/useBranchStore';
+import useAuthStore from '../../store/useAuthStore';
+import { tenantApi } from '../../../api/tenant.api';
 
 export const useAppInitialization = () => {
     const navigate = useNavigate();
