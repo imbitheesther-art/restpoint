@@ -4,7 +4,11 @@ import { useSocket } from '../../utils/context/socketContext';
 import env from '../../utils/config/env';
 import ReusableCalendar from '../../utils/calender/calender';
 
-const API_BASE_URL = `${env.FULL_API_URL}`;
+// Use the API gateway URL with /api/v1/restpoint prefix for all hearse service calls
+// The gateway strips /api/v1/restpoint and routes to the hearse service
+const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://restpoint.co.ke/api/v1/restpoint' 
+  : (env.FULL_API_URL || 'http://localhost:5000/api/v1/restpoint');
 const RESULTS_PER_PAGE = 10;
 
 const STATUS_CONFIG = {
