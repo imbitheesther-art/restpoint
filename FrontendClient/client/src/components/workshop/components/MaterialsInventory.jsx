@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSocket } from '../../../context/socketContext';
+import { useSocket } from '../../../utils/context/socketContext';
 import { useSocketEvents } from '../hooks/useSocketEvents';
 import {
     Package, AlertTriangle, TrendingDown, TrendingUp,

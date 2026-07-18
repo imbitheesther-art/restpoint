@@ -7,7 +7,7 @@ import {
 import api from '../../api/axios';
 import { io } from 'socket.io-client';
 import Footer from '../../components/layout/Footer';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 
 const C = {
   ink: '#15171A',

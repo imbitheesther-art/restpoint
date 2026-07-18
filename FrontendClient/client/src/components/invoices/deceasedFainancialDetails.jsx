@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import AdvancedPdfViewer from './pdfviewer';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 
 const DeceasedFinancialDetails = ({ 
   financialDetails, 

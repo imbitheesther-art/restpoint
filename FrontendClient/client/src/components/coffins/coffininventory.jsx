@@ -14,7 +14,7 @@ import {
   ArrowUp, ArrowDown, SearchX, SlidersHorizontal, Maximize2,
   Diamond, CheckSquare, XSquare, Loader2
 } from 'lucide-react';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 
 // ─── Color Palette ─────────────────────────────────────────────────────────
 const C = {
@@ -978,7 +978,7 @@ function CoffinInventory() {
       const username = (() => { try { const u = JSON.parse(localStorage.getItem('user') || '{}'); return u.username || u.name || 'Admin'; } catch { return 'Admin'; } })();
       formData.append('created_by', username);
       registerImageFiles.forEach(file => formData.append('images', file));
-      const env = await import('../../config/env');
+      const env = await import('../../utils/config/env');
       const { ENDPOINTS } = await import('../../api/endpoints');
       const { getTenantHeaders } = await import('../../api/endpoints');
       const registerUrl = `${env.default.FULL_API_URL}${ENDPOINTS.COFFINS.BASE}/register`;

@@ -3,7 +3,7 @@ import { Routes, Route, useParams, Navigate, useNavigate, useLocation } from 're
 
 import { tenantApi } from '../api/tenant.api';
 import { useTenantStore } from '../modules/seo/useTenantStore';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../utils/context/AuthContext';
 import ModernSidebar from '../components/layout/ModernSidebar';
 import UserProfile from '../components/layout/userProfile';
 import FooterComponent from '../components/layout/globalFooter';
@@ -71,15 +71,15 @@ const ForgotPassword = lazy(() => import('../components/auth/ForgotPassword'));
 const ChangePassword = lazy(() => import('../components/auth/changePassword'));
 const InvoiceManager = lazy(() => import('../components/invoices/invoicemanager'));
 const DocumentsPage = lazy(() => import('../components/documents/documentspage'));
-const DeceasedRegistrationForm = lazy(() => import('../components/deceasedinfo/registerDeceased'));
+const DeceasedRegistrationForm = lazy(() => import('../components/deceased/register/deceasedIntake'));
 const RegisterCoffin = lazy(() => import('../components/coffins/registerCoffin'));
 const CoffinInventory = lazy(() => import('../components/coffins/coffininventory'));
 const CoffinDetails = lazy(() => import('../components/coffins/coffinDetails'));
-const AllDeceasedPage = lazy(() => import('../components/deceasedinfo/listDeceased'));
+const AllDeceasedPage = lazy(() => import('../components/deceased/allDeceased/listDeceased'));
 const NotFound = lazy(() => import('../components/layout/notFound'));
-const DeceasedDetails = lazy(() => import('../components/deceasedprofile/deceasedDetailPage'));
+const DeceasedDetails = lazy(() => import('../components/deceased/deceasedinfo/deceasedDetailPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
-const DeceasedInfoSection = lazy(() => import('../components/deceasedinfo/deceasedInfoSection'));
+const DeceasedInfoSection = lazy(() => import('../components/deceased/deceasedInfoSection'));
 
 const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
@@ -90,6 +90,10 @@ const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemor
 
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
 const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
+
+// Flower Booking System
+const FlowerBookings = lazy(() => import('../components/florists/FlowerBookings'));
+const FlowerOrderDetail = lazy(() => import('../components/florists/FlowerOrderDetail'));
 
 const HearseBookings = lazy(() => import('../components/hearse/hearseBookings'));
 const DriverPortal = lazy(() => import('../components/hearse/DriverPortal'));
@@ -428,6 +432,18 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="users" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager']} userRole={userRole}>
           <Layout tenantData={tenantData}><UserManagement /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Flower Booking - Available to admin, manager, staff */}
+      <Route path="flowers" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><FlowerBookings /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="flowers/order/:id" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><FlowerOrderDetail /></Layout>
         </RoleBasedRoute>
       } />
 

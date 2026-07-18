@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { workshopService } from '../services/workshopService';
-import { useSocket } from '../../../context/socketContext';
+import { useSocket } from '../../../utils/context/socketContext';
 
 // ============================================================
 // WORKSHOP DATA HOOK - All data fetching and state management

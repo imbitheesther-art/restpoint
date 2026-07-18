@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useSocket } from '../../context/socketContext';
+import { useSocket } from '../../utils/context/socketContext';
 import { api, ENDPOINTS } from '../../api';
 import { Users, AlertCircle, Calendar } from 'lucide-react';
 

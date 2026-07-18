@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../../api/axios';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKETIO_URL || 'http://localhost:5018';
 

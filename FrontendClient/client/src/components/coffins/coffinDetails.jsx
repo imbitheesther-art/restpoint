@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 
 // ─── Color Palette (Elegant Vintage) ───────────────────────────────────────
 const Colors = {

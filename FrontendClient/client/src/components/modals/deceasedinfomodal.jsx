@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { X } from 'lucide-react';
-import DeceasedInfoSection from '../deceasedinfo/deceasedInfoSection';
+import DeceasedInfoSection from '../deceased/deceasedInfoSection';
 
 // Modal Overlay
 const ModalOverlay = styled.div`

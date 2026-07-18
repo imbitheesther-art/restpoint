@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle, AlertCircle
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../utils/context/AuthContext';
 
 const C = {
   ink: '#15171A',

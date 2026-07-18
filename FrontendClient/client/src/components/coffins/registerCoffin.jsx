@@ -12,7 +12,7 @@ import { Square as Button } from 'lucide-react';
 import { Form, Row, Col, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ENDPOINTS, getTenantHeaders } from '../../api/endpoints';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 
 // --- Enhanced Color Palette ---
 const Colors = {

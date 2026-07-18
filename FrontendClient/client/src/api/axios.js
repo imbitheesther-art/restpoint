@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
-import env from '../config/env';
+import env from '../utils/config/env';
 
 // Workshop service axios instance
 export const workshopApi = axios.create({

@@ -3,13 +3,15 @@ import {
     Row, Col, Spinner, Modal, Button, Form, Table, Dropdown
 } from 'react-bootstrap';
 import './hearseBookings.css';
-import { useSocket } from '../../context/socketContext';
+import { useSocket } from '../../utils/context/socketContext';
 import {
     Eye, RefreshCw, User, Car, CheckCircle, XCircle, AlertCircle,
     Calendar, Truck, Search, MoreVertical, MapPin, Plus, Wrench,
-    ChevronDown, Phone, Clock, ArrowRight, Building2
+    ChevronDown, Phone, Clock, ArrowRight, Building2, CalendarDays,
+    Grid3X3, List
 } from 'lucide-react';
-import env from '../../config/env';
+import env from '../../utils/config/env';
+import ReusableCalendar from '../../utils/calender/calender';
 
 const API_BASE_URL = `${env.FULL_API_URL}`;
 
@@ -178,15 +180,37 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
     const [filterBranch, setFilterBranch] = useState('all');
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [conflicts, setConflicts] = useState([]);
+    const [checkingConflict, setCheckingConflict] = useState(false);
 
     useEffect(() => {
         if (show) {
             setSelected(null); setBookingDate(''); setClientName('');
             setClientPhone(''); setFromLocation(''); setToLocation('');
-            setErrorMessage(''); setFilterBranch('all');
+            setErrorMessage(''); setFilterBranch('all'); setShowCalendar(false);
+            setConflicts([]);
             loadHearses();
         }
     }, [show]);
+
+    // Check for conflicts when date or hearse changes
+    useEffect(() => {
+        if (!selected || !bookingDate) { setConflicts([]); return; }
+        const checkConflicts = async () => {
+            setCheckingConflict(true);
+            try {
+                const data = await bookingService.checkDateAvailability(bookingDate);
+                const bookedHearses = data.booked_hearses || [];
+                const thisHearseBooked = bookedHearses.filter(
+                    (bh) => String(bh.hearse_id) === String(selected.id) || String(bh.id) === String(selected.id)
+                );
+                setConflicts(thisHearseBooked);
+            } catch { setConflicts([]); }
+            finally { setCheckingConflict(false); }
+        };
+        checkConflicts();
+    }, [selected, bookingDate]);
 
     const loadHearses = async () => {
         setLoading(true);
@@ -203,12 +227,14 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
         if (!selected || !bookingDate || !clientName || !fromLocation || !toLocation) {
             setErrorMessage('Please fill in all required fields'); return;
         }
+        if (conflicts.length > 0) {
+            setErrorMessage('This hearse is already booked on this date. Please choose another date or hearse.');
+            return;
+        }
         setSubmitting(true); setErrorMessage('');
         try {
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : {};
-
-            // Get current user's branch information
             const userBranchId = user?.branch_id || selected?.branch_id || '';
             const userBranchCode = user?.branch_code || selected?.branch_code || '';
 
@@ -217,7 +243,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                 client_name: clientName,
                 client_phone: clientPhone || '',
                 destination: `${fromLocation} to ${toLocation}`,
-                from_timestamp: bookingDate, // Date only, no time
+                from_timestamp: bookingDate,
                 booked_by: user?.email || user?.userId || user?.role || 'unknown',
                 branch_id: userBranchId,
                 branch_code: userBranchCode
@@ -227,10 +253,25 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
         finally { setSubmitting(false); }
     };
 
-    // Unique branches from available hearses
+    const handleDateSelect = useCallback((dateStr) => {
+        setBookingDate(dateStr);
+        setShowCalendar(false);
+    }, []);
+
     const branchOptions = globalBranches.length > 0
         ? globalBranches
         : [...new Map(hearses.filter(h => h.branch_id).map(h => [h.branch_id, { branch_id: h.branch_id, branch_name: h.branch_name || h.branch_code || `Branch ${h.branch_id}` }])).values()];
+
+    // Calendar items for conflict visualization
+    const calendarItems = selected ? [
+        { id: 'conflict-check', date: bookingDate || '', status: conflicts.length > 0 ? 'booked' : 'available' }
+    ] : [];
+
+    const toDateStr = (d) => {
+        if (!d) return '';
+        const dt = new Date(d);
+        return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    };
 
     return (
         <Modal show={show} onHide={onHide} size="lg" centered className="hb-modal hb-modal-dark" fullscreen="sm-down">
@@ -243,26 +284,15 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
             <Modal.Body>
                 {!selected ? (
                     <>
-                        {/* Branch filter tabs */}
                         {branchOptions.length > 1 && (
                             <div className="hb-branch-tabs mb-3">
-                                <button
-                                    className={`hb-branch-tab ${filterBranch === 'all' ? 'active' : ''}`}
-                                    onClick={() => setFilterBranch('all')}
-                                >
+                                <button className={`hb-branch-tab ${filterBranch === 'all' ? 'active' : ''}`} onClick={() => setFilterBranch('all')}>
                                     All Branches <span className="pill-count">{hearses.length}</span>
                                 </button>
                                 {branchOptions.map(br => (
-                                    <button
-                                        key={br.branch_id}
-                                        className={`hb-branch-tab ${String(filterBranch) === String(br.branch_id) ? 'active' : ''}`}
-                                        onClick={() => setFilterBranch(String(br.branch_id))}
-                                    >
-                                        <Building2 size={12} />
-                                        {br.branch_name}
-                                        <span className="pill-count">
-                                            {hearses.filter(h => String(h.branch_id) === String(br.branch_id)).length}
-                                        </span>
+                                    <button key={br.branch_id} className={`hb-branch-tab ${String(filterBranch) === String(br.branch_id) ? 'active' : ''}`} onClick={() => setFilterBranch(String(br.branch_id))}>
+                                        <Building2 size={12} /> {br.branch_name}
+                                        <span className="pill-count">{hearses.filter(h => String(h.branch_id) === String(br.branch_id)).length}</span>
                                     </button>
                                 ))}
                             </div>
@@ -281,17 +311,12 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                             </div>
                         ) : (
                             <>
-                                {/* Desktop table */}
                                 <div className="hb-desktop-only">
                                     <div className="table-responsive">
                                         <Table hover size="sm" className="hb-modal-table mb-0">
                                             <thead>
                                                 <tr>
-                                                    <th>Name</th>
-                                                    <th>Plate</th>
-                                                    <th>Model</th>
-                                                    <th>Branch</th>
-                                                    <th className="text-center">Action</th>
+                                                    <th>Name</th><th>Plate</th><th>Model</th><th>Branch</th><th className="text-center">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -300,9 +325,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                                                         <td><strong>{h.hearse_name || 'N/A'}</strong></td>
                                                         <td><span className="hb-plate-badge">{h.plate_number || h.number_plate}</span></td>
                                                         <td className="text-muted">{h.model || 'N/A'}</td>
-                                                        <td>
-                                                            <BranchBadge name={h.branch_name} code={h.branch_code} />
-                                                        </td>
+                                                        <td><BranchBadge name={h.branch_name} code={h.branch_code} /></td>
                                                         <td className="text-center">
                                                             <button className="hb-btn-book-sm" onClick={() => setSelected(h)}>
                                                                 <Car size={13} /> Book
@@ -314,7 +337,6 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                                         </Table>
                                     </div>
                                 </div>
-                                {/* Mobile cards */}
                                 <div className="hb-mobile-only">
                                     {displayedHearses.map(h => (
                                         <div key={h.id} className="hb-hearse-card" onClick={() => setSelected(h)}>
@@ -358,13 +380,62 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                             <Button variant="link" className="hb-change-btn" onClick={() => setSelected(null)}>← Change</Button>
                         </div>
 
-                        <div className="hb-section-label">Booking Details</div>
+                        {/* Conflict warning */}
+                        {conflicts.length > 0 && (
+                            <div className="hb-notice danger" style={{ marginTop: '0.75rem' }}>
+                                <AlertCircle size={16} />
+                                <span><strong>Conflict!</strong> This hearse is already booked on {fmtDateOnly(bookingDate)}. Choose a different date or hearse.</span>
+                            </div>
+                        )}
+                        {checkingConflict && bookingDate && (
+                            <div className="text-center py-1">
+                                <Spinner size="sm" /> <span className="text-muted small">Checking availability...</span>
+                            </div>
+                        )}
+
+                        <div className="hb-section-label" style={{ marginTop: '0.75rem' }}>Booking Details</div>
+
+                        {/* Date picker with calendar toggle */}
                         <Row className="g-3">
                             <Col xs={12} md={6}>
                                 <Form.Group>
                                     <Form.Label className="hb-form-label">Booking Date *</Form.Label>
-                                    <Form.Control type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} className="hb-form-control" required />
+                                    <div className="hb-date-picker-row">
+                                        <Form.Control
+                                            type="date"
+                                            value={bookingDate}
+                                            onChange={e => setBookingDate(e.target.value)}
+                                            className="hb-form-control"
+                                            required
+                                            style={{ flex: 1 }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="hb-btn-calendar"
+                                            onClick={() => setShowCalendar(!showCalendar)}
+                                            title="Pick date from calendar"
+                                        >
+                                            <CalendarDays size={16} />
+                                        </button>
+                                    </div>
                                 </Form.Group>
+                                {showCalendar && (
+                                    <div className="hb-inline-calendar">
+                                        <ReusableCalendar
+                                            items={calendarItems}
+                                            dateKey="date"
+                                            idKey="id"
+                                            selectedDate={bookingDate}
+                                            onDateSelect={handleDateSelect}
+                                            showAddButton={false}
+                                            showQuickFilters={true}
+                                            getStatusColor={(item) => item.status === 'booked' ? '#DC2626' : '#16A34A'}
+                                            getIsUrgent={(item) => item.status === 'booked'}
+                                            getItemTitle={(item) => item.status === 'booked' ? 'Booked' : 'Available'}
+                                            accentColor="#3B82F6"
+                                        />
+                                    </div>
+                                )}
                             </Col>
                             <Col xs={12} md={6}>
                                 <Form.Group>
@@ -398,7 +469,7 @@ const AvailableHearsesModal = ({ show, onHide, onBookingCreated, globalBranches 
                             <button
                                 type="button" className="hb-btn hb-btn-green"
                                 onClick={handleBook}
-                                disabled={!bookingDate || !clientName || !fromLocation || !toLocation || submitting}
+                                disabled={!bookingDate || !clientName || !fromLocation || !toLocation || submitting || conflicts.length > 0}
                             >
                                 {submitting ? <><span className="hb-loading-spinner hb-spinner-sm" />Booking...</> : <><CheckCircle size={16} />Confirm Booking</>}
                             </button>
@@ -828,6 +899,8 @@ const BookingSystem = () => {
     const [registering, setRegistering] = useState(false);
     const [availabilityResult, setAvailabilityResult] = useState(null);
     const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+    const [viewMode, setViewMode] = useState('table');
+    const [selectedDate, setSelectedDate] = useState(null);
     const { socket } = useSocket();
 
     const addToast = useCallback((message, type = 'success') => {

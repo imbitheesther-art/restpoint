@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CoffinSelectionModal from './coffinselectModal';

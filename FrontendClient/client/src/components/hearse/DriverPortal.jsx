@@ -5,8 +5,8 @@ import {
     Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ArrowRight,
     Route, Sun, Moon, CloudSun, User, Shield, Timer, CalendarDays
 } from 'lucide-react';
-import { useSocket } from '../../context/socketContext';
-import env from '../../config/env';
+import { useSocket } from '../../utils/context/socketContext';
+import env from '../../utils/config/env';
 
 const API_BASE_URL = env.FULL_API_URL;
 

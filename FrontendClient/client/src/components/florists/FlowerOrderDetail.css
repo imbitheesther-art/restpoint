@@ -1,0 +1,266 @@
+:root {
+    --primary-color: #E1E4E8;
+    --secondary-color: #0066cc;
+    --tertiary-color: #F6F6F6;
+    --table-header-color: #7389FF
+}
+
+body {
+    padding: 1% 2%;
+    background-color: var(--tertiary-color);
+}
+
+button {
+    cursor: pointer;
+}
+
+.flower-order-detail {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.page-navigation {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-navigation h2 {
+    font-size: 1.8rem;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.page-navigation span {
+    color: #6B7280;
+}
+
+.order-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.production-sheet-button {
+    border-radius: 0.7rem;
+    font-size: 1.4rem;
+    border: 1px solid #9b4dff;
+    background-color: white;
+    padding: 1.2rem 1.5rem;
+    color: #5b4dff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.production-sheet-button:hover {
+    background-color: #9b4dff;
+    color: white;
+}
+
+#save-button {
+    background-color: #5b4dff;
+    color: white;
+    border: none;
+}
+
+#save-button:hover {
+    background-color: #4a3de0;
+}
+
+.order-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.order-information {
+    background: #f9fafb;
+    padding: 2rem;
+    border-radius: 0.8rem;
+}
+
+.input-box {
+    margin-bottom: 1.5rem;
+}
+
+.input-box label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.input-box input,
+.input-box textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1.4rem;
+    background-color: white;
+    transition: border-color 0.3s ease;
+}
+
+.input-box input:focus,
+.input-box textarea:focus {
+    outline: none;
+    border-color: #5b4dff;
+    box-shadow: 0 0 0 3px rgba(91, 77, 255, 0.1);
+}
+
+.input-box input:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+}
+
+.input-box textarea {
+    resize: vertical;
+    min-height: 8rem;
+}
+
+.order-notes {
+    grid-column: 1 / -1;
+    background: #f9fafb;
+    padding: 2rem;
+    border-radius: 0.8rem;
+}
+
+.order-notes h3 {
+    font-size: 1.6rem;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+}
+
+.order-notes textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1.4rem;
+    resize: vertical;
+    min-height: 12rem;
+}
+
+.order-notes textarea:focus {
+    outline: none;
+    border-color: #5b4dff;
+    box-shadow: 0 0 0 3px rgba(91, 77, 255, 0.1);
+}
+
+.order-status {
+    grid-column: 1 / -1;
+    background: #f9fafb;
+    padding: 2rem;
+    border-radius: 0.8rem;
+}
+
+.order-status h3 {
+    font-size: 1.6rem;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-info p {
+    font-size: 1.4rem;
+    color: #6B7280;
+    margin: 0;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-badge.confirmed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.cancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.6rem;
+    color: #6B7280;
+}
+
+.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.6rem;
+    color: #ef4444;
+}
+
+@media screen and (1200px > width > 1120px) {
+    :root {
+        font-size: 62.5%;
+    }
+}
+
+@media screen and (1120px > width > 786px) {
+    :root {
+        font-size: 62.5%;
+    }
+
+    .order-detail {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (width <=786px) {
+    :root {
+        font-size: 62.5%;
+    }
+
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .order-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .production-sheet-button {
+        width: 100%;
+    }
+
+    .order-detail {
+        grid-template-columns: 1fr;
+    }
+}

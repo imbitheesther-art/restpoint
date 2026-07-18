@@ -2,7 +2,7 @@
 // All microservice endpoints are defined here
 // Import env for base URL configuration
 
-import env from '../config/env';
+import env from '../utils/config/env';
 
 // Helper to build full API URLs
 export const buildUrl = (service, path = '') => {

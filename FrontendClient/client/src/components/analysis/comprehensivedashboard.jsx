@@ -17,7 +17,7 @@ import {
   GitCompareArrows, X, ChevronDown
 } from "lucide-react";
 import { getTenantHeaders } from "../../api/endpoints";
-import env from "../../config/env";
+import env from "../../utils/config/env";
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement,

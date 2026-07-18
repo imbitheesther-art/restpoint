@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useSocket } from '../../../context/socketContext';
+import { useSocket } from '../../../utils/context/socketContext';
 
 // ============================================================
 // CUSTOM HOOK: useSocketEvents - Real-time socket event management

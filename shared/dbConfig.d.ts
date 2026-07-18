@@ -1,6 +1,7 @@
 /**
  * @file shared/dbConfig.ts
- * CENTRALIZED DATABASE CONFIGURATION — Single source of truth for ALL services
+ * PRODUCTION-GRADE CENTRALIZED DATABASE CONFIGURATION
+ * Features: Circuit Breaker, Pool Limits, Logger, Memory Leak Prevention
  */
 import * as mysql from 'mysql2/promise';
 export declare const getRootPool: () => Promise<mysql.Pool>;
@@ -14,6 +15,13 @@ export declare const safeTenantQuery: (dbName: string, sql: string, params?: any
 export declare const safeTenantExecute: (dbName: string, sql: string, params?: any[]) => Promise<mysql.ResultSetHeader>;
 export declare const closeTenantDB: (tenantDbName: string) => Promise<void>;
 export declare const closeAllConnections: () => Promise<void>;
+export declare const healthCheck: () => Promise<{
+    status: string;
+    pools: number;
+    cacheSize: number;
+    rootPoolBreaker: string;
+    timestamp: string;
+}>;
 declare const _default: {
     getRootPool: () => Promise<mysql.Pool>;
     lookupTenantDatabase: (tenantSlug: string) => Promise<string | null>;
@@ -26,6 +34,13 @@ declare const _default: {
     safeTenantExecute: (dbName: string, sql: string, params?: any[]) => Promise<mysql.ResultSetHeader>;
     closeTenantDB: (tenantDbName: string) => Promise<void>;
     closeAllConnections: () => Promise<void>;
+    healthCheck: () => Promise<{
+        status: string;
+        pools: number;
+        cacheSize: number;
+        rootPoolBreaker: string;
+        timestamp: string;
+    }>;
 };
 export default _default;
 //# sourceMappingURL=dbConfig.d.ts.map

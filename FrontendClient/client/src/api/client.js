@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
-import env from '../config/env';
+import env from '../utils/config/env';
 
 // Base instance
 const api = axios.create({

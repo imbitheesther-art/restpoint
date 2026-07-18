@@ -13,7 +13,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useReactToPrint } from 'react-to-print';
-import { playWarningSound, confirmWithWarning } from '../../utils/deleteWarning';
+import { playWarningSound, confirmWithWarning } from '../../utils/warnings/deleteWarning';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 

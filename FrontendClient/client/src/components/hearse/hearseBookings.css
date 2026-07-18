@@ -1,4 +1,213 @@
 /* ===== HEARSE BOOKINGS — FULLY MOBILE RESPONSIVE ===== */
+
+/* Date picker with calendar button */
+.hb-date-picker-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.hb-btn-calendar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius-sm);
+    background: var(--hbg-card);
+    color: var(--haccent);
+    cursor: pointer;
+    transition: var(--htransition);
+    flex-shrink: 0;
+}
+
+.hb-btn-calendar:hover {
+    background: var(--haccent-glow);
+    border-color: var(--haccent);
+}
+
+/* Inline calendar in modal */
+.hb-inline-calendar {
+    margin-top: 0.5rem;
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius);
+    overflow: hidden;
+    background: var(--hbg-card);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.hb-inline-calendar .rc-root {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Notice danger variant */
+.hb-notice.danger {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.hb-notice.danger svg {
+    color: #dc2626;
+    flex-shrink: 0;
+}
+
+/* Booking type tabs */
+.hb-booking-type-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.hb-type-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius-sm);
+    background: var(--hbg-card);
+    color: var(--htext-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--htransition);
+}
+
+.hb-type-tab:hover {
+    border-color: var(--haccent);
+    color: var(--haccent);
+}
+
+.hb-type-tab.active {
+    background: var(--haccent);
+    color: white;
+    border-color: var(--haccent);
+}
+
+/* View toggle buttons */
+.hb-view-toggle {
+    display: flex;
+    gap: 2px;
+    background: var(--hbg-surface);
+    border-radius: var(--hradius-sm);
+    padding: 2px;
+    border: 1px solid var(--hborder);
+}
+
+.hb-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--htext-muted);
+    cursor: pointer;
+    transition: var(--htransition);
+}
+
+.hb-view-btn:hover {
+    color: var(--htext-primary);
+}
+
+.hb-view-btn.active {
+    background: var(--hbg-card);
+    color: var(--haccent);
+    box-shadow: var(--hshadow-sm);
+}
+
+/* Calendar wrapper */
+.hb-calendar-wrapper {
+    margin-top: 1rem;
+    position: relative;
+}
+
+/* Availability panel */
+.hb-avail-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 280px;
+    background: var(--hbg-card);
+    border: 1px solid var(--hborder);
+    border-radius: var(--hradius);
+    box-shadow: var(--hshadow-lg);
+    padding: 1rem;
+    z-index: 10;
+}
+
+.hb-avail-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--htext-primary);
+    margin-bottom: 0.75rem;
+}
+
+.hb-avail-close {
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    color: var(--htext-muted);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.hb-avail-panel-body {
+    display: flex;
+    gap: 1rem;
+}
+
+.hb-avail-stat {
+    flex: 1;
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: var(--hradius-sm);
+}
+
+.hb-avail-stat.green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.hb-avail-stat.red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.hb-avail-num {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.hb-avail-stat span:last-child {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .hb-avail-panel {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        border-radius: var(--hradius) var(--hradius) 0 0;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+}
 :root {
     --hbg-primary: #0A2463;
     --hbg-secondary: #1A3A7A;
@@ -2005,4 +2214,4 @@
     background-size: 16px 12px;
     padding-right: 2.5rem;
     appearance: none;
-}
+}

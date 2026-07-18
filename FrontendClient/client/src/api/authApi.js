@@ -1,6 +1,6 @@
 import api from './axios';
 import { ENDPOINTS } from './endpoints';
-import useAuthStore from '../store/useAuthStore';
+import useAuthStore from '../utils/store/useAuthStore';
 
 // ─── Shared Auth API ──────────────────────────────────────────
 // Uses httpOnly cookies for refresh tokens (via withCredentials)

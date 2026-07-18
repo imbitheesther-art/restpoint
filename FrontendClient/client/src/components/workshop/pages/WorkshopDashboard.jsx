@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSocket } from '../../../context/socketContext';
+import { useSocket } from '../../../utils/context/socketContext';
 import { useSocketEvents } from '../hooks/useSocketEvents';
 import {
     Package, FlaskConical, Beaker, Droplets,

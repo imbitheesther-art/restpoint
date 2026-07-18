@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
-import env from '../../config/env';
+import env from '../../utils/config/env';
 import { ENDPOINTS } from '../../api/endpoints';
 
 const THEME = {
