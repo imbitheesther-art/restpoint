@@ -150,7 +150,7 @@ const HearseBookings = () => {
   const { user } = useAuthStore();
 
   const [newForm, setNewForm] = useState({
-    hearse_id:'', client_name:'', client_phone:'', destination:'', booking_date:'', branch_id:''
+    hearse_id:'', client_name:'', client_phone:'', from_location:'', to_location:'', booking_date:'', branch_id:''
   });
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -270,14 +270,14 @@ const HearseBookings = () => {
   const openNewBooking = useCallback((date) => {
     const dateStr = date || '';
     setPrefillDate(dateStr);
-    setNewForm({hearse_id:'',client_name:'',client_phone:'',destination:'',booking_date:dateStr,branch_id:''});
+    setNewForm({hearse_id:'',client_name:'',client_phone:'',from_location:'',to_location:'',booking_date:dateStr,branch_id:''});
     setNewBookingOpen(true);
   }, []);
   const closeNewBooking = useCallback(() => { setNewBookingOpen(false); setPrefillDate(''); }, []);
 
   const handleNewBooking = useCallback(async (e) => {
     e.preventDefault();
-    if (!newForm.hearse_id || !newForm.client_name || !newForm.destination || !newForm.booking_date) {
+    if (!newForm.hearse_id || !newForm.client_name || !newForm.from_location || !newForm.to_location || !newForm.booking_date) {
       showToast('Please fill all required fields', 'error'); return;
     }
     setSubmitLoading(true);
@@ -290,22 +290,35 @@ const HearseBookings = () => {
       if (user?.email) headers['x-user-email'] = user.email;
       headers['x-user-name'] = user?.full_name || user?.username || user?.name || 'System';
 
-      await fetch(`${API_BASE_URL}/hearse-bookings`, {
-        method: 'POST', headers, body: JSON.stringify({
-          hearse_id: newForm.hearse_id,
-          client_name: newForm.client_name,
-          client_phone: newForm.client_phone || '',
-          destination: newForm.destination,
-          from_timestamp: newForm.booking_date,
-          booked_by: user?.email || 'system',
-          branch_id: newForm.branch_id || user?.branch_id || '',
-          branch_code: user?.branch_code || ''
-        })
+      const requestBody = {
+        hearse_id: newForm.hearse_id,
+        client_name: newForm.client_name,
+        client_phone: newForm.client_phone || '',
+        from_location: newForm.from_location,
+        to_location: newForm.to_location,
+        from_timestamp: newForm.booking_date,
+        booked_by: user?.email || 'system',
+        branch_id: newForm.branch_id || user?.branch_id || '',
+        branch_code: user?.branch_code || ''
+      };
+
+      const response = await fetch(`${API_BASE_URL}/hearse-bookings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
       });
-      showToast('Booking created!');
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      showToast('Booking created successfully!');
       closeNewBooking();
       await loadData();
-    } catch (e) { showToast('Failed to create booking: '+e.message, 'error'); }
+    } catch (e) { 
+      showToast('Failed to create booking: ' + e.message, 'error'); 
+    }
     setSubmitLoading(false);
   }, [newForm, showToast, closeNewBooking, loadData]);
 
@@ -574,7 +587,8 @@ const HearseBookings = () => {
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1.25rem',marginBottom:'1.5rem'}}>
                 <DetailField label="Client">{selectedBooking.client_name}</DetailField>
                 <DetailField label="Phone">{selectedBooking.client_phone || '—'}</DetailField>
-                <DetailField label="Destination">{selectedBooking.destination || '—'}</DetailField>
+                <DetailField label="From">{selectedBooking.from_location || '—'}</DetailField>
+                <DetailField label="To">{selectedBooking.to_location || '—'}</DetailField>
                 <DetailField label="Branch">{selectedBooking.branch_name || branchOptions.find(b => String(b.branch_id) === String(selectedBooking.branch_id))?.branch_name || selectedBooking.branch_code || '—'}</DetailField>
                 <DetailField label="Date">{fmtDateOnly(selectedBooking.booking_date||selectedBooking.estimated_departure_time)}</DetailField>
                 <DetailField label="Status"><StatusBadge status={selectedBooking.status} /></DetailField>
@@ -639,9 +653,15 @@ const HearseBookings = () => {
                 <input className="hb-form-control" type="date" value={newForm.booking_date} onChange={e => setNewForm(p=>({...p,booking_date:e.target.value}))} required />
               </div>
             </div>
-            <div className="fb-form-field">
-              <label className="hb-form-label">Destination (From → To) *</label>
-              <input className="hb-form-control" placeholder="e.g., 123 Main St to 456 Elm St" value={newForm.destination} onChange={e => setNewForm(p=>({...p,destination:e.target.value}))} required />
+            <div className="fb-form-grid-2">
+              <div className="fb-form-field">
+                <label className="hb-form-label">From Location *</label>
+                <input className="hb-form-control" placeholder="e.g., Nairobi CBD" value={newForm.from_location} onChange={e => setNewForm(p=>({...p,from_location:e.target.value}))} required />
+              </div>
+              <div className="fb-form-field">
+                <label className="hb-form-label">To Location *</label>
+                <input className="hb-form-control" placeholder="e.g., Karen Memorial Park" value={newForm.to_location} onChange={e => setNewForm(p=>({...p,to_location:e.target.value}))} required />
+              </div>
             </div>
             <div className="fb-form-field">
               <label className="hb-form-label">Branch</label>
