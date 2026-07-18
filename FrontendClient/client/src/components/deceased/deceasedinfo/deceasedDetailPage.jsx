@@ -30,7 +30,7 @@ import {
   Heart,
   Building2,
 } from 'lucide-react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 
 import ScannerComponent from '../../scanner/ScannerComponent';
 
