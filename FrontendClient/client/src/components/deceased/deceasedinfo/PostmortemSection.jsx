@@ -17,7 +17,6 @@ import axios from 'axios';
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
 
-// Bootstrap-inspired color scheme
 const COLORS = {
     primary: '#1a5f7a',
     primaryLight: '#2c8ac9',
@@ -194,6 +193,26 @@ const PrimaryButton = styled.button`
   }
 `;
 
+const SecondaryButton = styled.button`
+  background: ${COLORS.surface};
+  color: ${COLORS.text};
+  border: 1px solid ${COLORS.border};
+  border-radius: ${COLORS.radiusSm};
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: ${COLORS.transition};
+
+  &:hover {
+    background: ${COLORS.bg};
+    border-color: ${COLORS.textSecondary};
+  }
+`;
+
 const getTenantSlug = () => {
     return localStorage.getItem('tenantSlug') ||
         localStorage.getItem('tenant_slug') ||
@@ -232,7 +251,8 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
                     headers: { 'x-tenant-slug': tenantSlug }
                 }
             );
-            setRequests(response.data?.data || response.data || []);
+            const data = response.data?.data || response.data || [];
+            setRequests(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching postmortem requests:', error);
             setRequests([]);
@@ -249,7 +269,7 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
         setIsLoading(true);
         try {
             const tenantSlug = getTenantSlug();
-            await axios.post(
+            const response = await axios.post(
                 `${BASE_URL}/autopsy/${deceasedId}`,
                 {
                     ...requestForm,
@@ -263,11 +283,11 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
 
             setShowRequestForm(false);
             setRequestForm({ reason: '', requested_by: '', priority: 'normal' });
-            fetchPostmortemRequests();
+            await fetchPostmortemRequests();
             onUpdate?.();
         } catch (error) {
             console.error('Error requesting postmortem:', error);
-            alert('Failed to submit postmortem request');
+            alert('Failed to submit postmortem request: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsLoading(false);
         }
@@ -282,9 +302,11 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
         }
     };
 
-    if (requests.length === 0 && !showRequestForm) {
-        return (
-            <Container>
+    const hasRequests = requests.length > 0;
+
+    return (
+        <Container>
+            {!hasRequests && !showRequestForm ? (
                 <EmptyState>
                     <Activity size={48} />
                     <h4>No Postmortem Requests</h4>
@@ -293,217 +315,193 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
                         <Plus size={16} /> Request Postmortem
                     </PrimaryButton>
                 </EmptyState>
-            </Container>
-        );
-    }
+            ) : (
+                <>
+                    {hasRequests && requests.map((request) => (
+                        <RequestCard key={request.autopsy_id || request.id}>
+                            <RequestHeader>
+                                <RequestTitle>
+                                    <Activity size={16} color={COLORS.primary} />
+                                    Postmortem Request
+                                </RequestTitle>
+                                <StatusBadge $status={request.status}>
+                                    {getStatusIcon(request.status)}
+                                    {request.status?.replace('_', ' ') || 'Pending'}
+                                </StatusBadge>
+                            </RequestHeader>
 
-    return (
-        <Container>
-            {requests.map((request) => (
-                <RequestCard key={request.autopsy_id || request.id}>
-                    <RequestHeader>
-                        <RequestTitle>
-                            <Activity size={16} color={COLORS.primary} />
-                            Postmortem Request
-                        </RequestTitle>
-                        <StatusBadge $status={request.status}>
-                            {getStatusIcon(request.status)}
-                            {request.status?.replace('_', ' ') || 'Pending'}
-                        </StatusBadge>
-                    </RequestHeader>
+                            <InfoRow>
+                                <FileText size={14} />
+                                <div>
+                                    <strong>Reason:</strong> {request.reason || 'Not specified'}
+                                </div>
+                            </InfoRow>
 
-                    <InfoRow>
-                        <FileText size={14} />
-                        <div>
-                            <strong>Reason:</strong> {request.reason || 'Not specified'}
+                            <InfoRow>
+                                <User size={14} />
+                                <div>
+                                    <strong>Requested By:</strong> {request.requested_by || 'Unknown'}
+                                </div>
+                            </InfoRow>
+
+                            <InfoRow>
+                                <Calendar size={14} />
+                                <div>
+                                    <strong>Request Date:</strong> {request.request_date ? new Date(request.request_date).toLocaleDateString() : 'N/A'}
+                                </div>
+                            </InfoRow>
+
+                            {request.priority && (
+                                <InfoRow>
+                                    <AlertTriangle size={14} />
+                                    <div>
+                                        <strong>Priority:</strong> {request.priority}
+                                    </div>
+                                </InfoRow>
+                            )}
+
+                            {request.notes && (
+                                <InfoRow>
+                                    <FileText size={14} />
+                                    <div>
+                                        <strong>Notes:</strong> {request.notes}
+                                    </div>
+                                </InfoRow>
+                            )}
+                        </RequestCard>
+                    ))}
+
+                    {!showRequestForm ? (
+                        <PrimaryButton onClick={() => setShowRequestForm(true)} style={{ width: '100%', marginTop: '0.75rem' }}>
+                            <Plus size={16} /> Request Postmortem
+                        </PrimaryButton>
+                    ) : (
+                        <div style={{
+                            marginTop: '1rem',
+                            padding: '1rem',
+                            background: COLORS.bg,
+                            borderRadius: COLORS.radiusSm,
+                            border: `1px solid ${COLORS.border}`
+                        }}>
+                            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9375rem', fontWeight: 600, color: COLORS.text }}>
+                                New Postmortem Request
+                            </h4>
+                            <form onSubmit={handleRequestSubmit}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{
+                                        display: 'block',
+                                        fontWeight: 600,
+                                        marginBottom: '0.375rem',
+                                        fontSize: '0.8125rem',
+                                        color: COLORS.text
+                                    }}>
+                                        Reason for Postmortem *
+                                    </label>
+                                    <textarea
+                                        value={requestForm.reason}
+                                        onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
+                                        placeholder="Enter reason for postmortem examination"
+                                        required
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem 0.75rem',
+                                            border: '1px solid ' + COLORS.border,
+                                            borderRadius: COLORS.radiusSm,
+                                            fontSize: '0.8125rem',
+                                            color: COLORS.text,
+                                            background: COLORS.surface,
+                                            minHeight: '80px',
+                                            resize: 'vertical'
+                                        }}
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{
+                                        display: 'block',
+                                        fontWeight: 600,
+                                        marginBottom: '0.375rem',
+                                        fontSize: '0.8125rem',
+                                        color: COLORS.text
+                                    }}>
+                                        Requested By *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={requestForm.requested_by}
+                                        onChange={(e) => setRequestForm({ ...requestForm, requested_by: e.target.value })}
+                                        placeholder="Your name"
+                                        required
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem 0.75rem',
+                                            border: '1px solid ' + COLORS.border,
+                                            borderRadius: COLORS.radiusSm,
+                                            fontSize: '0.8125rem',
+                                            color: COLORS.text,
+                                            background: COLORS.surface
+                                        }}
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{
+                                        display: 'block',
+                                        fontWeight: 600,
+                                        marginBottom: '0.375rem',
+                                        fontSize: '0.8125rem',
+                                        color: COLORS.text
+                                    }}>
+                                        Priority
+                                    </label>
+                                    <select
+                                        value={requestForm.priority}
+                                        onChange={(e) => setRequestForm({ ...requestForm, priority: e.target.value })}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem 0.75rem',
+                                            border: '1px solid ' + COLORS.border,
+                                            borderRadius: COLORS.radiusSm,
+                                            fontSize: '0.8125rem',
+                                            color: COLORS.text,
+                                            background: COLORS.surface
+                                        }}
+                                    >
+                                        <option value="normal">Normal</option>
+                                        <option value="urgent">Urgent</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <PrimaryButton type="submit" disabled={isLoading}>
+                                        {isLoading ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" /> Submitting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={16} /> Submit Request
+                                            </>
+                                        )}
+                                    </PrimaryButton>
+                                    <SecondaryButton
+                                        type="button"
+                                        onClick={() => {
+                                            setShowRequestForm(false);
+                                            setRequestForm({ reason: '', requested_by: '', priority: 'normal' });
+                                        }}
+                                    >
+                                        Cancel
+                                    </SecondaryButton>
+                                </div>
+                            </form>
                         </div>
-                    </InfoRow>
-
-                    <InfoRow>
-                        <User size={14} />
-                        <div>
-                            <strong>Requested By:</strong> {request.requested_by || 'Unknown'}
-                        </div>
-                    </InfoRow>
-
-                    <InfoRow>
-                        <Calendar size={14} />
-                        <div>
-                            <strong>Request Date:</strong> {request.request_date ? new Date(request.request_date).toLocaleDateString() : 'N/A'}
-                        </div>
-                    </InfoRow>
-
-                    {request.priority && (
-                        <InfoRow>
-                            <AlertTriangle size={14} />
-                            <div>
-                                <strong>Priority:</strong> {request.priority}
-                            </div>
-                        </InfoRow>
                     )}
-
-                    {request.notes && (
-                        <InfoRow>
-                            <FileText size={14} />
-                            <div>
-                                <strong>Notes:</strong> {request.notes}
-                            </div>
-                        </InfoRow>
-                    )}
-                </RequestCard>
-            ))}
-
-            {!showRequestForm && (
-                <PrimaryButton onClick={() => setShowRequestForm(true)} style={{ width: '100%', marginTop: '0.75rem' }}>
-                    <Plus size={16} /> Request Postmortem
-                </PrimaryButton>
-            )}
-
-            {showRequestForm && (
-                <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    background: COLORS.bg,
-                    borderRadius: COLORS.radiusSm,
-                    border: `1px solid ${COLORS.border}`
-                }}>
-                    <h4 style={{ margin: '0 0 1rem', fontSize: '0.9375rem', fontWeight: 600, color: COLORS.text }}>
-                        New Postmortem Request
-                    </h4>
-                    <form onSubmit={handleRequestSubmit}>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{
-                                display: 'block',
-                                fontWeight: 600,
-                                marginBottom: '0.375rem',
-                                fontSize: '0.8125rem',
-                                color: COLORS.text
-                            }}>
-                                Reason for Postmortem *
-                            </label>
-                            <textarea
-                                value={requestForm.reason}
-                                onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
-                                placeholder="Enter reason for postmortem examination"
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '0.5rem 0.75rem',
-                                    border: '1px solid ' + COLORS.border,
-                                    borderRadius: COLORS.radiusSm,
-                                    fontSize: '0.8125rem',
-                                    color: COLORS.text,
-                                    background: COLORS.surface,
-                                    minHeight: '80px',
-                                    resize: 'vertical'
-                                }}
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{
-                                display: 'block',
-                                fontWeight: 600,
-                                marginBottom: '0.375rem',
-                                fontSize: '0.8125rem',
-                                color: COLORS.text
-                            }}>
-                                Requested By *
-                            </label>
-                            <input
-                                type="text"
-                                value={requestForm.requested_by}
-                                onChange={(e) => setRequestForm({ ...requestForm, requested_by: e.target.value })}
-                                placeholder="Your name"
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '0.5rem 0.75rem',
-                                    border: '1px solid ' + COLORS.border,
-                                    borderRadius: COLORS.radiusSm,
-                                    fontSize: '0.8125rem',
-                                    color: COLORS.text,
-                                    background: COLORS.surface
-                                }}
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{
-                                display: 'block',
-                                fontWeight: 600,
-                                marginBottom: '0.375rem',
-                                fontSize: '0.8125rem',
-                                color: COLORS.text
-                            }}>
-                                Priority
-                            </label>
-                            <select
-                                value={requestForm.priority}
-                                onChange={(e) => setRequestForm({ ...requestForm, priority: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.5rem 0.75rem',
-                                    border: '1px solid ' + COLORS.border,
-                                    borderRadius: COLORS.radiusSm,
-                                    fontSize: '0.8125rem',
-                                    color: COLORS.text,
-                                    background: COLORS.surface
-                                }}
-                            >
-                                <option value="normal">Normal</option>
-                                <option value="urgent">Urgent</option>
-                                <option value="high">High</option>
-                            </select>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <PrimaryButton type="submit" disabled={isLoading}>
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 size={16} className="animate-spin" /> Submitting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Send size={16} /> Submit Request
-                                    </>
-                                )}
-                            </PrimaryButton>
-                            <SecondaryButton
-                                type="button"
-                                onClick={() => {
-                                    setShowRequestForm(false);
-                                    setRequestForm({ reason: '', requested_by: '', priority: 'normal' });
-                                }}
-                            >
-                                Cancel
-                            </SecondaryButton>
-                        </div>
-                    </form>
-                </div>
+                </>
             )}
         </Container>
     );
 };
-
-const SecondaryButton = styled.button`
-  background: ${COLORS.surface};
-  color: ${COLORS.text};
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  transition: ${COLORS.transition};
-
-  &:hover {
-    background: ${COLORS.bg};
-    border-color: ${COLORS.textSecondary};
-  }
-`;
 
 export default PostmortemSection;
