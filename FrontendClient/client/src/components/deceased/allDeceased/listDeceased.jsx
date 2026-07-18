@@ -365,11 +365,6 @@ const PanelActionArea = styled.div`
   margin-top: auto;
 `;
 
-const PanelActionButton = styled(PrimaryButton)`
-  width: 100%;
-  justify-content: center;
-`;
-
 const PanelError = styled.div`
   color: ${Colors.dangerRed};
   background: #fef2f2;
@@ -440,6 +435,11 @@ const PrimaryButton = styled.button`
       height: 0.95rem;
     }
   }
+`;
+
+const PanelActionButton = styled(PrimaryButton)`
+  width: 100%;
+  justify-content: center;
 `;
 
 const ReportButton = styled(PrimaryButton)`
