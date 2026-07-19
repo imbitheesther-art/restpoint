@@ -375,7 +375,7 @@ const DeceasedList = () => {
       setIsLoading(true);
       const tenantSlug = getTenantSlug();
 
-      const response = await axios.get(`${BASE_URL}/deceased`, {
+      const response = await axios.get(`${BASE_URL}/deceased-all`, {
         headers: {
           'x-tenant-slug': tenantSlug,
         },
