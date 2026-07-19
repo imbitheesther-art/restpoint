@@ -2,287 +2,54 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'restpoint-monitor'
-    environment: 'production'
+    environment: production
+    datacenter: restpoint
 
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - 'localhost:9093'
-
-# Load alerting rules
-rule_files:
-  - '/etc/prometheus/alerts/*.yml'
-
-# Scrape configurations
 scrape_configs:
-  # ============================================
-  # PROMETHEUS SELF-MONITORING
-  # ============================================
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  # ============================================
-  # NODE EXPORTER - Server Metrics
-  # ============================================
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['84.247.183.53:9100']
-        labels:
-          service: 'node-exporter'
-          component: 'server'
 
-  # ============================================
-  # CADVISOR - Container Metrics
-  # ============================================
   - job_name: 'cadvisor'
     static_configs:
-      - targets: ['84.247.183.53:8081']
-        labels:
-          service: 'cadvisor'
-          component: 'containers'
+      - targets: ['84.247.183.53:8082']
 
-  # ============================================
-  # BLACKBOX EXPORTER - External Service Monitoring
-  # ============================================
-  - job_name: 'blackbox'
+  - job_name: 'mysql-exporter'
     static_configs:
-      - targets:
-          - 'blackbox-exporter:9115'
+      - targets: ['84.247.183.53:9104']
+
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['84.247.183.53:9121']
+
+  - job_name: 'rabbitmq-exporter'
+    static_configs:
+      - targets: ['84.247.183.53:9419']
+
+  - job_name: 'process-exporter'
+    static_configs:
+      - targets: ['84.247.183.53:9256']
+
+  - job_name: 'blackbox-http'
     metrics_path: /probe
     params:
       module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://84.247.183.53:5000/health
+        - http://84.247.183.53:5001/health
+        - http://84.247.183.53:5002/health
+        - http://84.247.183.53:5003/health
+        - http://84.247.183.53:3003
+        - https://restpoint.co.ke
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: blackbox-exporter:9115
-
-  # ============================================
-  # APPLICATION METRICS - API Gateway
-  # ============================================
-  - job_name: 'api-gateway'
-    static_configs:
-      - targets: ['84.247.183.53:5000']
-        labels:
-          service: 'api-gateway'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Deceased Service
-  # ============================================
-  - job_name: 'deceased-service'
-    static_configs:
-      - targets: ['84.247.183.53:5003']
-        labels:
-          service: 'deceased-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Auth Service
-  # ============================================
-  - job_name: 'auth-service'
-    static_configs:
-      - targets: ['84.247.183.53:5001']
-        labels:
-          service: 'auth-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Tenant Service
-  # ============================================
-  - job_name: 'tenant-service'
-    static_configs:
-      - targets: ['84.247.183.53:5002']
-        labels:
-          service: 'tenant-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Invoice Service
-  # ============================================
-  - job_name: 'invoice-service'
-    static_configs:
-      - targets: ['84.247.183.53:5005']
-        labels:
-          service: 'invoice-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Coffin Service
-  # ============================================
-  - job_name: 'coffin-service'
-    static_configs:
-      - targets: ['84.247.183.53:5006']
-        labels:
-          service: 'coffin-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Analytics Service
-  # ============================================
-  - job_name: 'analytics-service'
-    static_configs:
-      - targets: ['84.247.183.53:5009']
-        labels:
-          service: 'analytics-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Documents Service
-  # ============================================
-  - job_name: 'documents-service'
-    static_configs:
-      - targets: ['84.247.183.53:5011']
-        labels:
-          service: 'documents-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Hearse Service
-  # ============================================
-  - job_name: 'hearse-service'
-    static_configs:
-      - targets: ['84.247.183.53:5023']
-        labels:
-          service: 'hearse-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Support Service
-  # ============================================
-  - job_name: 'support-service'
-    static_configs:
-      - targets: ['84.247.183.53:8111']
-        labels:
-          service: 'support-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Chemical Service
-  # ============================================
-  - job_name: 'chemical-service'
-    static_configs:
-      - targets: ['84.247.183.53:5105']
-        labels:
-          service: 'chemical-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Billing Service
-  # ============================================
-  - job_name: 'billing-service'
-    static_configs:
-      - targets: ['84.247.183.53:5020']
-        labels:
-          service: 'billing-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Notification Service
-  # ============================================
-  - job_name: 'notification-service'
-    static_configs:
-      - targets: ['84.247.183.53:5111']
-        labels:
-          service: 'notification-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Workshop Service
-  # ============================================
-  - job_name: 'workshop-service'
-    static_configs:
-      - targets: ['84.247.183.53:6969']
-        labels:
-          service: 'workshop-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Extra Services
-  # ============================================
-  - job_name: 'extra-services'
-    static_configs:
-      - targets: ['84.247.183.53:5016']
-        labels:
-          service: 'extra-services'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - SocketIO Service
-  # ============================================
-  - job_name: 'socketio-service'
-    static_configs:
-      - targets: ['84.247.183.53:5018']
-        labels:
-          service: 'socketio-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # APPLICATION METRICS - Leave Service
-  # ============================================
-  - job_name: 'leave-service'
-    static_configs:
-      - targets: ['84.247.183.53:5017']
-        labels:
-          service: 'leave-service'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # FRONTEND METRICS
-  # ============================================
-  - job_name: 'frontend'
-    static_configs:
-      - targets: ['84.247.183.53:8080']
-        labels:
-          service: 'frontend'
-          component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # BLACKBOX HTTP CHECKS - External Endpoints
-  # ============================================
-  - job_name: 'blackbox-http-checks'
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    static_configs:
-      - targets:
-          - 'http://84.247.183.53:80'
-          - 'http://84.247.183.53:5000/health'
-          - 'http://84.247.183.53:5001/health'
-          - 'http://84.247.183.53:5002/health'
-          - 'http://84.247.183.53:5003/health'
-          - 'http://84.247.183.53:8080'
-        labels:
-          service: 'blackbox-checks'
-          component: 'external'
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: blackbox-exporter:9115
+        replacement: 84.247.183.53:9115

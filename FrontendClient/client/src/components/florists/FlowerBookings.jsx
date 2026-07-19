@@ -47,8 +47,8 @@ const STATUS_CONFIG = {
 };
 
 const RESULTS_PER_PAGE = 8;
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const WEEKDAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -105,7 +105,7 @@ const generateSampleBookings = () => {
     flower_description: `${flower} — premium arrangement with seasonal flowers and greenery`,
     service_type: service,
     customer,
-    customer_phone: `(555) ${String(200 + id).padStart(3,'0')}-${String(3300 + id * 13).slice(0,4)}`,
+    customer_phone: `(555) ${String(200 + id).padStart(3, '0')}-${String(3300 + id * 13).slice(0, 4)}`,
     customer_email: `${customer.split(' ')[0].toLowerCase()}@email.com`,
     deceased_name: deceased,
     branch,
@@ -113,50 +113,50 @@ const generateSampleBookings = () => {
     delivery_time: time,
     delivery_address: branch === 'Rosedale Memorial' ? '1200 Oakridge Ave, Suite A'
       : branch === 'Serenity Gardens' ? '450 Garden Path Blvd'
-      : branch === 'Evergreen Chapel' ? '789 Pine Street'
-      : '320 Maple Drive',
+        : branch === 'Evergreen Chapel' ? '789 Pine Street'
+          : '320 Maple Drive',
     invoice_number: `INV-${24000 + id}`,
     amount,
     status,
     notes: notes || (urgent ? 'Urgent — family requested earliest possible delivery' : ''),
-    image: `https://picsum.photos/seed/flw${id}/80/80.jpg`,
+    image: `https://ui-avatars.com/api/?name=${encodeURIComponent(flower.split(' ')[0])}&background=266b52&color=fff&size=80&bold=true`,
     created_at: createdOffset(dayOff, Math.floor(Math.random() * 5) + 2),
     urgent: urgent || false,
   });
 
   return [
-    make(1,  -18, 'Standing Spray',  'Funeral Service',      'Helen Morrison',   'Robert Morrison',  'Rosedale Memorial',  '09:00', 285, 'delivered',  false, 'Family requested all white arrangement'),
-    make(2,  -14, 'Wreath',          'Memorial',             'James Whitfield',  'Dorothy Whitfield','Serenity Gardens',   '10:30', 195, 'delivered',  false, 'Pink and purple tones preferred'),
-    make(3,  -10, 'Casket Spray',    'Funeral Service',      'Patricia Chen',    'David Chen',       'Rosedale Memorial',  '08:00', 450, 'delivered',  false, 'Premium red roses'),
-    make(4,   -7, 'Sympathy Basket', 'Condolence Visit',     'Michael Torres',   'Maria Torres',     'Evergreen Chapel',   '14:00', 125, 'cancelled',  false, 'Service postponed'),
-    make(5,   -4, 'Floral Cross',    'Graveside',            'Susan Baker',      'Thomas Baker',     'Harmony Hall',       '11:00', 320, 'delivered',  false, ''),
-    make(6,   -2, 'Heart Tribute',   'Celebration of Life',  'Karen Mitchell',   'William Mitchell', 'Serenity Gardens',   '13:00', 275, 'delivered',  false, 'Heart shape very important to family'),
-    make(7,   -1, 'Standing Spray',  'Funeral Service',      'Robert Hayes',     'Eleanor Hayes',    'Evergreen Chapel',   '09:30', 310, 'delivered',  false, "Deceased's favorite color was blue"),
-    make(8,    0, 'Wreath',          'Memorial',             'Linda Garcia',     'Carlos Garcia',    'Harmony Hall',       '10:00', 210, 'delivering', true,  'Deliver directly to graveside'),
-    make(9,    0, 'Casket Spray',    'Funeral Service',      'Daniel Kim',       'Yuna Kim',         'Rosedale Memorial',  '07:30', 520, 'preparing',  true,  'Premium — family spending extra'),
-    make(10,   0, 'Sympathy Basket', 'Condolence Visit',     'Angela Brooks',    'Frank Brooks',     'Serenity Gardens',   '16:00', 145, 'pending',    false, 'Pastel colors only'),
-    make(11,   1, 'Floral Cross',    'Graveside',            'Nancy Freeman',    'George Freeman',   'Evergreen Chapel',   '10:00', 340, 'confirmed',  false, 'Lavender roses essential'),
-    make(12,   1, 'Heart Tribute',   'Celebration of Life',  'Christopher Dunn', 'Ruth Dunn',        'Harmony Hall',       '12:00', 295, 'confirmed',  false, 'Gardenias were her favorite'),
-    make(13,   2, 'Standing Spray',  'Funeral Service',      'Margaret Lewis',   'Henry Lewis',      'Rosedale Memorial',  '09:00', 265, 'confirmed',  false, ''),
-    make(14,   3, 'Wreath',          'Memorial',             'Thomas Ward',      'Alice Ward',       'Serenity Gardens',   '11:00', 205, 'pending',    false, 'Autumn tones'),
-    make(15,   4, 'Casket Spray',    'Funeral Service',      'Sandra Lopez',     'Ricardo Lopez',    'Evergreen Chapel',   '08:30', 480, 'pending',    true,  'Must arrive before 9am service'),
-    make(16,   5, 'Sympathy Basket', 'Condolence Visit',     'Brian Clark',      'Dorothy Clark',    'Harmony Hall',       '15:00', 135, 'pending',    false, ''),
-    make(17,   6, 'Floral Cross',    'Graveside',            'Deborah Hall',     'Edward Hall',      'Rosedale Memorial',  '10:30', 330, 'pending',    false, ''),
-    make(18,   8, 'Standing Spray',  'Funeral Service',      'Kevin Wright',     'Margaret Wright',  'Serenity Gardens',   '09:00', 290, 'pending',    false, ''),
-    make(19,   9, 'Heart Tribute',   'Celebration of Life',  'Lisa Adams',       'James Adams',      'Evergreen Chapel',   '13:00', 280, 'pending',    false, 'Red and pink heart'),
-    make(20,  10, 'Wreath',          'Memorial',             'Paul Nelson',      'Susan Nelson',     'Harmony Hall',       '14:00', 215, 'pending',    false, ''),
-    make(21,  12, 'Casket Spray',    'Funeral Service',      'Donna King',       'Charles King',     'Rosedale Memorial',  '08:00', 510, 'pending',    false, ''),
-    make(22,  15, 'Sympathy Basket', 'Condolence Visit',     'Mark Robinson',    'Helen Robinson',   'Serenity Gardens',   '16:30', 140, 'pending',    false, ''),
-    make(23,  18, 'Standing Spray',  'Funeral Service',      'Carol Scott',      'Donald Scott',     'Evergreen Chapel',   '09:30', 300, 'pending',    false, ''),
-    make(24,  22, 'Floral Cross',    'Graveside',            'Steven Green',     'Mary Green',       'Harmony Hall',       '11:00', 325, 'pending',    false, ''),
-    make(25,  28, 'Heart Tribute',   'Celebration of Life',  'Janet Young',      'Richard Young',    'Rosedale Memorial',  '12:00', 285, 'pending',    false, ''),
-    make(26,  32, 'Wreath',          'Memorial',             'Raymond Hill',     'Frances Hill',     'Serenity Gardens',   '10:00', 200, 'pending',    false, ''),
-    make(27,  35, 'Casket Spray',    'Funeral Service',      'Catherine Moore',  'George Moore',     'Evergreen Chapel',   '08:30', 475, 'pending',    false, ''),
-    make(28,  38, 'Standing Spray',  'Funeral Service',      'Jeffrey Taylor',   'Louise Taylor',    'Harmony Hall',       '09:00', 270, 'pending',    false, ''),
-    make(29,  42, 'Sympathy Basket', 'Condolence Visit',     'Diane Anderson',   'Harold Anderson',  'Rosedale Memorial',  '14:00', 130, 'pending',    false, ''),
-    make(30,  48, 'Floral Cross',    'Graveside',            'Gregory White',    'Evelyn White',     'Serenity Gardens',   '11:00', 335, 'pending',    false, ''),
-    make(31,  55, 'Heart Tribute',   'Celebration of Life',  'Monica Harris',    'Samuel Harris',    'Evergreen Chapel',   '13:00', 290, 'pending',    false, ''),
-    make(32,  60, 'Wreath',          'Memorial',             'Timothy Martin',   'Ruth Martin',      'Harmony Hall',       '10:30', 220, 'pending',    false, ''),
+    make(1, -18, 'Standing Spray', 'Funeral Service', 'Helen Morrison', 'Robert Morrison', 'Rosedale Memorial', '09:00', 285, 'delivered', false, 'Family requested all white arrangement'),
+    make(2, -14, 'Wreath', 'Memorial', 'James Whitfield', 'Dorothy Whitfield', 'Serenity Gardens', '10:30', 195, 'delivered', false, 'Pink and purple tones preferred'),
+    make(3, -10, 'Casket Spray', 'Funeral Service', 'Patricia Chen', 'David Chen', 'Rosedale Memorial', '08:00', 450, 'delivered', false, 'Premium red roses'),
+    make(4, -7, 'Sympathy Basket', 'Condolence Visit', 'Michael Torres', 'Maria Torres', 'Evergreen Chapel', '14:00', 125, 'cancelled', false, 'Service postponed'),
+    make(5, -4, 'Floral Cross', 'Graveside', 'Susan Baker', 'Thomas Baker', 'Harmony Hall', '11:00', 320, 'delivered', false, ''),
+    make(6, -2, 'Heart Tribute', 'Celebration of Life', 'Karen Mitchell', 'William Mitchell', 'Serenity Gardens', '13:00', 275, 'delivered', false, 'Heart shape very important to family'),
+    make(7, -1, 'Standing Spray', 'Funeral Service', 'Robert Hayes', 'Eleanor Hayes', 'Evergreen Chapel', '09:30', 310, 'delivered', false, "Deceased's favorite color was blue"),
+    make(8, 0, 'Wreath', 'Memorial', 'Linda Garcia', 'Carlos Garcia', 'Harmony Hall', '10:00', 210, 'delivering', true, 'Deliver directly to graveside'),
+    make(9, 0, 'Casket Spray', 'Funeral Service', 'Daniel Kim', 'Yuna Kim', 'Rosedale Memorial', '07:30', 520, 'preparing', true, 'Premium — family spending extra'),
+    make(10, 0, 'Sympathy Basket', 'Condolence Visit', 'Angela Brooks', 'Frank Brooks', 'Serenity Gardens', '16:00', 145, 'pending', false, 'Pastel colors only'),
+    make(11, 1, 'Floral Cross', 'Graveside', 'Nancy Freeman', 'George Freeman', 'Evergreen Chapel', '10:00', 340, 'confirmed', false, 'Lavender roses essential'),
+    make(12, 1, 'Heart Tribute', 'Celebration of Life', 'Christopher Dunn', 'Ruth Dunn', 'Harmony Hall', '12:00', 295, 'confirmed', false, 'Gardenias were her favorite'),
+    make(13, 2, 'Standing Spray', 'Funeral Service', 'Margaret Lewis', 'Henry Lewis', 'Rosedale Memorial', '09:00', 265, 'confirmed', false, ''),
+    make(14, 3, 'Wreath', 'Memorial', 'Thomas Ward', 'Alice Ward', 'Serenity Gardens', '11:00', 205, 'pending', false, 'Autumn tones'),
+    make(15, 4, 'Casket Spray', 'Funeral Service', 'Sandra Lopez', 'Ricardo Lopez', 'Evergreen Chapel', '08:30', 480, 'pending', true, 'Must arrive before 9am service'),
+    make(16, 5, 'Sympathy Basket', 'Condolence Visit', 'Brian Clark', 'Dorothy Clark', 'Harmony Hall', '15:00', 135, 'pending', false, ''),
+    make(17, 6, 'Floral Cross', 'Graveside', 'Deborah Hall', 'Edward Hall', 'Rosedale Memorial', '10:30', 330, 'pending', false, ''),
+    make(18, 8, 'Standing Spray', 'Funeral Service', 'Kevin Wright', 'Margaret Wright', 'Serenity Gardens', '09:00', 290, 'pending', false, ''),
+    make(19, 9, 'Heart Tribute', 'Celebration of Life', 'Lisa Adams', 'James Adams', 'Evergreen Chapel', '13:00', 280, 'pending', false, 'Red and pink heart'),
+    make(20, 10, 'Wreath', 'Memorial', 'Paul Nelson', 'Susan Nelson', 'Harmony Hall', '14:00', 215, 'pending', false, ''),
+    make(21, 12, 'Casket Spray', 'Funeral Service', 'Donna King', 'Charles King', 'Rosedale Memorial', '08:00', 510, 'pending', false, ''),
+    make(22, 15, 'Sympathy Basket', 'Condolence Visit', 'Mark Robinson', 'Helen Robinson', 'Serenity Gardens', '16:30', 140, 'pending', false, ''),
+    make(23, 18, 'Standing Spray', 'Funeral Service', 'Carol Scott', 'Donald Scott', 'Evergreen Chapel', '09:30', 300, 'pending', false, ''),
+    make(24, 22, 'Floral Cross', 'Graveside', 'Steven Green', 'Mary Green', 'Harmony Hall', '11:00', 325, 'pending', false, ''),
+    make(25, 28, 'Heart Tribute', 'Celebration of Life', 'Janet Young', 'Richard Young', 'Rosedale Memorial', '12:00', 285, 'pending', false, ''),
+    make(26, 32, 'Wreath', 'Memorial', 'Raymond Hill', 'Frances Hill', 'Serenity Gardens', '10:00', 200, 'pending', false, ''),
+    make(27, 35, 'Casket Spray', 'Funeral Service', 'Catherine Moore', 'George Moore', 'Evergreen Chapel', '08:30', 475, 'pending', false, ''),
+    make(28, 38, 'Standing Spray', 'Funeral Service', 'Jeffrey Taylor', 'Louise Taylor', 'Harmony Hall', '09:00', 270, 'pending', false, ''),
+    make(29, 42, 'Sympathy Basket', 'Condolence Visit', 'Diane Anderson', 'Harold Anderson', 'Rosedale Memorial', '14:00', 130, 'pending', false, ''),
+    make(30, 48, 'Floral Cross', 'Graveside', 'Gregory White', 'Evelyn White', 'Serenity Gardens', '11:00', 335, 'pending', false, ''),
+    make(31, 55, 'Heart Tribute', 'Celebration of Life', 'Monica Harris', 'Samuel Harris', 'Evergreen Chapel', '13:00', 290, 'pending', false, ''),
+    make(32, 60, 'Wreath', 'Memorial', 'Timothy Martin', 'Ruth Martin', 'Harmony Hall', '10:30', 220, 'pending', false, ''),
   ];
 };
 

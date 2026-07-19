@@ -165,7 +165,7 @@ const Container = styled.div`
 const Header = styled.div`
   background: ${COLORS.surface};
   border-bottom: 1px solid ${COLORS.border};
-  padding: 1.25rem 2rem;
+  padding: 1rem 1.25rem;
   box-shadow: ${COLORS.shadowSm};
 `;
 
@@ -273,7 +273,7 @@ const SecondaryButton = styled.button`
 const MainContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem;
 `;
 
 const StatsGrid = styled.div`
@@ -284,11 +284,11 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: ${COLORS.surface};
+  background: ${props => props.$bg || COLORS.surface};
   border-radius: ${COLORS.radius};
   box-shadow: ${COLORS.shadowSm};
   border: 1px solid ${COLORS.border};
-  padding: 1.25rem;
+  padding: 1rem;
   transition: ${COLORS.transition};
 
   &:hover {
@@ -339,7 +339,7 @@ const FilterCard = styled.div`
   border-radius: ${COLORS.radius};
   box-shadow: ${COLORS.shadowSm};
   border: 1px solid ${COLORS.border};
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
   margin-bottom: 1rem;
 `;
 
@@ -619,7 +619,7 @@ const Drawer = styled.div`
 `;
 
 const DrawerHeader = styled.div`
-  padding: 1.25rem;
+  padding: 1rem;
   border-bottom: 1px solid ${COLORS.border};
   display: flex;
   justify-content: space-between;
@@ -643,7 +643,7 @@ const DrawerSubtitle = styled.p`
 const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 1rem;
 `;
 
 const DrawerFooter = styled.div`
@@ -720,7 +720,7 @@ const HearseBookings = () => {
   const [filterBranch, setFilterBranch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState('calendar');
   const [selectedDate, setSelectedDate] = useState(formatDateStr(new Date()));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -913,6 +913,38 @@ const HearseBookings = () => {
     }));
   }, [bookings]);
 
+  const getBookingTime = useCallback((item) => {
+    if (item.booking_date && item.booking_date.includes('T')) {
+      return new Date(item.booking_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    if (item.estimated_departure_time) {
+      return new Date(item.estimated_departure_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    return '';
+  }, []);
+
+  const getBookingStatus = useCallback((item) => {
+    const cfg = STATUS_CONFIG[item.status];
+    if (!cfg) return null;
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.3rem',
+        padding: '0.25rem 0.6rem',
+        borderRadius: '6px',
+        fontSize: '0.68rem',
+        fontWeight: 600,
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.color}33`
+      }}>
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dotColor }} />
+        {cfg.label}
+      </span>
+    );
+  }, []);
+
   const getStatusColor = useCallback((item) => {
     return STATUS_CONFIG[item.status]?.dotColor || '#a8a29e';
   }, []);
@@ -979,7 +1011,7 @@ const HearseBookings = () => {
       <MainContent>
         {/* Stats Cards */}
         <StatsGrid>
-          <StatCard>
+          <StatCard $bg="#f0f7f4">
             <StatHeader>
               <StatLabel>Total Bookings</StatLabel>
               <StatIcon $bg="#f0f7f4" $color="#266b52">{Icons.truck}</StatIcon>
@@ -988,7 +1020,7 @@ const HearseBookings = () => {
             <StatSubtext>All time</StatSubtext>
           </StatCard>
 
-          <StatCard>
+          <StatCard $bg="#dbeafe">
             <StatHeader>
               <StatLabel>Active</StatLabel>
               <StatIcon $bg={COLORS.infoLight} $color={COLORS.infoDark}>{Icons.car}</StatIcon>
@@ -997,7 +1029,7 @@ const HearseBookings = () => {
             <StatSubtext style={{ color: COLORS.info }}>In progress</StatSubtext>
           </StatCard>
 
-          <StatCard>
+          <StatCard $bg="#fef3c7">
             <StatHeader>
               <StatLabel>Pending</StatLabel>
               <StatIcon $bg={COLORS.warningLight} $color={COLORS.warningDark}>{Icons.clock}</StatIcon>
@@ -1006,7 +1038,7 @@ const HearseBookings = () => {
             <StatSubtext style={{ color: COLORS.warning }}>Needs attention</StatSubtext>
           </StatCard>
 
-          <StatCard>
+          <StatCard $bg="#fce7f3">
             <StatHeader>
               <StatLabel>In Transit</StatLabel>
               <StatIcon $bg="#fce7f3" $color="#db2777">{Icons.truck}</StatIcon>
@@ -1015,7 +1047,7 @@ const HearseBookings = () => {
             <StatSubtext style={{ color: '#db2777' }}>On the road</StatSubtext>
           </StatCard>
 
-          <StatCard>
+          <StatCard $bg="#d1fae5">
             <StatHeader>
               <StatLabel>Completed</StatLabel>
               <StatIcon $bg={COLORS.successLight} $color={COLORS.successDark}>{Icons.check}</StatIcon>
@@ -1069,13 +1101,13 @@ const HearseBookings = () => {
           <FilterRow>
             <span style={{ fontSize: '0.72rem', color: COLORS.textMuted, fontWeight: 600, marginRight: '0.25rem' }}>DATE:</span>
             <PillGroup>
-              {['all', 'today', 'tomorrow', 'thisWeek', 'nextWeek', 'thisMonth', 'nextMonth'].map((f) => (
+              {['all', 'today', 'thisWeek'].map((f) => (
                 <Pill
                   key={f}
                   $active={dateFilter === f}
                   onClick={() => handleDateFilter(f)}
                 >
-                  {f === 'all' ? 'All' : f === 'today' ? 'Today' : f === 'tomorrow' ? 'Tomorrow' : f === 'thisWeek' ? 'This Week' : f === 'nextWeek' ? 'Next Week' : f === 'thisMonth' ? 'This Month' : 'Next Month'}
+                  {f === 'all' ? 'All' : f === 'today' ? 'Today' : 'This Week'}
                 </Pill>
               ))}
             </PillGroup>
@@ -1155,36 +1187,33 @@ const HearseBookings = () => {
                                 <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.7rem', fontWeight: 700, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                   Change Status
                                 </div>
-                                {getNextStatuses(b.status).map((s) => (
-                                  <button
-                                    key={s}
-                                    style={{
-                                      width: '100%',
-                                      padding: '0.5rem 0.75rem',
-                                      border: 'none',
-                                      background: 'transparent',
-                                      color: COLORS.text,
-                                      fontSize: '0.8125rem',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '0.5rem',
-                                      transition: COLORS.transition
-                                    }}
-                                    onClick={() => changeStatus(b.booking_id || b.id, s)}
-                                    onMouseEnter={(e) => e.target.style.background = COLORS.bg}
-                                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                                  >
-                                    <span style={{
-                                      width: 6,
-                                      height: 6,
-                                      borderRadius: '50%',
-                                      background: STATUS_CONFIG[s]?.dotColor || '#a8a29e',
-                                      flexShrink: 0
-                                    }} />
-                                    {STATUS_CONFIG[s]?.label || s}
-                                  </button>
-                                ))}
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      changeStatus(b.booking_id || b.id, e.target.value);
+                                      setActionMenuId(null);
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.5rem 0.75rem',
+                                    border: 'none',
+                                    background: COLORS.bg,
+                                    color: COLORS.text,
+                                    fontSize: '0.8125rem',
+                                    cursor: 'pointer',
+                                    borderRadius: '0.25rem',
+                                    margin: '0.25rem 0'
+                                  }}
+                                >
+                                  <option value="">Select status...</option>
+                                  {getNextStatuses(b.status).map((s) => (
+                                    <option key={s} value={s}>
+                                      {STATUS_CONFIG[s]?.label || s}
+                                    </option>
+                                  ))}
+                                </select>
                                 <div style={{ height: 1, background: COLORS.border, margin: '0.25rem 0' }} />
                                 <button
                                   style={{
@@ -1243,9 +1272,13 @@ const HearseBookings = () => {
                 getStatusColor={getStatusColor}
                 getIsUrgent={getIsUrgent}
                 getItemTitle={(item) => item.client_name}
-                getItemSubtitle={(item) => item.hearse_name || item.plate_number || ''}
+                getItemSubtitle={(item) => {
+                  const time = getBookingTime(item);
+                  const hearse = item.hearse_name || item.plate_number || '';
+                  return time ? `${time}${hearse ? ' · ' + hearse : ''}` : hearse;
+                }}
                 getItemMeta={(item) => item.destination || ''}
-                getItemStatus={(item) => <StatusBadge $status={item.status}>{STATUS_CONFIG[item.status]?.label || item.status}</StatusBadge>}
+                getItemStatus={getBookingStatus}
                 accentColor={COLORS.primary}
               />
             </div>

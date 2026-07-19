@@ -67,7 +67,7 @@ services:
       - /:/rootfs:ro
 
   # ============================================
-  # CADVISOR - Container Metrics (port 8082 to avoid conflict with frontend on 8080)
+  # CADVISOR - Container Metrics
   # ============================================
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -88,16 +88,16 @@ services:
       - monitoring
 
   # ============================================
-  # MYSQL EXPORTER - Database Metrics
+  # MYSQL EXPORTER - Database Metrics (v0.14.0 - working version)
   # ============================================
   mysql-exporter:
-    image: prom/mysqld-exporter:latest
+    image: prom/mysqld-exporter:v0.14.0
     container_name: restpoint-mysql-exporter
     restart: unless-stopped
     ports:
       - "9104:9104"
     environment:
-      - DATA_SOURCE_NAME=exporter:exporter_password@(84.247.183.53:3306)/
+      - DATA_SOURCE_NAME=exporter:exporter_password@tcp(restpoint_mariadb:3306)/
     networks:
       - monitoring
 
@@ -193,6 +193,8 @@ services:
     volumes:
       - ./loki/loki-config.yml:/etc/loki/local-config.yaml
       - loki-data:/loki
+    command:
+      - '-config.file=/etc/loki/local-config.yaml'
     networks:
       - monitoring
 
