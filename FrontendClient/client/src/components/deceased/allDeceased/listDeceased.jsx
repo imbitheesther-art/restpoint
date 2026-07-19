@@ -251,13 +251,13 @@ const TableRow = styled.tr`
 `;
 
 const TableCell = styled.td`
-  padding: 0.875rem 1rem;
+  padding: 0.625rem 0.75rem;
   color: ${COLORS.text};
   vertical-align: middle;
 `;
 
 const TableHeader = styled.th`
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
   font-weight: 600;
   color: ${COLORS.textSecondary};
@@ -369,6 +369,7 @@ const DeceasedList = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const tenantSlug = getTenantSlug();
 
   const fetchDeceasedList = useCallback(async () => {
     try {
@@ -536,7 +537,7 @@ const DeceasedList = () => {
             <SecondaryButton onClick={() => setShowExportModal(true)}>
               <FileSpreadsheet size={15} /> Export
             </SecondaryButton>
-            <PrimaryButton as={Link} to="/deceased/new">
+            <PrimaryButton as={Link} to={`/tenant/${tenantSlug}/deceased/register`}>
               <Plus size={15} /> New Record
             </PrimaryButton>
           </HeaderActions>
@@ -590,12 +591,11 @@ const DeceasedList = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeader>ID</TableHeader>
                       <TableHeader>Name</TableHeader>
                       <TableHeader>Date Admitted</TableHeader>
-                      <TableHeader>Days in Mortuary</TableHeader>
+                      <TableHeader>Days</TableHeader>
                       <TableHeader>Status</TableHeader>
-                      <TableHeader>Total Charges</TableHeader>
+                      <TableHeader>Charges</TableHeader>
                       <TableHeader style={{ textAlign: 'right' }}>Actions</TableHeader>
                     </TableRow>
                   </TableHead>
@@ -607,14 +607,11 @@ const DeceasedList = () => {
                       return (
                         <TableRow key={deceased.deceased_id || deceased.id}>
                           <TableCell>
-                            <div style={{ fontWeight: 500, fontSize: '0.75rem', color: COLORS.textSecondary }}>
-                              {deceased.deceased_id || deceased.id || 'N/A'}
+                            <div style={{ fontWeight: 500, fontSize: '0.8125rem' }}>
+                              {deceased.full_name || 'Unknown'}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div style={{ fontWeight: 500 }}>{deceased.full_name || 'Unknown'}</div>
                             {deceased.burial_type && (
-                              <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary, marginTop: '0.125rem' }}>
+                              <div style={{ fontSize: '0.6875rem', color: COLORS.textSecondary, marginTop: '0.125rem' }}>
                                 {deceased.burial_type}
                               </div>
                             )}
@@ -651,7 +648,7 @@ const DeceasedList = () => {
                               </ActionIconButton>
                               <ActionIconButton
                                 as={Link}
-                                to={`/deceased/${deceased.deceased_id || deceased.id}/edit`}
+                                to={`/tenant/${tenantSlug}/deceased/${deceased.deceased_id || deceased.id}/edit`}
                                 title="Edit"
                               >
                                 <Edit size={16} />
@@ -885,7 +882,7 @@ const DeceasedList = () => {
             <button
               onClick={() => {
                 closeDrawer();
-                window.location.href = `/deceased/${selectedRecord.deceased_id || selectedRecord.id}`;
+                window.location.href = `/tenant/${tenantSlug}/deceased/${selectedRecord.deceased_id || selectedRecord.id}`;
               }}
               style={{
                 flex: 1,
@@ -908,7 +905,7 @@ const DeceasedList = () => {
             <button
               onClick={() => {
                 closeDrawer();
-                window.location.href = `/deceased/${selectedRecord.deceased_id || selectedRecord.id}/edit`;
+                window.location.href = `/tenant/${tenantSlug}/deceased/${selectedRecord.deceased_id || selectedRecord.id}/edit`;
               }}
               style={{
                 flex: 1,

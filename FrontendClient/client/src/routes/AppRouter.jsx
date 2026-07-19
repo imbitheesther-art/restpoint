@@ -365,6 +365,9 @@ const TenantDashboardRoutes = ({ tenantData }) => {
         </RoleBasedRoute>
       } />
 
+      {/* Legacy deceased routes - redirect to tenant slug format */}
+      <Route path="/deceased/:id" element={<LegacyDeceasedRedirect />} />
+
       {/* Coffins - Available to admin, manager, staff */}
       <Route path="coffins" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
@@ -425,8 +428,8 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       } />
 
       {/* Memorial - Public access */}
-      <Route path="memorial/:deceasedId" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
-      <Route path="memorial/:deceasedId/:token" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
+      <Route path="memorial/:tenantSlug/:deceasedId" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
+      <Route path="memorial/:tenantSlug/:deceasedId/:token" element={<Layout tenantData={tenantData}><PublicMemorialPage /></Layout>} />
 
       {/* User Management - Available to admin and manager only */}
       <Route path="users" element={
@@ -512,6 +515,26 @@ const SystemAdminRoute = () => {
   // Render the system admin dashboard
   const AdminSys = lazy(() => import('../components/support/adminsys'));
   return <AdminSys />;
+};
+
+const LegacyDeceasedRedirect = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  useEffect(() => {
+    // Get tenant slug from localStorage
+    const tenantSlug = localStorage.getItem('tenantSlug') || 'system_shared';
+    navigate(`/tenant/${tenantSlug}/deceased/${id}`, { replace: true });
+  }, [navigate, id]);
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#6B7280' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid #E5E7EB', borderTop: '3px solid #C9A84C', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+        <p>Redirecting...</p>
+      </div>
+    </div>
+  );
 };
 
 const DashboardRedirect = () => {
