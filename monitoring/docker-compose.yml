@@ -25,7 +25,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   # ============================================
-  # GRAFANA - Dashboards & Visualization (port 3002 to avoid conflict with main app Grafana on 3000)
+  # GRAFANA - Dashboards & Visualization
   # ============================================
   grafana:
     image: grafana/grafana:latest
@@ -59,33 +59,22 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/host/root'
+      - '--path.rootfs=/rootfs'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-      - '--collector.cpu'
-      - '--collector.diskstats'
-      - '--collector.filesystem'
-      - '--collector.loadavg'
-      - '--collector.meminfo'
-      - '--collector.netdev'
-      - '--collector.netstat'
-      - '--collector.processes'
-      - '--collector.tcpstat'
-      - '--collector.udp'
-      - '--collector.systemd'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      - /:/root:ro
+      - /:/rootfs:ro
 
   # ============================================
-  # CADVISOR - Container Metrics
+  # CADVISOR - Container Metrics (port 8082 to avoid conflict with frontend on 8080)
   # ============================================
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: restpoint-cadvisor
     restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "8082:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -193,7 +182,7 @@ services:
       - monitoring
 
   # ============================================
-  # LOKI - Log Aggregation (port 3101 to avoid conflict with main app Loki on 3100)
+  # LOKI - Log Aggregation
   # ============================================
   loki:
     image: grafana/loki:latest
