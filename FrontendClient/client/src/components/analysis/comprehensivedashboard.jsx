@@ -17,7 +17,7 @@ import {
   GitCompareArrows, X, ChevronDown, Flower2, User, Phone, Mail, Eye, Filter,
   Download, Printer, MessageSquare, FileText, Edit, Trash2, MoreVertical,
   Search, SlidersHorizontal, ChevronLeft, ChevronRight, Users2, ClipboardList,
-  Gauge, BarChart2, PieChart as PieChartIcon
+  Gauge, BarChart2, PieChart as PieChartIcon, Plus
 } from "lucide-react";
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../utils/config/env";

@@ -374,9 +374,11 @@ const DeceasedList = () => {
     try {
       setIsLoading(true);
       const tenantSlug = getTenantSlug();
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
       const response = await axios.get(`${BASE_URL}/deceased/deceased-all`, {
         headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
           'x-tenant-slug': tenantSlug,
         },
       });
@@ -418,6 +420,7 @@ const DeceasedList = () => {
     setIsExporting(true);
     try {
       const tenantSlug = getTenantSlug();
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
       // Build query parameters
       const params = new URLSearchParams();
@@ -434,6 +437,7 @@ const DeceasedList = () => {
 
       const response = await axios.get(`${BASE_URL}/deceased/export?${params.toString()}`, {
         headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
           'x-tenant-slug': tenantSlug,
         },
         responseType: 'blob',
@@ -465,8 +469,10 @@ const DeceasedList = () => {
 
     try {
       const tenantSlug = getTenantSlug();
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
       await axios.delete(`${BASE_URL}/deceased/${id}`, {
         headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
           'x-tenant-slug': tenantSlug,
         },
       });
