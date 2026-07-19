@@ -112,12 +112,12 @@ Server             Docker          External Checks
 
 2. **Start all monitoring services**:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **Verify all services are running**:
    ```bash
-   docker-compose ps
+   docker compose ps
    ```
 
 4. **Access the monitoring tools**:
@@ -129,18 +129,18 @@ Server             Docker          External Checks
 ### Stopping the Stack
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Viewing Logs
 
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f prometheus
-docker-compose logs -f grafana
+docker compose logs -f prometheus
+docker compose logs -f grafana
 ```
 
 ## Configuration
@@ -366,10 +366,10 @@ docker volume inspect monitoring_loki-data
 **4. Container Not Starting**
 ```bash
 # Check logs
-docker-compose logs <service-name>
+docker compose logs <service-name>
 
 # Restart specific service
-docker-compose restart <service-name>
+docker compose restart <service-name>
 ```
 
 ## Production Deployment
@@ -442,23 +442,23 @@ docker run --rm -v monitoring_loki-data:/data -v $(pwd)/backup:/backup alpine ta
 
 ```bash
 # Start monitoring stack
-docker-compose up -d
+docker compose up -d
 
 # Stop monitoring stack
-docker-compose down
+docker compose down
 
 # Restart specific service
-docker-compose restart prometheus
+docker compose restart prometheus
 
 # View logs
-docker-compose logs -f <service-name>
+docker compose logs -f <service-name>
 
 # Check status
-docker-compose ps
+docker compose ps
 
 # Update images
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 
 # Access Prometheus CLI
 docker exec -it restpoint-prometheus promtool
@@ -483,7 +483,7 @@ curl 'http://localhost:9115/probe?target=google.com&module=http_2xx'
 ## Support
 
 For issues with the monitoring stack, check:
-1. Docker logs: `docker-compose logs <service>`
+1. Docker logs: `docker compose logs <service>`
 2. Prometheus targets: http://localhost:9090/targets
 3. Grafana logs: `docker logs restpoint-grafana`
 
@@ -501,8 +501,8 @@ The load testing setup includes:
 
 ```bash
 cd monitoring/load-testing
-docker-compose up -d
-docker-compose exec k6 run /scripts/load-test.js
+docker compose up -d
+docker compose exec k6 run /scripts/load-test.js
 ```
 
 Access load test results at: http://localhost:3003 (admin / admin123)

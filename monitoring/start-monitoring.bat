@@ -17,15 +17,15 @@ if %errorlevel% neq 0 (
 
 echo + Docker is running
 
-REM Check if docker-compose is available
-docker-compose --version >nul 2>&1
+REM Check if docker compose is available (Docker Compose V2)
+docker compose version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo X Error: docker-compose is not installed.
+    echo X Error: docker compose is not installed.
     pause
     exit /b 1
 )
 
-echo + docker-compose is available
+echo + docker compose is available
 echo.
 
 REM Create necessary directories
@@ -43,7 +43,7 @@ echo.
 
 REM Start the monitoring stack
 echo Starting monitoring services...
-docker-compose up -d
+docker compose up -d
 
 REM Wait for services to be ready
 echo.
@@ -54,7 +54,7 @@ REM Check service status
 echo.
 echo Service Status:
 echo ----------------------------------------
-docker-compose ps
+docker compose ps
 
 echo.
 echo ==========================================
@@ -74,7 +74,7 @@ echo   2. Configure Uptime Kuma with your notification preferences
 echo   3. Add custom metrics to your application (see README.md)
 echo   4. Set up alerts in Grafana
 echo.
-echo To view logs: docker-compose logs -f
-echo To stop:      docker-compose down
+echo To view logs: docker compose logs -f
+echo To stop:      docker compose down
 echo.
 pause

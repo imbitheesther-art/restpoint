@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ============================================
   # K6 - Load Testing Tool

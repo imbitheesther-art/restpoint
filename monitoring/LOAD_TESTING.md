@@ -53,13 +53,13 @@ Complete load testing setup using k6, InfluxDB, and Grafana for performance test
 
 ```bash
 cd monitoring/load-testing
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Verify Services
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 Expected output:
@@ -75,17 +75,17 @@ Expected output:
 cd monitoring/load-testing
 
 # Run load test with default settings
-docker-compose exec k6 run /scripts/load-test.js
+docker compose exec k6 run /scripts/load-test.js
 ```
 
 ### Custom Load Test
 
 ```bash
 # Test against specific URL
-BASE_URL=http://your-app.com docker-compose exec k6 run /scripts/load-test.js
+BASE_URL=http://your-app.com docker compose exec k6 run /scripts/load-test.js
 
 # Run with custom output
-docker-compose exec k6 run /scripts/load-test.js --out json=/results/custom-results.json
+docker compose exec k6 run /scripts/load-test.js --out json=/results/custom-results.json
 ```
 
 ### Load Test Scenarios
@@ -296,7 +296,7 @@ export default function () {
 ### Running Custom Tests
 
 ```bash
-docker-compose exec k6 run /scripts/custom-test.js
+docker compose exec k6 run /scripts/custom-test.js
 ```
 
 ### Load Test with Authentication
@@ -428,13 +428,13 @@ Create a unified dashboard that shows:
 
 ```bash
 # Check k6 logs
-docker-compose logs k6
+docker compose logs k6
 
 # Verify InfluxDB is running
-docker-compose ps influxdb
+docker compose ps influxdb
 
 # Restart k6
-docker-compose restart k6
+docker compose restart k6
 ```
 
 ### No Data in Grafana
@@ -444,7 +444,7 @@ docker-compose restart k6
 curl http://localhost:8086/ping
 
 # Check k6 is outputting to InfluxDB
-docker-compose logs k6 | grep influxdb
+docker compose logs k6 | grep influxdb
 
 # Verify Grafana datasource
 # Visit http://localhost:3003/datasources
@@ -454,7 +454,7 @@ docker-compose logs k6 | grep influxdb
 
 ```bash
 # Run test with more verbose output
-docker-compose exec k6 run /scripts/load-test.js --verbose
+docker compose exec k6 run /scripts/load-test.js --verbose
 
 # Test single endpoint manually
 curl http://localhost:5000/api/v1/restpoint/health
@@ -477,13 +477,13 @@ Common causes:
 
 ```bash
 # Override environment variables
-BASE_URL=https://staging.example.com docker-compose exec k6 run /scripts/load-test.js
+BASE_URL=https://staging.example.com docker compose exec k6 run /scripts/load-test.js
 
 # Run with custom iterations
-docker-compose exec k6 run /scripts/load-test.js --iterations 1000
+docker compose exec k6 run /scripts/load-test.js --iterations 1000
 
 # Run for specific duration
-docker-compose exec k6 run /scripts/load-test.js --duration 5m
+docker compose exec k6 run /scripts/load-test.js --duration 5m
 ```
 
 ### Distributed Load Testing
@@ -567,15 +567,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Start load testing stack
-        run: |
-          cd monitoring/load-testing
-          docker-compose up -d
+        - name: Start load testing stack
+          run: |
+            cd monitoring/load-testing
+            docker compose up -d
       
       - name: Run load test
         run: |
           cd monitoring/load-testing
-          docker-compose exec k6 run /scripts/load-test.js
+          docker compose exec k6 run /scripts/load-test.js
       
       - name: Check thresholds
         run: |
@@ -600,7 +600,7 @@ jobs:
 ## Support
 
 For issues with load testing:
-1. Check k6 logs: `docker-compose logs k6`
+1. Check k6 logs: `docker compose logs k6`
 2. Verify InfluxDB: `curl http://localhost:8086/ping`
 3. Check Grafana: http://localhost:3003
 4. Review application logs during test

@@ -15,6 +15,12 @@ chmod +x start-monitoring.sh
 ./start-monitoring.sh
 ```
 
+### Or use docker compose directly:
+```bash
+cd monitoring
+docker compose up -d
+```
+
 ## Access URLs
 
 | Tool | URL | Credentials |
@@ -56,7 +62,7 @@ chmod +x start-monitoring.sh
 
 ```bash
 # Check all services are running
-docker-compose ps
+docker compose ps
 
 # Check Prometheus targets
 curl http://localhost:9090/targets
@@ -69,19 +75,19 @@ curl 'http://localhost:9115/probe?target=google.com&module=http_2xx'
 
 ```bash
 # Start monitoring
-docker-compose up -d
+docker compose up -d
 
 # Stop monitoring
-docker-compose down
+docker compose down
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Restart specific service
-docker-compose restart prometheus
+docker compose restart prometheus
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 ## What Gets Monitored
@@ -126,11 +132,11 @@ docker-compose ps
 docker info
 
 # Check logs
-docker-compose logs
+docker compose logs
 
 # Restart
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Can't access Grafana
