@@ -25,18 +25,18 @@ services:
       - "host.docker.internal:host-gateway"
 
   # ============================================
-  # GRAFANA - Dashboards & Visualization
+  # GRAFANA - Dashboards & Visualization (port 3002 to avoid conflict with main app Grafana on 3000)
   # ============================================
   grafana:
     image: grafana/grafana:latest
-    container_name: restpoint-grafana
+    container_name: restpoint-monitoring-grafana
     restart: always
     ports:
-      - "3001:3000"
+      - "3003:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_SERVER_ROOT_URL=http://localhost:3003
       - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel
     volumes:
       - grafana-data:/var/lib/grafana
@@ -53,7 +53,7 @@ services:
   node-exporter:
     image: prom/node-exporter:latest
     container_name: restpoint-node-exporter
-    restart: always
+    restart: unless-stopped
     pid: host
     network_mode: host
     command:
@@ -83,7 +83,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: restpoint-cadvisor
-    restart: always
+    restart: unless-stopped
     ports:
       - "8081:8080"
     volumes:
@@ -94,17 +94,17 @@ services:
       - /dev/disk/:/dev/disk:ro
     devices:
       - /dev/kmsg
+    privileged: true
     networks:
       - monitoring
 
   # ============================================
   # MYSQL EXPORTER - Database Metrics
-  # Uses host IP directly to connect to MariaDB
   # ============================================
   mysql-exporter:
     image: prom/mysqld-exporter:latest
     container_name: restpoint-mysql-exporter
-    restart: always
+    restart: unless-stopped
     ports:
       - "9104:9104"
     environment:
@@ -114,12 +114,11 @@ services:
 
   # ============================================
   # REDIS EXPORTER - Cache Metrics
-  # Uses host IP directly to connect to Redis
   # ============================================
   redis-exporter:
     image: oliver006/redis_exporter:latest
     container_name: restpoint-redis-exporter
-    restart: always
+    restart: unless-stopped
     ports:
       - "9121:9121"
     environment:
@@ -130,12 +129,11 @@ services:
 
   # ============================================
   # RABBITMQ EXPORTER - Message Queue Metrics
-  # Uses host IP directly to connect to RabbitMQ
   # ============================================
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
     container_name: restpoint-rabbitmq-exporter
-    restart: always
+    restart: unless-stopped
     ports:
       - "9419:9419"
     environment:
@@ -152,7 +150,7 @@ services:
   process-exporter:
     image: ncabatoff/process-exporter:latest
     container_name: restpoint-process-exporter
-    restart: always
+    restart: unless-stopped
     ports:
       - "9256:9256"
     volumes:
@@ -170,7 +168,7 @@ services:
   blackbox-exporter:
     image: prom/blackbox-exporter:latest
     container_name: restpoint-blackbox-exporter
-    restart: always
+    restart: unless-stopped
     ports:
       - "9115:9115"
     volumes:
@@ -188,21 +186,21 @@ services:
     container_name: restpoint-uptime-kuma
     restart: always
     ports:
-      - "3002:3001"
+      - "3004:3001"
     volumes:
       - uptime-kuma-data:/app/data
     networks:
       - monitoring
 
   # ============================================
-  # LOKI - Log Aggregation
+  # LOKI - Log Aggregation (port 3101 to avoid conflict with main app Loki on 3100)
   # ============================================
   loki:
     image: grafana/loki:latest
-    container_name: restpoint-loki
-    restart: always
+    container_name: restpoint-monitoring-loki
+    restart: unless-stopped
     ports:
-      - "3100:3100"
+      - "3101:3100"
     volumes:
       - ./loki/loki-config.yml:/etc/loki/local-config.yaml
       - loki-data:/loki
@@ -214,8 +212,8 @@ services:
   # ============================================
   promtail:
     image: grafana/promtail:latest
-    container_name: restpoint-promtail
-    restart: always
+    container_name: restpoint-monitoring-promtail
+    restart: unless-stopped
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/config.yml
       - /var/log:/var/log
