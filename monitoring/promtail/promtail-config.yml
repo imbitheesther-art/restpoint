@@ -1,0 +1,79 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker container logs
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.*)
+        target_label: container_name
+      - source_labels: [__meta_docker_container_log_stream]
+        regex: stdout
+        target_label: log_stream
+      - source_labels: [__meta_docker_container_name]
+        regex: /restpoint-(.*)
+        target_label: service
+      - source_labels: [__meta_docker_container_name]
+        regex: /mysql
+        target_label: service
+        replacement: mysql
+      - source_labels: [__meta_docker_container_name]
+        regex: /redis
+        target_label: service
+        replacement: redis
+
+  # Application logs from files
+  - job_name: restpoint-apps
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: restpoint-logs
+          service: restpoint
+          __path__: /var/log/restpoint/*.log
+
+  # System logs
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          service: system
+          __path__: /var/log/syslog
+
+  # Nginx logs
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          service: nginx
+          __path__: /var/log/nginx/*.log
+
+  # Docker compose logs
+  - job_name: docker-compose
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker-compose
+          service: docker
+          __path__: /var/lib/docker/containers/*/*.log
+    relabel_configs:
+      - source_labels: [__path__]
+        regex: /var/lib/docker/containers/([^/]+)/.+.log
+        target_label: container_id
+        replacement: ${1}

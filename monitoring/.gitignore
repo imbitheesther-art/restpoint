@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Data volumes (these are Docker volumes)
+prometheus-data/
+grafana-data/
+uptime-kuma-data/
+loki-data/
+
+# Temporary files
+*.tmp
+*.log
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db

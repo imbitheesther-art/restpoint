@@ -1,0 +1,136 @@
+modules:
+  # HTTP/HTTPS checks
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200, 301, 302]
+      method: GET
+
+  # HTTPS checks with SSL verification
+  http_2xx_ssl:
+    prober: http
+    timeout: 5s
+    http:
+      tls_config:
+        insecure_skip_verify: false
+      valid_status_codes: [200, 301, 302]
+
+  # TCP checks
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+
+  # ICMP checks (ping)
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  # DNS checks
+  dns:
+    prober: dns
+    timeout: 5s
+    dns:
+      query_name: "restpoint.co.ke"
+      query_type: "A"
+      valid_rcodes:
+        - NOERROR
+        - NXDOMAIN
+
+  # PostgreSQL health check
+  postgres:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - send: "SELECT 1"
+          expect: "1"
+
+  # MySQL health check
+  mysql:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - send: "SELECT 1"
+          expect: "1"
+
+  # Redis health check
+  redis:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - send: "PING\r\n"
+          expect: "PONG"
+
+# Configuration for specific endpoints
+config:
+  # Main website
+  - site: restpoint.co.ke
+    url: https://restpoint.co.ke
+    module: http_2xx_ssl
+    check_interval: 30s
+
+  # API Gateway
+  - site: api-gateway
+    url: http://localhost:5000/health
+    module: http_2xx
+    check_interval: 15s
+
+  # Deceased Service
+  - site: deceased-service
+    url: http://localhost:5001/health
+    module: http_2xx
+    check_interval: 15s
+
+  # Auth Service
+  - site: auth-service
+    url: http://localhost:5002/health
+    module: http_2xx
+    check_interval: 15s
+
+  # Invoice Service
+  - site: invoice-service
+    url: http://localhost:5003/health
+    module: http_2xx
+    check_interval: 15s
+
+  # Documents Service
+  - site: documents-service
+    url: http://localhost:5004/health
+    module: http_2xx
+    check_interval: 15s
+
+  # Analytics Service
+  - site: analytics-service
+    url: http://localhost:5005/health
+    module: http_2xx
+    check_interval: 15s
+
+  # MySQL Database
+  - site: mysql
+    url: localhost:3306
+    module: mysql
+    check_interval: 30s
+
+  # Redis Cache
+  - site: redis
+    url: localhost:6379
+    module: redis
+    check_interval: 30s
+
+  # Frontend
+  - site: frontend
+    url: http://localhost:3000
+    module: http_2xx
+    check_interval: 30s
+
+  # Nginx
+  - site: nginx
+    url: http://localhost:80
+    module: http_2xx
+    check_interval: 15s
