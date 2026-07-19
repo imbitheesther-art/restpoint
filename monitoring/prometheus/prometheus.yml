@@ -30,7 +30,7 @@ scrape_configs:
   # ============================================
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['host.docker.internal:9100']
+      - targets: ['84.247.183.53:9100']
         labels:
           service: 'node-exporter'
           component: 'server'
@@ -40,7 +40,7 @@ scrape_configs:
   # ============================================
   - job_name: 'cadvisor'
     static_configs:
-      - targets: ['cadvisor:8080']
+      - targets: ['84.247.183.53:8081']
         labels:
           service: 'cadvisor'
           component: 'containers'
@@ -68,7 +68,7 @@ scrape_configs:
   # ============================================
   - job_name: 'api-gateway'
     static_configs:
-      - targets: ['host.docker.internal:5000']
+      - targets: ['84.247.183.53:5000']
         labels:
           service: 'api-gateway'
           component: 'application'
@@ -79,7 +79,7 @@ scrape_configs:
   # ============================================
   - job_name: 'deceased-service'
     static_configs:
-      - targets: ['host.docker.internal:5001']
+      - targets: ['84.247.183.53:5003']
         labels:
           service: 'deceased-service'
           component: 'application'
@@ -90,32 +90,164 @@ scrape_configs:
   # ============================================
   - job_name: 'auth-service'
     static_configs:
-      - targets: ['host.docker.internal:5002']
+      - targets: ['84.247.183.53:5001']
         labels:
           service: 'auth-service'
           component: 'application'
     metrics_path: '/metrics'
 
   # ============================================
-  # DATABASE METRICS - MySQL
+  # APPLICATION METRICS - Tenant Service
   # ============================================
-  - job_name: 'mysql'
+  - job_name: 'tenant-service'
     static_configs:
-      - targets: ['host.docker.internal:3306']
+      - targets: ['84.247.183.53:5002']
         labels:
-          service: 'mysql'
-          component: 'database'
+          service: 'tenant-service'
+          component: 'application'
     metrics_path: '/metrics'
 
   # ============================================
-  # CACHE METRICS - Redis
+  # APPLICATION METRICS - Invoice Service
   # ============================================
-  - job_name: 'redis'
+  - job_name: 'invoice-service'
     static_configs:
-      - targets: ['host.docker.internal:6379']
+      - targets: ['84.247.183.53:5005']
         labels:
-          service: 'redis'
-          component: 'cache'
+          service: 'invoice-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Coffin Service
+  # ============================================
+  - job_name: 'coffin-service'
+    static_configs:
+      - targets: ['84.247.183.53:5006']
+        labels:
+          service: 'coffin-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Analytics Service
+  # ============================================
+  - job_name: 'analytics-service'
+    static_configs:
+      - targets: ['84.247.183.53:5009']
+        labels:
+          service: 'analytics-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Documents Service
+  # ============================================
+  - job_name: 'documents-service'
+    static_configs:
+      - targets: ['84.247.183.53:5011']
+        labels:
+          service: 'documents-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Hearse Service
+  # ============================================
+  - job_name: 'hearse-service'
+    static_configs:
+      - targets: ['84.247.183.53:5023']
+        labels:
+          service: 'hearse-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Support Service
+  # ============================================
+  - job_name: 'support-service'
+    static_configs:
+      - targets: ['84.247.183.53:8111']
+        labels:
+          service: 'support-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Chemical Service
+  # ============================================
+  - job_name: 'chemical-service'
+    static_configs:
+      - targets: ['84.247.183.53:5105']
+        labels:
+          service: 'chemical-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Billing Service
+  # ============================================
+  - job_name: 'billing-service'
+    static_configs:
+      - targets: ['84.247.183.53:5020']
+        labels:
+          service: 'billing-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Notification Service
+  # ============================================
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['84.247.183.53:5111']
+        labels:
+          service: 'notification-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Workshop Service
+  # ============================================
+  - job_name: 'workshop-service'
+    static_configs:
+      - targets: ['84.247.183.53:6969']
+        labels:
+          service: 'workshop-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Extra Services
+  # ============================================
+  - job_name: 'extra-services'
+    static_configs:
+      - targets: ['84.247.183.53:5016']
+        labels:
+          service: 'extra-services'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - SocketIO Service
+  # ============================================
+  - job_name: 'socketio-service'
+    static_configs:
+      - targets: ['84.247.183.53:5018']
+        labels:
+          service: 'socketio-service'
+          component: 'application'
+    metrics_path: '/metrics'
+
+  # ============================================
+  # APPLICATION METRICS - Leave Service
+  # ============================================
+  - job_name: 'leave-service'
+    static_configs:
+      - targets: ['84.247.183.53:5017']
+        labels:
+          service: 'leave-service'
+          component: 'application'
     metrics_path: '/metrics'
 
   # ============================================
@@ -123,21 +255,10 @@ scrape_configs:
   # ============================================
   - job_name: 'frontend'
     static_configs:
-      - targets: ['host.docker.internal:3000']
+      - targets: ['84.247.183.53:8080']
         labels:
           service: 'frontend'
           component: 'application'
-    metrics_path: '/metrics'
-
-  # ============================================
-  # NGINX METRICS
-  # ============================================
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['host.docker.internal:80']
-        labels:
-          service: 'nginx'
-          component: 'proxy'
     metrics_path: '/metrics'
 
   # ============================================
@@ -149,11 +270,12 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - 'http://localhost:80'
-          - 'http://localhost:5000/health'
-          - 'http://localhost:5001/health'
-          - 'http://localhost:5002/health'
-          - 'http://localhost:3000'
+          - 'http://84.247.183.53:80'
+          - 'http://84.247.183.53:5000/health'
+          - 'http://84.247.183.53:5001/health'
+          - 'http://84.247.183.53:5002/health'
+          - 'http://84.247.183.53:5003/health'
+          - 'http://84.247.183.53:8080'
         labels:
           service: 'blackbox-checks'
           component: 'external'

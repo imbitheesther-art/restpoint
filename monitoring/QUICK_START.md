@@ -28,7 +28,7 @@ docker compose up -d
 | **Grafana** | http://localhost:3001 | admin / admin123 |
 | **Prometheus** | http://localhost:9090 | None |
 | **Uptime Kuma** | http://localhost:3002 | Create on first visit |
-| **cAdvisor** | http://localhost:8080 | None |
+| **cAdvisor** | http://localhost:8081 | None |
 | **Loki** | http://localhost:3100 | None |
 
 ## First Steps
@@ -157,7 +157,7 @@ docker logs restpoint-grafana
 curl http://localhost:9100/metrics
 
 # Test cAdvisor
-curl http://localhost:8080/metrics
+curl http://localhost:8081/metrics
 ```
 
 ## Next Steps

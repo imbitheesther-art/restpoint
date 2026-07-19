@@ -48,14 +48,14 @@ Server             Docker          External Checks
   - System load averages
   - Running processes
 
-### 4. **cAdvisor** (port 8080)
+### 4. **cAdvisor** (port 8081)
 - **Purpose**: Container metrics
 - **Monitors**:
   - CPU, memory, network per container
   - Disk usage per container
   - Container restarts and throttling
   - Resource limits vs usage
-- **Web UI**: http://localhost:8080
+- **Web UI**: http://localhost:8081
 
 ### 5. **Blackbox Exporter** (port 9115)
 - **Purpose**: External service monitoring
@@ -124,7 +124,7 @@ Server             Docker          External Checks
    - Grafana: http://localhost:3001 (admin / admin123)
    - Prometheus: http://localhost:9090
    - Uptime Kuma: http://localhost:3002
-   - cAdvisor: http://localhost:8080
+   - cAdvisor: http://localhost:8081
 
 ### Stopping the Stack
 

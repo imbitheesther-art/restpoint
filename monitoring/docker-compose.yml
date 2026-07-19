@@ -37,7 +37,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_SERVER_ROOT_URL=http://localhost:3001
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -61,6 +61,17 @@ services:
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/host/root'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.cpu'
+      - '--collector.diskstats'
+      - '--collector.filesystem'
+      - '--collector.loadavg'
+      - '--collector.meminfo'
+      - '--collector.netdev'
+      - '--collector.netstat'
+      - '--collector.processes'
+      - '--collector.tcpstat'
+      - '--collector.udp'
+      - '--collector.systemd'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -74,7 +85,7 @@ services:
     container_name: restpoint-cadvisor
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -83,6 +94,76 @@ services:
       - /dev/disk/:/dev/disk:ro
     devices:
       - /dev/kmsg
+    networks:
+      - monitoring
+
+  # ============================================
+  # MYSQL EXPORTER - Database Metrics
+  # ============================================
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: restpoint-mysql-exporter
+    restart: always
+    ports:
+      - "9104:9104"
+    environment:
+      - DATA_SOURCE_NAME=exporter:exporter_password@(mariadb:3306)/
+    networks:
+      - monitoring
+    depends_on:
+      - mariadb
+
+  # ============================================
+  # REDIS EXPORTER - Cache Metrics
+  # ============================================
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: restpoint-redis-exporter
+    restart: always
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=
+    networks:
+      - monitoring
+    depends_on:
+      - redis
+
+  # ============================================
+  # RABBITMQ EXPORTER - Message Queue Metrics
+  # ============================================
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: restpoint-rabbitmq-exporter
+    restart: always
+    ports:
+      - "9419:9419"
+    environment:
+      - RABBIT_URL=http://rabbitmq:15672
+      - RABBIT_USER=guest
+      - RABBIT_PASSWORD=guest
+      - PUBLISH_PORT=9419
+    networks:
+      - monitoring
+    depends_on:
+      - rabbitmq
+
+  # ============================================
+  # PROCESS EXPORTER - Process-level metrics
+  # ============================================
+  process-exporter:
+    image: ncabatoff/process-exporter:latest
+    container_name: restpoint-process-exporter
+    restart: always
+    ports:
+      - "9256:9256"
+    volumes:
+      - ./process-exporter/config.yml:/config/config.yml
+      - /proc:/host/proc:ro
+    command:
+      - '--config.path=/config/config.yml'
+      - '--procfs=/host/proc'
     networks:
       - monitoring
 
@@ -117,7 +198,7 @@ services:
       - monitoring
 
   # ============================================
-  # LOKI - Log Aggregation (Optional)
+  # LOKI - Log Aggregation
   # ============================================
   loki:
     image: grafana/loki:latest
@@ -132,7 +213,7 @@ services:
       - monitoring
 
   # ============================================
-  # PROMTAIL - Log Collection (Optional)
+  # PROMTAIL - Log Collection
   # ============================================
   promtail:
     image: grafana/promtail:latest
