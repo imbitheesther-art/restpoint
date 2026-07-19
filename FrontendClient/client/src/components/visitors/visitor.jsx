@@ -440,10 +440,10 @@ const BookingCard = styled.div`
   border-radius: 0.8rem;
   padding: 1.5rem;
   margin-bottom: 1rem;
-  border-left: 4px solid ${props => 
-    props.status === 'confirmed' ? Colors.successGreen : 
-    props.status === 'pending' ? Colors.warningYellow : 
-    Colors.infoBlue
+  border-left: 4px solid ${props =>
+    props.status === 'confirmed' ? Colors.successGreen :
+      props.status === 'pending' ? Colors.warningYellow :
+        Colors.infoBlue
   };
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   animation: ${slideIn} 0.3s ease-out;
@@ -665,7 +665,7 @@ const RegisterVisitor = () => {
     const fetchDeceasedRecords = async () => {
       setLoadingDeceased(true);
       try {
-        const response = await fetch('http://localhost:5000/api/v1/restpoint/deceased-all');
+        const response = await fetch('http://localhost:5000/api/v1/restpoint/deceased/deceased-all');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -802,7 +802,7 @@ const RegisterVisitor = () => {
 
       const result = await response.json();
       toast.success(result.message || 'Visitor registered successfully!');
-      
+
       // Reset form after successful submission
       setVisitorData({
         full_name: '',
@@ -814,7 +814,7 @@ const RegisterVisitor = () => {
       setSelectedDeceased(null);
       setSearchTerm('');
       setFilteredDeceased(allDeceased);
-      
+
       // Refresh recent visitors if on that tab
       if (activeTab === 'recent') {
         fetchRecentVisitors();
@@ -843,7 +843,7 @@ const RegisterVisitor = () => {
 
       const result = await response.json();
       toast.success(result.message || 'Booking processed successfully!');
-      
+
       // Refresh bookings list
       fetchOnlineBookings();
     } catch (err) {
@@ -852,19 +852,19 @@ const RegisterVisitor = () => {
     }
   };
 
-const renderOnlineBookings = () => {
-  if (loadingBookings) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <CoolLoader 
-          type="spinner" 
-          color="primary" 
-          text="Loading online bookings..." 
-          size="large"
-        />
-      </div>
-    );
-  }
+  const renderOnlineBookings = () => {
+    if (loadingBookings) {
+      return (
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <CoolLoader
+            type="spinner"
+            color="primary"
+            text="Loading online bookings..."
+            size="large"
+          />
+        </div>
+      );
+    }
 
     if (onlineBookings.length === 0) {
       return (
@@ -889,10 +889,10 @@ const renderOnlineBookings = () => {
             </div>
           </div>
           <div className="booking-status">
-            <Badge 
+            <Badge
               bg={
                 booking.status === 'confirmed' ? 'success' :
-                booking.status === 'pending' ? 'warning' : 'info'
+                  booking.status === 'pending' ? 'warning' : 'info'
               }
             >
               {booking.status?.toUpperCase()}
@@ -936,14 +936,14 @@ const renderOnlineBookings = () => {
         <BookingActions>
           {booking.status === 'pending' && (
             <>
-              <ActionButton 
+              <ActionButton
                 className="primary"
                 onClick={() => handleProcessBooking(booking.id, 'confirm')}
               >
                 <CheckCircle size={16} />
                 Confirm
               </ActionButton>
-              <ActionButton 
+              <ActionButton
                 className="secondary"
                 onClick={() => handleProcessBooking(booking.id, 'reject')}
               >
@@ -953,7 +953,7 @@ const renderOnlineBookings = () => {
             </>
           )}
           {booking.status === 'confirmed' && (
-            <ActionButton 
+            <ActionButton
               className="primary"
               onClick={() => handleProcessBooking(booking.id, 'checkin')}
             >
@@ -1031,7 +1031,7 @@ const renderOnlineBookings = () => {
                   {new Date(visitor.check_in_time).toLocaleString()}
                 </td>
                 <td>
-                  <Badge 
+                  <Badge
                     bg={visitor.visitor_type === 'walk-in' ? 'primary' : 'success'}
                   >
                     {visitor.visitor_type?.toUpperCase()}
