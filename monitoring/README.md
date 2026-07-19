@@ -487,6 +487,26 @@ For issues with the monitoring stack, check:
 2. Prometheus targets: http://localhost:9090/targets
 3. Grafana logs: `docker logs restpoint-grafana`
 
+## Load Testing
+
+For comprehensive load testing with k6, InfluxDB, and Grafana, see [LOAD_TESTING.md](LOAD_TESTING.md).
+
+The load testing setup includes:
+- **K6** - Load and performance testing tool
+- **InfluxDB** - Time-series database for test results
+- **Grafana Dashboard** - Real-time test visualization
+- **Application Metrics** - Track requests, errors, response times, database queries, and resource usage
+
+### Quick Load Test
+
+```bash
+cd monitoring/load-testing
+docker-compose up -d
+docker-compose exec k6 run /scripts/load-test.js
+```
+
+Access load test results at: http://localhost:3003 (admin / admin123)
+
 ## License
 
 This monitoring setup is part of the RestPoint funeral home management system.
