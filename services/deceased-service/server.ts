@@ -175,6 +175,7 @@ app.use('/', chargeSettingsRoutes);
 
 // Mount deceasedRoutes LAST (has catch-all /:id route)
 import deceasedRoutes from './routes/deceasedRoutes';
+import { error } from 'console';
 app.use('/', deceasedRoutes);
 
 // ============================================
@@ -216,15 +217,14 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 // ============================================
 // START SERVER
 // ============================================
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('========================================');
-    console.log(`  🚀 Deceased Service`);
-    console.log(`  📡 Running on http://localhost:${PORT}`);
-    console.log(`  🔗 Health: http://localhost:${PORT}/health`);
-    console.log(`  📝 POST: http://localhost:${PORT}/register-deceased`);
-    console.log(`  📋 GET: http://localhost:${PORT}/deceased`);
-    console.log(`  📋 GET: http://localhost:${PORT}/deceased-id/:id`);
-    console.log('========================================');
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Deceased service running on ${PORT}`);
 });
+
+server.on('error', (err) => {
+    console.error('Server failed to start', err);
+    process.exit(1);
+});
+
 
 export default app;
