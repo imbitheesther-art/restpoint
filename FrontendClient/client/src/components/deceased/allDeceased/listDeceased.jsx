@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -22,12 +22,13 @@ import {
   MoreVertical,
   ChevronDown,
   FileSpreadsheet,
+  X,
 } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
 import ExportModal from '../ExportModal';
 
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
+const BASE_URL = `${API_GATEWAY_URL}`;
 
 // Bootstrap-inspired color scheme
 const COLORS = {
@@ -68,6 +69,11 @@ const COLORS = {
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+`;
+
+const slideInRight = keyframes`
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 `;
 
 const spin = keyframes`
@@ -361,6 +367,8 @@ const DeceasedList = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
 
   const fetchDeceasedList = useCallback(async () => {
     try {
@@ -479,6 +487,16 @@ const DeceasedList = () => {
     return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   };
 
+  const openDrawer = (record) => {
+    setSelectedRecord(record);
+    setDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedRecord(null);
+  };
+
   if (isLoading) {
     return (
       <Container>
@@ -584,7 +602,7 @@ const DeceasedList = () => {
                         <TableRow key={deceased.deceased_id || deceased.id}>
                           <TableCell>
                             <div style={{ fontWeight: 500, fontSize: '0.75rem', color: COLORS.textSecondary }}>
-                              {deceased.deceased_id || deceased.id}
+                              {deceased.deceased_id || deceased.id || 'N/A'}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -620,8 +638,7 @@ const DeceasedList = () => {
                           <TableCell>
                             <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                               <ActionIconButton
-                                as={Link}
-                                to={`/deceased/${deceased.deceased_id || deceased.id}`}
+                                onClick={() => openDrawer(deceased)}
                                 title="View Details"
                               >
                                 <Eye size={16} />
@@ -652,6 +669,262 @@ const DeceasedList = () => {
           </CardBody>
         </Card>
       </MainContent>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExport}
+          isExporting={isExporting}
+          filters={{
+            search: searchTerm,
+            status: statusFilter,
+          }}
+        />
+      )}
+
+      {/* Side Drawer Overlay */}
+      {drawerOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.45)',
+            zIndex: 9998,
+            animation: 'fadeIn 0.12s ease-out',
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={closeDrawer}
+        />
+      )}
+
+      {/* Side Drawer */}
+      {drawerOpen && selectedRecord && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: '480px',
+            maxWidth: '100%',
+            background: COLORS.surface,
+            boxShadow: COLORS.shadowLg,
+            zIndex: 9999,
+            transform: drawerOpen ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.3s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideInRight 0.3s ease',
+          }}
+        >
+          {/* Drawer Header */}
+          <div style={{
+            padding: '1.25rem',
+            borderBottom: `1px solid ${COLORS.border}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: COLORS.bg,
+          }}>
+            <div>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0, color: COLORS.text }}>
+                Deceased Details
+              </h2>
+              <p style={{ fontSize: '0.8125rem', color: COLORS.textSecondary, margin: '0.25rem 0 0' }}>
+                {selectedRecord.deceased_id || selectedRecord.id || 'N/A'}
+              </p>
+            </div>
+            <button
+              onClick={closeDrawer}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: COLORS.textSecondary,
+                cursor: 'pointer',
+                padding: '0.5rem',
+                borderRadius: '0.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Drawer Body */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+            {/* Basic Information */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Basic Information
+              </h3>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                    Full Name
+                  </div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 500, color: COLORS.text }}>
+                    {selectedRecord.full_name || 'Unknown'}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                      Date Admitted
+                    </div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500, color: COLORS.text }}>
+                      {selectedRecord.date_admitted ? new Date(selectedRecord.date_admitted).toLocaleDateString() : 'N/A'}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                      Days in Mortuary
+                    </div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500, color: COLORS.text }}>
+                      {getDaysInMortuary(selectedRecord.date_admitted)} days
+                    </div>
+                  </div>
+                </div>
+
+                {selectedRecord.burial_type && (
+                  <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                      Burial Type
+                    </div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500, color: COLORS.text }}>
+                      {selectedRecord.burial_type}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Status and Charges */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Status & Charges
+              </h3>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                    Status
+                  </div>
+                  <Badge $variant={
+                    selectedRecord.status === 'released' ? 'success' :
+                      selectedRecord.status === 'transferred' ? 'info' : 'warning'
+                  }>
+                    {selectedRecord.status === 'active' && <Clock size={12} />}
+                    {selectedRecord.status === 'released' && <CheckCircle size={12} />}
+                    {selectedRecord.status || 'Active'}
+                  </Badge>
+                </div>
+
+                <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                    Total Charges
+                  </div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 600, color: COLORS.text }}>
+                    {selectedRecord.total_mortuary_charge || 0} {selectedRecord.currency || 'KES'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            {(selectedRecord.cause_of_death || selectedRecord.notes) && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Additional Information
+                </h3>
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {selectedRecord.cause_of_death && (
+                    <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: '0.375rem', border: `1px solid ${COLORS.border}` }}>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                        Cause of Death
+                      </div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 500, color: COLORS.text }}>
+                        {selectedRecord.cause_of_death}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedRecord.notes && (
+                    <div style={{ padding: '0.75rem', background: '#fffbeb', borderRadius: '0.375rem', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+                        Notes
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: COLORS.text, lineHeight: '1.5' }}>
+                        {selectedRecord.notes}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Drawer Footer */}
+          <div style={{
+            padding: '1rem 1.25rem',
+            borderTop: `1px solid ${COLORS.border}`,
+            display: 'flex',
+            gap: '0.5rem',
+            flexWrap: 'wrap',
+          }}>
+            <button
+              onClick={() => {
+                closeDrawer();
+                window.location.href = `/deceased/${selectedRecord.deceased_id || selectedRecord.id}`;
+              }}
+              style={{
+                flex: 1,
+                padding: '0.5rem 1rem',
+                background: COLORS.primary,
+                color: COLORS.white,
+                border: 'none',
+                borderRadius: '0.375rem',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.375rem',
+              }}
+            >
+              <Eye size={15} /> View Full Details
+            </button>
+            <button
+              onClick={() => {
+                closeDrawer();
+                window.location.href = `/deceased/${selectedRecord.deceased_id || selectedRecord.id}/edit`;
+              }}
+              style={{
+                flex: 1,
+                padding: '0.5rem 1rem',
+                background: COLORS.surface,
+                color: COLORS.text,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: '0.375rem',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.375rem',
+              }}
+            >
+              <Edit size={15} /> Edit
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Export Modal */}
       {showExportModal && (
