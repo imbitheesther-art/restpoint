@@ -99,6 +99,7 @@ services:
 
   # ============================================
   # MYSQL EXPORTER - Database Metrics
+  # Uses host IP directly to connect to MariaDB
   # ============================================
   mysql-exporter:
     image: prom/mysqld-exporter:latest
@@ -107,14 +108,13 @@ services:
     ports:
       - "9104:9104"
     environment:
-      - DATA_SOURCE_NAME=exporter:exporter_password@(mariadb:3306)/
+      - DATA_SOURCE_NAME=exporter:exporter_password@(84.247.183.53:3306)/
     networks:
       - monitoring
-    depends_on:
-      - mariadb
 
   # ============================================
   # REDIS EXPORTER - Cache Metrics
+  # Uses host IP directly to connect to Redis
   # ============================================
   redis-exporter:
     image: oliver006/redis_exporter:latest
@@ -123,15 +123,14 @@ services:
     ports:
       - "9121:9121"
     environment:
-      - REDIS_ADDR=redis:6379
+      - REDIS_ADDR=84.247.183.53:6379
       - REDIS_PASSWORD=
     networks:
       - monitoring
-    depends_on:
-      - redis
 
   # ============================================
   # RABBITMQ EXPORTER - Message Queue Metrics
+  # Uses host IP directly to connect to RabbitMQ
   # ============================================
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
@@ -140,14 +139,12 @@ services:
     ports:
       - "9419:9419"
     environment:
-      - RABBIT_URL=http://rabbitmq:15672
+      - RABBIT_URL=http://84.247.183.53:15672
       - RABBIT_USER=guest
       - RABBIT_PASSWORD=guest
       - PUBLISH_PORT=9419
     networks:
       - monitoring
-    depends_on:
-      - rabbitmq
 
   # ============================================
   # PROCESS EXPORTER - Process-level metrics
