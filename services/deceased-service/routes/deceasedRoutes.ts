@@ -2,14 +2,16 @@
 import { Router } from 'express';
 import { protect, authorizeAny } from '../../../services/app-global/middlewares/authMiddleware';
 import {
-    registerDeceased,
+
     getAllDeceased,
     getDeceasedById,
     updateDeceased,
     deleteDeceased,
-    getDeceasedStats,
-    exportDeceasedToExcel
+
+
 } from '../controllers/deceasedControl';
+
+import { registerNewDeceased } from '../controllers/registerDeceased'
 
 const router = Router();
 
@@ -17,15 +19,13 @@ const router = Router();
 router.use(protect);
 router.use(authorizeAny);
 
-// ============================================
-// ✅ ALL ROUTES - FULL PATH COMPATIBILITY
-// ============================================
+
 
 // POST - Register a new deceased
-router.post('/register-deceased', registerDeceased);
-router.post('/deceased/register-deceased', registerDeceased);
-router.post('/register', registerDeceased);
-router.post('/', registerDeceased);
+router.post('/register-deceased', registerNewDeceased);
+router.post('/deceased/register-deceased', registerNewDeceased);
+router.post('/register', registerNewDeceased);
+router.post('/', registerNewDeceased);
 
 // GET - All deceased
 router.get('/', getAllDeceased);
@@ -49,9 +49,9 @@ router.delete('/:id', deleteDeceased);
 router.delete('/delete-deceased/:id', deleteDeceased);
 
 // GET - Stats
-router.get('/stats', getDeceasedStats);
+// router.get('/stats', getDeceasedStats);
 
 // GET - Export
-router.get('/export', exportDeceasedToExcel);
+// router.get('/export', exportDeceasedToExcel);
 
 export default router;

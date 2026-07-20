@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { DateTime } from 'luxon';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { safeTenantQuery, safeTenantExecute } from '../../../shared/dbConfig';
 import Logger from '../../../packages/shared-logger/src/index';
 import { getKenyaTimeISO, getKenyaDate } from '../../../packages/shared-utils/dist/timestamps';
@@ -223,7 +223,7 @@ export const getDeceasedById = async (req: Request, res: Response): Promise<Resp
         });
 
     } catch (error: any) {
-        Logger.error('getDeceasedById error:', error);
+        Logger.error('getDeceasedById error: ' + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -329,7 +329,7 @@ export const updateDeceased = async (req: Request, res: Response): Promise<Respo
         });
 
     } catch (error: any) {
-        Logger.error('updateDeceased error:', error);
+        Logger.error('updateDeceased error: ' + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -389,7 +389,7 @@ export const deleteDeceased = async (req: Request, res: Response): Promise<Respo
         });
 
     } catch (error: any) {
-        Logger.error('deleteDeceased error:', error);
+        Logger.error('deleteDeceased error: ' + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: 'Internal Server Error',

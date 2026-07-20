@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, Plus, Edit, Trash2, Eye, RefreshCw, AlertTriangle,
   CheckCircle, Clock, User, Calendar, Filter, Download,
   MoreVertical, ChevronDown, FileSpreadsheet, X, Mail, Phone, MapPin, Copy
-} from '../../utils/icons/icons';
+} from '../../../utils/icons/icons';
 import styled, { keyframes, css } from 'styled-components';
 import ExportModal from '../ExportModal';
+import { ErrorBoundary } from 'react-error-boundary';
 
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE_URL = `${API_GATEWAY_URL}`;
@@ -123,7 +124,7 @@ const Actions = styled.div`
   align-items: center;
 `;
 
-const Btn = styled.button<{ $variant?: 'primary' | 'secondary' | 'ghost' }>`
+const Btn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -143,18 +144,34 @@ const Btn = styled.button<{ $variant?: 'primary' | 'secondary' | 'ghost' }>`
     border-color: ${T.textMuted};
   }
 
-  ${props => props.$variant === 'primary' && css`
-    background: ${T.primary};
-    color: white;
-    border-color: ${T.primary};
+  ${({ $variant }) =>
+    $variant === "primary" &&
+    `
+      background: ${T.primary};
+      color: white;
+      border-color: ${T.primary};
 
-    &:hover {
-      background: ${T.primaryHover};
-      border-color: ${T.primaryHover};
-      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
-    }
-  `}
+      &:hover {
+        background: ${T.primaryHover};
+      }
+    `}
+
+  ${({ $variant }) =>
+    $variant === "secondary" &&
+    `
+      background: ${T.secondary};
+      color: white;
+      border-color: ${T.secondary};
+    `}
+
+  ${({ $variant }) =>
+    $variant === "ghost" &&
+    `
+      background: transparent;
+      border: none;
+    `}
 `;
+
 
 const Main = styled.div`
   max-width: 1320px;
@@ -302,11 +319,11 @@ const TD = styled.td`
 
 // ─── Avatar ────────────────────────────────────────────────────────────────
 
-const Avatar = styled.div<{ $color: string }>`
+const Avatar = styled.div`
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: ${props => props.$color};
+  background: ${props => props.color};
   color: white;
   display: flex;
   align-items: center;
@@ -384,7 +401,7 @@ const CopyBtn = styled.button`
 
 // ─── Status Badge ─────────────────────────────────────────────────────────
 
-const StatusBadge = styled.span<{ $type: 'success' | 'warning' | 'danger' | 'info' | 'purple' }>`
+const StatusBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 0.3125rem;
@@ -398,18 +415,18 @@ const StatusBadge = styled.span<{ $type: 'success' | 'warning' | 'danger' | 'inf
     const map = {
       success: { bg: T.successBg, color: T.success, border: T.successBorder },
       warning: { bg: T.warningBg, color: T.warning, border: T.warningBorder },
-      danger:  { bg: T.dangerBg,  color: T.danger,  border: T.dangerBorder },
-      info:    { bg: T.infoBg,    color: T.info,    border: T.infoBorder },
-      purple:  { bg: T.purpleBg,  color: T.purple,  border: '#DDD6FE' },
+      danger: { bg: T.dangerBg, color: T.danger, border: T.dangerBorder },
+      info: { bg: T.infoBg, color: T.info, border: T.infoBorder },
+      purple: { bg: T.purpleBg, color: T.purple, border: '#DDD6FE' },
     };
-    const s = map[props.$type];
+    const s = map[props.type];
     return css`background: ${s.bg}; color: ${s.color}; border: 1px solid ${s.border};`;
   }}
 `;
 
 // ─── Days Badge ────────────────────────────────────────────────────────────
 
-const DaysBadge = styled.span<{ $type: 'ok' | 'warn' | 'danger' }>`
+const DaysBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -419,8 +436,8 @@ const DaysBadge = styled.span<{ $type: 'ok' | 'warn' | 'danger' }>`
   font-weight: 600;
 
   ${props => {
-    if (props.$type === 'danger') return css`background: ${T.dangerBg}; color: ${T.danger};`;
-    if (props.$type === 'warn') return css`background: ${T.warningBg}; color: ${T.warning};`;
+    if (props.type === 'danger') return css`background: ${T.dangerBg}; color: ${T.danger};`;
+    if (props.type === 'warn') return css`background: ${T.warningBg}; color: ${T.warning};`;
     return css`background: ${T.successBg}; color: ${T.success};`;
   }}
 `;
@@ -458,8 +475,7 @@ const ActionsCell = styled.div`
   gap: 0.125rem;
   justify-content: flex-end;
 `;
-
-const ActionBtn = styled.button<{ $danger?: boolean }>`
+const ActionBtn = styled.button`
   background: none;
   border: none;
   color: ${T.textMuted};
@@ -472,8 +488,8 @@ const ActionBtn = styled.button<{ $danger?: boolean }>`
   transition: all 0.12s ease;
 
   &:hover {
-    background: ${props => props.$danger ? T.dangerBg : T.primaryBg};
-    color: ${props => props.$danger ? T.danger : T.primary};
+    background: ${({ danger }) => danger ? T.dangerBg : T.primaryBg};
+    color: ${({ danger }) => danger ? T.danger : T.primary};
   }
 `;
 
@@ -519,6 +535,13 @@ const LoadingWrap = styled.div`
   justify-content: center;
   padding: 4rem 2rem;
   gap: 0.75rem;
+`;
+
+const Spinner = styled.div`
+  animation: ${spin} 1s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 // ─── Drawer ────────────────────────────────────────────────────────────────
@@ -651,8 +674,7 @@ const DrawerFooter = styled.div`
   gap: 0.5rem;
   background: ${T.surface};
 `;
-
-const DrawerBtn = styled.button<{ $primary?: boolean }>`
+const DrawerBtn = styled.button`
   flex: 1;
   display: flex;
   align-items: center;
@@ -668,14 +690,21 @@ const DrawerBtn = styled.button<{ $primary?: boolean }>`
   background: ${T.surface};
   color: ${T.textBody};
 
-  &:hover { background: ${T.surfaceHover}; }
+  &:hover {
+    background: ${T.surfaceHover};
+  }
 
-  ${props => props.$primary && css`
-    background: ${T.primary};
-    color: white;
-    border-color: ${T.primary};
-    &:hover { background: ${T.primaryHover}; }
-  `}
+  ${({ primary }) =>
+    primary &&
+    css`
+      background: ${T.primary};
+      color: white;
+      border-color: ${T.primary};
+
+      &:hover {
+        background: ${T.primaryHover};
+      }
+    `}
 `;
 
 // ─── Contact Row (Drawer) ────────────────────────────────────────────────
@@ -722,56 +751,84 @@ const getTenantSlug = () => {
     })();
 };
 
-const getInitials = (name: string) => {
+const getInitials = (name) => {
   if (!name || name === 'Unknown') return '??';
+
   return name
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase();
 };
 
-const getAvatarColor = (name: string) => {
+
+
+const getAvatarColor = (name) => {
   if (!name) return T.avatarColors[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return T.avatarColors[Math.abs(hash) % T.avatarColors.length];
-};
+}
 
-const getDaysInMortuary = (admissionDate: string) => {
+
+
+
+const getDaysInMortuary = (admissionDate) => {
   if (!admissionDate) return 0;
   return Math.max(0, Math.floor((Date.now() - new Date(admissionDate).getTime()) / 86400000));
-};
+}
 
-const formatDate = (dateStr: string) => {
+
+const formatDate = (dateStr) => {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' });
-};
 
-const copyToClipboard = (text: string) => {
+}
+
+
+
+
+const copyToClipboard = (text) => {
   navigator.clipboard?.writeText(text);
-};
-
+}
 // ═══════════════════════════════════════════════════════════════════════════
 //  COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
 const DeceasedList = () => {
-  const [deceasedList, setDeceasedList] = useState<any[]>([]);
-  const [filteredList, setFilteredList] = useState<any[]>([]);
+  const { slug } = useParams();
+  const [deceasedList, setDeceasedList] = useState([]);
+  const [filteredList, setFilteredList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const tenantSlug = getTenantSlug();
+  const [selectedRecord, setSelectedRecord] = useState(null);
+
+  // Get tenant slug directly from URL params (most reliable method)
+  // Fallback to localStorage if URL param is not available
+  const tenantSlug = slug === 'default' ? 'system_shared' : (slug || getTenantSlug());
+
+  // Sync tenant slug to localStorage immediately (before axios interceptor reads it)
+  if (tenantSlug && tenantSlug !== 'default') {
+    const currentLocalSlug = localStorage.getItem('tenantSlug');
+    if (currentLocalSlug !== tenantSlug) {
+      localStorage.setItem('tenantSlug', tenantSlug);
+    }
+  }
 
   // ─── Fetch ───────────────────────────────────────────────────────────
   const fetchDeceasedList = useCallback(async () => {
+    // Skip if tenant slug is not valid
+    if (!tenantSlug || tenantSlug === 'default') {
+      console.error('Invalid tenant slug:', tenantSlug);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -793,7 +850,9 @@ const DeceasedList = () => {
     }
   }, [tenantSlug]);
 
-  useEffect(() => { fetchDeceasedList(); }, [fetchDeceasedList]);
+  useEffect(() => {
+    fetchDeceasedList();
+  }, [fetchDeceasedList]);
 
   // ─── Filter ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -812,7 +871,7 @@ const DeceasedList = () => {
   }, [searchTerm, statusFilter, deceasedList]);
 
   // ─── Export ───────────────────────────────────────────────────────────
-  const handleExport = async (exportOptions: any) => {
+  const handleExport = async (exportOptions) => {
     setIsExporting(true);
     try {
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -847,7 +906,7 @@ const DeceasedList = () => {
   };
 
   // ─── Delete ───────────────────────────────────────────────────────────
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this record?')) return;
     try {
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -862,17 +921,17 @@ const DeceasedList = () => {
   };
 
   // ─── Drawer ───────────────────────────────────────────────────────────
-  const openDrawer = (record: any) => { setSelectedRecord(record); setDrawerOpen(true); };
+  const openDrawer = (record) => { setSelectedRecord(record); setDrawerOpen(true); };
   const closeDrawer = () => { setDrawerOpen(false); setSelectedRecord(null); };
 
   // ─── Status config ─────────────────────────────────────────────────────
-  const getStatusConfig = (status: string) => {
+  const getStatusConfig = (status) => {
     switch (status) {
-      case 'released': return { type: 'success' as const, label: 'Released', icon: <CheckCircle size={11} /> };
-      case 'transferred': return { type: 'info' as const, label: 'Transferred', icon: <Mail size={11} /> };
-      case 'cancelled': return { type: 'danger' as const, label: 'Cancelled', icon: <X size={11} /> };
+      case 'released': return { type: 'success', label: 'Released', icon: <CheckCircle size={11} /> };
+      case 'transferred': return { type: 'info', label: 'Transferred', icon: <Mail size={11} /> };
+      case 'cancelled': return { type: 'danger', label: 'Cancelled', icon: <X size={11} /> };
       case 'active':
-      default: return { type: 'warning' as const, label: 'Active', icon: <Clock size={11} /> };
+      default: return { type: 'warning', label: 'Active', icon: <Clock size={11} /> };
     }
   };
 
@@ -889,7 +948,7 @@ const DeceasedList = () => {
           </PageHeaderInner>
         </PageHeader>
         <LoadingWrap>
-          <div style={{ animation: `${spin} 1s linear infinite` }}><RefreshCw size={28} color={T.primary} /></div>
+          <Spinner><RefreshCw size={28} color={T.primary} /></Spinner>
           <span style={{ fontSize: '0.8125rem', color: T.textSecondary }}>Loading records...</span>
         </LoadingWrap>
       </Page>
@@ -984,7 +1043,7 @@ const DeceasedList = () => {
                         {/* Name + Avatar */}
                         <TD>
                           <NameCell>
-                            <Avatar $color={avatarColor}>{initials}</Avatar>
+                            <Avatar color={avatarColor}>{initials}</Avatar>
                             <NameInfo>
                               <NameText>{name}</NameText>
                               <SubText>{deceased.burial_type || 'Standard'}</SubText>
@@ -1014,7 +1073,7 @@ const DeceasedList = () => {
 
                         {/* Days */}
                         <TD>
-                          <DaysBadge $type={isOverdue ? 'danger' : isWarn ? 'warn' : 'ok'}>
+                          <DaysBadge type={isOverdue ? 'danger' : isWarn ? 'warn' : 'ok'}>
                             {isOverdue ? <AlertTriangle size={11} /> : <Clock size={11} />}
                             {days}d
                           </DaysBadge>
@@ -1022,7 +1081,7 @@ const DeceasedList = () => {
 
                         {/* Status */}
                         <TD>
-                          <StatusBadge $type={statusCfg.type}>
+                          <StatusBadge type={statusCfg.type}>
                             {statusCfg.icon}
                             {statusCfg.label}
                           </StatusBadge>
@@ -1045,7 +1104,7 @@ const DeceasedList = () => {
                             <ActionBtn as={Link} to={`/tenant/${tenantSlug}/deceased/${id}/edit`} title="Edit">
                               <Edit size={15} />
                             </ActionBtn>
-                            <ActionBtn $danger onClick={() => handleDelete(id)} title="Delete">
+                            <ActionBtn danger onClick={() => handleDelete(id)} title="Delete">
                               <Trash2 size={15} />
                             </ActionBtn>
                             <ActionBtn title="More">
@@ -1092,11 +1151,11 @@ const DeceasedList = () => {
             {/* Status + Days row */}
             <DrawerSection>
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <StatusBadge $type={getStatusConfig(selectedRecord.status).type}>
+                <StatusBadge type={getStatusConfig(selectedRecord.status).type}>
                   {getStatusConfig(selectedRecord.status).icon}
                   {getStatusConfig(selectedRecord.status).label}
                 </StatusBadge>
-                <DaysBadge $type={getDaysInMortuary(selectedRecord.date_admitted) > 30 ? 'danger' : getDaysInMortuary(selectedRecord.date_admitted) > 14 ? 'warn' : 'ok'}>
+                <DaysBadge type={getDaysInMortuary(selectedRecord.date_admitted) > 30 ? 'danger' : getDaysInMortuary(selectedRecord.date_admitted) > 14 ? 'warn' : 'ok'}>
                   <Clock size={11} /> {getDaysInMortuary(selectedRecord.date_admitted)} days in mortuary
                 </DaysBadge>
               </div>
@@ -1209,7 +1268,7 @@ const DeceasedList = () => {
 
           <DrawerFooter>
             <DrawerBtn
-              $primary
+              primary
               onClick={() => {
                 closeDrawer();
                 window.location.href = `/tenant/${tenantSlug}/deceased/${selectedRecord.deceased_id || selectedRecord.id}`;

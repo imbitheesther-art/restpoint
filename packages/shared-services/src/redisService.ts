@@ -118,14 +118,14 @@ function emitNotification(notification: Notification): void {
 export function registerService(config: ServiceConfig): void {
   const max = Math.min(config.maxMemoryMB, 20); // Max 20MB per service
   const soft = Math.min(config.softLimitMB || max * 0.8, max * 0.9);
-  
+
   serviceConfigs.set(config.name, {
     ...DEFAULT_SERVICE_CONFIG,
     ...config,
     maxMemoryMB: max,
     softLimitMB: soft,
   });
-  
+
   Logger.info(`[Redis]  Service "${config.name}" registered: ${max}MB max, ${soft}MB soft limit`);
 }
 
@@ -135,7 +135,7 @@ export function registerService(config: ServiceConfig): void {
 export function getServiceConfig(serviceName: string): ServiceConfig {
   const config = serviceConfigs.get(serviceName);
   if (config) return config;
-  
+
   // Return default config if service not registered
   return {
     name: serviceName,
@@ -234,10 +234,10 @@ export async function serviceSet(
     const fullKey = serviceKey(serviceName, tenantSlug, key);
     const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
     await r.setEx(fullKey, ttlSeconds, serialized);
-    
+
     // Check memory usage after set
     await checkAndBalance(serviceName, tenantSlug);
-    
+
     return true;
   } catch (error: any) {
     Logger.warn(`[Redis] serviceSet failed for ${serviceName}: ${error.message}`);
@@ -322,7 +322,7 @@ export async function getServiceMemoryUsage(
 
     const pattern = serviceKey(serviceName, tenantSlug, '*');
     const keys = await scanKeys(pattern);
-    
+
     let totalMemory = 0;
     let keysWithTTL = 0;
     for (const key of keys) {
@@ -331,7 +331,7 @@ export async function getServiceMemoryUsage(
       const ttl = await r.ttl(key);
       if (ttl > 0) keysWithTTL++;
     }
-    
+
     const usedMB = totalMemory / (1024 * 1024);
     const config = getServiceConfig(serviceName);
 
@@ -375,7 +375,7 @@ export async function checkAndBalance(
 
     const pattern = serviceKey(serviceName, tenantSlug, '*');
     const keys = await scanKeys(pattern);
-    
+
     const keyData = await Promise.all(
       keys.map(async (key) => {
         const ttl = await r.ttl(key);
@@ -392,7 +392,7 @@ export async function checkAndBalance(
     });
 
     const targetMB = isHardLimit ? config.softLimitMB : config.softLimitMB * 0.85;
-    
+
     let removed = 0;
     let freedMB = 0;
     let currentMB = memory.usedMB;
@@ -400,7 +400,7 @@ export async function checkAndBalance(
     for (const { key, ttl, mem } of keyData) {
       if (currentMB <= targetMB) break;
       if (ttl === -1 && !isHardLimit) continue;
-      
+
       await r.del(key);
       removed++;
       freedMB += mem / (1024 * 1024);
@@ -480,7 +480,7 @@ export async function getNotifications(
     if (!serviceName) {
       const allNotifications: Notification[] = [];
       const serviceNames = Array.from(serviceConfigs.keys());
-      
+
       for (const svc of serviceNames) {
         const listKey = `notifications:${tenantSlug}:${svc}:list`;
         const ids = await r.lRange(listKey, offset, offset + limit - 1);
@@ -490,18 +490,18 @@ export async function getNotifications(
           if (data) {
             try {
               allNotifications.push(JSON.parse(data));
-            } catch {}
+            } catch { }
           }
         }
       }
-      
+
       // Apply filters
       let filtered = allNotifications;
       if (filters?.type) filtered = filtered.filter(n => filters.type!.includes(n.type));
       if (filters?.priority) filtered = filtered.filter(n => filters.priority!.includes(n.priority));
       if (filters?.serviceName) filtered = filtered.filter(n => filters.serviceName!.includes(n.serviceName));
       if (filters?.read !== undefined) filtered = filtered.filter(n => n.read === filters.read);
-      
+
       return { notifications: filtered.slice(0, limit), total: filtered.length };
     }
 
@@ -520,7 +520,7 @@ export async function getNotifications(
           if (filters?.priority && !filters.priority.includes(notif.priority)) continue;
           if (filters?.read !== undefined && notif.read !== filters.read) continue;
           notifications.push(notif);
-        } catch {}
+        } catch { }
       }
     }
 
@@ -564,14 +564,14 @@ export async function deleteAllNotifications(
 
     const listKey = `notifications:${tenantSlug}:${serviceName}:list`;
     const ids = await r.lRange(listKey, 0, -1);
-    
+
     let deleted = 0;
     for (const id of ids) {
       const key = notificationKey(tenantSlug, serviceName, id);
       await r.del(key);
       deleted++;
     }
-    
+
     await r.del(listKey);
     Logger.info(`[Redis] 🗑️ [${serviceName}] Deleted ${deleted} notifications`);
     return deleted;
@@ -581,8 +581,11 @@ export async function deleteAllNotifications(
   }
 }
 
-// ─── Cleanup ──────────────────────────────────────────────────────────────
+// ─── Per-Service Cache Clearing ──────────────────────────────────────────────
 
+/**
+ * Clear all cache entries for a specific service and tenant
+ */
 export async function clearServiceCache(
   serviceName: string,
   tenantSlug: string
@@ -593,14 +596,53 @@ export async function clearServiceCache(
 
     const pattern = serviceKey(serviceName, tenantSlug, '*');
     const keys = await scanKeys(pattern);
-    
+
     if (keys.length > 0) {
       await r.del(keys);
-      Logger.info(`[Redis] 🧹 [${serviceName}] Cleared ${keys.length} cache entries for "${tenantSlug}"`);
+      Logger.info(`[Redis]  [${serviceName}] Cleared ${keys.length} cache entries for "${tenantSlug}"`);
     }
     return keys.length;
   } catch (error: any) {
     Logger.error(`[Redis] clearServiceCache failed: ${error.message}`);
+    return 0;
+  }
+}
+
+// ─── Tenant-wide Cache Clearing ────────────────────────────────────────────
+
+/**
+ * Clear ALL cache entries for a specific tenant across all registered services.
+ * This is useful when suspending/deleting a tenant to ensure all their cached data is purged.
+ */
+export async function clearTenantCache(tenantSlug: string): Promise<number> {
+  try {
+    const r = await getRedisClient();
+    if (!r) return 0;
+
+    let totalCleared = 0;
+
+    // Clear cache for each registered service
+    for (const [serviceName] of serviceConfigs) {
+      const pattern = serviceKey(serviceName, tenantSlug, '*');
+      const keys = await scanKeys(pattern);
+      if (keys.length > 0) {
+        await r.del(keys);
+        totalCleared += keys.length;
+      }
+    }
+
+    // Also clear any notification keys for this tenant
+    const notifPattern = `notifications:${tenantSlug}:*`;
+    const notifKeys = await scanKeys(notifPattern);
+    if (notifKeys.length > 0) {
+      await r.del(notifKeys);
+      totalCleared += notifKeys.length;
+    }
+
+    Logger.info(`[Redis] 🧹 Cleared ${totalCleared} cache entries for tenant "${tenantSlug}"`);
+    return totalCleared;
+  } catch (error: any) {
+    Logger.error(`[Redis] clearTenantCache failed for "${tenantSlug}": ${error.message}`);
     return 0;
   }
 }
@@ -617,8 +659,8 @@ export async function redisHealth(): Promise<{
     const r = await getRedisClient();
     if (!r) return { status: 'DISCONNECTED', latencyMs: 0, services: 0 };
     await r.ping();
-    return { 
-      status: 'UP', 
+    return {
+      status: 'UP',
       latencyMs: Date.now() - start,
       services: serviceConfigs.size,
     };
@@ -640,7 +682,7 @@ export async function initRedis(serviceConfigsList?: ServiceConfig[]): Promise<b
     Logger.info(`[Redis] 📊 Registered ${serviceConfigs.size} services`);
     return true;
   }
-  
+
   Logger.warn('[Redis] ⚠️ Running in fallback mode (no Redis)');
   return false;
 }
@@ -662,6 +704,7 @@ export default {
   serviceGet,
   serviceDel,
   clearServiceCache,
+  clearTenantCache,
 
   // Memory management
   getServiceMemoryUsage,

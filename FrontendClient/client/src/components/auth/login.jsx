@@ -1,31 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle, AlertCircle   ,  Mark } from '../../utils/icons/icons';
+import { Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle, AlertCircle, Mark } from '../../utils/icons/icons';
 import { useAuth } from '../../utils/context/AuthContext';
-import { ToastContainer } from 'react-toastify';
-import { showToast } from '../../utils/toast';
-
-const C = {
-  ink: '#15171A',
-  bone: '#FAF8F4',
-  bone2: '#F3EFE6',
-  brass: '#8B7355',
-  brassLight: '#A98F6E',
-  verdigris: '#3D4F47',
-  verdigrisDark: '#2E3F37',
-  verdigrisLight: '#4D6359',
-  verdigrisTint: '#EBEFEF',
-  line: '#E3DDD0',
-  lineDark: 'rgba(250,248,244,0.14)',
-  gray: '#6B6862',
-  grayLight: 'rgba(250,248,244,0.62)',
-  red: '#9B4A3F',
-  redBg: '#F7ECE9',
-  redLine: '#E8D2CC',
-  success: '#475A43',
-  successBg: '#EEF3EC',
-  white: '#FFFFFF',
-};
+import { ToastContainer, toast } from 'react-toastify';
+import LoginColors from '../../utils/colors/index'
+const C = LoginColors;
 
 
 const Spinner = () => (
@@ -101,7 +80,7 @@ export default function LoginPage() {
       });
 
       if (result && result.success) {
-        showToast.success('Login successful! Welcome back.');
+        toast.success('Login successful! Welcome back.');
         // AuthContext already stored tokens and setUser() - just read back for UI
         const data = result;
         const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug;
@@ -127,7 +106,7 @@ export default function LoginPage() {
           }
         }, 400);
       } else {
-        showToast.error(result?.message || 'Invalid credentials. Please try again.');
+        toast.error(result?.message || 'Invalid credentials. Please try again.');
         setMessage({
           type: 'error',
           text: result?.message || 'Invalid credentials. Please try again.'
@@ -135,7 +114,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      showToast.error(err.response?.data?.message || 'Connection error. Please try again.');
+      toast.error(err.response?.data?.message || 'Connection error. Please try again.');
       setMessage({
         type: 'error',
         text: err.response?.data?.message || 'Connection error. Please try again.'

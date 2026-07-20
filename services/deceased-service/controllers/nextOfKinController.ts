@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { NextOfKinModel } from "../models/NextOfKin";
 import Logger from "../../../packages/shared-logger/src/index";
-import redisService from "../../../packages/shared-services/src/redisService";
+import redisService, { NotificationType, NotificationPriority } from "../../../packages/shared-services/src/redisService";
 
 const SERVICE_NAME = 'nextofkin-service';
 
@@ -102,8 +102,9 @@ export const nextOfKinRegister = async (
                 SERVICE_NAME,
                 {
                     id: `notif_${Date.now()}_${deceased_id}`,
-                    type: 'success',
-                    priority: 'high',
+                    tenantSlug,
+                    type: NotificationType.SUCCESS,
+                    priority: NotificationPriority.HIGH,
                     title: "✅ Next of Kin Registered",
                     message: `${full_name} registered as next of kin for deceased ${deceased_id}`,
                     data: {
@@ -130,7 +131,7 @@ export const nextOfKinRegister = async (
         });
 
     } catch (error: any) {
-        Logger.error("Register next of kin error:", error.message);
+        Logger.error("Register next of kin error: " + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -164,7 +165,7 @@ export const getNextOfKinByDeceasedId = async (
         const cached = await redisService.serviceGet(SERVICE_NAME, tenantSlug, cacheKey);
 
         if (cached) {
-            Logger.info(`[Cache] 📦 Next of kin cache hit for deceased ${deceased_id}`);
+            Logger.info(`[Cache]  Next of kin cache hit for deceased ${deceased_id}`);
             return res.status(200).json({
                 success: true,
                 source: "cache",
@@ -201,7 +202,7 @@ export const getNextOfKinByDeceasedId = async (
         });
 
     } catch (error: any) {
-        Logger.error("Get next of kin error:", error.message);
+        Logger.error("Get next of kin error: " + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -267,7 +268,7 @@ export const updateNextOfKin = async (
                 await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
             }
             await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
-            Logger.info(`[Cache] 🧹 Next of kin cache invalidated for ${tenantSlug}`);
+            Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
         }
 
         // ==============================
@@ -279,9 +280,10 @@ export const updateNextOfKin = async (
                 SERVICE_NAME,
                 {
                     id: `notif_update_${Date.now()}`,
-                    type: 'info',
-                    priority: 'medium',
-                    title: "📝 Next of Kin Updated",
+                    tenantSlug,
+                    type: NotificationType.INFO,
+                    priority: NotificationPriority.MEDIUM,
+                    title: " Next of Kin Updated",
                     message: `Next of kin record ${id} has been updated`,
                     data: {
                         id,
@@ -299,7 +301,7 @@ export const updateNextOfKin = async (
         });
 
     } catch (error: any) {
-        Logger.error("Update next of kin error:", error.message);
+        Logger.error("Update next of kin error: " + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -329,7 +331,7 @@ export const deleteNextOfKin = async (
 
         // Get the record first to get deceased_id for cache invalidation
         const record = await NextOfKinModel.getById(req, Number(id));
-        
+
         const result = await NextOfKinModel.delete(req, Number(id));
 
         if (!result) {
@@ -347,7 +349,7 @@ export const deleteNextOfKin = async (
                 await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
             }
             await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
-            Logger.info(`[Cache] 🧹 Next of kin cache invalidated for ${tenantSlug}`);
+            Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
         }
 
         // ==============================
@@ -359,9 +361,10 @@ export const deleteNextOfKin = async (
                 SERVICE_NAME,
                 {
                     id: `notif_delete_${Date.now()}`,
-                    type: 'warning',
-                    priority: 'medium',
-                    title: "🗑️ Next of Kin Deleted",
+                    tenantSlug,
+                    type: NotificationType.WARNING,
+                    priority: NotificationPriority.MEDIUM,
+                    title: " Next of Kin Deleted",
                     message: `Next of kin record ${id} has been deleted`,
                     data: { id },
                     source: SERVICE_NAME,
@@ -376,7 +379,84 @@ export const deleteNextOfKin = async (
         });
 
     } catch (error: any) {
-        Logger.error("Delete next of kin error:", error.message);
+        Logger.error("Delete next of kin error: " + (error as Error).message);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
+
+// ============================================
+// MARK AS NOTIFIED
+// ============================================
+
+export const markAsNotified = async (
+    req: Request,
+    res: Response
+): Promise<Response> => {
+    try {
+        const { id } = req.params;
+        const tenantSlug = (req as any).tenantSlug || "unknown";
+        const tenantId = (req as any).tenant?.id;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: "Next of kin id required"
+            });
+        }
+
+        const updateData: import("../models/NextOfKin").UpdateNextOfKinDTO = { is_notified: true };
+        const result = await NextOfKinModel.update(req, Number(id), updateData);
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: "Next of kin not found"
+            });
+        }
+
+        // ==============================
+        // INVALIDATE CACHE
+        // ==============================
+        if (tenantSlug && tenantId) {
+            const record = await NextOfKinModel.getById(req, Number(id));
+            if (record && record.deceased_id) {
+                await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
+            }
+            await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
+            Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
+        }
+
+        // ==============================
+        // SEND NOTIFICATION
+        // ==============================
+        if (tenantSlug) {
+            await redisService.storeNotification(
+                tenantSlug,
+                SERVICE_NAME,
+                {
+                    id: `notif_notify_${Date.now()}`,
+                    tenantSlug,
+                    type: NotificationType.INFO,
+                    priority: NotificationPriority.MEDIUM,
+                    title: " Next of Kin Notified",
+                    message: `Next of kin record ${id} has been marked as notified`,
+                    data: { id },
+                    source: SERVICE_NAME,
+                    target: "admin"
+                }
+            );
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Next of kin marked as notified successfully"
+        });
+
+    } catch (error: any) {
+        Logger.error("Mark as notified error: " + (error as Error).message);
         return res.status(500).json({
             success: false,
             message: "Internal server error"

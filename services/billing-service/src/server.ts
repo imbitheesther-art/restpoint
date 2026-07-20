@@ -3,9 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cron from 'node-cron';
 import axios from 'axios';
-import winston from 'winston';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import pino from 'pino';
 
 import { BillingController } from './controllers/billingController';
 import { CalculationController } from './controllers/calculationController';
@@ -15,24 +15,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5020;
 
-// Configure Winston logger
-const logger = winston.createLogger({
+// Pino logger - outputs JSON to stdout (Docker captures it → Promtail → Loki)
+const logger = pino({
   level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'logs/billing-error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/billing-combined.log' }),
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
-    })
-  ]
+  timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
 });
 
 // Middleware
@@ -73,10 +59,10 @@ app.get('/health', (req, res) => {
 app.post('/api/billing/run', async (req, res) => {
   try {
     const { tenant_slug } = req.body;
-    const result = tenant_slug 
+    const result = tenant_slug
       ? await billingController.processTenantBilling(tenant_slug)
       : await billingController.processAllTenantsBilling();
-    
+
     res.json({
       success: true,
       message: 'Billing processed',
@@ -96,7 +82,7 @@ app.post('/api/billing/run', async (req, res) => {
 app.post('/api/billing/calculate', async (req, res) => {
   try {
     const { deceased_id, tenant_slug } = req.body;
-    
+
     if (!deceased_id || !tenant_slug) {
       return res.status(400).json({
         success: false,
@@ -105,7 +91,7 @@ app.post('/api/billing/calculate', async (req, res) => {
     }
 
     const charges = await calculationController.calculateDeceasedCharges(deceased_id, tenant_slug);
-    
+
     res.json({
       success: true,
       data: charges
@@ -125,7 +111,7 @@ app.get('/api/billing/history/:tenantSlug', async (req, res) => {
   try {
     const { tenantSlug } = req.params;
     const { startDate, endDate, limit = 100 } = req.query;
-    
+
     const history = await billingController.getBillingHistory(
       tenantSlug,
       startDate as string,
@@ -151,7 +137,7 @@ app.get('/api/billing/history/:tenantSlug', async (req, res) => {
 app.get('/api/billing/logs', async (req, res) => {
   try {
     const { limit = 50 } = req.query;
-    
+
     const logs = await billingController.getJobLogs(parseInt(limit as string));
 
     res.json({

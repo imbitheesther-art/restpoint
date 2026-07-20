@@ -83,6 +83,12 @@ export const AuthProvider = ({ children }) => {
                     sessionStorage.setItem('user', JSON.stringify(userData));
                 }
 
+                // Store tenant slug from multiple possible sources
+                const tenantSlug = data.tenant?.tenantSlug || data.tenant?.slug || userData?.tenantSlug || userData?.tenant?.slug;
+                if (tenantSlug) {
+                    localStorage.setItem('tenantSlug', tenantSlug);
+                }
+
                 setUser({
                     token: accessToken,
                     isAuthenticated: true,

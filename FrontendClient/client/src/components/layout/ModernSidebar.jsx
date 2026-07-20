@@ -399,6 +399,8 @@ const ModernSidebar = ({
       section: 'Analytics',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', path: `/tenant/${tenantSlug}/dashboard` },
+        { icon: BarChart3, label: 'Chemical Analytics', path: `/tenant/${tenantSlug}/chemicals/analytics` },
+        { icon: FileBarChart, label: 'Deceased Analytics', path: `/tenant/${tenantSlug}/deceased/analytics` },
       ]
     },
     {
@@ -423,17 +425,23 @@ const ModernSidebar = ({
 
     // Check if current path starts with this path
     if (location.pathname.startsWith(path + '/')) {
-      // Special case: don't mark parent route as active when on a child route
-      // For example, /leaves/apply should not mark /leaves as active
+      // Get the remaining path after the menu item's path
       const remainingPath = location.pathname.slice(path.length);
+
       // List of child routes that should not activate parent
-      const excludedChildRoutes = ['/apply', '/my-leaves', '/all'];
+      const excludedChildRoutes = ['/apply', '/my-leaves', '/all', '/analytics'];
       const isExcludedChild = excludedChildRoutes.some(child => remainingPath === child || remainingPath.startsWith(child + '/'));
 
       if (isExcludedChild) {
-        // Check if this path is the exact parent of the current route
-        // Only activate if there's no more specific menu item
-        return false;
+        // Check if there's an exact menu item for this child route
+        const allMenuItems = menuItems.flatMap(section => section.items || []);
+        const hasExactChildMatch = allMenuItems.some(item =>
+          item.path !== path && location.pathname === item.path
+        );
+
+        if (hasExactChildMatch) {
+          return false;
+        }
       }
 
       return true;

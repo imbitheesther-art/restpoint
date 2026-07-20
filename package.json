@@ -39,10 +39,9 @@
     "mysql2": "^3.22.6",
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
+    "pino-loki": "^3.0.0",
     "prop-types": "^15.8.1",
-    "react-gauge-chart": "^0.5.1",
-    "react-helmet-async": "^3.0.0",
-    "react-hot-toast": "^2.6.0",
+    "react-signature-canvas": "^1.1.0-alpha.2",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {

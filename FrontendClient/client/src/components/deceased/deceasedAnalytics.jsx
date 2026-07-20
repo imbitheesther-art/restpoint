@@ -1,1220 +1,838 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import styled, { keyframes, css } from 'styled-components';
-import {
-  User, Clock, CheckCircle, AlertTriangle, X, Eye, Edit,
-  ArrowUp, ArrowDown, RefreshCw, Download, Filter, FlaskConical,
-  Truck, Calendar, MapPin, Phone, Mail, Activity, ChevronRight,
-  FileText, ClipboardList, Zap, BarChart3, TrendingUp, Copy
-} from '../../utils/icons/icons';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
+const ChartJS = Chart;
 
-const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const BASE_URL = `${API_GATEWAY_URL}`;
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 //  TOKENS
-// ═══════════════════════════════════════════════════════════════════════════
-
+// ═══════════════════════════════════════════════════════════════
 const T = {
   bg: '#F8FAFC', surface: '#FFFFFF', surfaceHover: '#F1F5F9',
   border: '#E2E8F0', borderLight: '#F1F5F9',
   text: '#0F172A', textBody: '#334155', textSecondary: '#64748B',
   textMuted: '#94A3B8', textFaint: '#CBD5E1',
   primary: '#2563EB', primaryBg: '#EFF6FF', primaryLight: '#93C5FD',
-  success: '#059669', successBg: '#ECFDF5', successBorder: '#A7F3D0',
-  warning: '#D97706', warningBg: '#FFFBEB', warningBorder: '#FDE68A',
-  danger: '#DC2626', dangerBg: '#FEF2F2', dangerBorder: '#FECACA',
-  info: '#2563EB', infoBg: '#EFF6FF', infoBorder: '#BFDBFE',
-  purple: '#7C3AED', purpleBg: '#F5F3FF',
-  cyan: '#0891B2', cyanBg: '#ECFEFF',
-  teal: '#0D9488', tealBg: '#F0FDFA',
-  orange: '#EA580C', orangeBg: '#FFF7ED',
-  pink: '#DB2777', pinkBg: '#FDF2F8',
-  slate: '#475569', slateBg: '#F1F5F9',
-  chartColors: ['#2563EB', '#7C3AED', '#0891B2', '#059669', '#D97706', '#DC2626', '#DB2777', '#EA580C', '#0D9488', '#6366F1'],
+  success: '#059669', successBg: '#ECFDF5', successLight: '#6EE7B7',
+  warning: '#D97706', warningBg: '#FFFBEB', warningLight: '#FCD34D',
+  danger: '#DC2626', dangerBg: '#FEF2F2', dangerLight: '#FCA5A5',
+  purple: '#7C3AED', purpleBg: '#F5F3FF', purpleLight: '#C4B5FD',
+  cyan: '#0891B2', cyanBg: '#ECFEFF', cyanLight: '#67E8F9',
+  orange: '#EA580C', orangeBg: '#FFF7ED', orangeLight: '#FDBA74',
+  pink: '#DB2777', pinkBg: '#FDF2F8', pinkLight: '#F9A8D4',
+  teal: '#0D9488', tealBg: '#F0FDFA', tealLight: '#5EEAD4',
+  chartColors: ['#2563EB', '#7C3AED', '#0891B2', '#059669', '#D97706', '#DC2626', '#DB2777', '#EA580C', '#14B8A6', '#8B5CF6'],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  ANIMATIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//  ICONS (inline SVG to avoid dependency issues)
+// ═══════════════════════════════════════════════════════════════
+const I = {
+  chartBar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="12" width="4" height="9" rx="1" /><rect x="10" y="7" width="4" height="14" rx="1" /><rect x="17" y="3" width="4" height="18" rx="1" /></svg>,
+  calendar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+  chevLeft: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>,
+  chevRight: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>,
+  userPlus: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>,
+  check: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
+  clock: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+  pulse: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
+  fileText: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
+  x: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+  eye: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
+  arrowRight: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>,
+  download: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>,
+  refresh: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>,
+  search: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+  filter: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>,
+  alertTriangle: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+  shield: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+  phone: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>,
+  user: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+  hash: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></svg>,
+  mapPin: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>,
+};
 
-const fadeIn = keyframes`from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); }`;
-const slideInRight = keyframes`from { transform:translateX(100%); } to { transform:translateX(0); }`;
-const fadeInOverlay = keyframes`from { opacity:0; } to { opacity:1; }`;
-const barGrow = keyframes`from { transform:scaleX(0); } to { transform:scaleX(1); }`;
-const countUp = keyframes`from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); }`;
-const spin = keyframes`to { transform:rotate(360deg); }`;
-const progressFill = keyframes`from { width:0%; }`;
+// ═══════════════════════════════════════════════════════════════
+//  MOCK DATA
+// ═══════════════════════════════════════════════════════════════
+const NAMES = [
+  { name: 'John Kamau Njoroge', gender: 'Male' }, { name: 'Mary Wanjiru Kamau', gender: 'Female' },
+  { name: 'Peter Otieno Odhiambo', gender: 'Male' }, { name: 'Grace Wambui Muthoni', gender: 'Female' },
+  { name: 'James Mwangi Kariuki', gender: 'Male' }, { name: 'Hannah Chebet Kipchoge', gender: 'Female' },
+  { name: 'Stephen Mbugua Ngugi', gender: 'Male' }, { name: 'Agnes Nyokabi Githinji', gender: 'Female' },
+  { name: 'David Waweru Kimani', gender: 'Male' }, { name: 'Elizabeth Achieng Omondi', gender: 'Female' },
+  { name: 'Samuel Kiprop Chelimo', gender: 'Male' }, { name: 'Jane Njeri Wachiuri', gender: 'Female' },
+  { name: 'Joseph Maina Gikonyo', gender: 'Male' }, { name: 'Margaret Nduta Kariuki', gender: 'Female' },
+  { name: 'Francis Ochieng Owino', gender: 'Male' }, { name: 'Cecilia Wairimu Gathecha', gender: 'Female' },
+  { name: 'Daniel Kipngetich Rotich', gender: 'Male' }, { name: 'Rosemary Nasimiyu Wekesa', gender: 'Female' },
+  { name: 'Michael Njenga Mwithiga', gender: 'Male' }, { name: 'Dorcas Muthoni Thiongo', gender: 'Female' },
+  { name: 'Patrick Kipkurui Bii', gender: 'Male' }, { name: 'Lydia Kawira Mwenda', gender: 'Female' },
+  { name: 'Christopher Musyoka Mutua', gender: 'Male' }, { name: 'Peris Akinyi Onyango', gender: 'Female' },
+  { name: 'Albert Kipchumba Lagat', gender: 'Male' }, { name: 'Veronica Wanjiku Ndonga', gender: 'Female' },
+  { name: 'Thomas Gichuki Mwangi', gender: 'Male' }, { name: 'Naomi Chepngeno Arap', gender: 'Female' },
+  { name: 'William Omondi Juma', gender: 'Male' }, { name: 'Susan Wambui Njihia', gender: 'Female' },
+  { name: 'Robert Kipchoge Kirui', gender: 'Male' }, { name: 'Ann Njeri Gikunda', gender: 'Female' },
+  { name: 'Martin Kiprotich Sang', gender: 'Male' }, { name: 'Lucy Wambui Ndegwa', gender: 'Female' },
+  { name: 'George Otieno Awuor', gender: 'Male' }, { name: 'Miriam Chebet Koech', gender: 'Female' },
+];
+const SOURCES = ['Kenyatta National Hospital', 'Matter Hospital', 'Nairobi West Hospital', 'Brought from Home', 'Police Mortuary', 'MP Shah Hospital', 'Aga Khan Hospital', 'St. Mary\'s Hospital'];
+const CONTACTS = ['Mary Njoroge', 'James Kamau', 'Grace Wambui', 'Peter Otieno', 'Hannah Chebet', 'Stephen Mbugua', 'Agnes Nyokabi', 'David Waweru'];
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  TYPES
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface DeceasedRecord {
-  deceased_id: string;
-  full_name: string;
-  date_of_death: string;
-  date_admitted: string;
-  status: string;
-  burial_type: string;
-  cause_of_death: string;
-  gender: string;
-  age: number;
-  id_number: string;
-  total_charges: number;
-  currency: string;
-  postmortem_requested: boolean;
-  postmortem_done: boolean;
-  postmortem_date: string | null;
-  dispatched: boolean;
-  dispatched_date: string | null;
-  spaced: boolean;
-  spaced_date: string | null;
-  body_status: string;
-  next_of_kin_name: string;
-  next_of_kin_phone: string;
-  next_of_kin_email: string;
-  address: string;
-  notes: string;
-  requesting_authority: string;
-  pathologist_name: string;
+function generateMockData() {
+  const today = new Date();
+  const records = [];
+  let id = 1;
+  for (let mOffset = -2; mOffset <= 0; mOffset++) {
+    const refDate = new Date(today.getFullYear(), today.getMonth() + mOffset, 1);
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const maxDay = mOffset === 0 ? Math.min(today.getDate(), daysInMonth) : daysInMonth;
+    const countForMonth = 18 + ((mOffset + 2) * 11) % 12;
+    for (let i = 0; i < countForMonth; i++) {
+      const seed = id * 17 + i * 31;
+      const day = 1 + (seed % maxDay);
+      const hour = 6 + (seed * 3) % 16;
+      const min = (seed * 7) % 60;
+      const tmpl = NAMES[seed % NAMES.length];
+      const age = 18 + (seed * 3) % 80;
+      const dobYear = year - age;
+      const sr = (seed * 11) % 100;
+      let body_status = sr < 46 ? 'In Morgue' : sr < 64 ? 'Released' : sr < 80 ? 'Pending Autopsy' : 'Transferred';
+      const pmRequested = body_status === 'Pending Autopsy' ? true : (seed % 7 === 0);
+      const pmCompleted = pmRequested && (seed % 4 !== 0);
+      const ms = String(month + 1).padStart(2, '0');
+      const ds = String(day).padStart(2, '0');
+      const dateStr = `${year}-${ms}-${ds}`;
+      records.push({
+        id,
+        admission_number: `ADM-${year}-${String(id).padStart(4, '0')}`,
+        full_name: tmpl.name,
+        gender: tmpl.gender,
+        age,
+        date_of_birth: `${dobYear}-${String(1 + (seed % 12)).padStart(2, '0')}-${String(1 + (seed * 2 % 28)).padStart(2, '0')}`,
+        date_of_death: dateStr,
+        date_admitted: dateStr,
+        time_received: `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
+        cause_of_death: 'Cardiac Arrest',
+        body_status,
+        postmortem_requested: pmRequested,
+        postmortem_completed: pmCompleted,
+        postmortem_report: pmCompleted ? 'Report filed — available for collection' : '',
+        contact_person: CONTACTS[seed % CONTACTS.length],
+        id_number: String(10000000 + (seed * 12345) % 90000000),
+        tel_number: `+254 ${712 + (seed % 8)} ${String(100000 + (seed * 111) % 900000).replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}`,
+        received_from: SOURCES[seed % SOURCES.length],
+      });
+      id++;
+    }
+  }
+  return records.sort((a, b) => b.date_admitted.localeCompare(a.date_admitted) || b.time_received.localeCompare(a.time_received));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  MOCK DATA — Replace with API
-// ═══════════════════════════════════════════════════════════════════════════
+const ALL_RECORDS = generateMockData();
 
-const MOCK_DATA: DeceasedRecord[] = [
-  {
-    deceased_id: 'DEC-2401', full_name: 'John Ochieng', date_of_death: '2025-01-15',
-    date_admitted: '2025-01-16', status: 'active', burial_type: 'Burial',
-    cause_of_death: 'Cardiac arrest', gender: 'Male', age: 67, id_number: '12345678',
-    total_charges: 185000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-01-17',
-    dispatched: false, dispatched_date: null, spaced: false, spaced_date: null,
-    body_status: 'Preserved', next_of_kin_name: 'Peter Ochieng',
-    next_of_kin_phone: '0712345678', next_of_kin_email: 'peter@email.com',
-    address: 'Nairobi, Kenya', notes: 'Routine case. Family notified.',
-    requesting_authority: 'Nairobi Central Police', pathologist_name: 'Dr. Kamau',
-  },
-  {
-    deceased_id: 'DEC-2402', full_name: 'Mary Wanjiku', date_of_death: '2025-01-18',
-    date_admitted: '2025-01-19', status: 'active', burial_type: 'Cremation',
-    cause_of_death: 'Pneumonia', gender: 'Female', age: 72, id_number: '23456789',
-    total_charges: 210000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-01-20',
-    dispatched: false, dispatched_date: null, spaced: false, spaced_date: null,
-    body_status: 'Preserved', next_of_kin_name: 'Grace Wanjiku',
-    next_of_kin_phone: '0723456789', next_of_kin_email: 'grace@email.com',
-    address: 'Mombasa Rd, Nairobi', notes: '',
-    requesting_authority: 'Nairobi Central Police', pathologist_name: 'Dr. Kamau',
-  },
-  {
-    deceased_id: 'DEC-2403', full_name: 'James Mwangi', date_of_death: '2025-01-20',
-    date_admitted: '2025-01-21', status: 'dispatched', burial_type: 'Burial',
-    cause_of_death: 'Road traffic accident', gender: 'Male', age: 45, id_number: '34567890',
-    total_charges: 320000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-01-22',
-    dispatched: true, dispatched_date: '2025-01-23', spaced: true, spaced_date: '2025-01-23',
-    body_status: 'Dispatched', next_of_kin_name: 'Susan Mwangi',
-    next_of_kin_phone: '0734567890', next_of_kin_email: 'susan@email.com',
-    address: 'Kisumu, Kenya', notes: 'Coroner case. Full autopsy performed.',
-    requesting_authority: 'Kisumu Police Station', pathologist_name: 'Dr. Akinyi',
-  },
-  {
-    deceased_id: 'DEC-2404', full_name: 'Grace Akinyi', date_of_death: '2025-01-22',
-    date_admitted: '2025-01-23', status: 'active', burial_type: 'Burial',
-    cause_of_death: 'Natural causes', gender: 'Female', age: 89, id_number: '45678901',
-    total_charges: 155000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: false, postmortem_date: null,
-    dispatched: false, dispatched_date: null, spaced: false, spaced_date: null,
-    body_status: 'Awaiting postmortem', next_of_kin_name: 'Joseph Akinyi',
-    next_of_kin_phone: '0745678901', next_of_kin_email: 'joseph@email.com',
-    address: 'Nakuru, Kenya', notes: 'Elderly patient. Postmortem pending pathologist availability.',
-    requesting_authority: 'Nakuru Hospital', pathologist_name: 'Dr. Ochieng',
-  },
-  {
-    deceased_id: 'DEC-2405', full_name: 'Peter Otieno', date_of_death: '2025-01-24',
-    date_admitted: '2025-01-25', status: 'released', burial_type: 'Cremation',
-    cause_of_death: 'Cancer', gender: 'Male', age: 58, id_number: '56789012',
-    total_charges: 275000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-01-25',
-    dispatched: true, dispatched_date: '2025-01-26', spaced: true, spaced_date: '2025-01-26',
-    body_status: 'Cremated', next_of_kin_name: 'Alice Otieno',
-    next_of_kin_phone: '0756789012', next_of_kin_email: 'alice@email.com',
-    address: 'Eldoret, Kenya', notes: 'Family requested immediate cremation.',
-    requesting_authority: 'Eldoret Hospital', pathologist_name: 'Dr. Kamau',
-  },
-  {
-    deceased_id: 'DEC-2406', full_name: 'Sarah Njeri', date_of_death: '2025-01-26',
-    date_admitted: '2025-01-27', status: 'active', burial_type: 'Burial',
-    cause_of_death: 'Kidney failure', gender: 'Female', age: 54, id_number: '67890123',
-    total_charges: 195000, currency: 'KES',
-    postmortem_requested: false, postmortem_done: false, postmortem_date: null,
-    dispatched: false, dispatched_date: null, spaced: false, spaced_date: null,
-    body_status: 'Admitted', next_of_kin_name: 'David Njeri',
-    next_of_kin_phone: '0767890123', next_of_kin_email: 'david@email.com',
-    address: 'Thika, Kenya', notes: 'Postmortem not yet requested by family.',
-    requesting_authority: '', pathologist_name: '',
-  },
-  {
-    deceased_id: 'DEC-2407', full_name: 'Samuel Karanja', date_of_death: '2025-01-28',
-    date_admitted: '2025-01-28', status: 'active', burial_type: 'Burial',
-    cause_of_death: 'Diabetes complications', gender: 'Male', age: 71, id_number: '78901234',
-    total_charges: 168000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-01-29',
-    dispatched: false, dispatched_date: null, spaced: false, spaced_date: null,
-    body_status: 'Preserved', next_of_kin_name: 'Ruth Karanja',
-    next_of_kin_phone: '0778901234', next_of_kin_email: 'ruth@email.com',
-    address: 'Nairobi, Kenya', notes: '',
-    requesting_authority: 'Nairobi Central Police', pathologist_name: 'Dr. Akinyi',
-  },
-  {
-    deceased_id: 'DEC-2408', full_name: 'Agnes Wambui', date_of_death: '2025-01-29',
-    date_admitted: '2025-01-30', status: 'dispatched', burial_type: 'Burial',
-    cause_of_death: 'Hypertension', gender: 'Female', age: 80, id_number: '89012345',
-    total_charges: 240000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-01-30',
-    dispatched: true, dispatched_date: '2025-01-31', spaced: true, spaced_date: '2025-01-31',
-    body_status: 'Dispatched', next_of_kin_name: 'Michael Wambui',
-    next_of_kin_phone: '0789012345', next_of_kin_email: 'michael@email.com',
-    address: 'Kiambu, Kenya', notes: 'Natural death. No suspicious circumstances.',
-    requesting_authority: 'Kiambu Police', pathologist_name: 'Dr. Ochieng',
-  },
-  {
-    deceased_id: 'DEC-2409', full_name: 'Daniel Kiprop', date_of_death: '2025-02-01',
-    date_admitted: '2025-02-02', status: 'active', burial_type: 'Burial',
-    cause_of_death: 'TB complications', gender: 'Male', age: 38, id_number: '90123456',
-    total_charges: 178000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: false, postmortem_date: null,
-    dispatched: false, dispatched_date: null, spaced: false, spaced_date: null,
-    body_status: 'Awaiting postmortem', next_of_kin_name: 'Florence Kiprop',
-    next_of_kin_phone: '0790123456', next_of_kin_email: 'florence@email.com',
-    address: 'Uasin Gishu, Kenya', notes: 'Infectious disease protocol.',
-    requesting_authority: 'Moi Teaching Hospital', pathologist_name: 'Dr. Kamau',
-  },
-  {
-    deceased_id: 'DEC-2410', full_name: 'Lucy Nyambura', date_of_death: '2025-02-03',
-    date_admitted: '2025-02-04', status: 'released', burial_type: 'Cremation',
-    cause_of_death: 'Stroke', gender: 'Female', age: 65, id_number: '01234567',
-    total_charges: 260000, currency: 'KES',
-    postmortem_requested: true, postmortem_done: true, postmortem_date: '2025-02-04',
-    dispatched: true, dispatched_date: '2025-02-05', spaced: true, spaced_date: '2025-02-05',
-    body_status: 'Cremated', next_of_kin_name: 'Thomas Nyambura',
-    next_of_kin_phone: '0701234567', next_of_kin_email: 'thomas@email.com',
-    address: 'Nairobi, Kenya', notes: '',
-    requesting_authority: 'Nairobi Central Police', pathologist_name: 'Dr. Akinyi',
-  },
-];
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  STYLED COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════
-
-const Page = styled.div`
-  min-height: 100vh;
-  background: ${T.bg};
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: ${T.text};
-  padding: 1.25rem 1.75rem;
-  max-width: 1440px;
-  margin: 0 auto;
-`;
-
-const PageHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  animation: ${fadeIn} 0.2s ease-out;
-`;
-
-const PageTitle = styled.h1`
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const PageDesc = styled.p`
-  font-size: 0.8125rem;
-  color: ${T.textSecondary};
-  margin: 0.25rem 0 0;
-`;
-
-const HeaderActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-`;
-
-const Btn = styled.button<{ $variant?: 'primary' | 'secondary' }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.875rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid ${T.border};
-  background: ${T.surface};
-  color: ${T.textBody};
-  &:hover { background: ${T.surfaceHover}; border-color: ${T.textMuted}; }
-  ${props => props.$variant === 'primary' && css`
-    background: ${T.primary}; color: white; border-color: ${T.primary};
-    &:hover { background: #1D4ED8; box-shadow: 0 1px 3px rgba(37,99,235,0.3); }
-  `}
-`;
-
-// ─── Stats Grid ────────────────────────────────────────────────────────────
-
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  animation: ${fadeIn} 0.25s ease-out;
-  @media (max-width: 1200px) { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 700px) { grid-template-columns: repeat(2, 1fr); }
-`;
-
-const StatCard = styled.div`
-  background: ${T.surface};
-  border: 1px solid ${T.border};
-  border-radius: 10px;
-  padding: 0.875rem 1rem;
-  transition: all 0.15s ease;
-  &:hover { border-color: ${T.textMuted}; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-`;
-
-const StatLabel = styled.div`
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: ${T.textSecondary};
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
-`;
-
-const StatValue = styled.div`
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: ${T.text};
-  line-height: 1;
-  animation: ${countUp} 0.4s ease-out;
-`;
-
-const StatChange = styled.div<{ $up?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1875rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  margin-top: 0.25rem;
-  color: ${props => props.$up ? T.success : T.danger};
-`;
-
-// ─── Chart Grid (3 panels like reference) ───────────────────────────────────
-
-const ChartGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.875rem;
-  margin-bottom: 1.25rem;
-  @media (max-width: 1100px) { grid-template-columns: 1fr 1fr; }
-  @media (max-width: 700px) { grid-template-columns: 1fr; }
-`;
-
-const ChartCard = styled.div`
-  background: ${T.surface};
-  border: 1px solid ${T.border};
-  border-radius: 10px;
-  overflow: hidden;
-  animation: ${fadeIn} 0.3s ease-out;
-`;
-
-const ChartHeader = styled.div`
-  padding: 0.875rem 1.125rem;
-  border-bottom: 1px solid ${T.borderLight};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const ChartTitle = styled.h3`
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: ${T.text};
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-`;
-
-const ChartSub = styled.span`
-  font-size: 0.6875rem;
-  color: ${T.textMuted};
-  font-weight: 500;
-`;
-
-const ChartBody = styled.div`
-  padding: 1rem 1.125rem;
-`;
-
-// ─── Metric Summary (top of each panel, like reference image) ─────────────
-
-const MetricRow = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.875rem;
-  border-bottom: 1px solid ${T.borderLight};
-`;
-
-const MetricBox = styled.div`
-  flex: 1;
-`;
-
-const MetricValue = styled.div`
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: ${T.text};
-  line-height: 1;
-`;
-
-const MetricLabel = styled.div`
-  font-size: 0.6875rem;
-  color: ${T.textMuted};
-  margin-top: 0.125rem;
-`;
-
-const MetricChange = styled.span<{ $up?: boolean }>`
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: ${props => props.$up ? T.success : T.danger};
-  display: inline-flex;
-  align-items: center;
-  gap: 0.125rem;
-  margin-left: 0.375rem;
-`;
-
-// ─── Horizontal Bar ───────────────────────────────────────────────────────
-
-const HBarItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.625rem;
-  cursor: pointer;
-  padding: 0.375rem 0.5rem;
-  border-radius: 6px;
-  transition: background 0.12s ease;
-  &:hover { background: ${T.surfaceHover}; }
-  &:last-child { margin-bottom: 0; }
-`;
-
-const HBarLabel = styled.div`
-  width: 100px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: ${T.textBody};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
-`;
-
-const HBarTrack = styled.div`
-  flex: 1;
-  height: 24px;
-  background: ${T.borderLight};
-  border-radius: 5px;
-  overflow: hidden;
-`;
-
-const HBarFill = styled.div<{ $color: string; $width: number }>`
-  height: 100%;
-  border-radius: 5px;
-  background: ${props => props.$color};
-  width: ${props => Math.min(props.$width, 100)}%;
-  min-width: 4px;
-  animation: ${barGrow} 0.6s ease-out backwards;
-  transition: width 0.3s ease;
-`;
-
-const HBarValue = styled.div`
-  width: 52px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: ${T.text};
-  text-align: right;
-  flex-shrink: 0;
-`;
-
-// ─── Status Dots ───────────────────────────────────────────────────────────
-
-const StatusDot = styled.span<{ $color: string }>`
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: ${props => props.$color};
-  margin-right: 0.375rem;
-  flex-shrink: 0;
-`;
-
-// ─── Legend ────────────────────────────────────────────────────────────────
-
-const LegendRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.625rem;
-  margin-top: 0.875rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid ${T.borderLight};
-`;
-
-const LegendItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  font-size: 0.6875rem;
-  color: ${T.textSecondary};
-`;
-
-const LegendDot = styled.div<{ $color: string }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  background: ${props => props.$color};
-`;
-
-// ─── Drawer ──────────────────────────────────────────────────────────────
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 9998;
-  animation: ${fadeInOverlay} 0.15s ease-out;
-`;
-
-const Drawer = styled.div`
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 520px;
-  max-width: 100vw;
-  background: ${T.surface};
-  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  animation: ${slideInRight} 0.25s ease-out;
-`;
-
-const DrawerHeader = styled.div`
-  padding: 1.125rem 1.25rem;
-  border-bottom: 1px solid ${T.border};
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: ${T.bg};
-`;
-
-const DrawerTitle = styled.h2`
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: ${T.text};
-  margin: 0 0 0.125rem;
-`;
-
-const DrawerId = styled.span`
-  font-size: 0.6875rem;
-  color: ${T.textMuted};
-  font-family: 'SF Mono', 'Fira Code', monospace;
-`;
-
-const DrawerClose = styled.button`
-  background: ${T.surface};
-  border: 1px solid ${T.border};
-  color: ${T.textSecondary};
-  cursor: pointer;
-  padding: 0.375rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.12s ease;
-  &:hover { background: ${T.dangerBg}; color: ${T.danger}; border-color: ${T.dangerBorder}; }
-`;
-
-const DrawerBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.25rem;
-`;
-
-const DrawerSection = styled.div`
-  margin-bottom: 1.25rem;
-`;
-
-const SectionTitle = styled.h4`
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: ${T.textSecondary};
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 0.625rem;
-  padding-bottom: 0.375rem;
-  border-bottom: 1px solid ${T.borderLight};
-`;
-
-const FieldGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-`;
-
-const FieldCard = styled.div<{ $highlight?: boolean }>`
-  padding: 0.625rem 0.75rem;
-  background: ${props => props.$highlight ? T.warningBg : T.bg};
-  border: 1px solid ${props => props.$highlight ? T.warningBorder : T.borderLight};
-  border-radius: 7px;
-  grid-column: ${props => props.$highlight ? '1 / -1' : 'auto'};
-`;
-
-const FieldLabel = styled.div`
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: ${T.textMuted};
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.125rem;
-`;
-
-const FieldValue = styled.div`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${T.text};
-`;
-
-// ─── Timeline ────────────────────────────────────────────────────────────
-
-const Timeline = styled.div`
-  position: relative;
-  padding-left: 1.25rem;
-`;
-
-const TimelineLine = styled.div`
-  position: absolute;
-  left: 7px;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  background: ${T.border};
-`;
-
-const TimelineItem = styled.div`
-  position: relative;
-  padding-bottom: 1rem;
-  display: flex;
-  gap: 0.75rem;
-`;
-
-const TimelineDot = styled.div<{ $color: string; $done: boolean }>`
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid ${props => props.$color};
-  background: ${props => props.$done ? props.$color : T.surface};
-  flex-shrink: 0;
-  margin-top: 2px;
-  position: relative;
-  z-index: 1;
-`;
-
-const TimelineContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const TimelineTitle = styled.div`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${T.text};
-`;
-
-const TimelineDesc = styled.div`
-  font-size: 0.75rem;
-  color: ${T.textSecondary};
-  margin-top: 0.0625rem;
-`;
-
-const TimelineTime = styled.div`
-  font-size: 0.6875rem;
-  color: ${T.textMuted};
-  margin-top: 0.125rem;
-`;
-
-// ─── Status Pill ──────────────────────────────────────────────────────────
-
-const StatusPill = styled.span<{ $type: 'done' | 'pending' | 'not_done' | 'dispatched' | 'spaced' | 'active' | 'released' }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: 20px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  ${props => {
-    const map: Record<string, { bg: string; color: string; border: string }> = {
-      done: { bg: T.successBg, color: T.success, border: T.successBorder },
-      pending: { bg: T.warningBg, color: T.warning, border: T.warningBorder },
-      not_done: { bg: T.dangerBg, color: T.danger, border: T.dangerBorder },
-      dispatched: { bg: T.infoBg, color: T.info, border: T.infoBorder },
-      spaced: { bg: T.purpleBg, color: T.purple, border: '#DDD6FE' },
-      active: { bg: T.warningBg, color: T.warning, border: T.warningBorder },
-      released: { bg: T.tealBg, color: T.teal, border: '#99F6E4' },
-    };
-    const s = map[props.$type] || map.active;
-    return css`background: ${s.bg}; color: ${s.color}; border: 1px solid ${s.border};`;
-  }}
-`;
-
-const DrawerFooter = styled.div`
-  padding: 1rem 1.25rem;
-  border-top: 1px solid ${T.border};
-  display: flex;
-  gap: 0.5rem;
-  background: ${T.surface};
-`;
-
-const DrawerBtn = styled.button<{ $primary?: boolean }>`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid ${T.border};
-  background: ${T.surface};
-  color: ${T.textBody};
-  &:hover { background: ${T.surfaceHover}; }
-  ${props => props.$primary && css`
-    background: ${T.primary}; color: white; border-color: ${T.primary};
-    &:hover { background: #1D4ED8; }
-  `}
-`;
-
-const LoadingWrap = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  gap: 0.75rem;
-`;
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 //  HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+function dateKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function formatDisplayDate(dateStr) { const d = new Date(dateStr + 'T00:00:00'); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
 
-const getInitials = (n: string) => n.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
-const getAvatarColor = (n: string) => { let h = 0; for (let i = 0; i < n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return T.chartColors[Math.abs(h) % T.chartColors.length]; };
-const getDays = (d: string) => d ? Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86400000)) : 0;
-const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-const fmtMoney = (n: number) => `${Number(n || 0).toLocaleString()}`;
-const getBarWidth = (days: number) => Math.min((days / 40) * 100, 100);
+function getStatusStyle(status) {
+  switch (status) {
+    case 'In Morgue': return { bg: T.primaryBg, color: T.primary, dot: T.primary };
+    case 'Released': return { bg: T.successBg, color: T.success, dot: T.success };
+    case 'Pending Autopsy': return { bg: T.warningBg, color: T.warning, dot: T.warning };
+    case 'Transferred': return { bg: T.purpleBg, color: T.purple, dot: T.purple };
+    default: return { bg: T.borderLight, color: T.textMuted, dot: T.textMuted };
+  }
+}
 
-const getStatusType = (r: DeceasedRecord) => {
-  if (r.status === 'released') return 'released' as const;
-  if (r.status === 'dispatched') return 'dispatched' as const;
-  if (r.postmortem_done) return 'done' as const;
-  if (r.postmortem_requested) return 'pending' as const;
-  return 'not_done' as const;
-};
+function getPMStyle(req, done) {
+  if (!req) return { bg: T.borderLight, color: T.textMuted, label: 'Not Requested' };
+  if (done) return { bg: T.successBg, color: T.success, label: 'Completed' };
+  return { bg: T.dangerBg, color: T.danger, label: 'Pending' };
+}
 
-const getBarColor = (r: DeceasedRecord) => {
-  if (r.status === 'released') return T.teal;
-  if (r.status === 'dispatched') return T.info;
-  if (r.postmortem_done) return T.success;
-  if (r.postmortem_requested) return T.warning;
-  return T.danger;
-};
+// ═══════════════════════════════════════════════════════════════
+//  CHART HOOK
+// ═══════════════════════════════════════════════════════════════
+function useChart(ref, fn, deps) {
+  const cr = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    if (cr.current) { cr.current.destroy(); cr.current = null; }
+    ChartJS.defaults.color = T.textMuted;
+    ChartJS.defaults.borderColor = T.borderLight;
+    ChartJS.defaults.font.family = "'Inter',-apple-system,sans-serif";
+    ChartJS.defaults.font.size = 11;
+    cr.current = new ChartJS(ref.current, fn());
+    return () => { if (cr.current) { cr.current.destroy(); cr.current = null; } };
+  }, deps);
+}
 
-const getPostmortemStatus = (r: DeceasedRecord) => {
-  if (r.postmortem_done) return { label: 'Completed', type: 'done' as const };
-  if (r.postmortem_requested) return { label: 'Pending', type: 'pending' as const };
-  return { label: 'Not Requested', type: 'not_done' as const };
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
+// ═══════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
 const DeceasedAnalytics = () => {
-  const [data, setData] = useState<DeceasedRecord[]>(MOCK_DATA);
+  const [records] = useState(ALL_RECORDS);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [pmFilter, setPmFilter] = useState('all');
+  const [timeRange, setTimeRange] = useState('3m');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<DeceasedRecord | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Replace with API call:
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     setIsLoading(true);
-  //     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-  //     const slug = localStorage.getItem('tenantSlug');
-  //     const res = await axios.get(`${BASE_URL}/deceased/analytics`, { headers: { ... } });
-  //     setData(res.data);
-  //     setIsLoading(false);
-  //   };
-  //   fetchData();
-  // }, []);
+  // ── Chart Refs ──
+  const intakeRef = useRef(null);
+  const statusRef = useRef(null);
+  const pmRef = useRef(null);
+  const stayRef = useRef(null);
+  const genderRef = useRef(null);
 
-  // ─── Computed Stats ───────────────────────────────────────────────────
-  const total = data.length;
-  const pmRequested = data.filter(d => d.postmortem_requested).length;
-  const pmDone = data.filter(d => d.postmortem_done).length;
-  const dispatched = data.filter(d => d.dispatched).length;
-  const spaced = data.filter(d => d.spaced).length;
-  const released = data.filter(d => d.status === 'released').length;
-  const avgDays = total > 0 ? Math.round(data.reduce((s, d) => s + getDays(d.date_admitted), 0) / total) : 0;
-  const totalRevenue = data.reduce((s, d) => s + (d.total_charges || 0), 0);
+  // ── Filtered records for selected date ──
+  const selectedDateRecords = useMemo(() => {
+    if (!selectedDate) return [];
+    const dk = dateKey(selectedDate);
+    let filtered = records.filter(r => r.date_admitted === dk);
+    if (statusFilter !== 'all') filtered = filtered.filter(r => r.body_status === statusFilter);
+    if (pmFilter !== 'all') {
+      if (pmFilter === 'pending') filtered = filtered.filter(r => r.postmortem_requested && !r.postmortem_completed);
+      else if (pmFilter === 'done') filtered = filtered.filter(r => r.postmortem_completed);
+      else if (pmFilter === 'not_requested') filtered = filtered.filter(r => !r.postmortem_requested);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(r => r.full_name.toLowerCase().includes(q) || r.admission_number.toLowerCase().includes(q));
+    }
+    return filtered;
+  }, [selectedDate, records, statusFilter, pmFilter, searchQuery]);
 
-  // ─── Panel 2: Disposition breakdown ─────────────────────────────────────
-  const dispositionData = [
-    { label: 'Dispatched', count: dispatched, color: T.info },
-    { label: 'Spaced', count: spaced, color: T.purple },
-    { label: 'Released', count: released, color: T.teal },
-    { label: 'In Mortuary', count: total - dispatched - released, color: T.warning },
-  ];
-  const maxDisposition = Math.max(...dispositionData.map(d => d.count), 1);
+  // ── Calendar helpers ──
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(calYear, calMonth, 1);
+    const lastDay = new Date(calYear, calMonth + 1, 0);
+    let startDay = firstDay.getDay() - 1;
+    if (startDay < 0) startDay = 6;
+    const days = [];
+    for (let i = 0; i < startDay; i++) days.push(null);
+    for (let d = 1; d <= lastDay.getDate(); d++) days.push(d);
+    return days;
+  }, [calYear, calMonth]);
 
-  // ─── Panel 3: Postmortem completion ────────────────────────────────────
-  const pmData = [
-    { label: 'Completed', count: pmDone, color: T.success },
-    { label: 'Pending', count: pmRequested - pmDone, color: T.warning },
-    { label: 'Not Requested', count: total - pmRequested, color: T.danger },
-  ];
-  const maxPm = Math.max(...pmData.map(d => d.count), 1);
+  const dateRecordMap = useMemo(() => {
+    const map = {};
+    records.forEach(r => {
+      if (!map[r.date_admitted]) map[r.date_admitted] = [];
+      map[r.date_admitted].push(r);
+    });
+    return map;
+  }, [records]);
 
-  // ─── Drawer handlers ───────────────────────────────────────────────────
-  const openDrawer = (record: DeceasedRecord) => { setSelectedRecord(record); setDrawerOpen(true); };
-  const closeDrawer = () => { setDrawerOpen(false); setSelectedRecord(null); };
+  // ── Computed stats ──
+  const stats = useMemo(() => {
+    const inMorgue = records.filter(r => r.body_status === 'In Morgue').length;
+    const released = records.filter(r => r.body_status === 'Released').length;
+    const pmPending = records.filter(r => r.postmortem_requested && !r.postmortem_completed).length;
+    const pmDone = records.filter(r => r.postmortem_completed).length;
+    const pendingAutopsy = records.filter(r => r.body_status === 'Pending Autopsy').length;
+    const transferred = records.filter(r => r.body_status === 'Transferred').length;
+    return { total: records.length, inMorgue, released, pmPending, pmDone, pendingAutopsy, transferred };
+  }, [records]);
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // ── Monthly chart data ──
+  const monthlyData = useMemo(() => {
+    const map = {};
+    records.forEach(r => {
+      const key = r.date_admitted.slice(0, 7);
+      if (!map[key]) map[key] = { admissions: 0, releases: 0, pmPending: 0, pmDone: 0 };
+      map[key].admissions++;
+      if (r.body_status === 'Released') map[key].releases++;
+      if (r.postmortem_requested && !r.postmortem_completed) map[key].pmPending++;
+      if (r.postmortem_completed) map[key].pmDone++;
+    });
+    const sorted = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+    return sorted.map(([key, val]) => {
+      const [y, m] = key.split('-');
+      return { label: MONTH_NAMES[parseInt(m) - 1].slice(0, 3), ...val };
+    });
+  }, [records]);
+
+  // ── Stay duration data ──
+  const stayData = useMemo(() => {
+    const ranges = [
+      { label: '0-1 day', min: 0, max: 1, color: T.success },
+      { label: '2-3 days', min: 2, max: 3, color: T.primary },
+      { label: '4-7 days', min: 4, max: 7, color: T.purple },
+      { label: '8-14 days', min: 8, max: 14, color: T.warning },
+      { label: '15+ days', min: 15, max: 999, color: T.danger },
+    ];
+    const today = new Date();
+    return ranges.map(r => {
+      const count = records.filter(rec => {
+        const adm = new Date(rec.date_admitted + 'T00:00:00');
+        const diff = Math.floor((today - adm) / 86400000);
+        return diff >= r.min && diff <= r.max && rec.body_status === 'In Morgue';
+      }).length;
+      return { ...r, count };
+    });
+  }, [records]);
+
+  // ── Gender data ──
+  const genderData = useMemo(() => {
+    const male = records.filter(r => r.gender === 'Male').length;
+    const female = records.filter(r => r.gender === 'Female').length;
+    return [
+      { gender: 'Male', count: male, color: T.primary },
+      { gender: 'Female', count: female, color: T.pink },
+    ];
+  }, [records]);
+
+  // ── Status data ──
+  const statusData = useMemo(() => [
+    { status: 'In Morgue', count: stats.inMorgue, color: T.primary },
+    { status: 'Released', count: stats.released, color: T.success },
+    { status: 'Pending Autopsy', count: stats.pendingAutopsy, color: T.warning },
+    { status: 'Transferred', count: stats.transferred, color: T.purple },
+  ], [stats]);
+
+  // ═══════════════════════════════════════════════════════════════
+  //  CHARTS
+  // ═══════════════════════════════════════════════════════════════
+
+  // Intake/Release Line
+  useChart(intakeRef, () => ({
+    type: 'line',
+    data: {
+      labels: monthlyData.map(m => m.label),
+      datasets: [
+        { label: 'Admissions', data: monthlyData.map(m => m.admissions), borderColor: T.primary, backgroundColor: `${T.primary}12`, fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: T.primary, borderWidth: 2 },
+        { label: 'Releases', data: monthlyData.map(m => m.releases), borderColor: T.success, backgroundColor: `${T.success}12`, fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: T.success, borderWidth: 2 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'circle', padding: 16 } } },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: `${T.border}55` } } },
+    },
+  }), [records]);
+
+  // Body Status Donut
+  useChart(statusRef, () => ({
+    type: 'doughnut',
+    data: {
+      labels: statusData.map(s => s.status),
+      datasets: [{ data: statusData.map(s => s.count), backgroundColor: statusData.map(s => s.color), borderWidth: 0, spacing: 3 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 10 } } } },
+    },
+  }), [stats]);
+
+  // Postmortem Tracking Bar
+  useChart(pmRef, () => ({
+    type: 'bar',
+    data: {
+      labels: monthlyData.map(m => m.label),
+      datasets: [
+        { label: 'Completed', data: monthlyData.map(m => m.pmDone), backgroundColor: `${T.success}99`, borderRadius: 5, borderSkipped: false },
+        { label: 'Pending', data: monthlyData.map(m => m.pmPending), backgroundColor: `${T.danger}99`, borderRadius: 5, borderSkipped: false },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'circle', padding: 16 } } },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, grid: { color: `${T.border}55` } },
+      },
+    },
+  }), [records]);
+
+  // Length of Stay
+  useChart(stayRef, () => ({
+    type: 'bar',
+    data: {
+      labels: stayData.map(s => s.label),
+      datasets: [{ label: 'Current Bodies', data: stayData.map(s => s.count), backgroundColor: stayData.map(s => s.color + '88'), borderRadius: 6, borderSkipped: false }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: `${T.border}55` } } },
+    },
+  }), [records]);
+
+  // Gender Donut
+  useChart(genderRef, () => ({
+    type: 'doughnut',
+    data: {
+      labels: genderData.map(g => g.gender),
+      datasets: [{ data: genderData.map(g => g.count), backgroundColor: genderData.map(g => g.color), borderWidth: 0, spacing: 4 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, usePointStyle: true, pointStyle: 'circle' } } },
+    },
+  }), [records]);
+
+  // ── Calendar Navigation ──
+  const prevMonth = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); setSelectedDate(null); };
+  const nextMonth = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); setSelectedDate(null); };
+  const goToToday = () => { const t = new Date(); setCalYear(t.getFullYear()); setCalMonth(t.getMonth()); setSelectedDate(t); };
+
+  const isToday = (day) => {
+    if (!day) return false;
+    const t = new Date();
+    return day === t.getDate() && calMonth === t.getMonth() && calYear === t.getFullYear();
+  };
+
+  const isSelected = (day) => {
+    if (!day || !selectedDate) return false;
+    return day === selectedDate.getDate() && calMonth === selectedDate.getMonth() && calYear === selectedDate.getFullYear();
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER HELPERS
+  // ═══════════════════════════════════════════════════════════════
+  const S = (style) => ({ ...style, animation: 'fadeUp 0.4s ease both' });
+
+  const Select = ({ value, onChange, options, style }) => (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{
+      padding: '0.4rem 1.6rem 0.4rem 0.6rem', border: `1px solid ${T.border}`, borderRadius: '6px', fontSize: '0.78rem', color: T.textBody,
+      background: T.surface, cursor: 'pointer', appearance: 'none', outline: 'none',
+      backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+      backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center',
+      ...style,
+    }}>
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+
+  // ── Detail Modal ──
+  const DetailModal = () => {
+    if (!selectedRecord) return null;
+    const r = selectedRecord;
+    const ss = getStatusStyle(r.body_status);
+    const ps = getPMStyle(r.postmortem_requested, r.postmortem_completed);
+
+    const InfoRow = ({ icon, label, value }) => (
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.55rem 0', borderBottom: `1px solid ${T.borderLight}` }}>
+        <div style={{ width: 28, height: 28, borderRadius: '6px', background: T.primaryBg, color: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>{icon}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.65rem', color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500, marginBottom: '0.1rem' }}>{label}</div>
+          <div style={{ fontSize: '0.84rem', color: T.text, fontWeight: 500, wordBreak: 'break-word' }}>{value || '—'}</div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease', padding: '1rem' }} onClick={() => setSelectedRecord(null)}>
+        <div style={{ background: T.surface, borderRadius: '14px', width: '100%', maxWidth: '520px', maxHeight: '88vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(15,23,42,0.25)', animation: 'popIn 0.3s cubic-bezier(0.16,1,0.3,1)' }} onClick={e => e.stopPropagation()}>
+          {/* Modal Header */}
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: T.bg }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: T.text, margin: 0 }}>{r.full_name}</h3>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '4px', background: ss.bg, color: ss.color, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: ss.dot }} />{r.body_status}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: T.textMuted }}>{r.admission_number} · {r.gender} · {r.age} yrs</div>
+            </div>
+            <button onClick={() => setSelectedRecord(null)} style={{ width: 30, height: 30, borderRadius: '6px', border: `1px solid ${T.border}`, background: T.surface, color: T.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>{I.x}</button>
+          </div>
+
+          {/* Postmortem Banner */}
+          <div style={{ padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: `1px solid ${T.border}`, background: ps.bg }}>
+            {I.pulse}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: ps.color }}>Postmortem: {ps.label}</div>
+              {r.postmortem_report && <div style={{ fontSize: '0.68rem', color: T.textSecondary, marginTop: '0.1rem' }}>{r.postmortem_report}</div>}
+            </div>
+            {r.postmortem_requested && !r.postmortem_completed && (
+              <span style={{ fontSize: '0.6rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '4px', background: T.danger, color: '#fff' }}>ACTION NEEDED</span>
+            )}
+          </div>
+
+          {/* Details */}
+          <div style={{ padding: '0.5rem 1.5rem', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)' }}>
+            <InfoRow icon={I.calendar} label="Date Admitted" value={`${formatDisplayDate(r.date_admitted)} at ${r.time_received}`} />
+            <InfoRow icon={I.calendar} label="Date of Death" value={formatDisplayDate(r.date_of_death)} />
+            <InfoRow icon={I.user} label="Date of Birth" value={formatDisplayDate(r.date_of_birth)} />
+            <InfoRow icon={I.hash} label="National ID" value={r.id_number} />
+            <InfoRow icon={I.mapPin} label="Received From" value={r.received_from} />
+            <InfoRow icon={I.user} label="Contact Person" value={r.contact_person} />
+            <InfoRow icon={I.phone} label="Telephone" value={r.tel_number} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ═══════════════════════════════════════════════════════════════
   //  LOADING
-  // ═══════════════════════════════════════════════════════════════════════
-
+  // ═══════════════════════════════════════════════════════════════
   if (isLoading) {
     return (
-      <Page>
-        <LoadingWrap>
-          <div style={{ animation: `${spin} 1s linear infinite` }}><RefreshCw size={28} color={T.primary} /></div>
-          <span style={{ fontSize: '0.8125rem', color: T.textSecondary }}>Loading analytics...</span>
-        </LoadingWrap>
-      </Page>
+      <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter',sans-serif" }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 36, height: 36, border: `3px solid ${T.border}`, borderTop: `3px solid ${T.primary}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 0.75rem' }} />
+          <span style={{ fontSize: '0.8rem', color: T.textSecondary }}>Loading analytics...</span>
+        </div>
+      </div>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════════════
-
+  // ═══════════════════════════════════════════════════════════════
+  //  MAIN RENDER
+  // ═══════════════════════════════════════════════════════════════
   return (
-    <Page>
-      {/* ─── Header ──────────────────────────────────────────────────── */}
-      <PageHeader>
+    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Inter',-apple-system,sans-serif", color: T.text, padding: '1.25rem 1.5rem', maxWidth: 1440, margin: '0 auto' }}>
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes popIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:0.4}}
+        .cal-scroll::-webkit-scrollbar{width:4px}
+        .cal-scroll::-webkit-scrollbar-track{background:transparent}
+        .cal-scroll::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px}
+        .record-row{transition:background 0.12s}
+        .record-row:hover{background:${T.surfaceHover}}
+      `}</style>
+
+      {/* ── HEADER ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem', ...S({}) }}>
         <div>
-          <PageTitle><BarChart3 size={22} /> Deceased Analytics</PageTitle>
-          <PageDesc>Track postmortem, dispatch, spacing and disposition for each deceased record</PageDesc>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: T.text }}>
+            {I.chartBar} Deceased Intelligence
+          </h1>
+          <p style={{ fontSize: '0.78rem', color: T.textSecondary, margin: '0.2rem 0 0' }}>Body intake analytics, postmortem tracking & calendar navigation</p>
         </div>
-        <HeaderActions>
-          <Btn><Download size={14} /> Export</Btn>
-          <Btn onClick={() => window.location.reload()}><RefreshCw size={14} /> Refresh</Btn>
-        </HeaderActions>
-      </PageHeader>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <button style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', border: `1px solid ${T.border}`, background: T.surface, color: T.textBody, transition: 'all 0.15s' }}>{I.download} Export</button>
+          <button style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', border: `1px solid ${T.border}`, background: T.surface, color: T.textBody, transition: 'all 0.15s' }} onClick={() => window.location.reload()}>{I.refresh} Refresh</button>
+        </div>
+      </div>
 
-      {/* ─── Stat Cards ──────────────────────────────────────────────── */}
-      <StatsGrid>
-        <StatCard>
-          <StatLabel>Total Deceased</StatLabel>
-          <StatValue>{total}</StatValue>
-          <StatChange $up={true}><ArrowUp size={11} /> This period</StatChange>
-        </StatCard>
-        <StatCard>
-          <StatLabel>Postmortem Done</StatLabel>
-          <StatValue>{pmDone}/{pmRequested}</StatValue>
-          <StatChange $up={pmDone > 0}><ArrowUp size={11} /> {pmRequested > 0 ? Math.round((pmDone / pmRequested) * 100) : 0}%</StatChange>
-        </StatCard>
-        <StatCard>
-          <StatLabel>Dispatched</StatLabel>
-          <StatValue>{dispatched}</StatValue>
-          <StatChange $up={dispatched > 0}><ArrowUp size={11} /> {total > 0 ? Math.round((dispatched / total) * 100) : 0}%</StatChange>
-        </StatCard>
-        <StatCard>
-          <StatLabel>Released</StatLabel>
-          <StatValue>{released}</StatValue>
-          <StatChange $up={released > 0}><ArrowUp size={11} /> {total > 0 ? Math.round((released / total) * 100) : 0}%</StatChange>
-        </StatCard>
-        <StatCard>
-          <StatLabel>Avg. Days</StatLabel>
-          <StatValue>{avgDays}d</StatValue>
-          <StatChange $up={avgDays <= 10}><ArrowDown size={11} /> +2d vs last</StatChange>
-        </StatCard>
-      </StatsGrid>
+      {/* ── STAT CARDS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        {[
+          { label: 'Total Admissions', value: stats.total, icon: I.userPlus, color: T.primary, bg: T.primaryBg },
+          { label: 'In Morgue', value: stats.inMorgue, icon: I.clock, color: T.cyan, bg: T.cyanBg },
+          { label: 'Released', value: stats.released, icon: I.check, color: T.success, bg: T.successBg },
+          { label: 'PM Pending', value: stats.pmPending, icon: I.alertTriangle, color: T.danger, bg: T.dangerBg },
+          { label: 'PM Completed', value: stats.pmDone, icon: I.fileText, color: T.teal, bg: T.tealBg },
+        ].map((s, i) => (
+          <div key={i} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', padding: '0.9rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', transition: 'all 0.15s', animation: `fadeUp 0.3s ease-out ${i * 0.05}s both` }}>
+            <div>
+              <div style={{ fontSize: '0.62rem', fontWeight: 500, color: T.textSecondary, marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: T.text, lineHeight: 1 }}>{s.value}</div>
+            </div>
+            <div style={{ width: 36, height: 36, borderRadius: '8px', background: s.bg, color: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
+          </div>
+        ))}
+      </div>
 
-      {/* ─── 3-Panel Chart Grid ──────────────────────────────────────────── */}
-      <ChartGrid>
-        {/* ─── Panel 1: Per-Deceased Bar Chart ────────────────────────── */}
-        <ChartCard>
-          <ChartHeader>
-            <ChartTitle><Activity size={15} /> Per-Deceased Overview</ChartTitle>
-            <ChartSub>Click for details</ChartSub>
-          </ChartHeader>
-          <ChartBody>
-            <MetricRow>
-              <MetricBox>
-                <MetricValue>{fmtMoney(totalRevenue)}</MetricValue>
-                <MetricLabel>Total Charges (KES)</MetricLabel>
-              </MetricBox>
-              <MetricBox>
-                <MetricValue style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  {totalRevenue > (totalRevenue - 15000) ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                  {fmtMoney(Math.abs(totalRevenue - 15000))}
-                </MetricValue>
-                <MetricChange $up={totalRevenue > (totalRevenue - 15000)}>vs last</MetricChange>
-              </MetricBox>
-            </MetricRow>
+      {/* ── CHARTS ROW 1: Intake/Release + Body Status ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.15s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.borderLight}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {I.chartBar} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Admissions & Releases</h3>
+            </div>
+            <Select value={timeRange} onChange={setTimeRange} options={[{ value: '3m', label: '3 months' }, { value: '6m', label: '6 months' }, { value: '12m', label: '12 months' }]} style={{ fontSize: '0.7rem', padding: '0.25rem 1.3rem 0.25rem 0.5rem' }} />
+          </div>
+          <div style={{ padding: '0.75rem 1rem', height: 240 }}><canvas ref={intakeRef} /></div>
+        </div>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.2s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            {I.shield} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Body Status Distribution</h3>
+          </div>
+          <div style={{ padding: '0.75rem 1rem', height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 180 }}><canvas ref={statusRef} /></div>
+          </div>
+        </div>
+      </div>
 
-            {data.map((record, i) => {
-              const days = getDays(record.date_admitted);
-              const barW = getBarWidth(days);
-              const color = getBarColor(record);
-              const initials = getInitials(record.full_name);
-              const avatarColor = getAvatarColor(record.full_name);
+      {/* ── CHARTS ROW 2: Postmortem Tracking + Stay Duration + Gender ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.25s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            {I.pulse} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Postmortem Tracking</h3>
+          </div>
+          <div style={{ padding: '0.75rem 1rem', height: 210 }}><canvas ref={pmRef} /></div>
+        </div>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.3s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            {I.clock} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Length of Stay (Current)</h3>
+          </div>
+          <div style={{ padding: '0.75rem 1rem', height: 210 }}><canvas ref={stayRef} /></div>
+        </div>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.35s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            {I.user} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Gender</h3>
+          </div>
+          <div style={{ padding: '0.75rem 1rem', height: 210, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 140 }}><canvas ref={genderRef} /></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CALENDAR + RECORD LIST ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        {/* Calendar */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.4s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>{I.calendar} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Calendar Navigator</h3></div>
+            <button onClick={goToToday} style={{ fontSize: '0.68rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '4px', border: `1px solid ${T.primary}`, background: T.primaryBg, color: T.primary, cursor: 'pointer' }}>Today</button>
+          </div>
+
+          {/* Month Nav */}
+          <div style={{ padding: '0.6rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button onClick={prevMonth} style={{ width: 30, height: 30, borderRadius: '6px', border: `1px solid ${T.border}`, background: T.surface, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textSecondary, transition: 'all 0.15s' }}>{I.chevLeft}</button>
+            <span style={{ fontSize: '0.88rem', fontWeight: 600, color: T.text }}>{MONTH_NAMES[calMonth]} {calYear}</span>
+            <button onClick={nextMonth} style={{ width: 30, height: 30, borderRadius: '6px', border: `1px solid ${T.border}`, background: T.surface, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textSecondary, transition: 'all 0.15s' }}>{I.chevRight}</button>
+          </div>
+
+          {/* Day Names */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '0 0.75rem' }}>
+            {DAY_NAMES.map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: '0.6rem', fontWeight: 600, color: T.textMuted, padding: '0.3rem 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{d}</div>
+            ))}
+          </div>
+
+          {/* Days Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '0 0.75rem 0.75rem', gap: '2px' }}>
+            {calendarDays.map((day, i) => {
+              if (day === null) return <div key={`e${i}`} />;
+              const d = new Date(calYear, calMonth, day);
+              const dk = dateKey(d);
+              const dayRecords = dateRecordMap[dk] || [];
+              const today = isToday(day);
+              const selected = isSelected(day);
+              const hasRecords = dayRecords.length > 0;
+
+              // Count unique statuses for dot colors
+              const hasPM = dayRecords.some(r => r.postmortem_requested && !r.postmortem_completed);
+              const hasReleased = dayRecords.some(r => r.body_status === 'Released');
+
               return (
-                <HBarItem key={record.deceased_id} onClick={() => openDrawer(record)}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: avatarColor, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, flexShrink: 0 }}>
-                    {initials}
-                  </div>
-                  <HBarLabel title={record.full_name}>{record.full_name}</HBarLabel>
-                  <HBarTrack>
-                    <HBarFill $color={color} $width={barW} style={{ animationDelay: `${i * 0.06}s` }} />
-                  </HBarTrack>
-                  <HBarValue>{days}d</HBarValue>
-                </HBarItem>
+                <button
+                  key={i}
+                  onClick={() => setSelectedDate(d)}
+                  style={{
+                    aspectRatio: '1', borderRadius: '8px', border: 'none', cursor: hasRecords ? 'pointer' : 'default',
+                    background: selected ? T.primary : today ? T.primaryBg : hasRecords ? T.surfaceHover : 'transparent',
+                    color: selected ? '#fff' : today ? T.primary : hasRecords ? T.text : T.textFaint,
+                    fontWeight: selected || today ? 700 : hasRecords ? 500 : 400,
+                    fontSize: '0.78rem',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                    transition: 'all 0.12s', position: 'relative',
+                  }}
+                >
+                  {day}
+                  {hasRecords && (
+                    <div style={{ display: 'flex', gap: '2px', height: '4px' }}>
+                      {dayRecords.length > 0 && <span style={{ width: 4, height: 4, borderRadius: '50%', background: selected ? 'rgba(255,255,255,0.8)' : T.primary }} />}
+                      {hasPM && <span style={{ width: 4, height: 4, borderRadius: '50%', background: selected ? 'rgba(255,255,255,0.8)' : T.danger, animation: hasPM ? 'pulseDot 1.5s infinite' : 'none' }} />}
+                      {hasReleased && <span style={{ width: 4, height: 4, borderRadius: '50%', background: selected ? 'rgba(255,255,255,0.8)' : T.success }} />}
+                    </div>
+                  )}
+                </button>
               );
             })}
+          </div>
 
-            <LegendRow>
-              <LegendItem><LegendDot $color={T.success} /> Postmortem done</LegendItem>
-              <LegendItem><LegendDot $color={T.warning} /> Awaiting PM</LegendItem>
-              <LegendItem><LegendDot $color={T.danger} /> No PM requested</LegendItem>
-              <LegendItem><LegendDot $color={T.info} /> Dispatched</LegendItem>
-              <LegendItem><LegendDot $color={T.teal} /> Released</LegendItem>
-            </LegendRow>
-          </ChartBody>
-        </ChartCard>
-
-        {/* ─── Panel 2: Disposition Status ──────────────────────────────── */}
-        <ChartCard>
-          <ChartHeader>
-            <ChartTitle><Truck size={15} /> Disposition Status</ChartTitle>
-            <ChartSub>{total} total</ChartSub>
-          </ChartHeader>
-          <ChartBody>
-            <MetricRow>
-              <MetricBox>
-                <MetricValue>{dispatched + spaced + released}</MetricValue>
-                <MetricLabel>Processed</MetricLabel>
-              </MetricBox>
-              <MetricBox>
-                <MetricValue style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <ArrowUp size={14} /> {total > 0 ? Math.round(((dispatched + spaced + released) / total) * 100) : 0}%
-                </MetricValue>
-                <MetricChange $up={true}>Completion rate</MetricChange>
-              </MetricBox>
-            </MetricRow>
-
-            {dispositionData.map((item, i) => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.625rem' }}>
-                <div style={{ width: 70, fontSize: '0.75rem', color: T.textSecondary, textAlign: 'right', flexShrink: 0 }}>{item.label}</div>
-                <div style={{ flex: 1, height: '22px', background: T.borderLight, borderRadius: '5px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: '5px', background: item.color, width: `${(item.count / maxDisposition) * 100}%`, animation: `${barGrow} 0.5s ease-out ${i * 0.1}s backwards`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '0.5rem', minWidth: item.count > 0 ? '24px' : '0' }}>
-                    {item.count > 0 && <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>{item.count}</span>}
-                  </div>
-                </div>
+          {/* Legend */}
+          <div style={{ padding: '0 1rem 0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {[
+              { dot: T.primary, label: 'Admissions' },
+              { dot: T.danger, label: 'PM Pending' },
+              { dot: T.success, label: 'Released' },
+            ].map((l, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.62rem', color: T.textMuted }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: l.dot, flexShrink: 0 }} />{l.label}
               </div>
             ))}
-          </ChartBody>
-        </ChartCard>
+          </div>
+        </div>
 
-        {/* ─── Panel 3: Postmortem Completion ─────────────────────────────── */}
-        <ChartCard>
-          <ChartHeader>
-            <ChartTitle><FlaskConical size={15} /> Postmortem Status</ChartTitle>
-            <ChartSub>{pmRequested} requested</ChartSub>
-          </ChartHeader>
-          <ChartBody>
-            <MetricRow>
-              <MetricBox>
-                <MetricValue>{pmRequested > 0 ? Math.round((pmDone / pmRequested) * 100) : 0}%</MetricValue>
-                <MetricLabel>Completion rate</MetricLabel>
-              </MetricBox>
-              <MetricBox>
-                <MetricValue style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <ArrowUp size={14} /> {pmRequested - pmDone} pending
-                </MetricValue>
-                <MetricChange $up={(pmRequested - pmDone) <= 2}>Needs attention</MetricChange>
-              </MetricBox>
-            </MetricRow>
-
-            {pmData.map((item, i) => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.625rem' }}>
-                <div style={{ width: 90, fontSize: '0.75rem', color: T.textSecondary, display: 'flex', alignItems: 'center', gap: '0.375rem', justifyContent: 'flex-end', flexShrink: 0 }}>
-                  <StatusDot $color={item.color} />
-                  {item.label}
-                </div>
-                <div style={{ flex: 1, height: '22px', background: T.borderLight, borderRadius: '5px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: '5px', background: item.color, width: `${maxPm > 0 ? (item.count / maxPm) * 100 : 0}%`, animation: `${barGrow} 0.5s ease-out ${i * 0.1}s backwards`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '0.5rem', minWidth: item.count > 0 ? '24px' : '0' }}>
-                    {item.count > 0 && <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>{item.count}</span>}
-                  </div>
-                </div>
+        {/* Record List for Selected Date */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', display: 'flex', flexDirection: 'column', ...S({ animationDelay: '0.45s' }) }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {I.fileText}
+              <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>
+                {selectedDate ? formatDisplayDate(dateKey(selectedDate)) : 'Select a date'}
+              </h3>
+              {selectedDate && (
+                <span style={{ fontSize: '0.62rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: '4px', background: T.primaryBg, color: T.primary }}>
+                  {selectedDateRecords.length} record{selectedDateRecords.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: T.textMuted, display: 'flex', pointerEvents: 'none' }}>{I.search}</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search name or ID..."
+                  style={{ padding: '0.35rem 0.5rem 0.35rem 1.8rem', border: `1px solid ${T.border}`, borderRadius: '6px', fontSize: '0.72rem', color: T.textBody, background: T.surface, outline: 'none', width: '140px', fontFamily: 'inherit' }}
+                />
               </div>
-            ))}
+              <Select value={statusFilter} onChange={setStatusFilter} options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'In Morgue', label: 'In Morgue' },
+                { value: 'Released', label: 'Released' },
+                { value: 'Pending Autopsy', label: 'Pending Autopsy' },
+                { value: 'Transferred', label: 'Transferred' },
+              ]} style={{ fontSize: '0.68rem', padding: '0.35rem 1.3rem 0.35rem 0.4rem' }} />
+              <Select value={pmFilter} onChange={setPmFilter} options={[
+                { value: 'all', label: 'All PM' },
+                { value: 'pending', label: 'PM Pending' },
+                { value: 'done', label: 'PM Done' },
+                { value: 'not_requested', label: 'Not Requested' },
+              ]} style={{ fontSize: '0.68rem', padding: '0.35rem 1.3rem 0.35rem 0.4rem' }} />
+            </div>
+          </div>
 
-            {/* Pending list */}
-            {pmRequested - pmDone > 0 && (
-              <div style={{ marginTop: '0.875rem', paddingTop: '0.75rem', borderTop: `1px solid ${T.borderLight}` }}>
-                <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem' }}>
-                  Awaiting Postmortem
-                </div>
-                {data.filter(d => d.postmortem_requested && !d.postmortem_done).map(d => (
-                  <div key={d.deceased_id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0', marginBottom: '0.375rem', cursor: 'pointer', borderRadius: '6px', transition: 'background 0.12s ease', background: 'transparent', ':hover': { background: T.surfaceHover } }} onClick={() => openDrawer(d)}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: getAvatarColor(d.full_name), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, flexShrink: 0 }}>
-                      {getInitials(d.full_name)}
+          {/* Records */}
+          <div className="cal-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 200, maxHeight: 420 }}>
+            {!selectedDate ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 200, color: T.textMuted, gap: '0.5rem' }}>
+                {I.calendar}
+                <span style={{ fontSize: '0.82rem', fontWeight: 500 }}>Click a date on the calendar</span>
+                <span style={{ fontSize: '0.7rem' }}>Days with admissions are highlighted</span>
+              </div>
+            ) : selectedDateRecords.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 200, color: T.textMuted, gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 500 }}>No records match your filters</span>
+                <button onClick={() => { setSearchQuery(''); setStatusFilter('all'); setPmFilter('all'); }} style={{ fontSize: '0.72rem', color: T.primary, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}>Clear filters</button>
+              </div>
+            ) : (
+              <div>
+                {selectedDateRecords.map((r, i) => {
+                  const ss = getStatusStyle(r.body_status);
+                  const ps = getPMStyle(r.postmortem_requested, r.postmortem_completed);
+                  return (
+                    <div
+                      key={r.id}
+                      className="record-row"
+                      onClick={() => setSelectedRecord(r)}
+                      style={{
+                        padding: '0.7rem 1rem', borderBottom: `1px solid ${T.borderLight}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        borderLeft: `3px solid ${ss.color}`,
+                      }}
+                    >
+                      {/* Avatar */}
+                      <div style={{ width: 36, height: 36, borderRadius: '8px', background: ss.bg, color: ss.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0 }}>
+                        {r.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.full_name}</span>
+                          <span style={{ fontSize: '0.6rem', color: T.textMuted, whiteSpace: 'nowrap' }}>{r.gender[0]} · {r.age}y</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.62rem', color: T.textMuted, fontFamily: 'monospace' }}>{r.admission_number}</span>
+                          <span style={{ fontSize: '0.55rem', color: T.textFaint }}>·</span>
+                          <span style={{ fontSize: '0.62rem', color: T.textMuted }}>{r.time_received}</span>
+                          <span style={{ fontSize: '0.55rem', color: T.textFaint }}>·</span>
+                          <span style={{ fontSize: '0.62rem', color: T.textMuted }}>{r.received_from}</span>
+                        </div>
+                      </div>
+
+                      {/* Badges */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.6rem', fontWeight: 600, padding: '0.12rem 0.45rem', borderRadius: '4px', background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>
+                          {r.body_status}
+                        </span>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: '3px', background: ps.bg, color: ps.color, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
+                          {r.postmortem_requested && !r.postmortem_completed && <span style={{ width: 4, height: 4, borderRadius: '50%', background: T.danger, animation: 'pulseDot 1.5s infinite' }} />}
+                          PM: {ps.label}
+                        </span>
+                      </div>
+
+                      {/* View arrow */}
+                      <div style={{ color: T.textFaint, flexShrink: 0, display: 'flex', alignItems: 'center' }}>{I.arrowRight}</div>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 500, color: T.textBody, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.full_name}</div>
-                      <div style={{ fontSize: '0.625rem', color: T.textMuted }}>{getDays(d.date_admitted)}d in mortuary</div>
-                    </div>
-                    <ChevronRight size={14} color={T.textFaint} style={{ flexShrink: 0 }} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
-          </ChartBody>
-        </ChartCard>
-      </ChartGrid>
+          </div>
 
-      {/* ─── Drawer ────────────────────────────────────────────────────── */}
-      {drawerOpen && selectedRecord && (
-        <>
-          <Overlay onClick={closeDrawer} />
-          <Drawer>
-            <DrawerHeader>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: getAvatarColor(selectedRecord.full_name), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
-                    {getInitials(selectedRecord.full_name)}
-                  </div>
-                  <DrawerTitle>{selectedRecord.full_name}</DrawerTitle>
-                </div>
-                <DrawerId>{selectedRecord.deceased_id}</DrawerId>
+          {/* List footer summary */}
+          {selectedDate && selectedDateRecords.length > 0 && (
+            <div style={{ padding: '0.6rem 1rem', borderTop: `1px solid ${T.borderLight}`, background: T.bg, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, fontSize: '0.68rem', color: T.textMuted }}>
+              <span>{selectedDateRecords.length} record{selectedDateRecords.length !== 1 ? 's' : ''} · Click to view full details</span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: T.success }} />{selectedDateRecords.filter(r => r.body_status === 'Released').length} Released</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: T.danger }} />{selectedDateRecords.filter(r => r.postmortem_requested && !r.postmortem_completed).length} PM Pending</span>
               </div>
-              <DrawerClose onClick={closeDrawer}><X size={16} /></DrawerClose>
-            </DrawerHeader>
+            </div>
+          )}
+        </div>
+      </div>
 
-            <DrawerBody>
-              {/* Quick Status Row */}
-              <DrawerSection>
-                <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-                  <StatusPill $type={getPostmortemStatus(selectedRecord).type}>
-                    <FlaskConical size={10} /> {getPostmortemStatus(selectedRecord).label}
-                  </StatusPill>
-                  {selectedRecord.dispatched && <StatusPill $type="dispatched"><Truck size={10} /> Dispatched</StatusPill>}
-                  {selectedRecord.spaced && <StatusPill $type="spaced"><MapPin size={10} /> Spaced</StatusPill>}
-                  <StatusPill $type={selectedRecord.status as any}><Clock size={10} /> {selectedRecord.status}</StatusPill>
-                  <StatusPill $type={selectedRecord.body_status === 'Preserved' ? 'done' : selectedRecord.body_status === 'Dispatched' ? 'dispatched' : selectedRecord.body_status === 'Cremated' ? 'released' : 'pending'}>
-                    <Activity size={10} /> {selectedRecord.body_status || 'Admitted'}
-                  </StatusPill>
-                </div>
-              </DrawerSection>
-
-              {/* Personal Details */}
-              <DrawerSection>
-                <SectionTitle>Personal Information</SectionTitle>
-                <FieldGrid>
-                  <FieldCard><FieldLabel>Full Name</FieldLabel><FieldValue>{selectedRecord.full_name}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Age / Gender</FieldLabel><FieldValue>{selectedRecord.age}yr {selectedRecord.gender}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Date of Death</FieldLabel><FieldValue>{fmtDate(selectedRecord.date_of_death)}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Date Admitted</FieldLabel><FieldValue>{fmtDate(selectedRecord.date_admitted)}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Days in Mortuary</FieldLabel><FieldValue>{getDays(selectedRecord.date_admitted)} days</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Burial Type</FieldLabel><FieldValue>{selectedRecord.burial_type || '—'}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>ID Number</FieldLabel><FieldValue>{selectedRecord.id_number || '—'}</FieldValue></FieldCard>
-                  <FieldCard $highlight><FieldLabel>Cause of Death</FieldLabel><FieldValue>{selectedRecord.cause_of_death || '—'}</FieldValue></FieldCard>
-                </FieldGrid>
-              </DrawerSection>
-
-              {/* Postmortem Details */}
-              <DrawerSection>
-                <SectionTitle>Postmortem Details</SectionTitle>
-                <FieldGrid>
-                  <FieldCard><FieldLabel>Requested</FieldLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <StatusDot $color={selectedRecord.postmortem_requested ? T.success : T.danger} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: selectedRecord.postmortem_requested ? T.success : T.danger }}>
-                        {selectedRecord.postmortem_requested ? 'Yes' : 'No'}
+      {/* ── QUICK REFERENCE TABLE: PM STATUS OVERVIEW ── */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '10px', overflow: 'hidden', ...S({ animationDelay: '0.5s' }) }}>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${T.borderLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            {I.pulse} <h3 style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>Postmortem Status — All Records</h3>
+          </div>
+          <span style={{ fontSize: '0.65rem', color: T.textMuted }}>Showing records where postmortem was requested</span>
+        </div>
+        <div className="cal-scroll" style={{ maxHeight: 320, overflowY: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
+            <thead>
+              <tr style={{ background: T.bg, position: 'sticky', top: 0, zIndex: 1 }}>
+                {['Admission #', 'Name', 'Gender', 'Date Admitted', 'Body Status', 'PM Status', 'Report', ''].map((h, i) => (
+                  <th key={i} style={{ padding: '0.55rem 1rem', textAlign: 'left', fontWeight: 600, color: T.textSecondary, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {records.filter(r => r.postmortem_requested).map(r => {
+                const ss = getStatusStyle(r.body_status);
+                const ps = getPMStyle(r.postmortem_requested, r.postmortem_completed);
+                return (
+                  <tr key={r.id} className="record-row" onClick={() => setSelectedRecord(r)} style={{ cursor: 'pointer', borderBottom: `1px solid ${T.borderLight}` }}>
+                    <td style={{ padding: '0.5rem 1rem', fontFamily: 'monospace', fontSize: '0.7rem', color: T.textSecondary }}>{r.admission_number}</td>
+                    <td style={{ padding: '0.5rem 1rem', fontWeight: 600, color: T.text }}>{r.full_name}</td>
+                    <td style={{ padding: '0.5rem 1rem', color: T.textSecondary }}>{r.gender}</td>
+                    <td style={{ padding: '0.5rem 1rem', color: T.textSecondary, whiteSpace: 'nowrap' }}>{formatDisplayDate(r.date_admitted)}</td>
+                    <td style={{ padding: '0.5rem 1rem' }}><span style={{ fontSize: '0.62rem', fontWeight: 600, padding: '0.12rem 0.45rem', borderRadius: '4px', background: ss.bg, color: ss.color, whiteSpace: 'nowrap' }}>{r.body_status}</span></td>
+                    <td style={{ padding: '0.5rem 1rem' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 600, padding: '0.12rem 0.45rem', borderRadius: '4px', background: ps.bg, color: ps.color, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                        {!r.postmortem_completed && <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.danger, animation: 'pulseDot 1.5s infinite' }} />}
+                        {ps.label}
                       </span>
-                    </div>
-                  </FieldCard>
-                  <FieldCard><FieldLabel>Completed</FieldLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <StatusDot $color={selectedRecord.postmortem_done ? T.success : T.danger} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: selectedRecord.postmortem_done ? T.success : T.danger }}>
-                        {selectedRecord.postmortem_done ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                  </FieldCard>
-                  <FieldCard><FieldLabel>PM Date</FieldLabel><FieldValue>{selectedRecord.postmortem_date ? fmtDate(selectedRecord.postmortem_date) : '—'}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Pathologist</FieldLabel><FieldValue>{selectedRecord.pathologist_name || '—'}</FieldValue></FieldCard>
-                  <FieldCard $highlight><FieldLabel>Requesting Authority</FieldLabel><FieldValue>{selectedRecord.requesting_authority || '—'}</FieldValue></FieldCard>
-                </FieldGrid>
-              </DrawerSection>
+                    </td>
+                    <td style={{ padding: '0.5rem 1rem', color: r.postmortem_report ? T.success : T.textMuted, fontSize: '0.7rem', maxWidth: 140, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.postmortem_report || 'Pending'}</td>
+                    <td style={{ padding: '0.5rem 1rem', color: T.textFaint }}>{I.eye}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-              {/* Dispatch & Spacing */}
-              <DrawerSection>
-                <SectionTitle>Dispatch & Spacing</SectionTitle>
-                <FieldGrid>
-                  <FieldCard><FieldLabel>Dispatched</FieldLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <StatusDot $color={selectedRecord.dispatched ? T.info : T.danger} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: selectedRecord.dispatched ? T.info : T.danger }}>
-                        {selectedRecord.dispatched ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                  </FieldCard>
-                  <FieldCard><FieldLabel>Dispatch Date</FieldLabel><FieldValue>{selectedRecord.dispatched_date ? fmtDate(selectedRecord.dispatched_date) : '—'}</FieldValue></FieldCard>
-                  <FieldCard><FieldLabel>Spaced</FieldLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <StatusDot $color={selectedRecord.spaced ? T.purple : T.danger} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: selectedRecord.spaced ? T.purple : T.danger }}>
-                        {selectedRecord.spaced ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                  </FieldCard>
-                  <FieldCard><FieldLabel>Spaced Date</FieldLabel><FieldValue>{selectedRecord.spaced_date ? fmtDate(selectedRecord.spaced_date) : '—'}</FieldValue></FieldCard>
-                </FieldGrid>
-              </DrawerSection>
-
-              {/* Charges */}
-              <DrawerSection>
-                <SectionTitle>Charges</SectionTitle>
-                <FieldCard $highlight>
-                  <FieldLabel>Total Charges</FieldLabel>
-                  <div style={{ fontSize: '1.125rem', fontWeight: 700, color: T.text }}>
-                    {fmtMoney(selectedRecord.total_charges)} {selectedRecord.currency || 'KES'}
-                  </div>
-                </FieldCard>
-              </DrawerSection>
-
-              {/* Timeline */}
-              <DrawerSection>
-                <SectionTitle>Event Timeline</SectionTitle>
-                <Timeline>
-                  <TimelineLine />
-                  {[
-                    { label: 'Date of Death', desc: fmtDate(selectedRecord.date_of_death), time: selectedRecord.date_of_death, done: true, color: T.danger },
-                    { label: 'Admitted to Mortuary', desc: fmtDate(selectedRecord.date_admitted), time: selectedRecord.date_admitted, done: true, color: T.warning },
-                    ...(selectedRecord.postmortem_requested ? [{ label: 'Postmortem Requested', desc: 'By ' + (selectedRecord.requesting_authority || 'Authority'), time: selectedRecord.postmortem_done ? selectedRecord.postmortem_date : 'Pending', done: selectedRecord.postmortem_done, color: T.primary }] : []),
-                    ...(selectedRecord.postmortem_done ? [{ label: 'Postmortem Completed', desc: 'By ' + (selectedRecord.pathologist_name || 'Pathologist'), time: selectedRecord.postmortem_date, done: true, color: T.success }] : []),
-                    ...(selectedRecord.dispatched ? [{ label: 'Body Dispatched', desc: 'To burial/cremation site', time: selectedRecord.dispatched_date, done: true, color: T.info }] : []),
-                    ...(selectedRecord.spaced ? [{ label: 'Body Spaced', desc: 'Preparation for disposition', time: selectedRecord.spaced_date, done: true, color: T.purple }] : []),
-                    ...(selectedRecord.status === 'released' ? [{ label: 'Released', desc: 'To next of kin', time: '', done: true, color: T.teal }] : []),
-                  ].filter(Boolean).map((evt, i) => (
-                    <TimelineItem key={i}>
-                      <TimelineDot $color={evt.color} $done={evt.done} />
-                      <TimelineContent>
-                        <TimelineTitle>{evt.label}</TimelineTitle>
-                        <TimelineDesc>{evt.desc}</TimelineDesc>
-                        {evt.time && <TimelineTime>{evt.time}</TimelineTime>}
-                      </TimelineContent>
-                    </TimelineItem>
-                  ))}
-                </Timeline>
-              </DrawerSection>
-
-              {/* Contact */}
-              <DrawerSection>
-                <SectionTitle>Next of Kin</SectionTitle>
-                <div style={{ background: T.bg, borderRadius: '8px', border: `1px solid ${T.borderLight}`, padding: '0.5rem 0.75rem' }}>
-                  {selectedRecord.next_of_kin_name && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0', borderBottom: `1px solid ${T.borderLight}` }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '6px', background: T.primaryBg, color: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={13} /></div>
-                      <span style={{ fontSize: '0.8125rem', color: T.textBody }}>{selectedRecord.next_of_kin_name}</span>
-                    </div>
-                  )}
-                  {selectedRecord.next_of_kin_phone && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0', borderBottom: `1px solid ${T.borderLight}` }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '6px', background: T.successBg, color: T.success, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Phone size={13} /></div>
-                      <span style={{ fontSize: '0.8125rem', color: T.textBody }}>{selectedRecord.next_of_kin_phone}</span>
-                    </div>
-                  )}
-                  {selectedRecord.next_of_kin_email && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0' }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '6px', background: T.infoBg, color: T.info, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Mail size={13} /></div>
-                      <span style={{ fontSize: '0.8125rem', color: T.textBody }}>{selectedRecord.next_of_kin_email}</span>
-                    </div>
-                  )}
-                  {selectedRecord.address && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0' }}>
-                      <div style={{ width: 26, height: 26, borderRadius: '6px', background: T.warningBg, color: T.warning, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MapPin size={13} /></div>
-                      <span style={{ fontSize: '0.8125rem', color: T.textBody }}>{selectedRecord.address}</span>
-                    </div>
-                  )}
-                  {!(selectedRecord.next_of_kin_name || selectedRecord.next_of_kin_phone || selectedRecord.next_of_kin_email || selectedRecord.address) && (
-                    <div style={{ padding: '0.75rem 0', textAlign: 'center', color: T.textMuted, fontSize: '0.8125rem' }}>No contact on file</div>
-                  )}
-                </div>
-              </DrawerSection>
-
-              {/* Notes */}
-              {selectedRecord.notes && (
-                <DrawerSection>
-                  <SectionTitle>Notes</SectionTitle>
-                  <div style={{ padding: '0.625rem 0.75rem', background: T.warningBg, borderRadius: '7px', border: `1px solid ${T.warningBorder}` }}>
-                    <div style={{ fontSize: '0.8125rem', color: T.textBody, lineHeight: '1.6' }}>{selectedRecord.notes}</div>
-                  </div>
-                </DrawerSection>
-              )}
-            </DrawerBody>
-
-            <DrawerFooter>
-              <DrawerBtn $primary onClick={() => { closeDrawer(); window.location.href = `/deceased/${selectedRecord.deceased_id}`; }}>
-                <Eye size={14} /> View Full
-              </DrawerBtn>
-              <DrawerBtn onClick={() => { closeDrawer(); window.location.href = `/deceased/${selectedRecord.deceased_id}/edit`; }}>
-                <Edit size={14} /> Edit
-              </DrawerBtn>
-            </DrawerFooter>
-          </Drawer>
-        </>
-      )}
-    </Page>
+      {/* ── DETAIL MODAL ── */}
+      <DetailModal />
+    </div>
   );
 };
 

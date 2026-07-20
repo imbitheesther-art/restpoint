@@ -111,37 +111,37 @@ const MOCK_ACTIVITY = [
   {
     id: 1, person: 'Dr. Ochieng', chemical: 'Formaldehyde (5L)', action: 'Picked up',
     time: '2 hours ago', date: new Date(), daysSinceLast: 4, avgInterval: 3.5,
-    avatarColor: T.chartColors[0], type: 'pickup' as const,
+    avatarColor: T.chartColors[0], type: 'pickup',
   },
   {
     id: 2, person: 'Mary Wambui', chemical: 'Disinfectant (10L)', action: 'Picked up',
     time: '5 hours ago', date: new Date(Date.now() - 18000000), daysSinceLast: 7, avgInterval: 6.2,
-    avatarColor: T.chartColors[1], type: 'pickup' as const,
+    avatarColor: T.chartColors[1], type: 'pickup',
   },
   {
     id: 3, person: 'James Mwangi', chemical: 'Embalming Fluid (3L)', action: 'Picked up',
     time: '1 day ago', date: new Date(Date.now() - 86400000), daysSinceLast: 12, avgInterval: 10.0,
-    avatarColor: T.chartColors[2], type: 'pickup' as const,
+    avatarColor: T.chartColors[2], type: 'pickup',
   },
   {
     id: 4, person: 'Dr. Akinyi', chemical: 'Preservative (2L)', action: 'Picked up',
     time: '2 days ago', date: new Date(Date.now() - 172800000), daysSinceLast: 5, avgInterval: 4.8,
-    avatarColor: T.chartColors[3], type: 'pickup' as const,
+    avatarColor: T.chartColors[3], type: 'pickup',
   },
   {
     id: 5, person: 'Peter Otieno', chemical: 'Formaldehyde (8L)', action: 'Picked up',
     time: '3 days ago', date: new Date(Date.now() - 259200000), daysSinceLast: 15, avgInterval: 14.0,
-    avatarColor: T.chartColors[4], type: 'pickup' as const,
+    avatarColor: T.chartColors[4], type: 'pickup',
   },
   {
     id: 6, person: 'Grace Njeri', chemical: 'Disinfectant (5L)', action: 'Picked up',
     time: '4 days ago', date: new Date(Date.now() - 345600000), daysSinceLast: 3, avgInterval: 3.2,
-    avatarColor: T.chartColors[5], type: 'pickup' as const,
+    avatarColor: T.chartColors[5], type: 'pickup',
   },
   {
     id: 7, person: 'Samuel Karanja', chemical: 'Cleaning Agents (15L)', action: 'Picked up',
     time: '5 days ago', date: new Date(Date.now() - 432000000), daysSinceLast: 21, avgInterval: 18.5,
-    avatarColor: T.chartColors[6], type: 'pickup' as const,
+    avatarColor: T.chartColors[6], type: 'pickup',
   },
 ];
 
@@ -153,11 +153,11 @@ const MOCK_PICKUP_FREQUENCY = [
 ];
 
 const MOCK_STAFF_ANALYSIS = [
-  { name: 'Dr. Ochieng', pickups: 24, avgDays: 3.5, avgVolume: '5.2L', trend: 'down' as const, color: T.chartColors[0] },
-  { name: 'Mary Wambui', pickups: 18, avgDays: 6.2, avgVolume: '8.1L', trend: 'up' as const, color: T.chartColors[1] },
-  { name: 'James Mwangi', pickups: 12, avgDays: 10.0, avgVolume: '4.8L', trend: 'down' as const, color: T.chartColors[2] },
-  { name: 'Dr. Akinyi', pickups: 20, avgDays: 4.8, avgVolume: '3.5L', trend: 'up' as const, color: T.chartColors[3] },
-  { name: 'Peter Otieno', pickups: 8, avgDays: 14.0, avgVolume: '9.3L', trend: 'down' as const, color: T.chartColors[4] },
+  { name: 'Dr. Ochieng', pickups: 24, avgDays: 3.5, avgVolume: '5.2L', trend: 'down', color: T.chartColors[0] },
+  { name: 'Mary Wambui', pickups: 18, avgDays: 6.2, avgVolume: '8.1L', trend: 'up', color: T.chartColors[1] },
+  { name: 'James Mwangi', pickups: 12, avgDays: 10.0, avgVolume: '4.8L', trend: 'down', color: T.chartColors[2] },
+  { name: 'Dr. Akinyi', pickups: 20, avgDays: 4.8, avgVolume: '3.5L', trend: 'up', color: T.chartColors[3] },
+  { name: 'Peter Otieno', pickups: 8, avgDays: 14.0, avgVolume: '9.3L', trend: 'down', color: T.chartColors[4] },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -208,7 +208,7 @@ const HeaderActions = styled.div`
   align-items: center;
 `;
 
-const Btn = styled.button<{ $variant?: 'primary' | 'secondary' | 'ghost' }>`
+const Btn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -280,7 +280,7 @@ const StatValue = styled.div`
   animation: ${countUp} 0.4s ease-out;
 `;
 
-const StatChange = styled.div<{ $up?: boolean }>`
+const StatChange = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 0.1875rem;
@@ -290,7 +290,7 @@ const StatChange = styled.div<{ $up?: boolean }>`
   color: ${props => props.$up ? T.success : T.danger};
 `;
 
-const StatIcon = styled.div<{ $color: string; $bg: string }>`
+const StatIcon = styled.div`
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -400,7 +400,7 @@ const LegendItem = styled.div`
   padding: 0.25rem 0;
 `;
 
-const LegendDot = styled.div<{ $color: string }>`
+const LegendDot = styled.div`
   width: 10px;
   height: 10px;
   border-radius: 3px;
@@ -468,7 +468,7 @@ const ProgressBarBg = styled.div`
   overflow: hidden;
 `;
 
-const ProgressBarFill = styled.div<{ $color: string; $width: number }>`
+const ProgressBarFill = styled.div`
   height: 100%;
   border-radius: 10px;
   background: ${props => props.$color};
@@ -516,7 +516,7 @@ const FreqBarBg = styled.div`
   position: relative;
 `;
 
-const FreqBarFill = styled.div<{ $color: string; $width: number }>`
+const FreqBarFill = styled.div`
   height: 100%;
   border-radius: 6px;
   background: ${props => props.$color};
@@ -562,7 +562,7 @@ const ActivityItem = styled.div`
   &:last-child { border-bottom: none; }
 `;
 
-const ActivityAvatar = styled.div<{ $color: string }>`
+const ActivityAvatar = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -616,7 +616,7 @@ const ActivityMeta = styled.div`
   flex-wrap: wrap;
 `;
 
-const MetaTag = styled.span<{ $type: 'info' | 'warn' | 'success' | 'danger' }>`
+const MetaTag = styled.span`
   font-size: 0.625rem;
   font-weight: 600;
   padding: 0.125rem 0.4375rem;
@@ -629,7 +629,7 @@ const MetaTag = styled.span<{ $type: 'info' | 'warn' | 'success' | 'danger' }>`
       success: { bg: T.successBg, color: T.success },
       danger: { bg: T.dangerBg, color: T.danger },
     };
-    const s = map[props.$type];
+    const s = map[props.$type] || map.info;
     return css`background: ${s.bg}; color: ${s.color};`;
   }}
 `;
@@ -673,7 +673,7 @@ const StaffNameCell = styled.div`
   gap: 0.5rem;
 `;
 
-const StaffAvatar = styled.div<{ $color: string }>`
+const StaffAvatar = styled.div`
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -687,7 +687,7 @@ const StaffAvatar = styled.div<{ $color: string }>`
   flex-shrink: 0;
 `;
 
-const TrendBadge = styled.span<{ $up: boolean }>`
+const TrendBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 0.125rem;
@@ -749,13 +749,13 @@ const LoadingWrap = styled.div`
 //  HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const getInitials = (name: string) => name.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase();
+const getInitials = (name) => name.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase();
 
-const getDaysLabel = (days: number) => {
-  if (days <= 3) return { text: `${days}d gap`, type: 'success' as const };
-  if (days <= 7) return { text: `${days}d gap`, type: 'info' as const };
-  if (days <= 14) return { text: `${days}d gap`, type: 'warn' as const };
-  return { text: `${days}d gap`, type: 'danger' as const };
+const getDaysLabel = (days) => {
+  if (days <= 3) return { text: `${days}d gap`, type: 'success' };
+  if (days <= 7) return { text: `${days}d gap`, type: 'info' };
+  if (days <= 14) return { text: `${days}d gap`, type: 'warn' };
+  return { text: `${days}d gap`, type: 'danger' };
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -955,7 +955,7 @@ const ChemicalInventoryAnalytics = () => {
         <ChartCard>
           <ChartCardHeader>
             <ChartTitle>
-              <Target size={15} /> Inventory Goals
+              <span style={{ fontSize: '15px' }}>🎯</span> Inventory Goals
             </ChartTitle>
             <ChartSubtitle>This period</ChartSubtitle>
           </ChartCardHeader>
@@ -1092,11 +1092,10 @@ const ChemicalInventoryAnalytics = () => {
 
       {/* ─── Feedback Button ──────────────────────────────────────────── */}
       <FeedbackBtn>
-        <MessageSquare size={15} /> Feedback
+        <span style={{ fontSize: '15px' }}>💬</span> Feedback
       </FeedbackBtn>
     </Page>
   );
 };
-
 
 export default ChemicalInventoryAnalytics;

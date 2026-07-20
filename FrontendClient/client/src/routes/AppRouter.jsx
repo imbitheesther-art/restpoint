@@ -75,12 +75,13 @@ const DeceasedRegistrationForm = lazy(() => import('../components/deceased/regis
 const RegisterCoffin = lazy(() => import('../components/coffins/registerCoffin'));
 const CoffinInventory = lazy(() => import('../components/coffins/coffininventory'));
 const CoffinDetails = lazy(() => import('../components/coffins/coffinDetails'));
-const AllDeceasedPage = lazy(() => import('../components/deceased/allDeceased/listDeceased'));
+const DeceasedList = lazy(() => import('../components/deceased/allDeceased/listDeceased'));
 const NotFound = lazy(() => import('../components/layout/notFound'));
 const DeceasedDetails = lazy(() => import('../components/deceased/deceasedinfo/deceasedDetailPage'));
 const FinancialDetailsPage = lazy(() => import('../components/deceased/financialDetails/FinancialDetailsPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceased/deceasedInfoSection'));
+const DeceasedAnalytics = lazy(() => import('../components/deceased/deceasedAnalytics'));
 
 const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
@@ -90,6 +91,7 @@ const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemor
 
 
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
+const ChemicalInventoryAnalytics = lazy(() => import('../components/chemicals/chemicalAnalytics'));
 const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
 
 // Flower Booking System
@@ -339,15 +341,20 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       {/* Analytics - Available to all authenticated users */}
       <Route path="analytics" element={<Layout tenantData={tenantData}><DashboardPage /></Layout>} />
 
+      {/* Deceased Analytics - Available to all authenticated users */}
+      <Route path="deceased/analytics" element={
+        <Layout tenantData={tenantData}><DeceasedAnalytics /></Layout>
+      } />
+
       {/* Deceased Management - Available to admin, manager, staff, user */}
       <Route path="all-deceased" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole} tenantSlug={slug}>
-          <Layout tenantData={tenantData}><AllDeceasedPage /></Layout>
+          <Layout tenantData={tenantData}><DeceasedList /></Layout>
         </RoleBasedRoute>
       } />
       <Route path="deceased" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
-          <Layout tenantData={tenantData}><AllDeceasedPage /></Layout>
+          <Layout tenantData={tenantData}><DeceasedList /></Layout>
         </RoleBasedRoute>
       } />
       <Route path="deceased/register" element={
@@ -411,6 +418,11 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="chemicals" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
           <Layout tenantData={tenantData}><ChemicalManagementDashboard /></Layout>
+        </RoleBasedRoute>
+      } />
+      <Route path="chemicals/analytics" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><ChemicalInventoryAnalytics /></Layout>
         </RoleBasedRoute>
       } />
 
@@ -672,4 +684,3 @@ const AppRouter = () => (
 );
 
 export default AppRouter;
-

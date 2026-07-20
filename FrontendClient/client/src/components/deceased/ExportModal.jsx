@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 
-
+import { Loader2 } from '../../utils/icons/icons'
 
 
 
@@ -454,7 +454,7 @@ const ExportModal = ({
   const [customEndDate, setCustomEndDate] = useState('');
   const [format, setFormat] = useState('xlsx');
   const [includeCurrentFilters, setIncludeCurrentFilters] = useState(true);
-  
+
   // Column Selection State
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState([
@@ -466,11 +466,11 @@ const ExportModal = ({
     'has_kin',
     'has_autopsy',
   ]);
-  
+
   // Export History State
   const [showHistory, setShowHistory] = useState(false);
   const [exportHistory, setExportHistory] = useState([]);
-  
+
   // All available columns
   const availableColumns = [
     { id: 'full_name', label: 'Full Name' },
@@ -487,7 +487,7 @@ const ExportModal = ({
     { id: 'cause_of_death', label: 'Cause of Death' },
     { id: 'total_mortuary_charge', label: 'Charges' },
   ];
-  
+
   // Load history from localStorage on mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('exportHistory');
@@ -499,13 +499,13 @@ const ExportModal = ({
       }
     }
   }, []);
-  
+
   // Get date range based on period
   const getDateRange = (period) => {
     const now = new Date();
     const start = new Date();
     let end = new Date();
-    
+
     switch (period) {
       case 'thisMonth':
         start.setDate(1);
@@ -543,7 +543,7 @@ const ExportModal = ({
       endDate: end.toISOString().split('T')[0],
     };
   };
-  
+
   // Handle column toggle
   const toggleColumn = (columnId) => {
     setSelectedColumns((prev) =>
@@ -552,7 +552,7 @@ const ExportModal = ({
         : [...prev, columnId]
     );
   };
-  
+
   // Select/Deselect all columns
   const toggleSelectAll = () => {
     if (selectedColumns.length === availableColumns.length) {
@@ -561,18 +561,18 @@ const ExportModal = ({
       setSelectedColumns(availableColumns.map((c) => c.id));
     }
   };
-  
+
   // Handle export
   const handleExport = () => {
     if (selectedColumns.length === 0) {
       alert('Please select at least one column to export.');
       return;
     }
-    
+
     const dateRange = reportPeriod === 'custom'
       ? { startDate: customStartDate, endDate: customEndDate }
       : getDateRange(reportPeriod);
-    
+
     const exportOptions = {
       period: reportPeriod,
       startDate: dateRange.startDate,
@@ -581,7 +581,7 @@ const ExportModal = ({
       format,
       columns: selectedColumns,
     };
-    
+
     // Add to history
     const historyEntry = {
       id: Date.now().toString(),
@@ -593,20 +593,20 @@ const ExportModal = ({
       format,
       status: 'success',
     };
-    
+
     const updatedHistory = [historyEntry, ...exportHistory].slice(0, 10); // Keep last 10
     setExportHistory(updatedHistory);
     localStorage.setItem('exportHistory', JSON.stringify(updatedHistory));
-    
+
     onExport(exportOptions);
   };
-  
+
   // Clear history
   const clearHistory = () => {
     setExportHistory([]);
     localStorage.removeItem('exportHistory');
   };
-  
+
   // Get period label
   const getPeriodLabel = () => {
     const labels = {
@@ -621,9 +621,9 @@ const ExportModal = ({
     };
     return labels[reportPeriod] || reportPeriod;
   };
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <ModalOverlay onClick={onClose}>
       <ModalContainer onClick={(e) => e.stopPropagation()}>
@@ -636,7 +636,7 @@ const ExportModal = ({
             <X size={20} />
           </CloseButton>
         </ModalHeader>
-        
+
         <ModalBody>
           {/* Left Panel - Export Options */}
           <LeftPanel>
@@ -663,7 +663,7 @@ const ExportModal = ({
                     <option value="custom">Custom Range</option>
                   </Select>
                 </FormGroup>
-                
+
                 <FormGroup>
                   <Label>Export Format</Label>
                   <Select
@@ -675,7 +675,7 @@ const ExportModal = ({
                   </Select>
                 </FormGroup>
               </Grid>
-              
+
               {reportPeriod === 'custom' && (
                 <Grid cols="1fr 1fr">
                   <FormGroup>
@@ -697,9 +697,9 @@ const ExportModal = ({
                 </Grid>
               )}
             </Section>
-            
+
             <SectionDivider />
-            
+
             {/* Column Selection Section */}
             <Section>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -712,7 +712,7 @@ const ExportModal = ({
                   {selectedColumns.length} selected
                 </OutlineButton>
               </div>
-              
+
               {showColumnSelector && (
                 <div style={{
                   border: `1px solid ${Colors.borderGray}`,
@@ -746,16 +746,16 @@ const ExportModal = ({
                 </div>
               )}
             </Section>
-            
+
             <SectionDivider />
-            
+
             {/* Filter Options Section */}
             <Section>
               <SectionTitle>
                 <Filter size={16} />
                 Filter Options
               </SectionTitle>
-              
+
               <CheckboxItem
                 selected={includeCurrentFilters}
                 style={{ width: 'fit-content' }}
@@ -767,7 +767,7 @@ const ExportModal = ({
                 />
                 Apply current list filters to export
               </CheckboxItem>
-              
+
               {includeCurrentFilters && filters && (
                 <div style={{
                   display: 'flex',
@@ -805,14 +805,14 @@ const ExportModal = ({
               )}
             </Section>
           </LeftPanel>
-          
+
           {/* Right Panel - Export History */}
           <RightPanel>
             <SectionTitle style={{ marginBottom: '0.5rem' }}>
               <Clock size={16} />
               Recently Exported
             </SectionTitle>
-            
+
             <HistoryPanel style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <HistoryHeader onClick={() => setShowHistory(!showHistory)}>
                 <h4>
@@ -845,7 +845,7 @@ const ExportModal = ({
                   {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
               </HistoryHeader>
-              
+
               <HistoryList isOpen={showHistory} style={{ flex: 1, overflow: 'auto' }}>
                 {exportHistory.length === 0 ? (
                   <EmptyHistory>
@@ -878,7 +878,7 @@ const ExportModal = ({
             </HistoryPanel>
           </RightPanel>
         </ModalBody>
-        
+
         <ModalFooter>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <SecondaryButton onClick={onClose}>
@@ -901,7 +901,7 @@ const ExportModal = ({
               )}
             </PrimaryButton>
           </div>
-          
+
           <div style={{ fontSize: '0.75rem', color: Colors.textMuted }}>
             {selectedColumns.length} columns selected • {getPeriodLabel()}
           </div>

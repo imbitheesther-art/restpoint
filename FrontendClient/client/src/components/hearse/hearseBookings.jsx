@@ -20,6 +20,7 @@ const STATUS_CONFIG = {
   postponed: { label: 'Postponed', progress: 15, color: '#f59e0b', bg: '#fef3c7', dotColor: '#f59e0b' },
   maintenance: { label: 'Maintenance', progress: 0, color: '#8b5cf6', bg: '#f3e8ff', dotColor: '#8b5cf6' },
 };
+
 const STATUS_LIST = Object.keys(STATUS_CONFIG);
 
 const COLORS = {
@@ -717,6 +718,12 @@ const HearseBookings = () => {
   });
   const [submitLoading, setSubmitLoading] = useState(false);
 
+  const [registerHearseOpen, setRegisterHearseOpen] = useState(false);
+  const [hearseForm, setHearseForm] = useState({
+    plate_number: '', hearse_name: '', model: '', capacity: '8', status: 'available', branch_id: ''
+  });
+  const [registerLoading, setRegisterLoading] = useState(false);
+
   const showToast = useCallback((msg, type = 'success') => {
     setToasts(p => [...p, { id: Date.now(), message: msg, type }]);
   }, []);
@@ -982,6 +989,9 @@ const HearseBookings = () => {
             </SecondaryButton>
             <PrimaryButton onClick={() => openNewBooking('')}>
               {Icons.plus} New Booking
+            </PrimaryButton>
+            <PrimaryButton onClick={() => setRegisterHearseOpen(true)} style={{ background: COLORS.success }}>
+              {Icons.plus} Register Hearse
             </PrimaryButton>
           </HeaderActions>
         </HeaderContent>
@@ -1386,6 +1396,145 @@ const HearseBookings = () => {
             </DrawerBody>
           </>
         )}
+      </Drawer>
+
+      {/* Register New Hearse Drawer */}
+      {registerHearseOpen && <DrawerOverlay onClick={() => setRegisterHearseOpen(false)} />}
+      <Drawer $open={registerHearseOpen} style={{ width: '520px' }}>
+        <DrawerHeader style={{ background: COLORS.successDark }}>
+          <div>
+            <DrawerTitle style={{ color: COLORS.white }}>Register New Hearse</DrawerTitle>
+            <DrawerSubtitle style={{ color: 'rgba(255,255,255,0.7)' }}>Add a new hearse vehicle to your fleet</DrawerSubtitle>
+          </div>
+          <ActionButton onClick={() => setRegisterHearseOpen(false)} style={{ color: COLORS.white }}>{Icons.x}</ActionButton>
+        </DrawerHeader>
+        <DrawerBody>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (!hearseForm.plate_number || !hearseForm.branch_id) {
+              showToast('Plate number and branch are required', 'error');
+              return;
+            }
+            setRegisterLoading(true);
+            try {
+              const headers = getAuthHeaders();
+              headers['Content-Type'] = 'application/json';
+              const response = await fetch(`${API_BASE_URL}/hearses`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(hearseForm)
+              });
+              if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+              }
+              showToast('Hearse registered successfully!');
+              setRegisterHearseOpen(false);
+              setHearseForm({ plate_number: '', hearse_name: '', model: '', capacity: '8', status: 'available', branch_id: '' });
+              // Reload hearses
+              const hrs = await api.getAllHearses();
+              setAllHearses(hrs);
+            } catch (e) {
+              showToast('Failed to register hearse: ' + e.message, 'error');
+            }
+            setRegisterLoading(false);
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                  Plate Number *
+                </label>
+                <input
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                  placeholder="e.g., KCA 123T"
+                  value={hearseForm.plate_number}
+                  onChange={e => setHearseForm(p => ({ ...p, plate_number: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                  Hearse Name
+                </label>
+                <input
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                  placeholder="e.g., Mercedes Sprinter"
+                  value={hearseForm.hearse_name}
+                  onChange={e => setHearseForm(p => ({ ...p, hearse_name: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                  Model
+                </label>
+                <input
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                  placeholder="e.g., 2020 Toyota Hiace"
+                  value={hearseForm.model}
+                  onChange={e => setHearseForm(p => ({ ...p, model: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                  Capacity (seats)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                  value={hearseForm.capacity}
+                  onChange={e => setHearseForm(p => ({ ...p, capacity: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                  Branch *
+                </label>
+                <select
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                  value={hearseForm.branch_id}
+                  onChange={e => setHearseForm(p => ({ ...p, branch_id: e.target.value }))}
+                  required
+                >
+                  <option value="">— Select Branch —</option>
+                  {branchOptions.map(b => (
+                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                  Status
+                </label>
+                <select
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                  value={hearseForm.status}
+                  onChange={e => setHearseForm(p => ({ ...p, status: e.target.value }))}
+                >
+                  <option value="available">Available</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="unavailable">Unavailable</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <SecondaryButton type="button" onClick={() => setRegisterHearseOpen(false)}>
+                Cancel
+              </SecondaryButton>
+              <PrimaryButton type="submit" disabled={registerLoading} style={{ background: COLORS.success }}>
+                {registerLoading ? 'Registering...' : 'Register Hearse'}
+              </PrimaryButton>
+            </div>
+          </form>
+        </DrawerBody>
       </Drawer>
 
       {/* New Booking Drawer */}

@@ -3,6 +3,9 @@ import { ENDPOINTS } from './endpoints';
 import env from '../utils/config/env';
 import { getUserId, getAuthToken, getTenantSlug } from '../utils/globalAuth';
 
+// Alias for backwards compatibility
+const getSlug = getTenantSlug;
+
 // Workshop service axios instance
 export const workshopApi = axios.create({
   baseURL: env.WORKSHOP_API_URL,
@@ -53,8 +56,6 @@ const setRefreshToken = (token) => {
     sessionStorage.removeItem('refreshToken');
   }
 };
-
-const getSlug = () => cachedSlug || localStorage.getItem('tenantSlug');
 
 // ─── Token Refresh (every 10 minutes) ────────────────────────────────────
 export const startTokenRefresh = () => {

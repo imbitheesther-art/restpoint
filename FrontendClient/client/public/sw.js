@@ -4,9 +4,9 @@ const STATIC_CACHE = 'restpoint-static-v1';
 const DYNAMIC_CACHE = 'restpoint-dynamic-v1';
 
 // Assets to cache immediately on install
+
 const STATIC_ASSETS = [
     '/',
-    '/index.html',
     '/manifest.json',
     '/favicon.ico',
     '/logo.png',
@@ -101,10 +101,10 @@ self.addEventListener('fetch', (event) => {
         // Extract the asset path after /tenant/[tenant-slug]/
         const match = url.pathname.match(/^\/tenant\/[^\/]+\/(.+)$/);
         if (match) {
-            // Rewrite to root path
+            // Rewrite to root path - don't pass original request to avoid 'navigate' mode error
             const newUrl = new URL(request.url);
             newUrl.pathname = '/' + match[1];
-            cacheRequest = new Request(newUrl.toString(), request);
+            cacheRequest = new Request(newUrl.toString());
         }
     }
 

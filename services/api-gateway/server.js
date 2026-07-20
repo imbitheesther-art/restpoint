@@ -77,10 +77,10 @@ app.use(cors({
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
-// Rate limiting
+// Rate limiting - Increased to 1 million requests per window for load testing
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 2000,
+  max: 1000000,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
