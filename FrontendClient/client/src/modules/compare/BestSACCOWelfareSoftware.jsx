@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, Shield, Star, Users } from 'lucide-react';
+import { Check, ArrowRight, Shield, Star, Users } from '../../utils/icons/icons';
 
 const BestSACCOWelfareSoftware = () => {
     const navigate = useNavigate();

@@ -1,12 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import {
-    ArrowRight, Shield, Thermometer, FileText, Activity,
-    Fingerprint, BarChart3, Zap, Lock, Monitor,
-    ChevronRight, CheckCircle2, Building2, Heart, Cross,
-    ExternalLink
-} from 'lucide-react';
+import { ArrowRight, Shield, Thermometer, FileText, Activity, Fingerprint, BarChart3, Zap, Lock, Server, ChevronRight, CheckCircle, Building2, Heart, Cross, ExternalLink } from '../../utils/icons/icons';
 
 const C = {
     ink: '#000000',

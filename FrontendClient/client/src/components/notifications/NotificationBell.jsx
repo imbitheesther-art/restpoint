@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Bell, X, CheckCheck, Trash2, Clock, 
-  UserPlus, FlaskConical, Truck, CheckCircle, 
-  DollarSign, AlertTriangle, AlertCircle
-} from 'lucide-react';
+
 import api from '../../api/axios';
 import { getTenantHeaders } from '../../api/endpoints';
 import { useSocket } from '../../utils/context/socketContext';
+import { getTenantSlug, getAuthToken } from '../../utils/globalAuth';
+import { 
+  Bell, CheckCircle, X, Clock, Trash2, 
+  UserPlus, Truck, DollarSign, AlertTriangle, 
+  AlertCircle, CheckCheck 
+} from '../../utils/icons/icons';
 import './NotificationBell.css';
 
 const NOTIFICATION_SERVICE = '/notification';
@@ -33,8 +35,11 @@ const playNotificationSound = () => {
 // ─── Icon Mapping ───
 const getTypeIcon = (type) => {
   const icons = {
+    'success': <CheckCircle size={16} />,
+    'error': <AlertCircle size={16} />,
+    'warning': <AlertTriangle size={16} />,
+    'info': <Bell size={16} />,
     'new_body': <UserPlus size={16} />,
-    'autopsy_done': <FlaskConical size={16} />,
     'dispatch_created': <Truck size={16} />,
     'body_dispatched': <CheckCircle size={16} />,
     'balance_update': <DollarSign size={16} />,
@@ -43,15 +48,6 @@ const getTypeIcon = (type) => {
   };
   return icons[type] || <Bell size={16} />;
 };
-
-// ─── Sample Notifications (For testing UI) ───
-const SAMPLE_NOTIFICATIONS = [
-  { id: 's1', type: 'new_body', message: 'New body registered: John Doe (Case #1042)', is_read: 0, created_at: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
-  { id: 's2', type: 'autopsy_done', message: 'Autopsy report completed for Case #1039 and is ready for review.', is_read: 0, created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString() },
-  { id: 's3', type: 'billing-critical', message: 'Critical: Branch account balance is below the minimum threshold.', is_read: 0, created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
-  { id: 's4', type: 'dispatch_created', message: 'Dispatch #D-902 created for transfer to Central Morgue.', is_read: 1, created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
-  { id: 's5', type: 'body_dispatched', message: 'Body for Case #1035 has been successfully dispatched.', is_read: 1, created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-];
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
@@ -62,10 +58,6 @@ const NotificationBell = () => {
   
   const dropdownRef = useRef(null);
   const { socket, connected } = useSocket();
-
-  const getBranchId = useCallback(() => {
-    return localStorage.getItem('branchId') || localStorage.getItem('branch_id') || null;
-  }, []);
 
   // --- Toast Management ---
   const addToast = useCallback((notification) => {
@@ -83,32 +75,51 @@ const NotificationBell = () => {
     setToasts(prev => prev.filter(t => t.toastId !== id));
   };
 
-  // --- API Calls ---
+  // --- API Calls - Fetch from Redis notifications using correct tenant slug ---
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const branchId = getBranchId();
+      const tenantSlug = getTenantSlug();
       const headers = getTenantHeaders();
 
+      // Fetch notifications from Redis via notification-service REST endpoint
       let url = `${NOTIFICATION_SERVICE}/api/v1/restpoint/notification/notifications`;
-      if (branchId) url += `?branch_id=${branchId}`;
+      
+      const response = await api.get(url, { 
+        headers: {
+          ...headers,
+          'x-tenant-slug': tenantSlug,
+        } 
+      });
 
-      const response = await api.get(url, { headers });
-
-      if (response.data?.success && response.data?.data) {
-        const data = response.data.data;
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.is_read).length);
+      if (response.data?.notifications) {
+        // Map Redis notifications to the expected format
+        const redisNotifications = response.data.notifications.map(notif => ({
+          id: notif.id,
+          type: notif.type || 'info',
+          message: notif.message || notif.title || '',
+          is_read: notif.read ? 1 : 0,
+          created_at: notif.createdAt || new Date().toISOString(),
+          title: notif.title || '',
+          priority: notif.priority || 'low',
+          data: notif.data || null,
+        }));
+        
+        setNotifications(redisNotifications);
+        setUnreadCount(redisNotifications.filter(n => !n.is_read).length);
+      } else {
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('[NotificationBell] Failed to fetch:', error.message);
-      // Fallback to samples for UI testing if API fails
-      setNotifications(SAMPLE_NOTIFICATIONS);
-      setUnreadCount(SAMPLE_NOTIFICATIONS.filter(n => !n.is_read).length);
+      // On error, set empty - no fallback to sample data for production
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
-  }, [getBranchId]);
+  }, []);
 
   const markAsRead = async (id) => {
     try {
@@ -154,15 +165,27 @@ const NotificationBell = () => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  // Listen for real-time notifications via socket
   useEffect(() => {
     if (!socket) return;
 
     const handleNewNotification = (notification) => {
-      setNotifications(prev => [notification, ...prev]);
-      if (!notification.is_read) {
+      const formatted = {
+        id: notification.id,
+        type: notification.type || 'info',
+        message: notification.message || notification.title || '',
+        is_read: notification.read ? 1 : 0,
+        created_at: notification.createdAt || new Date().toISOString(),
+        title: notification.title || '',
+        priority: notification.priority || 'low',
+        data: notification.data || null,
+      };
+      
+      setNotifications(prev => [formatted, ...prev]);
+      if (!formatted.is_read) {
         setUnreadCount(prev => prev + 1);
       }
-      addToast(notification); // Trigger Toast + Sound
+      addToast(formatted); // Trigger Toast + Sound
     };
 
     socket.on('new_notification', handleNewNotification);

@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Quote, Users, TrendingUp, CheckCircle } from 'lucide-react';
+import { Quote, Users, TrendingUp, CheckCircle } from '../../utils/icons/icons';
 
 const CustomerStoriesPage = () => {
     const navigate = useNavigate();

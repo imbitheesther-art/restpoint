@@ -1,27 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Shield,
-    CheckCircle,
-    Clock,
-    FileText,
-    Users,
-    TrendingUp,
-    ArrowRight,
-    Mail,
-    Phone,
-    MapPin,
-    ChevronDown,
-    Lock,
-    Cloud,
-    Zap,
-    Wallet,
-    Calendar,
-    PieChart,
-    Building,
-    UserPlus,
-    RefreshCw
-} from 'lucide-react';
+import { Shield, CheckCircle, Clock, FileText, Users, TrendingUp, ArrowRight, Mail, Phone, MapPin, ChevronDown, Lock, Box, Zap, Wallet, Calendar, PieChart, Building2, UserPlus, RefreshCw } from '../../utils/icons/icons';
 
 /* ============================================================
    INSURANCE PAGE — Rest Point Insurance System

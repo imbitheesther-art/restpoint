@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Download, FileText, Calendar, Filter } from 'lucide-react';
+import { Download, FileText, Calendar, Filter } from '../../utils/icons/icons';
 import AnalyticsService from '../../services/analyticsService';
 import { KPICards, DateRangeSelector, ExportButtons, NavigationTabs } from '../../modules/analytics/components';
 

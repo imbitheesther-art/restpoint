@@ -1,22 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import {
-  Upload,
-  FileText,
-  X,
-  Loader2,
-  FileDigit,
-  FolderOpen,
-  FileUp,
-  CheckCircle,
-  Trash2,
-  Eye,
-  Printer,
-  Download,
-  File,
-  Image,
-  FileSpreadsheet,
-} from 'lucide-react';
+import { Upload, FileText, X, Loader2, FileDigit, Box, FileUp, CheckCircle, Trash2, Eye, Printer, Download, Image, FileSpreadsheet } from '../../utils/icons/icons';
 import { toast } from 'react-toastify';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1/restpoint';

@@ -3,20 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useSocket } from '../../utils/context/socketContext';
 import ReusableCalendar from '../../utils/calender/calender';
-import {
-  Search, Plus, Edit, Trash2, Eye, Package, AlertTriangle,
-  Filter, Download, Upload, Box, Database, RotateCw, Settings,
-  Flame, XCircle, Trophy, ChevronLeft, ChevronRight, BarChart3,
-  Users, Tag, DollarSign, Warehouse, Image as ImageIcon,
-  Calendar, User, Truck, Layers, Clock, PersonStanding,
-  Save, Users as UsersIcon, FileSpreadsheet, Grid3x3, List,
-  Home, ChevronDown, ShoppingBag, Star, Heart, Share2,
-  MoreHorizontal, CheckCircle, AlertCircle, Info, MinusCircle,
-  PlusCircle, RefreshCw, Printer, FileText, ArrowUpDown,
-  ArrowUp, ArrowDown, SearchX, SlidersHorizontal, Maximize2,
-  Diamond, CheckSquare, XSquare, Loader2, ClipboardList,
-  Phone, Mail, MapPin, FileSignature, StickyNote
-} from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, Package, AlertTriangle, Filter, Download, Upload, Box, HardDrive, RotateCw, Settings, Flame, XCircle, Trophy, ChevronLeft, ChevronRight, BarChart3, Users, Tag, DollarSign, Warehouse, Image, Calendar, User, Truck, Layers, Clock, PersonStanding, Save, FileSpreadsheet, Grid3x3, List, Home, ChevronDown, ShoppingBag, Star, Heart, Share2, MoreVertical, CheckCircle, AlertCircle, Info, MinusCircle, PlusCircle, RefreshCw, Printer, FileText, ArrowUpDown, ArrowUp, ArrowDown, SearchX, SlidersHorizontal, Maximize2, CheckSquare, XSquare, Loader2, ClipboardList, Phone, Mail, MapPin, FileSignature, StickyNote } from '../../utils/icons/icons';
 import env from '../../utils/config/env';
 
 // Bootstrap-inspired color scheme

@@ -1,6 +1,13 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Plus, Printer, FileImage, Package, Users, BarChart3, Eye } from 'lucide-react';
+
+
+
+
+
+
+
+
 import { COLORS } from '../styles/theme.jsx';
 
 const Section = styled.div`

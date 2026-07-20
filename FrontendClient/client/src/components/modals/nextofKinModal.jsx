@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Users, BookText, Phone, MapPin, X } from 'lucide-react';
+import { Users, BookText, Phone, MapPin, X } from '../../utils/icons/icons';
 
 // Styled Components
 const ModalOverlay = styled.div`

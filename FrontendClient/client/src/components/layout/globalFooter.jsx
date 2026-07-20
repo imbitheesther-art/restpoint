@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Zap, MessageCircle, Mail, Globe } from 'lucide-react';
+import { Shield, Zap, MessageCircle, Mail, Globe } from '../../utils/icons/icons';
 import styled from 'styled-components';
 
 // ------------------- DATA -------------------

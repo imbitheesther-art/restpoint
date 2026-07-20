@@ -10,33 +10,18 @@ import {
   PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
 } from "chart.js";
 import { Line, Pie, Bar, Doughnut } from "react-chartjs-2";
-import {
-  TrendingUp, Zap, Shield, Target, Users, ShoppingCart, Truck, AlertTriangle,
-  Clock, CheckCircle, Activity, FlaskConical, Box, MapPin, RotateCw, Calendar,
-  Building2, Trophy, ArrowUp, ArrowDown, DollarSign, Car, RefreshCw, Star, BarChart3,
-  GitCompareArrows, X, ChevronDown, Flower2, User, Phone, Mail, Eye, Filter,
-  Download, Printer, MessageSquare, FileText, Edit, Trash2, MoreVertical,
-  Search, SlidersHorizontal, ChevronLeft, ChevronRight, Users2, ClipboardList,
-  Gauge, BarChart2, PieChart as PieChartIcon, Plus
-} from "lucide-react";
+
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../utils/config/env";
+import   dashBordColors    from '../../utils/colors/index'
+
+const  Colors   =   dashBordColors;
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement,
   PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
 );
 
-const COLORS = {
-  primary: "#df2117ff", primaryLight: "#3b82f6",
-  secondary: "#64748b", success: "#10b981", successLight: "#d1fae5",
-  warning: "#f59e0b", warningLight: "#fef3c7", danger: "#ef4444",
-  dangerLight: "#fee2e2", info: "#06b6d4", infoLight: "#cffafe",
-  purple: "#8b5cf6", purpleLight: "#ede9fe", dark: "#1f2937",
-  gray: "#6b7280", light: "#f3f4f6", white: "#ffffff", border: "#e5e7eb",
-  chart1: "#3b82f6", chart2: "#10b981", chart3: "#f59e0b", chart4: "#ef4444",
-  chart5: "#8b5cf6", chart6: "#06b6d4", chart7: "#ec4899", chart8: "#14b8a6"
-};
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {

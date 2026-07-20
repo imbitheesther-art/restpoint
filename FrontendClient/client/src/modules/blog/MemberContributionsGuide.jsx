@@ -1,9 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import {
-    Check, ArrowRight, Clock, DollarSign, FileText, BarChart2,
-    Users, Search, Smartphone, Target, Award, MessageSquare, TrendingUp
-} from 'lucide-react';
+import { Check, ArrowRight, Clock, DollarSign, FileText, BarChart2, Users, Search, Smartphone, Target, Trophy, MessageSquare, TrendingUp } from '../../utils/icons/icons';
 import Footer from '../../components/layout/Footer';
 
 const C = {

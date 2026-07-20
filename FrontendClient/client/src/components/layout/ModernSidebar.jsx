@@ -1,28 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Calendar,
-  FolderOpen,
-  Hammer,
-  ShoppingCart,
-  Package,
-  Truck,
-  Beaker,
-  Activity,
-  BarChart3,
-  FileBarChart,
-  LifeBuoy,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Calendar, Box, Hammer, ShoppingCart, Package, Truck, Beaker, Activity, BarChart3, FileBarChart, LifeBuoy, Settings, LogOut, Menu, X, ChevronLeft, ChevronRight } from '../../utils/icons/icons';
 
 // ============================================================
 // DESIGN SYSTEM

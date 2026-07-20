@@ -2,26 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {
-  ArrowLeft,
-  FileText,
-  User,
-  Users,
-  Calendar,
-  MapPin,
-  Phone,
-  UserCheck as IdCard,
-  PenTool as Signature,
-  Download,
-  Printer as Print,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  Truck,
-  Edit3,
-  Eye,
-  Building2,
-} from 'lucide-react';
+
+
+
 import styled from 'styled-components';
 import { useTenantStore } from '../../modules/seo/useTenantStore';
 import api from '../../api/axios';

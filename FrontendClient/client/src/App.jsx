@@ -10,20 +10,23 @@ import './index.css';
 
 function App() {
   return (
-    <HelmetProvider>
-      <Router>
-        <AuthProvider>
-          <TenantProvider>
-            <UserProvider>
-              <SocketProvider>
-                <AppRoutes />
-                <InstallPrompt />
-              </SocketProvider>
-            </UserProvider>
-          </TenantProvider>
-        </AuthProvider>
-      </Router>
-    </HelmetProvider>
+    <>
+      {/* All Providers */}
+      <HelmetProvider>
+        <Router>
+          <AuthProvider>
+            <TenantProvider>
+              <UserProvider>
+                <SocketProvider>
+                  <AppRoutes />
+                  <InstallPrompt />
+                </SocketProvider>
+              </UserProvider>
+            </TenantProvider>
+          </AuthProvider>
+        </Router>
+      </HelmetProvider>
+    </>
   );
 }
 

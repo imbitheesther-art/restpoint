@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { 
-  ArrowLeft, FileText, Download, Eye, Trash2, User, AlertCircle, 
-  CheckCircle, Printer, X, Search, Filter, Share2, Mail, MessageCircle,
-  Tag, Calendar, HardDrive, Type, User as UserIcon, ExternalLink,
-  ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, Smartphone, Wifi, WifiOff,
-  Upload, Plus, ScanBarcode, Copy, QrCode
-} from 'lucide-react';
+import { ArrowLeft, FileText, Download, Eye, Trash2, User, AlertCircle, CheckCircle, Printer, X, Search, Filter, Share2, Mail, MessageCircle, Tag, Calendar, HardDrive, Type, ExternalLink, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, Smartphone, Wifi, WifiOff, Upload, Plus, ScanBarcode, Copy, QrCode } from '../../utils/icons/icons';
 import Swal from 'sweetalert2';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

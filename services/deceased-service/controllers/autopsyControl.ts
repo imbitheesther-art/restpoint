@@ -4,6 +4,7 @@ import path from 'path';
 import PDFDocument from 'pdfkit'; // Fixed: default import
 import { DateTime } from 'luxon';
 import { safeTenantExecute, safeTenantQuery, resolveDatabase } from '../../../shared/dbConfig';
+import redisService, { NotificationType, NotificationPriority } from '../../../packages/shared-services/src/redisService';
 
 
 
@@ -113,22 +114,70 @@ const ensurePostmortemTable = async (dbName: string): Promise<void> => {
             report_pdf_url VARCHAR(500),
             staff_username VARCHAR(255),
             mortuary_name VARCHAR(255),
+            status VARCHAR(50) DEFAULT 'pending',
+            requested_by VARCHAR(255),
+            requested_at DATETIME,
+            completed_at DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             created_by INT,
             updated_by INT,
             FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE,
             INDEX idx_deceased_id (deceased_id),
+            INDEX idx_status (status),
             INDEX idx_created_at (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
     
     try {
         await safeTenantExecute(dbName, createTableSQL, []);
-        console.log(`✅ Postmortem table ensured for database: ${dbName}`);
+        console.log(` Postmortem table ensured for database: ${dbName}`);
     } catch (error) {
-        console.error(`❌ Failed to create postmortem table:`, error);
+        console.error(` Failed to create postmortem table:`, error);
         throw error;
+    }
+};
+
+/**
+ * Request postmortem examination
+ * POST /api/v1/restpoint/deceased/postmortem/request
+ */
+export const requestPostmortem = async (req: TenantRequest, res: Response): Promise<Response> => {
+    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
+    if (!tenantSlug || tenantSlug === 'system_shared') {
+        return res.status(400).json({ success: false, message: 'Valid tenant required. Please provide x-tenant-slug header' });
+    }
+    try {
+        const { deceased_id, reason, requested_by, priority, notes } = req.body;
+        if (!deceased_id || !reason || !requested_by) {
+            return res.status(400).json({ success: false, message: 'deceased_id, reason, and requested_by are required' });
+        }
+        const dbName = await resolveDatabase(tenantSlug);
+        if (!dbName) {
+            return res.status(404).json({ success: false, message: `No database configured for tenant: ${tenantSlug}` });
+        }
+        await ensurePostmortemTable(dbName);
+        const now = nowNairobi();
+        const requestId = `PMREQ-${Date.now()}-${deceased_id}`;
+        const existingQuery = 'SELECT id FROM postmortem WHERE deceased_id = ?';
+        const existing = await safeTenantQuery(dbName, existingQuery, [deceased_id]);
+        if (existing && (existing as any[]).length > 0) {
+            const updateQuery = `UPDATE postmortem SET status = 'pending', requested_by = ?, requested_at = ?, requesting_authority = ?, updated_at = ? WHERE deceased_id = ?`;
+            await safeTenantExecute(dbName, updateQuery, [requested_by, now, reason, now, deceased_id]);
+        } else {
+            const insertQuery = `INSERT INTO postmortem (deceased_id, status, requested_by, requested_at, requesting_authority, examination_summary, created_at, updated_at) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)`;
+            await safeTenantExecute(dbName, insertQuery, [deceased_id, requested_by, now, reason, reason, now, now]);
+        }
+        await redisService.registerService({ name: 'deceased-service', maxMemoryMB: 10, softLimitMB: 8, notificationTTL: 3600, balanceTTL: 300 });
+        await redisService.storeNotification(tenantSlug, 'deceased-service', {
+            id: `notif_postmortem_req_${Date.now()}`, tenantSlug, type: NotificationType.INFO, priority: NotificationPriority.HIGH,
+            title: 'New Postmortem Request', message: `Postmortem requested for deceased ${deceased_id} by ${requested_by}. Reason: ${reason}`,
+            data: { deceased_id, requested_by, reason, priority, requestId, action: 'postmortem_request' }, source: 'deceased-service',
+        });
+        return res.status(200).json({ success: true, message: 'Postmortem request submitted successfully', data: { requestId, deceased_id, status: 'pending' } });
+    } catch (error: any) {
+        console.error('Error in requestPostmortem:', error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -170,7 +219,7 @@ export const savePostmortem = async (req: TenantRequest, res: Response): Promise
             });
         }
 
-        console.log(`📝 Saving postmortem data for deceased: ${deceased_id}`);
+        console.log(` Saving postmortem data for deceased: ${deceased_id}`);
         const dbName = await resolveDatabase(tenantSlug);
 
         if (!dbName) {
@@ -225,7 +274,7 @@ export const savePostmortem = async (req: TenantRequest, res: Response): Promise
                 deceased_id
             ]);
 
-            console.log(`✅ Postmortem record updated for deceased: ${deceased_id}`);
+            console.log(` Postmortem record updated for deceased: ${deceased_id}`);
             return res.status(200).json({
                 success: true,
                 message: 'Postmortem data saved successfully',
@@ -261,7 +310,7 @@ export const savePostmortem = async (req: TenantRequest, res: Response): Promise
                 now
             ]);
 
-            console.log(`✅ Postmortem record created for deceased: ${deceased_id}`);
+            console.log(` Postmortem record created for deceased: ${deceased_id}`);
             return res.status(201).json({
                 success: true,
                 message: 'Postmortem data saved successfully',
@@ -269,7 +318,7 @@ export const savePostmortem = async (req: TenantRequest, res: Response): Promise
             });
         }
     } catch (error: any) {
-        console.error('❌ Error in savePostmortem:', error);
+        console.error(' Error in savePostmortem:', error);
         return res.status(500).json({
             success: false,
             message: 'Internal Server Error',
@@ -415,47 +464,7 @@ export const updatePostmortem = async (req: TenantRequest, res: Response): Promi
             message: 'Postmortem record updated successfully'
         });
     } catch (error: any) {
-        console.error('❌ Error in updatePostmortem:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal Server Error'
-        });
-    }
-};
-
-/**
- * Delete postmortem record
- * DELETE /api/v1/restpoint/deceased/postmortem/:id
- */
-export const deletePostmortem = async (req: TenantRequest, res: Response): Promise<Response> => {
-    const tenantSlug = req.headers['x-slug'] as string || req.headers['x-tenant-slug'] as string || req.tenantSlug;
-    const { id } = req.params;
-
-    if (!id || !tenantSlug) {
-        return res.status(400).json({
-            success: false,
-            message: 'id and tenant are required'
-        });
-    }
-
-    try {
-        const dbName = await resolveDatabase(tenantSlug);
-        if (!dbName) {
-            return res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
-        }
-
-        const deleteQuery = 'DELETE FROM postmortem WHERE id = ?';
-        await safeTenantExecute(dbName, deleteQuery, [id]);
-
-        return res.status(200).json({
-            success: true,
-            message: 'Postmortem record deleted successfully'
-        });
-    } catch (error: any) {
-        console.error('❌ Error in deletePostmortem:', error);
+        console.error(' Error in updatePostmortem:', error);
         return res.status(500).json({
             success: false,
             message: 'Internal Server Error'
@@ -472,24 +481,17 @@ export const generatePostmortemPDF = async (req: TenantRequest, res: Response): 
     const { deceased_id } = req.params;
 
     if (!deceased_id || !tenantSlug) {
-        res.status(400).json({
-            success: false,
-            message: 'deceased_id and tenant are required'
-        });
+        res.status(400).json({ success: false, message: 'deceased_id and tenant are required' });
         return;
     }
 
     try {
         const dbName = await resolveDatabase(tenantSlug);
         if (!dbName) {
-            res.status(404).json({
-                success: false,
-                message: `No database configured for tenant: ${tenantSlug}`
-            });
+            res.status(404).json({ success: false, message: `No database configured for tenant: ${tenantSlug}` });
             return;
         }
 
-        // Fetch postmortem and deceased data
         const postmortemQuery = 'SELECT * FROM postmortem WHERE deceased_id = ?';
         const deceasedQuery = 'SELECT full_name, date_of_death FROM deceased WHERE deceased_id = ?';
 
@@ -497,150 +499,408 @@ export const generatePostmortemPDF = async (req: TenantRequest, res: Response): 
         const deceasedResults = await safeTenantQuery(dbName, deceasedQuery, [deceased_id]);
 
         if (!postmortemResults || (postmortemResults as any[]).length === 0) {
-            res.status(404).json({
-                success: false,
-                message: 'Postmortem record not found'
-            });
+            res.status(404).json({ success: false, message: 'Postmortem record not found' });
             return;
         }
 
         const postmortem = (postmortemResults as any[])[0];
         const deceased = deceasedResults && (deceasedResults as any[]).length > 0 ? (deceasedResults as any[])[0] : null;
-
         const facilityName = formatFacilityName(tenantSlug);
+        const reportDate = DateTime.now().setZone('Africa/Nairobi').toFormat('dd LLL yyyy HH:mm');
+        const reportDateShort = DateTime.now().setZone('Africa/Nairobi').toFormat('dd LLL yyyy');
+        const reportRef = `PM-${deceased_id}-${DateTime.now().toFormat('yyyyMMdd')}`;
 
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
-        
-        // Set response headers
+        const doc = new PDFDocument({
+            size: 'A4',
+            margin: 0,
+            bufferPages: true,
+            info: {
+                Title: `Postmortem Report - ${deceased?.full_name || deceased_id}`,
+                Author: facilityName,
+                Subject: 'Postmortem Examination Report',
+                Creator: facilityName,
+            }
+        });
+
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="postmortem-${deceased_id}.pdf"`);
-
-        // Pipe the PDF to the response
         doc.pipe(res);
 
-        ensurePdfLayout(doc, facilityName, tenantSlug);
+        // ─── Color Palette ────────────────────────────────────────────────
+        const C = {
+            navy: '#1E293B',
+            accent: '#DC2626',
+            accentSoft: '#FEF2F2',
+            text: '#111827',
+            textBody: '#374151',
+            textMuted: '#6B7280',
+            textFaint: '#9CA3AF',
+            border: '#E5E7EB',
+            rowAlt: '#F9FAFB',
+            white: '#FFFFFF',
+        };
 
-        doc.moveDown(4);
-        doc
-            .font('Helvetica-Bold')
-            .fontSize(12)
-            .fillColor('#111827')
-            .text('Deceased Information', { underline: true });
+        const PW = 595.28;
+        const PH = 841.89;
+        const ML = 52;
+        const MR = 52;
+        const CW = PW - ML - MR;
 
+        // ─── Helpers ──────────────────────────────────────────────────────
+
+        /** Thin horizontal line */
+        const line = (y: number, x1 = ML, x2 = PW - MR, color = C.border, w = 0.5) => {
+            doc.save().moveTo(x1, y).lineTo(x2, y)
+                .strokeColor(color).lineWidth(w).stroke().restore();
+        };
+
+        /** Section heading: bold title + underline */
+        const sectionHead = (y: number, title: string): number => {
+            doc.font('Helvetica-Bold').fontSize(10).fillColor(C.navy)
+                .text(title, ML, y);
+            const next = y + 16;
+            line(next);
+            return next + 12;
+        };
+
+        /** Single data row: label ... value on same baseline */
+        const dataRow = (y: number, label: string, value: string, labelW = 140): number => {
+            doc.font('Helvetica').fontSize(9).fillColor(C.textMuted)
+                .text(label, ML, y, { width: labelW });
+            doc.font('Helvetica').fontSize(9).fillColor(C.text)
+                .text(value || '—', ML + labelW, y, { width: CW - labelW });
+            return y + 20;
+        };
+
+        /** Two-column data row */
+        const dataRow2 = (y: number, l1: string, v1: string, l2: string, v2: string): number => {
+            const colW = CW / 2;
+            const r1x = ML;
+            const r2x = ML + colW + 16;
+            const lw = 110;
+            const vw = colW - 16 - lw;
+
+            doc.font('Helvetica').fontSize(9).fillColor(C.textMuted)
+                .text(l1, r1x, y, { width: lw });
+            doc.font('Helvetica').fontSize(9).fillColor(C.text)
+                .text(v1 || '—', r1x + lw, y, { width: vw });
+
+            doc.font('Helvetica').fontSize(9).fillColor(C.textMuted)
+                .text(l2, r2x, y, { width: lw });
+            doc.font('Helvetica').fontSize(9).fillColor(C.text)
+                .text(v2 || '—', r2x + lw, y, { width: vw });
+
+            return y + 20;
+        };
+
+        /** Alternating row background */
+        const rowBg = (y: number, h: number, odd: boolean) => {
+            if (!odd) {
+                doc.rect(ML, y, CW, h).fill(C.rowAlt);
+            }
+        };
+
+        /** Clean signature line with serifs */
+        const sigLine = (x: number, y: number, w: number) => {
+            line(y, x, x + w, C.text, 0.6);
+            doc.save()
+                .moveTo(x, y - 3).lineTo(x, y + 3).strokeColor(C.text).lineWidth(0.8).stroke()
+                .moveTo(x + w, y - 3).lineTo(x + w, y + 3).strokeColor(C.text).lineWidth(0.8).stroke()
+                .restore();
+        };
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  PAGE
+        // ═══════════════════════════════════════════════════════════════════
+
+        // ─── Top accent stripe ───────────────────────────────────────────
+        doc.rect(0, 0, PW, 4).fill(C.accent);
+
+        let y = 28;
+
+        // ─── Header: Facility name left, report meta right ───────────────
+        doc.font('Helvetica-Bold').fontSize(18).fillColor(C.navy)
+            .text(facilityName, ML, y, { width: CW * 0.55 });
+
+        doc.font('Helvetica').fontSize(8).fillColor(C.textMuted)
+            .text('Department of Pathology & Forensic Medicine', ML, y + 24, { width: CW * 0.55 });
+
+        // Right-aligned report metadata
+        const metaX = ML + CW * 0.58;
+        doc.font('Helvetica').fontSize(8).fillColor(C.textFaint)
+            .text('REPORT REFERENCE', metaX, y, { width: CW * 0.42, align: 'left' });
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(C.text)
+            .text(reportRef, metaX, y + 12, { width: CW * 0.42, align: 'left' });
+        doc.font('Helvetica').fontSize(8).fillColor(C.textFaint)
+            .text('DATE ISSUED', metaX, y + 28, { width: CW * 0.42, align: 'left' });
+        doc.font('Helvetica').fontSize(9).fillColor(C.text)
+            .text(reportDate, metaX, y + 40, { width: CW * 0.42, align: 'left' });
+
+        y += 64;
+        line(y, ML, PW - MR, C.text, 0.8);
+        y += 14;
+
+        // ─── Report title ────────────────────────────────────────────────
+        doc.font('Helvetica-Bold').fontSize(14).fillColor(C.navy)
+            .text('Postmortem Examination Report', ML, y);
         const deceasedName = deceased?.full_name || 'Unknown';
-        const deceasedDateOfDeath = deceased?.date_of_death || 'Unknown';
+        doc.font('Helvetica').fontSize(10).fillColor(C.textMuted)
+            .text(`for  ${deceasedName}`, ML, y + 20);
+        y += 42;
 
-        doc
-            .font('Helvetica')
-            .fontSize(10)
-            .fillColor('#1f2937')
-            .text(`Name: ${deceasedName}`)
-            .text(`Deceased ID: ${deceased_id}`)
-            .text(`Date of Death: ${deceasedDateOfDeath}`)
-            .text(`Report Date: ${DateTime.now().setZone('Africa/Nairobi').toFormat('dd LLL yyyy')}`)
-            .moveDown(1);
+        // ─── Deceased Information ────────────────────────────────────────
+        y = sectionHead(y, 'Deceased Information');
 
-        doc
-            .font('Helvetica-Bold')
-            .fontSize(12)
-            .text('Postmortem Summary', { underline: true });
+        const dod = deceased?.date_of_death || 'Unknown';
+        const infoRows = [
+            ['Full Name', deceasedName],
+            ['Deceased ID', deceased_id],
+            ['Date of Death', dod],
+            ['Report Date', reportDate],
+        ];
 
-        doc
-            .font('Helvetica')
-            .fontSize(10)
-            .fillColor('#1f2937')
-            .text(postmortem.examination_summary || 'No summary provided', {
-                align: 'left',
-                paragraphGap: 4,
-                lineGap: 3
-            })
-            .moveDown(1);
+        infoRows.forEach((row, i) => {
+            rowBg(y - 2, 20, i % 2 === 1);
+            y = dataRow2(y, `${row[0]}:`, row[1], '', '');
+        });
 
+        y += 8;
+
+        // ─── Examination Summary ─────────────────────────────────────────
+        y = sectionHead(y, 'Examination Summary');
+
+        const summaryText = postmortem.examination_summary || 'No summary provided.';
+        doc.rect(ML, y, CW, 4).fill(C.rowAlt);
+        const summaryH = doc.heightOfString(summaryText, { width: CW - 24, lineGap: 3, align: 'justify' });
+        doc.rect(ML, y, CW, summaryH + 16).fill(C.rowAlt);
+        doc.font('Helvetica').fontSize(9).fillColor(C.textBody)
+            .text(summaryText, ML + 12, y + 8, { width: CW - 24, lineGap: 3, align: 'justify' });
+
+        y += summaryH + 24;
+
+        // ─── Findings ────────────────────────────────────────────────────
         let displayFindings: Record<string, any> = {};
         if (postmortem.findings) {
             if (typeof postmortem.findings === 'string') {
-                try {
-                    displayFindings = JSON.parse(postmortem.findings || '{}');
-                } catch {
-                    displayFindings = { 'Findings': postmortem.findings };
-                }
+                try { displayFindings = JSON.parse(postmortem.findings || '{}'); }
+                catch { displayFindings = { 'Findings': postmortem.findings }; }
             } else {
                 displayFindings = postmortem.findings;
             }
         }
 
         if (displayFindings && Object.keys(displayFindings).length > 0) {
-            doc
-                .font('Helvetica-Bold')
-                .fontSize(12)
-                .text('Findings', { underline: true })
-                .moveDown(0.5);
+            y = sectionHead(y, 'Examination Findings');
 
-            Object.entries(displayFindings).forEach(([title, description]) => {
-                doc
-                    .font('Helvetica-Bold')
-                    .fontSize(10)
-                    .fillColor('#111827')
-                    .text(title || 'Finding', { continued: false });
+            const entries = Object.entries(displayFindings);
+            entries.forEach(([title, description], idx) => {
+                const descText = typeof description === 'string' ? description : JSON.stringify(description);
+                const descH = doc.heightOfString(descText, { width: CW - 40, lineGap: 2 });
+                const blockH = descH + 30;
 
-                doc
-                    .font('Helvetica')
-                    .fontSize(10)
-                    .fillColor('#1f2937')
-                    .text(description || 'No description provided', {
-                        indent: 10,
-                        paragraphGap: 4,
-                        lineGap: 2
-                    })
-                    .moveDown(0.5);
+                // Page break check
+                if (y + blockH > PH - 200) {
+                    doc.addPage();
+                    y = 36;
+                    doc.rect(0, 0, PW, 4).fill(C.accent);
+                    doc.font('Helvetica').fontSize(7).fillColor(C.textFaint)
+                        .text(`${facilityName}  ·  ${reportRef}  ·  Page continued`, ML, y - 8, { width: CW, align: 'right' });
+                }
+
+                // Alternating row
+                rowBg(y, blockH, idx % 2 === 1);
+
+                // Thin left accent
+                doc.rect(ML, y, 3, blockH).fill(C.accent);
+
+                // Number + title
+                doc.font('Helvetica-Bold').fontSize(9).fillColor(C.navy)
+                    .text(`${idx + 1}.  ${title || 'Finding'}`, ML + 14, y + 6, { width: CW - 28 });
+
+                // Description
+                doc.font('Helvetica').fontSize(8.5).fillColor(C.textBody)
+                    .text(descText || 'No description', ML + 14, y + 22, {
+                        width: CW - 40,
+                        lineGap: 2,
+                    });
+
+                y += blockH + 6;
             });
+
+            y += 4;
         }
 
-        doc
-            .font('Helvetica-Bold')
-            .fontSize(12)
-            .text('Cause of Death Details', { underline: true })
-            .moveDown(0.5);
+        // ─── Cause of Death ──────────────────────────────────────────────
+        y = sectionHead(y, 'Cause of Death');
 
-        doc
-            .font('Helvetica')
-            .fontSize(10)
-            .text(`Primary Cause: ${postmortem.cause_of_death || 'Not specified'}`)
-            .text(`Immediate Cause: ${postmortem.immediate_cause_of_death || 'Not specified'}`)
-            .text(`Underlying Cause: ${postmortem.underlying_cause_of_death || 'Not specified'}`)
-            .text(`Contributing Conditions: ${postmortem.contributing_conditions || 'Not specified'}`)
-            .text(`Manner of Death: ${postmortem.manner_of_death || 'Not specified'}`)
-            .moveDown(1);
+        const codFields = [
+            ['Primary Cause', postmortem.cause_of_death],
+            ['Immediate Cause', postmortem.immediate_cause_of_death],
+            ['Underlying Cause', postmortem.underlying_cause_of_death],
+            ['Contributing Conditions', postmortem.contributing_conditions],
+            ['Manner of Death', postmortem.manner_of_death],
+        ];
 
-        doc
-            .font('Helvetica-Bold')
-            .fontSize(12)
-            .text('Pathologist Information', { underline: true })
-            .moveDown(0.5);
+        codFields.forEach((row, i) => {
+            rowBg(y - 2, 20, i % 2 === 1);
+            // Small red indicator dot
+            doc.circle(ML + 6, y + 5, 2).fill(C.accent);
+            doc.font('Helvetica-Bold').fontSize(9).fillColor(C.navy)
+                .text(`${row[0]}:`, ML + 16, y, { width: 150, continued: true })
+                .font('Helvetica').fillColor(C.text)
+                .text(`  ${row[1] || 'Not specified'}`, { width: CW - 170 });
+            y += 20;
+        });
 
-        const pathologistLabel = postmortem.external_pathologist_name ? 'External Pathologist' : 'Staff Pathologist';
-        const pathologistName = postmortem.external_pathologist_name || postmortem.pathologist_name || 'Not specified';
-        const externalId = postmortem.external_pathologist_id ? `ID: ${postmortem.external_pathologist_id}` : '';
+        y += 8;
 
-        doc
-            .font('Helvetica')
-            .fontSize(10)
-            .text(`${pathologistLabel}: ${pathologistName}`)
-            .text(externalId)
-            .text(`Contact: ${postmortem.external_pathologist_mobile || 'Not specified'}`)
-            .text(`Requesting Authority: ${postmortem.requesting_authority || 'Not specified'}`)
-            .moveDown(1);
+        // ─── Pathologist Information ─────────────────────────────────────
+        y = sectionHead(y, 'Examining Pathologist');
 
-        // Finalize the PDF
+        const pathLabel = postmortem.external_pathologist_name ? 'External Pathologist' : 'Staff Pathologist';
+        const pathName = postmortem.external_pathologist_name || postmortem.pathologist_name || 'Not specified';
+        const pathId = postmortem.external_pathologist_id || '';
+        const pathContact = postmortem.external_pathologist_mobile || 'Not specified';
+        const requestingAuth = postmortem.requesting_authority || 'Not specified';
+
+        const pathRows: [string, string][] = [
+            [pathLabel, pathName],
+            ['Contact', pathContact],
+            ['Requesting Authority', requestingAuth],
+        ];
+        if (pathId) pathRows.splice(1, 0, ['License / ID', pathId]);
+
+        pathRows.forEach((row, i) => {
+            rowBg(y - 2, 20, i % 2 === 1);
+            y = dataRow(y, `${row[0]}:`, row[1], 140);
+        });
+
+        y += 16;
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  SIGNATURE & ATTESTATION — Clean invoice-style
+        // ═══════════════════════════════════════════════════════════════════
+
+        // Page break check
+        if (y > PH - 210) {
+            doc.addPage();
+            y = 36;
+            doc.rect(0, 0, PW, 4).fill(C.accent);
+            doc.font('Helvetica').fontSize(7).fillColor(C.textFaint)
+                .text(`${facilityName}  ·  ${reportRef}  ·  Page continued`, ML, y - 8, { width: CW, align: 'right' });
+        }
+
+        // Separator
+        line(y, ML, PW - MR, C.text, 0.4);
+        y += 14;
+
+        // Certification text
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(C.navy)
+            .text('Certification', ML, y, { width: CW, align: 'center' });
+        y += 14;
+
+        doc.font('Helvetica').fontSize(8).fillColor(C.textMuted)
+            .text(
+                'I certify that I have personally conducted the postmortem examination on the above-named deceased and that the findings herein are true and accurate to the best of my professional knowledge.',
+                ML + 20, y, { width: CW - 40, align: 'center', lineGap: 2 }
+            );
+        y += 36;
+
+        // ─── Three-column signature layout ───────────────────────────────
+        const colW = (CW - 40) / 3;
+        const cols = [ML, ML + colW + 20, ML + (colW + 20) * 2];
+
+        // Column 1: Pathologist Signature
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(C.textFaint)
+            .text('EXAMINING PATHOLOGIST', cols[0], y, { width: colW, characterSpacing: 1.5 });
+        sigLine(cols[0], y + 50, colW);
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(C.text)
+            .text(pathName, cols[0], y + 58, { width: colW });
+        doc.font('Helvetica').fontSize(7.5).fillColor(C.textMuted)
+            .text('Forensic / Pathology Examiner', cols[0], y + 72, { width: colW });
+        doc.font('Helvetica').fontSize(7.5).fillColor(C.textMuted)
+            .text(`Date: ${reportDateShort}`, cols[0], y + 84, { width: colW });
+
+        // Column 2: Authorized Officer
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(C.textFaint)
+            .text('AUTHORIZED OFFICER', cols[1], y, { width: colW, characterSpacing: 1.5 });
+        sigLine(cols[1], y + 50, colW);
+        doc.font('Helvetica').fontSize(8).fillColor(C.textMuted)
+            .text('Name & Designation', cols[1], y + 58, { width: colW });
+        doc.font('Helvetica').fontSize(7.5).fillColor(C.textMuted)
+            .text('Date: _______________', cols[1], y + 84, { width: colW });
+
+        // Column 3: Official Stamp
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(C.textFaint)
+            .text('OFFICIAL STAMP', cols[2], y, { width: colW, characterSpacing: 1.5 });
+
+        // Clean stamp placeholder — single circle, minimal
+        const stCx = cols[2] + colW / 2;
+        const stCy = y + 38;
+        const stR = 28;
+        doc.circle(stCx, stCy, stR).strokeColor(C.accent).lineWidth(1.5).stroke();
+        doc.circle(stCx, stCy, stR - 4).strokeColor(C.accent).lineWidth(0.3).stroke();
+        doc.font('Helvetica-Bold').fontSize(5).fillColor(C.accent)
+            .text(facilityName.toUpperCase(), stCx - stR + 6, stCy - 14, { width: (stR - 6) * 2, align: 'center' });
+        doc.font('Helvetica-Bold').fontSize(12).fillColor(C.accent)
+            .text('★', stCx - 5, stCy - 3, { width: 12, align: 'center' });
+        doc.font('Helvetica-Bold').fontSize(4.5).fillColor(C.accent)
+            .text('OFFICIAL', stCx - stR + 6, stCy + 10, { width: (stR - 6) * 2, align: 'center' });
+
+        doc.font('Helvetica').fontSize(7.5).fillColor(C.textMuted)
+            .text(`Date: ${reportDateShort}`, cols[2], y + 84, { width: colW });
+
+        y += 106;
+
+        // ─── Received By ─────────────────────────────────────────────────
+        line(y, ML, PW - MR, C.border, 0.3);
+        y += 12;
+
+        const halfW = (CW - 20) / 2;
+        const r1x = ML;
+        const r2x = ML + halfW + 20;
+
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(C.textFaint)
+            .text('RECEIVED BY', r1x, y, { width: halfW, characterSpacing: 1.5 });
+        sigLine(r1x, y + 34, halfW);
+        doc.font('Helvetica').fontSize(8).fillColor(C.textMuted)
+            .text('Name, Designation & Signature', r1x, y + 42, { width: halfW });
+        doc.font('Helvetica').fontSize(7.5).fillColor(C.textMuted)
+            .text('Date: _______________', r1x, y + 56, { width: halfW });
+
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(C.textFaint)
+            .text('RECEIVED BY', r2x, y, { width: halfW, characterSpacing: 1.5 });
+        sigLine(r2x, y + 34, halfW);
+        doc.font('Helvetica').fontSize(8).fillColor(C.textMuted)
+            .text('Name, Designation & Signature', r2x, y + 42, { width: halfW });
+        doc.font('Helvetica').fontSize(7.5).fillColor(C.textMuted)
+            .text('Date: _______________', r2x, y + 56, { width: halfW });
+
+        // ─── Footer (on every page) ──────────────────────────────────────
+        const pages = doc.bufferedPageRange();
+        for (let i = 0; i < pages.count; i++) {
+            doc.switchToPage(i);
+
+            const fY = PH - 32;
+            line(fY, ML, PW - MR, C.border, 0.3);
+
+            doc.font('Helvetica').fontSize(6.5).fillColor(C.textFaint)
+                .text(
+                    'This document is confidential and intended solely for authorized medical, legal, and administrative use.',
+                    ML, fY + 8, { width: CW - 80, align: 'left' }
+                );
+            doc.font('Helvetica').fontSize(6.5).fillColor(C.textFaint)
+                .text(
+                    `Page ${i + 1} of ${pages.count}`,
+                    PW - MR - 70, fY + 8, { width: 70, align: 'right' }
+                );
+        }
+
         doc.end();
     } catch (error: any) {
-        console.error('❌ Error in generatePostmortemPDF:', error);
-        // Only send error response if headers haven't been sent yet
+        console.error('Error in generatePostmortemPDF:', error);
         if (!res.headersSent) {
-            res.status(500).json({
-                success: false,
-                message: 'Internal Server Error'
-            });
+            res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
     }
 };

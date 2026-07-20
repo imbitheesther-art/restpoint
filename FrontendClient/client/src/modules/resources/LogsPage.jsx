@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Activity, FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Activity, FileText, Clock, CheckCircle, XCircle, AlertCircle } from '../../utils/icons/icons';
 
 const LogsPage = () => {
     const navigate = useNavigate();

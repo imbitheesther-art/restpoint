@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import {
-  User, Calendar, Clock, Info, Phone, BookText, PlusCircle, Trash2, X, Loader2,
-  Users, Eye, Search, Filter, Mail, MapPin, UserPlus, UserCheck, UserMinus
-} from 'lucide-react';
+import { User, Calendar, Clock, Info, Phone, BookText, PlusCircle, Trash2, X, Loader2, Users, Eye, Search, Filter, Mail, MapPin, UserPlus, UserCheck, UserMinus } from '../../utils/icons/icons';
 import api from '../../api/axios';
 
 // Modern, softer color palette

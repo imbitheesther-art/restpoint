@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../../../utils/context/socketContext';
 import { useSocketEvents } from '../hooks/useSocketEvents';
-import {
-    Package, AlertTriangle, TrendingDown, TrendingUp,
-    Filter, Search, Plus, DollarSign, History
-} from 'lucide-react';
+
+
+
+
+
+
 
 const MaterialsInventory = ({ materials: propMaterials }) => {
     const [localMaterials, setLocalMaterials] = useState(propMaterials || []);

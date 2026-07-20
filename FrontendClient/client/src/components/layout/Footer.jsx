@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Twitter, Linkedin, Github, Mail, ArrowRight, Info, ExternalLink } from 'lucide-react';
+import { ChevronDown, Globe, Mail, ArrowRight, Info, ExternalLink, Twitter, Linkedin, Github } from '../../utils/icons/icons';
 
 const C = {
     ink: '#000000',

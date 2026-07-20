@@ -1,17 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import {
-  X,
-  Search,
-  Package,
-  Check,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Image as ImageIcon,
-  User,
-  Calendar,
-} from 'lucide-react';
+import { X, Search, Package, Check, Loader2, ChevronLeft, ChevronRight, Image, User, Calendar } from '../../utils/icons/icons';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 

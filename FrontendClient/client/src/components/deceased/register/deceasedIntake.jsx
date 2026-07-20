@@ -2,21 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ENDPOINTS } from '../../../api/endpoints';
 import env from '../../../utils/config/env';
+import { ToastContainer } from 'react-toastify';
+
+import { showToast } from '../../utils/toast';
+import { getTenantSlug, getAuthToken } from '../../utils/globalAuth';
+
 import ReusableSignaturePad from '../../../utils/signature/signaturepad';
-import {
-  UserPlus,
-  Check,
-  Loader2,
-  AlertTriangle,
-  XCircle,
-  CheckCircle,
-  X,
-  FileText,
-  Clock,
-  User,
-  ArrowLeft,
-  RotateCcw
-} from 'lucide-react';
+import { UserPlus, Check, Loader2, AlertTriangle, XCircle, CheckCircle, X, FileText, Clock, User, ArrowLeft, RotateCcw } from '../../utils/icons/icons';
 import './DeceasedRegistrationForm.css';
 
 // ============================================================
@@ -111,12 +103,23 @@ const DeceasedRegistrationForm = () => {
 
     setLoading(true);
     try {
-      const tenantSlug = localStorage.getItem('tenantSlug') || 'default';
+      const tenantSlug = getTenantSlug();
+      const token = getAuthToken();
       const signatureData = sigPadRef.current?.toDataURL();
 
       const payload = {
-        ...formData,
-        age: formData.age ? parseInt(formData.age, 10) : null,
+        full_name: formData.full_name,
+        cause_of_death: formData.cause_of_death,
+        date_of_birth: formData.date_of_birth || null,
+        national_id: formData.id_number,
+        received_from: formData.contact_person,
+        age: formData.age ? parseInt(formData.age, 10) : 0,
+        time_received: formData.time_received,
+        body_status: formData.body_status || 'In Morgue',
+        contact_person: formData.contact_person,
+        tell_no: formData.tel_number,
+        gender: formData.gender,
+        date_of_death: formData.date_of_death || null,
         signature: signatureData,
       };
 
@@ -125,7 +128,7 @@ const DeceasedRegistrationForm = () => {
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-slug': tenantSlug,
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -136,6 +139,7 @@ const DeceasedRegistrationForm = () => {
         throw new Error(result.message || 'Registration failed');
       }
 
+      showToast.success(`Deceased ${formData.full_name} registered successfully!`);
       setNotification({
         isVisible: true,
         type: 'success',
@@ -148,6 +152,7 @@ const DeceasedRegistrationForm = () => {
       }, 2000);
 
     } catch (error) {
+      showToast.error(error.message || 'Registration failed');
       setNotification({
         isVisible: true,
         type: 'error',
@@ -167,6 +172,7 @@ const DeceasedRegistrationForm = () => {
 
   return (
     <div className="drf-wrapper">
+      <ToastContainer position="top-right" />
       <NotificationToast notification={notification} setNotification={setNotification} />
 
       {/* Header */}

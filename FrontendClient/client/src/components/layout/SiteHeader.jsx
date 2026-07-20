@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight } from '../../utils/icons/icons';
 import { C } from '../../styles/theme';
 
 const SiteHeader = ({ transparent = false, hideSignIn = false }) => {

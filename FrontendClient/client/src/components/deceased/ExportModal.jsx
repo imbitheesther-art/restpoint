@@ -1,22 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import {
-  Download,
-  X,
-  FileSpreadsheet,
-  FileText,
-  Clock,
-  Trash2,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Filter,
-  Columns,
-  RefreshCw,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+
+
+
+
+
 
 // Colors
 const Colors = {

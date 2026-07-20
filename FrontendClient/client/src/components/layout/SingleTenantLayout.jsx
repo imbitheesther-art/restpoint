@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BarChart3, Users, Package, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Users, Package, X, LogOut } from '../../utils/icons/icons';
 
 const menuItems = [
     { path: '/all-deceased', label: 'Dashboard', icon: LayoutDashboard },

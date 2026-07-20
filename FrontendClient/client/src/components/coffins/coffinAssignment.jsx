@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components'; // ✅ Import css
-import {
-    Box, CheckSquare, PlusSquare, Loader2,
-    Eye, X, ChevronLeft, ChevronRight,
-    Calendar, User, Package, Tag, Trash2,
-    CheckCircle, XCircle, Diamond, Maximize2,
-    DollarSign, Truck
-} from 'lucide-react';
+import { Box, CheckSquare, PlusSquare, Loader2, Eye, X, ChevronLeft, ChevronRight, Calendar, User, Package, Tag, Trash2, CheckCircle, XCircle, Star, Maximize2, DollarSign, Truck } from '../../utils/icons/icons';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 import env from '../../utils/config/env';

@@ -1,5 +1,24 @@
 import React, { useState, useEffect } from 'react'
+
+
+
+
+
+
+
 import { Box, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid, Card, CardContent, Tabs, Tab, List, ListItem, ListItemText, ListItemIcon, Chip, IconButton, TextField, Select, MenuItem, FormControl, InputLabel, LinearProgress, Avatar, Divider, Badge, Tooltip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Switch, FormControlLabel } from '@mui/material'
+
+
+import { Package, AlertTriangle, TrendingDown, TrendingUp, Filter, Search, Plus, DollarSign, History } from '../../utils/icons/icons';
+
+
+
+
+
+
+
+
+
 import { styled } from '@mui/material/styles'
 import { theme } from '../styles/theme.jsx'
 import { workshopService } from '../services/workshopService'

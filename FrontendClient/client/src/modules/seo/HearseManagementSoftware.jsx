@@ -1,12 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import {
-    ArrowRight, ChevronRight, ExternalLink,
-    Navigation, MapPin, UserCheck, Wrench, MessageSquare, FileText,
-    Truck, Eye, Heart, ClipboardCheck,
-    Building2, Shield, Landmark, CalendarClock, CheckCircle2
-} from 'lucide-react';
+import { ArrowRight, ChevronRight, ExternalLink, Navigation, MapPin, UserCheck, Settings, MessageSquare, FileText, Truck, Eye, Heart, ClipboardCheck, Building2, Shield, CalendarClock, CheckCircle } from '../../utils/icons/icons';
 
 const C = {
     ink: '#15171A',

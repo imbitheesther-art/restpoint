@@ -1,24 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import {
-  Heart,
-  MapPin,
-  Calendar,
-  Clock,
-  Users,
-  MessageCircle,
-  Share2,
-  ArrowLeft,
-  Image,
-  Video,
-  Sparkles,
-  Flame,
-  Send,
-  User,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock, Users, MessageCircle, Share2, ArrowLeft, Image, Video, Sparkles, Flame, Send, User, CheckCircle, AlertCircle } from '../../utils/icons/icons';
 import api from '../api/axios';
 import { ENDPOINTS } from '../api/endpoints';
 

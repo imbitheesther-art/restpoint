@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MapPin, Home, Save, X } from "lucide-react";
+import { MapPin, Home, Save, X } from '../../utils/icons/icons';
 import { toast } from "react-toastify";
 
 const ColdRoomAssignmentModal = ({ isOpen, onClose, deceasedData, onUpdate }) => {

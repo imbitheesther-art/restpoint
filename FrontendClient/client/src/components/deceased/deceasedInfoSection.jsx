@@ -1,47 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import {
-  User,
-  Calendar,
-  Heart,
-  MapPin,
-  Clock,
-  UserCheck,
-  Building2,
-  FileText,
-  Map,
-  CreditCard,
-  Activity,
-  Info,
-  Edit,
-  Save,
-  X,
-  ChevronRight,
-  Hash,
-  Users,
-  Globe,
-  CalendarDays,
-  RefreshCw,
-} from 'lucide-react';
+
+import    THEME  from  '../../utils/colors/theme'
+
+
+
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 
 // Simple Clean Color Palette
-const THEME = {
-  colors: {
-    ink: '#1a1a1a',
-    white: '#FFFFFF',
-    line: '#e5e5e5',
-    gray: '#666666',
-    verdigris: '#3D4F47',
-    brass: '#8B7355',
-    success: '#475A43',
-    red: '#dc3545',
-  }
-};
+
 
 // Animations
 const fadeIn = keyframes`

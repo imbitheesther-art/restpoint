@@ -1,27 +1,7 @@
 // src/assets/components/user/RegisterVisitor.js
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import {
-  UserPlus,
-  Phone,
-  Heart,
-  FileText,
-  Search,
-  CheckCircle,
-  XCircle,
-  Users,
-  Loader2,
-  List,
-  Eye,
-  Info,
-  Eraser,
-  Calendar,
-  Clock,
-  Mail,
-  MapPin,
-  History,
-  UserCheck,
-} from 'lucide-react';
+import { UserPlus, Phone, Heart, FileText, Search, CheckCircle, XCircle, Users, Loader2, List, Eye, Info, Eraser, Calendar, Clock, Mail, MapPin, History, UserCheck } from '../../utils/icons/icons';
 import { Form, Row, Col, InputGroup, Tabs, Tab, Badge, Table } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ToastContainer, toast } from 'react-toastify';

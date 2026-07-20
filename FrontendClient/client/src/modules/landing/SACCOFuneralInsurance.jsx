@@ -1,26 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Check, ArrowRight, ChevronDown, Menu, X, Users, Building, Quote
-} from 'lucide-react';
+import { Check, ArrowRight, ChevronDown, Menu, X, Users, Building2, Quote } from '../../utils/icons/icons';
 import Footer from '../../components/layout/Footer';
-
-const C = {
-    ink: '#15171A',
-    bone: '#FAF8F4',
-    bone2: '#F3EFE6',
-    brass: '#8B7355',
-    brassLight: '#A98F6E',
-    verdigris: '#3D4F47',
-    verdigrisDark: '#2E3F37',
-    verdigrisLight: '#4D6359',
-    verdigrisTint: '#EBEFEF',
-    line: '#E3DDD0',
-    lineDark: 'rgba(250,248,244,0.14)',
-    gray: '#6B6862',
-    grayLight: 'rgba(250,248,244,0.62)',
-    accent: '#C77B5E',
-};
+import    C  from   '../../utils/colors/index'
 
 // Hook for scroll reveal animations
 function useReveal() {

@@ -9,12 +9,7 @@ import InvoiceForm from './invoiceForm';
 import PaymentForm from './paymentForm';
 import ExtraChargeForm from './extraChargesForm';
 import Swal from 'sweetalert2';
-import { 
-  DollarSign, FileText, CreditCard, Receipt, Users, 
-  PlusCircle, Download, Eye, Info, Edit, Trash2, Filter,
-  Search, Calendar, ArrowLeft, BarChart3, CheckCircle,
-  AlertCircle, RefreshCw, Printer, FilePlus, TrendingUp
-} from 'lucide-react';
+import { DollarSign, FileText, CreditCard, Receipt, Users, PlusCircle, Download, Eye, Info, Edit, Trash2, Filter, Search, Calendar, ArrowLeft, BarChart3, CheckCircle, AlertCircle, RefreshCw, Printer, FilePlus, TrendingUp } from '../../utils/icons/icons';
 
 const InvoiceManager = () => {
   const [view, setView] = useState('overview');

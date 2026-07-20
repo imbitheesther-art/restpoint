@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useSocket } from '../../utils/context/socketContext';
 import { api, ENDPOINTS } from '../../api';
-import { Users, AlertCircle, Calendar } from 'lucide-react';
+import { Users, AlertCircle, Calendar } from '../../utils/icons/icons';
 
 const COLORS = {
   primary: '#0A2463',

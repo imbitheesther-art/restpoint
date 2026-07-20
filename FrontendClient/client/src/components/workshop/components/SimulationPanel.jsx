@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Cpu, Play, Square, Activity } from 'lucide-react';
+import { Server, Play, Square, Activity } from '../../utils/icons/icons';
 import { COLORS, Section, SectionHeader, SectionTitle, Select, Button, ProgressBar, Progress, LiveDot } from '../styles/theme.jsx';
 
 const FloorGrid = styled.div`

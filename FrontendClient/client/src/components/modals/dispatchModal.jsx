@@ -1,6 +1,6 @@
 // modals/DispatchModal.js
 import React from 'react';
-import { Truck, Calendar, MapPin, User, Phone, Clipboard, FileText, X } from 'lucide-react';
+import { Truck, Calendar, MapPin, User, Phone, ClipboardList, FileText, X } from '../../utils/icons/icons';
 import styled, { css } from 'styled-components';
 import { toast } from 'react-toastify';
 

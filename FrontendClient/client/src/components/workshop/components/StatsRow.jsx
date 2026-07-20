@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ClipboardList, Hammer, DollarSign, Clock, Package, Users } from 'lucide-react';
+import { ClipboardList, Hammer, DollarSign, Clock, Package, Users } from '../../utils/icons/icons';
 import { COLORS } from '../styles/theme.jsx';
 
 // ============================================================

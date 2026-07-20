@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import {
-  X,
-  DollarSign,
-  Settings,
-  Save,
-  RefreshCw,
-  Clock,
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-  History,
-} from 'lucide-react';
+import { X, DollarSign, Settings, Save, RefreshCw, Clock, Calendar, AlertCircle, CheckCircle, ChevronDown, ChevronUp, History } from '../../utils/icons/icons';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 

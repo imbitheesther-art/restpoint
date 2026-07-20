@@ -1,24 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import {
-    DollarSign,
-    Calendar,
-    FileText,
-    CreditCard,
-    AlertCircle,
-    Trash2,
-    Download,
-    Printer,
-    Eye,
-    Edit,
-    Plus,
-    Receipt,
-    TrendingUp,
-    Wallet,
-    CheckCircle,
-    XCircle,
-    Clock,
-} from 'lucide-react';
+
+
+
+import  Colors  from '../../../utils/colors/index'
+
 import Swal from 'sweetalert2';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';

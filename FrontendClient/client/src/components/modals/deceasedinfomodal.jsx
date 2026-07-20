@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { X } from 'lucide-react';
+import { X } from '../../utils/icons/icons';
 import DeceasedInfoSection from '../deceased/deceasedInfoSection';
 
 // Modal Overlay

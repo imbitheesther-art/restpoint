@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, TrendingUp, Shield, Star } from 'lucide-react';
+import { Check, ArrowRight, TrendingUp, Shield, Star } from '../../utils/icons/icons';
 
 const BestChurchSoftwareKenya = () => {
     const navigate = useNavigate();

@@ -1,26 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import {
-  DollarSign,
-  CalendarDays,
-  Box,
-  Receipt,
-  CreditCard,
-  Scale,
-  Printer,
-  X,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  Plus,
-  Wallet,
-  Package,
-  Truck,
-  FileText,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { DollarSign, CalendarDays, Box, Receipt, CreditCard, Scale, Printer, X, TrendingUp, AlertTriangle, CheckCircle, Plus, Wallet, Package, Truck, FileText, Clock, ChevronDown, ChevronUp } from '../../utils/icons/icons';
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle, Send, Bug, Lightbulb, HelpCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Send, Bug, Lightbulb, HelpCircle } from '../../utils/icons/icons';
 import api from '../../api/axios';
 
 /* ============================================================

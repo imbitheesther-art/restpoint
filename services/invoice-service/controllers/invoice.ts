@@ -141,6 +141,11 @@ const generateStampHash = (prefix: string = 'LFH'): string => {
   return `${prefix}-INV-${dd}-${mm}-${yyyy}`;
 };
 
+
+
+
+
+
 const generateInvoicePDFBuffer = async (invoice: InvoiceData, branding: any = null): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     try {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, DollarSign, Calendar, CreditCard, FileText, AlertCircle } from 'lucide-react';
+import { X, DollarSign, Calendar, CreditCard, FileText, AlertCircle } from '../../utils/icons/icons';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }

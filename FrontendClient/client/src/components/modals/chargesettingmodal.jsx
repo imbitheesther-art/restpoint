@@ -2,25 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import styled from "styled-components";
-import { 
-  DollarSign, 
-  Save, 
-  ArrowLeft, 
-  Tag, 
-  Clock, 
-  Calendar,
-  Zap,
-  Crown,
-  RefreshCw,
-  Percent,
-  TrendingUp,
-  Shield,
-  UserCheck,
-  Badge,
-  FileText,
-  CreditCard,
-  BarChart
-} from "lucide-react";
+import { DollarSign, Save, ArrowLeft, Tag, Clock, Calendar, Zap, Crown, RefreshCw, Percent, TrendingUp, Shield, UserCheck, Badge, FileText, CreditCard, BarChart2 } from '../../utils/icons/icons';
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
 

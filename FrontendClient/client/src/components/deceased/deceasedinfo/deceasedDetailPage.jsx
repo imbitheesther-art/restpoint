@@ -1,35 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense, Component, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import {
-  QrCode,
-  RefreshCw,
-  ArrowLeft,
-  User,
-  Info,
-  AlertTriangle,
-  CheckCircle,
-  Users,
-  TrendingUp,
-  DollarSign,
-  FileText,
-  Box,
-  Truck,
-  Activity,
-  Download,
-  Calendar,
-  Phone,
-  Mail,
-  Clock,
-  PlusCircle,
-  Eye,
-  Trash2,
-  Edit,
-  Send,
-  Stethoscope,
-  ClipboardList,
-  X,
-} from 'lucide-react';
+
 import styled, { keyframes } from 'styled-components';
 
 import ScannerComponent from '../../scanner/ScannerComponent';
@@ -732,6 +704,7 @@ const DeceasedDetails = () => {
     }
   });
   const [isLoadingFinancial, setIsLoadingFinancial] = useState(false);
+  const [financialActionLoading, setFinancialActionLoading] = useState(false);
 
   const getDeceasedId = () => deceasedData?.deceased_id || deceasedData?.id || id;
   const currentDeceasedId = getDeceasedId();
@@ -838,17 +811,16 @@ const DeceasedDetails = () => {
     setIsLoadingFinancial(true);
     try {
       const tenantSlug = getTenantSlug();
+      const headers = { 'x-tenant-slug': tenantSlug };
 
+      // Use the invoice service endpoints for financial data
       const [paymentsRes, chargesRes, invoicesRes] = await Promise.all([
-        apiClient.get(`/payments/${currentDeceasedId}`, {
-          headers: { 'x-tenant-slug': tenantSlug }
-        }).catch(err => ({ data: { data: [] } })),
-        apiClient.get(`/extra-charges/${currentDeceasedId}`, {
-          headers: { 'x-tenant-slug': tenantSlug }
-        }).catch(err => ({ data: { data: [] } })),
-        apiClient.get(`/invoices/${currentDeceasedId}`, {
-          headers: { 'x-tenant-slug': tenantSlug }
-        }).catch(err => ({ data: { data: [] } }))
+        apiClient.get(`/invoices/payments/${currentDeceasedId}`, { headers })
+          .catch(err => ({ data: { data: [] } })),
+        apiClient.get(`/invoices/extra-charges/${currentDeceasedId}`, { headers })
+          .catch(err => ({ data: { data: [] } })),
+        apiClient.get(`/invoices/deceased/${currentDeceasedId}`, { headers })
+          .catch(err => ({ data: { data: [] } }))
       ]);
 
       const payments = paymentsRes.data?.data || [];
@@ -879,6 +851,176 @@ const DeceasedDetails = () => {
       setIsLoadingFinancial(false);
     }
   }, [currentDeceasedId, deceasedData]);
+
+  // Financial action handlers connected to invoice backend
+  const handleCreatePayment = async (paymentData) => {
+    setFinancialActionLoading(true);
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.post('/invoices/payment', {
+        deceased_id: paymentData.deceased_id || currentDeceasedId,
+        amount: paymentData.amount,
+        payment_method: paymentData.payment_method,
+        reference_code: paymentData.reference_code,
+        description: paymentData.description
+      }, {
+        headers: { 'x-tenant-slug': tenantSlug }
+      });
+
+      if (response.data?.status === 'success') {
+        setShowPaymentForm(false);
+        fetchFinancialData();
+        return { success: true, message: 'Payment recorded successfully' };
+      }
+      throw new Error(response.data?.message || 'Failed to record payment');
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to record payment' };
+    } finally {
+      setFinancialActionLoading(false);
+    }
+  };
+
+  const handleAddExtraCharge = async (chargeData) => {
+    setFinancialActionLoading(true);
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.post('/invoices/extra-charge', {
+        deceased_id: chargeData.deceased_id || currentDeceasedId,
+        charge_type: chargeData.charge_type,
+        amount: chargeData.amount,
+        description: chargeData.description,
+        notes: chargeData.notes,
+        service_date: chargeData.service_date
+      }, {
+        headers: { 'x-tenant-slug': tenantSlug }
+      });
+
+      if (response.data?.status === 'success') {
+        setShowExtraChargeForm(false);
+        fetchFinancialData();
+        return { success: true, message: 'Extra charge added successfully' };
+      }
+      throw new Error(response.data?.message || 'Failed to add extra charge');
+    } catch (error) {
+      console.error('Error adding extra charge:', error);
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to add extra charge' };
+    } finally {
+      setFinancialActionLoading(false);
+    }
+  };
+
+  const handleDeleteExtraCharge = async (chargeId) => {
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.delete(`/invoices/extra-charge/${chargeId}`, {
+        headers: { 'x-tenant-slug': tenantSlug }
+      });
+
+      if (response.data?.status === 'success' || response.data?.success) {
+        fetchFinancialData();
+        return { success: true };
+      }
+      throw new Error('Failed to delete charge');
+    } catch (error) {
+      console.error('Error deleting extra charge:', error);
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  };
+
+  const handleEditExtraCharge = async (charge) => {
+    setShowExtraChargeForm(true);
+    // Pass the charge data to the form for editing
+    return charge;
+  };
+
+  const handleViewInvoice = async (invoiceId) => {
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.get(`/invoices/${invoiceId}`, {
+        headers: { 'x-tenant-slug': tenantSlug }
+      });
+      return response.data?.data || null;
+    } catch (error) {
+      console.error('Error viewing invoice:', error);
+      return null;
+    }
+  };
+
+  const handleDownloadInvoice = async (invoiceId) => {
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.get(`/invoices/${invoiceId}/download`, {
+        headers: { 'x-tenant-slug': tenantSlug },
+        responseType: 'blob'
+      });
+
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `invoice-${invoiceId}.pdf`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+?)"?$/);
+        if (match) filename = match[1];
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return { success: true };
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      return { success: false, message: 'Failed to download invoice' };
+    }
+  };
+
+  const handlePrintInvoice = async (invoiceId) => {
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.get(`/invoices/${invoiceId}/download`, {
+        headers: { 'x-tenant-slug': tenantSlug },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => printWindow.print(), 500);
+        };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      return { success: false, message: 'Failed to print invoice' };
+    }
+  };
+
+  const handleEditInvoice = async (invoiceId) => {
+    console.log('Edit invoice:', invoiceId);
+    // Could open an edit modal
+  };
+
+  const handleDeleteInvoice = async (invoiceId) => {
+    try {
+      const tenantSlug = getTenantSlug();
+      const response = await apiClient.delete(`/invoices/${invoiceId}`, {
+        headers: { 'x-tenant-slug': tenantSlug }
+      });
+
+      if (response.data?.status === 'success') {
+        fetchFinancialData();
+        return { success: true };
+      }
+      throw new Error('Failed to delete invoice');
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  };
 
   useEffect(() => {
     if (id) {

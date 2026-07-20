@@ -1,0 +1,4198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MORTEM — Coffin Production Workshop</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,900;1,9..40,400&family=Playfair+Display:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        --bg-deep: #07090f;
+        --bg-main: #0c1018;
+        --bg-card: #131a26;
+        --bg-card-h: #1a2233;
+        --bdr: rgba(212, 160, 83, 0.12);
+        --bdr-s: rgba(212, 160, 83, 0.25);
+        --accent: #d4a053;
+        --accent-l: #f0c97a;
+        --accent-d: rgba(212, 160, 83, 0.15);
+        --ok: #10b981;
+        --err: #ef4444;
+        --warn: #f59e0b;
+        --info: #3b82f6;
+        --t1: #f5f0eb;
+        --t2: #9ca3af;
+        --t3: #4b5563;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--bg-deep);
+        color: var(--t1);
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-main);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(212, 160, 83, 0.2);
+        border-radius: 3px;
+      }
+
+      @keyframes pulseRing {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(212, 160, 83, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 8px rgba(212, 160, 83, 0);
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(100px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes slideOut {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(100px);
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      @keyframes modalOut {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+      }
+      @keyframes miniPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      @keyframes livePulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .bg-atmos {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            ellipse 800px 600px at 15% 20%,
+            rgba(212, 160, 83, 0.04) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 600px 500px at 85% 80%,
+            rgba(16, 185, 129, 0.03) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 400px 400px at 50% 50%,
+            rgba(212, 160, 83, 0.02) 0%,
+            transparent 70%
+          );
+      }
+
+      /* Sidebar */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 260px;
+        background: linear-gradient(180deg, #0d1220, #0a0e17);
+        border-right: 1px solid var(--bdr);
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s;
+      }
+      .sidebar-logo {
+        padding: 1.5rem 1.25rem;
+        border-bottom: 1px solid var(--bdr);
+      }
+      .sidebar-logo h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: var(--accent);
+        letter-spacing: 0.15em;
+      }
+      .sidebar-logo span {
+        font-size: 0.65rem;
+        color: var(--t3);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        display: block;
+        margin-top: 0.25rem;
+      }
+      .nav-sec {
+        padding: 1rem 0.75rem;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .nav-lbl {
+        font-size: 0.6rem;
+        color: var(--t3);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 0.5rem 0.75rem;
+        margin-top: 0.5rem;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.7rem 0.75rem;
+        border-radius: 10px;
+        color: var(--t2);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 2px;
+        position: relative;
+      }
+      .nav-item:hover {
+        background: rgba(212, 160, 83, 0.08);
+        color: var(--t1);
+      }
+      .nav-item.active {
+        background: linear-gradient(135deg, rgba(212, 160, 83, 0.2), rgba(212, 160, 83, 0.08));
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .nav-item.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background: var(--accent);
+        border-radius: 0 3px 3px 0;
+      }
+      .nav-item i {
+        width: 20px;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+      .nav-badge {
+        margin-left: auto;
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 99px;
+        min-width: 20px;
+        text-align: center;
+      }
+      .nav-badge.gold {
+        background: var(--accent);
+      }
+      .nav-badge.red {
+        background: var(--err);
+      }
+      .sidebar-foot {
+        padding: 1rem 0.75rem;
+        border-top: 1px solid var(--bdr);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      /* Main */
+      .main {
+        margin-left: 260px;
+        min-height: 100vh;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Top bar */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(7, 9, 15, 0.85);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--bdr);
+        padding: 0.75rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .search-box {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        width: 320px;
+        transition: border-color 0.2s;
+      }
+      .search-box:focus-within {
+        border-color: var(--accent);
+      }
+      .search-box input {
+        background: none;
+        border: none;
+        outline: none;
+        color: var(--t1);
+        font-size: 0.85rem;
+        width: 100%;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .search-box input::placeholder {
+        color: var(--t3);
+      }
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .top-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        color: var(--t2);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        position: relative;
+      }
+      .top-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .top-btn .dot {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--err);
+        border: 2px solid var(--bg-deep);
+      }
+      .live-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 99px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+      }
+      .live-badge .ld {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--ok);
+        animation: livePulse 2s infinite;
+      }
+      .live-badge span {
+        font-size: 0.72rem;
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .user-av {
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), #b8860b);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      /* Page */
+      .page {
+        padding: 1.5rem 2rem 3rem;
+      }
+      .page-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .page-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.8rem;
+        font-weight: 900;
+      }
+      .page-sub {
+        color: var(--t3);
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+      }
+
+      /* Stat grid */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        border-radius: 14px;
+        padding: 1.25rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+      }
+      .stat-card:hover {
+        border-color: var(--bdr-s);
+        transform: translateY(-2px);
+      }
+      .stat-card .glow {
+        position: absolute;
+        top: -20px;
+        right: -20px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        filter: blur(30px);
+        opacity: 0.15;
+      }
+      .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+      }
+      .stat-val {
+        font-size: 1.75rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+      .stat-lbl {
+        font-size: 0.75rem;
+        color: var(--t3);
+      }
+      .stat-chg {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 99px;
+      }
+
+      /* Cards */
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .card-hdr {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--bdr);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card-ttl {
+        font-size: 0.9rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .card-body {
+        padding: 1.25rem;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.1rem;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        font-family: 'DM Sans', sans-serif;
+        background: linear-gradient(135deg, var(--accent), #b8860b);
+        color: #fff;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(212, 160, 83, 0.3);
+      }
+      .btn-g {
+        background: transparent;
+        color: var(--t2);
+        border: 1px solid var(--bdr);
+      }
+      .btn-g:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: none;
+        transform: none;
+      }
+      .btn-sm {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: 8px;
+      }
+      .btn-danger {
+        color: var(--err);
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+      .btn-danger:hover {
+        border-color: var(--err);
+        color: var(--err);
+        box-shadow: none;
+        transform: none;
+      }
+      .ibtn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        color: var(--t2);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .ibtn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .ibtn-lg {
+        width: 38px;
+        height: 38px;
+      }
+
+      /* Badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 99px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .badge-green {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+      }
+      .badge-red {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+      .badge-amber {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+      }
+      .badge-blue {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+      }
+      .badge-gray {
+        background: rgba(107, 114, 128, 0.15);
+        color: #9ca3af;
+      }
+      .badge-purple {
+        background: rgba(168, 85, 247, 0.15);
+        color: #c084fc;
+      }
+
+      /* Pipeline */
+      .pipeline {
+        display: flex;
+        gap: 0;
+        overflow-x: auto;
+        padding: 4px 1.25rem 1.25rem;
+      }
+      .pipe-stage {
+        flex: 1;
+        min-width: 100px;
+        text-align: center;
+        position: relative;
+      }
+      .pipe-stage:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: calc(50% + 20px);
+        right: calc(-50% + 20px);
+        height: 2px;
+        background: var(--bdr);
+        transition: background 0.3s;
+      }
+      .pipe-stage.done:not(:last-child)::after {
+        background: var(--ok);
+      }
+      .pipe-stage.active:not(:last-child)::after {
+        background: linear-gradient(90deg, var(--accent), var(--bdr));
+      }
+      .pipe-dot {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin: 0 auto 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        border: 2px solid var(--bdr);
+        background: var(--bg-card);
+        color: var(--t3);
+        transition: all 0.3s;
+        position: relative;
+        z-index: 2;
+      }
+      .pipe-stage.done .pipe-dot {
+        background: var(--ok);
+        border-color: var(--ok);
+        color: #fff;
+      }
+      .pipe-stage.active .pipe-dot {
+        border-color: var(--accent);
+        color: var(--accent);
+        animation: pulseRing 2s ease-in-out infinite;
+      }
+      .pipe-lbl {
+        font-size: 0.65rem;
+        color: var(--t3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: color 0.3s;
+      }
+      .pipe-stage.active .pipe-lbl {
+        color: var(--accent);
+      }
+      .pipe-stage.done .pipe-lbl {
+        color: var(--ok);
+      }
+      .pipe-cnt {
+        font-size: 0.7rem;
+        color: var(--t2);
+        margin-top: 0.15rem;
+      }
+
+      /* Table */
+      .dt {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .dt th {
+        text-align: left;
+        padding: 0.65rem 1rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--t3);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid var(--bdr);
+      }
+      .dt tr.tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        transition: background 0.15s;
+        cursor: pointer;
+      }
+      .dt tr.tr:hover {
+        background: var(--bg-card-h);
+      }
+      .dt td {
+        padding: 0.75rem 1rem;
+        font-size: 0.82rem;
+        color: var(--t2);
+      }
+
+      /* Progress */
+      .pbar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .pfill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+      }
+
+      /* Tabs */
+      .tab-bar {
+        display: flex;
+        gap: 0.25rem;
+      }
+      .tab-btn {
+        padding: 0.4rem 0.85rem;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: var(--t3);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .tab-btn:hover {
+        color: var(--t2);
+      }
+      .tab-btn.active {
+        background: var(--accent-d);
+        color: var(--accent);
+      }
+
+      /* Activity */
+      .feed-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      .feed-item:last-child {
+        border-bottom: none;
+      }
+      .feed-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-top: 0.35rem;
+        flex-shrink: 0;
+      }
+      .feed-text {
+        font-size: 0.78rem;
+        color: var(--t2);
+        line-height: 1.45;
+      }
+      .feed-text strong {
+        color: var(--t1);
+        font-weight: 600;
+      }
+      .feed-time {
+        font-size: 0.65rem;
+        color: var(--t3);
+        margin-top: 0.15rem;
+      }
+
+      /* Order cards */
+      .order-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1rem;
+      }
+      .order-card {
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        border-radius: 14px;
+        padding: 1.15rem;
+        transition: all 0.25s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+      .order-card:hover {
+        border-color: var(--bdr-s);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      }
+      .order-card.urgent {
+        border-left: 3px solid var(--err);
+      }
+      .order-card.high {
+        border-left: 3px solid var(--warn);
+      }
+      .pri-tag {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.2rem 0.7rem;
+        border-radius: 0 14px 0 10px;
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .mini-pipe {
+        display: flex;
+        gap: 3px;
+        margin-top: 0.75rem;
+      }
+      .mini-d {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.06);
+        transition: background 0.3s;
+      }
+      .mini-d.done {
+        background: var(--ok);
+      }
+      .mini-d.active {
+        background: var(--accent);
+        animation: miniPulse 1.5s ease-in-out infinite;
+      }
+
+      /* Leaderboard */
+      .lb-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        transition: background 0.15s;
+        margin-bottom: 0.25rem;
+      }
+      .lb-item:hover {
+        background: var(--bg-card-h);
+      }
+      .lb-rank {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .lb-av {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .lb-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .lb-name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .lb-role {
+        font-size: 0.68rem;
+        color: var(--t3);
+      }
+      .lb-score {
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .lb-cnt {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--accent);
+      }
+      .lb-unit {
+        font-size: 0.65rem;
+        color: var(--t3);
+      }
+
+      /* Insight */
+      .insight {
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid var(--bdr);
+        margin-bottom: 0.75rem;
+        transition: border-color 0.2s;
+      }
+      .insight:hover {
+        border-color: var(--bdr-s);
+      }
+      .insight-hdr {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .insight-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+      }
+      .insight-type {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .insight-text {
+        font-size: 0.8rem;
+        color: var(--t2);
+        line-height: 1.5;
+      }
+      .insight-text strong {
+        color: var(--t1);
+      }
+
+      /* Modal */
+      .modal-ov {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease;
+      }
+      .modal-ov.closing {
+        animation: fadeOut 0.2s ease forwards;
+      }
+      .modal-box {
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        border-radius: 18px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 85vh;
+        overflow-y: auto;
+        animation: modalIn 0.3s ease;
+      }
+      .modal-ov.closing .modal-box {
+        animation: modalOut 0.2s ease forwards;
+      }
+      .modal-hdr {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--bdr);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-hdr h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .modal-body {
+        padding: 1.5rem;
+      }
+      .modal-foot {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--bdr);
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+      }
+
+      /* Forms */
+      .fg {
+        margin-bottom: 1rem;
+      }
+      .fl {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--t2);
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .fi,
+      .fs {
+        width: 100%;
+        padding: 0.6rem 0.85rem;
+        border-radius: 10px;
+        background: var(--bg-main);
+        border: 1px solid var(--bdr);
+        color: var(--t1);
+        font-size: 0.85rem;
+        font-family: 'DM Sans', sans-serif;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .fi:focus,
+      .fs:focus {
+        border-color: var(--accent);
+      }
+      .fs {
+        cursor: pointer;
+      }
+      .frow {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      /* Toast */
+      .toast-wrap {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .toast {
+        background: var(--bg-card);
+        border: 1px solid var(--bdr);
+        border-radius: 12px;
+        padding: 0.85rem 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 300px;
+        max-width: 420px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        animation: slideIn 0.3s ease;
+        font-size: 0.82rem;
+      }
+      .toast.out {
+        animation: slideOut 0.3s ease forwards;
+      }
+      .toast-title {
+        font-weight: 700;
+        font-size: 0.8rem;
+      }
+      .toast-msg {
+        font-size: 0.75rem;
+        color: var(--t2);
+        margin-top: 0.1rem;
+      }
+
+      /* Grids */
+      .g2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+      .g3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+      }
+
+      /* Worker stat boxes */
+      .ws-box {
+        text-align: center;
+        padding: 0.5rem;
+        background: var(--bg-main);
+        border-radius: 8px;
+      }
+      .ws-val {
+        font-size: 1.1rem;
+        font-weight: 800;
+      }
+      .ws-lbl {
+        font-size: 0.6rem;
+        color: var(--t3);
+        text-transform: uppercase;
+      }
+
+      /* Select filter */
+      .sel-f {
+        width: 160px;
+        padding: 0.5rem 0.75rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 1200px) {
+        .stat-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 900px) {
+        .g2,
+        .g3 {
+          grid-template-columns: 1fr;
+        }
+        .search-box {
+          width: 200px;
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .main {
+          margin-left: 0;
+        }
+        .stat-grid {
+          grid-template-columns: 1fr;
+        }
+        .page {
+          padding: 1rem;
+        }
+        .frow {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script>
+      /* ================================================================
+   utilities/icons/index.js
+   Each icon is a React.forwardRef component wrapping FontAwesome
+   ================================================================ */
+      (function () {
+        var R = React;
+        function mk(cls) {
+          return R.forwardRef(function (p, ref) {
+            var s = p.size || '1rem',
+              c = p.color,
+              st = Object.assign({}, p.style, { fontSize: s, color: c || 'inherit' });
+            var pr = Object.assign({}, p, {
+              style: st,
+              ref: ref,
+              className: (p.className || '') + ' fas ' + cls,
+            });
+            delete pr.size;
+            delete pr.color;
+            return R.createElement('i', pr);
+          });
+        }
+        window.Icons = {
+          ThLarge: mk('fa-th-large'),
+          Industry: mk('fa-industry'),
+          Trophy: mk('fa-trophy'),
+          Brain: mk('fa-brain'),
+          ChartLine: mk('fa-chart-line'),
+          Users: mk('fa-users'),
+          BoxesStacked: mk('fa-boxes-stacked'),
+          Gear: mk('fa-gear'),
+          Plus: mk('fa-plus'),
+          Xmark: mk('fa-xmark'),
+          Bell: mk('fa-bell'),
+          Search: mk('fa-magnifying-glass'),
+          Rotate: mk('fa-rotate'),
+          Bars: mk('fa-bars'),
+          ArrowRight: mk('fa-arrow-right'),
+          Scissors: mk('fa-scissors'),
+          Screwdriver: mk('fa-screwdriver-wrench'),
+          Brush: mk('fa-paintbrush'),
+          SprayCan: mk('fa-spray-can-sparkles'),
+          Couch: mk('fa-couch'),
+          Wrench: mk('fa-wrench'),
+          ClipCheck: mk('fa-clipboard-check'),
+          Box: mk('fa-box'),
+          CircleCheck: mk('fa-circle-check'),
+          TriangleEx: mk('fa-triangle-exclamation'),
+          UsersGear: mk('fa-users-gear'),
+          ArrowUp: mk('fa-arrow-up'),
+          ArrowDown: mk('fa-arrow-down'),
+          ArrowTrendUp: mk('fa-arrow-trend-up'),
+          ArrowTrendDown: mk('fa-arrow-trend-down'),
+          Minus: mk('fa-minus'),
+          Route: mk('fa-route'),
+          ChartBar: mk('fa-chart-column'),
+          ListCheck: mk('fa-list-check'),
+          Bolt: mk('fa-bolt'),
+          Crown: mk('fa-crown'),
+          GaugeHigh: mk('fa-gauge-high'),
+          ChartPie: mk('fa-chart-pie'),
+          PersonFalling: mk('fa-person-falling-burst'),
+          WandSparkles: mk('fa-wand-magic-sparkles'),
+          BoxOpen: mk('fa-box-open'),
+          Rocket: mk('fa-rocket'),
+          Shield: mk('fa-shield-halved'),
+          Coins: mk('fa-coins'),
+          ForwardStep: mk('fa-forward-step'),
+          UserPen: mk('fa-user-pen'),
+          Trash: mk('fa-trash'),
+          User: mk('fa-user'),
+          Clock: mk('fa-clock'),
+          Tag: mk('fa-tag'),
+          CircleInfo: mk('fa-circle-info'),
+          CircleXmark: mk('fa-circle-xmark'),
+          Inbox: mk('fa-inbox'),
+          Filter: mk('fa-filter'),
+          Print: mk('fa-print'),
+        };
+      })();
+    </script>
+
+    <script type="text/babel">
+      /* ================================================================
+   MORTEM — React Workshop Management System
+   Icons imported from utilities/icons/index.js
+   ================================================================ */
+      const {
+        useState,
+        useEffect,
+        useRef,
+        useCallback,
+        useMemo,
+        createContext,
+        useContext,
+        forwardRef,
+      } = React;
+
+      // Import all icons from utilities/icons/index.js
+      const {
+        ThLarge,
+        Industry,
+        Trophy,
+        Brain,
+        ChartLine,
+        Users,
+        BoxesStacked,
+        Gear,
+        Plus,
+        Xmark,
+        Bell,
+        Search,
+        Rotate,
+        Bars,
+        ArrowRight,
+        Filter,
+        Scissors,
+        Screwdriver,
+        Brush,
+        SprayCan,
+        Couch,
+        Wrench,
+        ClipCheck,
+        Box,
+        CircleCheck,
+        TriangleEx,
+        UsersGear,
+        ArrowUp,
+        ArrowDown,
+        ArrowTrendUp,
+        ArrowTrendDown,
+        Minus,
+        Route,
+        ChartBar,
+        ListCheck,
+        Bolt,
+        Crown,
+        GaugeHigh,
+        ChartPie,
+        PersonFalling,
+        WandSparkles,
+        BoxOpen,
+        Rocket,
+        Shield,
+        Coins,
+        ForwardStep,
+        UserPen,
+        Trash,
+        User,
+        Clock,
+        Tag,
+        CircleInfo,
+        CircleXmark,
+        Inbox,
+        Print,
+      } = window.Icons;
+
+      /* ── Constants ── */
+      const STAGES = [
+        { id: 'cutting', label: 'Cutting', icon: 'fa-scissors', color: '#ef4444' },
+        { id: 'assembly', label: 'Assembly', icon: 'fa-screwdriver-wrench', color: '#f97316' },
+        { id: 'sanding', label: 'Sanding', icon: 'fa-paintbrush', color: '#eab308' },
+        { id: 'finishing', label: 'Finishing', icon: 'fa-spray-can-sparkles', color: '#22c55e' },
+        { id: 'upholstery', label: 'Upholstery', icon: 'fa-couch', color: '#14b8a6' },
+        { id: 'hardware', label: 'Hardware', icon: 'fa-wrench', color: '#3b82f6' },
+        {
+          id: 'quality_check',
+          label: 'Quality Check',
+          icon: 'fa-clipboard-check',
+          color: '#8b5cf6',
+        },
+        { id: 'packaging', label: 'Packaging', icon: 'fa-box', color: '#ec4899' },
+        { id: 'completed', label: 'Completed', icon: 'fa-circle-check', color: '#10b981' },
+      ];
+
+      const WORKERS = [
+        {
+          id: 1,
+          name: 'James Mwangi',
+          role: 'Master Carpenter',
+          initials: 'JM',
+          color: '#d4a053',
+          speed: 0.9,
+          reliability: 0.95,
+          todayCount: 3,
+          weekCount: 14,
+          monthCount: 52,
+          allTime: 384,
+          avgHours: 4.2,
+          trend: 'up',
+        },
+        {
+          id: 2,
+          name: 'Peter Ochieng',
+          role: 'Senior Carpenter',
+          initials: 'PO',
+          color: '#3b82f6',
+          speed: 0.85,
+          reliability: 0.88,
+          todayCount: 2,
+          weekCount: 11,
+          monthCount: 45,
+          allTime: 312,
+          avgHours: 4.8,
+          trend: 'up',
+        },
+        {
+          id: 3,
+          name: 'Samuel Kibet',
+          role: 'Upholsterer',
+          initials: 'SK',
+          color: '#10b981',
+          speed: 0.78,
+          reliability: 0.92,
+          todayCount: 2,
+          weekCount: 10,
+          monthCount: 41,
+          allTime: 278,
+          avgHours: 5.1,
+          trend: 'stable',
+        },
+        {
+          id: 4,
+          name: 'David Njoroge',
+          role: 'Finisher',
+          initials: 'DN',
+          color: '#ef4444',
+          speed: 0.82,
+          reliability: 0.85,
+          todayCount: 2,
+          weekCount: 9,
+          monthCount: 38,
+          allTime: 256,
+          avgHours: 4.5,
+          trend: 'down',
+        },
+        {
+          id: 5,
+          name: 'John Kamau',
+          role: 'Apprentice',
+          initials: 'JK',
+          color: '#8b5cf6',
+          speed: 0.6,
+          reliability: 0.75,
+          todayCount: 1,
+          weekCount: 5,
+          monthCount: 22,
+          allTime: 98,
+          avgHours: 7.2,
+          trend: 'up',
+        },
+        {
+          id: 6,
+          name: 'Francis Wanjiku',
+          role: 'Quality Inspector',
+          initials: 'FW',
+          color: '#ec4899',
+          speed: 0.88,
+          reliability: 0.98,
+          todayCount: 3,
+          weekCount: 13,
+          monthCount: 48,
+          allTime: 345,
+          avgHours: 3.8,
+          trend: 'stable',
+        },
+        {
+          id: 7,
+          name: 'Michael Odhiambo',
+          role: 'Hardware Specialist',
+          initials: 'MO',
+          color: '#14b8a6',
+          speed: 0.75,
+          reliability: 0.9,
+          todayCount: 1,
+          weekCount: 7,
+          monthCount: 30,
+          allTime: 198,
+          avgHours: 5.5,
+          trend: 'down',
+        },
+        {
+          id: 8,
+          name: 'Joseph Muthoni',
+          role: 'Sander',
+          initials: 'JM',
+          color: '#f59e0b',
+          speed: 0.8,
+          reliability: 0.87,
+          todayCount: 2,
+          weekCount: 8,
+          monthCount: 35,
+          allTime: 224,
+          avgHours: 5.0,
+          trend: 'up',
+        },
+      ];
+
+      const CTYPES = ['Standard', 'Premium', 'Elite', 'Child', 'Infant', 'Oversized'];
+      const CUSTOMERS = [
+        'Wanjiru K.',
+        'Otieno Family',
+        'Muthoni J.',
+        'Kipchoge Estate',
+        'Achieng M.',
+        'Njeri W.',
+        'Kamau & Sons',
+        'Omondi Funeral',
+        'Wambui T.',
+        'Chebet Family',
+        'Mwangi Holdings',
+        'Akinyi Services',
+      ];
+      const DECEASED = [
+        'Stephen K.',
+        'Mary A.',
+        'Joseph N.',
+        'Grace W.',
+        'Peter M.',
+        'Hannah O.',
+        'David K.',
+        'Ruth J.',
+        'Samuel T.',
+        'Elizabeth M.',
+        'John O.',
+        'Agnes W.',
+      ];
+      const COLORS = ['Walnut', 'Mahogany', 'Oak', 'Cherry', 'Ebony', 'Pine White'];
+      const INTERIORS = [
+        'Satin Gold',
+        'White Crepe',
+        'Blue Velvet',
+        'Rose Pink',
+        'Cream Silk',
+        'Burgundy',
+      ];
+      const PRICES = {
+        Standard: 15000,
+        Premium: 25000,
+        Elite: 45000,
+        Child: 8000,
+        Infant: 5000,
+        Oversized: 55000,
+      };
+
+      /* ── Utilities ── */
+      let _id = 1000;
+      const gid = () => ++_id;
+      function timeAgo(d) {
+        const s = Math.floor((Date.now() - new Date(d)) / 1000);
+        if (s < 60) return 'Just now';
+        if (s < 3600) return Math.floor(s / 60) + 'm ago';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+        return Math.floor(s / 86400) + 'd ago';
+      }
+
+      function makeOrders() {
+        const a = [];
+        for (let i = 0; i < 18; i++) {
+          const si = Math.min(Math.floor(Math.random() * 8), 7);
+          const w = WORKERS[Math.floor(Math.random() * WORKERS.length)];
+          const hrs = Math.floor(Math.random() * 72) + 1;
+          const ct = new Date(Date.now() - hrs * 3600000);
+          const tp = CTYPES[Math.floor(Math.random() * CTYPES.length)];
+          const stages = STAGES.slice(0, si + 1).map((s, idx) => ({
+            ...s,
+            status: idx < si ? 'completed' : 'in_progress',
+            startedAt: new Date(ct.getTime() + idx * ((hrs * 3600000) / (si + 1))),
+            completedAt:
+              idx < si ? new Date(ct.getTime() + (idx + 1) * ((hrs * 3600000) / (si + 1))) : null,
+          }));
+          a.push({
+            id: gid(),
+            orderNumber: 'CF-' + _id,
+            customerName: CUSTOMERS[i % 12],
+            deceasedName: DECEASED[i % 12],
+            coffinType: tp,
+            color: COLORS[Math.floor(Math.random() * 6)],
+            interior: INTERIORS[Math.floor(Math.random() * 6)],
+            currentStage: STAGES[si].id,
+            stages,
+            assignedWorker: { ...w },
+            priority: Math.random() < 0.1 ? 'urgent' : Math.random() < 0.25 ? 'high' : 'normal',
+            price: PRICES[tp] || 20000,
+            createdAt: ct,
+            dueDate: new Date(ct.getTime() + (3 + Math.floor(Math.random() * 5)) * 86400000),
+          });
+        }
+        return a;
+      }
+
+      function makeMaterials() {
+        return [
+          {
+            id: 1,
+            name: 'Mahogany Planks',
+            category: 'Wood',
+            quantity: 45,
+            unit: 'pcs',
+            minLevel: 20,
+            costPerUnit: 3200,
+            supplier: 'Timberland Nairobi',
+          },
+          {
+            id: 2,
+            name: 'Walnut Veneer Sheets',
+            category: 'Wood',
+            quantity: 12,
+            unit: 'sheets',
+            minLevel: 15,
+            costPerUnit: 1800,
+            supplier: 'Fine Veneers Ltd',
+          },
+          {
+            id: 3,
+            name: 'Brass Handles (Pair)',
+            category: 'Hardware',
+            quantity: 38,
+            unit: 'pairs',
+            minLevel: 10,
+            costPerUnit: 650,
+            supplier: 'MetalCraft Kenya',
+          },
+          {
+            id: 4,
+            name: 'Satin Gold Fabric',
+            category: 'Fabric',
+            quantity: 28,
+            unit: 'meters',
+            minLevel: 25,
+            costPerUnit: 450,
+            supplier: 'TextileHouse',
+          },
+          {
+            id: 5,
+            name: 'Wood Screws 1.5"',
+            category: 'Hardware',
+            quantity: 5,
+            unit: 'boxes',
+            minLevel: 10,
+            costPerUnit: 320,
+            supplier: 'Hardware World',
+          },
+          {
+            id: 6,
+            name: 'Polyurethane Varnish',
+            category: 'Finish',
+            quantity: 18,
+            unit: 'liters',
+            minLevel: 8,
+            costPerUnit: 1200,
+            supplier: 'PaintMaster',
+          },
+          {
+            id: 7,
+            name: 'Cotton Batting',
+            category: 'Fabric',
+            quantity: 32,
+            unit: 'rolls',
+            minLevel: 10,
+            costPerUnit: 280,
+            supplier: 'TextileHouse',
+          },
+          {
+            id: 8,
+            name: 'Pine Boards',
+            category: 'Wood',
+            quantity: 60,
+            unit: 'pcs',
+            minLevel: 30,
+            costPerUnit: 850,
+            supplier: 'Timberland Nairobi',
+          },
+          {
+            id: 9,
+            name: 'Corner Brackets',
+            category: 'Hardware',
+            quantity: 3,
+            unit: 'sets',
+            minLevel: 8,
+            costPerUnit: 180,
+            supplier: 'MetalCraft Kenya',
+          },
+          {
+            id: 10,
+            name: 'Sandpaper 120 grit',
+            category: 'Abrasive',
+            quantity: 22,
+            unit: 'packs',
+            minLevel: 15,
+            costPerUnit: 95,
+            supplier: 'Hardware World',
+          },
+          {
+            id: 11,
+            name: 'White Crepe Fabric',
+            category: 'Fabric',
+            quantity: 20,
+            unit: 'meters',
+            minLevel: 20,
+            costPerUnit: 380,
+            supplier: 'TextileHouse',
+          },
+          {
+            id: 12,
+            name: 'Hinges 3"',
+            category: 'Hardware',
+            quantity: 45,
+            unit: 'pairs',
+            minLevel: 15,
+            costPerUnit: 120,
+            supplier: 'MetalCraft Kenya',
+          },
+        ];
+      }
+
+      function makeActivity(ords) {
+        const a = [];
+        const acts = [
+          'completed Cutting stage for',
+          'started Upholstery on',
+          'passed Quality Check for',
+          'moved to Assembly for',
+          'applied Finishing to',
+          'installed Hardware on',
+          'finished Sanding for',
+          'started Cutting on',
+        ];
+        for (let i = 0; i < 8; i++) {
+          const w = WORKERS[i % 8],
+            o = ords[i % ords.length];
+          a.push({
+            worker: w,
+            action: acts[i],
+            coffin: o,
+            time: new Date(Date.now() - i * (Math.random() * 1800000 + 300000)),
+            type: i % 2 === 0 ? 'success' : 'info',
+          });
+        }
+        return a;
+      }
+
+      /* ── AI Insights Engine ── */
+      function genInsights(ords, mats, wkrs) {
+        const ins = [];
+        const sc = {};
+        STAGES.forEach((s) => (sc[s.id] = 0));
+        ords
+          .filter((o) => o.currentStage !== 'completed')
+          .forEach((o) => (sc[o.currentStage] = (sc[o.currentStage] || 0) + 1));
+        const mx = Object.entries(sc).sort((a, b) => b[1] - a[1])[0];
+        const bn = STAGES.find((s) => s.id === mx[0]);
+        if (mx[1] >= 3)
+          ins.push({
+            type: 'Bottleneck Detected',
+            icon: 'fa-triangle-exclamation',
+            text:
+              '<strong>' +
+              bn.label +
+              '</strong> has ' +
+              mx[1] +
+              ' coffins queued — your biggest bottleneck. Reassign <strong>' +
+              wkrs[0].name +
+              '</strong> (highest speed) to relieve pressure. Est. wait: ~' +
+              mx[1] * 1.5 +
+              'h.',
+            bg: 'rgba(239,68,68,0.06)',
+            iconBg: 'rgba(239,68,68,0.15)',
+            iconClr: '#f87171',
+            actLbl: 'Suggest Reassignment',
+          });
+        const slow = [...wkrs].sort((a, b) => a.speed - b.speed)[0];
+        ins.push({
+          type: 'Performance Alert',
+          icon: 'fa-person-falling-burst',
+          text:
+            '<strong>' +
+            slow.name +
+            '</strong> has the lowest speed rating (' +
+            Math.round(slow.speed * 100) +
+            '%) at ' +
+            slow.avgHours +
+            'h/coffin. That is ' +
+            Math.round(((slow.avgHours - wkrs[0].avgHours) / wkrs[0].avgHours) * 100) +
+            '% slower than your best worker. Recommend pairing with a mentor.',
+          bg: 'rgba(245,158,11,0.06)',
+          iconBg: 'rgba(245,158,11,0.15)',
+          iconClr: '#fbbf24',
+          actLbl: 'Initiate Mentorship',
+        });
+        const fast = [...wkrs].sort((a, b) => b.speed - a.speed)[0];
+        const cutO = ords.filter((o) => o.currentStage === 'cutting');
+        if (cutO.length > 0)
+          ins.push({
+            type: 'Optimal Assignment',
+            icon: 'fa-wand-magic-sparkles',
+            text:
+              'Assign <strong>' +
+              fast.name +
+              '</strong> to <strong>' +
+              cutO[0].orderNumber +
+              '</strong>. Based on historical data, this combination reduces completion time by ~<strong>23%</strong>.',
+            bg: 'rgba(16,185,129,0.06)',
+            iconBg: 'rgba(16,185,129,0.15)',
+            iconClr: '#34d399',
+            actLbl: 'Apply Suggestion',
+          });
+        const ac = ords.filter((o) => o.currentStage !== 'completed').length;
+        const avgC = wkrs.reduce((s, w) => s + w.avgHours, 0) / wkrs.length;
+        ins.push({
+          type: 'Throughput Prediction',
+          icon: 'fa-chart-line',
+          text:
+            'At ' +
+            avgC.toFixed(1) +
+            'h avg/coffin with ' +
+            wkrs.filter((w) => w.todayCount > 0).length +
+            ' active workers, expect <strong>' +
+            Math.round(wkrs.filter((w) => w.todayCount > 0).length * (8 / avgC)) +
+            '</strong> more completions today. Weekly projection: <strong>~' +
+            Math.round(
+              (wkrs.reduce((s, w) => s + w.weekCount, 0) / Math.max(1, new Date().getDay())) * 7,
+            ) +
+            '</strong> coffins.',
+          bg: 'rgba(59,130,246,0.06)',
+          iconBg: 'rgba(59,130,246,0.15)',
+          iconClr: '#60a5fa',
+        });
+        const lowM = mats.filter((m) => m.quantity <= m.minLevel);
+        if (lowM.length > 0)
+          ins.push({
+            type: 'Supply Chain Risk',
+            icon: 'fa-box-open',
+            text:
+              '<strong>' +
+              lowM.length +
+              ' materials</strong> at/below minimum: ' +
+              lowM
+                .slice(0, 3)
+                .map(
+                  (m) => '<strong>' + m.name + '</strong> (' + m.quantity + '/' + m.minLevel + ')',
+                )
+                .join(', ') +
+              '. <strong>' +
+              lowM[0].name +
+              '</strong> runs out in ~' +
+              Math.max(1, Math.round(lowM[0].quantity / 2)) +
+              ' days.',
+            bg: 'rgba(236,72,153,0.06)',
+            iconBg: 'rgba(236,72,153,0.15)',
+            iconClr: '#f472b6',
+            actLbl: 'Auto-Reorder',
+          });
+        const upT = wkrs.filter((w) => w.trend === 'up').length;
+        ins.push({
+          type: 'Team Momentum',
+          icon: 'fa-rocket',
+          text:
+            '<strong>' +
+            upT +
+            ' of ' +
+            wkrs.length +
+            ' workers</strong> show improving trends. ' +
+            (upT >= 4
+              ? 'Strong positive momentum — consider performance bonuses to sustain this pace.'
+              : 'Consider team motivation initiatives to boost overall output.') +
+            '</strong>',
+          bg: 'rgba(139,92,246,0.06)',
+          iconBg: 'rgba(139,92,246,0.15)',
+          iconClr: '#c084fc',
+        });
+        ins.push({
+          type: 'Quality Forecast',
+          icon: 'fa-shield-halved',
+          text:
+            'Based on <strong>' +
+            wkrs[5].name +
+            "</strong>'s " +
+            Math.round(wkrs[5].reliability * 100) +
+            '% reliability score and current queue, predict <strong>' +
+            Math.min(ac, Math.round(ac * wkrs[5].reliability)) +
+            '</strong> of ' +
+            ac +
+            ' active coffins will pass first quality check. Assign to high-priority orders.',
+          bg: 'rgba(20,184,166,0.06)',
+          iconBg: 'rgba(20,184,166,0.15)',
+          iconClr: '#2dd4bf',
+        });
+        const tv = ords
+          .filter((o) => o.currentStage !== 'completed')
+          .reduce((s, o) => s + o.price, 0);
+        ins.push({
+          type: 'Cost Efficiency',
+          icon: 'fa-coins',
+          text:
+            'Work-in-progress value: <strong>KES ' +
+            tv.toLocaleString() +
+            '</strong>. Current material utilization is estimated at <strong>87%</strong>. Reducing waste by 5% could save ~<strong>KES ' +
+            Math.round(tv * 0.05).toLocaleString() +
+            '</strong> per production cycle.',
+          bg: 'rgba(212,160,83,0.06)',
+          iconBg: 'rgba(212,160,83,0.15)',
+          iconClr: '#d4a053',
+        });
+        return ins;
+      }
+
+      /* ── Context ── */
+      const Ctx = createContext();
+
+      /* ── Chart Hook ── */
+      function useChart(ref, fn, deps) {
+        const cr = useRef(null);
+        useEffect(() => {
+          if (!ref.current) return;
+          if (cr.current) cr.current.destroy();
+          Chart.defaults.color = '#6b7280';
+          Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+          Chart.defaults.font.family = "'DM Sans',sans-serif";
+          Chart.defaults.font.size = 11;
+          cr.current = new Chart(ref.current, fn());
+          return () => {
+            if (cr.current) cr.current.destroy();
+          };
+        }, deps);
+      }
+
+      /* ─────────────────── COMPONENTS ─────────────────── */
+
+      /* Toast */
+      function Toasts() {
+        const { toasts } = useContext(Ctx);
+        const ic = {
+          success: CircleCheck,
+          error: CircleXmark,
+          info: CircleInfo,
+          warning: TriangleEx,
+        };
+        const cl = { success: '#10b981', error: '#ef4444', info: '#3b82f6', warning: '#f59e0b' };
+        return (
+          <div className="toast-wrap">
+            {toasts.map((t) => {
+              const Ic = ic[t.type] || CircleInfo;
+              return (
+                <div key={t.id} className={'toast' + (t.out ? ' out' : '')}>
+                  <Ic size="1rem" color={cl[t.type]} />
+                  <div style={{ flex: 1 }}>
+                    <div className="toast-title">{t.title}</div>
+                    <div className="toast-msg">{t.msg}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      /* Sidebar */
+      function Sidebar({ tab, setTab, open, setOpen }) {
+        const { orders } = useContext(Ctx);
+        const ac = orders.filter((o) => o.currentStage !== 'completed').length;
+        const items = [
+          { id: 'dashboard', label: 'Dashboard', Icon: ThLarge },
+          { id: 'production', label: 'Production', Icon: Industry, b: ac },
+          { id: 'leaderboard', label: 'Leaderboard', Icon: Trophy },
+          { id: 'insights', label: 'AI Insights', Icon: Brain, b: 3, gold: true },
+          { id: 'analytics', label: 'Analytics', Icon: ChartLine },
+          { id: 'workers', label: 'Workers', Icon: Users },
+          { id: 'materials', label: 'Materials', Icon: BoxesStacked },
+        ];
+        return (
+          <aside className={'sidebar' + (open ? ' open' : '')}>
+            <div className="sidebar-logo">
+              <h1>MORTEM</h1>
+              <span>Workshop Management</span>
+            </div>
+            <nav className="nav-sec">
+              <div className="nav-lbl">Main</div>
+              {items.slice(0, 3).map((it) => (
+                <div
+                  key={it.id}
+                  className={'nav-item' + (tab === it.id ? ' active' : '')}
+                  onClick={() => {
+                    setTab(it.id);
+                    setOpen(false);
+                  }}
+                >
+                  <it.Icon size="0.9rem" />
+                  {it.label}
+                  {it.b !== undefined && (
+                    <span className={'nav-badge' + (it.gold ? ' gold' : ' red')}>{it.b}</span>
+                  )}
+                </div>
+              ))}
+              <div className="nav-lbl">Intelligence</div>
+              {items.slice(3, 5).map((it) => (
+                <div
+                  key={it.id}
+                  className={'nav-item' + (tab === it.id ? ' active' : '')}
+                  onClick={() => {
+                    setTab(it.id);
+                    setOpen(false);
+                  }}
+                >
+                  <it.Icon size="0.9rem" />
+                  {it.label}
+                  {it.b !== undefined && (
+                    <span className={'nav-badge' + (it.gold ? ' gold' : ' red')}>{it.b}</span>
+                  )}
+                </div>
+              ))}
+              <div className="nav-lbl">Management</div>
+              {items.slice(5).map((it) => (
+                <div
+                  key={it.id}
+                  className={'nav-item' + (tab === it.id ? ' active' : '')}
+                  onClick={() => {
+                    setTab(it.id);
+                    setOpen(false);
+                  }}
+                >
+                  <it.Icon size="0.9rem" />
+                  {it.label}
+                </div>
+              ))}
+            </nav>
+            <div className="sidebar-foot">
+              <div className="user-av" style={{ width: 36, height: 36, fontSize: '0.8rem' }}>
+                AK
+              </div>
+              <div>
+                <div style={{ fontSize: '.82rem', fontWeight: 600 }}>Admin Kariuki</div>
+                <div style={{ fontSize: '.65rem', color: 'var(--t3)' }}>Workshop Manager</div>
+              </div>
+            </div>
+          </aside>
+        );
+      }
+
+      /* TopBar */
+      function TopBar({ open, setOpen }) {
+        const { addToast } = useContext(Ctx);
+        return (
+          <div className="topbar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button
+                className={'ibtn ibtn-lg'}
+                style={{ display: window.innerWidth <= 768 ? 'flex' : 'none' }}
+                onClick={() => setOpen(!open)}
+              >
+                <Bars size="0.9rem" />
+              </button>
+              <div className="search-box">
+                <Search size="0.85rem" color="var(--t3)" />
+                <input placeholder="Search orders, workers, materials..." />
+              </div>
+            </div>
+            <div className="topbar-actions">
+              <div className="live-badge">
+                <div className="ld" />
+                <span>LIVE</span>
+              </div>
+              <button
+                className="top-btn"
+                onClick={() => addToast('info', 'Sync', 'Data synchronized successfully')}
+              >
+                <Rotate size="0.85rem" />
+              </button>
+              <button
+                className="top-btn"
+                onClick={() => addToast('info', 'Notifications', 'No new notifications')}
+              >
+                <Bell size="0.85rem" />
+                <div className="dot" />
+              </button>
+              <div className="user-av" style={{ width: 34, height: 34, fontSize: '0.75rem' }}>
+                AK
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      /* Stat Card */
+      function StatCard({ label, value, icon: Icon, color, bg, chg, chgColor, chgBg, delay }) {
+        return (
+          <div
+            className="stat-card"
+            style={{ animation: 'fadeUp .5s ease both', animationDelay: delay || '0s' }}
+          >
+            <div className="glow" style={{ background: color }} />
+            <div className="stat-icon" style={{ background: bg, color }}>
+              <Icon size="1rem" />
+            </div>
+            <div className="stat-val" style={{ color }}>
+              {value}
+            </div>
+            <div className="stat-lbl">{label}</div>
+            <div className="stat-chg" style={{ background: chgBg, color: chgColor }}>
+              <ArrowUp size="0.6rem" />
+              {chg}
+            </div>
+          </div>
+        );
+      }
+
+      /* Pipeline */
+      function Pipeline({ orders }) {
+        const counts = useMemo(() => {
+          const c = {};
+          STAGES.forEach((s) => (c[s.id] = 0));
+          orders
+            .filter((o) => o.currentStage !== 'completed')
+            .forEach((o) => (c[o.currentStage] = (c[o.currentStage] || 0) + 1));
+          return c;
+        }, [orders]);
+        return (
+          <div className="pipeline">
+            {STAGES.map((s) => {
+              const cnt = counts[s.id] || 0;
+              const isActive = cnt > 0;
+              const doneIdx = STAGES.findIndex((st) => counts[st.id] > 0);
+              const myIdx = STAGES.findIndex((st) => st.id === s.id);
+              const isDone = myIdx < doneIdx;
+              return (
+                <div
+                  key={s.id}
+                  className={
+                    'pipe-stage' +
+                    (isDone && !isActive ? ' done' : '') +
+                    (isActive ? ' active' : '')
+                  }
+                >
+                  <div className="pipe-dot">
+                    <i className={'fas ' + s.icon} />
+                  </div>
+                  <div className="pipe-lbl">{s.label}</div>
+                  <div className="pipe-cnt">{cnt} active</div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      /* Weekly Chart */
+      function WeeklyChart() {
+        const r = useRef(null);
+        const [m, setM] = useState('orders');
+        useChart(
+          r,
+          () => ({
+            type: 'bar',
+            data: {
+              labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+              datasets:
+                m === 'orders'
+                  ? [
+                      {
+                        label: 'Orders',
+                        data: [5, 8, 6, 9, 7, 4, 3],
+                        backgroundColor: 'rgba(212,160,83,0.6)',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                      },
+                      {
+                        label: 'Completed',
+                        data: [4, 7, 5, 8, 6, 3, 2],
+                        backgroundColor: 'rgba(16,185,129,0.6)',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                      },
+                    ]
+                  : [
+                      {
+                        label: 'Revenue',
+                        data: [85000, 136000, 102000, 153000, 119000, 68000, 51000],
+                        backgroundColor: 'rgba(212,160,83,0.6)',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                      },
+                      {
+                        label: 'Cost',
+                        data: [68000, 119000, 85000, 136000, 102000, 51000, 34000],
+                        backgroundColor: 'rgba(16,185,129,0.6)',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                      },
+                    ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                  labels: { boxWidth: 12, padding: 15, usePointStyle: true, pointStyle: 'circle' },
+                },
+              },
+              scales: {
+                x: { grid: { display: false } },
+                y: {
+                  beginAtZero: true,
+                  grid: { color: 'rgba(255,255,255,0.04)' },
+                  ticks: m === 'revenue' ? { callback: (v) => 'KES ' + v / 1000 + 'K' } : undefined,
+                },
+              },
+            },
+          }),
+          [m],
+        );
+        return (
+          <div>
+            <div className="tab-bar">
+              <button
+                className={'tab-btn' + (m === 'orders' ? ' active' : '')}
+                onClick={() => setM('orders')}
+              >
+                Orders
+              </button>
+              <button
+                className={'tab-btn' + (m === 'revenue' ? ' active' : '')}
+                onClick={() => setM('revenue')}
+              >
+                Revenue
+              </button>
+            </div>
+            <div style={{ height: '180px', marginTop: '.75rem' }}>
+              <canvas ref={r} />
+            </div>
+          </div>
+        );
+      }
+
+      /* Recent Orders Table */
+      function RecentOrders({ orders, onView }) {
+        const active = useMemo(
+          () => orders.filter((o) => o.currentStage !== 'completed').slice(0, 8),
+          [orders],
+        );
+        return (
+          <table className="dt">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Deceased</th>
+                <th>Stage</th>
+                <th>Assigned</th>
+                <th>Priority</th>
+                <th>Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {active.map((o) => {
+                const si = STAGES.findIndex((s) => s.id === o.currentStage);
+                const pct = Math.round((si / (STAGES.length - 1)) * 100);
+                const st = STAGES[si];
+                return (
+                  <tr key={o.id} className="tr" onClick={() => onView(o.id)}>
+                    <td>
+                      <strong style={{ color: 'var(--accent)' }}>{o.orderNumber}</strong>
+                      <br />
+                      <span style={{ fontSize: '.7rem', color: 'var(--t3)' }}>{o.coffinType}</span>
+                    </td>
+                    <td>{o.deceasedName}</td>
+                    <td>
+                      <span
+                        className="badge"
+                        style={{ background: st.color + '22', color: st.color }}
+                      >
+                        <i className={'fas ' + st.icon} style={{ fontSize: '.6rem' }} /> {st.label}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ color: o.assignedWorker.color, fontWeight: 600 }}>
+                        {o.assignedWorker.name.split(' ')[0]}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          'badge badge-' +
+                          (o.priority === 'urgent'
+                            ? 'red'
+                            : o.priority === 'high'
+                              ? 'amber'
+                              : 'gray')
+                        }
+                      >
+                        {o.priority}
+                      </span>
+                    </td>
+                    <td style={{ minWidth: 120 }}>
+                      <div className="pbar">
+                        <div className="pfill" style={{ width: pct + '%', background: st.color }} />
+                      </div>
+                      <span style={{ fontSize: '.65rem', color: 'var(--t3)' }}>{pct}%</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        );
+      }
+
+      /* Activity Feed */
+      function ActivityFeed({ activity }) {
+        return (
+          <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+            {activity.slice(0, 10).map((a, i) => (
+              <div key={i} className="feed-item">
+                <div
+                  className="feed-dot"
+                  style={{ background: a.type === 'success' ? 'var(--ok)' : 'var(--info)' }}
+                />
+                <div>
+                  <div
+                    className="feed-text"
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        '<strong>' +
+                        a.worker.name +
+                        '</strong> ' +
+                        a.action +
+                        ' <strong>' +
+                        a.coffin.orderNumber +
+                        '</strong>',
+                    }}
+                  />
+                  <div className="feed-time">{timeAgo(a.time)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      /* Quick Insights */
+      function QuickInsights({ insights }) {
+        return (
+          <div className="g3">
+            {insights.slice(0, 3).map((ins, i) => (
+              <div key={i} className="insight" style={{ background: ins.bg }}>
+                <div className="insight-hdr">
+                  <div
+                    className="insight-icon"
+                    style={{ background: ins.iconBg, color: ins.iconClr }}
+                  >
+                    <i className={'fas ' + ins.icon} />
+                  </div>
+                  <span className="insight-type" style={{ color: ins.iconClr }}>
+                    {ins.type}
+                  </span>
+                </div>
+                <div className="insight-text" dangerouslySetInnerHTML={{ __html: ins.text }} />
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      /* ═══════ DASHBOARD TAB ═══════ */
+      function DashboardTab() {
+        const { orders, activity, materials, workers, openModal } = useContext(Ctx);
+        const insights = useMemo(
+          () => genInsights(orders, materials, workers),
+          [orders, materials, workers],
+        );
+        const ac = orders.filter((o) => o.currentStage !== 'completed').length;
+        const ls = materials.filter((m) => m.quantity <= m.minLevel).length;
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">Production Dashboard</div>
+                <div className="page-sub">
+                  Real-time workshop overview —{' '}
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </div>
+              </div>
+              <button className="btn" onClick={() => openModal('newOrder')}>
+                <Plus size="0.85rem" />
+                New Coffin Order
+              </button>
+            </div>
+            <div className="stat-grid">
+              <StatCard
+                label="Active Coffins"
+                value={ac}
+                icon={ListCheck}
+                color="var(--accent)"
+                bg="var(--accent-d)"
+                chg="12% vs yesterday"
+                chgColor="var(--ok)"
+                chgBg="rgba(16,185,129,0.1)"
+                delay=".05s"
+              />
+              <StatCard
+                label="Completed Today"
+                value={8}
+                icon={CircleCheck}
+                color="var(--ok)"
+                bg="rgba(16,185,129,0.12)"
+                chg="8% vs yesterday"
+                chgColor="var(--ok)"
+                chgBg="rgba(16,185,129,0.1)"
+                delay=".1s"
+              />
+              <StatCard
+                label="Workers On-Duty"
+                value={workers.length}
+                icon={UsersGear}
+                color="var(--info)"
+                bg="rgba(59,130,246,0.12)"
+                chg="Same as yesterday"
+                chgColor="var(--info)"
+                chgBg="rgba(59,130,246,0.1)"
+                delay=".15s"
+              />
+              <StatCard
+                label="Low Stock Alerts"
+                value={ls}
+                icon={TriangleEx}
+                color="var(--err)"
+                bg="rgba(239,68,68,0.12)"
+                chg="2 less than yesterday"
+                chgColor="var(--err)"
+                chgBg="rgba(239,68,68,0.1)"
+                delay=".2s"
+              />
+            </div>
+            <div className="g2" style={{ marginBottom: '1.5rem' }}>
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">
+                    <Route size="0.85rem" color="var(--accent)" />
+                    Production Pipeline
+                  </div>
+                  <span className="badge badge-blue">9 Stages</span>
+                </div>
+                <Pipeline orders={orders} />
+              </div>
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">
+                    <ChartBar size="0.85rem" color="var(--accent)" />
+                    Weekly Output
+                  </div>
+                </div>
+                <div className="card-body">
+                  <WeeklyChart />
+                </div>
+              </div>
+            </div>
+            <div className="g2" style={{ marginBottom: '1.5rem' }}>
+              <div
+                className="card"
+                style={{ animation: 'fadeUp .5s ease both', animationDelay: '.35s' }}
+              >
+                <div className="card-hdr">
+                  <div className="card-ttl">
+                    <ListCheck size="0.85rem" color="var(--accent)" />
+                    Active Coffin Orders
+                  </div>
+                  <button className="btn btn-g btn-sm" onClick={() => {}}>
+                    View All <ArrowRight size="0.65rem" />
+                  </button>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <RecentOrders orders={orders} onView={(id) => openModal('orderDetail', id)} />
+                </div>
+              </div>
+              <div
+                className="card"
+                style={{ animation: 'fadeUp .5s ease both', animationDelay: '.4s' }}
+              >
+                <div className="card-hdr">
+                  <div className="card-ttl">
+                    <Bolt size="0.85rem" color="var(--accent)" />
+                    Live Activity
+                  </div>
+                </div>
+                <div className="card-body">
+                  <ActivityFeed activity={activity} />
+                </div>
+              </div>
+            </div>
+            <div
+              className="card"
+              style={{ animation: 'fadeUp .5s ease both', animationDelay: '.45s' }}
+            >
+              <div className="card-hdr">
+                <div className="card-ttl">
+                  <Brain size="0.85rem" color="var(--accent)" />
+                  AI Quick Insights
+                </div>
+                <button className="btn btn-g btn-sm">
+                  View All <ArrowRight size="0.65rem" />
+                </button>
+              </div>
+              <div className="card-body">
+                <QuickInsights insights={insights} />
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ PRODUCTION TAB ═══════ */
+      function ProductionTab() {
+        const { orders, openModal } = useContext(Ctx);
+        const [flt, setFlt] = useState('all');
+        const filtered = useMemo(
+          () => (flt === 'all' ? orders : orders.filter((o) => o.currentStage === flt)),
+          [orders, flt],
+        );
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">Production Queue</div>
+                <div className="page-sub">All active coffin orders and their current stage</div>
+              </div>
+              <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
+                <select className="fs sel-f" value={flt} onChange={(e) => setFlt(e.target.value)}>
+                  <option value="all">All Stages</option>
+                  {STAGES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <button className="btn" onClick={() => openModal('newOrder')}>
+                  <Plus size="0.85rem" />
+                  New Order
+                </button>
+              </div>
+            </div>
+            <div className="order-grid">
+              {filtered.map((o) => {
+                const si = STAGES.findIndex((s) => s.id === o.currentStage);
+                const st = STAGES[si];
+                return (
+                  <div
+                    key={o.id}
+                    className={
+                      'order-card' +
+                      (o.priority === 'urgent' ? ' urgent' : o.priority === 'high' ? ' high' : '')
+                    }
+                    onClick={() => openModal('orderDetail', o.id)}
+                  >
+                    {o.priority !== 'normal' && (
+                      <div
+                        className="pri-tag"
+                        style={{
+                          background:
+                            o.priority === 'urgent'
+                              ? 'rgba(239,68,68,0.15)'
+                              : 'rgba(245,158,11,0.15)',
+                          color: o.priority === 'urgent' ? '#f87171' : '#fbbf24',
+                        }}
+                      >
+                        {o.priority}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '.5rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent)' }}>
+                          {o.orderNumber}
+                        </div>
+                        <div style={{ fontSize: '.72rem', color: 'var(--t3)', marginTop: '.1rem' }}>
+                          {o.coffinType} — {o.color}
+                        </div>
+                      </div>
+                      <span
+                        className="badge"
+                        style={{ background: st.color + '22', color: st.color }}
+                      >
+                        <i className={'fas ' + st.icon} style={{ fontSize: '.6rem' }} /> {st.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '.82rem', color: 'var(--t2)', marginBottom: '.25rem' }}>
+                      <strong style={{ color: 'var(--t1)' }}>Deceased:</strong> {o.deceasedName}
+                    </div>
+                    <div style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.15rem' }}>
+                      <User size="0.7rem" style={{ width: 14 }} /> {o.assignedWorker.name}{' '}
+                      &nbsp;|&nbsp; <Clock size="0.7rem" style={{ width: 14 }} />{' '}
+                      {timeAgo(o.createdAt)}
+                    </div>
+                    <div style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.5rem' }}>
+                      <Tag size="0.7rem" style={{ width: 14 }} /> KES {o.price.toLocaleString()}{' '}
+                      &nbsp;|&nbsp; <Couch size="0.7rem" style={{ width: 14 }} /> {o.interior}
+                    </div>
+                    <div className="mini-pipe">
+                      {STAGES.map((s, i) => (
+                        <div
+                          key={s.id}
+                          className={
+                            'mini-d' + (i < si ? ' done' : '') + (i === si ? ' active' : '')
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {filtered.length === 0 && (
+                <div
+                  style={{
+                    gridColumn: '1/-1',
+                    textAlign: 'center',
+                    padding: '4rem',
+                    color: 'var(--t3)',
+                  }}
+                >
+                  <Inbox
+                    size="2.5rem"
+                    style={{ opacity: 0.3, marginBottom: '1rem', display: 'block' }}
+                  />
+                  <div style={{ fontSize: '1rem', fontWeight: 600 }}>No orders in this stage</div>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ LEADERBOARD TAB ═══════ */
+      function LeaderboardTab() {
+        const { workers } = useContext(Ctx);
+        const [per, setPer] = useState('today');
+        const ck =
+          per === 'today'
+            ? 'todayCount'
+            : per === 'week'
+              ? 'weekCount'
+              : per === 'month'
+                ? 'monthCount'
+                : 'allTime';
+        const ul =
+          per === 'today'
+            ? 'today'
+            : per === 'week'
+              ? 'this week'
+              : per === 'month'
+                ? 'this month'
+                : 'all time';
+        const sorted = useMemo(() => [...workers].sort((a, b) => b[ck] - a[ck]), [workers, ck]);
+        const rBgs = [
+          'linear-gradient(135deg,#d4a053,#b8860b)',
+          'linear-gradient(135deg,#94a3b8,#64748b)',
+          'linear-gradient(135deg,#b45309,#92400e)',
+        ];
+        const avgR = useRef(null);
+        const pieR = useRef(null);
+        const byAvg = useMemo(
+          () => [...workers].sort((a, b) => a.avgHours - b.avgHours),
+          [workers],
+        );
+
+        useChart(
+          avgR,
+          () => ({
+            type: 'bar',
+            indexAxis: 'y',
+            data: {
+              labels: byAvg.map((w) => w.name.split(' ')[0]),
+              datasets: [
+                {
+                  label: 'Avg Hours',
+                  data: byAvg.map((w) => w.avgHours),
+                  backgroundColor: byAvg.map((w) => w.color + 'aa'),
+                  borderRadius: 6,
+                  borderSkipped: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
+                y: { grid: { display: false } },
+              },
+            },
+          }),
+          [workers],
+        );
+
+        useChart(
+          pieR,
+          () => ({
+            type: 'doughnut',
+            data: {
+              labels: workers.map((w) => w.name.split(' ')[0]),
+              datasets: [
+                {
+                  data: workers.map((w) => w.monthCount),
+                  backgroundColor: workers.map((w) => w.color + 'cc'),
+                  borderWidth: 0,
+                  spacing: 2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '65%',
+              plugins: {
+                legend: {
+                  position: 'right',
+                  labels: {
+                    boxWidth: 10,
+                    padding: 8,
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    font: { size: 10 },
+                  },
+                },
+              },
+            },
+          }),
+          [workers],
+        );
+
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">Performance Leaderboard</div>
+                <div className="page-sub">Real-time worker rankings based on production output</div>
+              </div>
+              <div className="tab-bar">
+                {[
+                  ['today', 'Today'],
+                  ['week', 'This Week'],
+                  ['month', 'This Month'],
+                  ['all', 'All Time'],
+                ].map(([k, l]) => (
+                  <button
+                    key={k}
+                    className={'tab-btn' + (per === k ? ' active' : '')}
+                    onClick={() => setPer(k)}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="g2">
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">
+                    <Crown size="0.85rem" color="var(--accent)" />
+                    Top Producers
+                  </div>
+                </div>
+                <div style={{ maxHeight: 500, overflowY: 'auto' }}>
+                  {sorted.map((w, i) => {
+                    const ti =
+                      w.trend === 'up' ? (
+                        <ArrowTrendUp size="0.65rem" color="var(--ok)" />
+                      ) : w.trend === 'down' ? (
+                        <ArrowTrendDown size="0.65rem" color="var(--err)" />
+                      ) : (
+                        <Minus size="0.65rem" color="var(--t3)" />
+                      );
+                    return (
+                      <div key={w.id} className="lb-item">
+                        <div
+                          className="lb-rank"
+                          style={{
+                            background: i < 3 ? rBgs[i] : 'var(--bg-main)',
+                            color: i < 3 ? '#fff' : 'var(--t3)',
+                          }}
+                        >
+                          {i + 1}
+                        </div>
+                        <div className="lb-av" style={{ background: w.color }}>
+                          {w.initials}
+                        </div>
+                        <div className="lb-info">
+                          <div className="lb-name">
+                            {w.name} {ti}
+                          </div>
+                          <div className="lb-role">
+                            {w.role} — Avg {w.avgHours}h/coffin
+                          </div>
+                        </div>
+                        <div className="lb-score">
+                          <div className="lb-cnt">{w[ck]}</div>
+                          <div className="lb-unit">coffins {ul}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="card" style={{ marginBottom: '1rem' }}>
+                  <div className="card-hdr">
+                    <div className="card-ttl">
+                      <GaugeHigh size="0.85rem" color="var(--accent)" />
+                      Avg Completion Time
+                    </div>
+                  </div>
+                  <div className="card-body" style={{ height: 250 }}>
+                    <canvas ref={avgR} />
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="card-hdr">
+                    <div className="card-ttl">
+                      <ChartPie size="0.85rem" color="var(--accent)" />
+                      Output Distribution
+                    </div>
+                  </div>
+                  <div
+                    className="card-body"
+                    style={{
+                      height: 250,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <canvas ref={pieR} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ INSIGHTS TAB ═══════ */
+      function InsightsTab() {
+        const { orders, materials, workers, addToast } = useContext(Ctx);
+        const insights = useMemo(
+          () => genInsights(orders, materials, workers),
+          [orders, materials, workers],
+        );
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">AI-Powered Insights</div>
+                <div className="page-sub">
+                  Predictive analytics and productivity recommendations
+                </div>
+              </div>
+              <button
+                className="btn btn-g"
+                onClick={() =>
+                  addToast('info', 'AI Engine', 'Regenerating insights with latest data...')
+                }
+              >
+                <Rotate size="0.85rem" />
+                Regenerate
+              </button>
+            </div>
+            <div className="g2">
+              {insights.map((ins, i) => (
+                <div key={i} className="insight" style={{ background: ins.bg }}>
+                  <div className="insight-hdr">
+                    <div
+                      className="insight-icon"
+                      style={{ background: ins.iconBg, color: ins.iconClr }}
+                    >
+                      <i className={'fas ' + ins.icon} />
+                    </div>
+                    <span className="insight-type" style={{ color: ins.iconClr }}>
+                      {ins.type}
+                    </span>
+                  </div>
+                  <div className="insight-text" dangerouslySetInnerHTML={{ __html: ins.text }} />
+                  {ins.actLbl && (
+                    <button
+                      className="btn btn-g btn-sm"
+                      style={{ marginTop: '.75rem' }}
+                      onClick={() =>
+                        addToast('info', 'Action', ins.actLbl + ' initiated successfully')
+                      }
+                    >
+                      {ins.actLbl}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ ANALYTICS TAB ═══════ */
+      function AnalyticsTab() {
+        const { orders } = useContext(Ctx);
+        const [per, setPer] = useState('weekly');
+        const labels =
+          per === 'weekly'
+            ? ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5', 'Wk 6', 'Wk 7', 'Wk 8']
+            : per === 'monthly'
+              ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
+              : ['Q1', 'Q2', 'Q3', 'Q4'];
+        const m = per === 'weekly' ? 1 : per === 'monthly' ? 4 : 12;
+        const oR = useRef(null);
+        const rR = useRef(null);
+        const ctR = useRef(null);
+        const bnR = useRef(null);
+        const efR = useRef(null);
+        const sd = useMemo(
+          () =>
+            STAGES.slice(0, -1).map((s) => orders.filter((o) => o.currentStage === s.id).length),
+          [orders],
+        );
+
+        useChart(
+          oR,
+          () => ({
+            type: 'line',
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: 'Orders',
+                  data: [18, 22, 19, 25, 28, 24, 31, 27].map((v) => v * m),
+                  borderColor: '#d4a053',
+                  backgroundColor: 'rgba(212,160,83,0.1)',
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointBackgroundColor: '#d4a053',
+                },
+                {
+                  label: 'Completed',
+                  data: [15, 20, 17, 23, 26, 22, 28, 25].map((v) => v * m),
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16,185,129,0.08)',
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointBackgroundColor: '#10b981',
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'circle' } },
+              },
+              scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
+              },
+            },
+          }),
+          [per],
+        );
+
+        useChart(
+          rR,
+          () => ({
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: 'Revenue (KES)',
+                  data: [285000, 340000, 295000, 410000, 455000, 390000, 520000, 460000].map(
+                    (v) => v * m,
+                  ),
+                  backgroundColor: 'rgba(212,160,83,0.5)',
+                  borderRadius: 8,
+                  borderSkipped: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'circle' } },
+              },
+              scales: {
+                x: { grid: { display: false } },
+                y: {
+                  grid: { color: 'rgba(255,255,255,0.04)' },
+                  beginAtZero: true,
+                  ticks: { callback: (v) => 'KES ' + v / 1000 + 'K' },
+                },
+              },
+            },
+          }),
+          [per],
+        );
+
+        useChart(
+          ctR,
+          () => ({
+            type: 'doughnut',
+            data: {
+              labels: CTYPES,
+              datasets: [
+                {
+                  data: [35, 28, 15, 12, 6, 4],
+                  backgroundColor: [
+                    '#d4a053',
+                    '#3b82f6',
+                    '#10b981',
+                    '#ef4444',
+                    '#8b5cf6',
+                    '#ec4899',
+                  ],
+                  borderWidth: 0,
+                  spacing: 2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '60%',
+              plugins: {
+                legend: {
+                  position: 'right',
+                  labels: {
+                    boxWidth: 10,
+                    padding: 6,
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    font: { size: 10 },
+                  },
+                },
+              },
+            },
+          }),
+          [],
+        );
+
+        useChart(
+          bnR,
+          () => ({
+            type: 'bar',
+            data: {
+              labels: STAGES.slice(0, -1).map((s) => s.label),
+              datasets: [
+                {
+                  label: 'Coffins in Stage',
+                  data: sd,
+                  backgroundColor: STAGES.slice(0, -1).map((s) => s.color + '88'),
+                  borderRadius: 6,
+                  borderSkipped: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' } },
+              },
+            },
+          }),
+          [sd],
+        );
+
+        // Efficiency gauge — manual canvas drawing
+        useEffect(() => {
+          if (!efR.current) return;
+          const c = efR.current,
+            dpr = window.devicePixelRatio || 1;
+          c.width = 200 * dpr;
+          c.height = 200 * dpr;
+          c.scale(dpr, dpr);
+          c.style.width = '200px';
+          c.style.height = '200px';
+          const ctx = c.getContext('2d'),
+            cx = 100,
+            cy = 110,
+            r = 75,
+            sa = Math.PI * 0.8,
+            ea = Math.PI * 2.2,
+            va = sa + 0.87 * (ea - sa);
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, sa, ea);
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.lineWidth = 12;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+          const g = ctx.createLinearGradient(0, 0, 200, 0);
+          g.addColorStop(0, '#ef4444');
+          g.addColorStop(0.4, '#f59e0b');
+          g.addColorStop(0.7, '#10b981');
+          g.addColorStop(1, '#10b981');
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, sa, va);
+          ctx.strokeStyle = g;
+          ctx.lineWidth = 12;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+          ctx.fillStyle = '#f5f0eb';
+          ctx.font = '900 36px DM Sans';
+          ctx.textAlign = 'center';
+          ctx.fillText('87%', cx, cy + 5);
+          ctx.fillStyle = '#6b7280';
+          ctx.font = '500 11px DM Sans';
+          ctx.fillText('EFFICIENCY', cx, cy + 25);
+        }, []);
+
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">Production Analytics</div>
+                <div className="page-sub">Detailed charts and trend analysis</div>
+              </div>
+              <div className="tab-bar">
+                {['weekly', 'monthly', 'quarterly'].map((p) => (
+                  <button
+                    key={p}
+                    className={'tab-btn' + (per === p ? ' active' : '')}
+                    onClick={() => setPer(p)}
+                    style={{ textTransform: 'capitalize' }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="g2" style={{ marginBottom: '1.5rem' }}>
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">Orders Over Time</div>
+                </div>
+                <div className="card-body" style={{ height: 280 }}>
+                  <canvas ref={oR} />
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">Revenue Trend</div>
+                </div>
+                <div className="card-body" style={{ height: 280 }}>
+                  <canvas ref={rR} />
+                </div>
+              </div>
+            </div>
+            <div className="g3">
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">Coffin Types</div>
+                </div>
+                <div
+                  className="card-body"
+                  style={{
+                    height: 250,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <canvas ref={ctR} />
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">Stage Bottlenecks</div>
+                </div>
+                <div className="card-body" style={{ height: 250 }}>
+                  <canvas ref={bnR} />
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hdr">
+                  <div className="card-ttl">Efficiency Score</div>
+                </div>
+                <div
+                  className="card-body"
+                  style={{
+                    height: 250,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <canvas ref={efR} />
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ WORKERS TAB ═══════ */
+      function WorkersTab() {
+        const { workers, orders } = useContext(Ctx);
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">Workshop Workers</div>
+                <div className="page-sub">Manage your production team</div>
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))',
+                gap: '1rem',
+              }}
+            >
+              {workers.map((w) => {
+                const ac = orders.filter(
+                  (o) => o.assignedWorker.id === w.id && o.currentStage !== 'completed',
+                ).length;
+                const ti =
+                  w.trend === 'up' ? (
+                    <ArrowTrendUp size="0.85rem" color="var(--ok)" />
+                  ) : w.trend === 'down' ? (
+                    <ArrowTrendDown size="0.85rem" color="var(--err)" />
+                  ) : (
+                    <Minus size="0.85rem" color="var(--t3)" />
+                  );
+                return (
+                  <div key={w.id} className="card">
+                    <div className="card-body">
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '.75rem',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        <div
+                          className="user-av"
+                          style={{
+                            width: 48,
+                            height: 48,
+                            fontSize: '1rem',
+                            borderRadius: 12,
+                            background: w.color,
+                          }}
+                        >
+                          {w.initials}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: '.95rem' }}>{w.name}</div>
+                          <div style={{ fontSize: '.72rem', color: 'var(--t3)' }}>{w.role}</div>
+                        </div>
+                        {ti}
+                      </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr 1fr',
+                          gap: '.5rem',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        {[
+                          { v: w.todayCount, l: 'Today', c: 'var(--accent)' },
+                          { v: w.weekCount, l: 'Week', c: 'var(--info)' },
+                          { v: w.monthCount, l: 'Month', c: 'var(--ok)' },
+                        ].map((s, i) => (
+                          <div key={i} className="ws-box">
+                            <div className="ws-val" style={{ color: s.c }}>
+                              {s.v}
+                            </div>
+                            <div className="ws-lbl">{s.l}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '.75rem',
+                          color: 'var(--t2)',
+                          marginBottom: '.35rem',
+                        }}
+                      >
+                        <span>Speed Rating</span>
+                        <span>{Math.round(w.speed * 100)}%</span>
+                      </div>
+                      <div className="pbar" style={{ marginBottom: '.5rem' }}>
+                        <div className="pfill" style={{ width: w.speed * 100 + '%' }} />
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '.75rem',
+                          color: 'var(--t2)',
+                          marginBottom: '.35rem',
+                        }}
+                      >
+                        <span>Reliability</span>
+                        <span>{Math.round(w.reliability * 100)}%</span>
+                      </div>
+                      <div className="pbar" style={{ marginBottom: '.75rem' }}>
+                        <div
+                          className="pfill"
+                          style={{ width: w.reliability * 100 + '%', background: 'var(--ok)' }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '.75rem', color: 'var(--t3)' }}>
+                        <ListCheck size="0.7rem" style={{ width: 14 }} /> {ac} active — Avg{' '}
+                        {w.avgHours}h per coffin
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ MATERIALS TAB ═══════ */
+      function MaterialsTab() {
+        const { materials, restockMat } = useContext(Ctx);
+        return (
+          <>
+            <div className="page-hdr">
+              <div>
+                <div className="page-title">Materials Inventory</div>
+                <div className="page-sub">Track stock levels and supplier information</div>
+              </div>
+            </div>
+            <div className="card">
+              <div style={{ overflowX: 'auto' }}>
+                <table className="dt">
+                  <thead>
+                    <tr>
+                      <th>Material</th>
+                      <th>Category</th>
+                      <th>In Stock</th>
+                      <th>Min Level</th>
+                      <th>Unit Cost</th>
+                      <th>Supplier</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {materials.map((m) => {
+                      const low = m.quantity <= m.minLevel;
+                      const crit = m.quantity <= m.minLevel * 0.5;
+                      return (
+                        <tr key={m.id} className="tr" style={{ cursor: 'default' }}>
+                          <td>
+                            <strong>{m.name}</strong>
+                          </td>
+                          <td>
+                            <span className="badge badge-gray">{m.category}</span>
+                          </td>
+                          <td style={{ fontWeight: 700, color: low ? 'var(--err)' : 'inherit' }}>
+                            {m.quantity} {m.unit}
+                          </td>
+                          <td>
+                            {m.minLevel} {m.unit}
+                          </td>
+                          <td>KES {m.costPerUnit.toLocaleString()}</td>
+                          <td style={{ fontSize: '.78rem' }}>{m.supplier}</td>
+                          <td>
+                            <span
+                              className={'badge badge-' + (crit ? 'red' : low ? 'amber' : 'green')}
+                            >
+                              {crit ? 'Critical' : low ? 'Low Stock' : 'In Stock'}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="ibtn" onClick={() => restockMat(m.id)}>
+                              <Plus size="0.75rem" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      /* ═══════ MODALS ═══════ */
+      function NewOrderModal({ close }) {
+        const { addToast, createOrder } = useContext(Ctx);
+        const [f, setF] = useState({
+          customer: '',
+          deceased: '',
+          type: 'Standard',
+          priority: 'normal',
+          color: 'Walnut',
+          interior: 'Satin Gold',
+          due: '',
+        });
+        const u = (k, v) => setF((p) => ({ ...p, [k]: v }));
+        const submit = () => {
+          if (!f.customer || !f.deceased) {
+            addToast('error', 'Validation', 'Enter customer and deceased names');
+            return;
+          }
+          createOrder(f.customer, f.deceased, f.type, f.priority, f.color, f.interior, f.due);
+          close();
+        };
+        return (
+          <div
+            className="modal-ov"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) close();
+            }}
+          >
+            <div className="modal-box">
+              <div className="modal-hdr">
+                <h3>
+                  <Plus size="0.9rem" color="var(--accent)" />
+                  New Coffin Order
+                </h3>
+                <button className="ibtn ibtn-lg" onClick={close}>
+                  <Xmark size="0.9rem" />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="frow">
+                  <div className="fg">
+                    <label className="fl">Customer Name</label>
+                    <input
+                      className="fi"
+                      value={f.customer}
+                      onChange={(e) => u('customer', e.target.value)}
+                      placeholder="Enter customer name"
+                    />
+                  </div>
+                  <div className="fg">
+                    <label className="fl">Deceased Name</label>
+                    <input
+                      className="fi"
+                      value={f.deceased}
+                      onChange={(e) => u('deceased', e.target.value)}
+                      placeholder="Enter deceased name"
+                    />
+                  </div>
+                </div>
+                <div className="frow">
+                  <div className="fg">
+                    <label className="fl">Coffin Type</label>
+                    <select
+                      className="fs"
+                      value={f.type}
+                      onChange={(e) => u('type', e.target.value)}
+                    >
+                      {CTYPES.map((t) => (
+                        <option key={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="fg">
+                    <label className="fl">Priority</label>
+                    <select
+                      className="fs"
+                      value={f.priority}
+                      onChange={(e) => u('priority', e.target.value)}
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="frow">
+                  <div className="fg">
+                    <label className="fl">Color / Finish</label>
+                    <select
+                      className="fs"
+                      value={f.color}
+                      onChange={(e) => u('color', e.target.value)}
+                    >
+                      {COLORS.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="fg">
+                    <label className="fl">Interior Fabric</label>
+                    <select
+                      className="fs"
+                      value={f.interior}
+                      onChange={(e) => u('interior', e.target.value)}
+                    >
+                      {INTERIORS.map((i) => (
+                        <option key={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="fg">
+                  <label className="fl">Due Date</label>
+                  <input
+                    className="fi"
+                    type="date"
+                    value={f.due}
+                    onChange={(e) => u('due', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="modal-foot">
+                <button className="btn btn-g" onClick={close}>
+                  Cancel
+                </button>
+                <button className="btn" onClick={submit}>
+                  <CircleCheck size="0.85rem" />
+                  Create Order
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function OrderDetailModal({ orderId, close }) {
+        const { orders, advanceStage, reassignOrder, removeOrder } = useContext(Ctx);
+        const o = orders.find((x) => x.id === orderId);
+        if (!o) return null;
+        const si = STAGES.findIndex((s) => s.id === o.currentStage);
+        return (
+          <div
+            className="modal-ov"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) close();
+            }}
+          >
+            <div className="modal-box" style={{ maxWidth: 700 }}>
+              <div className="modal-hdr">
+                <h3>
+                  <span style={{ color: 'var(--accent)' }}>{o.orderNumber}</span> — {o.coffinType}{' '}
+                  Coffin
+                </h3>
+                <button className="ibtn ibtn-lg" onClick={close}>
+                  <Xmark size="0.9rem" />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="g3" style={{ marginBottom: '1.25rem' }}>
+                  <div
+                    style={{ padding: '.75rem', background: 'var(--bg-main)', borderRadius: 10 }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '.65rem',
+                        color: 'var(--t3)',
+                        textTransform: 'uppercase',
+                        marginBottom: '.25rem',
+                      }}
+                    >
+                      Customer
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '.9rem' }}>{o.customerName}</div>
+                  </div>
+                  <div
+                    style={{ padding: '.75rem', background: 'var(--bg-main)', borderRadius: 10 }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '.65rem',
+                        color: 'var(--t3)',
+                        textTransform: 'uppercase',
+                        marginBottom: '.25rem',
+                      }}
+                    >
+                      Deceased
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '.9rem' }}>{o.deceasedName}</div>
+                  </div>
+                  <div
+                    style={{ padding: '.75rem', background: 'var(--bg-main)', borderRadius: 10 }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '.65rem',
+                        color: 'var(--t3)',
+                        textTransform: 'uppercase',
+                        marginBottom: '.25rem',
+                      }}
+                    >
+                      Price
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '.9rem', color: 'var(--accent)' }}>
+                      KES {o.price.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="g3" style={{ marginBottom: '1.25rem' }}>
+                  <div
+                    style={{
+                      padding: '.6rem',
+                      background: 'var(--bg-main)',
+                      borderRadius: 8,
+                      fontSize: '.82rem',
+                    }}
+                  >
+                    <span style={{ color: 'var(--t3)' }}>Color:</span> <strong>{o.color}</strong>
+                  </div>
+                  <div
+                    style={{
+                      padding: '.6rem',
+                      background: 'var(--bg-main)',
+                      borderRadius: 8,
+                      fontSize: '.82rem',
+                    }}
+                  >
+                    <span style={{ color: 'var(--t3)' }}>Interior:</span>{' '}
+                    <strong>{o.interior}</strong>
+                  </div>
+                  <div
+                    style={{
+                      padding: '.6rem',
+                      background: 'var(--bg-main)',
+                      borderRadius: 8,
+                      fontSize: '.82rem',
+                    }}
+                  >
+                    <span style={{ color: 'var(--t3)' }}>Priority:</span>{' '}
+                    <span
+                      className={
+                        'badge badge-' +
+                        (o.priority === 'urgent' ? 'red' : o.priority === 'high' ? 'amber' : 'gray')
+                      }
+                      style={{ marginLeft: 4 }}
+                    >
+                      {o.priority}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <div
+                    style={{
+                      fontSize: '.75rem',
+                      fontWeight: 600,
+                      color: 'var(--t2)',
+                      marginBottom: '.75rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.05em',
+                    }}
+                  >
+                    Assigned Worker
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '.75rem',
+                      padding: '.75rem',
+                      background: 'var(--bg-main)',
+                      borderRadius: 10,
+                    }}
+                  >
+                    <div
+                      className="user-av"
+                      style={{ width: 40, height: 40, background: o.assignedWorker.color }}
+                    >
+                      {o.assignedWorker.initials}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{o.assignedWorker.name}</div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--t3)' }}>
+                        {o.assignedWorker.role}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: '.75rem',
+                      fontWeight: 600,
+                      color: 'var(--t2)',
+                      marginBottom: '.75rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.05em',
+                    }}
+                  >
+                    Production Stages
+                  </div>
+                  <div className="pipeline" style={{ padding: '.5rem 0' }}>
+                    {STAGES.map((s, i) => {
+                      const os = o.stages.find((x) => x.id === s.id);
+                      const done = os && os.status === 'completed';
+                      const active = os && os.status === 'in_progress';
+                      return (
+                        <div
+                          key={s.id}
+                          className={
+                            'pipe-stage' +
+                            (done && !active ? ' done' : '') +
+                            (active ? ' active' : '')
+                          }
+                        >
+                          <div
+                            className="pipe-dot"
+                            style={{ width: 32, height: 32, fontSize: '.65rem' }}
+                          >
+                            <i className={'fas ' + s.icon} />
+                          </div>
+                          <div className="pipe-lbl" style={{ fontSize: '.58rem' }}>
+                            {s.label}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ marginTop: '1rem', display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => {
+                      advanceStage(o.id);
+                      close();
+                    }}
+                  >
+                    <ForwardStep size="0.75rem" />
+                    Advance Stage
+                  </button>
+                  <button
+                    className="btn btn-g btn-sm"
+                    onClick={() => {
+                      reassignOrder(o.id);
+                      close();
+                    }}
+                  >
+                    <UserPen size="0.75rem" />
+                    Reassign Worker
+                  </button>
+                  <button
+                    className="btn btn-g btn-sm btn-danger"
+                    onClick={() => {
+                      removeOrder(o.id);
+                      close();
+                    }}
+                  >
+                    <Trash size="0.75rem" />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function AddMaterialModal({ close }) {
+        const { addMaterial, addToast } = useContext(Ctx);
+        const [f, setF] = useState({
+          name: '',
+          cat: 'Wood',
+          unit: 'pcs',
+          qty: '',
+          min: '10',
+          cost: '',
+          sup: '',
+        });
+        const u = (k, v) => setF((p) => ({ ...p, [k]: v }));
+        const submit = () => {
+          if (!f.name || !f.qty || parseInt(f.qty) <= 0) {
+            addToast('error', 'Validation', 'Fill in name and valid quantity');
+            return;
+          }
+          addMaterial({
+            name: f.name,
+            category: f.cat,
+            unit: f.unit,
+            quantity: parseInt(f.qty),
+            minLevel: parseInt(f.min) || 10,
+            costPerUnit: parseInt(f.cost) || 0,
+            supplier: f.sup || 'N/A',
+          });
+          close();
+        };
+        return (
+          <div
+            className="modal-ov"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) close();
+            }}
+          >
+            <div className="modal-box">
+              <div className="modal-hdr">
+                <h3>
+                  <Plus size="0.9rem" color="var(--accent)" />
+                  Add Material
+                </h3>
+                <button className="ibtn ibtn-lg" onClick={close}>
+                  <Xmark size="0.9rem" />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="fg">
+                  <label className="fl">Material Name</label>
+                  <input
+                    className="fi"
+                    value={f.name}
+                    onChange={(e) => u('name', e.target.value)}
+                    placeholder="e.g. Oak Planks"
+                  />
+                </div>
+                <div className="frow">
+                  <div className="fg">
+                    <label className="fl">Category</label>
+                    <select className="fs" value={f.cat} onChange={(e) => u('cat', e.target.value)}>
+                      <option>Wood</option>
+                      <option>Hardware</option>
+                      <option>Fabric</option>
+                      <option>Finish</option>
+                      <option>Abrasive</option>
+                    </select>
+                  </div>
+                  <div className="fg">
+                    <label className="fl">Unit</label>
+                    <select
+                      className="fs"
+                      value={f.unit}
+                      onChange={(e) => u('unit', e.target.value)}
+                    >
+                      <option>pcs</option>
+                      <option>sheets</option>
+                      <option>meters</option>
+                      <option>liters</option>
+                      <option>boxes</option>
+                      <option>packs</option>
+                      <option>pairs</option>
+                      <option>sets</option>
+                      <option>rolls</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="frow">
+                  <div className="fg">
+                    <label className="fl">Quantity</label>
+                    <input
+                      className="fi"
+                      type="number"
+                      value={f.qty}
+                      onChange={(e) => u('qty', e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="fg">
+                    <label className="fl">Min Stock Level</label>
+                    <input
+                      className="fi"
+                      type="number"
+                      value={f.min}
+                      onChange={(e) => u('min', e.target.value)}
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+                <div className="frow">
+                  <div className="fg">
+                    <label className="fl">Cost Per Unit (KES)</label>
+                    <input
+                      className="fi"
+                      type="number"
+                      value={f.cost}
+                      onChange={(e) => u('cost', e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="fg">
+                    <label className="fl">Supplier</label>
+                    <input
+                      className="fi"
+                      value={f.sup}
+                      onChange={(e) => u('sup', e.target.value)}
+                      placeholder="Supplier name"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-foot">
+                <button className="btn btn-g" onClick={close}>
+                  Cancel
+                </button>
+                <button className="btn" onClick={submit}>
+                  <CircleCheck size="0.85rem" />
+                  Add Material
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function ModalRouter({ type, data, close }) {
+        if (!type) return null;
+        if (type === 'newOrder') return <NewOrderModal close={close} />;
+        if (type === 'orderDetail') return <OrderDetailModal orderId={data} close={close} />;
+        if (type === 'addMaterial') return <AddMaterialModal close={close} />;
+        return null;
+      }
+
+      /* ═══════ APP ═══════ */
+      function App() {
+        const [tab, setTab] = useState('dashboard');
+        const [sbOpen, setSbOpen] = useState(false);
+        const [modal, setModal] = useState({ type: null, data: null });
+        const [toasts, setToasts] = useState([]);
+        const [orders, setOrders] = useState(() => makeOrders());
+        const [materials, setMaterials] = useState(() => makeMaterials());
+        const [workers, setWorkers] = useState(() => WORKERS.map((w) => ({ ...w })));
+        const [activity, setActivity] = useState(() => makeActivity(makeOrders()));
+
+        const tid = useRef(0);
+        const addToast = useCallback((type, title, msg) => {
+          const id = ++tid.current;
+          setToasts((p) => [...p, { id, type, title, msg, out: false }]);
+          setTimeout(
+            () => setToasts((p) => p.map((t) => (t.id === id ? { ...t, out: true } : t))),
+            3800,
+          );
+          setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 4100);
+        }, []);
+
+        const openModal = useCallback((type, data = null) => setModal({ type, data }), []);
+        const closeModal = useCallback(() => setModal({ type: null, data: null }), []);
+
+        const createOrder = useCallback(
+          (cust, dec, type, pri, col, int, due) => {
+            const w = workers[Math.floor(Math.random() * workers.length)];
+            const o = {
+              id: gid(),
+              orderNumber: 'CF-' + _id,
+              customerName: cust,
+              deceasedName: dec,
+              coffinType: type,
+              color: col || 'Walnut',
+              interior: int || 'Satin Gold',
+              currentStage: 'cutting',
+              stages: [
+                { ...STAGES[0], status: 'in_progress', startedAt: new Date(), completedAt: null },
+              ],
+              assignedWorker: { ...w },
+              priority: pri || 'normal',
+              price: PRICES[type] || 20000,
+              createdAt: new Date(),
+              dueDate: due
+                ? new Date(due)
+                : new Date(Date.now() + (3 + Math.floor(Math.random() * 5)) * 86400000),
+            };
+            setOrders((p) => [o, ...p]);
+            setActivity((a) => [
+              {
+                worker: w,
+                action: 'started new order',
+                coffin: o,
+                time: new Date(),
+                type: 'success',
+              },
+              ...a,
+            ]);
+            addToast(
+              'success',
+              'New Order',
+              o.orderNumber + ' — ' + o.coffinType + ' coffin for ' + o.deceasedName,
+            );
+          },
+          [workers, addToast],
+        );
+
+        const advanceStage = useCallback(
+          (oid) => {
+            setOrders((p) =>
+              p.map((o) => {
+                if (o.id !== oid) return o;
+                const ci = STAGES.findIndex((s) => s.id === o.currentStage);
+                if (ci >= STAGES.length - 1) return o;
+                const ns = STAGES[ci + 1];
+                const w = workers[Math.floor(Math.random() * workers.length)];
+                const ns2 = [...o.stages];
+                ns2[ci] = { ...ns2[ci], status: 'completed', completedAt: new Date() };
+                ns2.push({
+                  ...ns,
+                  status: 'in_progress',
+                  startedAt: new Date(),
+                  completedAt: null,
+                });
+                setActivity((a) => [
+                  {
+                    worker: w,
+                    action: 'moved to ' + ns.label + ' for',
+                    coffin: o,
+                    time: new Date(),
+                    type: ns.id === 'completed' ? 'success' : 'info',
+                  },
+                  ...a,
+                ]);
+                if (ns.id === 'completed')
+                  setWorkers((ws) =>
+                    ws.map((x) =>
+                      x.id === w.id
+                        ? {
+                            ...x,
+                            todayCount: x.todayCount + 1,
+                            weekCount: x.weekCount + 1,
+                            monthCount: x.monthCount + 1,
+                            allTime: x.allTime + 1,
+                          }
+                        : x,
+                    ),
+                  );
+                addToast(
+                  ns.id === 'completed' ? 'success' : 'info',
+                  ns.id === 'completed' ? 'Coffin Completed' : 'Stage Advanced',
+                  ns.id === 'completed'
+                    ? o.orderNumber + ' finished production'
+                    : o.orderNumber + ' moved to ' + ns.label,
+                );
+                return { ...o, currentStage: ns.id, stages: ns2, assignedWorker: { ...w } };
+              }),
+            );
+          },
+          [workers, addToast],
+        );
+
+        const reassignOrder = useCallback(
+          (oid) => {
+            const w = workers[Math.floor(Math.random() * workers.length)];
+            setOrders((p) => p.map((o) => (o.id === oid ? { ...o, assignedWorker: { ...w } } : o)));
+            addToast('info', 'Reassigned', w.name + ' assigned to order');
+          },
+          [workers, addToast],
+        );
+
+        const removeOrder = useCallback(
+          (oid) => {
+            setOrders((p) => p.filter((o) => o.id !== oid));
+            addToast('info', 'Removed', 'Order removed from queue');
+          },
+          [addToast],
+        );
+
+        const restockMat = useCallback(
+          (mid) => {
+            setMaterials((p) =>
+              p.map((m) => (m.id === mid ? { ...m, quantity: m.quantity + m.minLevel * 2 } : m)),
+            );
+            addToast('success', 'Restocked', 'Material restocked successfully');
+          },
+          [addToast],
+        );
+
+        const addMaterial = useCallback(
+          (mat) => {
+            setMaterials((p) => [...p, { ...mat, id: Math.max(...p.map((m) => m.id), 0) + 1 }]);
+            addToast('success', 'Added', mat.name + ' added to inventory');
+          },
+          [addToast],
+        );
+
+        // Real-time simulation
+        useEffect(() => {
+          const iv1 = setInterval(() => {
+            setOrders((prev) => {
+              const active = prev.filter((o) => o.currentStage !== 'completed');
+              if (!active.length) return prev;
+              const o = active[Math.floor(Math.random() * active.length)];
+              const ci = STAGES.findIndex((s) => s.id === o.currentStage);
+              if (ci >= STAGES.length - 1) return prev;
+              const ns = STAGES[ci + 1];
+              const w = WORKERS[Math.floor(Math.random() * WORKERS.length)];
+              const ns2 = [...o.stages];
+              ns2[ci] = { ...ns2[ci], status: 'completed', completedAt: new Date() };
+              ns2.push({ ...ns, status: 'in_progress', startedAt: new Date(), completedAt: null });
+              setActivity((a) => [
+                {
+                  worker: w,
+                  action: 'moved to ' + ns.label + ' for',
+                  coffin: o,
+                  time: new Date(),
+                  type: 'info',
+                },
+                ...a,
+              ]);
+              if (ns.id === 'completed') {
+                setWorkers((ws) =>
+                  ws.map((x) =>
+                    x.id === w.id
+                      ? {
+                          ...x,
+                          todayCount: x.todayCount + 1,
+                          weekCount: x.weekCount + 1,
+                          monthCount: x.monthCount + 1,
+                          allTime: x.allTime + 1,
+                        }
+                      : x,
+                  ),
+                );
+                addToast('success', 'Coffin Completed', o.orderNumber + ' finished production');
+              } else {
+                addToast(
+                  'info',
+                  'Stage Update',
+                  w.name.split(' ')[0] + ' advanced ' + o.orderNumber + ' to ' + ns.label,
+                );
+              }
+              return prev.map((x) =>
+                x.id === o.id
+                  ? { ...x, currentStage: ns.id, stages: ns2, assignedWorker: { ...w } }
+                  : x,
+              );
+            });
+          }, 12000);
+          const iv2 = setInterval(() => {
+            if (Math.random() < 0.3) {
+              const w = WORKERS[Math.floor(Math.random() * WORKERS.length)];
+              const tp = CTYPES[Math.floor(Math.random() * CTYPES.length)];
+              const o = {
+                id: gid(),
+                orderNumber: 'CF-' + _id,
+                customerName: CUSTOMERS[Math.floor(Math.random() * 12)],
+                deceasedName: DECEASED[Math.floor(Math.random() * 12)],
+                coffinType: tp,
+                color: COLORS[Math.floor(Math.random() * 6)],
+                interior: INTERIORS[Math.floor(Math.random() * 6)],
+                currentStage: 'cutting',
+                stages: [
+                  { ...STAGES[0], status: 'in_progress', startedAt: new Date(), completedAt: null },
+                ],
+                assignedWorker: { ...w },
+                priority: Math.random() < 0.1 ? 'urgent' : Math.random() < 0.25 ? 'high' : 'normal',
+                price: PRICES[tp] || 20000,
+                createdAt: new Date(),
+                dueDate: new Date(Date.now() + (3 + Math.floor(Math.random() * 5)) * 86400000),
+              };
+              setOrders((p) => [o, ...p]);
+              setActivity((a) => [
+                {
+                  worker: w,
+                  action: 'started new order',
+                  coffin: o,
+                  time: new Date(),
+                  type: 'success',
+                },
+                ...a,
+              ]);
+            }
+          }, 28000);
+          return () => {
+            clearInterval(iv1);
+            clearInterval(iv2);
+          };
+        }, [addToast]);
+
+        const ctx = useMemo(
+          () => ({
+            orders,
+            materials,
+            workers,
+            activity,
+            toasts,
+            addToast,
+            openModal,
+            closeModal,
+            createOrder,
+            advanceStage,
+            reassignOrder,
+            removeOrder,
+            restockMat,
+            addMaterial,
+          }),
+          [
+            orders,
+            materials,
+            workers,
+            activity,
+            toasts,
+            addToast,
+            openModal,
+            closeModal,
+            createOrder,
+            advanceStage,
+            reassignOrder,
+            removeOrder,
+            restockMat,
+            addMaterial,
+          ],
+        );
+
+        const tabs = {
+          dashboard: DashboardTab,
+          production: ProductionTab,
+          leaderboard: LeaderboardTab,
+          insights: InsightsTab,
+          analytics: AnalyticsTab,
+          workers: WorkersTab,
+          materials: MaterialsTab,
+        };
+        const Tab = tabs[tab] || DashboardTab;
+
+        return (
+          <Ctx.Provider value={ctx}>
+            <div className="bg-atmos" />
+            <Toasts />
+            <Sidebar tab={tab} setTab={setTab} open={sbOpen} setOpen={setSbOpen} />
+            <div className="main">
+              <TopBar open={sbOpen} setOpen={setSbOpen} />
+              <div className="page">
+                <Tab />
+              </div>
+            </div>
+            <ModalRouter type={modal.type} data={modal.data} close={closeModal} />
+          </Ctx.Provider>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
+</html>

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../utils/context/socketContext';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp, X } from 'lucide-react';
+import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp, X } from '../../utils/icons/icons';
 
 const COLORS = {
   primary: '#0A2463',

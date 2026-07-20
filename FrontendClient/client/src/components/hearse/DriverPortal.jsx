@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Car, RefreshCw, CheckCircle, Phone, LogOut, Calendar,
-    Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ArrowRight,
-    Route, Sun, Moon, CloudSun, User, Shield, Timer, CalendarDays
-} from 'lucide-react';
+import { Car, RefreshCw, CheckCircle, Phone, LogOut, Calendar, Clock, AlertCircle, Truck, Loader2, Zap, Navigation, ArrowRight, Route, Sun, Moon, CloudSun, User, Shield, Timer, CalendarDays } from '../../utils/icons/icons';
 import { useSocket } from '../../utils/context/socketContext';
 import env from '../../utils/config/env';
 

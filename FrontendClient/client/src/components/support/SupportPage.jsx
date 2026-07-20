@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { api, ENDPOINTS } from '../../api';
-import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, Send, X, Mail, User, Tag } from 'lucide-react';
+import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, Send, X, Mail, User, Tag } from '../../utils/icons/icons';
 
 const COLORS = {
     primary: '#0A2463',

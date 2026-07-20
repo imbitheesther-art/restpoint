@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle, AlertCircle
-} from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle, AlertCircle   ,  Mark } from '../../utils/icons/icons';
 import { useAuth } from '../../utils/context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import { showToast } from '../../utils/toast';
 
 const C = {
   ink: '#15171A',
@@ -27,13 +27,6 @@ const C = {
   white: '#FFFFFF',
 };
 
-const Mark = ({ size = 28, color = C.verdigris }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="16" cy="16" r="15" stroke={color} strokeWidth="1.5" />
-    <path d="M16 8V24M8 16H24" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="16" cy="16" r="3.5" fill={color} />
-  </svg>
-);
 
 const Spinner = () => (
   <span className="spinner" />
@@ -108,6 +101,7 @@ export default function LoginPage() {
       });
 
       if (result && result.success) {
+        showToast.success('Login successful! Welcome back.');
         // AuthContext already stored tokens and setUser() - just read back for UI
         const data = result;
         const tenantSlug = data.tenant?.tenantSlug || data.user?.tenantSlug;
@@ -133,6 +127,7 @@ export default function LoginPage() {
           }
         }, 400);
       } else {
+        showToast.error(result?.message || 'Invalid credentials. Please try again.');
         setMessage({
           type: 'error',
           text: result?.message || 'Invalid credentials. Please try again.'
@@ -140,6 +135,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
+      showToast.error(err.response?.data?.message || 'Connection error. Please try again.');
       setMessage({
         type: 'error',
         text: err.response?.data?.message || 'Connection error. Please try again.'
@@ -244,6 +240,7 @@ export default function LoginPage() {
         }
       `}</style>
 
+      <ToastContainer position="top-right" />
       <div className="login-container">
         {/* Sidebar */}
         <div className="login-sidebar">

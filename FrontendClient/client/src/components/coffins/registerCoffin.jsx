@@ -2,12 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import styled, { keyframes, css } from 'styled-components';
-import {
-  Tag, Box, Diamond, Maximize2, Paintbrush, Package,
-  DollarSign, Image, Save, Loader2, UploadCloud, Truck,
-  CheckCircle, XCircle, Camera, X, RotateCcw, Globe, MapPin,
-  ArrowLeft
-} from 'lucide-react';
+import { Tag, Box, Star, Maximize2, Paintbrush, Package, DollarSign, Image, Save, Loader2, UploadCloud, Truck, CheckCircle, XCircle, Camera, X, RotateCcw, Globe, MapPin, ArrowLeft } from '../../utils/icons/icons';
 import { Square as Button } from 'lucide-react';
 import { Form, Row, Col, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';

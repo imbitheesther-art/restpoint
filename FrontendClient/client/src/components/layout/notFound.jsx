@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { AlertTriangle, Home, ArrowLeft, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Home, ArrowLeft, RefreshCw } from '../../utils/icons/icons';
 
 // Elegant color palette
 const C = {

@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Download, FileText, Users, ClipboardList, CheckCircle } from 'lucide-react';
+import { Download, FileText, Users, ClipboardList, CheckCircle } from '../../utils/icons/icons';
 
 const TemplatesPage = () => {
     const navigate = useNavigate();

@@ -1,7 +1,7 @@
 // components/DocumentsModal.js
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { X, Download, Trash2, FileText, Image, File } from 'lucide-react';
+import { X, Download, Trash2, FileText, Image } from '../../utils/icons/icons';
 
 import { toast } from 'react-toastify';
 

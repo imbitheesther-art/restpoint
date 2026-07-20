@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
 import env from '../utils/config/env';
+import { getUserId, getAuthToken, getTenantSlug } from '../utils/globalAuth';
 
 // Workshop service axios instance
 export const workshopApi = axios.create({
@@ -11,9 +12,8 @@ export const workshopApi = axios.create({
 });
 
 workshopApi.interceptors.request.use((config) => {
-  const slug = localStorage.getItem('tenantSlug');
-  // Check BOTH localStorage and sessionStorage for auth token
-  const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  const token = getAuthToken();
+  const slug = getTenantSlug();
   if (token) config.headers['Authorization'] = `Bearer ${token}`;
   if (slug) config.headers['x-tenant-slug'] = slug;
   return config;
@@ -159,15 +159,8 @@ api.interceptors.request.use((config) => {
   const slug = getSlug();
   const tenantId = localStorage.getItem('tenantId');
 
-  // Get user ID
-  let userId = null;
-  try {
-    const userData = sessionStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      userId = user.id || user.userId;
-    }
-  } catch { }
+  // Get user ID from globalAuth
+  const userId = getUserId();
 
   if (token) config.headers['Authorization'] = `Bearer ${token}`;
   if (slug) config.headers['x-tenant-slug'] = slug;

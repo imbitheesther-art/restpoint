@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  HardHat,
-  Home,
-  ArrowLeft,
-  Hammer,
-  AlertTriangle,
-  Wrench,
-  Clock,
-  Users,
-  Sparkles,
-  TrafficCone
-} from "lucide-react";
+import { HardHat, Home, ArrowLeft, Hammer, AlertTriangle, Settings, Clock, Users, Sparkles, TrafficCone } from '../../utils/icons/icons';
 
 const Construction404 = () => {
   const navigate = useNavigate();

@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    ArrowRight, Heart, Globe, MessageCircle, Camera,
-    Shield, Star, ChevronRight, ExternalLink, Music, Mic
-} from 'lucide-react';
+import { ArrowRight, Heart, Globe, MessageCircle, Camera, Shield, Star, ChevronRight, ExternalLink, Music, Mic } from '../../utils/icons/icons';
 
 const C = {
     bone: '#FAF8F4',

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useSocket } from '../../utils/context/socketContext';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp, Filter } from 'lucide-react';
+import { Calendar, Clock, Users, FileText, AlertCircle, CheckCircle, XCircle, TrendingUp, Filter } from '../../utils/icons/icons';
 
 const COLORS = {
   primary: '#0A2463',

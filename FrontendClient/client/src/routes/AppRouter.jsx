@@ -78,6 +78,7 @@ const CoffinDetails = lazy(() => import('../components/coffins/coffinDetails'));
 const AllDeceasedPage = lazy(() => import('../components/deceased/allDeceased/listDeceased'));
 const NotFound = lazy(() => import('../components/layout/notFound'));
 const DeceasedDetails = lazy(() => import('../components/deceased/deceasedinfo/deceasedDetailPage'));
+const FinancialDetailsPage = lazy(() => import('../components/deceased/financialDetails/FinancialDetailsPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DeceasedInfoSection = lazy(() => import('../components/deceased/deceasedInfoSection'));
 
@@ -362,6 +363,13 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="deceased-details/:id" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff', 'user']} userRole={userRole}>
           <Layout tenantData={tenantData}><DeceasedDetails /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Financial Details - Standalone page for managing payments, charges, invoices */}
+      <Route path="financials/:id" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><FinancialDetailsPage /></Layout>
         </RoleBasedRoute>
       } />
 

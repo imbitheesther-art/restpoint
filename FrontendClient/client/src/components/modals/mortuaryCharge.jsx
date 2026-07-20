@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  DollarSign, AlertCircle, CheckCircle, Loader2, Calendar, Clock, Clipboard,
-  Truck, UserCheck, CreditCard, TrendingUp, AlertTriangle, Info, Home,
-  FileText, Users, Plus, Edit, Trash2, X, Save, Tag
-} from 'lucide-react';
+import { DollarSign, AlertCircle, CheckCircle, Loader2, Calendar, Clock, ClipboardList, Truck, UserCheck, CreditCard, TrendingUp, AlertTriangle, Info, Home, FileText, Users, Plus, Edit, Trash2, X, Save, Tag } from '../../utils/icons/icons';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import styled, { keyframes } from 'styled-components';

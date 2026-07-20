@@ -1,25 +1,13 @@
 import { useState, useEffect, useRef, Children } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  ChevronDown, Menu, Check, ShieldCheck, Server, Zap, ArrowRight, X,
-  FileText, Download, MapPin, Truck, Activity, Users, TrendingUp,
-  Search, Newspaper, ExternalLink, LayoutDashboard, Lock, Globe, Layers
-} from 'lucide-react';
+import { ChevronDown, Menu, Check, ShieldCheck, Server, Zap, ArrowRight, X, FileText, Download, MapPin, Truck, Activity, Users, TrendingUp, Search, Newspaper, ExternalLink, LayoutDashboard, Lock, Globe, Layers } from '../../utils/icons/icons';
 
 import Footer from '../../components/layout/Footer';
 import LandingPageSEO from '../seo/LandingPageSEO';
 
+import   C    from  '../../utils/colors/index'
 
-
-const C = {
-  ink: '#15171A', bone: '#FAF8F4', bone2: '#F3EFE6',
-  brass: '#8B7355', brassLight: '#A98F6E',
-  verdigris: '#3D4F47', verdigrisDark: '#2E3F37', verdigrisLight: '#4D6359', verdigrisTint: '#EBEFEF',
-  line: '#E3DDD0', lineDark: 'rgba(250,248,244,0.14)',
-  gray: '#6B6862', grayLight: 'rgba(250,248,244,0.62)', grayDark: '#4A4844',
-  accent: '#C77B5E',
-};
 
 /* ═══════════════════════════════════════
    HOOKS

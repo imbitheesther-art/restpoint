@@ -737,7 +737,7 @@ const FlowerBookings = () => {
   const [newBookingOpen, setNewBookingOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [actionMenuId, setActionMenuId] = useState(null);
-  const [viewMode, setViewMode] = useState('table'); // 'table' | 'calendar'
+  const [viewMode, setViewMode] = useState('calendar'); // 'table' | 'calendar'
   const [selectedDate, setSelectedDate] = useState(formatDateStr(new Date()));
   const [prefillDate, setPrefillDate] = useState('');
   const [showDashboard, setShowDashboard] = useState(true);

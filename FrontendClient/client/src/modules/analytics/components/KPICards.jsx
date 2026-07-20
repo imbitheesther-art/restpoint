@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { TrendingUp, Users, DollarSign, Clock } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Clock } from '../../utils/icons/icons';
 
 const KPIGrid = styled.div`
   display: grid;

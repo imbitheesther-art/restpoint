@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, FileText, Upload, X, User, Mail, MapPin, Briefcase, History } from 'lucide-react';
+import { Calendar, FileText, Upload, X, User, Mail, MapPin, Briefcase, History } from '../../utils/icons/icons';
 
 const COLORS = {
     primary: '#0A2463',

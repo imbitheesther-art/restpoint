@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { api, ENDPOINTS } from '../../api';
-import { Calendar, CheckCircle, XCircle, Clock, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const COLORS = {
   primary: '#0A2463',

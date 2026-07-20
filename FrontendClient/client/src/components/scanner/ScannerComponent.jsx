@@ -1,10 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { 
-  Upload, FileText, X, Loader2, 
-  CheckCircle, AlertTriangle, Camera,
-  Printer, RefreshCw
-} from 'lucide-react';
+import { Upload, FileText, X, Loader2, CheckCircle, AlertTriangle, Camera, Printer, RefreshCw } from '../../utils/icons/icons';
 import { toast } from 'react-toastify';
 import { 
   getScanners, 

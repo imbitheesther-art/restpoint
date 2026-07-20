@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../../../utils/context/socketContext';
 import { useSocketEvents } from '../hooks/useSocketEvents';
-import {
-    Package, FlaskConical, Beaker, Droplets,
-    Calendar, Loader2, Download, Gauge,
-    ClipboardList, AlertTriangle, TrendingUp,
-    Plus, Printer, FileImage, Cpu, Users, BarChart3,
-    ChevronDown, Upload, Eye, Edit3, CheckCircle, XCircle,
-    Clock, Hammer, Wrench, Paintbrush, Search, Filter,
-    ArrowUpDown, FileText, Image, Layers, Settings,
-    Grid, List, RefreshCw, Trash2, Save, X, BarChart, PieChart,
-    Activity, Target, DollarSign, Award, Zap, TrendingDown,
-    ArrowUp, TrendingUp as TrendUp, Sun, Moon, Percent
-} from 'lucide-react';
+import { Package, FlaskConical, Beaker, Droplets, Calendar, Loader2, Download, Gauge, ClipboardList, AlertTriangle, TrendingUp, Plus, Printer, FileImage, Server, Users, BarChart3, ChevronDown, Upload, Eye, Edit3, CheckCircle, XCircle, Clock, Hammer, Settings, Paintbrush, Search, Filter, ArrowUpDown, FileText, Image, Layers, Grid, List, RefreshCw, Trash2, Save, X, BarChart2, PieChart, Activity, Target, DollarSign, Trophy, Zap, TrendingDown, ArrowUp, Sun, Moon, Percent } from '../../utils/icons/icons';
 import { workshopService } from '../services/workshopService';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Bar, Doughnut, Line, Pie } from 'react-chartjs-2';

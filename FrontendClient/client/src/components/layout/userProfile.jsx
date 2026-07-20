@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCircle, AlertCircle, Info, Clock } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Info, Clock } from '../../utils/icons/icons';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 

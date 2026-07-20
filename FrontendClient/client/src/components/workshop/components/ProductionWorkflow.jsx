@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../../../utils/context/socketContext';
 import { useSocketEvents } from '../hooks/useSocketEvents';
-import {
-    CheckCircle2, Circle, Play, Pause,
-    Clock, User, AlertTriangle, ChevronRight
-} from 'lucide-react';
+
+
+
+
 
 const PRODUCTION_STAGES = [
     { id: 'design', name: 'Design', description: 'Create coffin design specifications' },

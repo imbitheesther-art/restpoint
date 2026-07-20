@@ -1,9 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck,
-    CheckCircle, AlertCircle, Lock, KeyRound, RefreshCw
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck, CheckCircle, AlertCircle, Lock, KeyRound, RefreshCw } from '../../utils/icons/icons';
 import { authApi } from '../../api/authApi';
 import { ENDPOINTS } from '../../api/endpoints';
 import api from '../../api/axios';

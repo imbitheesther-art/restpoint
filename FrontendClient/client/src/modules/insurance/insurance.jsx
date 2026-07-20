@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    ChevronDown, Menu, Check, ArrowRight, X,
-    ShieldCheck, Activity, Layers, DollarSign, Users, FileText, Zap
-} from 'lucide-react';
+import { ChevronDown, Menu, Check, ArrowRight, X, ShieldCheck, Activity, Layers, DollarSign, Users, FileText, Zap } from '../../utils/icons/icons';
 import Footer from '../../components/layout/Footer';
 
 const C = {

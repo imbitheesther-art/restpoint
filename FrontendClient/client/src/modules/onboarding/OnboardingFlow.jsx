@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ChevronDown, Menu, X, ArrowRight, Eye, EyeOff,
-  Upload, Plus, Trash2, Check, AlertCircle
-} from 'lucide-react';
+import { ChevronDown, Menu, X, ArrowRight, Eye, EyeOff, Upload, Plus, Trash2, Check, AlertCircle } from '../../utils/icons/icons';
 import api from '../../api/axios';
 import { io } from 'socket.io-client';
 import Footer from '../../components/layout/Footer';

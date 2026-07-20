@@ -1,7 +1,7 @@
 // DocumentsModal.jsx
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FileText, Download, Eye, Trash2, Upload, Plus, X } from 'lucide-react';
+import { FileText, Download, Eye, Trash2, Upload, Plus, X } from '../../utils/icons/icons';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 

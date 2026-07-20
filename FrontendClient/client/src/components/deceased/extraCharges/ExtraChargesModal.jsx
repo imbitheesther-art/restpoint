@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import {
-    X,
-    Plus,
-    DollarSign,
-    Trash2,
-    Calendar,
-    FileText,
-    AlertCircle,
-    CheckCircle,
-    Loader2,
-} from 'lucide-react';
+
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
 

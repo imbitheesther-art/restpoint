@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { BarChart3, Calendar, TrendingUp } from 'lucide-react';
+import { BarChart3, Calendar, TrendingUp } from '../../utils/icons/icons';
 
 const TabContainer = styled.div`
   display: flex;

@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search } from '../../utils/icons/icons';
 
 const GlossaryPage = () => {
     const navigate = useNavigate();

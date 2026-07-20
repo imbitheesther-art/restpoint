@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import {
-    ArrowRight, ChevronRight, ExternalLink,
-    Receipt, Smartphone, ListChecks, ShieldCheck, BarChart3, Wallet,
-    Zap, Eye, Lock, Sparkles,
-    Building2, Building, Link2, Users,
-    FileText, CreditCard, TrendingUp, CheckCircle2
-} from 'lucide-react';
+import { ArrowRight, ChevronRight, ExternalLink, Receipt, Smartphone, ListChecks, ShieldCheck, BarChart3, Wallet, Zap, Eye, Lock, Sparkles, Building2, Link2, Users, FileText, CreditCard, TrendingUp, CheckCircle } from '../../utils/icons/icons';
 
 const C = {
     ink: '#1A1A1A',

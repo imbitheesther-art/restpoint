@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Clock, Calendar, AlertTriangle, TrendingUp, TrendingDown, Hourglass, Loader2 } from 'lucide-react';
+import { Clock, Calendar, AlertTriangle, TrendingUp, TrendingDown, Hourglass, Loader2 } from '../../utils/icons/icons';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 

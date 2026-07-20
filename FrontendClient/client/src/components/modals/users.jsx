@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Users, UserPlus, UserX, Shield, Mail, Phone, Search,
-  CheckCircle, AlertCircle, X, RefreshCw,
-} from 'lucide-react';
+import { Users, UserPlus, UserMinus, Shield, Mail, Phone, Search, CheckCircle, AlertCircle, X, RefreshCw } from '../../utils/icons/icons';
 import api from '../../api/axios';
 
 const C = {

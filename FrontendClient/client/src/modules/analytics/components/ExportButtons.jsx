@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Download, FileText, Mail } from 'lucide-react';
+import { Download, FileText, Mail } from '../../utils/icons/icons';
 import AnalyticsService from '../../../services/analyticsService';
 
 const ExportWrapper = styled.div`

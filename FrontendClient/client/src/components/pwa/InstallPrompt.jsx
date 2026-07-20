@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Smartphone } from 'lucide-react';
+import { Download, X, Smartphone } from '../../utils/icons/icons';
 
 const InstallPrompt = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);

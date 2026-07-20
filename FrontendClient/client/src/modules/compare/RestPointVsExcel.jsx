@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, X, TrendingUp, Shield, Zap } from 'lucide-react';
+import { Check, ArrowRight, X, TrendingUp, Shield, Zap } from '../../utils/icons/icons';
 
 const RestPointVsExcel = () => {
     const navigate = useNavigate();

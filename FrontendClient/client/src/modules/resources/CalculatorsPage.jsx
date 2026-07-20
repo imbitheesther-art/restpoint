@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, ArrowRight, Users, DollarSign, TrendingUp } from 'lucide-react';
+import { Calculator, ArrowRight, Users, DollarSign, TrendingUp } from '../../utils/icons/icons';
 
 const CalculatorsPage = () => {
     const navigate = useNavigate();

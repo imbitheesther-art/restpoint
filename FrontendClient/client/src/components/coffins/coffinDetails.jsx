@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import {
-    Package, Home, ChevronDown, DollarSign, Tag, Layers,
-    Maximize2, Diamond, Eye, Calendar, User, Truck, Clock,
-    Star, Share2, Heart, ArrowLeft, Edit, Trash2,
-    CheckCircle, XCircle, AlertTriangle, Info, Image as ImageIcon,
-    ChevronLeft, ChevronRight, X, Loader2, ShoppingBag,
-    Warehouse, BarChart3, Users, Save, PlusCircle
-} from 'lucide-react';
+import { Package, Home, ChevronDown, DollarSign, Tag, Layers, Maximize2, Star, Eye, Calendar, User, Truck, Clock, Share2, Heart, ArrowLeft, Edit, Trash2, CheckCircle, XCircle, AlertTriangle, Info, Image, ChevronLeft, ChevronRight, X, Loader2, ShoppingBag, Warehouse, BarChart3, Users, Save, PlusCircle } from '../../utils/icons/icons';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
 import env from '../../utils/config/env';

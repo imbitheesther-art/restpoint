@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
-import {
-  Package, TrendingUp, AlertTriangle, CheckCircle, Search,
-  Beaker, Plus, X, Save, History, Shield, FlaskConical,
-  RefreshCw, Zap, Syringe, Truck, ArrowRight, TestTube2,
-  ClipboardList, ChevronDown, CircleDot
-} from 'lucide-react';
+import { Package, TrendingUp, AlertTriangle, CheckCircle, Search, Beaker, Plus, X, Save, History, Shield, FlaskConical, RefreshCw, Zap, Syringe, Truck, ArrowRight, TestTube2, ClipboardList, ChevronDown, CircleDot } from '../../utils/icons/icons';
 import { toast } from 'react-toastify';
 import api from '../../api/axios';
 

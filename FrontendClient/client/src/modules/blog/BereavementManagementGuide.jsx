@@ -1,9 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import {
-    Check, ArrowRight, Database, Clock, XCircle, Lock,
-    TrendingUp, FileText, Users, ShieldCheck, Activity, Zap
-} from 'lucide-react';
+import { Check, ArrowRight, HardDrive, Clock, XCircle, Lock, TrendingUp, FileText, Users, ShieldCheck, Activity, Zap } from '../../utils/icons/icons';
 import Footer from '../../components/layout/Footer';
 
 const C = {

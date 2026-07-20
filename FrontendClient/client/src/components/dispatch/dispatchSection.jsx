@@ -1,27 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import {
-  Truck,
-  Calendar,
-  PlusCircle,
-  X,
-  Loader2,
-  CheckCircle,
-  MapPin,
-  DollarSign,
-  Car,
-  Edit,
-  Trash2,
-  Route,
-  Fuel,
-  Gauge,
-  Settings,
-  Send,
-  Users,
-  Clock,
-  AlertCircle,
-  Navigation,
-} from 'lucide-react';
+
+
+
 import { useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { ENDPOINTS } from '../../api/endpoints';
@@ -778,6 +759,18 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Body Release Form Fields
+  const [admissionNumber, setAdmissionNumber] = useState('');
+  const [admissionDate, setAdmissionDate] = useState('');
+  const [dateOfRemoval, setDateOfRemoval] = useState('');
+  const [permitNumber, setPermitNumber] = useState('');
+  const [modeOfTransport, setModeOfTransport] = useState('Hearse');
+  const [nextOfKin, setNextOfKin] = useState('');
+  const [relationship, setRelationship] = useState('');
+  const [nokIdNumber, setNokIdNumber] = useState('');
+  const [nokTelephone, setNokTelephone] = useState('');
+  const [releaseSignature, setReleaseSignature] = useState(null);
+
   const [fuelCost, setFuelCost] = useState(null);
   const [fuelEstimate, setFuelEstimate] = useState(null);
   const [transportCost, setTransportCost] = useState(null);
@@ -970,6 +963,17 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
     setTotalCost(null);
     setRouteSteps([]);
     setEditingId(null);
+    // Reset body release fields
+    setAdmissionNumber('');
+    setAdmissionDate('');
+    setDateOfRemoval('');
+    setPermitNumber('');
+    setModeOfTransport('Hearse');
+    setNextOfKin('');
+    setRelationship('');
+    setNokIdNumber('');
+    setNokTelephone('');
+    setReleaseSignature(null);
   };
 
   const handleSubmit = async (e) => {
@@ -978,7 +982,13 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
     setMessage('');
 
     if (!vehiclePlate || !dispatchDate || !driverName || !driverContact || !destinationLat) {
-      setMessage('Error: Please fill in all required fields');
+      setMessage('Error: Please fill in all required dispatch fields');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!dateOfRemoval || !permitNumber || !nextOfKin || !nokTelephone) {
+      setMessage('Error: Please fill in all required body release fields');
       setIsLoading(false);
       return;
     }
@@ -1012,6 +1022,17 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
       origin_lon: DEFAULT_MORTUARY.lon,
       created_by: username,
       status: 'Assigned',
+      // Body release fields
+      admission_number: admissionNumber,
+      admission_date: admissionDate,
+      date_of_removal: dateOfRemoval,
+      permit_number: permitNumber,
+      mode_of_transport: modeOfTransport,
+      next_of_kin: nextOfKin,
+      relationship: relationship,
+      nok_id_number: nokIdNumber,
+      nok_telephone: nokTelephone,
+      release_signature: releaseSignature,
     };
 
     try {
@@ -1559,6 +1580,138 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                   )}
                 </MapContainer>
 
+                {/* Body Release Section */}
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1.25rem',
+                  background: COLORS.successLight,
+                  borderRadius: COLORS.radiusSm,
+                  border: `2px solid ${COLORS.success}`
+                }}>
+                  <Label style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9375rem', color: COLORS.successDark }}>
+                    <FileText size={16} /> Body Release Information
+                  </Label>
+
+                  <FormGrid>
+                    <FormGroup>
+                      <Label>Admission Number *</Label>
+                      <Input
+                        value={admissionNumber}
+                        onChange={(e) => setAdmissionNumber(e.target.value)}
+                        placeholder="System generated or manual"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Admission Date *</Label>
+                      <Input
+                        type="date"
+                        value={admissionDate}
+                        onChange={(e) => setAdmissionDate(e.target.value)}
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Date of Removal *</Label>
+                      <Input
+                        type="date"
+                        value={dateOfRemoval}
+                        onChange={(e) => setDateOfRemoval(e.target.value)}
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Permit Number *</Label>
+                      <Input
+                        value={permitNumber}
+                        onChange={(e) => setPermitNumber(e.target.value)}
+                        placeholder="Permit/License number"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Mode of Transport *</Label>
+                      <Select
+                        value={modeOfTransport}
+                        onChange={(e) => setModeOfTransport(e.target.value)}
+                        required
+                      >
+                        <option value="Hearse">Hearse</option>
+                        <option value="Ambulance">Ambulance</option>
+                        <option value="Van">Van</option>
+                        <option value="Other">Other</option>
+                      </Select>
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Next of Kin Name *</Label>
+                      <Input
+                        value={nextOfKin}
+                        onChange={(e) => setNextOfKin(e.target.value)}
+                        placeholder="Full name of next of kin"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Relationship *</Label>
+                      <Input
+                        value={relationship}
+                        onChange={(e) => setRelationship(e.target.value)}
+                        placeholder="e.g., Son, Daughter, Spouse"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>ID Number *</Label>
+                      <Input
+                        value={nokIdNumber}
+                        onChange={(e) => setNokIdNumber(e.target.value)}
+                        placeholder="National ID number"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup style={{ gridColumn: '1 / -1' }}>
+                      <Label>Telephone Number *</Label>
+                      <Input
+                        value={nokTelephone}
+                        onChange={(e) => setNokTelephone(e.target.value)}
+                        placeholder="+2547XXXXXXXX"
+                        required
+                      />
+                    </FormGroup>
+                  </FormGrid>
+
+                  {/* Signature Canvas Placeholder */}
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    background: COLORS.surface,
+                    borderRadius: COLORS.radiusSm,
+                    border: `1px dashed ${COLORS.border}`
+                  }}>
+                    <Label style={{ marginBottom: '0.5rem' }}>Release Signature</Label>
+                    <div style={{
+                      height: '120px',
+                      background: COLORS.bg,
+                      borderRadius: COLORS.radiusXs,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: COLORS.textSecondary,
+                      fontSize: '0.8125rem'
+                    }}>
+                      [Signature Canvas Component - To be integrated]
+                    </div>
+                  </div>
+                </div>
+
                 <PrimaryButton
                   type="submit"
                   disabled={
@@ -1568,7 +1721,11 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                     !dispatchDate ||
                     !ratePerKm ||
                     !driverName ||
-                    !driverContact
+                    !driverContact ||
+                    !dateOfRemoval ||
+                    !permitNumber ||
+                    !nextOfKin ||
+                    !nokTelephone
                   }
                   style={{ width: '100%', marginTop: '1rem' }}
                 >
@@ -1578,7 +1735,7 @@ const DispatchSection = ({ deceasedId, dispatchData, onUpdate }) => {
                     </>
                   ) : (
                     <>
-                      <CheckCircle size={16} /> {editingId ? 'Update' : 'Create'} Dispatch
+                      <CheckCircle size={16} /> {editingId ? 'Update' : 'Create'} Dispatch & Release Body
                     </>
                   )}
                 </PrimaryButton>

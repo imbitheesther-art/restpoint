@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import Footer from '../../components/layout/Footer';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, X, Clock, Users, DollarSign, Shield } from 'lucide-react';
+import { Check, ArrowRight, X, Clock, Users, DollarSign, Shield } from '../../utils/icons/icons';
 
 const ManualVsDigital = () => {
     const navigate = useNavigate();

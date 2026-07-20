@@ -4,28 +4,7 @@ import { useSocket } from '../../utils/context/socketContext';
 import env from '../../utils/config/env';
 import ReusableCalendar from '../../utils/calender/calender';
 import useAuthStore from '../../utils/store/useAuthStore';
-import {
-  Truck,
-  Car,
-  Clock,
-  Check,
-  Search,
-  Plus,
-  RefreshCw,
-  MoreVertical,
-  ChevronLeft,
-  ChevronRight,
-  ChevronFirst,
-  ChevronLast,
-  List,
-  Grid,
-  X,
-  Calendar,
-  MapPin,
-  Phone,
-  User,
-  Filter,
-} from 'lucide-react';
+import { Truck, Car, Clock, Check, Search, Plus, RefreshCw, MoreVertical, ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, List, Grid, X, Calendar, MapPin, Phone, User, Filter } from '../../utils/icons/icons';
 
 const API_BASE_URL = import.meta.env.PROD
   ? 'https://restpoint.co.ke/api/v1/restpoint'
@@ -1082,35 +1061,17 @@ const HearseBookings = () => {
           </FilterRow>
 
           <FilterRow $marginBottom="0.5rem">
-            <PillGroup>
-              {['', ...STATUS_LIST].map((tab) => {
-                const cfg = tab === '' ? null : STATUS_CONFIG[tab];
+            <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ minWidth: '180px' }}>
+              <option value="">All Statuses</option>
+              {STATUS_LIST.map((status) => {
+                const cfg = STATUS_CONFIG[status];
                 return (
-                  <Pill
-                    key={tab}
-                    $active={filterStatus === tab}
-                    onClick={() => setFilterStatus(tab)}
-                  >
-                    {tab === '' ? 'All' : cfg?.label || tab}
-                  </Pill>
+                  <option key={status} value={status}>
+                    {cfg?.label || status}
+                  </option>
                 );
               })}
-            </PillGroup>
-          </FilterRow>
-
-          <FilterRow>
-            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted, fontWeight: 600, marginRight: '0.25rem' }}>DATE:</span>
-            <PillGroup>
-              {['all', 'today', 'thisWeek'].map((f) => (
-                <Pill
-                  key={f}
-                  $active={dateFilter === f}
-                  onClick={() => handleDateFilter(f)}
-                >
-                  {f === 'all' ? 'All' : f === 'today' ? 'Today' : 'This Week'}
-                </Pill>
-              ))}
-            </PillGroup>
+            </Select>
           </FilterRow>
         </FilterCard>
 

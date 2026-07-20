@@ -3,25 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { ENDPOINTS } from '../../../api/endpoints';
 import env from '../../../utils/config/env';
 import ReusableSignaturePad from '../../../utils/signature/signaturepad';
-import {
-    UserPlus,
-    Check,
-    Loader2,
-    AlertTriangle,
-    XCircle,
-    CheckCircle,
-    X,
-    FileText,
-    Clock,
-    User,
-    ArrowLeft,
-    RotateCcw,
-    Truck,
-    Send,
-    MapPin,
-    Calendar,
-    UserCheck,
-} from 'lucide-react';
+import { UserPlus, Check, Loader2, AlertTriangle, XCircle, CheckCircle, X, FileText, Clock, User, ArrowLeft, RotateCcw, Truck, Send, MapPin, Calendar, UserCheck } from '../../utils/icons/icons';
 import styled, { keyframes } from 'styled-components';
 
 // Bootstrap-inspired color scheme
