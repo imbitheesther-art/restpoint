@@ -4,6 +4,7 @@ import Logger from "../../../packages/shared-logger/src/index";
 import { getKenyaTimeISO } from "../../../packages/shared-utils/dist/timestamps";
 import generateUniqueDeceasedId from "../utils/deceasedId";
 import * as z from "zod";
+import sharp from "sharp";
 
 // Redis service with universal notifications
 import redisService, { NotificationType, NotificationPriority } from "../../../packages/shared-services/src/redisService";
@@ -82,6 +83,38 @@ export const registerNewDeceased = async (
         const now = getKenyaTimeISO();
 
         // ==============================
+        // COMPRESS SIGNATURE WITH SHARP
+        // ==============================
+
+        let compressedSignature = data.signature;
+        if (data.signature && data.signature.startsWith('data:image/png;base64,')) {
+            try {
+                Logger.info({ message: "Compressing signature image with Sharp" });
+                const base64Data = data.signature.replace(/^data:image\/png;base64,/, '');
+                const buffer = Buffer.from(base64Data, 'base64');
+
+                const compressedBuffer = await sharp(buffer)
+                    .resize(400, 200, { fit: 'inside', withoutEnlargement: true })
+                    .png({ quality: 60, compressionLevel: 9 })
+                    .toBuffer();
+
+                compressedSignature = `data:image/png;base64,${compressedBuffer.toString('base64')}`;
+                Logger.info({
+                    message: "Signature compressed successfully",
+                    originalSize: `${(buffer.length / 1024).toFixed(2)} KB`,
+                    compressedSize: `${(compressedBuffer.length / 1024).toFixed(2)} KB`,
+                    reduction: `${((1 - compressedBuffer.length / buffer.length) * 100).toFixed(1)}%`
+                });
+            } catch (compressionError) {
+                Logger.warn({
+                    message: "Failed to compress signature, using original",
+                    error: compressionError
+                });
+                compressedSignature = data.signature;
+            }
+        }
+
+        // ==============================
         // INSERT RECORD
         // ==============================
 
@@ -126,7 +159,7 @@ export const registerNewDeceased = async (
                 data.tell_no,
                 data.gender || null,
                 data.date_of_death || null,
-                data.signature || null,
+                compressedSignature || null,
                 now
             ]
         );

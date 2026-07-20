@@ -93,6 +93,7 @@ const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemor
 const ChemicalManagementDashboard = lazy(() => import('../components/chemicals/chemicals'));
 const ChemicalInventoryAnalytics = lazy(() => import('../components/chemicals/chemicalAnalytics'));
 const WorkshopDashboard = lazy(() => import('../components/workshop/pages/WorkshopDashboard'));
+const CataloguePage = lazy(() => import('../components/catalogue/catalogue'));
 
 // Flower Booking System
 const FlowerBookings = lazy(() => import('../components/florists/FlowerBookings'));
@@ -430,6 +431,13 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       <Route path="workshop" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
           <Layout tenantData={tenantData}><WorkshopDashboard /></Layout>
+        </RoleBasedRoute>
+      } />
+
+      {/* Catalogue - Available to admin, manager, staff */}
+      <Route path="catalogue" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <Layout tenantData={tenantData}><CataloguePage /></Layout>
         </RoleBasedRoute>
       } />
 

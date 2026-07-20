@@ -32,8 +32,8 @@ const OCR_CONFIG = {
   language: 'eng',
   oem: 1,
   psm: 3,
-  confidenceThreshold: 60,
-  maxRetries: 2,
+  confidenceThreshold: 30,  // Lowered for better detection
+  maxRetries: 3,
 };
 
 // ============================================================
@@ -120,8 +120,9 @@ export const preprocessImage = async (imageDataUrl) => {
 
       canvas.width = width;
       canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
 
+      // Simple grayscale conversion - less aggressive
+      ctx.drawImage(img, 0, 0, width, height);
       const imageData = ctx.getImageData(0, 0, width, height);
       const data = imageData.data;
 
@@ -129,15 +130,17 @@ export const preprocessImage = async (imageDataUrl) => {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        gray = gray < 128 ? gray * 0.8 : Math.min(255, gray * 1.2);
+        // Simple grayscale
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
         data[i] = gray;
         data[i + 1] = gray;
         data[i + 2] = gray;
       }
 
       ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
+
+      // Return as high quality JPEG
+      resolve(canvas.toDataURL('image/jpeg', 0.95));
     };
     img.onerror = () => reject(new Error('Failed to load image for preprocessing'));
     img.src = imageDataUrl;
@@ -244,6 +247,7 @@ export const scanIDCard = async (imageDataUrl, options = {}) => {
   const startTime = Date.now();
   const config = { ...OCR_CONFIG, ...options };
   let lastError = null;
+  let bestResult = null;
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
@@ -254,31 +258,62 @@ export const scanIDCard = async (imageDataUrl, options = {}) => {
       const confidence = data.confidence || 0;
       const parsedFields = parseIDCardText(extractedText);
 
-      return {
-        success: confidence >= config.confidenceThreshold,
-        extractedText,
-        parsedFields,
+      console.log(`OCR Attempt ${attempt + 1}:`, {
         confidence,
-        processingTime: Date.now() - startTime,
-        attempt: attempt + 1,
-        capturedImage: imageDataUrl,
-      };
+        textLength: extractedText.length,
+        hasIdNumber: !!parsedFields.idNumber,
+        hasName: !!parsedFields.fullName,
+        textPreview: extractedText.substring(0, 100)
+      });
+
+      // Keep track of results
+      if (!bestResult || confidence > bestResult.confidence) {
+        bestResult = {
+          success: false,
+          extractedText,
+          parsedFields,
+          confidence,
+          processingTime: Date.now() - startTime,
+          attempt: attempt + 1,
+          capturedImage: imageDataUrl,
+        };
+      }
+
+      // Success if we have valid fields and reasonable confidence
+      const hasValidFields = parsedFields.idNumber || parsedFields.fullName || parsedFields.dateOfBirth;
+      if (hasValidFields && confidence >= config.confidenceThreshold) {
+        bestResult.success = true;
+        return bestResult;
+      }
+
+      // Accept lower confidence if we have valid fields
+      if (hasValidFields && confidence >= 20) {
+        bestResult.success = true;
+        return bestResult;
+      }
     } catch (error) {
       lastError = error;
-      console.warn(`OCR attempt ${attempt + 1} failed:`, error.message);
+      console.error(`OCR attempt ${attempt + 1} error:`, error.message);
       if (attempt < config.maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
   }
 
+  // Return best result if we have any valid fields
+  if (bestResult && (bestResult.parsedFields.idNumber || bestResult.parsedFields.fullName)) {
+    bestResult.success = true;
+    return bestResult;
+  }
+
+  // Return error with diagnostic info
   return {
     success: false,
-    extractedText: '',
-    parsedFields: parseIDCardText(''),
-    confidence: 0,
+    extractedText: bestResult?.extractedText || '',
+    parsedFields: bestResult?.parsedFields || parseIDCardText(''),
+    confidence: bestResult?.confidence || 0,
     processingTime: Date.now() - startTime,
-    error: lastError?.message || 'OCR processing failed',
+    error: lastError?.message || 'Could not read ID card. Please ensure the ID is clearly visible and try again.',
     attempt: config.maxRetries + 1,
     capturedImage: imageDataUrl,
   };
@@ -527,11 +562,11 @@ export const IDScannerComponent = ({
               color: '#fff', fontSize: 15,
             }}>
               <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
               </svg>
             </div>
             <div>
@@ -692,8 +727,8 @@ export const IDScannerComponent = ({
                   ) : (
                     <>
                       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
                       </svg>
                       Capture & Scan
                     </>
@@ -727,7 +762,7 @@ export const IDScannerComponent = ({
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}>
                     <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <polyline points="20 6 9 17 4 12"/>
+                      <polyline points="20 6 9 17 4 12" />
                     </svg>
                     Captured
                   </div>
@@ -750,7 +785,7 @@ export const IDScannerComponent = ({
                   fontSize: 15, flexShrink: 0,
                 }}>
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <polyline points="20 6 9 17 4 12"/>
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
                 <div>
@@ -770,8 +805,8 @@ export const IDScannerComponent = ({
                   value={result.parsedFields.fullName}
                   icon={
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
                     </svg>
                   }
                 />
@@ -780,8 +815,8 @@ export const IDScannerComponent = ({
                   value={result.parsedFields.idNumber}
                   icon={
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" strokeWidth="2" viewBox="0 0 24 24">
-                      <rect x="2" y="4" width="20" height="16" rx="2"/>
-                      <path d="M2 10h20"/>
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M2 10h20" />
                     </svg>
                   }
                 />
@@ -790,10 +825,10 @@ export const IDScannerComponent = ({
                   value={result.parsedFields.dateOfBirth}
                   icon={
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" strokeWidth="2" viewBox="0 0 24 24">
-                      <rect x="3" y="4" width="18" height="18" rx="2"/>
-                      <line x1="16" y1="2" x2="16" y2="6"/>
-                      <line x1="8" y1="2" x2="8" y2="6"/>
-                      <line x1="3" y1="10" x2="21" y2="10"/>
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
                   }
                 />
@@ -802,10 +837,10 @@ export const IDScannerComponent = ({
                   value={result.parsedFields.gender}
                   icon={
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" strokeWidth="2" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10"/>
-                      <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                      <line x1="9" y1="9" x2="9.01" y2="9"/>
-                      <line x1="15" y1="9" x2="15.01" y2="9"/>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                      <line x1="9" y1="9" x2="9.01" y2="9" />
+                      <line x1="15" y1="9" x2="15.01" y2="9" />
                     </svg>
                   }
                 />
@@ -814,8 +849,8 @@ export const IDScannerComponent = ({
                   value={result.parsedFields.passportNumber}
                   icon={
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
                     </svg>
                   }
                 />
@@ -824,7 +859,7 @@ export const IDScannerComponent = ({
                   value={result.parsedFields.phoneNumber}
                   icon={
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                   }
                 />
@@ -865,8 +900,8 @@ export const IDScannerComponent = ({
                   onClick={handleRetry}
                 >
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polyline points="1 4 1 10 7 10"/>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                   </svg>
                   Re-scan
                 </button>
@@ -881,7 +916,7 @@ export const IDScannerComponent = ({
                   onClick={onClose}
                 >
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polyline points="20 6 9 17 4 12"/>
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Done
                 </button>
@@ -996,30 +1031,18 @@ export const IDScannerComponent = ({
                   onClick={handleRetry}
                 >
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polyline points="1 4 1 10 7 10"/>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                   </svg>
                   Try Again
                 </button>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
   );
 };
 
-// ============================================================
-// DEFAULT EXPORT
-// ============================================================
-
-export default {
-  scanIDCard,
-  preprocessImage,
-  parseIDCardText,
-  captureImage,
-  terminateWorker,
-  IDScannerComponent,
-};
+export default IDScannerComponent;

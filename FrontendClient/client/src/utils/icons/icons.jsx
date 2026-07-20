@@ -398,9 +398,13 @@ export const MessageSquare = (p) => (
   <Icon {...p}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Icon>
 );
 
-// ─── Security ────────────────────────────────────────────────────────────────
+// ─── Security & Identification ───────────────────────────────────────────────
 export const Shield = (p) => (
   <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>
+);
+
+export const IdCard = (p) => (
+  <Icon {...p}><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></Icon>
 );
 
 export const ShieldCheck = (p) => (
@@ -648,7 +652,7 @@ export const LifeBuoy = (p) => (
 // ─── Aggregate Object (convenience) ──────────────────────────────────────────
 export const Icons = {
   // Navigation & Layout
-  FileBarChart,  Hammer  ,  MessageSquare  ,  Target ,    LifeBuoy   ,  Home, Menu, ArrowLeft, ArrowRight, ArrowUp, ArrowDown,
+  FileBarChart, Hammer, MessageSquare, Target, LifeBuoy, Home, Menu, ArrowLeft, ArrowRight, ArrowUp, ArrowDown,
   ChevronDown, ChevronRight, ChevronUp, ChevronLeft, ChevronFirst, ChevronLast,
   Grid, List, Columns, Maximize2, Minimize2, ExternalLink,
   LayoutDashboard, Layers, Mark,
