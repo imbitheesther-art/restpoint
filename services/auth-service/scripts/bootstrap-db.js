@@ -69,8 +69,8 @@ async function main() {
         console.warn(`   ⚠️  Could not drop user ${configuredUser}@localhost:`, e.message);
       }
 
-      // Only create for 127.0.0.1 and % to avoid localhost socket auth issues
-      const hosts = ['127.0.0.1', '%'];
+      // Create user for localhost, 127.0.0.1, and % to ensure connectivity from any host
+      const hosts = ['localhost', '127.0.0.1', '%'];
       for (const h of hosts) {
         try {
           await adminConn.query(`CREATE USER IF NOT EXISTS \`${configuredUser}\`@'${h}' IDENTIFIED BY '${configuredPass}'`);
@@ -118,12 +118,11 @@ async function main() {
       throw connErr;
     }
 
-    // Drop and recreate tenants table to ensure correct schema
-    await userConn.query('DROP TABLE IF EXISTS tenants');
-    console.log('Dropped old tenants table (if existed)');
+    // Create tables if they don't exist - no dropping to avoid foreign key issues
+    console.log('Creating tables if they do not exist...');
 
     await userConn.query(`
-      CREATE TABLE tenants (
+      CREATE TABLE IF NOT EXISTS tenants (
         id INT AUTO_INCREMENT PRIMARY KEY,
         tenant_name VARCHAR(255) NOT NULL,
         tenant_slug VARCHAR(255) UNIQUE NOT NULL,
@@ -165,22 +164,33 @@ async function main() {
         INDEX idx_role (role)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('Ensured users table');
+    console.log('✅ Created users table with correct schema');
 
-    // Insert tenant record
-    await userConn.query(`
-      INSERT INTO tenants (tenant_name, tenant_slug, db_name, email, phone, location, country, status, subscription_status, deployment_type)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'active', 'single')
-      ON DUPLICATE KEY UPDATE tenant_name = VALUES(tenant_name)
-    `, [SYSTEM_ADMIN.tenantName, SYSTEM_ADMIN.tenantSlug, SYSTEM_ADMIN.dbName, SYSTEM_ADMIN.email, SYSTEM_ADMIN.phone, SYSTEM_ADMIN.location, SYSTEM_ADMIN.country]);
-    console.log('Ensured system tenant record');
-
-    // Get tenant id
-    const [tenants] = await userConn.query('SELECT id FROM tenants WHERE email = ?', [SYSTEM_ADMIN.email]);
-    const tenantId = tenants[0] && tenants[0].id;
+    // Insert tenant record - check if exists first to avoid foreign key issues
+    let tenantId;
+    const [existingTenant] = await userConn.query('SELECT id FROM tenants WHERE email = ? LIMIT 1', [SYSTEM_ADMIN.email]);
+    
+    if (existingTenant.length === 0) {
+      try {
+        const [insertResult] = await userConn.query(`
+          INSERT INTO tenants (tenant_name, tenant_slug, db_name, email, phone, location, country, status, subscription_status, deployment_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'active', 'single')
+        `, [SYSTEM_ADMIN.tenantName, SYSTEM_ADMIN.tenantSlug, SYSTEM_ADMIN.dbName, SYSTEM_ADMIN.email, SYSTEM_ADMIN.phone, SYSTEM_ADMIN.location, SYSTEM_ADMIN.country]);
+        tenantId = insertResult.insertId;
+        console.log('✅ Created system tenant record');
+      } catch (insertErr) {
+        console.warn('⚠️  Could not insert tenant record, trying to fetch existing:', insertErr.message);
+        // Try to get the tenant ID even if insert failed (might already exist)
+        const [tenantsAfterFail] = await userConn.query('SELECT id FROM tenants WHERE email = ? LIMIT 1', [SYSTEM_ADMIN.email]);
+        tenantId = tenantsAfterFail[0] && tenantsAfterFail[0].id;
+      }
+    } else {
+      tenantId = existingTenant[0].id;
+      console.log('✅ System tenant record already exists');
+    }
 
     if (!tenantId) {
-      console.error('Failed to get tenant id after insertion');
+      console.error('Failed to get tenant id');
       process.exit(1);
     }
 

@@ -1,0 +1,41 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../../",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "server.ts",
+    "routes/**/*.ts",
+    "controllers/**/*.ts",
+    "models/**/*.ts",
+    "services/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "../../shared/**/*.ts",
+    "../../packages/shared-config/src/**/*.ts",
+    "../../packages/shared-logger/src/**/*.ts",
+    "../../packages/shared-utils/src/**/*.ts",
+    "../../packages/shared-services/src/**/*.ts",
+    "../../app-global/**/*.ts",
+    "../../app-global/**/*.js",
+    "../../configurations/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}
