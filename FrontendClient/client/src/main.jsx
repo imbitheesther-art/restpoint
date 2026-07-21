@@ -22,10 +22,12 @@ if ('serviceWorker' in navigator) {
       console.error('[PWA] Service Worker registration failed:', error);
     });
 
-  // Listen for service worker updates
+  // Listen for service worker updates - show a notification instead of auto-reloading
+  // Auto-reload can cause the app to disappear on mobile devices
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('[PWA] New service worker activated, reloading...');
-    window.location.reload();
+    console.log('[PWA] New service worker activated');
+    // Don't auto-reload, let the user continue using the app
+    // The new version will be available on next load
   });
 }
 

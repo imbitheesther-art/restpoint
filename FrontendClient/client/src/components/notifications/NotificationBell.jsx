@@ -32,6 +32,29 @@ const playNotificationSound = () => {
   }
 };
 
+// ─── Critical Notification Sound (Louder, More Urgent) ───
+const playCriticalSound = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Play two beeps for critical notifications
+    [0, 0.15].forEach((delay, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = i === 0 ? 880 : 1100; // Two-tone alert
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.2);
+    });
+  } catch (e) {
+    // Audio context not supported
+  }
+};
+
 // ─── Icon Mapping ───
 const getTypeIcon = (type) => {
   const icons = {
@@ -165,32 +188,210 @@ const NotificationBell = () => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Listen for real-time notifications via socket
+  // Generate notification message from event data
+  const generateNotificationMessage = (eventName, data) => {
+    switch (eventName) {
+      case 'notification:deceased-admitted':
+        return `New body registered: ${data.fullName || 'Unknown'}`;
+      case 'notification:status-change':
+        return `Status updated for ${data.deceasedName || 'deceased record'}`;
+      case 'notification:release-requested':
+        return `Release requested for ${data.deceasedName || 'deceased'}`;
+      case 'notification:release-approved':
+        return `Release approved for ${data.deceasedName || 'deceased'}`;
+      case 'notification:invoice-created':
+        return `Invoice created: ${data.invoiceNumber || 'N/A'} - KES ${data.total || 0}`;
+      case 'notification:payment-received':
+        return `Payment received: KES ${data.amount || 0} for invoice ${data.invoiceNumber || 'N/A'}`;
+      case 'alert:invoice-overdue':
+        return `Invoice overdue: ${data.invoiceNumber || 'N/A'} (${data.daysOverdue || 0} days) - KES ${data.outstandingAmount || 0}`;
+      case 'alert:low-stock':
+        return `Low stock alert: ${data.itemName || 'Unknown item'} (${data.currentStock || 0}/${data.minimumStock || 0})`;
+      case 'notification:coffin-used':
+        return `Coffin used: ${data.coffinType || 'Standard'} for ${data.deceasedName || 'Unknown'}`;
+      case 'notification:document-generated':
+        return `Document generated: ${data.documentName || data.documentType || 'Document'}`;
+      case 'notification:task-completed':
+        return `Task completed: ${data.taskType || 'Task'} for ${data.deceasedName || 'Unknown'}`;
+      default:
+        return 'New notification received';
+    }
+  };
+
+  const generateNotificationTitle = (eventName) => {
+    switch (eventName) {
+      case 'notification:deceased-admitted':
+        return 'New Body Registration';
+      case 'notification:status-change':
+        return 'Status Update';
+      case 'notification:release-requested':
+        return 'Release Request';
+      case 'notification:release-approved':
+        return 'Release Approved';
+      case 'notification:invoice-created':
+        return 'Invoice Created';
+      case 'notification:payment-received':
+        return 'Payment Received';
+      case 'alert:invoice-overdue':
+        return 'Payment Overdue';
+      case 'alert:low-stock':
+        return 'Low Stock Alert';
+      case 'notification:coffin-used':
+        return 'Coffin Used';
+      case 'notification:document-generated':
+        return 'Document Generated';
+      case 'notification:task-completed':
+        return 'Task Completed';
+      default:
+        return 'Notification';
+    }
+  };
+
+  // Listen for real-time notifications via socket (matching backend event names)
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewNotification = (notification) => {
+    const handleNotification = (eventName, data) => {
+      // Map backend events to notification types
+      const eventTypeMap = {
+        'notification:deceased-admitted': 'new_body',
+        'notification:status-change': 'status_update',
+        'notification:release-requested': 'release_request',
+        'notification:release-approved': 'release_approved',
+        'notification:invoice-created': 'billing-threshold-exceeded',
+        'notification:payment-received': 'balance_update',
+        'alert:invoice-overdue': 'billing-critical',
+        'alert:low-stock': 'warning',
+        'notification:coffin-used': 'info',
+        'notification:document-generated': 'info',
+        'notification:task-completed': 'success',
+      };
+
+      const type = eventTypeMap[eventName] || 'info';
+      
+      // Determine priority based on event type
+      const priorityMap = {
+        'billing-critical': 'critical',
+        'alert:invoice-overdue': 'critical',
+        'alert:low-stock': 'high',
+        'new_body': 'high',
+        'release-requested': 'high',
+      };
+      
+      // Generate human-readable message and title
+      const message = data.message || data.title || generateNotificationMessage(eventName, data);
+      const title = data.title || generateNotificationTitle(eventName);
+      
       const formatted = {
-        id: notification.id,
-        type: notification.type || 'info',
-        message: notification.message || notification.title || '',
-        is_read: notification.read ? 1 : 0,
-        created_at: notification.createdAt || new Date().toISOString(),
-        title: notification.title || '',
-        priority: notification.priority || 'low',
-        data: notification.data || null,
+        id: data.id || Date.now(),
+        type: type,
+        message: message,
+        is_read: 0,
+        created_at: data.timestamp || new Date().toISOString(),
+        title: title,
+        priority: priorityMap[eventName] || 'low',
+        data: data,
       };
       
       setNotifications(prev => [formatted, ...prev]);
-      if (!formatted.is_read) {
-        setUnreadCount(prev => prev + 1);
+      setUnreadCount(prev => prev + 1);
+      
+      // Play sound - louder for critical notifications
+      if (formatted.priority === 'critical') {
+        playCriticalSound();
+      } else {
+        playNotificationSound();
       }
-      addToast(formatted); // Trigger Toast + Sound
+      
+      addToast(formatted);
     };
 
-    socket.on('new_notification', handleNewNotification);
-    return () => socket.off('new_notification', handleNewNotification);
+    // Listen to all notification events from socket.io service
+    const notificationEvents = [
+      'notification:deceased-admitted',
+      'notification:status-change',
+      'notification:release-requested',
+      'notification:release-approved',
+      'notification:invoice-created',
+      'notification:payment-received',
+      'alert:invoice-overdue',
+      'alert:low-stock',
+      'notification:coffin-used',
+      'notification:document-generated',
+      'notification:task-completed',
+    ];
+
+    const handlers = {};
+    notificationEvents.forEach(event => {
+      const handler = (data) => handleNotification(event, data);
+      handlers[event] = handler;
+      socket.on(event, handler);
+    });
+    
+    return () => {
+      Object.entries(handlers).forEach(([event, handler]) => {
+        socket.off(event, handler);
+      });
+    };
   }, [socket, addToast]);
+
+  // Generate dummy notifications for testing (only if no real notifications exist)
+  useEffect(() => {
+    if (notifications.length === 0 && !loading) {
+      const dummyNotifications = [
+        {
+          id: 'dummy-1',
+          type: 'new_body',
+          message: 'New body registered: Stephen K. - Standard Coffin',
+          is_read: 0,
+          created_at: new Date(Date.now() - 300000).toISOString(),
+          title: 'New Body Registration',
+          priority: 'high',
+          data: { body_id: 123 }
+        },
+        {
+          id: 'dummy-2',
+          type: 'dispatch_created',
+          message: 'Dispatch scheduled for Mary A. - Executive Sedan',
+          is_read: 0,
+          created_at: new Date(Date.now() - 600000).toISOString(),
+          title: 'Dispatch Created',
+          priority: 'medium',
+          data: { dispatch_id: 456 }
+        },
+        {
+          id: 'dummy-3',
+          type: 'billing-critical',
+          message: 'Critical: Invoice #INV-2024-001 payment overdue by 5 days',
+          is_read: 0,
+          created_at: new Date(Date.now() - 900000).toISOString(),
+          title: 'Payment Overdue',
+          priority: 'critical',
+          data: { invoice_id: 789, amount: 25000 }
+        },
+        {
+          id: 'dummy-4',
+          type: 'info',
+          message: 'Production milestone: 10 coffins completed this week',
+          is_read: 1,
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          title: 'Weekly Production Update',
+          priority: 'low',
+          data: {}
+        }
+      ];
+      
+      // Only show dummy data after 2 seconds if still empty
+      const timer = setTimeout(() => {
+        if (notifications.length === 0) {
+          setNotifications(dummyNotifications);
+          setUnreadCount(dummyNotifications.filter(n => !n.is_read).length);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notifications.length, loading]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {

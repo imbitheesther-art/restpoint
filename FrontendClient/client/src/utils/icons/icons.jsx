@@ -647,15 +647,43 @@ export const LifeBuoy = (p) => (
 );
 
 
+export const CalendarClock = (p) => (
+  <Icon {...p}>
+    <path d="M21 7.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3" />
+    <path d="M16 2v4" />
+    <path d="M8 2v4" />
+    <path d="M3 10h18" />
+    <path d="M16 14a4 4 0 1 0 0 8" />
+    <path d="M18 16l-2 2" />
+    <path d="M18 16v4" />
+  </Icon>
+);
+
+
+export const ClipboardCheck = (p) => (
+  <Icon {...p}>
+    <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path d="m9 14 2 2 4-4" />
+  </Icon>
+);
+
+
+
+export const Wrench = (p) => (
+  <Icon {...p}>
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+  </Icon>
+);
 
 
 // ─── Aggregate Object (convenience) ──────────────────────────────────────────
 export const Icons = {
   // Navigation & Layout
-  FileBarChart, Hammer, MessageSquare, Target, LifeBuoy, Home, Menu, ArrowLeft, ArrowRight, ArrowUp, ArrowDown,
+  FileBarChart, Hammer, MessageSquare, Target,  Wrench  ,     ClipboardCheck  ,   LifeBuoy, Home, Menu, ArrowLeft, ArrowRight, ArrowUp, ArrowDown,
   ChevronDown, ChevronRight, ChevronUp, ChevronLeft, ChevronFirst, ChevronLast,
   Grid, List, Columns, Maximize2, Minimize2, ExternalLink,
-  LayoutDashboard, Layers, Mark,
+  LayoutDashboard, Layers, Mark,  CalendarClock   , 
   // User & People
   User, Users, Users2, UserPlus, UserCheck, UserMinus,
   // Status & Alerts

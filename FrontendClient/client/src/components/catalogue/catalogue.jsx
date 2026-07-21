@@ -1,260 +1,210 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Search, Filter, Grid, List, Share2, Eye, ShoppingCart, X, ChevronDown,
-  Package, AlertTriangle, CheckCircle, Clock, Plus, MoreVertical,
-  SlidersHorizontal, Copy, ExternalLink, Star, Heart, Box, Layers, Tag
+  Search, Eye, ShoppingCart, X, Star, Box, Package, AlertTriangle,
+  CheckCircle, Clock, Share2, Copy, ExternalLink, Grid, List,
+  Wallet, Heart
 } from '../../utils/icons/icons';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { Container, Row, Col, Card, Button, Badge, InputGroup, Form, Modal, Spinner, Alert } from 'react-bootstrap';
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MOCK DATA
 // ═══════════════════════════════════════════════════════════════════════════
 
-const MOCK_CATEGORIES = [
-  'All', 'Caskets', 'Coffins', 'Urns', 'Ash Containers', 'Memorial Items'
+const MOCK_CATEGORIES = ['All', 'Caskets', 'Coffins', 'Urns', 'Ash Containers', 'Memorial Items'];
+
+const IMGS = [
+  'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1513519245088-0a12902e35ca?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1513519245088-0a12902e35ca?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1513519245088-0a12902e35ca?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=400&h=300&fit=crop',
 ];
 
 const MOCK_COFFINS = [
-  {
-    id: 'CFN-001', name: 'Mahogany Crown', category: 'Coffins', price: 185000,
-    image: '', status: 'in_stock', stockCount: 12, material: 'Solid Mahogany',
-    description: 'Premium hand-finished mahogany coffin with velvet interior and brass fittings.',
-    rating: 5, isFeatured: true, dateAdded: '2025-01-15'
-  },
-  {
-    id: 'CFN-002', name: 'Oak Heritage', category: 'Coffins', price: 145000,
-    image: '', status: 'in_stock', stockCount: 8, material: 'European Oak',
-    description: 'Classic oak coffin with traditional design and satin lining.',
-    rating: 4, dateAdded: '2025-01-20'
-  },
-  {
-    id: 'CFN-003', name: 'White Steel Vault', category: 'Caskets', price: 220000,
-    image: '', status: 'low_stock', stockCount: 2, material: '18-gauge Steel',
-    description: 'Protective steel casket with gasket seal and white crepe interior.',
-    rating: 5, isFeatured: true, dateAdded: '2025-02-01'
-  },
-  {
-    id: 'CFN-004', name: 'Willow Natural', category: 'Coffins', price: 65000,
-    image: '', status: 'in_stock', stockCount: 15, material: 'Natural Willow',
-    description: 'Eco-friendly woven willow coffin, biodegradable, suitable for green burials.',
-    rating: 4, dateAdded: '2025-02-10'
-  },
-  {
-    id: 'URN-001', name: 'Brass Legacy Urn', category: 'Urns', price: 35000,
-    image: '', status: 'in_stock', stockCount: 20, material: 'Solid Brass',
-    description: 'Handcrafted brass urn with engraving option. Capacity: 200 cubic inches.',
-    rating: 5, dateAdded: '2025-02-15'
-  },
-  {
-    id: 'CFN-005', name: 'Pine Simple', category: 'Coffins', price: 38000,
-    image: '', status: 'out_of_stock', stockCount: 0, material: 'Pine Wood',
-    description: 'Simple unvarnished pine coffin. Minimalist and affordable.',
-    rating: 3, dateAdded: '2025-03-01'
-  },
-  {
-    id: 'CFN-006', name: 'Cherry Blossom', category: 'Caskets', price: 195000,
-    image: '', status: 'reserved', stockCount: 3, material: 'Cherry Wood',
-    description: 'Elegant cherry wood casket with rose gold hardware and pink velvet interior.',
-    rating: 5, isFeatured: true, dateAdded: '2025-03-05'
-  },
-  {
-    id: 'ASH-001', name: 'Keepsake Heart Box', category: 'Ash Containers', price: 12000,
-    image: '', status: 'in_stock', stockCount: 30, material: 'Wood Composite',
-    description: 'Small heart-shaped keepsake box for sharing ashes among family members.',
-    rating: 4, dateAdded: '2025-03-10'
-  },
-  {
-    id: 'MEM-001', name: 'Memorial Photo Frame', category: 'Memorial Items', price: 8500,
-    image: '', status: 'in_stock', stockCount: 25, material: 'Brushed Steel',
-    description: 'Elegant double-frame memorial display with engraved plaque space.',
-    rating: 4, dateAdded: '2025-03-12'
-  },
-  {
-    id: 'CFN-007', name: 'Walnut Executive', category: 'Coffins', price: 168000,
-    image: '', status: 'low_stock', stockCount: 1, material: 'American Walnut',
-    description: 'Premium walnut coffin with half-couch design and tailored interior.',
-    rating: 5, dateAdded: '2025-03-15'
-  },
-  {
-    id: 'URN-002', name: 'Ceramic Artisan Urn', category: 'Urns', price: 28000,
-    image: '', status: 'in_stock', stockCount: 14, material: 'Handmade Ceramic',
-    description: 'Unique hand-thrown ceramic urn with glazed finish in ocean blue.',
-    rating: 4, dateAdded: '2025-03-18'
-  },
-  {
-    id: 'CFN-008', name: 'Poplar Economy', category: 'Coffins', price: 32000,
-    image: '', status: 'in_stock', stockCount: 18, material: 'Poplar Wood',
-    description: 'Budget-friendly poplar coffin with basic interior lining.',
-    rating: 3, dateAdded: '2025-03-20'
-  },
+  { id:'CFN-001', name:'Mahogany Crown', category:'Coffins', price:185000, image:IMGS[0], status:'in_stock', stockCount:12, material:'Solid Mahogany', description:'Premium hand-finished mahogany coffin with velvet interior and brass fittings. High-gloss lacquer finish with hand-carved detailing.', rating:5, isFeatured:true, dateAdded:'2025-01-15' },
+  { id:'CFN-002', name:'Oak Heritage', category:'Coffins', price:145000, image:IMGS[1], status:'in_stock', stockCount:8, material:'European Oak', description:'Classic oak coffin with traditional design and satin lining. Natural wood grain visible through clear coat finish.', rating:4, dateAdded:'2025-01-20' },
+  { id:'CFN-003', name:'White Steel Vault', category:'Caskets', price:220000, image:IMGS[2], status:'low_stock', stockCount:2, material:'18-gauge Steel', description:'Protective steel casket with gasket seal and white crepe interior. Includes a protective vault with welded seams.', rating:5, isFeatured:true, dateAdded:'2025-02-01' },
+  { id:'CFN-004', name:'Willow Natural', category:'Coffins', price:65000, image:IMGS[3], status:'in_stock', stockCount:15, material:'Natural Willow', description:'Eco-friendly woven willow coffin, fully biodegradable. Suitable for green burials and natural burial grounds.', rating:4, dateAdded:'2025-02-10' },
+  { id:'URN-001', name:'Brass Legacy Urn', category:'Urns', price:35000, image:IMGS[4], status:'in_stock', stockCount:20, material:'Solid Brass', description:'Handcrafted brass urn with engraving option. Capacity: 200 cubic inches. Threaded secure lid.', rating:5, dateAdded:'2025-02-15' },
+  { id:'CFN-005', name:'Pine Simple', category:'Coffins', price:38000, image:IMGS[5], status:'out_of_stock', stockCount:0, material:'Pine Wood', description:'Simple unvarnished pine coffin. Minimalist, affordable, and environmentally conscious.', rating:3, dateAdded:'2025-03-01' },
+  { id:'CFN-006', name:'Cherry Blossom', category:'Caskets', price:195000, image:IMGS[6], status:'reserved', stockCount:3, material:'Cherry Wood', description:'Elegant cherry wood casket with rose gold hardware and pink velvet interior. Half-couch design.', rating:5, isFeatured:true, dateAdded:'2025-03-05' },
+  { id:'ASH-001', name:'Keepsake Heart Box', category:'Ash Containers', price:12000, image:IMGS[7], status:'in_stock', stockCount:30, material:'Wood Composite', description:'Small heart-shaped keepsake box for sharing ashes among family members. Lined with velvet.', rating:4, dateAdded:'2025-03-10' },
+  { id:'MEM-001', name:'Memorial Photo Frame', category:'Memorial Items', price:8500, image:IMGS[8], status:'in_stock', stockCount:25, material:'Brushed Steel', description:'Elegant double-frame memorial display with engraved plaque space. Holds two 5x7 photos.', rating:4, dateAdded:'2025-03-12' },
+  { id:'CFN-007', name:'Walnut Executive', category:'Coffins', price:168000, image:IMGS[9], status:'low_stock', stockCount:1, material:'American Walnut', description:'Premium walnut coffin with half-couch design and tailored interior. Rich dark finish.', rating:5, dateAdded:'2025-03-15' },
+  { id:'URN-002', name:'Ceramic Artisan Urn', category:'Urns', price:28000, image:IMGS[10], status:'in_stock', stockCount:14, material:'Handmade Ceramic', description:'Unique hand-thrown ceramic urn with glazed finish in ocean blue. Each piece is one-of-a-kind.', rating:4, dateAdded:'2025-03-18' },
+  { id:'CFN-008', name:'Poplar Economy', category:'Coffins', price:32000, image:IMGS[11], status:'in_stock', stockCount:18, material:'Poplar Wood', description:'Budget-friendly poplar coffin with basic interior lining. Painted finish available in multiple colors.', rating:3, dateAdded:'2025-03-20' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  STATUS BADGE
+//  HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const StatusBadge = ({ status, count }) => {
-  const config = {
-    in_stock: { label: `${count} in Stock`, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle size={12} /> },
-    low_stock: { label: `Only ${count} Left`, cls: 'bg-amber-50 text-amber-700 border-amber-200', icon: <AlertTriangle size={12} /> },
-    out_of_stock: { label: 'Out of Stock', cls: 'bg-red-50 text-red-700 border-red-200', icon: <X size={12} /> },
-    reserved: { label: `${count} Reserved`, cls: 'bg-blue-50 text-blue-700 border-blue-200', icon: <Clock size={12} /> },
+const formatPrice = (p) => `KSh ${p.toLocaleString()}`;
+
+const getStatusBadge = (status, count) => {
+  const configs = {
+    in_stock: { bg: 'success', text: `${count} in Stock` },
+    low_stock: { bg: 'warning', text: `Only ${count} Left` },
+    out_of_stock: { bg: 'danger', text: 'Out of Stock' },
+    reserved: { bg: 'info', text: `${count} Reserved` },
   };
-  const c = config[status];
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border ${c.cls}`}>
-      {c.icon}
-      {c.label}
-    </span>
-  );
+  const config = configs[status] || configs.in_stock;
+  return <Badge bg={config.bg}>{config.text}</Badge>;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  COFFIN CARD (Catalogue Item)
+//  PRODUCT CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CoffinCard = ({ item, view, onAdd, onView, isPreview }) => {
-  const [liked, setLiked] = useState(false);
-  const formatPrice = (p) => `KES ${p.toLocaleString()}`;
+const ProductCard = ({ item, view, onBuy, onView, isPreview }) => {
+  const hasImg = item.image && item.image.length > 0;
 
   if (view === 'list') {
     return (
-      <div className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200">
-        {/* Image */}
-        <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 shrink-0 overflow-hidden flex items-center justify-center border border-gray-200">
-          <Box size={32} className="text-gray-400" />
-        </div>
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h4>
-            {item.isFeatured && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
-          </div>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs text-gray-600">{item.material}</span>
-            <span className="text-xs text-gray-400">·</span>
-            <span className="text-xs text-gray-600">{item.category}</span>
-          </div>
-        </div>
-        {/* Status */}
-        <StatusBadge status={item.status} count={item.stockCount} />
-        {/* Price */}
-        <div className="text-right shrink-0 w-32">
-          <p className="text-sm font-bold text-gray-900">{formatPrice(item.price)}</p>
-          <p className="text-xs text-gray-500">per unit</p>
-        </div>
-        {/* Actions */}
-        {!isPreview && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => onView?.(item)}
-              className="p-2 rounded-md text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              title="View details"
+      <Card className="mb-3 shadow-sm">
+        <Row className="g-0">
+          <Col md={3} className="d-none d-md-block">
+            <div 
+              className="h-100 bg-light d-flex align-items-center justify-content-center"
+              style={{ 
+                backgroundImage: hasImg ? `url(${item.image})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                minHeight: '120px'
+              }}
             >
-              <Eye size={16} />
-            </button>
-            <button
-              onClick={() => onAdd?.(item)}
-              disabled={item.status === 'out_of_stock'}
-              className="p-2 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              title="Add to booking"
-            >
-              <ShoppingCart size={16} />
-            </button>
-          </div>
-        )}
-      </div>
+              {!hasImg && <Box size={40} className="text-muted" />}
+            </div>
+          </Col>
+          <Col md={9}>
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-start">
+                <div className="flex-grow-1">
+                  <small className="text-muted text-uppercase fw-semibold">{item.category}</small>
+                  <Card.Title className="mb-1">{item.name}</Card.Title>
+                  <p className="text-muted small mb-2">{item.material}</p>
+                  {getStatusBadge(item.status, item.stockCount)}
+                </div>
+                <div className="text-end ms-3">
+                  <h5 className="mb-0 fw-bold">{formatPrice(item.price)}</h5>
+                  <small className="text-muted">per unit</small>
+                </div>
+              </div>
+              {!isPreview && (
+                <div className="mt-3 d-flex gap-2">
+                  <Button variant="outline-secondary" size="sm" onClick={() => onView?.(item)}>
+                    <Eye size={13} className="me-1" /> Details
+                  </Button>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    onClick={() => onBuy?.(item)}
+                    disabled={item.status === 'out_of_stock'}
+                  >
+                    <ShoppingCart size={13} className="me-1" /> Buy Now
+                  </Button>
+                </div>
+              )}
+            </Card.Body>
+          </Col>
+        </Row>
+      </Card>
     );
   }
 
-  // Grid view
   return (
-    <div className="group rounded-xl border border-gray-200 bg-white overflow-hidden hover:border-blue-300 hover:shadow-lg transition-all duration-200">
-      {/* Image area */}
-      <div className="relative h-44 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Box size={48} className="text-gray-300 group-hover:text-gray-400 transition-colors duration-300" />
-        </div>
-        {/* Top badges */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <StatusBadge status={item.status} count={item.stockCount} />
-        </div>
-        {item.isFeatured && (
-          <div className="absolute top-3 right-3">
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-              <Star size={10} className="fill-amber-500" /> Featured
-            </span>
+    <Card className="h-100 shadow-sm border-0 overflow-hidden" style={{ borderRadius: '16px' }}>
+      <div className="position-relative" style={{ height: '220px', background: '#f5f2ee' }}>
+        {hasImg ? (
+          <div 
+            className="w-100 h-100"
+            style={{ 
+              backgroundImage: `url(${item.image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              transition: 'transform 0.5s ease'
+            }}
+          />
+        ) : (
+          <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+            <Box size={48} className="text-muted" />
           </div>
         )}
-        {/* Hover overlay */}
+        <div className="position-absolute top-0 start-0 m-2">
+          {getStatusBadge(item.status, item.stockCount)}
+        </div>
+        {item.isFeatured && (
+          <div className="position-absolute top-0 end-0 m-2">
+            <Badge bg="warning" style={{ color: '#fff' }}>
+              <Star size={9} fill="#fff" className="me-1" /> Featured
+            </Badge>
+          </div>
+        )}
         {!isPreview && (
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-            <button
-              onClick={() => onView?.(item)}
-              className="p-2 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-700 hover:bg-white transition-colors shadow-md"
-              title="View"
-            >
-              <Eye size={16} />
-            </button>
-            <button
-              onClick={() => onAdd?.(item)}
+          <div className="position-absolute bottom-0 start-0 end-0 p-2 d-flex gap-2" style={{ 
+            background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+            opacity: 0,
+            transition: 'all 0.25s ease'
+          }}>
+            <Button variant="light" size="sm" className="flex-fill" onClick={() => onView?.(item)}>
+              <Eye size={13} className="me-1" /> Quick View
+            </Button>
+            <Button 
+              variant="light" 
+              size="sm" 
+              className="flex-fill"
+              onClick={() => onBuy?.(item)}
               disabled={item.status === 'out_of_stock'}
-              className="p-2 rounded-lg bg-emerald-50 backdrop-blur-sm border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-md"
-              title="Add to booking"
             >
-              <ShoppingCart size={16} />
-            </button>
+              <ShoppingCart size={13} className="me-1" /> Add
+            </Button>
           </div>
         )}
       </div>
-      {/* Content */}
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h4 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h4>
-            <p className="text-xs text-gray-600 mt-1">{item.material} · {item.category}</p>
-          </div>
-          {!isPreview && (
-            <button
-              onClick={() => setLiked(!liked)}
-              className="p-1 rounded-md text-gray-400 hover:text-red-600 transition-colors shrink-0 mt-0.5"
-            >
-              <Heart size={14} className={liked ? 'fill-red-600 text-red-600' : ''} />
-            </button>
-          )}
-        </div>
-        {/* Rating */}
+      <Card.Body>
+        <small className="text-muted text-uppercase fw-semibold" style={{ color: '#b8941f !important' }}>{item.category}</small>
+        <Card.Title className="mb-1">{item.name}</Card.Title>
+        <p className="text-muted small mb-2">{item.material}</p>
         {item.rating && (
-          <div className="flex items-center gap-0.5 mt-2">
+          <div className="mb-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                size={10}
-                className={i < (item.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}
+              <Star 
+                key={i} 
+                size={12} 
+                style={{ 
+                  color: i < item.rating ? '#d4b44a' : '#e8e4df',
+                  fill: i < item.rating ? '#d4b44a' : 'none'
+                }} 
               />
             ))}
           </div>
         )}
-        {/* Price + Action */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+        <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
           <div>
-            <p className="text-base font-bold text-gray-900">{formatPrice(item.price)}</p>
+            <h5 className="mb-0 fw-bold">{formatPrice(item.price)}</h5>
+            <small className="text-muted">per unit</small>
           </div>
           {!isPreview && (
-            <button
-              onClick={() => onAdd?.(item)}
+            <Button 
+              variant="dark" 
+              size="sm"
+              onClick={() => onBuy?.(item)}
               disabled={item.status === 'out_of_stock'}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700
-                border border-gray-200 hover:border-emerald-200
-                disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gray-50 disabled:hover:text-gray-700
-                transition-all duration-150"
             >
-              <Plus size={12} /> Add
-            </button>
+              <ShoppingCart size={13} className="me-1" /> Buy Now
+            </Button>
           )}
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 };
 
@@ -266,81 +216,76 @@ const ShareModal = ({ isOpen, onClose, funeralHomeName }) => {
   const [copied, setCopied] = useState(false);
   const shareUrl = `https://memorialcare.co.ke/catalogue/${funeralHomeName.toLowerCase().replace(/\s+/g, '-')}`;
 
-  if (!isOpen) return null;
-
   const handleCopy = () => {
     navigator.clipboard?.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      {/* Modal */}
-      <div className="relative w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Share2 size={20} className="text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">Share Catalogue</h3>
-              <p className="text-xs text-gray-600">Send to clients via link</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        {/* Body */}
-        <div className="p-6 space-y-5">
-          {/* URL Input */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 uppercase tracking-wider mb-2 block">Catalogue Link</label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-700 truncate font-mono">
-                {shareUrl}
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content" style={{ borderRadius: '20px', border: '1px solid #e8e4df' }}>
+          <div className="modal-header border-0 pb-0">
+            <div className="d-flex align-items-center gap-3">
+              <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ 
+                width: '40px', height: '40px', background: 'rgba(184,148,31,0.06)', border: '1px solid rgba(184,148,31,0.18)', color: '#b8941f' 
+              }}>
+                <Share2 size={18} />
               </div>
-              <button
-                onClick={handleCopy}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 shrink-0 ${copied
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                  }`}
-              >
-                <Copy size={14} />
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
+              <div>
+                <h5 className="modal-title mb-0 fw-semibold">Share Catalogue</h5>
+                <small className="text-muted">Send to clients via link</small>
+              </div>
             </div>
+            <button type="button" className="btn-close" onClick={onClose}></button>
           </div>
-          {/* Share Options */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 uppercase tracking-wider mb-3 block">Share via</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'WhatsApp', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
-                { label: 'Email', color: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-                { label: 'SMS', color: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' },
-              ].map(opt => (
-                <button
-                  key={opt.label}
-                  className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium border transition-colors ${opt.color}`}
-                >
-                  <ExternalLink size={12} />
-                  {opt.label}
-                </button>
-              ))}
+          <div className="modal-body">
+            <div className="mb-3">
+              <label className="form-label small fw-semibold text-uppercase text-muted">Catalogue Link</label>
+              <div className="input-group">
+                <input 
+                  type="text" 
+                  className="form-control bg-light border" 
+                  value={shareUrl} 
+                  readOnly 
+                  style={{ fontFamily: 'monospace', fontSize: '13px' }}
+                />
+                <Button variant={copied ? 'success' : 'outline-secondary'} onClick={handleCopy}>
+                  <Copy size={13} className="me-1" /> {copied ? 'Copied!' : 'Copy'}
+                </Button>
+              </div>
             </div>
-          </div>
-          {/* Info */}
-          <div className="flex items-start gap-2.5 p-4 rounded-lg bg-amber-50 border border-amber-200">
-            <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-700 leading-relaxed">
-              This link provides read-only access to your catalogue. Clients can browse items but cannot modify inventory or place orders directly.
-            </p>
+            <div className="mb-3">
+              <label className="form-label small fw-semibold text-uppercase text-muted">Share via</label>
+              <div className="row g-2">
+                <div className="col-4">
+                  <Button variant="outline-success" className="w-100">
+                    <ExternalLink size={11} className="me-1" /> WhatsApp
+                  </Button>
+                </div>
+                <div className="col-4">
+                  <Button variant="outline-primary" className="w-100">
+                    <ExternalLink size={11} className="me-1" /> Email
+                  </Button>
+                </div>
+                <div className="col-4">
+                  <Button variant="outline-dark" className="w-100">
+                    <ExternalLink size={11} className="me-1" /> SMS
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 rounded-3" style={{ background: '#fef9ec', border: '1px solid #f0d88a' }}>
+              <div className="d-flex gap-2">
+                <AlertTriangle size={15} style={{ color: '#a16207', flexShrink: 0, marginTop: '2px' }} />
+                <p className="small text-muted mb-0">
+                  This link provides read-only access to your catalogue. Clients can browse items but cannot modify inventory or place orders directly.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -352,97 +297,113 @@ const ShareModal = ({ isOpen, onClose, funeralHomeName }) => {
 //  DETAIL DRAWER
 // ═══════════════════════════════════════════════════════════════════════════
 
-const DetailDrawer = ({ item, isOpen, onClose, onAdd, isPreview }) => {
+const DetailDrawer = ({ item, isOpen, onClose, onBuy, isPreview }) => {
   if (!isOpen || !item) return null;
-
-  const formatPrice = (p) => `KES ${p.toLocaleString()}`;
+  const hasImg = item.image && item.image.length > 0;
 
   return (
-    <div className="fixed inset-0 z-[90] flex justify-end">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white border-l border-gray-200 shadow-2xl overflow-y-auto animate-slide-in-right">
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white/90 backdrop-blur-sm border-b border-gray-200">
-          <h3 className="text-base font-semibold text-gray-900">Item Details</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        {/* Image */}
-        <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-          <Box size={64} className="text-gray-300" />
-          <div className="absolute top-24 left-6">
-            <StatusBadge status={item.status} count={item.stockCount} />
+    <div className="modal show d-block" tabIndex="-1">
+      <div className="modal-dialog modal-dialog-end" style={{ maxWidth: '520px' }}>
+        <div className="modal-content h-100" style={{ borderRadius: '0', border: 'none', boxShadow: '-5px 0 30px rgba(0,0,0,0.15)' }}>
+          <div className="modal-header sticky-top bg-white border-bottom">
+            <h5 className="modal-title fw-semibold">Product Details</h5>
+            <button type="button" className="btn-close" onClick={onClose}></button>
           </div>
-        </div>
-        {/* Content */}
-        <div className="p-6 space-y-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-gray-900">{item.name}</h2>
-              {item.isFeatured && <Star size={16} className="text-amber-500 fill-amber-500" />}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">{item.category} · {item.material}</p>
-          </div>
-
-          {/* Price */}
-          <div className="p-5 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-            <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">Price</p>
-            <p className="text-3xl font-bold text-gray-900">{formatPrice(item.price)}</p>
-            <p className="text-xs text-gray-600 mt-1">per unit, exclusive of VAT</p>
-          </div>
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Material', value: item.material },
-              { label: 'Category', value: item.category },
-              { label: 'Stock', value: `${item.stockCount} units` },
-              { label: 'Added', value: new Date(item.dateAdded).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }) },
-            ].map(d => (
-              <div key={d.label} className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-                <p className="text-xs text-gray-600 uppercase tracking-wider">{d.label}</p>
-                <p className="text-sm font-medium text-gray-900 mt-1">{d.value}</p>
+          <div className="modal-body p-0 overflow-auto" style={{ maxHeight: 'calc(100vh - 60px)' }}>
+            <div className="position-relative" style={{ height: '280px', background: '#f5f2ee' }}>
+              {hasImg ? (
+                <div 
+                  className="w-100 h-100"
+                  style={{ 
+                    backgroundImage: `url(${item.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                />
+              ) : (
+                <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                  <Box size={64} className="text-muted" />
+                </div>
+              )}
+              <div className="position-absolute top-0 start-0 m-3">
+                {getStatusBadge(item.status, item.stockCount)}
               </div>
-            ))}
-          </div>
-
-          {/* Rating */}
-          {item.rating && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} size={16} className={i < (item.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
-                ))}
+            </div>
+            <div className="p-4">
+              <div className="mb-3">
+                <div className="d-flex align-items-start gap-2">
+                  <h2 className="h4 fw-bold mb-0">{item.name}</h2>
+                  {item.isFeatured && <Star size={20} style={{ color: '#b8941f', fill: '#b8941f', flexShrink: 0, marginTop: '4px' }} />}
+                </div>
+                <p className="text-muted small mt-1 mb-0">{item.category} · {item.material}</p>
               </div>
-              <span className="text-sm text-gray-600">{item.rating}.0 rating</span>
-            </div>
-          )}
+              
+              <div className="p-3 rounded-3 mb-3" style={{ 
+                background: 'linear-gradient(135deg, rgba(184,148,31,0.06), rgba(184,148,31,0.03))',
+                border: '1px solid rgba(184,148,31,0.18)'
+              }}>
+                <small className="text-muted text-uppercase fw-semibold d-block mb-1">Price</small>
+                <h3 className="fw-bold mb-0">{formatPrice(item.price)}</h3>
+                <small className="text-muted">per unit, exclusive of VAT</small>
+              </div>
 
-          {/* Description */}
-          <div>
-            <p className="text-xs text-gray-600 uppercase tracking-wider mb-2">Description</p>
-            <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+              <Row className="g-2 mb-3">
+                <Col xs={6}>
+                  <div className="p-2 rounded-2 bg-light border">
+                    <small className="text-muted d-block text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Material</small>
+                    <p className="small fw-medium mb-0 mt-1">{item.material}</p>
+                  </div>
+                </Col>
+                <Col xs={6}>
+                  <div className="p-2 rounded-2 bg-light border">
+                    <small className="text-muted d-block text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Category</small>
+                    <p className="small fw-medium mb-0 mt-1">{item.category}</p>
+                  </div>
+                </Col>
+                <Col xs={6}>
+                  <div className="p-2 rounded-2 bg-light border">
+                    <small className="text-muted d-block text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Stock</small>
+                    <p className="small fw-medium mb-0 mt-1">{item.stockCount} units</p>
+                  </div>
+                </Col>
+                <Col xs={6}>
+                  <div className="p-2 rounded-2 bg-light border">
+                    <small className="text-muted d-block text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Added</small>
+                    <p className="small fw-medium mb-0 mt-1">
+                      {new Date(item.dateAdded).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                </Col>
+              </Row>
+
+              {item.rating && (
+                <div className="d-flex align-items-center gap-2 mb-3">
+                  <div className="d-flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={16} style={{ color: i < item.rating ? '#d4b44a' : '#e8e4df', fill: i < item.rating ? '#d4b44a' : 'none' }} />
+                    ))}
+                  </div>
+                  <span className="text-muted small">{item.rating}.0 rating</span>
+                </div>
+              )}
+
+              <div className="mb-3">
+                <small className="text-muted d-block text-uppercase fw-semibold mb-2" style={{ fontSize: '11px' }}>Description</small>
+                <p className="text-muted small mb-0" style={{ lineHeight: '1.7' }}>{item.description}</p>
+              </div>
+
+              {!isPreview && (
+                <div className="d-flex gap-2 pt-2">
+                  <Button variant="dark" className="flex-fill" onClick={() => onBuy?.(item)} disabled={item.status === 'out_of_stock'}>
+                    <ShoppingCart size={16} className="me-2" /> Buy Now
+                  </Button>
+                  <Button variant="outline-secondary">
+                    <Heart size={16} />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Actions */}
-          {!isPreview && (
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => onAdd?.(item)}
-                disabled={item.status === 'out_of_stock'}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold
-                  bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400
-                  transition-colors duration-150 shadow-sm hover:shadow-md"
-              >
-                <ShoppingCart size={16} />
-                Add to Booking
-              </button>
-              <button className="px-4 py-3 rounded-xl text-sm font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors">
-                <Heart size={16} />
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -450,7 +411,7 @@ const DetailDrawer = ({ item, isOpen, onClose, onAdd, isPreview }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN: FUNERAL CATALOGUE
+//  MAIN CATALOGUE
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const FuneralCatalogue = ({
@@ -464,19 +425,18 @@ export const FuneralCatalogue = ({
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
-  const [showFilters, setShowFilters] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
-  const [priceRange, setPriceRange] = useState([0, 500000]);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [budgetInput, setBudgetInput] = useState('');
+  const [budgetActive, setBudgetActive] = useState(false);
 
-  // Filter logic
+  const budgetNum = budgetInput ? parseInt(budgetInput.replace(/[^0-9]/g, ''), 10) || 0 : 0;
+
   const filtered = items.filter(item => {
     const matchSearch = !search || item.name.toLowerCase().includes(search.toLowerCase()) || item.material.toLowerCase().includes(search.toLowerCase());
-    const matchCategory = activeCategory === 'All' || item.category === activeCategory;
-    const matchPrice = item.price >= priceRange[0] && item.price <= priceRange[1];
-    const matchStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchSearch && matchCategory && matchPrice && matchStatus;
+    const matchCat = activeCategory === 'All' || item.category === activeCategory;
+    const matchBudget = !budgetActive || item.price <= budgetNum;
+    return matchSearch && matchCat && matchBudget;
   }).sort((a, b) => {
     switch (sortBy) {
       case 'name': return a.name.localeCompare(b.name);
@@ -487,370 +447,228 @@ export const FuneralCatalogue = ({
     }
   });
 
-  // Stats
-  const totalItems = items.length;
-  const inStock = items.filter(i => i.status === 'in_stock').length;
-  const lowStock = items.filter(i => i.status === 'low_stock').length;
-  const outOfStock = items.filter(i => i.status === 'out_of_stock').length;
-  const totalValue = items.reduce((sum, i) => sum + i.price * i.stockCount, 0);
+  const applyBudget = () => {
+    if (budgetInput && budgetNum > 0) setBudgetActive(true);
+  };
+
+  const clearBudget = () => {
+    setBudgetInput('');
+    setBudgetActive(false);
+  };
 
   return (
-    <div className={`h-full flex flex-col bg-white ${isPreview ? '' : 'rounded-xl border border-gray-200'}`}>
-      {/* ─── Top Bar ─────────────────────────────────────────────────── */}
-      <div className="shrink-0 px-6 py-5 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between gap-4">
-          {/* Left: Title */}
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
-                <Layers size={20} className="text-white" />
+    <div className="min-vh-100" style={{ background: '#faf9f7' }}>
+      {/* Hero Banner */}
+      <div 
+        className="position-relative w-100 overflow-hidden"
+        style={{ 
+          height: '320px',
+          backgroundImage: "url('/coffin.bg.webp')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="position-relative h-100 d-flex flex-column justify-content-end" style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 32px 40px', width: '100%' }}>
+          <div className="d-flex align-items-center gap-2 mb-3">
+            <span className="small" style={{ color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>Home</span>
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px' }}>›</span>
+            <span className="small" style={{ color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>Shop</span>
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px' }}>›</span>
+            <span className="small fw-medium" style={{ color: '#d4b44a' }}>Catalogue</span>
+          </div>
+          <h1 className="fw-bold mb-2" style={{ fontSize: '38px', color: '#fff', letterSpacing: '-0.03em', lineHeight: '1.15' }}>Our Collection</h1>
+          <p className="mb-0" style={{ fontSize: '15px', color: 'rgba(255,255,255,0.65)', maxWidth: '520px', lineHeight: '1.5' }}>
+            Browse our curated selection of premium caskets, coffins, urns, and memorial items. Every piece crafted with dignity and care.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: '1200px', margin: '-40px auto 0', padding: '0 32px 60px', position: 'relative', zIndex: 5 }}>
+        {/* Budget Bar */}
+        <Card className="shadow-sm mb-4" style={{ borderRadius: '16px', border: '1px solid #e8e4df' }}>
+          <Card.Body className="p-3">
+            <div className="d-flex flex-wrap align-items-center gap-3">
+              <div className="d-flex align-items-center gap-2">
+                <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ 
+                  width: '36px', height: '36px', background: 'rgba(184,148,31,0.06)', border: '1px solid rgba(184,148,31,0.18)', color: '#b8941f' 
+                }}>
+                  <Wallet size={16} />
+                </div>
+                <span className="fw-semibold small">What's your budget?</span>
               </div>
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-gray-900 truncate">Product Catalogue</h2>
-                <p className="text-sm text-gray-600 truncate">{funeralHomeName}</p>
+              <div className="flex-grow-1" style={{ minWidth: '240px', maxWidth: '400px' }}>
+                <InputGroup>
+                  <InputGroup.Text className="bg-light border fw-semibold small">KSh</InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter amount e.g. 100000"
+                    value={budgetInput}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setBudgetInput(val ? parseInt(val).toLocaleString() : '');
+                      if (!val) setBudgetActive(false);
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && applyBudget()}
+                    className="bg-light border"
+                    style={{ fontSize: '15px', fontWeight: '600' }}
+                  />
+                  <InputGroup.Text className="bg-light border small text-muted">max</InputGroup.Text>
+                </InputGroup>
               </div>
+              <Button variant="dark" onClick={applyBudget}>
+                <Search size={13} className="me-1" /> Find Coffins
+              </Button>
+              {budgetActive && (
+                <Button variant="outline-secondary" size="sm" onClick={clearBudget}>Clear</Button>
+              )}
+              {budgetActive && (
+                <div className="ms-auto d-flex align-items-center gap-2">
+                  <span className="fw-bold" style={{ fontSize: '24px', color: '#b8941f' }}>{filtered.length}</span>
+                  <span className="small text-muted">coffins within KSh {budgetNum.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          </Card.Body>
+        </Card>
+
+        {/* Toolbar */}
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+          <div className="d-flex flex-wrap gap-2">
+            {MOCK_CATEGORIES.map(cat => (
+              <Button
+                key={cat}
+                variant={activeCategory === cat ? 'dark' : 'outline-secondary'}
+                size="sm"
+                onClick={() => setActiveCategory(cat)}
+                style={{ borderRadius: '100px', fontSize: '13px' }}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <span className="small text-muted">Showing {filtered.length} of {items.length} results</span>
+            <Form.Select 
+              size="sm" 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)}
+              style={{ width: 'auto', borderRadius: '10px' }}
+            >
+              <option value="newest">Sort by latest</option>
+              <option value="name">Name A-Z</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+            </Form.Select>
+            <div className="btn-group" role="group">
+              <Button 
+                variant={view === 'grid' ? 'dark' : 'outline-secondary'} 
+                size="sm"
+                onClick={() => setView('grid')}
+                style={{ borderRadius: '8px' }}
+              >
+                <Grid size={14} />
+              </Button>
+              <Button 
+                variant={view === 'list' ? 'dark' : 'outline-secondary'} 
+                size="sm"
+                onClick={() => setView('list')}
+                style={{ borderRadius: '8px' }}
+              >
+                <List size={14} />
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Right: Actions */}
-          {!isPreview && (
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setShareOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium
-                  bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 transition-colors"
-              >
-                <Share2 size={14} /> Share
-              </button>
-              <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold
-                bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">
-                <Plus size={14} /> Add Item
-              </button>
-            </div>
+        {/* Search */}
+        <div className="position-relative mb-4" style={{ maxWidth: '400px' }}>
+          <div className="position-absolute top-50 start-0 translate-middle-y ps-3" style={{ color: '#9e9890' }}>
+            <Search size={16} />
+          </div>
+          <Form.Control
+            type="text"
+            placeholder="Search by name or material..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="ps-5 pe-5"
+            style={{ borderRadius: '10px', border: '1px solid #e8e4df', background: '#fff' }}
+          />
+          {search && (
+            <button 
+              className="position-absolute top-50 end-0 translate-middle-y pe-3 border-0 bg-transparent"
+              style={{ color: '#9e9890', cursor: 'pointer' }}
+              onClick={() => setSearch('')}
+            >
+              <X size={14} />
+            </button>
           )}
         </div>
 
-        {/* Stats Row */}
-        <div className="flex items-center gap-6 mt-4">
-          {[
-            { label: 'Total Items', value: totalItems, color: 'text-gray-900' },
-            { label: 'In Stock', value: inStock, color: 'text-emerald-600' },
-            { label: 'Low Stock', value: lowStock, color: 'text-amber-600' },
-            { label: 'Out of Stock', value: outOfStock, color: 'text-red-600' },
-          ].map(s => (
-            <div key={s.label} className="flex items-center gap-1.5">
-              <span className={`text-base font-bold ${s.color}`}>{s.value}</span>
-              <span className="text-xs text-gray-600">{s.label}</span>
-            </div>
-          ))}
-          <div className="ml-auto text-right">
-            <span className="text-xs text-gray-600">Inventory Value </span>
-            <span className="text-sm font-bold text-gray-900 ml-1">KES {totalValue.toLocaleString()}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Search & Filter Bar ─────────────────────────────────────── */}
-      <div className="shrink-0 px-6 py-3 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="relative flex-1 max-w-sm">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-white border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-colors"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          {/* Category Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {MOCK_CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 ${activeCategory === cat
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-white border border-gray-200'
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-2 rounded-lg bg-white border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-400 cursor-pointer"
-            >
-              <option value="newest">Newest First</option>
-              <option value="name">Name A-Z</option>
-              <option value="price_asc">Price: Low → High</option>
-              <option value="price_desc">Price: High → Low</option>
-            </select>
-            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
-
-          {/* View Toggle */}
-          <div className="flex items-center bg-white rounded-lg p-0.5 border border-gray-200">
-            <button
-              onClick={() => setView('grid')}
-              className={`p-1.5 rounded-md transition-colors ${view === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Grid view"
-            >
-              <Grid size={14} />
-            </button>
-            <button
-              onClick={() => setView('list')}
-              className={`p-1.5 rounded-md transition-colors ${view === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-              title="List view"
-            >
-              <List size={14} />
-            </button>
-          </div>
-
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-lg border transition-colors ${showFilters ? 'bg-blue-50 text-blue-600 border-blue-200' : 'text-gray-600 hover:text-gray-900 border-gray-200 hover:bg-white'}`}
-            title="Filters"
-          >
-            <SlidersHorizontal size={14} />
-          </button>
-        </div>
-
-        {/* Expanded Filters */}
-        {showFilters && (
-          <div className="flex items-center gap-6 mt-3 pt-3 border-t border-gray-200">
-            {/* Price Range */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">Price:</span>
-              <input
-                type="number"
-                value={priceRange[0]}
-                onChange={e => setPriceRange([Number(e.target.value), priceRange[1]])}
-                className="w-24 px-2 py-1 rounded bg-white border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-blue-400"
-                placeholder="Min"
-              />
-              <span className="text-gray-400">—</span>
-              <input
-                type="number"
-                value={priceRange[1]}
-                onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
-                className="w-24 px-2 py-1 rounded bg-white border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-blue-400"
-                placeholder="Max"
-              />
-            </div>
-            {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">Status:</span>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="appearance-none px-2.5 py-1 rounded bg-white border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-400 cursor-pointer"
-              >
-                <option value="all">All Statuses</option>
-                <option value="in_stock">In Stock</option>
-                <option value="low_stock">Low Stock</option>
-                <option value="out_of_stock">Out of Stock</option>
-                <option value="reserved">Reserved</option>
-              </select>
-            </div>
-            <button
-              onClick={() => { setPriceRange([0, 500000]); setStatusFilter('all'); }}
-              className="text-xs text-gray-600 hover:text-gray-900 transition-colors ml-auto"
-            >
-              Reset Filters
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ─── Content Area ───────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-6 bg-white">
+        {/* Results */}
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-              <Package size={28} className="text-gray-400" />
+          <div className="text-center py-5">
+            <div className="rounded-3 d-inline-flex align-items-center justify-content-center mb-3" style={{ 
+              width: '72px', height: '72px', background: '#faf9f7', border: '1px solid #e8e4df', color: '#9e9890' 
+            }}>
+              <Package size={32} />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">No products found</h3>
-            <p className="text-sm text-gray-600 mt-1 max-w-xs">Try adjusting your search or filter criteria to find what you're looking for.</p>
-            <button
-              onClick={() => { setSearch(''); setActiveCategory('All'); setStatusFilter('all'); setPriceRange([0, 500000]); }}
-              className="mt-4 px-4 py-2 rounded-lg text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 transition-colors"
+            <h3 className="fw-semibold mb-2">No products found</h3>
+            <p className="text-muted small mb-3" style={{ maxWidth: '340px', margin: '6px auto 20px' }}>
+              {budgetActive
+                ? `No coffins found within KSh ${budgetNum.toLocaleString()}. Try increasing your budget or clearing the filter.`
+                : "Try adjusting your search or filter criteria to find what you're looking for."}
+            </p>
+            <Button 
+              variant="outline-secondary"
+              onClick={() => { setSearch(''); setActiveCategory('All'); clearBudget(); }}
             >
               Clear all filters
-            </button>
+            </Button>
           </div>
         ) : view === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map(item => (
-              <CoffinCard
-                key={item.id}
-                item={item}
-                view="grid"
-                onAdd={onAddToBooking}
-                onView={setDetailItem}
-                isPreview={isPreview}
-              />
+          <Row className="g-4">
+            {filtered.map((item, i) => (
+              <Col key={item.id} xs={12} md={6} lg={4}>
+                <ProductCard
+                  item={item}
+                  view="grid"
+                  onBuy={onAddToBooking}
+                  onView={setDetailItem}
+                  isPreview={isPreview}
+                />
+              </Col>
             ))}
-          </div>
+          </Row>
         ) : (
-          <div className="space-y-2">
-            {filtered.map(item => (
-              <CoffinCard
+          <div className="d-flex flex-column gap-3">
+            {filtered.map((item, i) => (
+              <ProductCard
                 key={item.id}
                 item={item}
                 view="list"
-                onAdd={onAddToBooking}
+                onBuy={onAddToBooking}
                 onView={setDetailItem}
                 isPreview={isPreview}
               />
             ))}
           </div>
         )}
-
-        {/* Results count */}
-        {filtered.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-600">
-              Showing {filtered.length} of {totalItems} products
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* ─── Modals ─────────────────────────────────────────────────── */}
-      <ShareModal
-        isOpen={shareOpen}
-        onClose={() => setShareOpen(false)}
-        funeralHomeName={funeralHomeName}
-      />
-      <DetailDrawer
-        item={detailItem}
-        isOpen={!!detailItem}
-        onClose={() => setDetailItem(null)}
-        onAdd={onAddToBooking}
-        isPreview={isPreview}
-      />
+      {/* Modals */}
+      <ShareModal isOpen={shareOpen} onClose={() => setShareOpen(false)} funeralHomeName={funeralHomeName} />
+      <DetailDrawer item={detailItem} isOpen={!!detailItem} onClose={() => setDetailItem(null)} onBuy={onAddToBooking} isPreview={isPreview} />
     </div>
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  DEMO: How to use ResizableCard with different content
-// ═══════════════════════════════════════════════════════════════════════════
-
 export const CatalogueDemo = () => {
-  const [chartSize, setChartSize] = useState({ w: 0, h: 0 });
-  const [bookingSize, setBookingSize] = useState({ w: 0, h: 0 });
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
-      {/* Demo Header */}
-      <div className="mb-2">
-        <h1 className="text-xl font-bold text-gray-900">Resizable Card + Catalogue Demo</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Drag the bottom-right corner of each card to resize in real time.
-        </p>
-      </div>
-
-      {/* Row 1: Small resizable cards for charts/bookings */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* Example: Chart Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Revenue Overview</h3>
-          <div className="h-full flex items-end gap-1.5 px-2 pb-2">
-            {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-t-sm bg-blue-500/20 hover:bg-blue-500/30 transition-colors"
-                style={{ height: `${h}%`, minHeight: 4 }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Example: Bookings Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Bookings</h3>
-          <div className="space-y-2">
-            {[
-              { name: 'John Doe', service: 'Cremation', time: '10:30 AM', status: 'Confirmed' },
-              { name: 'Jane Smith', service: 'Burial', time: '2:00 PM', status: 'Pending' },
-              { name: 'Alex Mwangi', service: 'Viewing', time: '4:00 PM', status: 'Confirmed' },
-            ].map((b, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-600">
-                  {b.name.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{b.name}</p>
-                  <p className="text-xs text-gray-600">{b.service} · {b.time}</p>
-                </div>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${b.status === 'Confirmed'
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'bg-amber-50 text-amber-700'
-                  }`}>
-                  {b.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Example: Quick Stats Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Coffin Inventory</h3>
-          <div className="space-y-3">
-            {[
-              { name: 'Mahogany Crown', stock: 12, max: 20, status: 'ok' },
-              { name: 'White Steel Vault', stock: 2, max: 10, status: 'low' },
-              { name: 'Pine Simple', stock: 0, max: 15, status: 'out' },
-              { name: 'Walnut Executive', stock: 1, max: 8, status: 'low' },
-            ].map((item, i) => (
-              <div key={i}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-700 truncate">{item.name}</span>
-                  <span className={`text-xs font-medium ${item.status === 'ok' ? 'text-emerald-600' : item.status === 'low' ? 'text-amber-600' : 'text-red-600'
-                    }`}>
-                    {item.stock}/{item.max}
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${item.status === 'ok' ? 'bg-emerald-500' : item.status === 'low' ? 'bg-amber-500' : 'bg-red-500'
-                      }`}
-                    style={{ width: `${(item.stock / item.max) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Row 2: Full Catalogue */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6">
-          <FuneralCatalogue
-            funeralHomeName="Memorial Care Funeral Home"
-            onAddToBooking={(item) => console.log('Add to booking:', item.name)}
-            onViewDetails={(item) => console.log('View details:', item.name)}
-          />
-        </div>
-      </div>
-    </div>
+    <FuneralCatalogue
+      funeralHomeName="Memorial Care Funeral Home"
+      onAddToBooking={(item) => console.log('Buy:', item.name)}
+      onViewDetails={(item) => console.log('View:', item.name)}
+    />
   );
 };
 

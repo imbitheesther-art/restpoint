@@ -1,10 +1,10 @@
 // Service Worker for Rest Point PWA
-const CACHE_NAME = 'restpoint-v1';
-const STATIC_CACHE = 'restpoint-static-v1';
-const DYNAMIC_CACHE = 'restpoint-dynamic-v1';
+const CACHE_VERSION = 'v2'; // Increment this to force cache refresh
+const STATIC_CACHE = `restpoint-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `restpoint-dynamic-${CACHE_VERSION}`;
+const CACHE_NAME = `restpoint-${CACHE_VERSION}`;
 
 // Assets to cache immediately on install
-
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
@@ -41,7 +41,8 @@ self.addEventListener('activate', (event) => {
                 return Promise.all(
                     cacheNames
                         .filter((name) => {
-                            return name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== CACHE_NAME;
+                            // Delete all caches that don't match current version
+                            return !name.includes(CACHE_VERSION);
                         })
                         .map((name) => {
                             console.log('[SW] Deleting old cache:', name);
