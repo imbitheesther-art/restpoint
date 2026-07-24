@@ -1,68 +1,46 @@
-import sharp from "sharp";
-import path from "path";
-import fs from "fs/promises";
+import sharp from 'sharp';
+import { imageUploadService } from '../../../packages/shared-services/src/imageUploadService';
 
-
+/**
+ * Process and save a signature buffer as an optimized image.
+ * Uses the centralized image upload service with sharp for compression.
+ * Enhances signature visibility by increasing boldness and contrast.
+ *
+ * @param inputBuffer - Raw image buffer from signature pad
+ * @param filename - Unique filename identifier
+ * @returns The relative URL path to the saved file
+ */
 export async function processSignature(
     inputBuffer: Buffer,
-    filename: string
-) {
-
-    const uploadPath =
-        path.join(
-            "uploads",
-            "signatures"
-        );
-
-
-    await fs.mkdir(
-        uploadPath,
-        { recursive: true }
-    );
-
-
-    const outputFile =
-        path.join(
-            uploadPath,
-            `${filename}.png`
-        );
-
-
-    await sharp(inputBuffer)
-
-        // remove unnecessary metadata
-        .rotate()
-
-        // resize but keep quality
-        .resize({
-            width: 800,
-            height: 300,
-            fit: "inside",
-            withoutEnlargement: true
+    filename: string,
+    tenantSlug?: string
+): Promise<string> {
+    // Enhance signature: increase boldness and visibility
+    const enhancedBuffer = await sharp(inputBuffer)
+        .normalize() // Enhance contrast automatically
+        .sharpen({ // Sharpen to make lines more defined
+            sigma: 1.5,
         })
-
-        // optimize PNG
+        .gamma(1.5) // Increase gamma to make dark areas darker and more bold
         .png({
-            compressionLevel: 9,
-            adaptiveFiltering: true,
-            palette: true
+            quality: 90,
+            compressionLevel: 6,
         })
+        .toBuffer();
 
-        .toFile(outputFile);
-
-
-await sharp(buffer)
-
-    .grayscale()
-
-    .threshold(180)
-
-    .png({
-        compressionLevel: 9,
-        palette: true
-    })
-
-    .toFile(output); 
-    return `/uploads/signatures/${filename}.png`;
-
+    const result = await imageUploadService.uploadImage(
+        enhancedBuffer,
+        `${filename}.png`,
+        'signatures',
+        tenantSlug || 'system',
+        undefined,
+        {
+            maxWidth: 800,
+            maxHeight: 300,
+            quality: 90,
+            format: 'png',
+            stripMetadata: true,
+        }
+    );
+    return result.urlPath;
 }

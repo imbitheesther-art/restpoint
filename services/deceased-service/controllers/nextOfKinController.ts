@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { NextOfKinModel } from "../models/NextOfKin";
 import Logger from "../../../packages/shared-logger/src/index";
-import redisService, { NotificationType, NotificationPriority } from "../../../packages/shared-services/src/redisService";
+import redisService from "../../../packages/shared-services/dist/redisService";
 
 const SERVICE_NAME = 'nextofkin-service';
 
@@ -88,35 +88,9 @@ export const nextOfKinRegister = async (
         // INVALIDATE CACHE
         // ==============================
         if (tenantSlug && tenantId) {
-            await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${deceased_id}`);
-            await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
+            await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:deceased:${deceased_id}`);
+            await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:list:${tenantId}`);
             Logger.info(`[Cache] 🧹 Next of kin cache invalidated for ${tenantSlug}`);
-        }
-
-        // ==============================
-        // SEND NOTIFICATION
-        // ==============================
-        if (tenantSlug) {
-            await redisService.storeNotification(
-                tenantSlug,
-                SERVICE_NAME,
-                {
-                    id: `notif_${Date.now()}_${deceased_id}`,
-                    tenantSlug,
-                    type: NotificationType.SUCCESS,
-                    priority: NotificationPriority.HIGH,
-                    title: "✅ Next of Kin Registered",
-                    message: `${full_name} registered as next of kin for deceased ${deceased_id}`,
-                    data: {
-                        deceased_id,
-                        full_name,
-                        relationship,
-                        contact
-                    },
-                    source: SERVICE_NAME,
-                    target: "admin"
-                }
-            );
         }
 
         return res.status(201).json({
@@ -148,7 +122,7 @@ export const getNextOfKinByDeceasedId = async (
     res: Response
 ): Promise<Response> => {
     try {
-        const { deceased_id } = req.query;
+        const deceased_id = req.params.deceased_id || req.query.deceased_id as string;
         const tenantSlug = (req as any).tenantSlug || "unknown";
 
         if (!deceased_id) {
@@ -162,7 +136,7 @@ export const getNextOfKinByDeceasedId = async (
         // CHECK CACHE
         // ==============================
         const cacheKey = `nextofkin:deceased:${deceased_id}`;
-        const cached = await redisService.serviceGet(SERVICE_NAME, tenantSlug, cacheKey);
+        const cached = await redisService.serviceGet('deceased-service', tenantSlug, cacheKey);
 
         if (cached) {
             Logger.info(`[Cache]  Next of kin cache hit for deceased ${deceased_id}`);
@@ -177,17 +151,26 @@ export const getNextOfKinByDeceasedId = async (
         const rows = await NextOfKinModel.getByDeceasedId(req, String(deceased_id));
 
         const formattedData = rows.map((item: any) => ({
+            id: item.id,
             deceased_id: item.deceased_id,
             full_name: item.full_name,
             relationship: item.relationship,
-            contact: item.contact
+            contact: item.contact,
+            email: item.email || null,
+            alternative_phone: item.alternative_phone || null,
+            id_number: item.id_number || null,
+            id_type: item.id_type || null,
+            address: item.address || null,
+            is_primary: item.is_primary || false,
+            is_notified: item.is_notified || false,
+            created_at: item.created_at
         }));
 
         // ==============================
         // STORE IN CACHE
         // ==============================
         await redisService.serviceSet(
-            SERVICE_NAME,
+            'deceased-service',
             tenantSlug,
             cacheKey,
             formattedData,
@@ -265,34 +248,10 @@ export const updateNextOfKin = async (
             // Get the deceased_id from the result to invalidate specific cache
             const record = await NextOfKinModel.getById(req, Number(id));
             if (record && record.deceased_id) {
-                await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
+                await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
             }
-            await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
+            await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:list:${tenantId}`);
             Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
-        }
-
-        // ==============================
-        // SEND NOTIFICATION
-        // ==============================
-        if (tenantSlug) {
-            await redisService.storeNotification(
-                tenantSlug,
-                SERVICE_NAME,
-                {
-                    id: `notif_update_${Date.now()}`,
-                    tenantSlug,
-                    type: NotificationType.INFO,
-                    priority: NotificationPriority.MEDIUM,
-                    title: " Next of Kin Updated",
-                    message: `Next of kin record ${id} has been updated`,
-                    data: {
-                        id,
-                        updated_fields: Object.keys(updateData)
-                    },
-                    source: SERVICE_NAME,
-                    target: "admin"
-                }
-            );
         }
 
         return res.status(200).json({
@@ -346,31 +305,10 @@ export const deleteNextOfKin = async (
         // ==============================
         if (tenantSlug && tenantId) {
             if (record && record.deceased_id) {
-                await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
+                await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
             }
-            await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
+            await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:list:${tenantId}`);
             Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
-        }
-
-        // ==============================
-        // SEND NOTIFICATION
-        // ==============================
-        if (tenantSlug) {
-            await redisService.storeNotification(
-                tenantSlug,
-                SERVICE_NAME,
-                {
-                    id: `notif_delete_${Date.now()}`,
-                    tenantSlug,
-                    type: NotificationType.WARNING,
-                    priority: NotificationPriority.MEDIUM,
-                    title: " Next of Kin Deleted",
-                    message: `Next of kin record ${id} has been deleted`,
-                    data: { id },
-                    source: SERVICE_NAME,
-                    target: "admin"
-                }
-            );
         }
 
         return res.status(200).json({
@@ -423,31 +361,10 @@ export const markAsNotified = async (
         if (tenantSlug && tenantId) {
             const record = await NextOfKinModel.getById(req, Number(id));
             if (record && record.deceased_id) {
-                await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
+                await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:deceased:${record.deceased_id}`);
             }
-            await redisService.serviceDel(SERVICE_NAME, tenantSlug, `nextofkin:list:${tenantId}`);
+            await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:list:${tenantId}`);
             Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
-        }
-
-        // ==============================
-        // SEND NOTIFICATION
-        // ==============================
-        if (tenantSlug) {
-            await redisService.storeNotification(
-                tenantSlug,
-                SERVICE_NAME,
-                {
-                    id: `notif_notify_${Date.now()}`,
-                    tenantSlug,
-                    type: NotificationType.INFO,
-                    priority: NotificationPriority.MEDIUM,
-                    title: " Next of Kin Notified",
-                    message: `Next of kin record ${id} has been marked as notified`,
-                    data: { id },
-                    source: SERVICE_NAME,
-                    target: "admin"
-                }
-            );
         }
 
         return res.status(200).json({

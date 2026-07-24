@@ -4,7 +4,7 @@ import './SignaturePad.css';
 
 /* ═══════════════════════════════════════════════════════════════
    MINI INLINE ICONS (zero dependencies)
-   ═══════════════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════════════ */
 const Ic = ({ children, s = 16 }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,10 +20,11 @@ const Icons = {
 
 /* ═══════════════════════════════════════════════════════════════
    COMPONENT
-   ═══════════════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════════════ */
 
 const ReusableSignaturePad = forwardRef(({
-  penColor = '#1c1917',
+  penColor = '#0a0a0a',
+  penWidth = 2.5, 
   backgroundColor = 'transparent',
   placeholder = 'Sign here',
   disabled = false,
@@ -37,28 +38,31 @@ const ReusableSignaturePad = forwardRef(({
   className = '',
   style = {},
 }, ref) => {
-  const containerRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const canvasContainerRef = useRef(null); // Dedicated ref for the drawing area
   const sigCanvas = useRef(null);
   const historyRef = useRef([]);
   const [hasContent, setHasContent] = useState(false);
-  const [canvasSize, setCanvasSize] = useState({ width: 600, height: 280 });
+  const [canvasSize, setCanvasSize] = useState({ width: 600, height: 250 });
 
-  // Dynamically measure container and set canvas to EXACT pixel size
-  // This prevents the coordinate mismatch that causes signatures to shift
+  // Dynamically measure ONLY the canvas container to get exact drawing pixels
   useEffect(() => {
     const measure = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
+      if (!canvasContainerRef.current) return;
+      
+      // Get the exact width and height of the drawing area only
+      const rect = canvasContainerRef.current.getBoundingClientRect();
       const w = Math.floor(rect.width);
-      const h = 280; // Generous height for comfortable signing
-      if (w > 0 && (w !== canvasSize.width || h !== canvasSize.height)) {
-        // Save existing signature before resize
+      const h = Math.floor(rect.height) || 250; // Fallback to 250
+      
+      if (w > 0 && h > 0 && (w !== canvasSize.width || h !== canvasSize.height)) {
         let existingData = null;
         if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
           try { existingData = sigCanvas.current.toDataURL(); } catch (e) { /* ignore */ }
         }
+        
         setCanvasSize({ width: w, height: h });
-        // Restore after React re-renders with new size
+        
         if (existingData) {
           requestAnimationFrame(() => {
             try {
@@ -75,21 +79,19 @@ const ReusableSignaturePad = forwardRef(({
 
     measure();
 
-    // Use ResizeObserver for real-time container size tracking
     let observer = null;
     if (typeof ResizeObserver !== 'undefined') {
       observer = new ResizeObserver(() => measure());
-      observer.observe(containerRef.current);
+      observer.observe(canvasContainerRef.current);
     }
 
-    // Also listen for window resize as fallback
     window.addEventListener('resize', measure);
 
     return () => {
       window.removeEventListener('resize', measure);
       if (observer) observer.disconnect();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canvasSize.width, canvasSize.height]);
 
   useImperativeHandle(ref, () => ({
     clear: handleClear,
@@ -178,12 +180,12 @@ const ReusableSignaturePad = forwardRef(({
 
   return (
     <div
-      ref={containerRef}
+      ref={wrapperRef}
       className={`sp-wrapper ${disabled ? 'sp-disabled' : ''} ${className}`}
       style={style}
     >
-      {/* Canvas Area — NO CSS scaling, canvas pixels = display pixels */}
-      <div className="sp-canvas-container">
+      {/* Applied the dedicated ref here */}
+      <div className="sp-canvas-container" ref={canvasContainerRef}>
         {!hasContent && (
           <div className="sp-placeholder">
             {Icons.pen}
@@ -200,16 +202,16 @@ const ReusableSignaturePad = forwardRef(({
             ...canvasProps,
           }}
           penColor={penColor}
+          dotSize={penWidth} 
+          minWidth={penWidth * 0.8} 
+          maxWidth={penWidth * 1.5} 
+          velocityFilterWeight={0.7}
           backgroundColor={backgroundColor}
           onBegin={handleBegin}
           onEnd={handleEnd}
         />
       </div>
 
-      {/* Signature baseline */}
-      <div className="sp-line" />
-
-      {/* Toolbar */}
       {showControls && (
         <div className="sp-controls">
           {showUndo && (
@@ -234,7 +236,7 @@ const ReusableSignaturePad = forwardRef(({
               {Icons.clear} Clear
             </button>
           )}
-          <div style={{ flex: 1 }} />
+          <div className="sp-spacer" />
           {showSave && (
             <button
               type="button"
@@ -243,7 +245,7 @@ const ReusableSignaturePad = forwardRef(({
               disabled={!hasContent}
               title="Save signature"
             >
-              {Icons.save} Save
+              {Icons.save} Save Signature
             </button>
           )}
         </div>

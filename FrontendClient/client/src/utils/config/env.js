@@ -1,4 +1,4 @@
-// src/config/env.js
+   // src/config/env.js
 // Centralized configuration for the application environment
 // ALL services import from here - single source of truth
 
@@ -33,8 +33,8 @@ const env = {
   // Final path after gateway: /workshop/materials → matches workshopRouter at /workshop
   WORKSHOP_API_URL: import.meta.env.VITE_WORKSHOP_API_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke/api/v1/restpoint' : 'http://localhost:5000/api/v1/restpoint'),
 
-  // WebSocket URL for real-time features (hearse service port 5002)
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_SOCKETIO_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5013'),
+  // WebSocket URL for real-time features (socketio-service port 5018)
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_SOCKETIO_URL || (import.meta.env.PROD ? 'https://restpoint.co.ke' : 'http://localhost:5018'),
 
   // Feature flags
   FEATURES: {

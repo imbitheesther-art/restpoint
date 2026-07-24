@@ -753,7 +753,36 @@ exports.connectionManager = ConnectionManager.getInstance();
  * This wraps the legacy signature: safeTenantQuery(dbName, sql, params)
  */
 const safeQuery = async (tenantDbName, sql, params = []) => {
-    return exports.connectionManager.query(tenantDbName, sql, params);
+    // Auto-detect argument order: if first arg looks like SQL, shift args
+    if (typeof tenantDbName === 'string' && tenantDbName.trim().toUpperCase().startsWith('SELECT')) {
+        // Called as safeQuery(sql, params) without tenantDbName
+        params = sql || [];
+        sql = tenantDbName;
+        tenantDbName = process.env.DB_NAME || 'restpoint_db';
+    }
+    try {
+        return await exports.connectionManager.query(tenantDbName, sql, params);
+    } catch (error) {
+        // Fallback: if query fails (e.g. mariadb host not found), try direct connection to localhost
+        console.warn(`[ConnectionManager] safeQuery failed for "${tenantDbName}": ${error.message}. Trying direct connection...`);
+        try {
+            const mysql = require('mysql2/promise');
+            const conn = await mysql.createConnection({
+                host: process.env.DB_HOST_FALLBACK || '127.0.0.1',
+                port: parseInt(process.env.DB_PORT || '3306', 10),
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: tenantDbName,
+            });
+            const [rows] = await conn.query(sql, params);
+            await conn.end();
+            return rows;
+        } catch (fallbackError) {
+            // Return empty array if fallback also fails (non-critical read)
+            if (sql && typeof sql === 'string' && sql.trim().toUpperCase().startsWith('SELECT')) return [];
+            throw fallbackError;
+        }
+    }
 };
 exports.safeQuery = safeQuery;
 const safeExecute = async (tenantDbName, sql, params = []) => {

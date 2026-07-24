@@ -1,6 +1,6 @@
 ﻿import { Queue, Worker } from 'bullmq';
 import { resolveDatabase, safeTenantQuery, safeTenantExecute } from '../../../shared/dbConfig';
-import redisService, { NotificationType, NotificationPriority } from '../../../packages/shared-services/src/redisService';
+import redisService from '../../../packages/shared-services/dist/redisService';
 
 export const PDF_QUEUE_NAME = 'postmortem-pdf-generation';
 

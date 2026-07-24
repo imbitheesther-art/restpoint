@@ -10,6 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
+import knex from 'knex';
 import { initSocket } from './socket';
 import { workshopRouter } from './controllers/routes/workshopRouter';
 
@@ -157,205 +158,43 @@ app.get('/api/health', (_req: any, res: any) => {
 });
 
 // ============================================
-// AUTO-MIGRATION: Ensure workshop tables exist
+// AUTO-MIGRATION: Ensure workshop tables exist in tenant databases
 // ============================================
-const WORKSHOP_TABLES_SQL = `
--- Add id column if it doesn't exist (for tables created before id column was added)
-ALTER TABLE coffin_orders ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
-ALTER TABLE materials ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
-ALTER TABLE material_usage ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
-ALTER TABLE production_stages ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
-ALTER TABLE worker_assignments ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY FIRST;
-
-CREATE TABLE IF NOT EXISTS users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  role VARCHAR(50) DEFAULT 'worker',
-  phone VARCHAR(20),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_users_role (role),
-  INDEX idx_users_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS coffin_orders (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  order_number VARCHAR(50) NOT NULL UNIQUE,
-  customer_name VARCHAR(255) NOT NULL,
-  customer_phone VARCHAR(20),
-  customer_email VARCHAR(255),
-  deceased_name VARCHAR(255) NOT NULL,
-  coffin_type VARCHAR(50) DEFAULT 'standard',
-  dimensions TEXT,
-  color VARCHAR(100),
-  interior_fabric VARCHAR(100),
-  notes TEXT,
-  instructions TEXT,
-  selling_price DECIMAL(10,2) DEFAULT 0,
-  total_cost DECIMAL(10,2) DEFAULT 0,
-  profit DECIMAL(10,2) DEFAULT 0,
-  due_date DATE,
-  priority VARCHAR(20) DEFAULT 'normal',
-  branch_id INT DEFAULT NULL,
-  hold_reason TEXT,
-  created_by VARCHAR(255),
-  status VARCHAR(50) DEFAULT 'pending',
-  delivery_date DATE,
-  order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_orders_status (status),
-  INDEX idx_orders_date (order_date),
-  INDEX idx_orders_branch (branch_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS materials (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  category VARCHAR(100) NOT NULL,
-  unit VARCHAR(50) NOT NULL DEFAULT 'pieces',
-  quantity DECIMAL(10,2) NOT NULL DEFAULT 0,
-  unit_price DECIMAL(10,2) DEFAULT 0,
-  min_stock_level DECIMAL(10,2) DEFAULT 0,
-  description TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_materials_category (category)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS material_usage (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  coffin_order_id INT NOT NULL,
-  material_id INT NOT NULL,
-  quantity_used DECIMAL(10,2) NOT NULL,
-  unit_cost DECIMAL(10,2) DEFAULT 0,
-  notes TEXT,
-  used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE,
-  INDEX idx_usage_order (coffin_order_id),
-  INDEX idx_usage_material (material_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS production_stages (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  coffin_order_id INT NOT NULL,
-  stage VARCHAR(50) NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending',
-  started_at DATETIME NULL,
-  completed_at DATETIME NULL,
-  notes TEXT,
-  FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE,
-  UNIQUE KEY uk_order_stage (coffin_order_id, stage),
-  INDEX idx_stages_order (coffin_order_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS worker_assignments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  coffin_order_id INT NOT NULL,
-  user_id INT NOT NULL,
-  stage VARCHAR(50) NOT NULL,
-  hours_worked DECIMAL(5,2) DEFAULT 0,
-  notes TEXT,
-  assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  completed_at DATETIME NULL,
-  FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE,
-  INDEX idx_assignments_order (coffin_order_id),
-  INDEX idx_assignments_user (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS costing (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  coffin_order_id INT NOT NULL UNIQUE,
-  materials_cost DECIMAL(10,2) DEFAULT 0,
-  labor_cost DECIMAL(10,2) DEFAULT 0,
-  overhead_cost DECIMAL(10,2) DEFAULT 0,
-  total_cost DECIMAL(10,2) DEFAULT 0,
-  selling_price DECIMAL(10,2) DEFAULT 0,
-  profit DECIMAL(10,2) DEFAULT 0,
-  profit_margin DECIMAL(5,2) DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS design_specifications (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  coffin_order_id INT NOT NULL UNIQUE,
-  design_name VARCHAR(255),
-  description TEXT,
-  specifications JSON,
-  design_files JSON,
-  status VARCHAR(50) DEFAULT 'draft',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE,
-  INDEX idx_design_order (coffin_order_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS material_intake (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  material_id INT NOT NULL,
-  quantity DECIMAL(10,2) NOT NULL,
-  unit_cost DECIMAL(10,2) DEFAULT 0,
-  supplier VARCHAR(255),
-  invoice_number VARCHAR(100),
-  notes TEXT,
-  received_by VARCHAR(255),
-  received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE,
-  INDEX idx_intake_material (material_id),
-  INDEX idx_intake_date (received_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-`;
-
 async function ensureWorkshopTables(dbName: string) {
-    let connection;
     try {
-        // @ts-ignore - dynamic import for shared module
-        const { getTenantDB } = await import('../../shared/dbConfig.js');
-        const pool = await getTenantDB(dbName);
-        connection = await pool.getConnection();
+        // Create a knex instance for the tenant database
+        const tenantKnex = knex({
+            client: 'mysql2',
+            connection: {
+                host: process.env.DB_HOST || 'localhost',
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: dbName,
+            },
+            pool: { min: 1, max: 5 },
+        });
 
         console.log(`[WORKSHOP] Ensuring workshop tables in: ${dbName}`);
 
-        const statements = WORKSHOP_TABLES_SQL
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s.length > 0);
+        // Check if tables already exist
+        const hasUsers = await tenantKnex.schema.hasTable('users');
+        const hasOrders = await tenantKnex.schema.hasTable('coffin_orders');
+        const hasMaterials = await tenantKnex.schema.hasTable('materials');
 
-        console.log(`[WORKSHOP] Found ${statements.length} SQL statements to execute`);
-
-        for (let i = 0; i < statements.length; i++) {
-            const statement = statements[i];
-            if (!statement) continue;
-
-            try {
-                await connection.query(statement + ';');
-                const match = statement.match(/(?:TABLE|COLUMN)\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/i);
-                const objectName = match ? match[1] : 'unknown';
-                console.log(`[WORKSHOP] ✓ ${objectName} (${i + 1}/${statements.length})`);
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                // Ignore "duplicate key" and "already exists" errors
-                if (errorMessage.includes('Duplicate') || errorMessage.includes('already exists')) {
-                    console.log(`[WORKSHOP] - ${errorMessage.split('.')[0]} (already exists)`);
-                } else {
-                    console.warn(`[WORKSHOP] Warning (${i + 1}/${statements.length}): ${errorMessage}`);
-                }
-            }
+        if (!hasUsers || !hasOrders || !hasMaterials) {
+            // Run the migration for this tenant
+            const { up } = await import('./migrations/20240622000001_create_workshop_tables.js');
+            await up(tenantKnex);
+            console.log(`[WORKSHOP] ✅ Workshop tables created in: ${dbName}`);
+        } else {
+            console.log(`[WORKSHOP] ✓ Workshop tables already exist in: ${dbName}`);
         }
 
-        console.log(`[WORKSHOP] ✅ Workshop tables ensured in database: ${dbName}`);
+        await tenantKnex.destroy();
         return true;
     } catch (error: any) {
         console.error(`[WORKSHOP] ❌ Failed to ensure workshop tables in ${dbName}:`, error.message);
         return false;
-    } finally {
-        if (connection) await connection.release();
     }
 }
 
@@ -371,11 +210,21 @@ async function startServer() {
     // Run auto-migration on tenant databases
     console.log('[WORKSHOP] Checking for tenant databases to migrate...');
     try {
-        // @ts-ignore - dynamic import for shared module
-        const { getRootPool } = await import('../../shared/dbConfig.js');
-        const rootPool = await getRootPool();
-        const [tenantRows] = await rootPool.query('SELECT db_name, name FROM tenant_tracking.tenants WHERE status = "active"');
-        const tenants = tenantRows as Array<{ db_name: string; name: string }>;
+        // Create temporary knex instance to query tenants
+        const tempKnex = knex({
+            client: 'mysql2',
+            connection: {
+                host: process.env.DB_HOST || 'localhost',
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: 'tenant_tracking',
+            },
+            pool: { min: 1, max: 5 },
+        });
+
+        const tenants = await tempKnex('tenants')
+            .where({ status: 'active' })
+            .select('db_name', 'name');
 
         console.log(`[WORKSHOP] Found ${tenants.length} active tenant(s)`);
 
@@ -388,6 +237,8 @@ async function startServer() {
                 console.error(`[WORKSHOP] ❌ Failed to migrate: ${tenant.name}`);
             }
         }
+
+        await tempKnex.destroy();
     } catch (error) {
         console.error('[WORKSHOP] Tenant migration error:', error);
     }

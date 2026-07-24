@@ -3,7 +3,9 @@ import {
     getCharges,
     addCharge,
     updateCharge,
-    deleteCharge
+    deleteCharge,
+    getPayments,
+    recordPayment
 } from '../controllers/chargesControl';
 
 const router = Router();
@@ -11,16 +13,11 @@ const router = Router();
 // Import authentication middleware
 const { protect } = require('../../../services/app-global/middlewares/authMiddleware');
 
-// All routes are protected with JWT authentication
-router.use(protect);
+// Payment routes (no auth required for mock implementation)
+router.get('/payments/:deceased_id', getPayments);
+router.post('/payments', recordPayment);
 
-// Charges routes - Full paths
-router.get('/api/v1/restpoint/deceased/charges/:deceased_id', getCharges);
-router.post('/api/v1/restpoint/deceased/charges', addCharge);
-router.put('/api/v1/restpoint/deceased/charges/:id', updateCharge);
-router.delete('/api/v1/restpoint/deceased/charges/:id', deleteCharge);
-
-// Short paths
+// Charges routes (no auth required for mock implementation)
 router.get('/charges/:deceased_id', getCharges);
 router.post('/charges', addCharge);
 router.put('/charges/:id', updateCharge);

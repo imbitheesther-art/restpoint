@@ -1,84 +1,147 @@
 /**
  * @file packages/shared-services/src/redisService.ts
- * CENTRALIZED: Redis Service with per-tenant namespacing
+ * CENTRALIZED: Redis Service with per-service memory limits
  *
  * Features:
- * - Per-tenant key namespace isolation (tenant:{slug}:*)
- * - Demand-based connection pool (lazy connect, shared connections)
- * - Automatic cache clearing when tenant is suspended/deleted
- * - Balance computation caching between tenants
- * - Graceful fallback when Redis is unavailable
+ * - Per-service memory limits (10MB per service)
+ * - Automatic balancing when service exceeds limit
+ * - Universal notification system
+ * - Redis-backed real-time notifications via Socket.IO
+ * - Auto-expiration with configurable TTL
+ * - Cross-tenant notification routing
  */
 import { RedisClientType, RedisModules, RedisFunctions, RedisScripts } from 'redis';
 type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
+export interface ServiceConfig {
+    name: string;
+    maxMemoryMB: number;
+    softLimitMB: number;
+    notificationTTL: number;
+    balanceTTL: number;
+}
+export declare enum NotificationType {
+    ALERT = "alert",
+    INFO = "info",
+    WARNING = "warning",
+    SUCCESS = "success",
+    ERROR = "error",
+    SYSTEM = "system",
+    PAYMENT = "payment",
+    BOOKING = "booking",
+    REMINDER = "reminder",
+    TASK = "task",
+    DECEASED = "deceased",
+    HEARSE = "hearse"
+}
+export declare enum NotificationPriority {
+    LOW = "low",
+    MEDIUM = "medium",
+    HIGH = "high",
+    CRITICAL = "critical"
+}
+export interface Notification {
+    id: string;
+    tenantSlug: string;
+    serviceName: string;
+    type: NotificationType;
+    priority: NotificationPriority;
+    title: string;
+    message: string;
+    data?: any;
+    read: boolean;
+    delivered: boolean;
+    createdAt: string;
+    expiresAt: string;
+    source?: string;
+    target?: string | string[];
+    actions?: {
+        label: string;
+        url: string;
+    }[];
+}
+export interface NotificationFilters {
+    type?: NotificationType[];
+    priority?: NotificationPriority[];
+    serviceName?: string[];
+    read?: boolean;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    offset?: number;
+}
+export declare function setNotificationEmitter(emitter: (notification: Notification) => void): void;
 /**
- * Get or create the shared Redis client (lazy initialization)
- * All services share one connection pool to Redis
+ * Register or update service configuration
  */
+export declare function registerService(config: ServiceConfig): void;
+/**
+ * Get service configuration
+ */
+export declare function getServiceConfig(serviceName: string): ServiceConfig;
 export declare function getRedisClient(): Promise<RedisClient | null>;
+export declare function serviceKey(serviceName: string, tenantSlug: string, key: string): string;
+export declare function notificationKey(tenantSlug: string, serviceName: string, notificationId: string): string;
+export declare function crossNotificationKey(sourceTenant: string, targetTenant: string, notificationId: string): string;
+export declare function serviceSet(serviceName: string, tenantSlug: string, key: string, value: any, ttlSeconds?: number): Promise<boolean>;
+export declare function serviceGet<T = any>(serviceName: string, tenantSlug: string, key: string): Promise<T | null>;
+export declare function serviceDel(serviceName: string, tenantSlug: string, key: string): Promise<boolean>;
+export declare function getServiceMemoryUsage(serviceName: string, tenantSlug: string): Promise<{
+    usedMB: number;
+    maxMB: number;
+    softLimitMB: number;
+    percentage: number;
+    softLimitPercentage: number;
+    keys: number;
+    keysWithTTL: number;
+}>;
+export declare function checkAndBalance(serviceName: string, tenantSlug: string): Promise<{
+    balanced: boolean;
+    removed: number;
+    freedMB: number;
+    reason: 'soft_limit' | 'hard_limit' | 'none';
+}>;
+export declare function storeNotification(tenantSlug: string, serviceName: string, notification: Omit<Notification, 'createdAt' | 'expiresAt' | 'read' | 'delivered' | 'serviceName'>): Promise<Notification | null>;
+export declare function getNotifications(tenantSlug: string, serviceName?: string, filters?: NotificationFilters): Promise<{
+    notifications: Notification[];
+    total: number;
+}>;
+export declare function deleteNotification(tenantSlug: string, serviceName: string, notificationId: string): Promise<boolean>;
+export declare function deleteAllNotifications(tenantSlug: string, serviceName: string): Promise<number>;
 /**
- * Build a namespaced Redis key for a tenant
- * Format: tenant:{tenantSlug}:{key}
+ * Clear all cache entries for a specific service and tenant
  */
-export declare function tenantKey(tenantSlug: string, key: string): string;
+export declare function clearServiceCache(serviceName: string, tenantSlug: string): Promise<number>;
 /**
- * Build a namespaced Redis key for cross-tenant operations
- * Format: cross:{sourceTenant}:{targetTenant}:{key}
- */
-export declare function crossTenantKey(sourceTenant: string, targetTenant: string, key: string): string;
-/**
- * Set a cached value for a specific tenant
- */
-export declare function tenantSet(tenantSlug: string, key: string, value: any, ttlSeconds?: number): Promise<boolean>;
-/**
- * Get a cached value for a specific tenant
- */
-export declare function tenantGet<T = any>(tenantSlug: string, key: string): Promise<T | null>;
-/**
- * Delete a cached value for a specific tenant
- */
-export declare function tenantDel(tenantSlug: string, key: string): Promise<boolean>;
-/**
- * Clear ALL cached values for a specific tenant (used on tenant suspend/delete)
+ * Clear ALL cache entries for a specific tenant across all registered services.
+ * This is useful when suspending/deleting a tenant to ensure all their cached data is purged.
  */
 export declare function clearTenantCache(tenantSlug: string): Promise<number>;
-/**
- * Cached balance computation between tenants
- */
-export declare function getCachedBalance(tenantSlug: string, computationKey: string): Promise<{
-    balance: number;
-    cachedAt: string;
-} | null>;
-/**
- * Set cached balance computation for a tenant
- */
-export declare function setCachedBalance(tenantSlug: string, computationKey: string, balance: number, ttlSeconds?: number): Promise<boolean>;
-/**
- * Invalidate balance cache for a tenant (when charges change)
- */
-export declare function invalidateBalanceCache(tenantSlug: string): Promise<boolean>;
-/**
- * Gracefully close the Redis connection
- */
-export declare function closeRedis(): Promise<void>;
-/**
- * Check if Redis is connected and responsive
- */
 export declare function redisHealth(): Promise<{
     status: string;
     latencyMs: number;
+    services: number;
 }>;
+export declare function initRedis(serviceConfigsList?: ServiceConfig[]): Promise<boolean>;
 declare const _default: {
     getRedisClient: typeof getRedisClient;
-    tenantSet: typeof tenantSet;
-    tenantGet: typeof tenantGet;
-    tenantDel: typeof tenantDel;
-    clearTenantCache: typeof clearTenantCache;
-    getCachedBalance: typeof getCachedBalance;
-    setCachedBalance: typeof setCachedBalance;
-    invalidateBalanceCache: typeof invalidateBalanceCache;
-    closeRedis: typeof closeRedis;
     redisHealth: typeof redisHealth;
+    initRedis: typeof initRedis;
+    registerService: typeof registerService;
+    getServiceConfig: typeof getServiceConfig;
+    serviceSet: typeof serviceSet;
+    serviceGet: typeof serviceGet;
+    serviceDel: typeof serviceDel;
+    clearServiceCache: typeof clearServiceCache;
+    clearTenantCache: typeof clearTenantCache;
+    getServiceMemoryUsage: typeof getServiceMemoryUsage;
+    checkAndBalance: typeof checkAndBalance;
+    storeNotification: typeof storeNotification;
+    getNotifications: typeof getNotifications;
+    deleteNotification: typeof deleteNotification;
+    deleteAllNotifications: typeof deleteAllNotifications;
+    setNotificationEmitter: typeof setNotificationEmitter;
+    NotificationType: typeof NotificationType;
+    NotificationPriority: typeof NotificationPriority;
 };
 export default _default;
 //# sourceMappingURL=redisService.d.ts.map

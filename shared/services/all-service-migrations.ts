@@ -12,6 +12,8 @@
  * NOTE: Leave Management has its own migration system (leave-service).
  * NOTE: EDocuments has been removed - unnecessary module.
  * NOTE: JWT secrets managed in tenant_tracking DB by Tenant.model.ts.
+ * NOTE: Soft-delete migrations removed per project policy.
+ * NOTE: Workshop migrations removed per project policy.
  */
 
 import { Migration } from './migration-service';
@@ -62,7 +64,7 @@ const TENANT_SERVICE_MIGRATIONS: Migration[] = [
 const DECEASED_SERVICE_MIGRATIONS: Migration[] = [
   {
     name: '010_create_deceased_table',
-    sql: `CREATE TABLE IF NOT EXISTS deceased (id INT NOT NULL AUTO_INCREMENT, deceased_id VARCHAR(100) NOT NULL COMMENT 'Unique identifier', admission_number VARCHAR(100) NOT NULL UNIQUE, cause_of_death TEXT, date_admitted DATETIME NULL, date_of_birth DATE NOT NULL, date_of_death DATE NULL, date_registered DATETIME NULL, full_name VARCHAR(255) NOT NULL, gender ENUM('Male', 'Female', 'Other') NOT NULL DEFAULT 'Other', county VARCHAR(100) NOT NULL DEFAULT 'Unknown', location VARCHAR(255), created_by INT, status VARCHAR(50) DEFAULT 'active', total_mortuary_charge DECIMAL(10,2) DEFAULT 0.00, currency VARCHAR(3) DEFAULT 'KES', burial_type VARCHAR(50), dispatch_date DATE, extra_charges_amount DECIMAL(10,2) DEFAULT 0, next_of_kin_count INT DEFAULT 0, is_deleted BOOLEAN DEFAULT FALSE, branch_code VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY unique_deceased_id (deceased_id), UNIQUE KEY unique_admission_number (admission_number), INDEX idx_deceased_id (deceased_id), INDEX idx_date_of_death (date_of_death), INDEX idx_created_at (created_at), INDEX idx_full_name (full_name), INDEX idx_status (status), INDEX idx_is_deleted (is_deleted), INDEX idx_branch_code (branch_code), FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Deceased persons'`,
+    sql: `CREATE TABLE IF NOT EXISTS deceased (id INT NOT NULL AUTO_INCREMENT, deceased_id VARCHAR(100) NOT NULL COMMENT 'Unique identifier', admission_number VARCHAR(100) NOT NULL UNIQUE, full_name VARCHAR(255) NOT NULL, gender ENUM('Male', 'Female', 'Other') NOT NULL DEFAULT 'Other', age INT DEFAULT 0, date_of_birth DATE NULL, date_of_death DATE NULL, date_admitted DATETIME NULL, time_received TIME NULL, cause_of_death TEXT, place_of_death VARCHAR(255), physician VARCHAR(255), body_status VARCHAR(100) DEFAULT 'In Morgue', national_id VARCHAR(100), id_type ENUM('national-id', 'passport', 'voters-card', 'other') NULL, email VARCHAR(255), phone_number VARCHAR(20), alternative_phone VARCHAR(20), received_from VARCHAR(255), receiving_officer VARCHAR(255), signature TEXT, verified_by VARCHAR(255), relationship VARCHAR(100), permit_number VARCHAR(100) NULL, county VARCHAR(100) DEFAULT 'Unknown', location VARCHAR(255), portal_slug VARCHAR(255) UNIQUE NULL, admission_status ENUM('admitted', 'embalmed', 'released', 'buried') DEFAULT 'admitted', release_status ENUM('pending', 'approved', 'released') DEFAULT 'pending', chamber_assigned VARCHAR(100), total_mortuary_charge DECIMAL(10,2) DEFAULT 0.00, coffin_status VARCHAR(50), dispatch_date DATE, created_by VARCHAR(255), is_deleted BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY unique_deceased_id (deceased_id), UNIQUE KEY unique_admission_number (admission_number), INDEX idx_deceased_id (deceased_id), INDEX idx_date_of_death (date_of_death), INDEX idx_created_at (created_at), INDEX idx_full_name (full_name), INDEX idx_status (admission_status), INDEX idx_is_deleted (is_deleted)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Deceased persons'`,
   },
   {
     name: '010a_alter_deceased_table_add_missing_columns',
@@ -70,7 +72,7 @@ const DECEASED_SERVICE_MIGRATIONS: Migration[] = [
   },
   {
     name: '011_create_next_of_kin_table',
-    sql: `CREATE TABLE IF NOT EXISTS next_of_kin (id INT AUTO_INCREMENT PRIMARY KEY, deceased_id VARCHAR(50) NOT NULL, full_name VARCHAR(255) NOT NULL, relationship VARCHAR(100), contact VARCHAR(20), email VARCHAR(255), alternative_phone VARCHAR(20), address TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE, INDEX idx_deceased_id (deceased_id), INDEX idx_relationship (relationship)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS next_of_kin (id INT AUTO_INCREMENT PRIMARY KEY, deceased_id VARCHAR(50) NOT NULL, tenant_slug VARCHAR(255) NOT NULL, full_name VARCHAR(255) NOT NULL, relationship VARCHAR(100) NOT NULL, contact VARCHAR(30) NOT NULL, email VARCHAR(255), alternative_phone VARCHAR(20), id_number VARCHAR(100), id_type ENUM('national-id', 'passport', 'voters-card', 'other') NULL, address TEXT, is_primary BOOLEAN DEFAULT TRUE, is_notified BOOLEAN DEFAULT FALSE, notified_at TIMESTAMP NULL, created_by VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, is_deleted BOOLEAN DEFAULT FALSE, deleted_at TIMESTAMP NULL, deleted_by VARCHAR(255), FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE, INDEX idx_deceased_id (deceased_id), INDEX idx_relationship (relationship), INDEX idx_tenant_slug (tenant_slug)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
   {
     name: '011a_add_next_of_kin_missing_columns',
@@ -78,7 +80,7 @@ const DECEASED_SERVICE_MIGRATIONS: Migration[] = [
   },
   {
     name: '013_create_postmortem_table',
-    sql: `CREATE TABLE IF NOT EXISTS postmortem (id INT AUTO_INCREMENT PRIMARY KEY, deceased_id VARCHAR(50) NOT NULL, examination_date TIMESTAMP NULL, examiner_name VARCHAR(255), findings TEXT, cause_of_death TEXT, manner_of_death VARCHAR(100), status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending', report_file_path VARCHAR(500), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_deceased_id (deceased_id), INDEX idx_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    sql: `CREATE TABLE IF NOT EXISTS postmortem (id INT AUTO_INCREMENT PRIMARY KEY, deceased_id VARCHAR(100) NOT NULL, pathologist_name VARCHAR(255), external_pathologist_name VARCHAR(255), external_pathologist_mobile VARCHAR(20), external_pathologist_id VARCHAR(50), examination_summary TEXT, cause_of_death TEXT, immediate_cause_of_death TEXT, underlying_cause_of_death TEXT, contributing_conditions TEXT, manner_of_death VARCHAR(50), requesting_authority VARCHAR(100), findings JSON, head_findings TEXT, chest_findings TEXT, abdomen_findings TEXT, extremities_findings TEXT, toxicology_findings TEXT, custom_findings JSON, report_pdf_url VARCHAR(500), staff_username VARCHAR(255), mortuary_name VARCHAR(255), status VARCHAR(50) DEFAULT 'pending', requested_by VARCHAR(255), requested_at DATETIME, completed_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, created_by INT, updated_by INT, FOREIGN KEY (deceased_id) REFERENCES deceased(deceased_id) ON DELETE CASCADE, INDEX idx_deceased_id (deceased_id), INDEX idx_status (status), INDEX idx_created_at (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   },
   {
     name: '014_create_charges_table',
@@ -209,43 +211,6 @@ const HEARSE_SERVICE_MIGRATIONS: Migration[] = [
   },
 ];
 
-// ─── Workshop Service Migrations ─────────────────────────────────────────────
-
-const WORKSHOP_SERVICE_MIGRATIONS: Migration[] = [
-  {
-    name: '160_create_coffin_orders_table',
-    sql: `CREATE TABLE IF NOT EXISTS coffin_orders (id INT AUTO_INCREMENT PRIMARY KEY, order_number VARCHAR(50) UNIQUE, customer_name VARCHAR(255), customer_phone VARCHAR(20), customer_email VARCHAR(255), deceased_name VARCHAR(255) NOT NULL, coffin_type VARCHAR(50) DEFAULT 'standard', dimensions TEXT, color VARCHAR(100), interior_fabric VARCHAR(100), notes TEXT, instructions TEXT, priority VARCHAR(20) DEFAULT 'normal', due_date DATE, branch_id INT DEFAULT 1, selling_price DECIMAL(10,2) DEFAULT 0, total_cost DECIMAL(10,2) DEFAULT 0, profit DECIMAL(10,2) DEFAULT 0, status VARCHAR(50) DEFAULT 'pending', hold_reason TEXT, delivery_date DATE, order_date DATETIME DEFAULT CURRENT_TIMESTAMP, branch_code VARCHAR(50), created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_orders_status (status), INDEX idx_orders_date (order_date), INDEX idx_branch_code (branch_code), INDEX idx_orders_branch (branch_id), INDEX idx_orders_priority (priority)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '161_create_materials_table',
-    sql: `CREATE TABLE IF NOT EXISTS materials (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, category VARCHAR(100) NOT NULL, unit VARCHAR(50) NOT NULL DEFAULT 'pieces', quantity DECIMAL(10,2) NOT NULL DEFAULT 0, unit_price DECIMAL(10,2) DEFAULT 0, min_stock_level DECIMAL(10,2) DEFAULT 0, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX idx_materials_category (category)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '162_create_material_usage_table',
-    sql: `CREATE TABLE IF NOT EXISTS material_usage (id INT AUTO_INCREMENT PRIMARY KEY, coffin_order_id INT NOT NULL, material_id INT NOT NULL, quantity_used DECIMAL(10,2) NOT NULL, unit_cost DECIMAL(10,2) DEFAULT 0, notes TEXT, used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE, FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE, INDEX idx_usage_order (coffin_order_id), INDEX idx_usage_material (material_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '163_create_production_stages_table',
-    sql: `CREATE TABLE IF NOT EXISTS production_stages (id INT AUTO_INCREMENT PRIMARY KEY, coffin_order_id INT NOT NULL, stage VARCHAR(50) NOT NULL, status VARCHAR(50) DEFAULT 'pending', started_at DATETIME NULL, completed_at DATETIME NULL, notes TEXT, FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE, UNIQUE KEY uk_order_stage (coffin_order_id, stage), INDEX idx_stages_order (coffin_order_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '164_create_worker_assignments_table',
-    sql: `CREATE TABLE IF NOT EXISTS worker_assignments (id INT AUTO_INCREMENT PRIMARY KEY, coffin_order_id INT NOT NULL, user_id INT NOT NULL, stage VARCHAR(50) NOT NULL, hours_worked DECIMAL(5,2) DEFAULT 0, notes TEXT, assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP, completed_at DATETIME NULL, FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE, INDEX idx_assignments_order (coffin_order_id), INDEX idx_assignments_user (user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '165_create_costing_table',
-    sql: `CREATE TABLE IF NOT EXISTS costing (id INT AUTO_INCREMENT PRIMARY KEY, coffin_order_id INT NOT NULL UNIQUE, materials_cost DECIMAL(10,2) DEFAULT 0, labor_cost DECIMAL(10,2) DEFAULT 0, overhead_cost DECIMAL(10,2) DEFAULT 0, total_cost DECIMAL(10,2) DEFAULT 0, selling_price DECIMAL(10,2) DEFAULT 0, profit DECIMAL(10,2) DEFAULT 0, profit_margin DECIMAL(5,2) DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '166_create_design_specifications_table',
-    sql: `CREATE TABLE IF NOT EXISTS design_specifications (id INT AUTO_INCREMENT PRIMARY KEY, coffin_order_id INT NOT NULL UNIQUE, design_name VARCHAR(255), description TEXT, specifications JSON, design_files JSON, status VARCHAR(50) DEFAULT 'draft', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (coffin_order_id) REFERENCES coffin_orders(id) ON DELETE CASCADE, INDEX idx_design_order (coffin_order_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-  {
-    name: '167_create_material_intake_table',
-    sql: `CREATE TABLE IF NOT EXISTS material_intake (id INT AUTO_INCREMENT PRIMARY KEY, material_id INT NOT NULL, quantity DECIMAL(10,2) NOT NULL, unit_cost DECIMAL(10,2) DEFAULT 0, supplier VARCHAR(255), invoice_number VARCHAR(100), notes TEXT, received_by VARCHAR(255), received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE, INDEX idx_intake_material (material_id), INDEX idx_intake_date (received_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  },
-];
-
 // ─── Extra Services Migrations ───────────────────────────────────────────────
 
 const EXTRA_SERVICES_MIGRATIONS: Migration[] = [
@@ -274,7 +239,6 @@ export const ALL_TENANT_MIGRATIONS: Migration[] = [
   ...COFFIN_SERVICE_MIGRATIONS,
   ...CHEMICALS_SERVICE_MIGRATIONS,
   ...HEARSE_SERVICE_MIGRATIONS,
-  ...WORKSHOP_SERVICE_MIGRATIONS,
 
   ...EXTRA_SERVICES_MIGRATIONS,
   ...BILLING_SERVICE_MIGRATIONS,
@@ -319,7 +283,6 @@ export {
   COFFIN_SERVICE_MIGRATIONS,
   CHEMICALS_SERVICE_MIGRATIONS,
   HEARSE_SERVICE_MIGRATIONS,
-  WORKSHOP_SERVICE_MIGRATIONS,
   EXTRA_SERVICES_MIGRATIONS,
   BILLING_SERVICE_MIGRATIONS,
 };
@@ -369,4 +332,3 @@ export function getAllTenantMigrations(): Migration[] {
   // migrations (migration runner --mode=all).
   return ALL_TENANT_MIGRATIONS;
 }
-

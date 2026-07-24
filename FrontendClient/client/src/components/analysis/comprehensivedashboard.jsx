@@ -10,12 +10,13 @@ import {
   PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale
 } from "chart.js";
 import { Line, Pie, Bar, Doughnut } from "react-chartjs-2";
+import { MapPin } from "../../utils/icons/icons";
 
 import { getTenantHeaders } from "../../api/endpoints";
 import env from "../../utils/config/env";
 import   dashBordColors    from '../../utils/colors/index'
 
-const  Colors   =   dashBordColors;
+const  COLORS  =   dashBordColors;
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement,

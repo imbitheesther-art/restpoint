@@ -1,19 +1,19 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": "../../",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "composite": true,
+    "rootDir": ".",
     "strict": false,
     "noImplicitAny": false,
     "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ]
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "typeRoots": ["./types", "../../node_modules/@types"]
   },
   "include": [
     "server.ts",
@@ -23,14 +23,8 @@
     "services/**/*.ts",
     "utils/**/*.ts",
     "config/**/*.ts",
-    "../../shared/**/*.ts",
-    "../../packages/shared-config/src/**/*.ts",
-    "../../packages/shared-logger/src/**/*.ts",
-    "../../packages/shared-utils/src/**/*.ts",
-    "../../packages/shared-services/src/**/*.ts",
-    "../../app-global/**/*.ts",
-    "../../app-global/**/*.js",
-    "../../configurations/**/*.ts"
+    "utilities/**/*.ts",
+    "types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",

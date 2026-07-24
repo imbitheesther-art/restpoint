@@ -5,7 +5,7 @@ import { tenantApi } from '../api/tenant.api';
 import { useTenantStore } from '../modules/seo/useTenantStore';
 import { useAuth } from '../utils/context/AuthContext';
 import ModernSidebar from '../components/layout/ModernSidebar';
-import UserProfile from '../components/layout/userProfile';
+import NotificationBell from '../components/notifications/NotificationBell';
 import FooterComponent from '../components/layout/globalFooter';
 
 import Loader from '../components/loader/loader';
@@ -85,6 +85,7 @@ const DeceasedAnalytics = lazy(() => import('../components/deceased/deceasedAnal
 
 const SettingsPage = lazy(() => import('../components/settings/SettingsPage'));
 const ReleaseFormPage = lazy(() => import('../components/releaseform/ReleaseFormPage'));
+const PostmortemFormPage = lazy(() => import('../components/deceased/deceasedinfo/PostmortemFormPage'));
 const UserManagement = lazy(() => import('../components/modals/users'));
 const PublicMemorialPage = lazy(() => import('../components/memorial/PublicMemorialPage'));
 
@@ -184,8 +185,16 @@ const DashboardLayout = ({ children, tenantData }) => {
           <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
         </main>
       </div>
+      {/* Floating Notification Bell - Top Right */}
+      <div style={{
+        position: 'fixed',
+        top: '16px',
+        right: '16px',
+        zIndex: 1000,
+      }}>
+        <NotificationBell />
+      </div>
       <div style={{ marginLeft: footerMarginLeft, transition: 'margin-left 0.3s ease' }}>
-        <UserProfile />
         <FooterComponent />
       </div>
     </div>
@@ -360,7 +369,7 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       } />
       <Route path="deceased/register" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
-          <Layout tenantData={tenantData}><DeceasedRegistrationForm /></Layout>
+          <DeceasedRegistrationForm />
         </RoleBasedRoute>
       } />
       <Route path="deceased/:id" element={
@@ -451,7 +460,14 @@ const TenantDashboardRoutes = ({ tenantData }) => {
       {/* Release Form - Available to admin, manager, staff */}
       <Route path="release-form/:id" element={
         <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
-          <Layout tenantData={tenantData}><ReleaseFormPage /></Layout>
+          <ReleaseFormPage />
+        </RoleBasedRoute>
+      } />
+
+      {/* Postmortem Examination Form - Available to admin, manager, staff */}
+      <Route path="postmortem-form/:deceased_id" element={
+        <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} userRole={userRole}>
+          <PostmortemFormPage />
         </RoleBasedRoute>
       } />
 

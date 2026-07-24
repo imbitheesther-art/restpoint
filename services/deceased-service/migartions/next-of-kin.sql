@@ -1,19 +1,22 @@
 CREATE TABLE next_of_kin (
-
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-
     deceased_id VARCHAR(100) NOT NULL,
-
     full_name VARCHAR(255) NOT NULL,
-
     relationship VARCHAR(100) NOT NULL,
-
     contact VARCHAR(30) NOT NULL,
-
-
+    email VARCHAR(255),
+    alternative_phone VARCHAR(30),
+    address TEXT,
+    is_primary BOOLEAN DEFAULT FALSE,
+    is_notified BOOLEAN DEFAULT FALSE,
+    notified_at DATETIME NULL,
+    created_by VARCHAR(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-
-    INDEX(deceased_id)
-
-);
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at DATETIME NULL,
+    deleted_by VARCHAR(255),
+    INDEX(deceased_id),
+    INDEX idx_contact (contact),
+    INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

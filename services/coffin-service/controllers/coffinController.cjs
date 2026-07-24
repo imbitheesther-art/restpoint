@@ -1,7 +1,5 @@
 /**
- * Coffin Controller - JavaScript wrapper for the TypeScript controller
- * This bridge allows the CommonJS routes file to use the TypeScript controller
- * when loaded via ts-node (which handles .ts requires from .ts files)
+ * Coffin Controller - Complete inventory management with cross-branch requests
  */
 
 const { query, execute } = require('../../../shared/dbConfig');
@@ -11,22 +9,19 @@ const path = require('path');
 const fs = require('fs/promises');
 
 // ============================================
-// COFFIN CONTROLLER (JavaScript version)
+// CONFIGURATION
 // ============================================
 
-// Generate a unique coffin ID
-const generateCoffinId = () => {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
-    return `COF-${timestamp}-${random}`;
-};
-
-// Exchange rates
 const EXCHANGE_RATES = { USD: 150, KES: 1 };
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-// In-memory cache (replace with Redis in production)
+// In-memory cache
 const coffinCache = new Map();
 const CACHE_TTL = 300000; // 5 minutes
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 
 const getCached = (key) => {
     const cached = coffinCache.get(key);
@@ -49,9 +44,60 @@ const clearCache = (pattern) => {
     }
 };
 
-/**
- * CREATE COFFIN - POST /api/v1/restpoint/coffins/register
- */
+const generateCoffinId = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+    return `COF-${timestamp}-${random}`;
+};
+
+const sharp = require('sharp');
+
+const ensureUploadDir = async (tenantSlug) => {
+    const dir = path.join(__dirname, '../../uploads/coffins', tenantSlug);
+    await fs.mkdir(dir, { recursive: true });
+    return dir;
+};
+
+const compressAndSaveImage = async (buffer, filename, tenantSlug) => {
+    const dir = await ensureUploadDir(tenantSlug);
+    // WebP output for ~50% smaller files than JPEG at same quality
+    const filepath = path.join(dir, filename.replace(/\.\w+$/, '.webp'));
+    
+    await sharp(buffer)
+        .resize(1200, null, { 
+            withoutEnlargement: true,
+            fit: 'inside'
+        })
+        .webp({ quality: 80, effort: 6 })
+        .toFile(filepath);
+    
+    return `/uploads/coffins/${tenantSlug}/${path.basename(filepath)}`;
+};
+
+const getStockStatus = (stock) => {
+    if (stock <= 0) return { label: 'Out of Stock', class: 'out', icon: 'fa-circle-xmark' };
+    if (stock <= 2) return { label: 'Low Stock', class: 'lo', icon: 'fa-triangle-exclamation' };
+    return { label: 'Available', class: 'av', icon: 'fa-circle-check' };
+};
+
+const getBookingStatus = (status) => {
+    const statusMap = {
+        pending: { label: 'Pending', class: 'pn', icon: 'fa-clock' },
+        booked: { label: 'Booked', class: 'bk', icon: 'fa-calendar-check' },
+        completed: { label: 'Completed', class: 'cp', icon: 'fa-check-circle' },
+        cancelled: { label: 'Cancelled', class: 'ca', icon: 'fa-times-circle' },
+        approved: { label: 'Approved', class: 'ap', icon: 'fa-check-circle' },
+        rejected: { label: 'Rejected', class: 'rj', icon: 'fa-times-circle' },
+        transferring: { label: 'Transferring', class: 'tf', icon: 'fa-truck' },
+        delivered: { label: 'Delivered', class: 'dl', icon: 'fa-check-double' }
+    };
+    return statusMap[status] || statusMap.pending;
+};
+
+// ============================================
+// COFFIN CRUD
+// ============================================
+
 const createCoffin = async (req, res) => {
     const tenantSlug = req.tenantSlug;
 
@@ -61,59 +107,44 @@ const createCoffin = async (req, res) => {
 
     try {
         const {
-            custom_id, type, material, exact_price, currency, quantity,
-            supplier, origin, color, size, category, created_by
+            name, sku, type, material, price, stock, notes, branch_id
         } = req.body;
 
         // Validation
-        if (!type || !material || !exact_price) {
-            return res.status(400).json({ success: false, message: 'Missing required fields: type, material, exact_price' });
+        if (!name || !sku || !type || !material || price === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields: name, sku, type, material, price' 
+            });
         }
 
-        const price = parseFloat(exact_price);
-        if (isNaN(price) || price < 0) {
-            return res.status(400).json({ success: false, message: 'Invalid price' });
-        }
+        const coffinId = generateCoffinId();
+        const finalStock = parseInt(stock) || 0;
+        const finalPrice = parseFloat(price);
+        const branchId = branch_id || req.tenant?.branch_id || 1;
 
-        const finalCoffinId = custom_id || generateCoffinId();
-        const finalCurrency = currency || 'KES';
+        // Check for duplicate SKU
+        const existing = await query(req,
+            'SELECT coffin_id FROM coffins WHERE sku = ? AND tenant_slug = ?',
+            [sku, tenantSlug]
+        );
 
-        // Calculate prices
-        let priceKES, priceUSD;
-        if (finalCurrency === 'USD') {
-            priceUSD = price;
-            priceKES = price * EXCHANGE_RATES.USD;
-        } else {
-            priceKES = price;
-            priceUSD = price / EXCHANGE_RATES.USD;
-        }
-
-        // Use the query function which resolves the database from the tenant slug
-        // Check for duplicate custom ID
-        if (custom_id) {
-const existing = await query(req,
-                'SELECT coffin_id FROM coffins WHERE custom_id = ? AND tenant_slug = ?',
-                [custom_id, tenantSlug]
-            );
-            if (existing.length > 0) {
-                return res.status(400).json({ success: false, message: 'Custom ID already exists' });
-            }
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, message: 'SKU already exists' });
         }
 
         // Insert coffin
         const insertSql = `
-      INSERT INTO coffins (
-        coffin_id, custom_id, tenant_slug, type, material, exact_price, currency, 
-        price_usd, exchange_rate, quantity, supplier, origin, color, 
-        size, category, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-    `;
+            INSERT INTO coffins (
+                coffin_id, tenant_slug, branch_id, name, sku, type, material,
+                price, stock, notes, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
 
-const result = await query(req, insertSql, [
-            finalCoffinId, finalCoffinId, tenantSlug, type.trim(), material.trim(), priceKES, finalCurrency,
-            priceUSD, EXCHANGE_RATES.USD, parseInt(quantity) || 1,
-            supplier?.trim() || null, origin?.trim() || null, color?.trim() || null,
-            size?.trim() || null, category || 'locally_made', created_by || null
+        const result = await query(req, insertSql, [
+            coffinId, tenantSlug, branchId, name.trim(), sku.trim(),
+            type.trim(), material.trim(), finalPrice, finalStock,
+            notes?.trim() || null
         ]);
 
         const coffinDbId = result.insertId;
@@ -121,83 +152,88 @@ const result = await query(req, insertSql, [
         // Process images if any
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
-            // Handle images with multer memory storage - files are in req.files
             for (let i = 0; i < Math.min(req.files.length, 10); i++) {
                 const file = req.files[i];
                 const imageName = `coffin-${coffinDbId}-${Date.now()}-${i}.jpg`;
-                const imageUrl = `/uploads/coffins/${tenantSlug}/${imageName}`;
+                const imageUrl = await compressAndSaveImage(file.buffer, imageName, tenantSlug);
                 imageUrls.push(imageUrl);
             }
 
             if (imageUrls.length > 0) {
                 const imageSql = `INSERT INTO coffin_images (coffin_id, tenant_slug, image_url, created_at) VALUES ?`;
                 const imageValues = imageUrls.map(url => [coffinDbId, tenantSlug, url, new Date().toISOString()]);
-await query(req, imageSql, [imageValues]);
+                await query(req, imageSql, [imageValues]);
             }
         }
 
-        // Clear cache
         clearCache('allCoffins');
 
         return res.status(201).json({
             success: true,
             message: 'Coffin created successfully',
-            coffin_id: finalCoffinId,
-            database_id: coffinDbId,
-            images: { count: imageUrls.length, urls: imageUrls },
-            pricing: { price_kes: priceKES, price_usd: priceUSD, currency: finalCurrency },
-            data: { coffin_id: finalCoffinId, type, material, quantity: parseInt(quantity) || 1 }
+            data: {
+                coffin_id: coffinId,
+                database_id: coffinDbId,
+                name,
+                sku,
+                type,
+                material,
+                price: finalPrice,
+                stock: finalStock,
+                branch_id: branchId,
+                images: imageUrls
+            }
         });
 
     } catch (error) {
         console.error('Create coffin error:', error);
-
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ success: false, message: 'Custom ID already exists' });
-        }
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
-/**
- * GET ALL COFFINS
- */
 const getAllCoffins = async (req, res) => {
     const tenantSlug = req.tenantSlug;
+    const branchId = req.headers['x-branch-id'] || req.tenant?.branch_id;
 
     if (!tenantSlug) {
         return res.status(403).json({ success: false, message: 'Valid tenant required' });
     }
 
     try {
-        const cacheKey = `allCoffins_${tenantSlug}`;
+        const cacheKey = `allCoffins_${tenantSlug}_${branchId || 'all'}`;
         let coffins = getCached(cacheKey);
 
         if (!coffins) {
-            const sql = `
-        SELECT 
-          c.*, 
-          u.full_name as created_by_name,
-          GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
-        FROM coffins c
-        LEFT JOIN users u ON c.created_by = u.user_id
-        LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
-        WHERE c.tenant_slug = ? AND c.is_deleted = FALSE
-        GROUP BY c.coffin_id
-        ORDER BY c.created_at DESC
-      `;
+            let sql = `
+                SELECT 
+                    c.*,
+                    b.name as branch_name,
+                    b.color as branch_color,
+                    GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
+                FROM coffins c
+                LEFT JOIN branches b ON c.branch_id = b.id AND c.tenant_slug = b.tenant_slug
+                LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
+                WHERE c.tenant_slug = ? AND c.is_deleted = FALSE
+            `;
+            
+            const params = [tenantSlug];
+            
+            // Filter by branch if specified
+            if (branchId) {
+                sql += ' AND c.branch_id = ?';
+                params.push(branchId);
+            }
+            
+            sql += ' GROUP BY c.coffin_id ORDER BY c.created_at DESC';
 
-coffins = await query(req, sql, [tenantSlug]);
+            coffins = await query(req, sql, params);
 
             coffins = coffins.map(coffin => ({
                 ...coffin,
-                exact_price: parseFloat(coffin.exact_price),
-                price_usd: parseFloat(coffin.price_usd),
+                price: parseFloat(coffin.price),
                 images: coffin.image_urls ? coffin.image_urls.split(',').slice(0, 10) : [],
                 primary_image: coffin.image_urls ? coffin.image_urls.split(',')[0] : null,
-                display_price: coffin.currency === 'USD'
-                    ? `$${parseFloat(coffin.price_usd).toFixed(2)} (Ksh ${parseFloat(coffin.exact_price).toFixed(2)})`
-                    : `Ksh ${parseFloat(coffin.exact_price).toFixed(2)} ($${parseFloat(coffin.price_usd).toFixed(2)})`
+                stock_status: getStockStatus(coffin.stock)
             }));
 
             setCached(cacheKey, coffins);
@@ -207,7 +243,8 @@ coffins = await query(req, sql, [tenantSlug]);
             success: true,
             data: coffins,
             count: coffins.length,
-            tenant: tenantSlug
+            tenant: tenantSlug,
+            branch: branchId
         });
 
     } catch (error) {
@@ -216,9 +253,6 @@ coffins = await query(req, sql, [tenantSlug]);
     }
 };
 
-/**
- * GET COFFIN BY ID
- */
 const getCoffinById = async (req, res) => {
     const tenantSlug = req.tenantSlug;
     const { id } = req.params;
@@ -233,18 +267,19 @@ const getCoffinById = async (req, res) => {
 
         if (!coffin) {
             const sql = `
-        SELECT 
-          c.*, 
-          u.full_name as created_by_name,
-          GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
-        FROM coffins c
-        LEFT JOIN users u ON c.created_by = u.user_id
-        LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
-        WHERE (c.coffin_id = ? OR c.custom_id = ?) AND c.tenant_slug = ? AND c.is_deleted = FALSE
-        GROUP BY c.coffin_id
-      `;
+                SELECT 
+                    c.*,
+                    b.name as branch_name,
+                    b.color as branch_color,
+                    GROUP_CONCAT(DISTINCT ci.image_url) as image_urls
+                FROM coffins c
+                LEFT JOIN branches b ON c.branch_id = b.id AND c.tenant_slug = b.tenant_slug
+                LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
+                WHERE (c.coffin_id = ? OR c.sku = ?) AND c.tenant_slug = ? AND c.is_deleted = FALSE
+                GROUP BY c.coffin_id
+            `;
 
-const coffins = await query(req, sql, [id, id, tenantSlug]);
+            const coffins = await query(req, sql, [id, id, tenantSlug]);
 
             if (coffins.length === 0) {
                 return res.status(404).json({ success: false, message: 'Coffin not found' });
@@ -252,8 +287,8 @@ const coffins = await query(req, sql, [id, id, tenantSlug]);
 
             coffin = coffins[0];
             coffin.images = coffin.image_urls ? coffin.image_urls.split(',').slice(0, 10) : [];
-            coffin.exact_price = parseFloat(coffin.exact_price);
-            coffin.price_usd = parseFloat(coffin.price_usd);
+            coffin.price = parseFloat(coffin.price);
+            coffin.stock_status = getStockStatus(coffin.stock);
 
             setCached(cacheKey, coffin);
         }
@@ -266,9 +301,6 @@ const coffins = await query(req, sql, [id, id, tenantSlug]);
     }
 };
 
-/**
- * UPDATE COFFIN
- */
 const updateCoffin = async (req, res) => {
     const tenantSlug = req.tenantSlug;
     const { id } = req.params;
@@ -278,12 +310,12 @@ const updateCoffin = async (req, res) => {
     }
 
     try {
-        const { type, material, exact_price, currency, quantity, supplier, origin, color, size, category } = req.body;
+        const { name, sku, type, material, price, stock, notes, branch_id } = req.body;
 
         // Check if coffin exists
-const existingCoffin = await query(req,
-            'SELECT * FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?',
-            [id, id, tenantSlug]
+        const existingCoffin = await query(req,
+            'SELECT * FROM coffins WHERE coffin_id = ? AND tenant_slug = ? AND is_deleted = FALSE',
+            [id, tenantSlug]
         );
 
         if (existingCoffin.length === 0) {
@@ -293,42 +325,43 @@ const existingCoffin = await query(req,
         const updateFields = [];
         const updateValues = [];
 
+        if (name) { updateFields.push('name = ?'); updateValues.push(name.trim()); }
+        if (sku) { updateFields.push('sku = ?'); updateValues.push(sku.trim()); }
         if (type) { updateFields.push('type = ?'); updateValues.push(type.trim()); }
         if (material) { updateFields.push('material = ?'); updateValues.push(material.trim()); }
-        if (exact_price !== undefined) {
-            const price = parseFloat(exact_price);
-            const cur = currency || existingCoffin[0].currency || 'KES';
-            if (cur === 'USD') {
-                updateFields.push('exact_price = ?, price_usd = ?');
-                updateValues.push(price * EXCHANGE_RATES.USD, price);
-            } else {
-                updateFields.push('exact_price = ?, price_usd = ?');
-                updateValues.push(price, price / EXCHANGE_RATES.USD);
-            }
-        }
-        if (currency) { updateFields.push('currency = ?'); updateValues.push(currency); }
-        if (quantity !== undefined) { updateFields.push('quantity = ?'); updateValues.push(parseInt(quantity)); }
-        if (supplier !== undefined) { updateFields.push('supplier = ?'); updateValues.push(supplier?.trim() || null); }
-        if (origin !== undefined) { updateFields.push('origin = ?'); updateValues.push(origin?.trim() || null); }
-        if (color !== undefined) { updateFields.push('color = ?'); updateValues.push(color?.trim() || null); }
-        if (size !== undefined) { updateFields.push('size = ?'); updateValues.push(size?.trim() || null); }
-        if (category !== undefined) { updateFields.push('category = ?'); updateValues.push(category); }
+        if (price !== undefined) { updateFields.push('price = ?'); updateValues.push(parseFloat(price)); }
+        if (stock !== undefined) { updateFields.push('stock = ?'); updateValues.push(parseInt(stock)); }
+        if (notes !== undefined) { updateFields.push('notes = ?'); updateValues.push(notes?.trim() || null); }
+        if (branch_id) { updateFields.push('branch_id = ?'); updateValues.push(branch_id); }
 
         updateFields.push('updated_at = NOW()');
-        updateValues.push(id, id, tenantSlug);
+        updateValues.push(id, tenantSlug);
 
-        if (updateFields.length > 1) {
+        if (updateFields.length > 2) {
             const updateSql = `
-        UPDATE coffins 
-        SET ${updateFields.join(', ')} 
-        WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ? AND is_deleted = FALSE
-      `;
-await query(req, updateSql, updateValues);
+                UPDATE coffins 
+                SET ${updateFields.join(', ')} 
+                WHERE coffin_id = ? AND tenant_slug = ? AND is_deleted = FALSE
+            `;
+            await query(req, updateSql, updateValues);
         }
 
-        // Clear caches
+        // Handle new images
+        if (req.files && req.files.length > 0) {
+            for (let i = 0; i < Math.min(req.files.length, 10); i++) {
+                const file = req.files[i];
+                const imageName = `coffin-${id}-${Date.now()}-${i}.jpg`;
+                const imageUrl = await compressAndSaveImage(file.buffer, imageName, tenantSlug);
+                
+                await query(req,
+                    'INSERT INTO coffin_images (coffin_id, tenant_slug, image_url, created_at) VALUES (?, ?, ?, NOW())',
+                    [id, tenantSlug, imageUrl]
+                );
+            }
+        }
+
         clearCache('allCoffins');
-        clearCache(`coffin_${tenantSlug}`);
+        clearCache(`coffin_${tenantSlug}_${id}`);
 
         return res.status(200).json({ success: true, message: 'Coffin updated successfully' });
 
@@ -338,9 +371,6 @@ await query(req, updateSql, updateValues);
     }
 };
 
-/**
- * DELETE COFFIN (Soft Delete)
- */
 const deleteCoffin = async (req, res) => {
     const tenantSlug = req.tenantSlug;
     const { id } = req.params;
@@ -350,29 +380,27 @@ const deleteCoffin = async (req, res) => {
     }
 
     try {
-        // Check if coffin has assignments
-const assignments = await query(req,
-            `SELECT id FROM deceased_coffin 
-       WHERE coffin_id = (SELECT coffin_id FROM coffins WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?)`,
-            [id, id, tenantSlug]
+        // Check if coffin has bookings
+        const bookings = await query(req,
+            'SELECT id FROM bookings WHERE coffin_id = ? AND tenant_slug = ? AND status != "cancelled"',
+            [id, tenantSlug]
         );
 
-        if (assignments.length > 0) {
+        if (bookings.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Cannot delete coffin with existing assignments to deceased persons'
+                message: 'Cannot delete coffin with active bookings'
             });
         }
 
         // Soft delete
-await query(req,
-            'UPDATE coffins SET is_deleted = TRUE WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ?',
-            [id, id, tenantSlug]
+        await query(req,
+            'UPDATE coffins SET is_deleted = TRUE, updated_at = NOW() WHERE coffin_id = ? AND tenant_slug = ?',
+            [id, tenantSlug]
         );
 
-        // Clear caches
         clearCache('allCoffins');
-        clearCache(`coffin_${tenantSlug}`);
+        clearCache(`coffin_${tenantSlug}_${id}`);
 
         return res.status(200).json({ success: true, message: 'Coffin deleted successfully' });
 
@@ -382,140 +410,442 @@ await query(req,
     }
 };
 
-/**
- * ASSIGN COFFIN TO DECEASED
- */
-const assignCoffin = async (req, res) => {
+// ============================================
+// BOOKINGS
+// ============================================
+
+const createBooking = async (req, res) => {
     const tenantSlug = req.tenantSlug;
-    const { deceased_id, coffin_id, assigned_by, assigned_date, deceased_name } = req.body;
+    const branchId = req.tenant?.branch_id || req.headers['x-branch-id'];
 
     if (!tenantSlug) {
         return res.status(403).json({ success: false, message: 'Valid tenant required' });
     }
 
-    if (!deceased_id || !coffin_id || !deceased_name) {
-        return res.status(400).json({
-            success: false,
-            message: 'Missing required fields: deceased_id, coffin_id, deceased_name'
-        });
-    }
-
     try {
-        // Check coffin availability
-const coffins = await query(req,
-            `SELECT coffin_id, quantity, type, material FROM coffins 
-       WHERE (coffin_id = ? OR custom_id = ?) AND tenant_slug = ? AND is_deleted = FALSE`,
-            [coffin_id, coffin_id, tenantSlug]
+        const {
+            client_name, client_phone, deceased_name, coffin_id,
+            service_date, notes, paid, specifications
+        } = req.body;
+
+        if (!client_name || !deceased_name || !coffin_id || !service_date) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: client_name, deceased_name, coffin_id, service_date'
+            });
+        }
+
+        // Check if coffin exists and has stock
+        const coffins = await query(req,
+            'SELECT * FROM coffins WHERE coffin_id = ? AND tenant_slug = ? AND is_deleted = FALSE',
+            [coffin_id, tenantSlug]
         );
 
         if (coffins.length === 0) {
             return res.status(404).json({ success: false, message: 'Coffin not found' });
         }
 
-        if (coffins[0].quantity <= 0) {
+        const coffin = coffins[0];
+        if (coffin.stock <= 0) {
             return res.status(400).json({ success: false, message: 'Coffin out of stock' });
         }
 
-        const rfid = `RFID-${crypto.createHash('md5').update(`${deceased_name}-${Date.now()}`).digest('hex').substring(0, 8).toUpperCase()}`;
-        const finalAssignedDate = assigned_date || new Date().toISOString().split('T')[0];
-        const assignedBy = assigned_by || req.user?.name || 'system';
+        // Create booking
+        const bookingSql = `
+            INSERT INTO bookings (
+                tenant_slug, branch_id, client_name, client_phone, deceased_name,
+                coffin_id, service_date, notes, paid, specifications, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+        `;
 
-        // Insert assignment
-const insertResult = await query(req,
-            `INSERT INTO deceased_coffin (deceased_id, coffin_id, tenant_slug, assigned_by_username, assigned_date, rfid, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-            [deceased_id, coffins[0].coffin_id, tenantSlug, assignedBy, finalAssignedDate, rfid]
+        const result = await query(req, bookingSql, [
+            tenantSlug, branchId, client_name.trim(), client_phone?.trim() || null,
+            deceased_name.trim(), coffin_id, service_date,
+            notes?.trim() || null, paid ? 1 : 0,
+            specifications ? JSON.stringify(specifications) : null
+        ]);
+
+        const bookingId = result.insertId;
+
+        // Deduct stock
+        await query(req,
+            'UPDATE coffins SET stock = stock - 1, updated_at = NOW() WHERE coffin_id = ? AND tenant_slug = ?',
+            [coffin_id, tenantSlug]
         );
 
-        // Update coffin stock
-await query(req,
-            'UPDATE coffins SET quantity = quantity - 1, updated_at = NOW() WHERE coffin_id = ? AND tenant_slug = ?',
-            [coffins[0].coffin_id, tenantSlug]
-        );
-
-        // Clear cache
         clearCache('allCoffins');
 
         return res.status(201).json({
             success: true,
-            message: 'Coffin assigned successfully',
-            assignment_id: insertResult.insertId,
-            rfid,
-            coffin_details: { type: coffins[0].type, material: coffins[0].material }
+            message: 'Booking created successfully',
+            booking_id: bookingId,
+            coffin: {
+                name: coffin.name,
+                sku: coffin.sku,
+                price: coffin.price
+            }
         });
 
     } catch (error) {
-        console.error('Assign coffin error:', error);
+        console.error('Create booking error:', error);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
-/**
- * GET COFFIN ANALYTICS
- */
-const getCoffinAnalytics = async (req, res) => {
+const getBookings = async (req, res) => {
     const tenantSlug = req.tenantSlug;
+    const branchId = req.headers['x-branch-id'] || req.tenant?.branch_id;
+    const { status, search } = req.query;
 
     if (!tenantSlug) {
         return res.status(403).json({ success: false, message: 'Valid tenant required' });
     }
 
     try {
-        const cacheKey = `coffinAnalytics_${tenantSlug}`;
-        let analytics = getCached(cacheKey);
+        let sql = `
+            SELECT 
+                b.*,
+                c.name as coffin_name,
+                c.sku as coffin_sku,
+                c.price as coffin_price,
+                c.type as coffin_type,
+                GROUP_CONCAT(DISTINCT ci.image_url) as coffin_images
+            FROM bookings b
+            LEFT JOIN coffins c ON b.coffin_id = c.coffin_id AND b.tenant_slug = c.tenant_slug
+            LEFT JOIN coffin_images ci ON b.coffin_id = ci.coffin_id AND b.tenant_slug = ci.tenant_slug
+            WHERE b.tenant_slug = ?
+        `;
+        const params = [tenantSlug];
 
-        if (!analytics) {
-const overview = await query(req, `
-        SELECT 
-          COUNT(*) AS total_coffins,
-          SUM(quantity) AS total_in_stock,
-          SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END) AS out_of_stock_count,
-          SUM(CASE WHEN quantity > 0 THEN 1 ELSE 0 END) AS available_types,
-          COUNT(DISTINCT type) as unique_types,
-          COUNT(DISTINCT material) as unique_materials,
-          SUM(exact_price * quantity) AS total_inventory_value
-        FROM coffins
-        WHERE tenant_slug = ? AND is_deleted = FALSE
-      `, [tenantSlug]);
-
-            analytics = {
-                overview: {
-                    total_coffins: overview[0]?.total_coffins || 0,
-                    total_in_stock: overview[0]?.total_in_stock || 0,
-                    out_of_stock_count: overview[0]?.out_of_stock_count || 0,
-                    available_types: overview[0]?.available_types || 0,
-                    unique_types: overview[0]?.unique_types || 0,
-                    unique_materials: overview[0]?.unique_materials || 0,
-                    total_inventory_value: parseFloat(overview[0]?.total_inventory_value || 0).toFixed(2),
-                },
-                last_updated: new Date().toISOString()
-            };
-
-            setCached(cacheKey, analytics);
+        if (branchId) {
+            sql += ' AND b.branch_id = ?';
+            params.push(branchId);
         }
+
+        if (status && status !== 'all') {
+            sql += ' AND b.status = ?';
+            params.push(status);
+        }
+
+        if (search) {
+            sql += ' AND (b.client_name LIKE ? OR b.deceased_name LIKE ? OR b.coffin_id LIKE ?)';
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
+        }
+
+        sql += ' GROUP BY b.id ORDER BY b.created_at DESC';
+
+        const bookings = await query(req, sql, params);
+
+        const formatted = bookings.map(booking => ({
+            ...booking,
+            coffin_price: parseFloat(booking.coffin_price),
+            paid: Boolean(booking.paid),
+            specifications: booking.specifications ? JSON.parse(booking.specifications) : [],
+            coffin_images: booking.coffin_images ? booking.coffin_images.split(',').slice(0, 5) : [],
+            status_display: getBookingStatus(booking.status)
+        }));
 
         return res.status(200).json({
             success: true,
-            data: analytics,
-            tenant: tenantSlug
+            data: formatted,
+            count: formatted.length
         });
 
     } catch (error) {
-        console.error('Get coffin analytics error:', error);
+        console.error('Get bookings error:', error);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
-/**
- * HEALTH CHECK
- */
-const healthCheck = async (req, res) => {
-    return res.status(200).json({
-        status: 'UP',
-        service: 'coffin-service',
-        timestamp: new Date().toISOString()
-    });
+const updateBookingStatus = async (req, res) => {
+    const tenantSlug = req.tenantSlug;
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!tenantSlug) {
+        return res.status(403).json({ success: false, message: 'Valid tenant required' });
+    }
+
+    if (!status) {
+        return res.status(400).json({ success: false, message: 'Status is required' });
+    }
+
+    try {
+        const result = await query(req,
+            'UPDATE bookings SET status = ?, updated_at = NOW() WHERE id = ? AND tenant_slug = ?',
+            [status, id, tenantSlug]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Booking updated to ${status}`
+        });
+
+    } catch (error) {
+        console.error('Update booking error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
+
+// ============================================
+// CROSS-BRANCH STOCK REQUESTS
+// ============================================
+
+const createStockRequest = async (req, res) => {
+    const tenantSlug = req.tenantSlug;
+    const fromBranchId = req.tenant?.branch_id || req.headers['x-branch-id'];
+
+    if (!tenantSlug) {
+        return res.status(403).json({ success: false, message: 'Valid tenant required' });
+    }
+
+    try {
+        const {
+            to_branch_id, coffin_id, quantity, client_name, client_phone,
+            deceased_name, service_date, notes, specifications
+        } = req.body;
+
+        if (!to_branch_id || !coffin_id || !quantity || !deceased_name) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: to_branch_id, coffin_id, quantity, deceased_name'
+            });
+        }
+
+        // Verify coffin exists at the target branch
+        const targetCoffins = await query(req,
+            'SELECT * FROM coffins WHERE coffin_id = ? AND branch_id = ? AND tenant_slug = ? AND is_deleted = FALSE AND stock >= ?',
+            [coffin_id, to_branch_id, tenantSlug, quantity]
+        );
+
+        if (targetCoffins.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Insufficient stock at target branch' 
+            });
+        }
+
+        const coffin = targetCoffins[0];
+
+        // Create stock request
+        const requestSql = `
+            INSERT INTO stock_requests (
+                tenant_slug, from_branch_id, to_branch_id, coffin_id, quantity,
+                client_name, client_phone, deceased_name, service_date,
+                notes, specifications, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+        `;
+
+        const result = await query(req, requestSql, [
+            tenantSlug, fromBranchId, to_branch_id, coffin_id, quantity,
+            client_name?.trim() || null, client_phone?.trim() || null,
+            deceased_name.trim(), service_date || null,
+            notes?.trim() || null,
+            specifications ? JSON.stringify(specifications) : null
+        ]);
+
+        const requestId = result.insertId;
+
+        // Create tracking
+        const trackingSql = `
+            INSERT INTO stock_request_tracking (request_id, tenant_slug, status, notes, created_at)
+            VALUES (?, ?, 'pending', 'Request sent', NOW())
+        `;
+        await query(req, trackingSql, [requestId, tenantSlug]);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Stock request created successfully',
+            request_id: requestId,
+            coffin: {
+                name: coffin.name,
+                sku: coffin.sku,
+                available_stock: coffin.stock
+            }
+        });
+
+    } catch (error) {
+        console.error('Create stock request error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const getStockRequests = async (req, res) => {
+    const tenantSlug = req.tenantSlug;
+    const branchId = req.tenant?.branch_id || req.headers['x-branch-id'];
+
+    if (!tenantSlug) {
+        return res.status(403).json({ success: false, message: 'Valid tenant required' });
+    }
+
+    try {
+        // Incoming requests (to this branch)
+        const incomingSql = `
+            SELECT 
+                sr.*,
+                c.name as coffin_name,
+                c.sku as coffin_sku,
+                c.type as coffin_type,
+                c.material as coffin_material,
+                b_from.name as from_branch_name,
+                b_from.color as from_branch_color,
+                GROUP_CONCAT(DISTINCT ci.image_url) as coffin_images
+            FROM stock_requests sr
+            LEFT JOIN coffins c ON sr.coffin_id = c.coffin_id AND sr.tenant_slug = c.tenant_slug
+            LEFT JOIN branches b_from ON sr.from_branch_id = b_from.id AND sr.tenant_slug = b_from.tenant_slug
+            LEFT JOIN coffin_images ci ON sr.coffin_id = ci.coffin_id AND sr.tenant_slug = ci.tenant_slug
+            WHERE sr.tenant_slug = ? AND sr.to_branch_id = ?
+            GROUP BY sr.id
+            ORDER BY sr.created_at DESC
+        `;
+
+        const incoming = await query(req, incomingSql, [tenantSlug, branchId]);
+
+        // Outgoing requests (from this branch)
+        const outgoingSql = `
+            SELECT 
+                sr.*,
+                c.name as coffin_name,
+                c.sku as coffin_sku,
+                b_to.name as to_branch_name,
+                b_to.color as to_branch_color
+            FROM stock_requests sr
+            LEFT JOIN coffins c ON sr.coffin_id = c.coffin_id AND sr.tenant_slug = c.tenant_slug
+            LEFT JOIN branches b_to ON sr.to_branch_id = b_to.id AND sr.tenant_slug = b_to.tenant_slug
+            WHERE sr.tenant_slug = ? AND sr.from_branch_id = ?
+            ORDER BY sr.created_at DESC
+        `;
+
+        const outgoing = await query(req, outgoingSql, [tenantSlug, branchId]);
+
+        const formatRequest = (req) => ({
+            ...req,
+            coffin_images: req.coffin_images ? req.coffin_images.split(',').slice(0, 3) : [],
+            status_display: getBookingStatus(req.status),
+            specifications: req.specifications ? JSON.parse(req.specifications) : []
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                incoming: incoming.map(formatRequest),
+                outgoing: outgoing.map(formatRequest)
+            }
+        });
+
+    } catch (error) {
+        console.error('Get stock requests error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const approveStockRequest = async (req, res) => {
+    const tenantSlug = req.tenantSlug;
+    const { id } = req.params;
+    const branchId = req.tenant?.branch_id || req.headers['x-branch-id'];
+
+    if (!tenantSlug) {
+        return res.status(403).json({ success: false, message: 'Valid tenant required' });
+    }
+
+    try {
+        // Get the request
+        const requests = await query(req,
+            'SELECT * FROM stock_requests WHERE id = ? AND tenant_slug = ? AND to_branch_id = ? AND status = "pending"',
+            [id, tenantSlug, branchId]
+        );
+
+        if (requests.length === 0) {
+            return res.status(404).json({ success: false, message: 'Stock request not found' });
+        }
+
+        const stockRequest = requests[0];
+
+        // Check stock availability
+        const coffins = await query(req,
+            'SELECT * FROM coffins WHERE coffin_id = ? AND branch_id = ? AND tenant_slug = ? AND stock >= ?',
+            [stockRequest.coffin_id, branchId, tenantSlug, stockRequest.quantity]
+        );
+
+        if (coffins.length === 0) {
+            return res.status(400).json({ success: false, message: 'Insufficient stock' });
+        }
+
+        // Deduct stock
+        await query(req,
+            'UPDATE coffins SET stock = stock - ?, updated_at = NOW() WHERE coffin_id = ? AND branch_id = ? AND tenant_slug = ?',
+            [stockRequest.quantity, stockRequest.coffin_id, branchId, tenantSlug]
+        );
+
+        // Update request status
+        await query(req,
+            'UPDATE stock_requests SET status = "approved", updated_at = NOW() WHERE id = ?',
+            [id]
+        );
+
+        // Add tracking
+        await query(req,
+            'INSERT INTO stock_request_tracking (request_id, tenant_slug, status, notes, created_at) VALUES (?, ?, "approved", "Request approved", NOW())',
+            [id, tenantSlug]
+        );
+
+        clearCache('allCoffins');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Stock request approved',
+            request_id: id
+        });
+
+    } catch (error) {
+        console.error('Approve stock request error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const rejectStockRequest = async (req, res) => {
+    const tenantSlug = req.tenantSlug;
+    const { id } = req.params;
+    const branchId = req.tenant?.branch_id || req.headers['x-branch-id'];
+
+    if (!tenantSlug) {
+        return res.status(403).json({ success: false, message: 'Valid tenant required' });
+    }
+
+    try {
+        const result = await query(req,
+            'UPDATE stock_requests SET status = "rejected", updated_at = NOW() WHERE id = ? AND tenant_slug = ? AND to_branch_id = ? AND status = "pending"',
+            [id, tenantSlug, branchId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Stock request not found' });
+        }
+
+        await query(req,
+            'INSERT INTO stock_request_tracking (request_id, tenant_slug, status, notes, created_at) VALUES (?, ?, "rejected", "Request rejected", NOW())',
+            [id, tenantSlug]
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: 'Stock request rejected'
+        });
+
+    } catch (error) {
+        console.error('Reject stock request error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// EXPORTS
+// ============================================
 
 module.exports = {
     createCoffin,
@@ -523,7 +853,13 @@ module.exports = {
     getCoffinById,
     updateCoffin,
     deleteCoffin,
-    assignCoffin,
-    getCoffinAnalytics,
-    healthCheck
+    createBooking,
+    getBookings,
+    updateBookingStatus,
+    createStockRequest,
+    getStockRequests,
+    approveStockRequest,
+    rejectStockRequest,
+    getStockStatus,
+    getBookingStatus
 };

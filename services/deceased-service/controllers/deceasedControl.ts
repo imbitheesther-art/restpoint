@@ -5,7 +5,7 @@ import { safeTenantQuery, safeTenantExecute } from '../../../shared/dbConfig';
 import Logger from '../../../packages/shared-logger/src/index';
 import { getKenyaTimeISO, getKenyaDate } from '../../../packages/shared-utils/dist/timestamps';
 import generateUniqueDeceasedId from '../utils/deceasedId';
-import redisService from '../../../packages/shared-services/src/redisService';
+import redisService from '../../../packages/shared-services/dist/redisService';
 
 const SERVICE_NAME = 'deceased-service';
 
@@ -27,10 +27,10 @@ export const getAllDeceased = async (
 ): Promise<Response> => {
     try {
         const dbName = (req as any).tenant?.db_name;
-        const tenantId = (req as any).tenant?.id;
+        const tenantId = (req as any).tenant?.id ?? (req as any).tenant?.tenant_id;
         const tenantSlug = (req as any).tenantSlug || "unknown";
 
-        if (!dbName || !tenantId) {
+        if (!dbName || tenantId === undefined || tenantId === null) {
             return res.status(400).json({
                 success: false,
                 message: "Tenant information missing"
@@ -52,7 +52,7 @@ export const getAllDeceased = async (
         const cacheKey = `deceased:list:${tenantId}:page:${pageNumber}:limit:${limitNumber}:search:${search}`;
 
         // Try to get from cache
-        const cached = await redisService.serviceGet(SERVICE_NAME, tenantSlug, cacheKey);
+        const cached = await redisService.serviceGet('deceased-service', tenantSlug, cacheKey);
 
         if (cached) {
             Logger.info({ message: "Deceased records served from Redis" });
@@ -67,13 +67,13 @@ export const getAllDeceased = async (
         // DATABASE QUERY
         // ============================
         const offset = (pageNumber - 1) * limitNumber;
-        let whereClause = `WHERE (is_deleted = 0 OR is_deleted IS NULL)`;
+        let whereClause = ``;
         const params: any[] = [];
 
         if (typeof search === "string" && search.trim()) {
-            whereClause += ` AND (full_name LIKE ? OR deceased_id LIKE ? OR national_id LIKE ?)`;
+            whereClause = `WHERE (full_name LIKE ? OR deceased_id LIKE ?)`;
             const keyword = `%${search}%`;
-            params.push(keyword, keyword, keyword);
+            params.push(keyword, keyword);
         }
 
         const countQuery = `SELECT COUNT(*) total FROM deceased ${whereClause}`;
@@ -81,25 +81,7 @@ export const getAllDeceased = async (
         const total = Number((countResult as any)[0]?.total || 0);
 
         const query = `
-            SELECT
-                deceased_id,
-                full_name,
-                cause_of_death,
-                date_of_birth,
-                national_id,
-                received_from,
-                permit_no,
-                age,
-                time_received,
-                body_status,
-                contact_person,
-                tell_no,
-                gender,
-                county,
-                status,
-                portal_slug,
-                created_at,
-                updated_at
+            SELECT *
             FROM deceased
             ${whereClause}
             ORDER BY created_at DESC
@@ -124,7 +106,7 @@ export const getAllDeceased = async (
         // SAVE TO REDIS
         // ============================
         await redisService.serviceSet(
-            SERVICE_NAME,
+            'deceased-service',
             tenantSlug,
             cacheKey,
             responseData,
@@ -134,13 +116,14 @@ export const getAllDeceased = async (
         return res.status(200).json(responseData);
 
     } catch (error: any) {
+        console.error('[DECEASED] getAllDeceased raw error:', error?.message || error?.sqlMessage || JSON.stringify(error));
         Logger.error({
             message: "getAllDeceased failed",
-            error
+            error: error?.message || error?.sqlMessage || String(error)
         });
         return res.status(500).json({
             success: false,
-            message: "Internal server error"
+            message: error?.sqlMessage || error?.message || "Internal server error"
         });
     }
 };
@@ -177,7 +160,7 @@ export const getDeceasedById = async (req: Request, res: Response): Promise<Resp
 
         // Try cache first
         const cacheKey = `deceased:detail:${id}`;
-        const cached = await redisService.serviceGet(SERVICE_NAME, tenantSlug, cacheKey);
+        const cached = await redisService.serviceGet('deceased-service', tenantSlug, cacheKey);
 
         if (cached) {
             Logger.info({ message: `Deceased ${id} served from Redis` });
@@ -193,7 +176,6 @@ export const getDeceasedById = async (req: Request, res: Response): Promise<Resp
             SELECT *
             FROM deceased
             WHERE ${isNumeric ? 'id = ?' : 'deceased_id = ?'}
-            AND (is_deleted IS NULL OR is_deleted = FALSE)
             LIMIT 1
         `;
 
@@ -209,7 +191,7 @@ export const getDeceasedById = async (req: Request, res: Response): Promise<Resp
 
         // Cache the result
         await redisService.serviceSet(
-            SERVICE_NAME,
+            'deceased-service',
             tenantSlug,
             cacheKey,
             deceased,
@@ -270,7 +252,6 @@ export const updateDeceased = async (req: Request, res: Response): Promise<Respo
         const checkQuery = `
             SELECT deceased_id FROM deceased 
             WHERE ${isNumeric ? 'id = ?' : 'deceased_id = ?'} 
-            AND (is_deleted IS NULL OR is_deleted = FALSE)
         `;
         const checkResult = await safeTenantQuery(dbName, checkQuery, [isNumeric ? parseInt(id, 10) : id]);
         if (!checkResult || (checkResult as any[]).length === 0) {
@@ -315,9 +296,9 @@ export const updateDeceased = async (req: Request, res: Response): Promise<Respo
         await safeTenantExecute(dbName, updateQuery, values);
 
         // Invalidate cache
-        await redisService.serviceDel(SERVICE_NAME, tenantSlug, `deceased:detail:${id}`);
-        await redisService.serviceDel(SERVICE_NAME, tenantSlug, `deceased:list:${tenantId}`);
-        await redisService.serviceDel(SERVICE_NAME, tenantSlug, `deceased:stats:${tenantId}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:detail:${id}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:list:${tenantId}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:stats:${tenantId}`);
 
         return res.status(200).json({
             success: true,
@@ -371,17 +352,16 @@ export const deleteDeceased = async (req: Request, res: Response): Promise<Respo
 
         const isNumeric = /^\d+$/.test(id);
         const deleteQuery = `
-            UPDATE deceased 
-            SET is_deleted = TRUE, deleted_at = NOW() 
+            DELETE FROM deceased
             WHERE ${isNumeric ? 'id = ?' : 'deceased_id = ?'} 
             LIMIT 1
         `;
         const result = await safeTenantExecute(dbName, deleteQuery, [isNumeric ? parseInt(id, 10) : id]);
 
         // Invalidate cache
-        await redisService.serviceDel(SERVICE_NAME, tenantSlug, `deceased:detail:${id}`);
-        await redisService.serviceDel(SERVICE_NAME, tenantSlug, `deceased:list:${tenantId}`);
-        await redisService.serviceDel(SERVICE_NAME, tenantSlug, `deceased:stats:${tenantId}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:detail:${id}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:list:${tenantId}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:stats:${tenantId}`);
 
         return res.status(200).json({
             success: true,
@@ -399,11 +379,88 @@ export const deleteDeceased = async (req: Request, res: Response): Promise<Respo
 };
 
 // ============================================
+// UPDATE DECEASED STATUS (for cross-service calls)
+// ============================================
+export const updateDeceasedStatus = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const { admission_number, body_status, is_embalmed } = req.body;
+        const dbName = (req as any).tenant?.db_name;
+
+        if (!dbName) {
+            return res.status(400).json({
+                success: false,
+                message: 'No database configured'
+            });
+        }
+
+        if (!admission_number) {
+            return res.status(400).json({
+                success: false,
+                message: 'Admission number is required'
+            });
+        }
+
+        // Build dynamic update query
+        const updates: string[] = [];
+        const values: any[] = [];
+
+        if (body_status) {
+            updates.push('body_status = ?');
+            values.push(body_status);
+        }
+
+        if (is_embalmed !== undefined) {
+            updates.push('is_embalmed = ?');
+            values.push(is_embalmed ? 1 : 0);
+        }
+
+        updates.push('updated_at = NOW()');
+
+        if (updates.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No fields to update'
+            });
+        }
+
+        values.push(admission_number);
+
+        const updateQuery = `
+            UPDATE deceased 
+            SET ${updates.join(', ')} 
+            WHERE admission_number = ?
+        `;
+
+        const result = await safeTenantExecute(dbName, updateQuery, values);
+
+        // Invalidate cache
+        const tenantSlug = (req as any).tenantSlug || "unknown";
+        const tenantId = (req as any).tenant?.id;
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:list:${tenantId}`);
+        await redisService.serviceDel('deceased-service', tenantSlug, `deceased:stats:${tenantId}`);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Deceased status updated successfully'
+        });
+
+    } catch (error: any) {
+        Logger.error('updateDeceasedStatus error: ' + (error as Error).message);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+// ============================================
 // EXPORT ALL
 // ============================================
 export default {
     getAllDeceased,
     getDeceasedById,
     updateDeceased,
-    deleteDeceased
+    deleteDeceased,
+    updateDeceasedStatus
 };

@@ -1,22 +1,24 @@
+/**
+ * Generate admission number in format: ADM-XXXXXX-XXXX
+ * First 6 chars: Gender prefix (M/F) + 5-digit sequence
+ * Last 4 chars: Random alphanumeric for uniqueness
+ * 
+ * @param gender - "Male" | "Female" | "M" | "F"
+ * @param sequence - Sequential number for this tenant
+ * @returns Admission number like "ADM-M00001-A3XK"
+ */
 const generateAdmissionNumber = (
-    tenantSlug: string,
-    gender: "M" | "F",
+    gender: "Male" | "Female" | "M" | "F" | string,
     sequence: number
 ): string => {
-    const tenant = tenantSlug
-        .replace(/[^a-zA-Z0-9]/g, "")
-        .substring(0, 10)
-        .toUpperCase();
+    const genderPrefix = gender?.toUpperCase() === "FEMALE" || gender?.toUpperCase() === "F"
+        ? "F"
+        : "M";
 
-    const letterIndex = Math.floor((sequence - 1) / 99);
-    const letter = String.fromCharCode(65 + letterIndex); // A, B, C...
+    const seqPart = String(sequence).padStart(5, "0");
+    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    const number = ((sequence - 1) % 99) + 1;
-
-    return `${tenant}/${gender}/${letter}${number
-        .toString()
-        .padStart(2, "0")}`;
+    return `ADM-${genderPrefix}${seqPart}-${randomPart}`;
 };
 
-
-export   default   generateAdmissionNumber;
+export default generateAdmissionNumber;

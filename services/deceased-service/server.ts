@@ -2,7 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { errorHandler, notFoundHandler } from '../app-global/middlewares/errorHandler';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
 dotenv.config();
 
@@ -39,7 +40,7 @@ app.use(helmet({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Tenant Middleware - supports both tenant slugs and branch database name slugs
+// Tenant Middleware
 app.use(async (req: Request, res: Response, next: NextFunction) => {
     try {
         const tenantSlug = req.headers['x-tenant-slug'] as string | undefined;
@@ -54,12 +55,12 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
             (req as any).tenant = {
                 db_name: process.env.DB_NAME || 'restpoint_db',
                 tenant_id: 1,
+                id: 1,
                 name: 'System Shared'
             };
             return next();
         }
 
-        // Step 1: Try direct database connection (slug IS the database name)
         let resolvedDbName = null;
 
         console.log(`[DECEASED] Trying direct database connection for: ${tenantSlug}`);
@@ -84,7 +85,6 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
             console.log(`[DECEASED] Direct database connection failed: ${dbErr.message}`);
         }
 
-        // Step 2: If direct connection failed, try resolveDatabase
         if (!resolvedDbName) {
             try {
                 const { resolveDatabase } = require('../../shared/dbConfig');
@@ -103,6 +103,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 
         (req as any).tenant = {
             db_name: resolvedDbName,
+            id: 0,
             tenant_id: 0,
             name: tenantSlug,
             tenant_slug: tenantSlug
@@ -120,17 +121,13 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     }
 });
 
-// ============================================
-// REQUEST LOGGING (before routes for debugging)
-// ============================================
+// Request logging
 app.use((req: Request, res: Response, next: NextFunction) => {
     console.log(`[DECEASED] ${req.method} ${req.path}`);
     next();
 });
 
-// ============================================
-// HEALTH CHECK (MUST be before routes to avoid /:id catching it)
-// ============================================
+// Health check
 app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({
         status: 'UP',
@@ -141,31 +138,14 @@ app.get('/health', (req: Request, res: Response) => {
     });
 });
 
-// ============================================
-// ✅ MOUNT ROUTES - CLEAN ROOT MOUNT
-// ============================================
-// The API Gateway strips /api/v1/restpoint prefix and forwards remaining path
-// Gateway extracts first segment (e.g. "deceased") as routing key
-// It proxies the ENTIRE remaining URL to the target service
-//
-// For example: /api/v1/restpoint/deceased/deceased-all
-//   Gateway strips /api/v1/restpoint → /deceased/deceased-all
-//   Gateway proxies → http://localhost:5003/deceased/deceased-all
-//   We match it with full-prefix routes below
-
-// Import routes
+// Mount routes
 import autopsyRoutes from './routes/autopsyRoutes';
 import chargesRoutes from './routes/chargesRoutes';
 import chargeSettingsRoutes from './routes/chargeSettingsRoutes';
-
-// Import other route modules
 import nextOfKinRoutes from './routes/nextOfKinRoutes';
 import hearseRoutes from './routes/hearseRoutes';
 import documentsRoutes from './routes/documentsRoutes';
 
-// Mount all sub-routers at root - routes use paths relative to root
-// IMPORTANT: Order matters! Mount specific routes BEFORE generic routes
-// Next-of-kin must be mounted BEFORE deceasedRoutes to avoid /:id catch-all conflict
 app.use('/', nextOfKinRoutes);
 app.use('/', hearseRoutes);
 app.use('/', documentsRoutes);
@@ -173,14 +153,10 @@ app.use('/', autopsyRoutes);
 app.use('/', chargesRoutes);
 app.use('/', chargeSettingsRoutes);
 
-// Mount deceasedRoutes LAST (has catch-all /:id route)
 import deceasedRoutes from './routes/deceasedRoutes';
-import { error } from 'console';
 app.use('/', deceasedRoutes);
 
-// ============================================
-// 404 HANDLER
-// ============================================
+// 404 handler
 app.use((req: Request, res: Response) => {
     console.log(`[404] ${req.method} ${req.path}`);
     res.status(404).json({
@@ -202,9 +178,7 @@ app.use((req: Request, res: Response) => {
     });
 });
 
-// ============================================
-// ERROR HANDLER
-// ============================================
+// Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error('[ERROR]', err.message);
     res.status(500).json({
@@ -214,17 +188,77 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     });
 });
 
-// ============================================
-// START SERVER
-// ============================================
-const server = app.listen(PORT, '0.0.0.0', () => {
+// Start server with socket error handling and graceful shutdown
+const server = http.createServer({
+    insecureHTTPParser: false,
+}, app);
+
+// Initialize Socket.IO with the HTTP server
+const io = new SocketIOServer(server, {
+    cors: {
+        origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
+        credentials: true
+    }
+});
+
+// Make io available globally for controllers
+(global as any).io = io;
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log(`[SOCKET] Client connected: ${socket.id}`);
+    
+    socket.on('join-tenant', (tenantSlug: string) => {
+        socket.join(`tenant:${tenantSlug}`);
+        console.log(`[SOCKET] Client ${socket.id} joined tenant: ${tenantSlug}`);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log(`[SOCKET] Client disconnected: ${socket.id}`);
+    });
+});
+
+const gracefulShutdown = (signal: string) => {
+    console.log(`[SHUTDOWN] Received ${signal}. Starting graceful shutdown...`);
+    server.close(() => {
+        console.log('[SHUTDOWN] HTTP server closed.');
+        process.exit(0);
+    });
+    setTimeout(() => {
+        console.error('[SHUTDOWN] Forced shutdown after timeout.');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[SECURITY] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[SECURITY] Uncaught Exception:', err.message);
+});
+
+server.on('connection', (socket) => {
+    socket.setTimeout(120000);
+    socket.on('error', (err) => {
+        console.error('[SECURITY] Socket error handled:', err.message);
+        socket.destroy();
+    });
+});
+
+server.on('error', (err: NodeJS.ErrnoException) => {
+    console.error('[SECURITY] Server error:', err.message);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+        process.exit(1);
+    }
+});
+
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Deceased service running on ${PORT}`);
 });
-
-server.on('error', (err) => {
-    console.error('Server failed to start', err);
-    process.exit(1);
-});
-
 
 export default app;

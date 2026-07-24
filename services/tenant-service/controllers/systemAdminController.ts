@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
-import { clearTenantCache } from '../../../packages/shared-services/src/redisService';
+import { clearTenantCache } from '../../../packages/shared-services/dist/redisService';
 import logger from '@montezuma/shared-logger';
 
 // Server connection (same as Tenant.model)

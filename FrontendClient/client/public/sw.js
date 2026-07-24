@@ -1,5 +1,5 @@
 // Service Worker for Rest Point PWA
-const CACHE_VERSION = 'v2'; // Increment this to force cache refresh
+const CACHE_VERSION = 'v3'; // Increment this to force cache refresh
 const STATIC_CACHE = `restpoint-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `restpoint-dynamic-${CACHE_VERSION}`;
 const CACHE_NAME = `restpoint-${CACHE_VERSION}`;
@@ -130,6 +130,7 @@ self.addEventListener('fetch', (event) => {
                         event.waitUntil(
                             fetch(cacheRequest)
                                 .then((response) => {
+                                    // Only cache successful responses
                                     if (response.ok) {
                                         caches.open(STATIC_CACHE)
                                             .then((cache) => cache.put(cacheRequest, response));
@@ -144,6 +145,7 @@ self.addEventListener('fetch', (event) => {
                     // Not in cache, fetch from network
                     return fetch(cacheRequest)
                         .then((response) => {
+                            // Only cache successful responses
                             if (response.ok) {
                                 const responseClone = response.clone();
                                 caches.open(STATIC_CACHE)

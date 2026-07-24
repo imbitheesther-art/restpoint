@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { Activity, Plus, Calendar, Clock, User, FileText, CheckCircle, AlertTriangle, Send, Loader2, Stethoscope, ClipboardList } from '../../utils/icons/icons';
+import styled, { keyframes } from 'styled-components';
+import { Activity, Plus, Calendar, Clock, User, FileText, CheckCircle, AlertTriangle, Send, Loader2, Stethoscope, ClipboardList } from '../../../utils/icons/icons';
+import { COLORS } from '../../../utils/colors';
 import axios from 'axios';
-import { getTenantSlug, getAuthToken } from '../../../utils/globalAuth';
+import { getTenantSlug } from '../../../utils/globalAuth';
 import { ToastContainer } from 'react-toastify';
 import { showToast } from '../../../utils/toast';
-
-const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
-
+import { io } from 'socket.io-client';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 `;
+
+const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const BASE_URL = `${API_GATEWAY_URL}/api/v1/restpoint`;
 
 const Container = styled.div`
   animation: ${fadeIn} 0.25s ease-out;
@@ -170,19 +171,6 @@ const SecondaryButton = styled.button`
   }
 `;
 
-const getTenantSlug = () => {
-    return localStorage.getItem('tenantSlug') ||
-        localStorage.getItem('tenant_slug') ||
-        (() => {
-            try {
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
-                return user.tenantSlug || user.tenant?.slug || 'default';
-            } catch {
-                return 'default';
-            }
-        })();
-};
-
 const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
     const [requests, setRequests] = useState([]);
     const [postmortemData, setPostmortemData] = useState(null);
@@ -211,6 +199,40 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
         status: 'completed',
     });
 
+    // Socket connection for real-time updates
+    useEffect(() => {
+        const tenantSlug = getTenantSlug();
+        const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+            transports: ['websocket']
+        });
+        
+        socket.on('connect', () => {
+            console.log('[SOCKET] Connected to server');
+            socket.emit('join-tenant', tenantSlug);
+        });
+        
+        socket.on('postmortem:updated', (data) => {
+            console.log('[SOCKET] Postmortem updated:', data);
+            if (data.deceasedId === deceasedId) {
+                // Refresh postmortem data when updated
+                fetchPostmortemData();
+                fetchPostmortemRequests();
+                onUpdate?.();
+                
+                // Show notification
+                showToast.info('Postmortem record has been updated');
+            }
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('[SOCKET] Disconnected from server');
+        });
+        
+        return () => {
+            socket.disconnect();
+        };
+    }, [deceasedId]);
+    
     useEffect(() => {
         fetchPostmortemRequests();
         fetchPostmortemData();
@@ -375,7 +397,7 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
                 </RequestCard>
             )}
 
-            {/* Show completed postmortem */}
+            {/* Show completed postmortem with full details */}
             {hasCompletedPostmortem && (
                 <RequestCard style={{ borderColor: COLORS.success, background: COLORS.successLight }}>
                     <RequestHeader>
@@ -388,26 +410,102 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
                             Completed
                         </StatusBadge>
                     </RequestHeader>
-                    <InfoRow>
-                        <Stethoscope size={14} />
-                        <div>
-                            <strong>Pathologist:</strong> {postmortemData.pathologist_name || 'Not specified'}
+                    
+                    {/* Death Specifics Section */}
+                    <div style={{ 
+                        marginTop: '0.75rem', 
+                        padding: '0.75rem', 
+                        background: COLORS.surface, 
+                        borderRadius: COLORS.radiusSm,
+                        border: `1px solid ${COLORS.borderLight}`
+                    }}>
+                        <div style={{ 
+                            fontSize: '0.75rem', 
+                            fontWeight: 700, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.05em',
+                            color: COLORS.textSecondary,
+                            marginBottom: '0.5rem'
+                        }}>
+                            Death Specifics
                         </div>
-                    </InfoRow>
-                    <InfoRow>
+                        
+                        <InfoRow>
+                            <Calendar size={14} />
+                            <div>
+                                <strong>Date of Death:</strong> {deceasedData?.date_of_death ? new Date(deceasedData.date_of_death).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not recorded'}
+                            </div>
+                        </InfoRow>
+                        
+                        <InfoRow>
+                            <FileText size={14} />
+                            <div>
+                                <strong>Place of Death:</strong> {deceasedData?.place_of_death || 'Not specified'}
+                            </div>
+                        </InfoRow>
+                        
+                        {postmortemData.immediate_cause_of_death && (
+                            <InfoRow>
+                                <ClipboardList size={14} />
+                                <div>
+                                    <strong>Immediate Cause:</strong> {postmortemData.immediate_cause_of_death}
+                                </div>
+                            </InfoRow>
+                        )}
+                        
+                        {postmortemData.underlying_cause_of_death && (
+                            <InfoRow>
+                                <ClipboardList size={14} />
+                                <div>
+                                    <strong>Underlying Cause:</strong> {postmortemData.underlying_cause_of_death}
+                                </div>
+                            </InfoRow>
+                        )}
+                        
+                        {postmortemData.manner_of_death && (
+                            <InfoRow>
+                                <Activity size={14} />
+                                <div>
+                                    <strong>Manner of Death:</strong> {postmortemData.manner_of_death}
+                                </div>
+                            </InfoRow>
+                        )}
+                        
+                        {postmortemData.pathologist_name && (
+                            <InfoRow>
+                                <Stethoscope size={14} />
+                                <div>
+                                    <strong>Physician:</strong> {postmortemData.pathologist_name}
+                                </div>
+                            </InfoRow>
+                        )}
+                        
+                        {postmortemData.external_pathologist_name && (
+                            <InfoRow>
+                                <User size={14} />
+                                <div>
+                                    <strong>External Pathologist:</strong> {postmortemData.external_pathologist_name}
+                                </div>
+                            </InfoRow>
+                        )}
+                        
+                        {postmortemData.permit_number && (
+                            <InfoRow>
+                                <FileText size={14} />
+                                <div>
+                                    <strong style={{ color: COLORS.primary }}>Permit Number:</strong> {postmortemData.permit_number}
+                                </div>
+                            </InfoRow>
+                        )}
+                    </div>
+                    
+                    <InfoRow style={{ marginTop: '0.75rem' }}>
                         <Calendar size={14} />
                         <div>
                             <strong>Completed At:</strong> {postmortemData.completed_at ? new Date(postmortemData.completed_at).toLocaleString() : 'N/A'}
                         </div>
                     </InfoRow>
-                    {postmortemData.cause_of_death && (
-                        <InfoRow>
-                            <ClipboardList size={14} />
-                            <div>
-                                <strong>Cause of Death:</strong> {postmortemData.cause_of_death}
-                            </div>
-                        </InfoRow>
-                    )}
+                    
                     <PrimaryButton
                         onClick={() => window.open(`${BASE_URL}/postmortem/${deceasedId}/pdf`, '_blank')}
                         style={{ marginTop: '0.75rem' }}
@@ -603,13 +701,16 @@ const PostmortemSection = ({ deceasedId, deceasedData, onUpdate }) => {
                 </div>
             )}
 
-            {/* Button to show findings form when pending */}
+            {/* Button to open full Postmortem Examination Form */}
             {hasPendingPostmortem && !showFindingsForm && (
                 <PrimaryButton
-                    onClick={() => setShowFindingsForm(true)}
+                    onClick={() => {
+                        const tenantSlug = getTenantSlug();
+                        window.location.href = `/tenant/${tenantSlug}/postmortem-form/${deceasedId}`;
+                    }}
                     style={{ width: '100%', marginTop: '0.75rem' }}
                 >
-                    <Stethoscope size={16} /> Enter Postmortem Findings
+                    <Stethoscope size={16} /> Open Examination Form
                 </PrimaryButton>
             )}
         </Container>

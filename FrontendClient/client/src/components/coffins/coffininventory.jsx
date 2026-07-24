@@ -1,2234 +1,956 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import styled, { keyframes } from 'styled-components';
-import { useSocket } from '../../utils/context/socketContext';
-import ReusableCalendar from '../../utils/calender/calender';
-import { Search, Plus, Edit, Trash2, Eye, Package, AlertTriangle, Filter, Download, Upload, Box, HardDrive, RotateCw, Settings, Flame, XCircle, Trophy, ChevronLeft, ChevronRight, BarChart3, Users, Tag, DollarSign, Warehouse, Image, Calendar, User, Truck, Layers, Clock, PersonStanding, Save, FileSpreadsheet, Grid3x3, List, Home, ChevronDown, ShoppingBag, Star, Heart, Share2, MoreVertical, CheckCircle, AlertCircle, Info, MinusCircle, PlusCircle, RefreshCw, Printer, FileText, ArrowUpDown, ArrowUp, ArrowDown, SearchX, SlidersHorizontal, Maximize2, CheckSquare, XSquare, Loader2, ClipboardList, Phone, Mail, MapPin, FileSignature, StickyNote } from '../../utils/icons/icons';
+import api from '../../api/axios';
+import { ENDPOINTS } from '../../api/endpoints';
 import env from '../../utils/config/env';
+import { getTenantSlug } from '../../utils/globalAuth';
 
-// Bootstrap-inspired color scheme
-const COLORS = {
-  primary: '#1a5f7a',
-  primaryLight: '#2c8ac9',
-  primaryDark: '#134b5f',
-  white: '#FFFFFF',
-  bg: '#f5f7fa',
-  surface: '#ffffff',
-  border: '#d1d5db',
-  borderLight: '#e5e7eb',
-  text: '#111827',
-  textSecondary: '#6b7280',
-  textMuted: '#9ca3af',
-  success: '#10b981',
-  successLight: '#d1fae5',
-  successDark: '#059669',
-  warning: '#f59e0b',
-  warningLight: '#fef3c7',
-  warningDark: '#d97706',
-  danger: '#ef4444',
-  dangerLight: '#fee2e2',
-  dangerDark: '#dc2626',
-  info: '#3b82f6',
-  infoLight: '#dbeafe',
-  infoDark: '#2563eb',
-  accent: '#3b82f6',
-  accentHover: '#2563eb',
-  accentGlow: 'rgba(59, 130, 246, 0.1)',
-  radius: '8px',
-  radiusSm: '6px',
-  radiusXs: '4px',
-  shadowSm: '0 1px 2px rgba(0, 0, 0, 0.04)',
-  shadowMd: '0 4px 6px rgba(0, 0, 0, 0.06)',
-  shadowLg: '0 10px 15px rgba(0, 0, 0, 0.08)',
-  transition: 'all 0.15s ease',
-};
+const API = env.FULL_API_URL;
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const slideIn = keyframes`
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-`;
-
-// Styled Components
+// ─── Styled Components ──────────────────────────────────────────────
 const Container = styled.div`
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  color: #1e293b;
+  background: #f0f2f5;
   min-height: 100vh;
-  background: ${COLORS.bg};
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  color: ${COLORS.text};
-`;
-
-const Header = styled.div`
-  background: ${COLORS.surface};
-  border-bottom: 1px solid ${COLORS.border};
-  padding: 1.25rem 2rem;
-  box-shadow: ${COLORS.shadowSm};
-`;
-
-const HeaderContent = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-`;
-
-const Title = styled.h1`
-  font-size: 1.375rem;
-  font-weight: 600;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  color: ${COLORS.text};
-`;
-
-const HeaderActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-`;
-
-const PrimaryButton = styled.button`
-  background: ${COLORS.primary};
-  color: ${COLORS.white};
-  border: none;
-  border-radius: ${COLORS.radiusSm};
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  transition: ${COLORS.transition};
-  box-shadow: ${COLORS.shadowSm};
-
-  &:hover {
-    background: ${COLORS.primaryDark};
-    transform: translateY(-1px);
-    box-shadow: ${COLORS.shadowMd};
-  }
-
-  &:disabled {
-    background: ${COLORS.textMuted};
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
-const SecondaryButton = styled.button`
-  background: ${COLORS.surface};
-  color: ${COLORS.text};
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  transition: ${COLORS.transition};
-
-  &:hover {
-    background: ${COLORS.bg};
-    border-color: ${COLORS.textSecondary};
-  }
-`;
-
-const MainContent = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1.5rem;
-`;
-
-const TabContainer = styled.div`
-  background: ${COLORS.surface};
-  border-radius: ${COLORS.radius};
-  box-shadow: ${COLORS.shadowSm};
-  border: 1px solid ${COLORS.border};
-  overflow: hidden;
-  margin-bottom: 1rem;
-`;
-
-const TabHeader = styled.div`
-  display: flex;
-  background: ${COLORS.bg};
-  border-bottom: 1px solid ${COLORS.border};
-`;
-
-const TabButton = styled.button`
-  flex: 1;
-  padding: 0.875rem 1.25rem;
-  background: transparent;
-  border: none;
-  color: ${COLORS.textSecondary};
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: ${COLORS.transition};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-
-  &:hover {
-    color: ${COLORS.primary};
-    background: ${COLORS.surface};
-  }
-
-  ${props => props.$active && `
-    color: ${COLORS.primary};
-    border-bottom-color: ${COLORS.primary};
-    background: ${COLORS.surface};
-    font-weight: 600;
-  `}
-`;
-
-const TabContent = styled.div`
-  padding: 1.25rem;
-  animation: ${fadeIn} 0.3s ease-out;
+  padding: 22px;
 `;
 
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 14px;
+  margin-bottom: 22px;
 `;
 
 const StatCard = styled.div`
-  background: ${COLORS.surface};
-  border-radius: ${COLORS.radius};
-  box-shadow: ${COLORS.shadowSm};
-  border: 1px solid ${COLORS.border};
-  padding: 1.25rem;
-  transition: ${COLORS.transition};
-
-  &:hover {
-    box-shadow: ${COLORS.shadowMd};
-    transform: translateY(-2px);
-  }
-`;
-
-const StatHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-`;
-
-const StatLabel = styled.div`
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: ${COLORS.textSecondary};
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 12px;
+  padding: 18px;
+  transition: box-shadow 0.2s;
+  &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 `;
 
 const StatIcon = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: ${COLORS.radiusSm};
+  width: 36px; height: 36px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${props => props.$bg};
-  color: ${props => props.$color};
+  font-size: 14px;
+  background: ${props => props.$c === 'teal' ? '#ccfbf1' : 
+    props.$c === 'grn' ? '#dcfce7' : props.$c === 'blu' ? '#dbeafe' :
+    props.$c === 'red' ? '#fee2e2' : props.$c === 'amb' ? '#fef3c7' : '#ffedd5'};
+  color: ${props => props.$c === 'teal' ? '#0d9488' : 
+    props.$c === 'grn' ? '#16a34a' : props.$c === 'blu' ? '#2563eb' :
+    props.$c === 'red' ? '#dc2626' : props.$c === 'amb' ? '#d97706' : '#ea580c'};
 `;
 
-const StatValue = styled.div`
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: ${COLORS.text};
-  line-height: 1.2;
-  margin-bottom: 0.25rem;
+const StatValue = styled.div`font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 3px;`;
+const StatLabel = styled.div`font-size: 11px; color: #94a3b8; font-weight: 500;`;
+const StatChange = styled.div`
+  display: inline-flex; align-items: center; gap: 2px; font-size: 10px;
+  font-weight: 600; margin-top: 6px; padding: 2px 6px; border-radius: 4px;
+  color: ${props => props.$up ? '#16a34a' : '#dc2626'};
+  background: ${props => props.$up ? '#dcfce7' : '#fee2e2'};
 `;
 
-const StatSubtext = styled.div`
-  font-size: 0.75rem;
-  color: ${COLORS.textSecondary};
+const Alert = styled.div`
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: 8px; margin-bottom: 10px; font-size: 10px; border: 1px solid;
+  background: ${p => p.$t === 'warning' ? '#fef3c7' : p.$t === 'error' ? '#fee2e2' : p.$t === 'info' ? '#dbeafe' : '#dcfce7'};
+  border-color: ${p => p.$t === 'warning' ? 'rgba(217,119,6,.2)' : p.$t === 'error' ? 'rgba(220,38,38,.2)' : p.$t === 'info' ? 'rgba(37,99,235,.2)' : 'rgba(22,163,74,.2)'};
+  color: ${p => p.$t === 'warning' ? '#d97706' : p.$t === 'error' ? '#dc2626' : p.$t === 'info' ? '#2563eb' : '#16a34a'};
 `;
 
-const FilterCard = styled.div`
-  background: ${COLORS.surface};
-  border-radius: ${COLORS.radius};
-  box-shadow: ${COLORS.shadowSm};
-  border: 1px solid ${COLORS.border};
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
+const Card = styled.div`background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; overflow: hidden;`;
+const CardHeader = styled.div`display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #e8ecf1;`;
+const CardTitle = styled.h3`font-size: 13px; font-weight: 600; margin: 0;`;
+const CardBody = styled.div`padding: 16px;`;
+
+const TabsContainer = styled.div`
+  display: flex; gap: 3px; margin-bottom: 18px; flex-wrap: wrap;
+`;
+const Tab = styled.button`
+  padding: 8px 18px; border-radius: 8px 8px 0 0; border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  background: ${p => p.$active ? '#fff' : 'transparent'};
+  color: ${p => p.$active ? '#0d9488' : '#64748b'};
+  border-bottom: ${p => p.$active ? '2px solid #0d9488' : '2px solid transparent'};
+  transition: all 0.15s;
+  &:hover { color: #0d9488; }
 `;
 
-const FilterRow = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: ${props => props.$marginBottom || '0'};
+const TableWrapper = styled.div`
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; overflow: hidden;
 `;
-
-const SearchInput = styled.input`
-  flex: 1;
-  min-width: 250px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-  background: ${COLORS.surface};
-  transition: ${COLORS.transition};
-
-  &:focus {
-    outline: none;
-    border-color: ${COLORS.primary};
-    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
+const TableToolbar = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid #e8ecf1; gap: 8px; flex-wrap: wrap;
+`;
+const SearchBox = styled.div`
+  display: flex; align-items: center; gap: 5px; background: #f8fafc;
+  border: 1px solid #e8ecf1; border-radius: 6px; padding: 5px 9px; width: 180px;
+  &:focus-within { border-color: #0d9488; }
+  input {
+    border: none; outline: none; background: transparent; font-size: 11px;
+    color: #1e293b; width: 100%; font-family: inherit;
   }
 `;
-
-const Select = styled.select`
-  padding: 0.5rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-  background: ${COLORS.surface};
-  cursor: pointer;
-  transition: ${COLORS.transition};
-
-  &:focus {
-    outline: none;
-    border-color: ${COLORS.primary};
-    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
-  }
+const FilterButtons = styled.div`display: flex; gap: 3px; flex-wrap: wrap;`;
+const FilterButton = styled.button`
+  padding: 3px 9px; border-radius: 5px; border: 1px solid #e8ecf1;
+  background: ${p => p.$on ? '#0d9488' : '#fff'};
+  color: ${p => p.$on ? '#fff' : '#64748b'};
+  font-size: 9px; cursor: pointer; font-family: inherit; font-weight: 500;
+  transition: all 0.1s;
+  &:hover { border-color: #0d9488; color: ${p => p.$on ? '#fff' : '#0d9488'}; }
 `;
 
-const PillGroup = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-items: center;
+const Table = styled.table`width: 100%; border-collapse: collapse;`;
+const Th = styled.th`
+  text-align: left; padding: 9px 12px; font-size: 9px; text-transform: uppercase;
+  letter-spacing: 1px; color: #94a3b8; border-bottom: 1px solid #e8ecf1;
+  font-weight: 600; background: #f8fafc;
+`;
+const Td = styled.td`
+  padding: 9px 12px; font-size: 11px; border-bottom: 1px solid #e8ecf1;
+  color: #64748b; vertical-align: middle;
+  &:last-child { text-align: right; }
+`;
+const Tr = styled.tr`
+  &:hover { background: #f8fafc; }
+  &:last-child td { border-bottom: none; }
 `;
 
-const Pill = styled.button`
-  padding: 0.375rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: 2rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: ${COLORS.transition};
-  background: ${COLORS.surface};
-  color: ${COLORS.textSecondary};
-
+const Button = styled.button`
+  display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px;
+  border-radius: 6px; border: none; font-size: 10px; font-weight: 600;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  background: ${p => p.$primary ? '#0d9488' : p.$danger ? '#fee2e2' : p.$success ? '#dcfce7' : '#f1f5f9'};
+  color: ${p => p.$primary ? '#fff' : p.$danger ? '#dc2626' : p.$success ? '#16a34a' : '#64748b'};
   &:hover {
-    background: ${COLORS.bg};
-    border-color: ${COLORS.primary};
-    color: ${COLORS.primary};
+    background: ${p => p.$primary ? '#0f766e' : p.$danger ? '#dc2626' : p.$success ? '#16a34a' : '#e2e8f0'};
+    color: ${p => p.$primary || p.$danger || p.$success ? '#fff' : '#1e293b'};
   }
-
-  ${props => props.$active && `
-    background: ${COLORS.primary};
-    color: ${COLORS.white};
-    border-color: ${COLORS.primary};
-  `}
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
-const TableCard = styled.div`
-  background: ${COLORS.surface};
-  border-radius: ${COLORS.radius};
-  box-shadow: ${COLORS.shadowSm};
-  border: 1px solid ${COLORS.border};
-  overflow: hidden;
+const IconBtn = styled.button`
+  width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center;
+  justify-content: center; border-radius: 5px; border: 1px solid #e8ecf1;
+  background: #fff; color: #94a3b8; cursor: pointer; font-size: 9px;
+  transition: all 0.1s; margin: 0 1px;
+  &:hover { border-color: #0d9488; color: #0d9488; }
 `;
 
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-`;
-
-const TableHead = styled.thead`
-  background: ${COLORS.bg};
-  border-bottom: 1px solid ${COLORS.border};
-`;
-
-const TableRow = styled.tr`
-  border-bottom: 1px solid ${COLORS.border};
-  cursor: pointer;
-  transition: ${COLORS.transition};
-
-  &:hover {
-    background: ${COLORS.bg};
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const TableCell = styled.td`
-  padding: 0.875rem 1rem;
-  color: ${COLORS.text};
-  vertical-align: middle;
-`;
-
-const TableHeader = styled.th`
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: ${COLORS.textSecondary};
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-`;
-
-const StatusBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 2rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background: ${props => {
-    switch (props.$status) {
-      case 'available': return COLORS.successLight;
-      case 'booked': return COLORS.warningLight;
-      case 'in-store': return COLORS.infoLight;
-      default: return COLORS.borderLight;
-    }
-  }};
-  color: ${props => {
-    switch (props.$status) {
-      case 'available': return COLORS.successDark;
-      case 'booked': return COLORS.warningDark;
-      case 'in-store': return COLORS.infoDark;
-      default: return COLORS.textSecondary;
-    }
-  }};
-`;
-
-const ActionButton = styled.button`
-  background: transparent;
-  border: none;
-  color: ${COLORS.textSecondary};
-  cursor: pointer;
-  padding: 0.375rem;
-  border-radius: ${COLORS.radiusXs};
-  transition: ${COLORS.transition};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: ${COLORS.border};
-    color: ${COLORS.text};
-  }
+const Tag = styled.span`
+  display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px;
+  border-radius: 4px; font-size: 9px; font-weight: 600;
+  background: ${p => p.$available ? '#dcfce7' : p.$low ? '#fef3c7' : p.$out ? '#fee2e2' : 
+    p.$booked ? '#dbeafe' : p.$pending ? '#fef3c7' : p.$completed ? '#dcfce7' : 
+    p.$paid ? '#dcfce7' : p.$unpaid ? '#fee2e2' : '#f1f5f9'};
+  color: ${p => p.$available ? '#16a34a' : p.$low ? '#d97706' : p.$out ? '#dc2626' : 
+    p.$booked ? '#2563eb' : p.$pending ? '#d97706' : p.$completed ? '#16a34a' : 
+    p.$paid ? '#16a34a' : p.$unpaid ? '#dc2626' : '#64748b'};
 `;
 
 const EmptyState = styled.div`
-  text-align: center;
-  padding: 3rem 2rem;
-  color: ${COLORS.textSecondary};
+  text-align: center; padding: 30px 12px; color: #94a3b8;
+  p { font-size: 11px; }
+`;
 
-  svg {
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.4;
+const ModalOverlay = styled.div`
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(3px); z-index: 200;
+  display: ${p => p.$open ? 'flex' : 'none'};
+  align-items: center; justify-content: center; padding: 14px;
+`;
+const ModalDialog = styled.div`
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 12px;
+  width: 100%; max-width: ${p => p.$w || '540px'}; max-height: 85vh;
+  overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  animation: modalIn 0.2s;
+  @keyframes modalIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+`;
+const ModalHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid #e8ecf1;
+`;
+const ModalTitle = styled.h3`font-size: 15px; font-weight: 600; margin: 0;`;
+const ModalClose = styled.button`
+  width: 26px; height: 26px; border-radius: 6px; border: 1px solid #e8ecf1;
+  background: #fff; color: #94a3b8; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-size: 10px;
+  &:hover { border-color: #dc2626; color: #dc2626; background: #fee2e2; }
+`;
+const ModalBody = styled.div`padding: 18px;`;
+const ModalFooter = styled.div`
+  display: flex; justify-content: flex-end; gap: 5px;
+  padding: 10px 18px; border-top: 1px solid #e8ecf1;
+`;
+
+const FormGroup = styled.div`margin-bottom: 12px;`;
+const FormRow = styled.div`display: grid; grid-template-columns: 1fr 1fr; gap: 9px;`;
+const FormLabel = styled.label`
+  display: block; font-size: 9px; color: #94a3b8; margin-bottom: 3px;
+  text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+`;
+const FormInput = styled.input`
+  width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #e8ecf1;
+  background: #fff; color: #1e293b; font-size: 11px; font-family: inherit;
+  outline: none; box-sizing: border-box;
+  &:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+`;
+const FormSelect = styled.select`
+  width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #e8ecf1;
+  background: #fff; color: #1e293b; font-size: 11px; font-family: inherit;
+  outline: none; cursor: pointer; box-sizing: border-box;
+  &:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+`;
+const FormTextarea = styled.textarea`
+  width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #e8ecf1;
+  background: #fff; color: #1e293b; font-size: 11px; font-family: inherit;
+  outline: none; resize: vertical; min-height: 50px; box-sizing: border-box;
+  &:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+`;
+
+const LoadingSpinner = styled.div`
+  display: flex; align-items: center; justify-content: center; padding: 60px;
+  color: #94a3b8; font-size: 13px; gap: 10px;
+  &::before {
+    content: ''; width: 20px; height: 20px; border: 2px solid #e8ecf1;
+    border-top-color: #0d9488; border-radius: 50%;
+    animation: spin 0.6s linear infinite;
   }
-
-  h4 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 0.5rem;
-    color: ${COLORS.text};
-  }
-
-  p {
-    font-size: 0.8125rem;
-    margin: 0;
-    color: ${COLORS.textSecondary};
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 `;
 
-const Pagination = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid ${COLORS.border};
-  flex-wrap: wrap;
-  gap: 0.5rem;
-`;
-
-const PageInfo = styled.span`
-  font-size: 0.8rem;
-  color: ${COLORS.textSecondary};
-`;
-
-const PageButtons = styled.div`
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-`;
-
-const PageButton = styled.button`
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid ${COLORS.border};
-  border-radius: 6px;
-  background: ${COLORS.surface};
-  color: ${COLORS.textSecondary};
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: ${COLORS.transition};
-
-  &:hover:not(:disabled) {
-    background: ${COLORS.bg};
-    border-color: ${COLORS.primary};
-    color: ${COLORS.primary};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  ${props => props.$active && `
-    background: ${COLORS.primary};
-    color: ${COLORS.white};
-    border-color: ${COLORS.primary};
-  `}
-`;
-
-const DrawerOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 9998;
-  animation: ${fadeIn} 0.12s ease-out;
-  backdrop-filter: blur(3px);
-`;
-
-const Drawer = styled.div`
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 600px;
-  max-width: 100%;
-  background: ${COLORS.surface};
-  box-shadow: ${COLORS.shadowLg};
-  z-index: 9999;
-  transform: translateX(${props => props.$open ? '0' : '100%'});
-  transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-`;
-
-const DrawerHeader = styled.div`
-  padding: 1.25rem;
-  border-bottom: 1px solid ${COLORS.border};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: ${COLORS.bg};
-`;
-
-const DrawerTitle = styled.h2`
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
-  color: ${COLORS.text};
-`;
-
-const DrawerSubtitle = styled.p`
-  font-size: 0.8125rem;
-  color: ${COLORS.textSecondary};
-  margin: 0.25rem 0 0;
-`;
-
-const DrawerBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.25rem;
-`;
-
-const DrawerFooter = styled.div`
-  padding: 1rem 1.25rem;
-  border-top: 1px solid ${COLORS.border};
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-`;
-
-const DetailGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-`;
-
-const DetailItem = styled.div`
-  padding: 0.75rem;
-  background: ${COLORS.bg};
-  border-radius: ${COLORS.radiusSm};
-  border: 1px solid ${COLORS.border};
-`;
-
-const DetailLabel = styled.div`
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: ${COLORS.textSecondary};
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
-`;
-
-const DetailValue = styled.div`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: ${COLORS.text};
-  word-break: break-word;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 1rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.375rem;
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-
-  .required {
-    color: ${COLORS.danger};
-    margin-left: 0.25rem;
-  }
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-  background: ${COLORS.surface};
-  transition: ${COLORS.transition};
-
-  &:focus {
-    outline: none;
-    border-color: ${COLORS.primary};
-    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
-  }
-
-  &:disabled {
-    background: ${COLORS.bg};
-    color: ${COLORS.textSecondary};
-    cursor: not-allowed;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid ${COLORS.border};
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  color: ${COLORS.text};
-  background: ${COLORS.surface};
-  transition: ${COLORS.transition};
-  min-height: 80px;
-  resize: vertical;
-
-  &:focus {
-    outline: none;
-    border-color: ${COLORS.primary};
-    box-shadow: 0 0 0 3px ${COLORS.accentGlow};
-  }
-`;
-
-const ToastContainer = styled.div`
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 10000;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Toast = styled.div`
-  padding: 0.875rem 1.25rem;
-  border-radius: ${COLORS.radiusSm};
-  font-size: 0.8125rem;
-  font-weight: 500;
-  box-shadow: ${COLORS.shadowMd};
-  animation: ${fadeIn} 0.2s ease-out;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: ${props => props.type === 'error' ? COLORS.dangerLight : COLORS.successLight};
-  color: ${props => props.type === 'error' ? COLORS.dangerDark : COLORS.successDark};
-  border: 1px solid ${props => props.type === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'};
-`;
-
-const getTenantSlug = () => {
-  return localStorage.getItem('tenantSlug') ||
-    localStorage.getItem('tenant_slug') ||
-    (() => {
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        return user.tenantSlug || user.tenant?.slug || 'default';
-      } catch {
-        return 'default';
-      }
-    })();
+// ─── Helpers ────────────────────────────────────────────────────────
+const getStockStatus = (stock) => {
+  if (stock <= 0) return { label: 'Out of Stock', cls: 'out' };
+  if (stock <= 2) return { label: 'Low Stock', cls: 'low' };
+  return { label: 'Available', cls: 'available' };
 };
 
-const CoffinInventory = () => {
-  const navigate = useNavigate();
-  const { slug } = useParams();
+const getBookingStatus = (status) => {
+  const map = {
+    pending: { label: 'Pending', cls: 'pending' },
+    booked: { label: 'Booked', cls: 'booked' },
+    completed: { label: 'Completed', cls: 'completed' },
+    cancelled: { label: 'Cancelled', cls: 'unpaid' },
+    approved: { label: 'Approved', cls: 'booked' },
+    rejected: { label: 'Rejected', cls: 'out' },
+    transferring: { label: 'Transferring', cls: 'pending' },
+    delivered: { label: 'Delivered', cls: 'completed' }
+  };
+  return map[status] || map.pending;
+};
+
+const formatDate = (d) => {
+  if (!d) return '—';
+  const date = new Date(d);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const COFFIN_TYPES = {
+  Traditional: '⚰️', Modern: '🪦', Religious: '✝️',
+  'Eco-Friendly': '🌿', Child: '🕊️', Veteran: '🎖️'
+};
+
+// ─── Main Component ──────────────────────────────────────────────────
+const CoffinDashboard = () => {
+  const [tab, setTab] = useState('dashboard');
+  const [loading, setLoading] = useState(true);
+
+  // Data from backend
   const [coffins, setCoffins] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [selectedCoffin, setSelectedCoffin] = useState(null);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showCoffinDetailModal, setShowCoffinDetailModal] = useState(false);
-  const [showNewBookingModal, setShowNewBookingModal] = useState(false);
-  const [showBookingDetailModal, setShowBookingDetailModal] = useState(false);
-  const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
-  const [paymentFormData, setPaymentFormData] = useState({
-    is_paid: false,
-    amount_paid: '',
-    payment_method: 'cash',
-    payment_notes: ''
-  });
-  const [editFormData, setEditFormData] = useState({});
-  const [registerFormData, setRegisterFormData] = useState({
-    type: '', material: '', size: '', color: '', quantity: '',
-    exact_price: '', currency: 'KES', supplier: '', origin: '', category: 'locally_made',
-    store_location: '', shelf_number: '', notes: ''
-  });
-  const [bookingFormData, setBookingFormData] = useState({
-    client_name: '', client_phone: '', client_email: '', client_address: '',
-    coffin_id: '', booking_date: '', event_date: '', special_requirements: '', notes: ''
-  });
-  const [newBookingFormData, setNewBookingFormData] = useState({
-    client_name: '', client_phone: '', client_email: '', client_address: '',
-    booking_type: 'inventory', // 'inventory' or 'external'
-    coffin_id: '', coffin_type: '', coffin_material: '', coffin_price: '',
-    booking_date: '', event_date: '', special_requirements: '', notes: ''
-  });
-  const [registerImageFiles, setRegisterImageFiles] = useState([]);
-  const [registerImagePreviews, setRegisterImagePreviews] = useState([]);
-  const [registerLoading, setRegisterLoading] = useState(false);
-  const [registerError, setRegisterError] = useState(null);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const fileInputRef = useRef(null);
-  const [toast, setToast] = useState(null);
-  const [viewMode, setViewMode] = useState('table');
-  const [activeTab, setActiveTab] = useState('inventory');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const { socket } = useSocket();
+  const [stockRequests, setStockRequests] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [currentBranch, setCurrentBranch] = useState(null);
 
-  const showToast = useCallback((message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  }, []);
+  // Filters
+  const [inventoryFilter, setInventoryFilter] = useState('all');
+  const [bookingFilter, setBookingFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const getTenantHeaders = () => {
-    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-    const headers = { 'x-tenant-slug': getTenantSlug() };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return headers;
-  };
+  // Modal
+  const [modal, setModal] = useState({ open: false, type: '', data: {} });
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Fetch coffins
-  const fetchCoffins = useCallback(async () => {
+  // ─── API Calls ──────────────────────────────────────────────────────
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${env.FULL_API_URL}/coffins`, {
-        headers: getTenantHeaders()
-      });
-      const result = await response.json();
-      if (result.success || result.data) {
-        const coffinsData = result.data || result.coffins || [];
-        setCoffins(coffinsData);
-        showToast('Coffins loaded successfully', 'success');
+      const tenantSlug = getTenantSlug();
+
+      // Fetch branches
+      let branchList = [];
+      try {
+        const brRes = await api.get('/coffins/bookings?limit=0');
+        // Try to get branches from tenant info
+        const tenantRes = await api.get(`/tenant/${tenantSlug}/settings`).catch(() => null);
+        if (tenantRes?.data?.branches) {
+          branchList = tenantRes.data.branches;
+        }
+      } catch (e) { /* ignore */ }
+
+      // Default branch if none
+      if (branchList.length === 0) {
+        branchList = [{ id: 1, name: 'Main Branch', color: '#0d9488' }];
       }
+      setBranches(branchList);
+      setCurrentBranch(branchList[0]?.id || 1);
+
+      // Fetch coffins
+      const coffinRes = await api.get('/coffins/list');
+      if (coffinRes.data?.success && coffinRes.data?.data) {
+        setCoffins(coffinRes.data.data);
+      }
+
+      // Fetch bookings
+      const bookingRes = await api.get('/coffins/bookings');
+      if (bookingRes.data?.success && bookingRes.data?.data) {
+        setBookings(bookingRes.data.data);
+      }
+
+      // Fetch stock requests
+      const stockRes = await api.get('/coffins/stock-requests');
+      if (stockRes.data?.success && stockRes.data?.data) {
+        setStockRequests(stockRes.data.data);
+      }
+
     } catch (error) {
-      console.error('Failed to load coffins:', error);
-      showToast('Failed to load coffins', 'error');
+      console.error('Error fetching coffin data:', error);
+      toast.error('Failed to load coffin data');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
-
-  // Fetch bookings
-  const fetchBookings = useCallback(async () => {
-    try {
-      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings`, {
-        headers: getTenantHeaders()
-      });
-      const result = await response.json();
-      if (result.success || result.data) {
-        const bookingsData = result.data || result.bookings || [];
-        setBookings(bookingsData);
-      }
-    } catch (error) {
-      console.error('Failed to load bookings:', error);
-    }
   }, []);
 
-  useEffect(() => {
-    fetchCoffins();
-    fetchBookings();
-  }, [fetchCoffins, fetchBookings]);
+  useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
-  // Add dummy bookings for demonstration if none exist
-  useEffect(() => {
-    if (bookings.length === 0 && coffins.length > 0) {
-      const dummyBookings = [
-        {
-          booking_id: 'dummy-1',
-          booking_code: 'BK-DEMO001',
-          client_name: 'John Kamau',
-          client_phone: '+254 712 345 678',
-          client_email: 'john.kamau@email.com',
-          client_address: '123 Moi Avenue, Nairobi',
-          coffin_id: coffins[0]?.coffin_id,
-          coffin_type: coffins[0]?.type || 'Premium Oak',
-          coffin_material: coffins[0]?.material || 'Oak',
-          coffin_price: coffins[0]?.exact_price || '45000',
-          booking_date: new Date().toISOString().split('T')[0],
-          event_date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
-          status: 'confirmed',
-          special_requirements: 'No cross on the coffin - family preference',
-          notes: 'Client requested simple design without religious symbols. Delivery to Karen residence.',
-          created_at: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-          booking_id: 'dummy-2',
-          booking_code: 'BK-DEMO002',
-          client_name: 'Mary Wanjiku',
-          client_phone: '+254 733 987 654',
-          client_email: 'mary.wanjiku@email.com',
-          client_address: '456 Kenyatta Road, Kiambu',
-          coffin_id: coffins[1]?.coffin_id || coffins[0]?.coffin_id,
-          coffin_type: coffins[1]?.type || 'Classic Pine',
-          coffin_material: coffins[1]?.material || 'Pine',
-          coffin_price: coffins[1]?.exact_price || '35000',
-          booking_date: new Date(Date.now() - 86400000 * 3).toISOString().split('T')[0],
-          event_date: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
-          status: 'pending',
-          special_requirements: 'Add white roses arrangement on top',
-          notes: 'VIP client - needs premium handling. Church service at St. Mary\'s before burial.',
-          created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-        },
-        {
-          booking_id: 'dummy-3',
-          booking_code: 'BK-DEMO003',
-          client_name: 'Peter Mwangi',
-          client_phone: '+254 701 234 567',
-          client_email: 'peter.mwangi@email.com',
-          client_address: '789 Thika Superhighway',
-          coffin_id: coffins[2]?.coffin_id || coffins[0]?.coffin_id,
-          coffin_type: coffins[2]?.type || 'Elegant Mahogany',
-          coffin_material: coffins[2]?.material || 'Mahogany',
-          coffin_price: coffins[2]?.exact_price || '65000',
-          booking_date: new Date(Date.now() - 86400000 * 5).toISOString().split('T')[0],
-          event_date: new Date(Date.now() + 86400000 * 1).toISOString().split('T')[0],
-          status: 'confirmed',
-          special_requirements: 'No cross - humanist ceremony',
-          notes: 'Family prefers secular service. Coffin should be plain with natural finish only.',
-          created_at: new Date(Date.now() - 86400000 * 4).toISOString()
-        }
-      ];
-      setBookings(dummyBookings);
-    }
-  }, [coffins, bookings.length]);
-
-  // Real-time updates with WebSocket
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewBooking = (data) => {
-      setBookings(prev => [data.booking, ...prev]);
-      showToast('New coffin booking received!', 'success');
-    };
-
-    const handleBookingUpdated = (data) => {
-      setBookings(prev => prev.map(b =>
-        (b.booking_id === data.booking_id || b.id === data.booking_id)
-          ? { ...b, ...data.booking }
-          : b
-      ));
-    };
-
-    socket.on('coffin_booking_created', handleNewBooking);
-    socket.on('coffin_booking_updated', handleBookingUpdated);
-
-    return () => {
-      socket.off('coffin_booking_created', handleNewBooking);
-      socket.off('coffin_booking_updated', handleBookingUpdated);
-    };
-  }, [socket, showToast]);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const totalModels = coffins.length;
-    const totalStock = coffins.reduce((sum, c) => sum + (c.quantity || 0), 0);
-    const inStore = coffins.filter(c => c.status === 'in-store').length;
-    const available = coffins.filter(c => c.status === 'available' || !c.status).length;
-    const totalBookings = bookings.length;
-    const activeBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length;
-
-    return [
-      { title: 'Total Models', value: totalModels, icon: <Box size={18} />, bg: COLORS.infoLight, color: COLORS.infoDark },
-      { title: 'Total Stock', value: totalStock, icon: <Database size={18} />, bg: COLORS.successLight, color: COLORS.successDark },
-      { title: 'In Store', value: inStore, icon: <Warehouse size={18} />, bg: '#fef3c7', color: COLORS.warningDark },
-      { title: 'Available', value: available, icon: <CheckCircle size={18} />, bg: COLORS.successLight, color: COLORS.successDark },
-      { title: 'Total Bookings', value: totalBookings, icon: <ClipboardList size={18} />, bg: '#fce7f3', color: '#db2777' },
-      { title: 'Active Bookings', value: activeBookings, icon: <Calendar size={18} />, bg: COLORS.warningLight, color: COLORS.warningDark },
-    ];
-  }, [coffins, bookings]);
-
-  // Filter coffins
-  const filteredCoffins = useMemo(() => {
-    let filtered = coffins;
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(coffin =>
-        coffin.type?.toLowerCase().includes(term) ||
-        coffin.custom_id?.toLowerCase().includes(term) ||
-        coffin.material?.toLowerCase().includes(term) ||
-        coffin.supplier?.toLowerCase().includes(term) ||
-        coffin.store_location?.toLowerCase().includes(term)
-      );
-    }
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(c => c.status === statusFilter || (!c.status && statusFilter === 'available'));
-    }
-    return filtered;
-  }, [coffins, searchTerm, statusFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredCoffins.length / itemsPerPage));
-  const pageData = filteredCoffins.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
-
-  // Handlers
-  const handleAddCoffin = () => {
-    setRegisterFormData({
-      type: '', material: '', size: '', color: '', quantity: '',
-      exact_price: '', currency: 'KES', supplier: '', origin: '', category: 'locally_made',
-      store_location: '', shelf_number: '', notes: ''
-    });
-    setRegisterImageFiles([]);
-    setRegisterImagePreviews([]);
-    setRegisterError(null);
-    setShowRegisterModal(true);
-  };
-
-  const handleRegisterChange = (e) => {
-    const { name, value } = e.target;
-    setRegisterFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleRegisterSubmit = async (e) => {
+  // ─── Create Coffin ──────────────────────────────────────────────────
+  const handleCreateCoffin = async (e) => {
     e.preventDefault();
-    setRegisterLoading(true);
-    setRegisterError(null);
-
-    if (!registerFormData.type || !registerFormData.material || !registerFormData.exact_price) {
-      setRegisterError('Model, Material, and Price are required.');
-      setRegisterLoading(false);
-      return;
-    }
-
+    setSubmitLoading(true);
     try {
-      const formData = new FormData();
-      Object.keys(registerFormData).forEach(key => {
-        if (registerFormData[key] !== '') formData.append(key, registerFormData[key]);
+      const data = modal.data;
+      const res = await api.post('/coffins/create', {
+        name: data.name, sku: data.sku, type: data.type,
+        material: data.material, price: parseFloat(data.price),
+        stock: parseInt(data.stock) || 0, notes: data.notes,
+        branch_id: currentBranch
       });
-      registerImageFiles.forEach(file => formData.append('images', file));
-
-      const response = await fetch(`${env.FULL_API_URL}/coffins/register`, {
-        method: 'POST',
-        headers: getTenantHeaders(),
-        body: formData
-      });
-
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'Registration failed');
-
-      showToast('Coffin registered successfully!', 'success');
-      setShowRegisterModal(false);
-      fetchCoffins();
-    } catch (err) {
-      setRegisterError(err.message || 'An unexpected error occurred.');
-    } finally {
-      setRegisterLoading(false);
-    }
-  };
-
-  const handleBookCoffin = (coffin) => {
-    setBookingFormData({
-      client_name: '', client_phone: '', client_email: '', client_address: '',
-      coffin_id: coffin.coffin_id, booking_date: new Date().toISOString().split('T')[0],
-      event_date: '', special_requirements: '', notes: ''
-    });
-    setSelectedCoffin(coffin);
-    setShowBookingModal(true);
-  };
-
-  const handleNewBooking = () => {
-    setNewBookingFormData({
-      client_name: '', client_phone: '', client_email: '', client_address: '',
-      booking_type: 'inventory', coffin_id: '', coffin_type: '', coffin_material: '', coffin_price: '',
-      booking_date: new Date().toISOString().split('T')[0], event_date: '', special_requirements: '', notes: ''
-    });
-    setShowNewBookingModal(true);
-  };
-
-  const handleBookingSubmit = async (e) => {
-    e.preventDefault();
-    setBookingLoading(true);
-
-    try {
-      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings`, {
-        method: 'POST',
-        headers: {
-          ...getTenantHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingFormData)
-      });
-
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'Booking failed');
-
-      showToast('Coffin booked successfully!', 'success');
-      setShowBookingModal(false);
-      fetchBookings();
-      fetchCoffins();
-    } catch (err) {
-      showToast(err.message || 'Booking failed', 'error');
-    } finally {
-      setBookingLoading(false);
-    }
-  };
-
-  const handleNewBookingSubmit = async (e) => {
-    e.preventDefault();
-    setBookingLoading(true);
-
-    try {
-      const payload = {
-        ...newBookingFormData,
-        coffin_id: newBookingFormData.booking_type === 'inventory' ? newBookingFormData.coffin_id : null,
-        coffin_type: newBookingFormData.booking_type === 'external' ? newBookingFormData.coffin_type : null,
-        coffin_material: newBookingFormData.booking_type === 'external' ? newBookingFormData.coffin_material : null,
-        coffin_price: newBookingFormData.booking_type === 'external' ? newBookingFormData.coffin_price : null,
-      };
-
-      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings`, {
-        method: 'POST',
-        headers: {
-          ...getTenantHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'Booking failed');
-
-      showToast('Booking created successfully!', 'success');
-      setShowNewBookingModal(false);
-      fetchBookings();
-      fetchCoffins();
-    } catch (err) {
-      showToast(err.message || 'Booking failed', 'error');
-    } finally {
-      setBookingLoading(false);
-    }
-  };
-
-  const handleDelete = (coffin) => {
-    setSelectedCoffin(coffin);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDelete = async () => {
-    try {
-      const response = await fetch(`${env.FULL_API_URL}/coffins/${selectedCoffin.coffin_id}`, {
-        method: 'DELETE',
-        headers: getTenantHeaders()
-      });
-      const result = await response.json();
-      if (result.success) {
-        setCoffins(coffins.filter(c => c.coffin_id !== selectedCoffin.coffin_id));
-        showToast('Deleted successfully!', 'success');
+      if (res.data?.success) {
+        toast.success('Coffin created successfully');
+        setModal({ open: false, type: '', data: {} });
+        fetchAllData();
       }
-    } catch (error) {
-      showToast('Delete failed', 'error');
-    }
-    setShowDeleteModal(false);
-    setSelectedCoffin(null);
-  };
-
-  const handleEdit = (coffin) => {
-    setSelectedCoffin(coffin);
-    setEditFormData({
-      type: coffin.type || '',
-      material: coffin.material || '',
-      exact_price: coffin.exact_price || '',
-      quantity: coffin.quantity || '',
-      supplier: coffin.supplier || '',
-      color: coffin.color || '',
-      size: coffin.size || '',
-      store_location: coffin.store_location || '',
-      shelf_number: coffin.shelf_number || ''
-    });
-    setShowEditModal(true);
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${env.FULL_API_URL}/coffins/${selectedCoffin.coffin_id}`, {
-        method: 'PUT',
-        headers: {
-          ...getTenantHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(editFormData)
-      });
-      const result = await response.json();
-      if (result.success) {
-        setCoffins(coffins.map(c => c.coffin_id === selectedCoffin.coffin_id ? { ...c, ...editFormData } : c));
-        showToast('Updated successfully!', 'success');
-        setShowEditModal(false);
-        setSelectedCoffin(null);
-      }
-    } catch (error) {
-      showToast('Update failed', 'error');
-    }
-  };
-
-  const handleViewDetails = (coffin) => {
-    setSelectedCoffin(coffin);
-    setShowCoffinDetailModal(true);
-  };
-
-  const handleBookingClick = (booking) => {
-    setSelectedBookingDetail(booking);
-    setPaymentFormData({
-      is_paid: booking.is_paid || false,
-      amount_paid: booking.amount_paid || '',
-      payment_method: booking.payment_method || 'cash',
-      payment_notes: booking.payment_notes || ''
-    });
-    setShowBookingDetailModal(true);
-  };
-
-  const handlePaymentUpdate = async (e) => {
-    e.preventDefault();
-    if (!selectedBookingDetail) return;
-
-    try {
-      const response = await fetch(`${env.FULL_API_URL}/coffin-bookings/${selectedBookingDetail.booking_id || selectedBookingDetail.id}/payment`, {
-        method: 'PUT',
-        headers: {
-          ...getTenantHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(paymentFormData)
-      });
-
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'Payment update failed');
-
-      showToast('Payment updated successfully!', 'success');
-
-      setBookings(prev => prev.map(b =>
-        (b.booking_id === selectedBookingDetail.booking_id || b.id === selectedBookingDetail.id)
-          ? { ...b, ...paymentFormData }
-          : b
-      ));
-
-      setSelectedBookingDetail(prev => ({ ...prev, ...paymentFormData }));
-      setShowBookingDetailModal(false);
     } catch (err) {
-      showToast(err.message || 'Failed to update payment', 'error');
+      toast.error(err.response?.data?.message || 'Failed to create coffin');
+    } finally { setSubmitLoading(false); }
+  };
+
+  // ─── Create Booking ─────────────────────────────────────────────────
+  const handleCreateBooking = async (e) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+    try {
+      const d = modal.data;
+      const res = await api.post('/coffins/bookings', {
+        client_name: d.client_name, client_phone: d.client_phone,
+        deceased_name: d.deceased_name, coffin_id: d.coffin_id,
+        service_date: d.service_date, notes: d.notes,
+        paid: d.paid || false, specifications: d.specifications || []
+      });
+      if (res.data?.success) {
+        toast.success('Booking created successfully');
+        setModal({ open: false, type: '', data: {} });
+        fetchAllData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create booking');
+    } finally { setSubmitLoading(false); }
+  };
+
+  // ─── Create Stock Request ──────────────────────────────────────────
+  const handleCreateStockRequest = async (e) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+    try {
+      const d = modal.data;
+      const res = await api.post('/coffins/stock-requests', {
+        from_branch_id: currentBranch,
+        to_branch_id: d.to_branch_id,
+        coffin_id: d.coffin_id, quantity: parseInt(d.quantity) || 1,
+        client_name: d.client_name, client_phone: d.client_phone,
+        deceased_name: d.deceased_name, service_date: d.service_date,
+        notes: d.notes
+      });
+      if (res.data?.success) {
+        toast.success('Stock request sent');
+        setModal({ open: false, type: '', data: {} });
+        fetchAllData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create request');
+    } finally { setSubmitLoading(false); }
+  };
+
+  // ─── Approve / Reject Stock Request ────────────────────────────────
+  const handleStockAction = async (id, action) => {
+    try {
+      const res = await api.post(`/coffins/stock-requests/${id}/${action}`);
+      if (res.data?.success) {
+        toast.success(`Request ${action}ed successfully`);
+        fetchAllData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to ${action} request`);
     }
   };
 
-  const renderPagination = () => {
-    const btns = [];
-    btns.push(
-      <PageButton key="prev" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-        <ChevronLeft size={16} />
-      </PageButton>
-    );
-    for (let i = 1; i <= totalPages; i++) {
-      if (totalPages > 7 && i > 2 && i < totalPages - 1 && Math.abs(i - currentPage) > 1) {
-        if (i === 3 || i === totalPages - 2) btns.push(<span key={`dots-${i}`} style={{ padding: '0 0.25rem', color: COLORS.textMuted }}>…</span>);
-        continue;
+  // ─── Update Booking Status ──────────────────────────────────────────
+  const handleBookingStatus = async (id, status) => {
+    try {
+      const res = await api.patch(`/coffins/bookings/${id}/status`, { status });
+      if (res.data?.success) {
+        toast.success(`Booking ${status}`);
+        fetchAllData();
       }
-      btns.push(<PageButton key={i} $active={currentPage === i} onClick={() => setCurrentPage(i)}>{i}</PageButton>);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update booking');
     }
-    btns.push(
-      <PageButton key="next" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-        <ChevronRight size={16} />
-      </PageButton>
-    );
-    return btns;
   };
+
+  // ─── Delete Coffin ──────────────────────────────────────────────────
+  const handleDeleteCoffin = async (id) => {
+    if (!confirm('Are you sure you want to delete this coffin?')) return;
+    try {
+      const res = await api.delete(`/coffins/delete/${id}`);
+      if (res.data?.success) {
+        toast.success('Coffin deleted');
+        fetchAllData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete coffin');
+    }
+  };
+
+  // ─── Filtered Data ──────────────────────────────────────────────────
+  const branchCoffins = coffins.filter(c => 
+    !currentBranch || c.branch_id === currentBranch || c.branch_id == currentBranch
+  );
+  const branchBookings = bookings.filter(b =>
+    !currentBranch || b.branch_id === currentBranch || b.branch_id == currentBranch
+  );
+
+  const filteredCoffins = branchCoffins.filter(c => {
+    if (searchQuery && !c.name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !c.sku?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (inventoryFilter === 'available') return c.stock > 2;
+    if (inventoryFilter === 'low') return c.stock > 0 && c.stock <= 2;
+    if (inventoryFilter === 'out') return c.stock <= 0;
+    return true;
+  });
+
+  const filteredBookings = branchBookings.filter(b => {
+    if (searchQuery && !b.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !b.deceased_name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (bookingFilter === 'unpaid') return !b.paid;
+    if (bookingFilter !== 'all') return b.status === bookingFilter;
+    return true;
+  });
+
+  const incomingRequests = stockRequests.filter(r => r.to_branch_id == currentBranch);
+  const outgoingRequests = stockRequests.filter(r => r.from_branch_id == currentBranch);
+
+  const totalStock = branchCoffins.reduce((s, c) => s + (parseInt(c.stock) || 0), 0);
+  const lowStock = branchCoffins.filter(c => c.stock > 0 && c.stock <= 2).length;
+  const outOfStock = branchCoffins.filter(c => c.stock <= 0).length;
+  const pendingBookingsCount = branchBookings.filter(b => b.status === 'pending').length;
+  const totalRevenue = branchBookings.filter(b => b.paid && b.status !== 'cancelled')
+    .reduce((s, b) => s + (parseFloat(b.coffin_price || b.price) || 0), 0);
+
+  // ─── Modals ─────────────────────────────────────────────────────────
+  const openModal = (type, data = {}) => setModal({ open: true, type, data });
+  const closeModal = () => setModal({ open: false, type: '', data: {} });
+
+  if (loading) {
+    return <Container><LoadingSpinner>Loading coffin inventory...</LoadingSpinner></Container>;
+  }
 
   return (
     <Container>
-      <Header>
-        <HeaderContent>
+      <ToastContainer position="top-center" autoClose={3000} />
+
+      {/* Tabs */}
+      <TabsContainer>
+        <Tab $active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>Dashboard</Tab>
+        <Tab $active={tab === 'inventory'} onClick={() => setTab('inventory')}>Inventory</Tab>
+        <Tab $active={tab === 'bookings'} onClick={() => setTab('bookings')}>Bookings</Tab>
+        <Tab $active={tab === 'requests'} onClick={() => setTab('requests')}>Stock Requests</Tab>
+      </TabsContainer>
+
+      {/* ========== DASHBOARD TAB ========== */}
+      {tab === 'dashboard' && (
+        <>
+          {/* Alerts */}
           <div>
-            <Title>
-              <Package size={24} />
-              Coffin Management
-            </Title>
-            <div style={{ fontSize: '0.8125rem', color: COLORS.textSecondary, marginTop: '0.25rem' }}>
-              Inventory & Booking System
+            {outOfStock > 0 && (
+              <Alert $t="error"><strong>{outOfStock} item(s) out of stock</strong> — Consider cross-branch requests</Alert>
+            )}
+            {lowStock > 0 && (
+              <Alert $t="warning"><strong>{lowStock} item(s) low on stock</strong></Alert>
+            )}
+            {pendingBookingsCount > 0 && (
+              <Alert $t="info"><strong>{pendingBookingsCount} pending booking(s)</strong> — Action required</Alert>
+            )}
+          </div>
+
+          <StatsGrid>
+            <StatCard>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <StatIcon $c="teal">$</StatIcon>
+              </div>
+              <StatValue>KES {totalRevenue.toLocaleString()}</StatValue>
+              <StatLabel>Total Revenue</StatLabel>
+            </StatCard>
+            <StatCard>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <StatIcon $c="grn">📦</StatIcon>
+              </div>
+              <StatValue>{totalStock}</StatValue>
+              <StatLabel>Total in Stock</StatLabel>
+            </StatCard>
+            <StatCard>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <StatIcon $c="blu">📅</StatIcon>
+              </div>
+              <StatValue>{branchBookings.length}</StatValue>
+              <StatLabel>Total Bookings</StatLabel>
+            </StatCard>
+            <StatCard>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <StatIcon $c="red">⏳</StatIcon>
+              </div>
+              <StatValue>{branchBookings.filter(b => !b.paid && b.status !== 'cancelled').length}</StatValue>
+              <StatLabel>Unpaid</StatLabel>
+            </StatCard>
+          </StatsGrid>
+
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <Card style={{ flex: '1 1 300px' }}>
+              <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
+              <CardBody>
+                {branchBookings.length === 0 ? (
+                  <p style={{ color: '#94a3b8', fontSize: 12 }}>No recent bookings</p>
+                ) : (
+                  branchBookings.slice(0, 5).map(b => (
+                    <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 11 }}>
+                      <span style={{ fontWeight: 500 }}>{b.client_name || 'N/A'}</span>
+                      <Tag $pending={b.status === 'pending'} $completed={b.status === 'completed'} $booked={b.status === 'booked'}>
+                        {b.status || 'pending'}
+                      </Tag>
+                    </div>
+                  ))
+                )}
+              </CardBody>
+            </Card>
+            <Card style={{ flex: '1 1 300px' }}>
+              <CardHeader><CardTitle>Stock Status</CardTitle></CardHeader>
+              <CardBody>
+                <p style={{ color: '#94a3b8', fontSize: 12 }}>Available: {branchCoffins.filter(c => c.stock > 2).length}</p>
+                <p style={{ color: '#d97706', fontSize: 12 }}>Low Stock: {lowStock}</p>
+                <p style={{ color: '#dc2626', fontSize: 12 }}>Out of Stock: {outOfStock}</p>
+              </CardBody>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* ========== INVENTORY TAB ========== */}
+      {tab === 'inventory' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+              Inventory — <span style={{ color: '#94a3b8', fontWeight: 400 }}>{branches.find(b => b.id == currentBranch)?.name || 'All'}</span>
+            </h3>
+            <Button $primary onClick={() => openModal('coffin', { type: 'Traditional', stock: 0, price: 0 })}>+ Add Coffin</Button>
+          </div>
+
+          <TableWrapper>
+            <TableToolbar>
+              <SearchBox>
+                <input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              </SearchBox>
+              <FilterButtons>
+                <FilterButton $on={inventoryFilter === 'all'} onClick={() => setInventoryFilter('all')}>All</FilterButton>
+                <FilterButton $on={inventoryFilter === 'available'} onClick={() => setInventoryFilter('available')}>Available</FilterButton>
+                <FilterButton $on={inventoryFilter === 'low'} onClick={() => setInventoryFilter('low')}>Low</FilterButton>
+                <FilterButton $on={inventoryFilter === 'out'} onClick={() => setInventoryFilter('out')}>Out</FilterButton>
+              </FilterButtons>
+            </TableToolbar>
+            <Table>
+              <thead><tr>
+                <Th>Coffin</Th><Th>Type</Th><Th>Material</Th><Th>Price</Th><Th>Stock</Th><Th>Status</Th><Th>Branch</Th><Th></Th>
+              </tr></thead>
+              <tbody>
+                {filteredCoffins.length === 0 ? (
+                  <tr><td colSpan={8}><EmptyState><p>No coffins found</p></EmptyState></td></tr>
+                ) : filteredCoffins.map(coffin => {
+                  const st = getStockStatus(coffin.stock);
+                  const branch = branches.find(b => b.id == coffin.branch_id);
+                  return (
+                    <tr key={coffin.coffin_id || coffin.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 6, overflow: 'hidden', border: '1px solid #e8ecf1', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                            {COFFIN_TYPES[coffin.type] || '⚰️'}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 500, color: '#1e293b', fontSize: 11 }}>{coffin.name}</div>
+                            <div style={{ fontSize: 8, color: '#94a3b8', letterSpacing: '0.5px' }}>{coffin.sku}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <Td>{coffin.type}</Td>
+                      <Td>{coffin.material}</Td>
+                      <Td style={{ fontWeight: 500, color: '#1e293b' }}>KES {parseFloat(coffin.price).toLocaleString()}</Td>
+                      <Td style={{ fontWeight: coffin.stock <= 2 ? 700 : 400, color: coffin.stock <= 2 ? '#dc2626' : '#64748b' }}>{coffin.stock}</Td>
+                      <Td><Tag $available={st.cls === 'available'} $low={st.cls === 'low'} $out={st.cls === 'out'}>{st.label}</Tag></Td>
+                      <Td>{branch?.name || 'N/A'}</Td>
+                      <Td>
+                        <IconBtn onClick={() => handleDeleteCoffin(coffin.coffin_id || coffin.id)} title="Delete">✕</IconBtn>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </TableWrapper>
+        </>
+      )}
+
+      {/* ========== BOOKINGS TAB ========== */}
+      {tab === 'bookings' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+              Bookings — <span style={{ color: '#94a3b8', fontWeight: 400 }}>{branches.find(b => b.id == currentBranch)?.name || 'All'}</span>
+            </h3>
+            <Button $primary onClick={() => openModal('booking', { service_date: new Date().toISOString().split('T')[0] })}>+ New Booking</Button>
+          </div>
+
+          <TableWrapper>
+            <TableToolbar>
+              <SearchBox>
+                <input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              </SearchBox>
+              <FilterButtons>
+                <FilterButton $on={bookingFilter === 'all'} onClick={() => setBookingFilter('all')}>All</FilterButton>
+                <FilterButton $on={bookingFilter === 'pending'} onClick={() => setBookingFilter('pending')}>Pending</FilterButton>
+                <FilterButton $on={bookingFilter === 'booked'} onClick={() => setBookingFilter('booked')}>Booked</FilterButton>
+                <FilterButton $on={bookingFilter === 'completed'} onClick={() => setBookingFilter('completed')}>Completed</FilterButton>
+                <FilterButton $on={bookingFilter === 'unpaid'} onClick={() => setBookingFilter('unpaid')}>Unpaid</FilterButton>
+              </FilterButtons>
+            </TableToolbar>
+            <Table>
+              <thead><tr>
+                <Th>ID</Th><Th>Client</Th><Th>Deceased</Th><Th>Coffin</Th><Th>Date</Th><Th>Paid</Th><Th>Status</Th><Th></Th>
+              </tr></thead>
+              <tbody>
+                {filteredBookings.length === 0 ? (
+                  <tr><td colSpan={8}><EmptyState><p>No bookings found</p></EmptyState></td></tr>
+                ) : filteredBookings.map(b => {
+                  const st = getBookingStatus(b.status);
+                  const coffin = coffins.find(c => (c.coffin_id || c.id) == b.coffin_id);
+                  return (
+                    <tr key={b.id}>
+                      <Td style={{ fontWeight: 600, color: '#1e293b' }}>#{b.id}</Td>
+                      <Td style={{ fontWeight: 500, color: '#1e293b' }}>{b.client_name}</Td>
+                      <Td>{b.deceased_name}</Td>
+                      <Td>{coffin?.name || 'N/A'}</Td>
+                      <Td>{formatDate(b.service_date)}</Td>
+                      <Td><Tag $paid={b.paid} $unpaid={!b.paid}>{b.paid ? 'Paid' : 'Unpaid'}</Tag></Td>
+                      <Td><Tag $pending={st.cls === 'pending'} $completed={st.cls === 'completed'} $booked={st.cls === 'booked'} $unpaid={st.cls === 'unpaid'}>{st.label}</Tag></Td>
+                      <Td>
+                        {b.status === 'pending' && (
+                          <>
+                            <IconBtn onClick={() => handleBookingStatus(b.id, 'booked')} title="Approve">✓</IconBtn>
+                            <IconBtn onClick={() => handleBookingStatus(b.id, 'cancelled')} title="Cancel" style={{ borderColor: '#dc2626', color: '#dc2626' }}>✕</IconBtn>
+                          </>
+                        )}
+                        {b.status === 'booked' && (
+                          <IconBtn onClick={() => handleBookingStatus(b.id, 'completed')} title="Complete">✓</IconBtn>
+                        )}
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </TableWrapper>
+        </>
+      )}
+
+      {/* ========== STOCK REQUESTS TAB ========== */}
+      {tab === 'requests' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Stock Requests</h3>
+            <Button $primary onClick={() => openModal('stockRequest', { quantity: 1 })}>+ New Request</Button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {/* Incoming */}
+            <div>
+              <h4 style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px' }}>Incoming</h4>
+              <TableWrapper>
+                <Table>
+                  <thead><tr><Th>ID</Th><Th>From</Th><Th>Coffin</Th><Th>Qty</Th><Th>Status</Th><Th></Th></tr></thead>
+                  <tbody>
+                    {incomingRequests.length === 0 ? (
+                      <tr><td colSpan={6}><EmptyState><p>No incoming requests</p></EmptyState></td></tr>
+                    ) : incomingRequests.map(r => {
+                      const from = branches.find(b => b.id == r.from_branch_id);
+                      const coffin = coffins.find(c => (c.coffin_id || c.id) == r.coffin_id);
+                      const st = getBookingStatus(r.status);
+                      return (
+                        <tr key={r.id}>
+                          <Td style={{ fontWeight: 600 }}>#{r.id}</Td>
+                          <Td>{from?.name || 'N/A'}</Td>
+                          <Td>{coffin?.name || 'N/A'}</Td>
+                          <Td>{r.quantity || 1}</Td>
+                          <Td><Tag $pending={st.cls === 'pending'} $completed={st.cls === 'completed'} $booked={st.cls === 'booked'}>{st.label}</Tag></Td>
+                          <Td>
+                            {r.status === 'pending' && (
+                              <>
+                                <IconBtn style={{ borderColor: '#16a34a', color: '#16a34a' }} onClick={() => handleStockAction(r.id, 'approve')} title="Approve">✓</IconBtn>
+                                <IconBtn style={{ borderColor: '#dc2626', color: '#dc2626' }} onClick={() => handleStockAction(r.id, 'reject')} title="Reject">✕</IconBtn>
+                              </>
+                            )}
+                          </Td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </TableWrapper>
+            </div>
+
+            {/* Outgoing */}
+            <div>
+              <h4 style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px' }}>Outgoing</h4>
+              <TableWrapper>
+                <Table>
+                  <thead><tr><Th>ID</Th><Th>To</Th><Th>Coffin</Th><Th>Qty</Th><Th>Status</Th></tr></thead>
+                  <tbody>
+                    {outgoingRequests.length === 0 ? (
+                      <tr><td colSpan={5}><EmptyState><p>No outgoing requests</p></EmptyState></td></tr>
+                    ) : outgoingRequests.map(r => {
+                      const to = branches.find(b => b.id == r.to_branch_id);
+                      const coffin = coffins.find(c => (c.coffin_id || c.id) == r.coffin_id);
+                      const st = getBookingStatus(r.status);
+                      return (
+                        <tr key={r.id}>
+                          <Td style={{ fontWeight: 600 }}>#{r.id}</Td>
+                          <Td>{to?.name || 'N/A'}</Td>
+                          <Td>{coffin?.name || 'N/A'}</Td>
+                          <Td>{r.quantity || 1}</Td>
+                          <Td><Tag $pending={st.cls === 'pending'} $completed={st.cls === 'completed'} $booked={st.cls === 'booked'}>{st.label}</Tag></Td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </TableWrapper>
             </div>
           </div>
-          <HeaderActions>
-            <SecondaryButton onClick={fetchCoffins}>
-              <RefreshCw size={15} /> Refresh
-            </SecondaryButton>
-            <PrimaryButton onClick={handleAddCoffin}>
-              <Plus size={15} /> Add Coffin
-            </PrimaryButton>
-          </HeaderActions>
-        </HeaderContent>
-      </Header>
-
-      <MainContent>
-        {/* Stats */}
-        <StatsGrid>
-          {stats.map((stat, index) => (
-            <StatCard key={index}>
-              <StatHeader>
-                <StatLabel>{stat.title}</StatLabel>
-                <StatIcon $bg={stat.bg} $color={stat.color}>{stat.icon}</StatIcon>
-              </StatHeader>
-              <StatValue>{stat.value}</StatValue>
-              <StatSubtext>{stat.title.includes('Bookings') ? 'All time' : 'Current'}</StatSubtext>
-            </StatCard>
-          ))}
-        </StatsGrid>
-
-        {/* Tabs */}
-        <TabContainer>
-          <TabHeader>
-            <TabButton $active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}>
-              <Warehouse size={16} /> Inventory
-            </TabButton>
-            <TabButton $active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')}>
-              <ClipboardList size={16} /> Bookings ({bookings.length})
-            </TabButton>
-          </TabHeader>
-
-          <TabContent>
-            {activeTab === 'inventory' && (
-              <>
-                {/* Filters */}
-                <FilterCard>
-                  <FilterRow>
-                    <SearchInput
-                      type="text"
-                      placeholder="Search by name, ID, material, location..."
-                      value={searchTerm}
-                      onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                    />
-                    <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
-                      <option value="all">All Status</option>
-                      <option value="available">Available</option>
-                      <option value="in-store">In Store</option>
-                      <option value="booked">Booked</option>
-                    </Select>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <ActionButton onClick={() => setViewMode('table')} style={{ background: viewMode === 'table' ? COLORS.primary : COLORS.surface, color: viewMode === 'table' ? COLORS.white : COLORS.textSecondary }}>
-                        <List size={16} />
-                      </ActionButton>
-                      <ActionButton onClick={() => setViewMode('grid')} style={{ background: viewMode === 'grid' ? COLORS.primary : COLORS.surface, color: viewMode === 'grid' ? COLORS.white : COLORS.textSecondary }}>
-                        <Grid3x3 size={16} />
-                      </ActionButton>
-                    </div>
-                  </FilterRow>
-                </FilterCard>
-
-                {/* Inventory Table/Grid */}
-                <TableCard>
-                  {loading ? (
-                    <div style={{ padding: '3rem', textAlign: 'center', color: COLORS.textSecondary }}>
-                      <RefreshCw size={32} className="animate-spin" style={{ marginBottom: '1rem' }} />
-                      <p>Loading inventory...</p>
-                    </div>
-                  ) : filteredCoffins.length === 0 ? (
-                    <EmptyState>
-                      <Package size={48} />
-                      <h4>No coffins found</h4>
-                      <p>Try adjusting your search or filters</p>
-                    </EmptyState>
-                  ) : viewMode === 'table' ? (
-                    <>
-                      <div style={{ overflowX: 'auto' }}>
-                        <Table>
-                          <TableHead>
-                            <tr>
-                              <TableHeader>Model</TableHeader>
-                              <TableHeader>ID</TableHeader>
-                              <TableHeader>Material</TableHeader>
-                              <TableHeader>Location</TableHeader>
-                              <TableHeader>Price</TableHeader>
-                              <TableHeader>Stock</TableHeader>
-                              <TableHeader>Status</TableHeader>
-                              <TableHeader style={{ width: 120 }}>Actions</TableHeader>
-                            </tr>
-                          </TableHead>
-                          <tbody>
-                            {pageData.map((coffin) => (
-                              <TableRow key={coffin.coffin_id}>
-                                <TableCell>
-                                  <div style={{ fontWeight: 500 }}>{coffin.type}</div>
-                                  <div style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>{coffin.supplier || 'N/A'}</div>
-                                </TableCell>
-                                <TableCell style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: COLORS.primary }}>
-                                  {coffin.custom_id || `COFF-${coffin.coffin_id}`}
-                                </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>{coffin.material || 'N/A'}</TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>
-                                  {coffin.store_location ? (
-                                    <div>
-                                      <div>{coffin.store_location}</div>
-                                      {coffin.shelf_number && <div style={{ color: COLORS.textMuted }}>Shelf: {coffin.shelf_number}</div>}
-                                    </div>
-                                  ) : 'Not specified'}
-                                </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem', fontWeight: 600 }}>
-                                  Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}
-                                </TableCell>
-                                <TableCell>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{coffin.quantity || 0}</div>
-                                </TableCell>
-                                <TableCell>
-                                  <StatusBadge $status={coffin.status || 'available'}>
-                                    {coffin.status === 'in-store' ? 'In Store' : coffin.status === 'booked' ? 'Booked' : 'Available'}
-                                  </StatusBadge>
-                                </TableCell>
-                                <TableCell onClick={(e) => e.stopPropagation()}>
-                                  <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                    <ActionButton onClick={() => handleViewDetails(coffin)} title="View">
-                                      <Eye size={14} />
-                                    </ActionButton>
-                                    <ActionButton onClick={() => handleBookCoffin(coffin)} title="Book">
-                                      <Calendar size={14} />
-                                    </ActionButton>
-                                    <ActionButton onClick={() => handleEdit(coffin)} title="Edit">
-                                      <Edit size={14} />
-                                    </ActionButton>
-                                    <ActionButton onClick={() => handleDelete(coffin)} title="Delete">
-                                      <Trash2 size={14} />
-                                    </ActionButton>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                      {filteredCoffins.length > 0 && (
-                        <Pagination>
-                          <PageInfo>
-                            Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredCoffins.length)} of {filteredCoffins.length}
-                          </PageInfo>
-                          <PageButtons>{renderPagination()}</PageButtons>
-                        </Pagination>
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', padding: '1rem' }}>
-                      {pageData.map((coffin) => (
-                        <div key={coffin.coffin_id} style={{
-                          background: COLORS.bg,
-                          border: '1px solid ' + COLORS.border,
-                          borderRadius: COLORS.radiusSm,
-                          padding: '1rem',
-                          cursor: 'pointer',
-                          transition: COLORS.transition
-                        }}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLORS.primary; e.currentTarget.style.boxShadow = COLORS.shadowMd; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.boxShadow = 'none'; }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.25rem' }}>{coffin.type}</div>
-                              <div style={{ fontSize: '0.72rem', color: COLORS.textMuted, fontFamily: 'monospace' }}>
-                                {coffin.custom_id || `COFF-${coffin.coffin_id}`}
-                              </div>
-                            </div>
-                            <StatusBadge $status={coffin.status || 'available'}>
-                              {coffin.status === 'in-store' ? 'In Store' : coffin.status === 'booked' ? 'Booked' : 'Available'}
-                            </StatusBadge>
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary, marginBottom: '0.5rem' }}>
-                            <div style={{ marginBottom: '0.25rem' }}><strong>Material:</strong> {coffin.material || 'N/A'}</div>
-                            <div style={{ marginBottom: '0.25rem' }}><strong>Location:</strong> {coffin.store_location || 'Not specified'}</div>
-                            <div style={{ marginBottom: '0.25rem' }}><strong>Price:</strong> <span style={{ color: COLORS.primary, fontWeight: 600 }}>Ksh {parseInt(coffin.exact_price || 0).toLocaleString()}</span></div>
-                            <div><strong>Stock:</strong> {coffin.quantity || 0} units</div>
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid ' + COLORS.border }}>
-                            <ActionButton onClick={() => handleViewDetails(coffin)} style={{ flex: 1, padding: '0.5rem', border: '1px solid ' + COLORS.border, borderRadius: COLORS.radiusXs }}>
-                              <Eye size={14} /> View
-                            </ActionButton>
-                            <ActionButton onClick={() => handleBookCoffin(coffin)} style={{ flex: 1, padding: '0.5rem', border: '1px solid ' + COLORS.primary, borderRadius: COLORS.radiusXs, color: COLORS.primary }}>
-                              <Calendar size={14} /> Book
-                            </ActionButton>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TableCard>
-              </>
-            )}
-
-            {activeTab === 'bookings' && (
-              <>
-                <FilterCard>
-                  <FilterRow>
-                    <SearchInput
-                      type="text"
-                      placeholder="Search by client name, coffin model..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <ActionButton
-                        onClick={() => setViewMode('table')}
-                        style={{
-                          background: viewMode === 'table' ? COLORS.primary : COLORS.surface,
-                          color: viewMode === 'table' ? COLORS.white : COLORS.textSecondary
-                        }}
-                      >
-                        <List size={16} />
-                      </ActionButton>
-                      <ActionButton
-                        onClick={() => setViewMode('calendar')}
-                        style={{
-                          background: viewMode === 'calendar' ? COLORS.primary : COLORS.surface,
-                          color: viewMode === 'calendar' ? COLORS.white : COLORS.textSecondary
-                        }}
-                      >
-                        <Calendar size={16} />
-                      </ActionButton>
-                    </div>
-                    <PrimaryButton onClick={handleNewBooking}>
-                      <Plus size={15} /> New Booking
-                    </PrimaryButton>
-                  </FilterRow>
-                </FilterCard>
-
-                {viewMode === 'table' ? (
-                  <TableCard>
-                    {bookings.length === 0 ? (
-                      <EmptyState>
-                        <ClipboardList size={48} />
-                        <h4>No bookings yet</h4>
-                        <p>Coffin bookings will appear here</p>
-                      </EmptyState>
-                    ) : (
-                      <div style={{ overflowX: 'auto' }}>
-                        <Table>
-                          <TableHead>
-                            <tr>
-                              <TableHeader>Booking ID</TableHeader>
-                              <TableHeader>Client</TableHeader>
-                              <TableHeader>Coffin</TableHeader>
-                              <TableHeader>Event Date</TableHeader>
-                              <TableHeader>Status</TableHeader>
-                              <TableHeader>Notes</TableHeader>
-                              <TableHeader>Booked On</TableHeader>
-                            </tr>
-                          </TableHead>
-                          <tbody>
-                            {bookings.map((booking) => (
-                              <TableRow key={booking.booking_id || booking.id} onClick={() => handleBookingClick(booking)} style={{ cursor: 'pointer' }}>
-                                <TableCell style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: COLORS.primary }}>
-                                  {booking.booking_code || `BK-${booking.booking_id}`}
-                                </TableCell>
-                                <TableCell>
-                                  <div style={{ fontWeight: 500 }}>{booking.client_name}</div>
-                                  <div style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>{booking.client_phone}</div>
-                                </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>
-                                  {booking.coffin_type || booking.coffin?.type || 'N/A'}
-                                  {booking.special_requirements && (
-                                    <div style={{ fontSize: '0.68rem', color: COLORS.warningDark, marginTop: '0.15rem', fontStyle: 'italic' }}>
-                                      ⚠️ {booking.special_requirements}
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>
-                                  {booking.event_date ? new Date(booking.event_date).toLocaleDateString() : 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                  <StatusBadge $status={booking.status || 'pending'}>
-                                    {booking.status || 'Pending'}
-                                  </StatusBadge>
-                                </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem', maxWidth: '200px' }}>
-                                  {booking.notes ? (
-                                    <div style={{
-                                      padding: '0.25rem 0.5rem',
-                                      background: COLORS.warningLight,
-                                      borderRadius: '0.25rem',
-                                      fontSize: '0.68rem',
-                                      color: COLORS.warningDark,
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap'
-                                    }} title={booking.notes}>
-                                      📝 {booking.notes}
-                                    </div>
-                                  ) : (
-                                    <span style={{ color: COLORS.textMuted }}>—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell style={{ fontSize: '0.72rem' }}>
-                                  {booking.created_at ? new Date(booking.created_at).toLocaleDateString() : 'N/A'}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                    )}
-                  </TableCard>
-                ) : (
-                  <TableCard>
-                    <div style={{ padding: '1rem' }}>
-                      <ReusableCalendar
-                        items={bookings}
-                        dateKey="event_date"
-                        idKey="booking_id"
-                        selectedDate={selectedDate}
-                        onDateSelect={setSelectedDate}
-                        onItemClick={handleBookingClick}
-                        showAddButton={true}
-                        addButtonText="New Booking"
-                        onAddForDate={(dateStr) => {
-                          setNewBookingFormData(p => ({ ...p, event_date: dateStr }));
-                          setShowNewBookingModal(true);
-                        }}
-                        getStatusColor={(item) => {
-                          switch (item.status) {
-                            case 'confirmed': return COLORS.success;
-                            case 'pending': return COLORS.warning;
-                            case 'cancelled': return COLORS.danger;
-                            default: return COLORS.info;
-                          }
-                        }}
-                        getIsUrgent={(item) => {
-                          if (!item.event_date) return false;
-                          const eventDate = new Date(item.event_date);
-                          const today = new Date();
-                          const diffDays = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
-                          return diffDays <= 2 && diffDays >= 0;
-                        }}
-                        getItemTitle={(item) => item.client_name}
-                        getItemSubtitle={(item) => item.coffin_type || item.coffin?.type || 'External coffin'}
-                        getItemMeta={(item) => item.client_phone || ''}
-                        getItemStatus={(item) => <StatusBadge $status={item.status || 'pending'}>{item.status || 'Pending'}</StatusBadge>}
-                        accentColor={COLORS.primary}
-                      />
-                    </div>
-                  </TableCard>
-                )}
-              </>
-            )}
-          </TabContent>
-        </TabContainer>
-      </MainContent>
-
-      {/* Register Modal */}
-      {showRegisterModal && (
-        <DrawerOverlay onClick={() => setShowRegisterModal(false)}>
-          <Drawer $open={showRegisterModal} style={{ width: '700px' }}>
-            <DrawerHeader>
-              <div>
-                <DrawerTitle>Register New Coffin</DrawerTitle>
-                <DrawerSubtitle>Add a new coffin model to inventory</DrawerSubtitle>
-              </div>
-              <ActionButton onClick={() => setShowRegisterModal(false)}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <form onSubmit={handleRegisterSubmit}>
-                {registerError && (
-                  <div style={{ padding: '0.75rem', background: COLORS.dangerLight, color: COLORS.dangerDark, borderRadius: COLORS.radiusSm, marginBottom: '1rem', fontSize: '0.8125rem' }}>
-                    {registerError}
-                  </div>
-                )}
-                <FormGroup>
-                  <Label>Model Name <span className="required">*</span></Label>
-                  <Input name="type" value={registerFormData.type} onChange={handleRegisterChange} placeholder="e.g., Premium Oak" required />
-                </FormGroup>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Material <span className="required">*</span></Label>
-                    <Input name="material" value={registerFormData.material} onChange={handleRegisterChange} placeholder="e.g., Oak, Pine" required />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Price (KES) <span className="required">*</span></Label>
-                    <Input name="exact_price" type="number" value={registerFormData.exact_price} onChange={handleRegisterChange} placeholder="0" required />
-                  </FormGroup>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Size</Label>
-                    <Input name="size" value={registerFormData.size} onChange={handleRegisterChange} placeholder="e.g., 6ft" />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Color</Label>
-                    <Input name="color" value={registerFormData.color} onChange={handleRegisterChange} placeholder="e.g., Dark Brown" />
-                  </FormGroup>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Quantity</Label>
-                    <Input name="quantity" type="number" value={registerFormData.quantity} onChange={handleRegisterChange} placeholder="1" />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Supplier</Label>
-                    <Input name="supplier" value={registerFormData.supplier} onChange={handleRegisterChange} placeholder="Supplier name" />
-                  </FormGroup>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Store Location</Label>
-                    <Input name="store_location" value={registerFormData.store_location} onChange={handleRegisterChange} placeholder="e.g., Warehouse A" />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Shelf Number</Label>
-                    <Input name="shelf_number" value={registerFormData.shelf_number} onChange={handleRegisterChange} placeholder="e.g., A-12" />
-                  </FormGroup>
-                </div>
-                <FormGroup>
-                  <Label>Notes</Label>
-                  <TextArea name="notes" value={registerFormData.notes} onChange={handleRegisterChange} placeholder="Additional notes..." rows="3" />
-                </FormGroup>
-                <DrawerFooter>
-                  <SecondaryButton type="button" onClick={() => setShowRegisterModal(false)}>Cancel</SecondaryButton>
-                  <PrimaryButton type="submit" disabled={registerLoading}>
-                    {registerLoading ? 'Registering...' : 'Register Coffin'}
-                  </PrimaryButton>
-                </DrawerFooter>
-              </form>
-            </DrawerBody>
-          </Drawer>
-        </DrawerOverlay>
+        </>
       )}
 
-      {/* Booking Modal */}
-      {showBookingModal && selectedCoffin && (
-        <DrawerOverlay onClick={() => setShowBookingModal(false)}>
-          <Drawer $open={showBookingModal} style={{ width: '600px' }}>
-            <DrawerHeader style={{ background: COLORS.primaryDark }}>
-              <div>
-                <DrawerTitle style={{ color: COLORS.white }}>Book Coffin</DrawerTitle>
-                <DrawerSubtitle style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  {selectedCoffin.type} - Ksh {parseInt(selectedCoffin.exact_price || 0).toLocaleString()}
-                </DrawerSubtitle>
-              </div>
-              <ActionButton onClick={() => setShowBookingModal(false)} style={{ color: COLORS.white }}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <form onSubmit={handleBookingSubmit}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Client Name <span className="required">*</span></Label>
-                    <Input value={bookingFormData.client_name} onChange={(e) => setBookingFormData(p => ({ ...p, client_name: e.target.value }))} required />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Phone <span className="required">*</span></Label>
-                    <Input value={bookingFormData.client_phone} onChange={(e) => setBookingFormData(p => ({ ...p, client_phone: e.target.value }))} required />
-                  </FormGroup>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Email</Label>
-                    <Input type="email" value={bookingFormData.client_email} onChange={(e) => setBookingFormData(p => ({ ...p, client_email: e.target.value }))} />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Booking Date <span className="required">*</span></Label>
-                    <Input type="date" value={bookingFormData.booking_date} onChange={(e) => setBookingFormData(p => ({ ...p, booking_date: e.target.value }))} required />
-                  </FormGroup>
-                </div>
+      {/* ========== MODALS ========== */}
+
+      {/* Coffin Create Modal */}
+      <ModalOverlay $open={modal.open && modal.type === 'coffin'} onClick={closeModal}>
+        <ModalDialog onClick={e => e.stopPropagation()}>
+          <ModalHeader>
+            <ModalTitle>Add New Coffin</ModalTitle>
+            <ModalClose onClick={closeModal}>✕</ModalClose>
+          </ModalHeader>
+          <form onSubmit={handleCreateCoffin}>
+            <ModalBody>
+              <FormRow>
                 <FormGroup>
-                  <Label>Event Date</Label>
-                  <Input type="date" value={bookingFormData.event_date} onChange={(e) => setBookingFormData(p => ({ ...p, event_date: e.target.value }))} />
+                  <FormLabel>Name *</FormLabel>
+                  <FormInput required value={modal.data.name || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, name: e.target.value } })} placeholder="Mahogany Heritage" />
                 </FormGroup>
                 <FormGroup>
-                  <Label>Client Address</Label>
-                  <TextArea value={bookingFormData.client_address} onChange={(e) => setBookingFormData(p => ({ ...p, client_address: e.target.value }))} placeholder="Full address..." rows="2" />
+                  <FormLabel>SKU *</FormLabel>
+                  <FormInput required value={modal.data.sku || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, sku: e.target.value } })} placeholder="MH-001" />
+                </FormGroup>
+              </FormRow>
+              <FormRow>
+                <FormGroup>
+                  <FormLabel>Type *</FormLabel>
+                  <FormSelect required value={modal.data.type || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, type: e.target.value } })}>
+                    <option value="">Select type</option>
+                    <option value="Traditional">Traditional</option>
+                    <option value="Modern">Modern</option>
+                    <option value="Religious">Religious</option>
+                    <option value="Eco-Friendly">Eco-Friendly</option>
+                    <option value="Child">Child</option>
+                    <option value="Veteran">Veteran</option>
+                  </FormSelect>
                 </FormGroup>
                 <FormGroup>
-                  <Label>Special Requirements</Label>
-                  <TextArea value={bookingFormData.special_requirements} onChange={(e) => setBookingFormData(p => ({ ...p, special_requirements: e.target.value }))} placeholder="Any special requirements or customization..." rows="3" />
+                  <FormLabel>Material *</FormLabel>
+                  <FormInput required value={modal.data.material || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, material: e.target.value } })} placeholder="Solid Mahogany" />
+                </FormGroup>
+              </FormRow>
+              <FormRow>
+                <FormGroup>
+                  <FormLabel>Price (KES) *</FormLabel>
+                  <FormInput required type="number" value={modal.data.price || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, price: e.target.value } })} />
                 </FormGroup>
                 <FormGroup>
-                  <Label>Additional Notes</Label>
-                  <TextArea value={bookingFormData.notes} onChange={(e) => setBookingFormData(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." rows="2" />
+                  <FormLabel>Stock</FormLabel>
+                  <FormInput type="number" value={modal.data.stock || 0} onChange={e => setModal({ ...modal, data: { ...modal.data, stock: parseInt(e.target.value) || 0 } })} />
                 </FormGroup>
-                <DrawerFooter>
-                  <SecondaryButton type="button" onClick={() => setShowBookingModal(false)}>Cancel</SecondaryButton>
-                  <PrimaryButton type="submit" disabled={bookingLoading}>
-                    {bookingLoading ? 'Booking...' : 'Confirm Booking'}
-                  </PrimaryButton>
-                </DrawerFooter>
-              </form>
-            </DrawerBody>
-          </Drawer>
-        </DrawerOverlay>
-      )}
+              </FormRow>
+              <FormGroup>
+                <FormLabel>Notes</FormLabel>
+                <FormTextarea value={modal.data.notes || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, notes: e.target.value } })} placeholder="Any notes..." />
+              </FormGroup>
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" onClick={closeModal}>Cancel</Button>
+              <Button $primary type="submit" disabled={submitLoading}>{submitLoading ? 'Saving...' : 'Save Coffin'}</Button>
+            </ModalFooter>
+          </form>
+        </ModalDialog>
+      </ModalOverlay>
 
-      {/* Coffin Detail Modal */}
-      {showCoffinDetailModal && selectedCoffin && (
-        <DrawerOverlay onClick={() => setShowCoffinDetailModal(false)}>
-          <Drawer $open={showCoffinDetailModal}>
-            <DrawerHeader>
-              <div>
-                <DrawerTitle>{selectedCoffin.type}</DrawerTitle>
-                <DrawerSubtitle>
-                  <StatusBadge $status={selectedCoffin.status || 'available'}>
-                    {selectedCoffin.status === 'in-store' ? 'In Store' : selectedCoffin.status === 'booked' ? 'Booked' : 'Available'}
-                  </StatusBadge>
-                </DrawerSubtitle>
-              </div>
-              <ActionButton onClick={() => setShowCoffinDetailModal(false)}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <DetailGrid>
-                <DetailItem>
-                  <DetailLabel>Model ID</DetailLabel>
-                  <DetailValue style={{ fontFamily: 'monospace' }}>{selectedCoffin.custom_id || `COFF-${selectedCoffin.coffin_id}`}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Material</DetailLabel>
-                  <DetailValue>{selectedCoffin.material || 'N/A'}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Size</DetailLabel>
-                  <DetailValue>{selectedCoffin.size || 'N/A'}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Color</DetailLabel>
-                  <DetailValue>{selectedCoffin.color || 'N/A'}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Price</DetailLabel>
-                  <DetailValue style={{ color: COLORS.primary, fontWeight: 600 }}>
-                    Ksh {parseInt(selectedCoffin.exact_price || 0).toLocaleString()}
-                  </DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Stock</DetailLabel>
-                  <DetailValue>{selectedCoffin.quantity || 0} units</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Store Location</DetailLabel>
-                  <DetailValue>{selectedCoffin.store_location || 'Not specified'}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Shelf Number</DetailLabel>
-                  <DetailValue>{selectedCoffin.shelf_number || 'Not specified'}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Supplier</DetailLabel>
-                  <DetailValue>{selectedCoffin.supplier || 'N/A'}</DetailValue>
-                </DetailItem>
-                <DetailItem>
-                  <DetailLabel>Category</DetailLabel>
-                  <DetailValue style={{ textTransform: 'capitalize' }}>{selectedCoffin.category?.replace('_', ' ') || 'N/A'}</DetailValue>
-                </DetailItem>
-              </DetailGrid>
-
-              {selectedCoffin.notes && (
-                <div style={{ padding: '1rem', background: COLORS.bg, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.border, marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Notes
-                  </div>
-                  <div style={{ fontSize: '0.8125rem', color: COLORS.text }}>{selectedCoffin.notes}</div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <PrimaryButton onClick={() => { setShowCoffinDetailModal(false); handleBookCoffin(selectedCoffin); }} style={{ flex: 1 }}>
-                  <Calendar size={15} /> Book This Coffin
-                </PrimaryButton>
-                <SecondaryButton onClick={() => { setShowCoffinDetailModal(false); handleEdit(selectedCoffin); }} style={{ flex: 1 }}>
-                  <Edit size={15} /> Edit
-                </SecondaryButton>
-              </div>
-            </DrawerBody>
-          </Drawer>
-        </DrawerOverlay>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && selectedCoffin && (
-        <DrawerOverlay onClick={() => setShowEditModal(false)}>
-          <Drawer $open={showEditModal}>
-            <DrawerHeader>
-              <div>
-                <DrawerTitle>Edit Coffin</DrawerTitle>
-                <DrawerSubtitle>Update coffin details</DrawerSubtitle>
-              </div>
-              <ActionButton onClick={() => setShowEditModal(false)}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <form onSubmit={handleEditSubmit}>
+      {/* Booking Create Modal */}
+      <ModalOverlay $open={modal.open && modal.type === 'booking'} onClick={closeModal}>
+        <ModalDialog onClick={e => e.stopPropagation()}>
+          <ModalHeader>
+            <ModalTitle>New Booking</ModalTitle>
+            <ModalClose onClick={closeModal}>✕</ModalClose>
+          </ModalHeader>
+          <form onSubmit={handleCreateBooking}>
+            <ModalBody>
+              <FormRow>
                 <FormGroup>
-                  <Label>Model <span className="required">*</span></Label>
-                  <Input value={editFormData.type} onChange={(e) => setEditFormData(p => ({ ...p, type: e.target.value }))} required />
+                  <FormLabel>Client Name *</FormLabel>
+                  <FormInput required value={modal.data.client_name || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, client_name: e.target.value } })} />
                 </FormGroup>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Material <span className="required">*</span></Label>
-                    <Input value={editFormData.material} onChange={(e) => setEditFormData(p => ({ ...p, material: e.target.value }))} required />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Price <span className="required">*</span></Label>
-                    <Input type="number" value={editFormData.exact_price} onChange={(e) => setEditFormData(p => ({ ...p, exact_price: e.target.value }))} required />
-                  </FormGroup>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Quantity</Label>
-                    <Input type="number" value={editFormData.quantity} onChange={(e) => setEditFormData(p => ({ ...p, quantity: e.target.value }))} />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Color</Label>
-                    <Input value={editFormData.color} onChange={(e) => setEditFormData(p => ({ ...p, color: e.target.value }))} />
-                  </FormGroup>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Store Location</Label>
-                    <Input value={editFormData.store_location} onChange={(e) => setEditFormData(p => ({ ...p, store_location: e.target.value }))} />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Shelf Number</Label>
-                    <Input value={editFormData.shelf_number} onChange={(e) => setEditFormData(p => ({ ...p, shelf_number: e.target.value }))} />
-                  </FormGroup>
-                </div>
-                <DrawerFooter>
-                  <SecondaryButton type="button" onClick={() => setShowEditModal(false)}>Cancel</SecondaryButton>
-                  <PrimaryButton type="submit">Save Changes</PrimaryButton>
-                </DrawerFooter>
-              </form>
-            </DrawerBody>
-          </Drawer>
-        </DrawerOverlay>
-      )}
-
-      {/* Delete Modal */}
-      {showDeleteModal && selectedCoffin && (
-        <DrawerOverlay onClick={() => setShowDeleteModal(false)}>
-          <Drawer $open={showDeleteModal} style={{ width: '420px' }}>
-            <DrawerHeader>
-              <DrawerTitle>Delete Coffin</DrawerTitle>
-              <ActionButton onClick={() => setShowDeleteModal(false)}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <p style={{ fontSize: '0.875rem', color: COLORS.textSecondary, margin: '0 0 1rem' }}>
-                Are you sure you want to delete <strong>{selectedCoffin.type}</strong>? This action cannot be undone.
-              </p>
-            </DrawerBody>
-            <DrawerFooter>
-              <SecondaryButton onClick={() => setShowDeleteModal(false)}>Cancel</SecondaryButton>
-              <PrimaryButton onClick={confirmDelete} style={{ background: COLORS.danger }}>
-                <Trash2 size={15} /> Delete
-              </PrimaryButton>
-            </DrawerFooter>
-          </Drawer>
-        </DrawerOverlay>
-      )}
-
-      {/* New Booking Modal (Inventory or External) */}
-      {showNewBookingModal && (
-        <DrawerOverlay onClick={() => setShowNewBookingModal(false)}>
-          <Drawer $open={showNewBookingModal} style={{ width: '650px' }}>
-            <DrawerHeader style={{ background: COLORS.primaryDark }}>
-              <div>
-                <DrawerTitle style={{ color: COLORS.white }}>New Booking</DrawerTitle>
-                <DrawerSubtitle style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  Book from inventory or create external booking
-                </DrawerSubtitle>
-              </div>
-              <ActionButton onClick={() => setShowNewBookingModal(false)} style={{ color: COLORS.white }}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <form onSubmit={handleNewBookingSubmit}>
-                {/* Booking Type Selection */}
                 <FormGroup>
-                  <Label>Booking Type <span className="required">*</span></Label>
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.75rem', border: '1px solid ' + COLORS.border, borderRadius: COLORS.radiusSm, flex: 1, background: newBookingFormData.booking_type === 'inventory' ? COLORS.primary : COLORS.surface, color: newBookingFormData.booking_type === 'inventory' ? COLORS.white : COLORS.text }}>
-                      <input type="radio" name="booking_type" value="inventory" checked={newBookingFormData.booking_type === 'inventory'} onChange={(e) => setNewBookingFormData(p => ({ ...p, booking_type: e.target.value }))} style={{ accentColor: COLORS.primary }} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>From Inventory</div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Select existing coffin</div>
-                      </div>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.75rem', border: '1px solid ' + COLORS.border, borderRadius: COLORS.radiusSm, flex: 1, background: newBookingFormData.booking_type === 'external' ? COLORS.primary : COLORS.surface, color: newBookingFormData.booking_type === 'external' ? COLORS.white : COLORS.text }}>
-                      <input type="radio" name="booking_type" value="external" checked={newBookingFormData.booking_type === 'external'} onChange={(e) => setNewBookingFormData(p => ({ ...p, booking_type: e.target.value }))} style={{ accentColor: COLORS.primary }} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>External Booking</div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Custom coffin details</div>
-                      </div>
-                    </label>
-                  </div>
+                  <FormLabel>Client Phone</FormLabel>
+                  <FormInput value={modal.data.client_phone || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, client_phone: e.target.value } })} />
                 </FormGroup>
-
-                {/* Client Information */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Client Name <span className="required">*</span></Label>
-                    <Input value={newBookingFormData.client_name} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_name: e.target.value }))} required />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Phone <span className="required">*</span></Label>
-                    <Input value={newBookingFormData.client_phone} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_phone: e.target.value }))} required />
-                  </FormGroup>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <FormGroup>
-                    <Label>Email</Label>
-                    <Input type="email" value={newBookingFormData.client_email} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_email: e.target.value }))} />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Booking Date <span className="required">*</span></Label>
-                    <Input type="date" value={newBookingFormData.booking_date} onChange={(e) => setNewBookingFormData(p => ({ ...p, booking_date: e.target.value }))} required />
-                  </FormGroup>
-                </div>
-
+              </FormRow>
+              <FormGroup>
+                <FormLabel>Deceased Name *</FormLabel>
+                <FormInput required value={modal.data.deceased_name || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, deceased_name: e.target.value } })} />
+              </FormGroup>
+              <FormRow>
                 <FormGroup>
-                  <Label>Client Address</Label>
-                  <TextArea value={newBookingFormData.client_address} onChange={(e) => setNewBookingFormData(p => ({ ...p, client_address: e.target.value }))} placeholder="Full address..." rows="2" />
+                  <FormLabel>Coffin *</FormLabel>
+                  <FormSelect required value={modal.data.coffin_id || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, coffin_id: e.target.value } })}>
+                    <option value="">Select coffin</option>
+                    {branchCoffins.filter(c => c.stock > 0).map(c => (
+                      <option key={c.coffin_id || c.id} value={c.coffin_id || c.id}>{c.name} — KES {parseFloat(c.price).toLocaleString()}</option>
+                    ))}
+                  </FormSelect>
                 </FormGroup>
-
-                {/* Coffin Selection based on type */}
-                {newBookingFormData.booking_type === 'inventory' ? (
-                  <FormGroup>
-                    <Label>Select Coffin from Inventory <span className="required">*</span></Label>
-                    <Select value={newBookingFormData.coffin_id} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_id: e.target.value }))} required>
-                      <option value="">-- Select a coffin --</option>
-                      {coffins.filter(c => c.status === 'available' || !c.status).map(coffin => (
-                        <option key={coffin.coffin_id} value={coffin.coffin_id}>
-                          {coffin.type} - {coffin.material} - Ksh {parseInt(coffin.exact_price || 0).toLocaleString()} (Stock: {coffin.quantity || 0})
-                        </option>
-                      ))}
-                    </Select>
-                  </FormGroup>
-                ) : (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                      <FormGroup>
-                        <Label>Coffin Type/Model <span className="required">*</span></Label>
-                        <Input value={newBookingFormData.coffin_type} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_type: e.target.value }))} placeholder="e.g., Premium Oak" required />
-                      </FormGroup>
-                      <FormGroup>
-                        <Label>Material <span className="required">*</span></Label>
-                        <Input value={newBookingFormData.coffin_material} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_material: e.target.value }))} placeholder="e.g., Oak, Pine" required />
-                      </FormGroup>
-                    </div>
-                    <FormGroup>
-                      <Label>Price (KES) <span className="required">*</span></Label>
-                      <Input type="number" value={newBookingFormData.coffin_price} onChange={(e) => setNewBookingFormData(p => ({ ...p, coffin_price: e.target.value }))} placeholder="0" required />
-                    </FormGroup>
-                  </>
-                )}
-
                 <FormGroup>
-                  <Label>Event Date</Label>
-                  <Input type="date" value={newBookingFormData.event_date} onChange={(e) => setNewBookingFormData(p => ({ ...p, event_date: e.target.value }))} />
+                  <FormLabel>Service Date *</FormLabel>
+                  <FormInput required type="date" value={modal.data.service_date || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, service_date: e.target.value } })} />
                 </FormGroup>
+              </FormRow>
+              <FormGroup>
+                <FormLabel>Notes</FormLabel>
+                <FormTextarea value={modal.data.notes || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, notes: e.target.value } })} />
+              </FormGroup>
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" onClick={closeModal}>Cancel</Button>
+              <Button $primary type="submit" disabled={submitLoading}>{submitLoading ? 'Saving...' : 'Create Booking'}</Button>
+            </ModalFooter>
+          </form>
+        </ModalDialog>
+      </ModalOverlay>
 
+      {/* Stock Request Modal */}
+      <ModalOverlay $open={modal.open && modal.type === 'stockRequest'} onClick={closeModal}>
+        <ModalDialog onClick={e => e.stopPropagation()}>
+          <ModalHeader>
+            <ModalTitle>New Stock Request</ModalTitle>
+            <ModalClose onClick={closeModal}>✕</ModalClose>
+          </ModalHeader>
+          <form onSubmit={handleCreateStockRequest}>
+            <ModalBody>
+              <FormRow>
                 <FormGroup>
-                  <Label>Special Requirements</Label>
-                  <TextArea value={newBookingFormData.special_requirements} onChange={(e) => setNewBookingFormData(p => ({ ...p, special_requirements: e.target.value }))} placeholder="Any special requirements or customization..." rows="3" />
+                  <FormLabel>Request To *</FormLabel>
+                  <FormSelect required value={modal.data.to_branch_id || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, to_branch_id: e.target.value } })}>
+                    <option value="">Select branch</option>
+                    {branches.filter(b => b.id != currentBranch).map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </FormSelect>
                 </FormGroup>
-
                 <FormGroup>
-                  <Label>Additional Notes</Label>
-                  <TextArea value={newBookingFormData.notes} onChange={(e) => setNewBookingFormData(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." rows="2" />
+                  <FormLabel>Coffin *</FormLabel>
+                  <FormSelect required value={modal.data.coffin_id || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, coffin_id: e.target.value } })}>
+                    <option value="">Select coffin</option>
+                    {coffins.filter(c => c.stock > 0).map(c => (
+                      <option key={c.coffin_id || c.id} value={c.coffin_id || c.id}>{c.name}</option>
+                    ))}
+                  </FormSelect>
                 </FormGroup>
-
-                <DrawerFooter>
-                  <SecondaryButton type="button" onClick={() => setShowNewBookingModal(false)}>Cancel</SecondaryButton>
-                  <PrimaryButton type="submit" disabled={bookingLoading}>
-                    {bookingLoading ? 'Creating...' : 'Create Booking'}
-                  </PrimaryButton>
-                </DrawerFooter>
-              </form>
-            </DrawerBody>
-          </Drawer>
-        </DrawerOverlay>
-      )}
-
-      {/* Booking Detail Modal with Payment Update */}
-      {showBookingDetailModal && selectedBookingDetail && (
-        <DrawerOverlay onClick={() => setShowBookingDetailModal(false)}>
-          <Drawer $open={showBookingDetailModal} style={{ width: '650px' }}>
-            <DrawerHeader style={{ background: COLORS.primaryDark }}>
-              <div>
-                <DrawerTitle style={{ color: COLORS.white }}>Booking Details</DrawerTitle>
-                <DrawerSubtitle style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  {selectedBookingDetail.booking_code || `BK-${selectedBookingDetail.booking_id}`}
-                </DrawerSubtitle>
-              </div>
-              <ActionButton onClick={() => setShowBookingDetailModal(false)} style={{ color: COLORS.white }}><XCircle size={20} /></ActionButton>
-            </DrawerHeader>
-            <DrawerBody>
-              <form onSubmit={handlePaymentUpdate}>
-                {/* Client Information */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Client Information
-                  </h3>
-                  <DetailGrid>
-                    <DetailItem>
-                      <DetailLabel>Client Name</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.client_name}</DetailValue>
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailLabel>Phone</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.client_phone}</DetailValue>
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailLabel>Email</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.client_email || 'N/A'}</DetailValue>
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailLabel>Booking Date</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.booking_date ? new Date(selectedBookingDetail.booking_date).toLocaleDateString() : 'N/A'}</DetailValue>
-                    </DetailItem>
-                  </DetailGrid>
-                  {selectedBookingDetail.client_address && (
-                    <div style={{ padding: '0.75rem', background: COLORS.bg, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.border, marginBottom: '0.5rem' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Address
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', color: COLORS.text }}>{selectedBookingDetail.client_address}</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Coffin Details */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Coffin Details
-                  </h3>
-                  <DetailGrid>
-                    <DetailItem>
-                      <DetailLabel>Coffin Type</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.coffin_type || selectedBookingDetail.coffin?.type || 'External'}</DetailValue>
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailLabel>Material</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.coffin_material || selectedBookingDetail.coffin?.material || 'N/A'}</DetailValue>
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailLabel>Price</DetailLabel>
-                      <DetailValue style={{ color: COLORS.primary, fontWeight: 600 }}>
-                        Ksh {parseInt(selectedBookingDetail.coffin_price || selectedBookingDetail.coffin?.exact_price || 0).toLocaleString()}
-                      </DetailValue>
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailLabel>Event Date</DetailLabel>
-                      <DetailValue>{selectedBookingDetail.event_date ? new Date(selectedBookingDetail.event_date).toLocaleDateString() : 'TBD'}</DetailValue>
-                    </DetailItem>
-                  </DetailGrid>
-                </div>
-
-                {/* Special Requirements */}
-                {selectedBookingDetail.special_requirements && (
-                  <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: COLORS.warningLight, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.warning }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.warningDark, marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      ⚠️ Special Requirements
-                    </div>
-                    <div style={{ fontSize: '0.8125rem', color: COLORS.warningDark }}>{selectedBookingDetail.special_requirements}</div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {selectedBookingDetail.notes && (
-                  <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: COLORS.bg, borderRadius: COLORS.radiusSm, border: '1px solid ' + COLORS.border }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      📝 Notes
-                    </div>
-                    <div style={{ fontSize: '0.8125rem', color: COLORS.text }}>{selectedBookingDetail.notes}</div>
-                  </div>
-                )}
-
-                {/* Payment Information */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textSecondary, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Payment Information
-                  </h3>
-
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      cursor: 'pointer',
-                      padding: '0.75rem',
-                      border: '1px solid ' + COLORS.border,
-                      borderRadius: COLORS.radiusSm,
-                      flex: 1,
-                      background: paymentFormData.is_paid ? COLORS.successLight : COLORS.surface
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={paymentFormData.is_paid}
-                        onChange={(e) => setPaymentFormData(p => ({ ...p, is_paid: e.target.checked }))}
-                        style={{ accentColor: COLORS.success, width: '1.25rem', height: '1.25rem' }}
-                      />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.875rem', color: paymentFormData.is_paid ? COLORS.successDark : COLORS.text }}>
-                          Payment Received
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: COLORS.textSecondary }}>
-                          {paymentFormData.is_paid ? 'Yes' : 'No'}
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <FormGroup>
-                      <Label>Amount Paid (KES) <span className="required">*</span></Label>
-                      <Input
-                        type="number"
-                        value={paymentFormData.amount_paid}
-                        onChange={(e) => setPaymentFormData(p => ({ ...p, amount_paid: e.target.value }))}
-                        placeholder="0"
-                        required
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>Payment Method</Label>
-                      <Select
-                        value={paymentFormData.payment_method}
-                        onChange={(e) => setPaymentFormData(p => ({ ...p, payment_method: e.target.value }))}
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="mpesa">M-Pesa</option>
-                        <option value="bank_transfer">Bank Transfer</option>
-                        <option value="cheque">Cheque</option>
-                        <option value="other">Other</option>
-                      </Select>
-                    </FormGroup>
-                  </div>
-
-                  <FormGroup>
-                    <Label>Payment Notes</Label>
-                    <TextArea
-                      value={paymentFormData.payment_notes}
-                      onChange={(e) => setPaymentFormData(p => ({ ...p, payment_notes: e.target.value }))}
-                      placeholder="Additional payment notes..."
-                      rows="2"
-                    />
-                  </FormGroup>
-
-                  {/* Payment Summary */}
-                  <div style={{
-                    padding: '1rem',
-                    background: COLORS.bg,
-                    borderRadius: COLORS.radiusSm,
-                    border: '1px solid ' + COLORS.border,
-                    marginBottom: '1rem'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8125rem', color: COLORS.textSecondary }}>Total Amount:</span>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.text }}>
-                        Ksh {parseInt(selectedBookingDetail.coffin_price || selectedBookingDetail.coffin?.exact_price || 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8125rem', color: COLORS.textSecondary }}>Amount Paid:</span>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.primary }}>
-                        Ksh {parseInt(paymentFormData.amount_paid || 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div style={{ height: 1, background: COLORS.border, margin: '0.5rem 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: COLORS.text }}>Balance:</span>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 700, color: paymentFormData.is_paid ? COLORS.success : COLORS.danger }}>
-                        Ksh {parseInt((selectedBookingDetail.coffin_price || selectedBookingDetail.coffin?.exact_price || 0) - (paymentFormData.amount_paid || 0)).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <DrawerFooter>
-                  <SecondaryButton type="button" onClick={() => setShowBookingDetailModal(false)}>Cancel</SecondaryButton>
-                  <PrimaryButton type="submit">
-                    Update Payment
-                  </PrimaryButton>
-                </DrawerFooter>
-              </form>
-            </DrawerBody>
-          </Drawer>
-        </DrawerOverlay>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <ToastContainer>
-          <Toast type={toast.type}>
-            {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-            {toast.message}
-          </Toast>
-        </ToastContainer>
-      )}
+              </FormRow>
+              <FormRow>
+                <FormGroup>
+                  <FormLabel>Quantity</FormLabel>
+                  <FormInput type="number" min={1} value={modal.data.quantity || 1} onChange={e => setModal({ ...modal, data: { ...modal.data, quantity: parseInt(e.target.value) || 1 } })} />
+                </FormGroup>
+                <FormGroup>
+                  <FormLabel>Client Name</FormLabel>
+                  <FormInput value={modal.data.client_name || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, client_name: e.target.value } })} />
+                </FormGroup>
+              </FormRow>
+              <FormRow>
+                <FormGroup>
+                  <FormLabel>Client Phone</FormLabel>
+                  <FormInput value={modal.data.client_phone || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, client_phone: e.target.value } })} />
+                </FormGroup>
+                <FormGroup>
+                  <FormLabel>Deceased Name</FormLabel>
+                  <FormInput value={modal.data.deceased_name || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, deceased_name: e.target.value } })} />
+                </FormGroup>
+              </FormRow>
+              <FormGroup>
+                <FormLabel>Notes</FormLabel>
+                <FormTextarea value={modal.data.notes || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, notes: e.target.value } })} />
+              </FormGroup>
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" onClick={closeModal}>Cancel</Button>
+              <Button $primary type="submit" disabled={submitLoading}>{submitLoading ? 'Sending...' : 'Send Request'}</Button>
+            </ModalFooter>
+          </form>
+        </ModalDialog>
+      </ModalOverlay>
     </Container>
   );
 };
 
-export default CoffinInventory;
+export default CoffinDashboard;

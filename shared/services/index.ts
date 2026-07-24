@@ -16,4 +16,4 @@
 export { MigrationService } from './migration-service';
 export type { DatabaseConfig, Migration, MigrationResult } from './migration-service';
 
-export { ALL_SERVICE_MIGRATIONS, getMainTenantMigrations, getBranchMigrations } from './all-service-migrations';
+export { getMainTenantMigrations, getBranchMigrations } from './all-service-migrations';

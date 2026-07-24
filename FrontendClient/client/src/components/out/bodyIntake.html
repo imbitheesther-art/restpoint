@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deceased Intake Form — FuneralOS</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --black: #0a0a0a;
+        --dark: #1a1a1a;
+        --mid: #444444;
+        --gray: #777777;
+        --light-gray: #aaaaaa;
+        --border: #c8c8c8;
+        --border-light: #e0e0e0;
+        --bg-field: #f7f7f5;
+        --bg-accent: #f0eeea;
+        --bg-section: #fafaf9;
+        --red: #c0392b;
+      }
+
+      body {
+        font-family: 'Source Sans 3', sans-serif;
+        color: var(--dark);
+        background: #d5d3cf;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-size: 10.5px;
+        line-height: 1.5;
+      }
+
+      .page {
+        width: 8.5in;
+        min-height: 11in;
+        margin: 24px auto;
+        background: white;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.12);
+        position: relative;
+        padding: 0.55in 0.6in;
+        display: flex;
+        flex-direction: column;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .page {
+          margin: 0;
+          box-shadow: none;
+          page-break-after: always;
+          min-height: auto;
+          height: 11in;
+          padding: 0.5in 0.55in;
+        }
+        .page:last-child {
+          page-break-after: avoid;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
+
+      /* ===== TOP BAR ===== */
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-bottom: 10px;
+        border-bottom: 2.5px solid var(--black);
+        margin-bottom: 6px;
+      }
+
+      .top-bar-left {
+      }
+
+      .saas-brand {
+        font-size: 8px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--gray);
+        margin-bottom: 2px;
+      }
+
+      .doc-title-main {
+        font-family: 'Merriweather', serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--black);
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        line-height: 1.2;
+      }
+
+      .doc-title-sub {
+        font-family: 'Merriweather', serif;
+        font-size: 11px;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--mid);
+        margin-top: 1px;
+      }
+
+      .top-bar-right {
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .release-id-block {
+        margin-bottom: 6px;
+      }
+
+      .release-id-label {
+        font-size: 7px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gray);
+      }
+
+      .release-id-value {
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--black);
+        letter-spacing: 0.08em;
+      }
+
+      .top-meta {
+        display: flex;
+        gap: 18px;
+        justify-content: flex-end;
+      }
+
+      .top-meta-item {
+        text-align: right;
+      }
+
+      .top-meta-label {
+        font-size: 7px;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--light-gray);
+      }
+
+      .top-meta-value {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--dark);
+      }
+
+      /* ===== THIN SUB LINE ===== */
+      .sub-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 0.5px solid var(--border-light);
+        margin-bottom: 16px;
+        font-size: 8px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--light-gray);
+      }
+
+      /* ===== SECTIONS ===== */
+      .section {
+        margin-bottom: 16px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding: 6px 10px;
+        background: var(--black);
+        color: white;
+        border-radius: 2px;
+      }
+
+      .section-num {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        opacity: 0.5;
+      }
+
+      .section-title {
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .section-body {
+        padding: 0 2px;
+      }
+
+      /* ===== FORM GRID ===== */
+      .row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .row:last-child {
+        margin-bottom: 0;
+      }
+
+      .col {
+        flex: 1;
+        min-width: 0;
+      }
+      .col-2 {
+        flex: 2;
+        min-width: 0;
+      }
+      .col-05 {
+        flex: 0.5;
+        min-width: 0;
+      }
+      .col-07 {
+        flex: 0.7;
+        min-width: 0;
+      }
+      .col-03 {
+        flex: 0.3;
+        min-width: 0;
+      }
+      .col-04 {
+        flex: 0.4;
+        min-width: 0;
+      }
+      .col-06 {
+        flex: 0.6;
+        min-width: 0;
+      }
+      .col-08 {
+        flex: 0.8;
+        min-width: 0;
+      }
+      .col-15 {
+        flex: 1.5;
+        min-width: 0;
+      }
+
+      .lbl {
+        display: block;
+        font-size: 7.5px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gray);
+        margin-bottom: 3px;
+      }
+
+      .lbl .req {
+        color: var(--red);
+        font-weight: 800;
+      }
+
+      .inp {
+        width: 100%;
+        height: 28px;
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 0 8px;
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 10.5px;
+        color: var(--dark);
+        background: var(--bg-field);
+        transition: border-color 0.15s;
+      }
+
+      .inp:focus {
+        outline: none;
+        border-color: var(--black);
+        box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08);
+      }
+
+      .inp::placeholder {
+        color: #c0bdb8;
+        font-style: italic;
+      }
+
+      .inp-lg {
+        height: 32px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .inp-disabled {
+        background: #eeedeb;
+        color: var(--gray);
+        cursor: not-allowed;
+      }
+
+      select.inp {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23777'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        padding-right: 24px;
+        cursor: pointer;
+      }
+
+      select.inp:focus {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%230a0a0a'/%3E%3C/svg%3E");
+      }
+
+      .txtarea {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 6px 8px;
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 10px;
+        color: var(--dark);
+        background: var(--bg-field);
+        resize: vertical;
+      }
+
+      .txtarea:focus {
+        outline: none;
+        border-color: var(--black);
+        box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08);
+      }
+
+      /* ===== CHECKBOXES & RADIOS ===== */
+      .check-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 18px;
+      }
+
+      .chk-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        color: var(--mid);
+        cursor: pointer;
+        padding: 3px 0;
+      }
+
+      .chk-item input[type='checkbox'],
+      .chk-item input[type='radio'] {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border: 1.5px solid var(--border);
+        background: white;
+        cursor: pointer;
+        flex-shrink: 0;
+        position: relative;
+      }
+
+      .chk-item input[type='checkbox'] {
+        border-radius: 2px;
+      }
+      .chk-item input[type='radio'] {
+        border-radius: 50%;
+      }
+
+      .chk-item input[type='checkbox']:checked {
+        background: var(--black);
+        border-color: var(--black);
+      }
+
+      .chk-item input[type='checkbox']:checked::after {
+        content: '';
+        position: absolute;
+        top: 1px;
+        left: 4px;
+        width: 4px;
+        height: 8px;
+        border: solid white;
+        border-width: 0 1.5px 1.5px 0;
+        transform: rotate(45deg);
+      }
+
+      .chk-item input[type='radio']:checked {
+        border-color: var(--black);
+      }
+
+      .chk-item input[type='radio']:checked::after {
+        content: '';
+        position: absolute;
+        top: 2.5px;
+        left: 2.5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--black);
+      }
+
+      /* ===== HIGHLIGHT ROW ===== */
+      .highlight-row {
+        background: var(--bg-accent);
+        padding: 8px 10px;
+        border-radius: 2px;
+        margin-bottom: 8px;
+      }
+
+      .highlight-row .row {
+        margin-bottom: 0;
+      }
+
+      /* ===== LEGAL TEXT ===== */
+      .legal-block {
+        padding: 12px 14px;
+        background: var(--bg-section);
+        border: 1px solid var(--border-light);
+        border-left: 3px solid var(--black);
+        border-radius: 0 3px 3px 0;
+        margin-bottom: 10px;
+      }
+
+      .legal-block p {
+        font-size: 9.5px;
+        line-height: 1.65;
+        color: var(--mid);
+        margin-bottom: 6px;
+      }
+
+      .legal-block p:last-child {
+        margin-bottom: 0;
+      }
+      .legal-block strong {
+        color: var(--dark);
+      }
+
+      /* ===== SIGNATURE ===== */
+      .sig-section {
+        margin-top: auto;
+      }
+
+      .sig-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 14px;
+      }
+
+      .sig-card {
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .sig-card-head {
+        background: var(--bg-accent);
+        padding: 5px 10px;
+        font-size: 7.5px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--gray);
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .sig-card-body {
+        padding: 10px;
+      }
+
+      .sig-canvas-wrap {
+        border: 1px dashed var(--border);
+        border-radius: 2px;
+        height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-field);
+        cursor: crosshair;
+        position: relative;
+        margin-bottom: 6px;
+        overflow: hidden;
+      }
+
+      .sig-canvas-wrap canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .sig-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 9px;
+        color: var(--light-gray);
+        font-style: italic;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+
+      .sig-placeholder.hidden {
+        opacity: 0;
+      }
+
+      .sig-line {
+        border-bottom: 1px solid var(--dark);
+        height: 38px;
+        margin-bottom: 4px;
+        position: relative;
+      }
+
+      .sig-line-hint {
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        font-size: 7px;
+        color: var(--light-gray);
+        letter-spacing: 0.05em;
+        font-style: italic;
+      }
+
+      .sig-meta-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .sig-meta-row .col .lbl {
+        margin-bottom: 2px;
+      }
+      .sig-meta-row .col .inp {
+        height: 24px;
+        font-size: 9.5px;
+      }
+
+      /* ===== FH USE BLOCK ===== */
+      .fh-use {
+        padding: 10px 12px;
+        background: #f0f3f7;
+        border: 1px solid #d8dfe8;
+        border-radius: 2px;
+        margin-top: 10px;
+      }
+
+      .fh-use-title {
+        font-size: 7.5px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #6a7d94;
+        margin-bottom: 8px;
+      }
+
+      .fh-use .inp {
+        background: #e6eaf0;
+        border-color: #c8d0dc;
+        height: 24px;
+        font-size: 9.5px;
+      }
+
+      /* ===== NOTICE BAR ===== */
+      .notice-bar {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 8px 10px;
+        background: #fff9f0;
+        border: 1px solid #f0e0c0;
+        border-radius: 2px;
+        margin-bottom: 12px;
+      }
+
+      .notice-bar-icon {
+        flex-shrink: 0;
+        width: 14px;
+        height: 14px;
+        margin-top: 1px;
+      }
+
+      .notice-bar-icon svg {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: #b8860b;
+        stroke-width: 2;
+      }
+      .notice-bar-text {
+        font-size: 9px;
+        color: var(--mid);
+        line-height: 1.5;
+      }
+      .notice-bar-text strong {
+        color: var(--dark);
+      }
+
+      /* ===== WATERMARK ===== */
+      .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-35deg);
+        font-size: 60px;
+        font-weight: 900;
+        color: rgba(0, 0, 0, 0.02);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        pointer-events: none;
+        white-space: nowrap;
+        z-index: 0;
+      }
+
+      .page > *:not(.watermark) {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ===== FOOTER ===== */
+      .doc-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 8px;
+        border-top: 0.5px solid var(--border-light);
+        margin-top: auto;
+      }
+
+      .doc-footer-left {
+        font-size: 7px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--light-gray);
+      }
+
+      .doc-footer-right {
+        font-size: 7px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--light-gray);
+      }
+
+      /* ===== STAMP ===== */
+      .stamp-area {
+        position: relative;
+        width: 96px;
+        height: 96px;
+        border: 2px dashed var(--red);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        opacity: 0.45;
+        margin: 8px 0;
+      }
+
+      .stamp-text {
+        font-size: 6.5px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--red);
+        line-height: 1.4;
+      }
+
+      /* ===== CLEAR SIG BTN ===== */
+      .clear-sig-btn {
+        font-size: 7.5px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gray);
+        background: none;
+        border: 1px solid var(--border-light);
+        border-radius: 2px;
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-family: 'Source Sans 3', sans-serif;
+      }
+
+      .clear-sig-btn:hover {
+        color: var(--dark);
+        border-color: var(--border);
+      }
+
+      /* ===== SCAN BTN ===== */
+      .scan-btn {
+        height: 28px;
+        padding: 0 12px;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--gray);
+        background: var(--bg-field);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.15s;
+        font-family: 'Source Sans 3', sans-serif;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .scan-btn:hover {
+        color: var(--dark);
+        border-color: var(--black);
+      }
+
+      .scan-btn svg {
+        width: 13px;
+        height: 13px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+      }
+
+      /* ===== PRINT BTN ===== */
+      .print-btn {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 1000;
+        background: var(--black);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s;
+      }
+
+      .print-btn:hover {
+        background: #333;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .print-btn svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+      }
+
+      /* ===== BODY STATUS TAGS ===== */
+      .status-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px 10px;
+      }
+
+      .status-tag {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        color: var(--mid);
+        cursor: pointer;
+        padding: 3px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="print-btn no-print" onclick="window.print()">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
+      </svg>
+      Save as PDF
+    </button>
+
+    <!-- ==================== PAGE 1 ==================== -->
+    <div class="page">
+      <div class="watermark">Original</div>
+
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="top-bar-left">
+          <div class="saas-brand">FuneralOS — Morgue Registry</div>
+          <div class="doc-title-main">Deceased Intake Record</div>
+          <div class="doc-title-sub">
+            Admission Registration & Authorization for Reception of Remains
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <div class="release-id-block">
+            <div class="release-id-label">Admission ID</div>
+            <div class="release-id-value" id="admId">ADM-2025-00000</div>
+          </div>
+          <div class="top-meta">
+            <div class="top-meta-item">
+              <div class="top-meta-label">Date</div>
+              <div class="top-meta-value" id="dateIssued"></div>
+            </div>
+            <div class="top-meta-item">
+              <div class="top-meta-label">Time</div>
+              <div class="top-meta-value" id="timeIssued"></div>
+            </div>
+            <div class="top-meta-item">
+              <div class="top-meta-label">Page</div>
+              <div class="top-meta-value">1 of 1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-line">
+        <span>Confidential Medical-Legal Record</span>
+        <span>This document constitutes an official intake record</span>
+      </div>
+
+      <!-- Section 1: Admission Details -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">01</span>
+          <span class="section-title">Admission Details</span>
+        </div>
+        <div class="section-body">
+          <div class="highlight-row">
+            <div class="row">
+              <div class="col-2">
+                <label class="lbl">Admission Number</label>
+                <input
+                  type="text"
+                  class="inp inp-lg inp-disabled"
+                  value="ADM-2025-00472"
+                  readonly
+                  disabled
+                />
+              </div>
+              <div class="col">
+                <label class="lbl">Date Admitted <span class="req">*</span></label>
+                <input type="date" class="inp inp-lg" id="dateAdmitted" />
+              </div>
+              <div class="col-06">
+                <label class="lbl">Time Received <span class="req">*</span></label>
+                <input type="time" class="inp inp-lg" id="timeReceived" />
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="lbl">Received From (Facility / Person)</label>
+              <input type="text" class="inp" placeholder="Hospital, Home, Police, Other" />
+            </div>
+            <div class="col">
+              <label class="lbl">Receiving Officer</label>
+              <input type="text" class="inp" placeholder="Officer / Staff Name" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Deceased Information -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">02</span>
+          <span class="section-title">Deceased Personal Information</span>
+        </div>
+        <div class="section-body">
+          <div class="row">
+            <div class="col-2">
+              <label class="lbl">Full Legal Name of Deceased <span class="req">*</span></label>
+              <input type="text" class="inp inp-lg" placeholder="Last, First, Middle Name" />
+            </div>
+            <div class="col-05">
+              <label class="lbl">Age</label>
+              <input type="number" class="inp" placeholder="Yrs" min="0" max="150" />
+            </div>
+            <div class="col-05">
+              <label class="lbl">Sex <span class="req">*</span></label>
+              <select class="inp">
+                <option value="" disabled selected>Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="lbl">Date of Birth</label>
+              <input type="date" class="inp" />
+            </div>
+            <div class="col">
+              <label class="lbl">Date of Death</label>
+              <input type="date" class="inp" />
+            </div>
+            <div class="col-06">
+              <label class="lbl">Time of Death</label>
+              <input type="time" class="inp" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="lbl">Place of Death</label>
+              <input type="text" class="inp" placeholder="Facility Name, Address, or Residence" />
+            </div>
+            <div class="col-06">
+              <label class="lbl">Attending Physician</label>
+              <input type="text" class="inp" placeholder="Dr. Name" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-2">
+              <label class="lbl">Cause of Death</label>
+              <textarea
+                class="txtarea"
+                rows="2"
+                placeholder="Preliminary cause if known — clinical notes, pending autopsy, etc."
+              ></textarea>
+            </div>
+          </div>
+          <div class="row" style="margin-top: 4px">
+            <div class="col">
+              <label class="lbl">Body Status</label>
+              <div class="status-grid">
+                <label class="status-tag"
+                  ><input type="radio" name="bodyStatus" value="in-morgue" checked /> In
+                  Morgue</label
+                >
+                <label class="status-tag"
+                  ><input type="radio" name="bodyStatus" value="pending-autopsy" /> Pending
+                  Autopsy</label
+                >
+                <label class="status-tag"
+                  ><input type="radio" name="bodyStatus" value="autopsy-complete" /> Autopsy
+                  Complete</label
+                >
+                <label class="status-tag"
+                  ><input type="radio" name="bodyStatus" value="embalmed" /> Embalmed</label
+                >
+                <label class="status-tag"
+                  ><input type="radio" name="bodyStatus" value="refrigerated" /> Refrigerated</label
+                >
+                <label class="status-tag"
+                  ><input type="radio" name="bodyStatus" value="other" /> Other</label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="row" style="margin-top: 4px">
+            <div class="col">
+              <label class="lbl">Identifying Marks / Condition</label>
+              <input
+                type="text"
+                class="inp"
+                placeholder="Scars, tattoos, birthmarks, medical devices, prosthetics, etc."
+              />
+            </div>
+            <div class="col-06">
+              <label class="lbl">Morgue Slot / Shelf</label>
+              <input type="text" class="inp" placeholder="e.g. A-12" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Contact & ID -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">03</span>
+          <span class="section-title">Next of Kin — Contact & Identification</span>
+        </div>
+        <div class="section-body">
+          <div class="row">
+            <div class="col-2">
+              <label class="lbl">Next of Kin Full Name</label>
+              <input type="text" class="inp" placeholder="Last, First, Middle" />
+            </div>
+            <div class="col">
+              <label class="lbl">Relationship to Deceased</label>
+              <input type="text" class="inp" placeholder="Spouse, Child, Parent, Sibling, etc." />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-15">
+              <label class="lbl">ID Number (Government-Issued)</label>
+              <div style="display: flex; gap: 8px">
+                <input
+                  type="text"
+                  class="inp"
+                  style="flex: 1"
+                  placeholder="National ID / Passport / Driver's License No."
+                />
+                <button type="button" class="scan-btn no-print">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                    <line x1="7" y1="12" x2="17" y2="12" />
+                  </svg>
+                  Scan ID
+                </button>
+              </div>
+            </div>
+            <div class="col-06">
+              <label class="lbl">ID Type</label>
+              <select class="inp">
+                <option value="" disabled selected>Select</option>
+                <option value="national-id">National ID</option>
+                <option value="passport">Passport</option>
+                <option value="drivers-license">Driver's License</option>
+                <option value="voters-card">Voter's Card</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="lbl">Telephone Number</label>
+              <input type="tel" class="inp" placeholder="+254 7XX XXX XXX" />
+            </div>
+            <div class="col">
+              <label class="lbl">Alternative Phone</label>
+              <input type="tel" class="inp" placeholder="+254 7XX XXX XXX" />
+            </div>
+            <div class="col-06">
+              <label class="lbl">Email</label>
+              <input type="email" class="inp" placeholder="email@example.com" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-2">
+              <label class="lbl">Physical Address</label>
+              <input type="text" class="inp" placeholder="Street, City, County, ZIP/Postal Code" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Belongings -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">04</span>
+          <span class="section-title">Personal Effects & Valuables Inventory</span>
+        </div>
+        <div class="section-body">
+          <div class="check-grid" style="margin-bottom: 8px">
+            <label class="chk-item"><input type="checkbox" /> Wallet / Purse</label>
+            <label class="chk-item"><input type="checkbox" /> Mobile Phone</label>
+            <label class="chk-item"><input type="checkbox" /> Jewelry</label>
+            <label class="chk-item"><input type="checkbox" /> Watch</label>
+            <label class="chk-item"><input type="checkbox" /> Keys</label>
+            <label class="chk-item"><input type="checkbox" /> Clothing</label>
+            <label class="chk-item"><input type="checkbox" /> Eyewear</label>
+            <label class="chk-item"><input type="checkbox" /> Dentures</label>
+            <label class="chk-item"><input type="checkbox" /> Prosthetics</label>
+            <label class="chk-item"><input type="checkbox" /> Medical Devices</label>
+            <label class="chk-item"><input type="checkbox" /> Cash / Currency</label>
+            <label class="chk-item"><input type="checkbox" /> Documents</label>
+            <label class="chk-item"><input type="checkbox" /> None</label>
+            <label class="chk-item"><input type="checkbox" /> Other (specify below)</label>
+          </div>
+          <div class="row">
+            <div class="col-2">
+              <label class="lbl">Detailed Description / Additional Items</label>
+              <textarea
+                class="txtarea"
+                rows="2"
+                placeholder="List all items with description, quantity, and estimated value if applicable..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="lbl">Valuables Secured By</label>
+              <input type="text" class="inp" placeholder="Staff member name who logged valuables" />
+            </div>
+            <div class="col-06">
+              <label class="lbl">Safe / Locker No.</label>
+              <input type="text" class="inp" placeholder="e.g. L-07" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5: Declaration -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">05</span>
+          <span class="section-title">Declaration & Authorization</span>
+        </div>
+        <div class="section-body">
+          <div class="legal-block">
+            <p>
+              <strong>DECLARATION:</strong> I, the undersigned, being the legally authorized next of
+              kin or duly appointed representative of the above-named deceased, do hereby confirm
+              that the information provided in this intake record is true, accurate, and complete to
+              the best of my knowledge. I authorize the admission and temporary custody of the
+              remains by this facility for the purpose of preparation, safekeeping, and eventual
+              disposition in accordance with applicable laws.
+            </p>
+            <p>
+              <strong>LIABILITY:</strong> I understand that personal effects listed herein remain my
+              responsibility to claim within thirty (30) days. Unclaimed items may be disposed of at
+              the facility's discretion without further liability. I release the facility, its
+              officers, employees, and agents from any claim arising from the handling, storage, or
+              processing of the remains except in cases of proven gross negligence.
+            </p>
+            <p>
+              <strong>IDENTITY:</strong> I confirm that I have presented a valid government-issued
+              identification document as noted in Section 03, and that I possess the legal authority
+              to authorize this intake.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 6: Signatures -->
+      <div class="section sig-section">
+        <div class="section-head">
+          <span class="section-num">06</span>
+          <span class="section-title"
+            >Signatures <span style="color: var(--red); font-weight: 800">*</span></span
+          >
+        </div>
+        <div class="section-body">
+          <div class="sig-grid">
+            <!-- Next of Kin Signature -->
+            <div class="sig-card">
+              <div class="sig-card-head">Next of Kin / Authorizing Party</div>
+              <div class="sig-card-body">
+                <div class="sig-canvas-wrap" id="sigWrap1">
+                  <canvas id="sigCanvas1"></canvas>
+                  <span class="sig-placeholder" id="sigPlaceholder1">Sign here</span>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 6px">
+                  <button type="button" class="clear-sig-btn no-print" onclick="clearSig(1)">
+                    Clear
+                  </button>
+                </div>
+                <div class="sig-meta-row">
+                  <div class="col">
+                    <label class="lbl">Printed Name</label>
+                    <input type="text" class="inp" placeholder="Full name" />
+                  </div>
+                  <div class="col-06">
+                    <label class="lbl">Date</label>
+                    <input type="date" class="inp" />
+                  </div>
+                  <div class="col-06">
+                    <label class="lbl">Time</label>
+                    <input type="time" class="inp" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Witness / Receiving Officer Signature -->
+            <div class="sig-card">
+              <div class="sig-card-head">Receiving Officer / Witness</div>
+              <div class="sig-card-body">
+                <div class="sig-canvas-wrap" id="sigWrap2">
+                  <canvas id="sigCanvas2"></canvas>
+                  <span class="sig-placeholder" id="sigPlaceholder2">Sign here</span>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 6px">
+                  <button type="button" class="clear-sig-btn no-print" onclick="clearSig(2)">
+                    Clear
+                  </button>
+                </div>
+                <div class="sig-meta-row">
+                  <div class="col">
+                    <label class="lbl">Printed Name</label>
+                    <input type="text" class="inp" placeholder="Full name" />
+                  </div>
+                  <div class="col-06">
+                    <label class="lbl">Badge No.</label>
+                    <input type="text" class="inp" placeholder="Badge #" />
+                  </div>
+                  <div class="col-06">
+                    <label class="lbl">Date</label>
+                    <input type="date" class="inp" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notice -->
+      <div class="notice-bar">
+        <div class="notice-bar-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <div class="notice-bar-text">
+          <strong>Notice:</strong> Signature is mandatory to complete intake. This document must be
+          retained in the deceased's permanent file for a minimum of five (5) years as required by
+          law. A copy shall be provided to the authorizing party upon request.
+        </div>
+      </div>
+
+      <!-- FH Use -->
+      <div class="fh-use">
+        <div class="fh-use-title">For Facility Use Only</div>
+        <div class="row" style="margin-bottom: 0">
+          <div class="col-06">
+            <label class="lbl">Verified By</label>
+            <input type="text" class="inp" placeholder="Supervisor" />
+          </div>
+          <div class="col-04">
+            <label class="lbl">Date Verified</label>
+            <input type="date" class="inp" />
+          </div>
+          <div class="col-04">
+            <label class="lbl">Morgue Log Entry</label>
+            <input type="text" class="inp" placeholder="Log #" />
+          </div>
+          <div class="col-06">
+            <label class="lbl">Storage Location</label>
+            <input type="text" class="inp" placeholder="Wing / Shelf / Unit" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="doc-footer">
+        <div class="doc-footer-left">
+          FuneralOS Intake Record — Generated <span id="footerDate"></span>
+        </div>
+        <div class="doc-footer-right">Page 1 of 1 — Original</div>
+      </div>
+    </div>
+
+    <script>
+      // === Date/Time Fill ===
+      const now = new Date();
+      const dateOpts = { year: 'numeric', month: 'long', day: 'numeric' };
+      const dateStr = now.toLocaleDateString('en-US', dateOpts);
+      const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+      document.getElementById('dateIssued').textContent = dateStr;
+      document.getElementById('timeIssued').textContent = timeStr;
+      document.getElementById('footerDate').textContent = dateStr;
+
+      // Set date/time inputs
+      const dateAdm = document.getElementById('dateAdmitted');
+      const timeRecv = document.getElementById('timeReceived');
+      if (dateAdm) dateAdm.value = now.toISOString().split('T')[0];
+      if (timeRecv) timeRecv.value = timeStr;
+
+      // === Signature Pad Logic ===
+      function initSignaturePad(num) {
+        const wrap = document.getElementById('sigWrap' + num);
+        const canvas = document.getElementById('sigCanvas' + num);
+        const placeholder = document.getElementById('sigPlaceholder' + num);
+        if (!wrap || !canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let hasDrawn = false;
+
+        function resize() {
+          const rect = wrap.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+          ctx.strokeStyle = '#0a0a0a';
+          ctx.lineWidth = 1.5;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        function getPos(e) {
+          const rect = canvas.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height),
+          };
+        }
+
+        function start(e) {
+          e.preventDefault();
+          drawing = true;
+          const pos = getPos(e);
+          ctx.beginPath();
+          ctx.moveTo(pos.x, pos.y);
+          if (!hasDrawn) {
+            hasDrawn = true;
+            placeholder.classList.add('hidden');
+          }
+        }
+
+        function move(e) {
+          if (!drawing) return;
+          e.preventDefault();
+          const pos = getPos(e);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+        }
+
+        function end(e) {
+          if (e) e.preventDefault();
+          drawing = false;
+        }
+
+        canvas.addEventListener('mousedown', start);
+        canvas.addEventListener('mousemove', move);
+        canvas.addEventListener('mouseup', end);
+        canvas.addEventListener('mouseleave', end);
+        canvas.addEventListener('touchstart', start, { passive: false });
+        canvas.addEventListener('touchmove', move, { passive: false });
+        canvas.addEventListener('touchend', end, { passive: false });
+
+        // Store clear function
+        window['_sigClear' + num] = function () {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          hasDrawn = false;
+          placeholder.classList.remove('hidden');
+        };
+      }
+
+      function clearSig(num) {
+        if (window['_sigClear' + num]) window['_sigClear' + num]();
+      }
+
+      initSignaturePad(1);
+      initSignaturePad(2);
+    </script>
+  </body>
+</html>

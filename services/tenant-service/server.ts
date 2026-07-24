@@ -136,6 +136,237 @@ app.get('/tenant/:tenantSlug/settings', asyncHandler(async (req: Request, res: R
   }
 }));
 
+// ============================================
+// MORTUARY CHARGE SETTINGS ROUTES
+// ============================================
+
+// Helper to ensure mortuary_charge_settings table exists
+const ensureMortuarySettingsTable = async (conn: mysql.Connection) => {
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS mortuary_charge_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_slug VARCHAR(255) NOT NULL UNIQUE,
+      daily_storage_rate DECIMAL(12,2) NOT NULL DEFAULT 500.00,
+      initial_admission_fee DECIMAL(12,2) NOT NULL DEFAULT 2000.00,
+      embalming_fee DECIMAL(12,2) NOT NULL DEFAULT 5000.00,
+      viewing_fee_per_session DECIMAL(12,2) NOT NULL DEFAULT 1000.00,
+      certificate_processing_fee DECIMAL(12,2) NOT NULL DEFAULT 500.00,
+      currency VARCHAR(10) NOT NULL DEFAULT 'KES',
+      charge_type ENUM('daily','hourly') NOT NULL DEFAULT 'daily',
+      free_days INT NOT NULL DEFAULT 0,
+      notes TEXT,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+};
+
+// GET mortuary charge settings for a tenant
+app.get('/tenant/:tenantSlug/mortuary-charges', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: tenant.db_name
+  });
+
+  try {
+    await ensureMortuarySettingsTable(conn);
+
+    const [rows] = await conn.query(
+      'SELECT * FROM mortuary_charge_settings WHERE tenant_slug = ?',
+      [tenantSlug]
+    );
+    const settings = (rows as any[]);
+
+    if (settings.length === 0) {
+      // Return defaults
+      res.json({
+        success: true,
+        data: {
+          tenant_slug: tenantSlug,
+          daily_storage_rate: 500.00,
+          initial_admission_fee: 2000.00,
+          embalming_fee: 5000.00,
+          viewing_fee_per_session: 1000.00,
+          certificate_processing_fee: 500.00,
+          currency: 'KES',
+          charge_type: 'daily',
+          free_days: 0,
+          notes: null,
+          is_new: true
+        }
+      });
+    } else {
+      res.json({ success: true, data: settings[0] });
+    }
+  } finally {
+    await conn.end();
+  }
+}));
+
+// PUT mortuary charge settings for a tenant
+app.put('/tenant/:tenantSlug/mortuary-charges', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  const {
+    daily_storage_rate,
+    initial_admission_fee,
+    embalming_fee,
+    viewing_fee_per_session,
+    certificate_processing_fee,
+    currency,
+    charge_type,
+    free_days,
+    notes
+  } = req.body;
+
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: tenant.db_name
+  });
+
+  try {
+    await ensureMortuarySettingsTable(conn);
+
+    await conn.query(
+      `INSERT INTO mortuary_charge_settings
+        (tenant_slug, daily_storage_rate, initial_admission_fee, embalming_fee, viewing_fee_per_session, certificate_processing_fee, currency, charge_type, free_days, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+        daily_storage_rate = VALUES(daily_storage_rate),
+        initial_admission_fee = VALUES(initial_admission_fee),
+        embalming_fee = VALUES(embalming_fee),
+        viewing_fee_per_session = VALUES(viewing_fee_per_session),
+        certificate_processing_fee = VALUES(certificate_processing_fee),
+        currency = VALUES(currency),
+        charge_type = VALUES(charge_type),
+        free_days = VALUES(free_days),
+        notes = VALUES(notes),
+        updated_at = NOW()`,
+      [
+        tenantSlug,
+        parseFloat(daily_storage_rate) || 500,
+        parseFloat(initial_admission_fee) || 2000,
+        parseFloat(embalming_fee) || 5000,
+        parseFloat(viewing_fee_per_session) || 1000,
+        parseFloat(certificate_processing_fee) || 500,
+        currency || 'KES',
+        charge_type || 'daily',
+        parseInt(free_days) || 0,
+        notes || null
+      ]
+    );
+
+    const [rows] = await conn.query(
+      'SELECT * FROM mortuary_charge_settings WHERE tenant_slug = ?',
+      [tenantSlug]
+    );
+
+    res.json({ success: true, message: 'Mortuary charge settings saved successfully', data: (rows as any[])[0] });
+  } finally {
+    await conn.end();
+  }
+}));
+
+// GET deceased with calculated mortuary charges
+app.get('/tenant/:tenantSlug/mortuary-charges/deceased-preview', asyncHandler(async (req: Request, res: Response) => {
+  const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;
+  const tenant = await TenantModel.findBySubdomain(tenantSlug);
+
+  if (!tenant) {
+    return res.status(404).json({ success: false, message: 'Tenant not found' });
+  }
+
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: tenant.db_name
+  });
+
+  try {
+    await ensureMortuarySettingsTable(conn);
+
+    // Get charge settings
+    const [settingsRows] = await conn.query(
+      'SELECT * FROM mortuary_charge_settings WHERE tenant_slug = ?',
+      [tenantSlug]
+    );
+    const settings = (settingsRows as any[])[0] || {
+      daily_storage_rate: 500,
+      initial_admission_fee: 2000,
+      embalming_fee: 5000,
+      currency: 'KES',
+      free_days: 0
+    };
+
+    // Get all active deceased
+    const [deceased] = await conn.query(
+      `SELECT deceased_id, full_name, date_admitted, admission_status, gender
+       FROM deceased
+       WHERE is_deleted = FALSE AND admission_status NOT IN ('released', 'buried')
+       ORDER BY date_admitted ASC`
+    );
+
+    const deceasedList = (deceased as any[]).map(d => {
+      const admittedDate = new Date(d.date_admitted);
+      const now = new Date();
+      const totalDays = Math.max(0, Math.floor((now.getTime() - admittedDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const billableDays = Math.max(0, totalDays - (settings.free_days || 0));
+      const storageFee = billableDays * parseFloat(settings.daily_storage_rate);
+      const totalFee = storageFee + parseFloat(settings.initial_admission_fee);
+
+      return {
+        deceased_id: d.deceased_id,
+        full_name: d.full_name,
+        date_admitted: d.date_admitted,
+        admission_status: d.admission_status,
+        total_days: totalDays,
+        billable_days: billableDays,
+        daily_rate: parseFloat(settings.daily_storage_rate),
+        storage_fee: storageFee,
+        initial_admission_fee: parseFloat(settings.initial_admission_fee),
+        total_estimated_fee: totalFee,
+        currency: settings.currency
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        settings,
+        deceased: deceasedList,
+        summary: {
+          total_deceased: deceasedList.length,
+          total_estimated_revenue: deceasedList.reduce((sum: number, d: any) => sum + d.total_estimated_fee, 0),
+          currency: settings.currency
+        }
+      }
+    });
+  } finally {
+    await conn.end();
+  }
+}));
+
 // Simplified user routes (tenantSlug only)
 app.get('/tenant/:tenantSlug/users', asyncHandler(async (req: Request, res: Response) => {
   const tenantSlug = Array.isArray(req.params.tenantSlug) ? req.params.tenantSlug[0] : req.params.tenantSlug;

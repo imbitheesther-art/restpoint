@@ -113,15 +113,18 @@ const SERVICE_ROUTES = {
   'change-password': SERVICE_URLS.auth,
   'me': SERVICE_URLS.auth,
 
-  // Tenant service (port 8002)
-  'tenant': SERVICE_URLS.tenant,
-  'tenants': SERVICE_URLS.tenant,
-  'system-admin': SERVICE_URLS.tenant,
+   // Tenant service (port 8002)
+   'tenant': SERVICE_URLS.tenant,
+   'tenants': SERVICE_URLS.tenant,
+   'system-admin': SERVICE_URLS.tenant,
+   'uploads': SERVICE_URLS.tenant,
 
   // Deceased service (port 5003)
   'deceased': SERVICE_URLS.deceased,
   'autopsy': SERVICE_URLS.deceased,
+  'postmortem': SERVICE_URLS.deceased,
   'charges': SERVICE_URLS.deceased,
+  'payments': SERVICE_URLS.deceased,
   'charge-settings': SERVICE_URLS.deceased,
   'embalming': SERVICE_URLS.deceased,
 
@@ -170,6 +173,7 @@ const SERVICE_ROUTES = {
 
   // Body checkout service (port 5013)
   'bodycheckout': SERVICE_URLS.bodycheckout,
+  'body-release': SERVICE_URLS.bodycheckout,
 
   // Extra services (port 5019)
   'extra': SERVICE_URLS.extra,
@@ -239,9 +243,12 @@ for (const targetUrl of Object.values(SERVICE_ROUTES)) {
       onError: (err, req, res) => {
         Logger.error(`[PROXY ERROR] ${req.method} ${req.originalUrl}: ${err.message}`);
         if (!res.headersSent) {
-          res.status(504).json({
+          const firstSegment = (req.originalUrl || req.url || '').split('/').filter(Boolean)[2] || 'unknown';
+          const friendlyName = firstSegment.charAt(0).toUpperCase() + firstSegment.slice(1);
+          res.status(503).json({
             success: false,
-            message: 'Gateway Timeout: The microservice failed to respond.',
+            message: `${friendlyName} service is temporarily unavailable. Please try again later.`,
+            service: firstSegment,
             error: err.code,
             target: targetUrl
           });

@@ -11,12 +11,14 @@
     "noImplicitAny": false,
     "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
+    "moduleResolution": "node16",
     "types": [
       "node"
     ]
   },
   "include": [
     "server.ts",
+    "socket.ts",
     "routes/**/*.ts",
     "controllers/**/*.ts",
     "database/**/*.ts",
@@ -25,13 +27,7 @@
     "utils/**/*.ts",
     "config/**/*.ts",
     "types/**/*.ts",
-    "../../shared/**/*.ts",
-    "../../packages/shared-config/src/**/*.ts",
-    "../../packages/shared-logger/src/**/*.ts",
-    "../../packages/shared-utils/src/**/*.ts",
-    "../../packages/shared-services/src/**/*.ts",
-    "../../global/**/*.ts",
-    "../../configurations/**/*.ts"
+    "migrations/**/*.js"
   ],
   "exclude": [
     "node_modules",

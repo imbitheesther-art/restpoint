@@ -1,7 +1,10 @@
+
+
+
 :root {
   color-scheme: light;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f8ff;
+
   --app-max-width: 96vw;
 }
 
@@ -18,15 +21,29 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f3f4f6;
+ 
   color: #0f172a;
   overflow-x: hidden;
 }
 
-#root {
-  overflow-x: hidden;
-  min-height: 100vh;
+
+
+/* Hide scrollbar for Chrome, Safari and Edge */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
 }
+
+/* Hide scrollbar for Firefox */
+html {
+    scrollbar-width: none;
+}
+
+/* Hide scrollbar for IE/Edge */
+body {
+    -ms-overflow-style: none;
+}
+
 
 .btn-dark,
 .btn-outline {

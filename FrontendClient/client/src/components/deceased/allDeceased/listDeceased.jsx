@@ -1,1294 +1,532 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import axios from 'axios';
-import {
-  Search, Plus, Edit, Trash2, Eye, RefreshCw, AlertTriangle,
-  CheckCircle, Clock, User, Calendar, Filter, Download,
-  MoreVertical, ChevronDown, FileSpreadsheet, X, Mail, Phone, MapPin, Copy
-} from '../../../utils/icons/icons';
-import styled, { keyframes, css } from 'styled-components';
-import ExportModal from '../ExportModal';
-import { ErrorBoundary } from 'react-error-boundary';
+import { getTenantSlug, getAuthToken } from '../../../utils/globalAuth';
+import { showToast } from '../../../utils/toast';
+import { ToastContainer } from 'react-toastify';
 
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const BASE_URL = `${API_GATEWAY_URL}`;
+const BASE_URL = `${API_GATEWAY_URL}/deceased`;
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  DESIGN TOKENS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Global Font Styles ─────────────────────────────────────────────
+const GlobalFonts = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+`;
 
-const T = {
-  bg: '#F8FAFC',
-  surface: '#FFFFFF',
-  surfaceHover: '#F1F5F9',
-  border: '#E2E8F0',
-  borderLight: '#F1F5F9',
-  text: '#0F172A',
-  textBody: '#334155',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  textFaint: '#CBD5E1',
-  primary: '#2563EB',
-  primaryBg: '#EFF6FF',
-  primaryHover: '#1D4ED8',
+const fadeIn = keyframes`from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); }`;
+
+// ─── Color Variables ────────────────────────────────────────────────
+const C = {
+  black: '#0a0a0a',
+  dark: '#1a1a1a',
+  mid: '#444444',
+  gray: '#777777',
+  lightGray: '#aaaaaa',
+  border: '#c8c8c8',
+  borderLight: '#e0e0e0',
+  bgField: '#f7f7f5',
+  bgAccent: '#f0eeea',
+  bgSection: '#fafaf9',
+  bgApp: '#ececec',
+  exportBtn: '#0F3040',
   success: '#059669',
-  successBg: '#ECFDF5',
-  successBorder: '#A7F3D0',
-  warning: '#D97706',
-  warningBg: '#FFFBEB',
-  warningBorder: '#FDE68A',
-  danger: '#DC2626',
-  dangerBg: '#FEF2F2',
-  dangerBorder: '#FECACA',
-  info: '#2563EB',
-  infoBg: '#EFF6FF',
-  infoBorder: '#BFDBFE',
-  purple: '#7C3AED',
-  purpleBg: '#F5F3FF',
-  avatarColors: ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#EF4444', '#06B6D4', '#F97316'],
+  successBg: '#ecfdf5',
+  warning: '#d97706',
+  warningBg: '#fef3c7',
+  danger: '#dc2626',
+  dangerBg: '#fef2f2',
+  info: '#2563eb',
+  infoBg: '#eff6ff',
+  brown: '#795548',
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  ANIMATIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const slideInRight = keyframes`
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-`;
-
-const fadeInOverlay = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-
-const spin = keyframes`
-  to { transform: rotate(360deg); }
-`;
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  STYLED COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════
-
-const Page = styled.div`
+// ─── Styled Components ──────────────────────────────────────────────
+const AppContainer = styled.div`
+  font-family: 'Source Sans 3', -apple-system, sans-serif;
+ 
+  color: ${C.dark};
+  font-size: 14px;
+  line-height: 1.5;
   min-height: 100vh;
-  background: ${T.bg};
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: ${T.text};
+
+  margin: 0 auto;
+  padding: 0px;
+  animation: ${fadeIn} 0.25s ease-out;
 `;
 
 const PageHeader = styled.div`
-  background: ${T.surface};
-  border-bottom: 1px solid ${T.border};
-  padding: 1.125rem 1.75rem;
-`;
-
-const PageHeaderInner = styled.div`
-  max-width: 1320px;
-  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 24px;
   flex-wrap: wrap;
-  gap: 0.75rem;
-`;
-
-const PageTitle = styled.h1`
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
-  color: ${T.text};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const Subtitle = styled.p`
-  font-size: 0.8125rem;
-  color: ${T.textSecondary};
-  margin: 0.125rem 0 0 1.75rem;
-  max-width: 1320px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-bottom: 0;
+  gap: 16px;
+  h1 {
+    font-family: 'Merriweather', serif;
+    font-size: 24px;
+    color: ${C.black};
+    margin: 0;
+  }
+  p {
+    color: ${C.gray};
+    font-size: 14px;
+    margin: 4px 0 0;
+  }
 `;
 
 const Actions = styled.div`
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 `;
 
 const Btn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.875rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid ${T.border};
-  background: ${T.surface};
-  color: ${T.textBody};
-  white-space: nowrap;
-
-  &:hover {
-    background: ${T.surfaceHover};
-    border-color: ${T.textMuted};
-  }
-
-  ${({ $variant }) =>
-    $variant === "primary" &&
-    `
-      background: ${T.primary};
-      color: white;
-      border-color: ${T.primary};
-
-      &:hover {
-        background: ${T.primaryHover};
-      }
-    `}
-
-  ${({ $variant }) =>
-    $variant === "secondary" &&
-    `
-      background: ${T.secondary};
-      color: white;
-      border-color: ${T.secondary};
-    `}
-
-  ${({ $variant }) =>
-    $variant === "ghost" &&
-    `
-      background: transparent;
-      border: none;
-    `}
+  padding: 10px 16px; border-radius: 4px; font-weight: 600; font-size: 13px;
+  cursor: pointer; border: 1px solid ${C.border}; background: white; color: ${C.dark};
+  transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: 'Source Sans 3', sans-serif;
+  &:hover { background: ${C.bgField}; border-color: ${C.gray}; }
+  ${p => p.$primary && `background: ${C.black}; color: white; border-color: ${C.black};
+    &:hover { background: ${C.dark}; }`}
+  ${p => p.$danger && `background: ${C.danger}; color: white; border-color: ${C.danger};
+    &:hover { background: #b91c1c; }`}
+  ${p => p.$export && `background: ${C.exportBtn}; color: white; border-color: ${C.exportBtn};
+    &:hover { background: #0c2530; }`}
+  ${p => p.$sm && `padding: 6px 12px; font-size: 12px;`}
 `;
 
-
-const Main = styled.div`
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 1.25rem 1.75rem 2rem;
-`;
-
-const Card = styled.div`
-  background: ${T.surface};
-  border: 1px solid ${T.border};
-  border-radius: 10px;
+const ListCard = styled.div`
+  background: white;
+  border: 1px solid ${C.borderLight};
+  border-radius: 8px;
   overflow: hidden;
-  animation: ${fadeIn} 0.2s ease-out;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 `;
 
-const CardTop = styled.div`
-  padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid ${T.borderLight};
+const ListHeader = styled.div`
+  background: ${C.bgSection};
+  padding: 16px 24px;
+  border-bottom: 1px solid ${C.borderLight};
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 12px;
+  h2 { font-size: 16px; font-weight: 700; color: ${C.black}; margin: 0; }
 `;
 
-const CardTopLeft = styled.div`
+const FilterToolbar = styled.div`
+  padding: 16px 24px;
+  background: white;
+  border-bottom: 1px solid ${C.borderLight};
   display: flex;
-  align-items: center;
-  gap: 0.625rem;
-`;
-
-const CardTopLabel = styled.span`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${T.text};
-`;
-
-const CountBadge = styled.span`
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 10px;
-  background: ${T.primaryBg};
-  color: ${T.primary};
-`;
-
-const CardTopRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const SearchBox = styled.div`
-  position: relative;
-  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
   align-items: center;
 `;
 
-const SearchIcon = styled.div`
-  position: absolute;
-  left: 0.625rem;
-  color: ${T.textMuted};
-  display: flex;
-  pointer-events: none;
+const FormInput = styled.input`
+  height: 38px;
+  border: 1px solid ${C.border};
+  border-radius: 4px;
+  padding: 0 12px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px;
+  color: ${C.dark};
+  background: ${p => p.$search ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23777' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E") no-repeat 10px center, ${C.bgField}` : C.bgField};
+  background-size: ${p => p.$search ? '16px, auto' : 'auto'};
+  padding-left: ${p => p.$search ? '34px' : '12px'};
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  &:focus { outline: none; border-color: ${C.black}; background: white; }
 `;
 
-const SearchInput = styled.input`
-  padding: 0.4375rem 0.75rem 0.4375rem 2rem;
-  border: 1px solid ${T.border};
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  color: ${T.text};
-  background: ${T.surface};
-  width: 220px;
-  transition: all 0.15s ease;
-
-  &::placeholder { color: ${T.textMuted}; }
-  &:focus {
-    outline: none;
-    border-color: ${T.primary};
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
-  }
-`;
-
-const SelectInput = styled.select`
-  padding: 0.4375rem 1.75rem 0.4375rem 0.625rem;
-  border: 1px solid ${T.border};
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  color: ${T.textBody};
-  background: ${T.surface};
+const FormSelect = styled.select`
+  height: 38px;
+  border: 1px solid ${C.border};
+  border-radius: 4px;
+  padding: 0 12px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px;
+  color: ${C.dark};
+  background: ${C.bgField};
+  transition: border-color 0.15s;
   cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  transition: all 0.15s ease;
+  &:focus { outline: none; border-color: ${C.black}; background: white; }
+`;
 
-  &:focus {
-    outline: none;
-    border-color: ${T.primary};
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+const TableWrap = styled.div`overflow-x: auto;`;
+
+const StyledTable = styled.table`
+  width: 100%; border-collapse: collapse; min-width: 800px;
+  thead th {
+    text-align: left; padding: 12px 24px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: ${C.gray};
+    border-bottom: 1px solid ${C.borderLight}; background: ${C.bgSection}; white-space: nowrap;
   }
+  tbody tr {
+    border-bottom: 1px solid ${C.borderLight}; cursor: pointer; transition: background 0.1s;
+    &:last-child { border-bottom: none; }
+    &:hover { background: ${C.bgField}; }
+  }
+  td { padding: 16px 24px; font-size: 14px; color: ${C.dark}; vertical-align: middle; }
 `;
 
-const TableWrap = styled.div`
-  overflow-x: auto;
+const AvatarSm = styled.div`
+  width: 36px; height: 36px; border-radius: 50%; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
+  background: ${p => p.$female ? C.brown : C.black};
 `;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-const THead = styled.thead``;
-
-const TRow = styled.tr`
-  border-bottom: 1px solid ${T.borderLight};
-  transition: background 0.1s ease;
-
-  &:last-child { border-bottom: none; }
-  &:hover { background: ${T.surfaceHover}; }
-`;
-
-const TH = styled.th`
-  padding: 0.625rem 1rem;
-  text-align: left;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: ${T.textSecondary};
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: ${T.bg};
-  border-bottom: 1px solid ${T.border};
-  white-space: nowrap;
-`;
-
-const TD = styled.td`
-  padding: 0.75rem 1rem;
-  font-size: 0.8125rem;
-  color: ${T.textBody};
-  vertical-align: middle;
-  white-space: nowrap;
-`;
-
-// ─── Avatar ────────────────────────────────────────────────────────────────
-
-const Avatar = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: ${props => props.color};
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
-`;
-
-// ─── Name Cell ────────────────────────────────────────────────────────────
 
 const NameCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 200px;
+  display: flex; align-items: center; gap: 12px;
+  .meta { font-size: 12px; color: ${C.gray}; margin-top: 2px; }
 `;
 
-const NameInfo = styled.div`
-  min-width: 0;
+const Badge = styled.span`
+  padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; white-space: nowrap;
+  background: ${p => p.$active ? C.warningBg : p.$released ? C.successBg : C.bgField};
+  color: ${p => p.$active ? C.warning : p.$released ? C.success : C.gray};
 `;
 
-const NameText = styled.div`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${T.text};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+const EmptyRow = styled.td`
+  text-align: center; padding: 40px; color: ${C.gray};
 `;
 
-const SubText = styled.div`
-  font-size: 0.6875rem;
-  color: ${T.textSecondary};
-  margin-top: 0.0625rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-// ─── ID Cell ──────────────────────────────────────────────────────────────
-
-const IdCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-`;
-
-const IdText = styled.span`
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: ${T.textSecondary};
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  background: ${T.bg};
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid ${T.borderLight};
-`;
-
-const CopyBtn = styled.button`
-  background: none;
-  border: none;
-  color: ${T.textMuted};
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 3px;
-  display: flex;
-  opacity: 0;
-  transition: all 0.12s ease;
-
-  ${TRow}:hover & { opacity: 1; }
-  &:hover { color: ${T.primary}; background: ${T.primaryBg}; }
-`;
-
-// ─── Status Badge ─────────────────────────────────────────────────────────
-
-const StatusBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3125rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: 20px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-
-  ${props => {
-    const map = {
-      success: { bg: T.successBg, color: T.success, border: T.successBorder },
-      warning: { bg: T.warningBg, color: T.warning, border: T.warningBorder },
-      danger: { bg: T.dangerBg, color: T.danger, border: T.dangerBorder },
-      info: { bg: T.infoBg, color: T.info, border: T.infoBorder },
-      purple: { bg: T.purpleBg, color: T.purple, border: '#DDD6FE' },
-    };
-    const s = map[props.type];
-    return css`background: ${s.bg}; color: ${s.color}; border: 1px solid ${s.border};`;
-  }}
-`;
-
-// ─── Days Badge ────────────────────────────────────────────────────────────
-
-const DaysBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.1875rem 0.5rem;
-  border-radius: 20px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-
-  ${props => {
-    if (props.type === 'danger') return css`background: ${T.dangerBg}; color: ${T.danger};`;
-    if (props.type === 'warn') return css`background: ${T.warningBg}; color: ${T.warning};`;
-    return css`background: ${T.successBg}; color: ${T.success};`;
-  }}
-`;
-
-// ─── Type Tag ─────────────────────────────────────────────────────────────
-
-const TypeTag = styled.span`
-  font-size: 0.6875rem;
-  color: ${T.textSecondary};
-  background: ${T.bg};
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid ${T.borderLight};
-`;
-
-// ─── Charge Text ───────────────────────────────────────────────────────────
-
-const ChargeText = styled.span`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${T.text};
-`;
-
-const ChargeLabel = styled.span`
-  font-size: 0.6875rem;
-  color: ${T.textMuted};
-  display: block;
-`;
-
-// ─── Action Buttons ────────────────────────────────────────────────────────
-
-const ActionsCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.125rem;
-  justify-content: flex-end;
-`;
-const ActionBtn = styled.button`
-  background: none;
-  border: none;
-  color: ${T.textMuted};
-  cursor: pointer;
-  padding: 0.375rem;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.12s ease;
-
-  &:hover {
-    background: ${({ danger }) => danger ? T.dangerBg : T.primaryBg};
-    color: ${({ danger }) => danger ? T.danger : T.primary};
+const LoadingState = styled.div`
+  text-align: center; padding: 60px; color: ${C.gray};
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  .spinner {
+    width: 24px; height: 24px; border: 2px solid ${C.borderLight};
+    border-top-color: ${C.black}; border-radius: 50%;
+    animation: spin 0.6s linear infinite;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
 `;
 
-// ─── Empty State ───────────────────────────────────────────────────────────
-
-const EmptyWrap = styled.div`
-  text-align: center;
-  padding: 4rem 2rem;
+// ─── Modal Components ───────────────────────────────────────────────
+const ModalOverlay = styled.div`
+  display: ${p => p.$open ? 'flex' : 'none'};
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+  justify-content: center; align-items: center; padding: 20px;
+`;
+const ModalContent = styled.div`
+  background: white; border-radius: 8px; width: 100%; max-width: 700px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+`;
+const ModalHeader = styled.div`
+  padding: 20px 24px; border-bottom: 1px solid ${C.borderLight};
+  display: flex; justify-content: space-between; align-items: center;
+  h2 { font-family: 'Merriweather', serif; font-size: 18px; color: ${C.black}; margin: 0; }
+`;
+const ModalBody = styled.div`padding: 24px;`;
+const ModalFooter = styled.div`
+  padding: 16px 24px; border-top: 1px solid ${C.borderLight}; text-align: right; display: flex; gap: 8px; justify-content: flex-end;
+`;
+const CloseBtn = styled.button`
+  background: none; border: none; font-size: 24px; color: ${C.gray}; cursor: pointer; line-height: 1;
+  &:hover { color: ${C.black}; }
+`;
+const SectionHead = styled.div`
+  background: ${C.black}; color: white; padding: 8px 16px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 24px; border-radius: 2px;
+  display: flex; align-items: center; gap: 8px;
+  span { opacity: 0.5; font-size: 10px; }
+  ${p => p.$mt0 && 'margin-top: 0;'}
+  ${p => p.$mt4 && 'margin-top: 32px;'}
+`;
+const FormRow = styled.div`
+  display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+`;
+const FormGroup = styled.div`flex: 1; min-width: 150px;`;
+const FormLabel = styled.label`
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: ${C.gray}; margin-bottom: 6px;
 `;
 
-const EmptyIcon = styled.div`
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: ${T.bg};
-  border: 1px solid ${T.border};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: ${T.textMuted};
-  margin-bottom: 1rem;
+const ModalInput = styled.input`
+  height: 38px; width: 100%; border: 1px solid ${C.border}; border-radius: 4px;
+  padding: 0 12px; font-family: 'Source Sans 3', sans-serif; font-size: 14px;
+  color: ${C.dark}; background: ${C.bgField}; box-sizing: border-box;
+  &:focus { outline: none; border-color: ${C.black}; background: white; }
 `;
 
-const EmptyTitle = styled.h4`
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: ${T.text};
-  margin: 0 0 0.375rem;
+const DataTable = styled.table`
+  width: 100%; border-collapse: collapse; margin-top: 0;
+  th { text-align: left; font-size: 11px; text-transform: uppercase; color: ${C.gray}; padding: 8px 12px; border-bottom: 2px solid ${C.borderLight}; white-space: nowrap; }
+  td { padding: 12px; font-size: 13px; border-bottom: 1px solid ${C.borderLight}; vertical-align: middle; }
 `;
 
-const EmptyDesc = styled.p`
-  font-size: 0.8125rem;
-  color: ${T.textSecondary};
-  margin: 0;
+const StatusTag = styled.span`
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 4px; font-size: 12px; font-weight: 700;
+  background: ${p => p.$success ? C.successBg : p.$warning ? C.warningBg : p.$info ? C.infoBg : C.bgField};
+  color: ${p => p.$success ? C.success : p.$warning ? C.warning : p.$info ? C.info : C.gray};
+  border: 1px solid ${p => p.$success ? '#a7f3d0' : p.$warning ? '#fde68a' : p.$info ? '#bfdbfe' : C.borderLight};
 `;
 
-// ─── Loading ───────────────────────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────
+const DeceasedListPage = () => {
+  const navigate = useNavigate();
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [genderFilter, setGenderFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [showExport, setShowExport] = useState(false);
+  const [exportStart, setExportStart] = useState('');
+  const [exportEnd, setExportEnd] = useState('');
 
-const LoadingWrap = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  gap: 0.75rem;
-`;
-
-const Spinner = styled.div`
-  animation: ${spin} 1s linear infinite;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-// ─── Drawer ────────────────────────────────────────────────────────────────
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 9998;
-  animation: ${fadeInOverlay} 0.15s ease-out;
-`;
-
-const Drawer = styled.div`
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 460px;
-  max-width: 100vw;
-  background: ${T.surface};
-  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  animation: ${slideInRight} 0.25s ease-out;
-`;
-
-const DrawerHeader = styled.div`
-  padding: 1.125rem 1.25rem;
-  border-bottom: 1px solid ${T.border};
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: ${T.bg};
-`;
-
-const DrawerTitle = styled.h2`
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: ${T.text};
-  margin: 0;
-`;
-
-const DrawerSubtitle = styled.p`
-  font-size: 0.75rem;
-  color: ${T.textSecondary};
-  margin: 0.25rem 0 0;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-`;
-
-const DrawerClose = styled.button`
-  background: ${T.surface};
-  border: 1px solid ${T.border};
-  color: ${T.textSecondary};
-  cursor: pointer;
-  padding: 0.375rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.12s ease;
-
-  &:hover { background: ${T.dangerBg}; color: ${T.danger}; border-color: ${T.dangerBorder}; }
-`;
-
-const DrawerBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.25rem;
-`;
-
-const DrawerSection = styled.div`
-  margin-bottom: 1.25rem;
-`;
-
-const DrawerSectionTitle = styled.h4`
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: ${T.textSecondary};
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 0.625rem;
-  padding-bottom: 0.375rem;
-  border-bottom: 1px solid ${T.borderLight};
-`;
-
-const FieldGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.625rem;
-`;
-
-const FieldCard = styled.div`
-  padding: 0.75rem;
-  background: ${T.bg};
-  border: 1px solid ${T.borderLight};
-  border-radius: 8px;
-`;
-
-const FieldCardFull = styled(FieldCard)`
-  grid-column: 1 / -1;
-`;
-
-const FieldLabel = styled.div`
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: ${T.textMuted};
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
-`;
-
-const FieldValue = styled.div`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${T.text};
-`;
-
-const FieldValueLarge = styled.div`
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: ${T.text};
-`;
-
-const DrawerFooter = styled.div`
-  padding: 1rem 1.25rem;
-  border-top: 1px solid ${T.border};
-  display: flex;
-  gap: 0.5rem;
-  background: ${T.surface};
-`;
-const DrawerBtn = styled.button`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid ${T.border};
-  background: ${T.surface};
-  color: ${T.textBody};
-
-  &:hover {
-    background: ${T.surfaceHover};
-  }
-
-  ${({ primary }) =>
-    primary &&
-    css`
-      background: ${T.primary};
-      color: white;
-      border-color: ${T.primary};
-
-      &:hover {
-        background: ${T.primaryHover};
-      }
-    `}
-`;
-
-// ─── Contact Row (Drawer) ────────────────────────────────────────────────
-
-const ContactRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid ${T.borderLight};
-
-  &:last-child { border-bottom: none; }
-`;
-
-const ContactIcon = styled.div`
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: ${T.primaryBg};
-  color: ${T.primary};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-`;
-
-const ContactText = styled.div`
-  font-size: 0.8125rem;
-  color: ${T.textBody};
-`;
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-const getTenantSlug = () => {
-  return localStorage.getItem('tenantSlug') ||
-    localStorage.getItem('tenant_slug') ||
-    (() => {
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        return user.tenantSlug || user.tenant?.slug || 'default';
-      } catch { return 'default'; }
-    })();
-};
-
-const getInitials = (name) => {
-  if (!name || name === 'Unknown') return '??';
-
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase();
-};
-
-
-
-const getAvatarColor = (name) => {
-  if (!name) return T.avatarColors[0];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return T.avatarColors[Math.abs(hash) % T.avatarColors.length];
-}
-
-
-
-
-const getDaysInMortuary = (admissionDate) => {
-  if (!admissionDate) return 0;
-  return Math.max(0, Math.floor((Date.now() - new Date(admissionDate).getTime()) / 86400000));
-}
-
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' });
-
-}
-
-
-
-
-const copyToClipboard = (text) => {
-  navigator.clipboard?.writeText(text);
-}
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-const DeceasedList = () => {
-  const { slug } = useParams();
-  const [deceasedList, setDeceasedList] = useState([]);
-  const [filteredList, setFilteredList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
-
-  // Get tenant slug directly from URL params (most reliable method)
-  // Fallback to localStorage if URL param is not available
-  const tenantSlug = slug === 'default' ? 'system_shared' : (slug || getTenantSlug());
-
-  // Sync tenant slug to localStorage immediately (before axios interceptor reads it)
-  if (tenantSlug && tenantSlug !== 'default') {
-    const currentLocalSlug = localStorage.getItem('tenantSlug');
-    if (currentLocalSlug !== tenantSlug) {
-      localStorage.setItem('tenantSlug', tenantSlug);
-    }
-  }
-
-  // ─── Fetch ───────────────────────────────────────────────────────────
-  const fetchDeceasedList = useCallback(async () => {
-    // Skip if tenant slug is not valid
-    if (!tenantSlug || tenantSlug === 'default') {
-      console.error('Invalid tenant slug:', tenantSlug);
-      return;
-    }
-
+  // ─── Fetch Deceased ──────────────────────────────────────────────
+  const fetchDeceased = useCallback(async () => {
+    setLoading(true);
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      const response = await axios.get(`${BASE_URL}/deceased/deceased-all`, {
+      const tenantSlug = getTenantSlug();
+      const params = {};
+      if (search) params.search = search;
+      const token = getAuthToken ? getAuthToken() : localStorage.getItem('token') || '';
+      const res = await axios.get(`${BASE_URL}/deceased-all`, {
+        params,
         headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
+          'Authorization': `Bearer ${token}`,
           'x-tenant-slug': tenantSlug,
         },
       });
-      const data = response.data?.data || response.data || [];
-      setDeceasedList(data);
-      setFilteredList(data);
-    } catch (error) {
-      console.error('Error fetching deceased list:', error);
-      setDeceasedList([]);
-      setFilteredList([]);
+      const data = res.data?.data || res.data || [];
+      setRecords(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching deceased:', err);
+      setRecords([]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [tenantSlug]);
+  }, [search]);
 
   useEffect(() => {
-    fetchDeceasedList();
-  }, [fetchDeceasedList]);
+    fetchDeceased();
+  }, [fetchDeceased]);
 
-  // ─── Filter ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    let filtered = deceasedList;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      filtered = filtered.filter(d =>
-        d.full_name?.toLowerCase().includes(q) ||
-        d.deceased_id?.toLowerCase().includes(q)
-      );
+  // ─── Filters ─────────────────────────────────────────────────────
+  const filteredRecords = records.filter(r => {
+    const name = (r.full_name || r.name || '').toLowerCase();
+    const id = (r.deceased_id || r.id || '').toLowerCase();
+    const adm = (r.admission_number || r.admission_no || '').toLowerCase();
+    const searchTerm = search.toLowerCase();
+    if (search && !name.includes(searchTerm) && !id.includes(searchTerm) && !adm.includes(searchTerm)) return false;
+    if (statusFilter) {
+      const status = (r.body_status || r.status || '').toLowerCase();
+      if (statusFilter === 'Active' && !['active', 'in morgue', 'pending'].includes(status)) return false;
+      if (statusFilter === 'Released' && !['released', 'transferred'].includes(status)) return false;
     }
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(d => d.status === statusFilter);
+    if (genderFilter) {
+      const sex = (r.sex || r.gender || '').toLowerCase();
+      if (genderFilter.toLowerCase() !== sex) return false;
     }
-    setFilteredList(filtered);
-  }, [searchTerm, statusFilter, deceasedList]);
+    return true;
+  });
 
-  // ─── Export ───────────────────────────────────────────────────────────
-  const handleExport = async (exportOptions) => {
-    setIsExporting(true);
-    try {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      const params = new URLSearchParams();
-      if (exportOptions.startDate) params.append('startDate', exportOptions.startDate);
-      if (exportOptions.endDate) params.append('endDate', exportOptions.endDate);
-      if (exportOptions.format) params.append('format', exportOptions.format);
-      if (exportOptions.columns?.length) params.append('columns', exportOptions.columns.join(','));
-      if (exportOptions.includeFilters) {
-        if (searchTerm) params.append('search', searchTerm);
-        if (statusFilter !== 'all') params.append('status', statusFilter);
-      }
-      const response = await axios.get(`${BASE_URL}/deceased/export?${params.toString()}`, {
-        headers: { 'Authorization': token ? `Bearer ${token}` : '', 'x-tenant-slug': tenantSlug },
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `deceased_report_${new Date().toISOString().split('T')[0]}.${exportOptions.format || 'xlsx'}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      setShowExportModal(false);
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert('Failed to export data.');
-    } finally {
-      setIsExporting(false);
-    }
+  const getInitials = (name) => {
+    if (!name) return 'NA';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
-  // ─── Delete ───────────────────────────────────────────────────────────
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
-    try {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      await axios.delete(`${BASE_URL}/deceased/${id}`, {
-        headers: { 'Authorization': token ? `Bearer ${token}` : '', 'x-tenant-slug': tenantSlug },
-      });
-      setDeceasedList(prev => prev.filter(item => item.deceased_id !== id && item.id !== id));
-    } catch (error) {
-      console.error('Delete failed:', error);
-      alert('Failed to delete record.');
-    }
+  const getDaysInMorgue = (admittedDate) => {
+    if (!admittedDate) return 0;
+    const admitted = new Date(admittedDate);
+    const now = new Date();
+    return Math.floor((now - admitted) / (1000 * 60 * 60 * 24));
   };
 
-  // ─── Drawer ───────────────────────────────────────────────────────────
-  const openDrawer = (record) => { setSelectedRecord(record); setDrawerOpen(true); };
-  const closeDrawer = () => { setDrawerOpen(false); setSelectedRecord(null); };
-
-  // ─── Status config ─────────────────────────────────────────────────────
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'released': return { type: 'success', label: 'Released', icon: <CheckCircle size={11} /> };
-      case 'transferred': return { type: 'info', label: 'Transferred', icon: <Mail size={11} /> };
-      case 'cancelled': return { type: 'danger', label: 'Cancelled', icon: <X size={11} /> };
-      case 'active':
-      default: return { type: 'warning', label: 'Active', icon: <Clock size={11} /> };
-    }
+  const formatDate = (d) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  LOADING STATE
-  // ═══════════════════════════════════════════════════════════════════════
+  const getStatus = (r) => {
+    const s = (r.body_status || r.status || '').toLowerCase();
+    if (s === 'released' || s === 'transferred') return 'Released';
+    return 'Active';
+  };
 
-  if (isLoading) {
-    return (
-      <Page>
-        <PageHeader>
-          <PageHeaderInner>
-            <PageTitle><User size={22} /> Deceased Records</PageTitle>
-          </PageHeaderInner>
-        </PageHeader>
-        <LoadingWrap>
-          <Spinner><RefreshCw size={28} color={T.primary} /></Spinner>
-          <span style={{ fontSize: '0.8125rem', color: T.textSecondary }}>Loading records...</span>
-        </LoadingWrap>
-      </Page>
-    );
-  }
+  const openProfile = (id) => {
+    const tenantSlug = getTenantSlug();
+    navigate(`/tenant/${tenantSlug}/deceased/${id}`);
+  };
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════════════
+  // ─── Export History ──────────────────────────────────────────────
+  const exportHistory = [
+    { date: 'Mar 15, 2025 10:00', range: 'Feb 2025 - Mar 2025', format: 'XLSX', status: 'Completed' },
+    { date: 'Feb 28, 2025 16:30', range: 'Jan 2025 - Feb 2025', format: 'CSV', status: 'Completed' },
+  ];
 
   return (
-    <Page>
-      {/* ─── Header ──────────────────────────────────────────────────── */}
-      <PageHeader>
-        <PageHeaderInner>
-          <PageTitle><User size={22} /> Deceased Records</PageTitle>
+    <>
+      <GlobalFonts />
+      <AppContainer>
+        <ToastContainer position="top-right" />
+
+        {/* Page Header */}
+        <PageHeader>
+          <div>
+            <h1>Deceased Records</h1>
+            <p>Manage and track all deceased records across your facility</p>
+          </div>
           <Actions>
-            <Btn onClick={fetchDeceasedList}><RefreshCw size={14} /> Refresh</Btn>
-            <Btn onClick={() => setShowExportModal(true)}><Download size={14} /> Export</Btn>
-            <Btn $variant="primary" as={Link} to={`/tenant/${tenantSlug}/deceased/register`}>
-              <Plus size={14} /> New Record
-            </Btn>
+            <Btn $export onClick={() => setShowExport(true)}>⬇ Export Data to Excel</Btn>
+            <Btn $primary onClick={() => {
+              const slug = getTenantSlug();
+              navigate(`/tenant/${slug}/deceased/register`);
+            }}>+ New Admission</Btn>
           </Actions>
-        </PageHeaderInner>
-      </PageHeader>
+        </PageHeader>
 
-      <Subtitle>Manage and track all deceased records across your facility</Subtitle>
+        {/* Main Card */}
+        <ListCard>
+          <ListHeader>
+            <h2>All Deceased (<span>{filteredRecords.length}</span>)</h2>
+          </ListHeader>
 
-      <Main>
-        <Card>
-          {/* ─── Card Top Bar ─────────────────────────────────────────── */}
-          <CardTop>
-            <CardTopLeft>
-              <CardTopLabel>All Records</CardTopLabel>
-              <CountBadge>{filteredList.length}</CountBadge>
-            </CardTopLeft>
-            <CardTopRight>
-              <SearchBox>
-                <SearchIcon><Search size={14} /></SearchIcon>
-                <SearchInput
-                  type="text"
-                  placeholder="Search name or ID..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </SearchBox>
-              <SelectInput value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="released">Released</option>
-                <option value="transferred">Transferred</option>
-                <option value="cancelled">Cancelled</option>
-              </SelectInput>
-            </CardTopRight>
-          </CardTop>
+          {/* Filters */}
+          <FilterToolbar>
+            <FormInput
+              $search
+              type="text"
+              placeholder="Search name or ID..."
+              style={{ flex: 1, minWidth: 200 }}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <FormSelect value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Released">Released</option>
+            </FormSelect>
+            <FormSelect value={genderFilter} onChange={e => setGenderFilter(e.target.value)}>
+              <option value="">All Genders</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </FormSelect>
+            <FormSelect value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
+              <option value="">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+            </FormSelect>
+          </FilterToolbar>
 
-          {/* ─── Table ───────────────────────────────────────────────── */}
-          {filteredList.length === 0 ? (
-            <EmptyWrap>
-              <EmptyIcon><User size={24} /></EmptyIcon>
-              <EmptyTitle>No records found</EmptyTitle>
-              <EmptyDesc>Try adjusting your search or filter criteria</EmptyDesc>
-            </EmptyWrap>
-          ) : (
-            <TableWrap>
-              <Table>
-                <THead>
-                  <TRow>
-                    <TH>Deceased</TH>
-                    <TH>ID</TH>
-                    <TH>Type</TH>
-                    <TH>Admitted</TH>
-                    <TH>Duration</TH>
-                    <TH>Status</TH>
-                    <TH>Charges</TH>
-                    <TH style={{ textAlign: 'right' }}>Actions</TH>
-                  </TRow>
-                </THead>
-                <tbody>
-                  {filteredList.map((deceased) => {
-                    const id = deceased.deceased_id || deceased.id;
-                    const name = deceased.full_name || 'Unknown';
-                    const days = getDaysInMortuary(deceased.date_admitted);
-                    const statusCfg = getStatusConfig(deceased.status);
-                    const avatarColor = getAvatarColor(name);
-                    const initials = getInitials(name);
-                    const isOverdue = days > 30;
-                    const isWarn = days > 14 && !isOverdue;
+          {/* Table */}
+          <TableWrap>
+            <StyledTable>
+              <thead>
+                <tr>
+                  <th>Deceased Name</th>
+                  <th>Admission No.</th>
+                  <th>Date Admitted</th>
+                  <th>Days in Morgue</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6}><LoadingState><div className="spinner" /> Loading records...</LoadingState></td></tr>
+                ) : filteredRecords.length === 0 ? (
+                  <tr><td colSpan={6}><EmptyRow>No records found matching your filters.</EmptyRow></td></tr>
+                ) : filteredRecords.map(r => {
+                  const name = r.full_name || r.name || 'Unknown';
+                  const id = r.deceased_id || r.id;
+                  const adm = r.admission_number || r.admission_no || '—';
+                  const admitted = r.created_at || r.date_admitted || r.admission_date;
+                  const days = getDaysInMorgue(admitted);
+                  const status = getStatus(r);
+                  const sex = r.sex || r.gender || '';
+                  const isFemale = sex.toLowerCase() === 'female';
+                  return (
+                    <tr key={id} onClick={() => openProfile(id)}>
+                      <td>
+                        <NameCell>
+                          <AvatarSm $female={isFemale}>{getInitials(name)}</AvatarSm>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{name}</div>
+                            <div className="meta">{sex ? `${sex}, ` : ''}{r.age || '—'} yrs</div>
+                          </div>
+                        </NameCell>
+                      </td>
+                      <td>{adm}</td>
+                      <td>{formatDate(admitted)}</td>
+                      <td>{days} days</td>
+                      <td><Badge $active={status === 'Active'} $released={status === 'Released'}>{status}</Badge></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Btn $sm onClick={(e) => { e.stopPropagation(); openProfile(id); }}>View Profile</Btn>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </StyledTable>
+          </TableWrap>
+        </ListCard>
 
-                    return (
-                      <TRow key={id}>
-                        {/* Name + Avatar */}
-                        <TD>
-                          <NameCell>
-                            <Avatar color={avatarColor}>{initials}</Avatar>
-                            <NameInfo>
-                              <NameText>{name}</NameText>
-                              <SubText>{deceased.burial_type || 'Standard'}</SubText>
-                            </NameInfo>
-                          </NameCell>
-                        </TD>
-
-                        {/* ID */}
-                        <TD>
-                          <IdCell>
-                            <IdText>{id}</IdText>
-                            <CopyBtn onClick={() => copyToClipboard(id)} title="Copy ID">
-                              <Copy size={12} />
-                            </CopyBtn>
-                          </IdCell>
-                        </TD>
-
-                        {/* Type */}
-                        <TD>
-                          <TypeTag>{deceased.burial_type || 'Standard'}</TypeTag>
-                        </TD>
-
-                        {/* Date Admitted */}
-                        <TD style={{ color: T.textSecondary }}>
-                          {formatDate(deceased.date_admitted)}
-                        </TD>
-
-                        {/* Days */}
-                        <TD>
-                          <DaysBadge type={isOverdue ? 'danger' : isWarn ? 'warn' : 'ok'}>
-                            {isOverdue ? <AlertTriangle size={11} /> : <Clock size={11} />}
-                            {days}d
-                          </DaysBadge>
-                        </TD>
-
-                        {/* Status */}
-                        <TD>
-                          <StatusBadge type={statusCfg.type}>
-                            {statusCfg.icon}
-                            {statusCfg.label}
-                          </StatusBadge>
-                        </TD>
-
-                        {/* Charges */}
-                        <TD>
-                          <ChargeText>
-                            {Number(deceased.total_mortuary_charge || 0).toLocaleString()}
-                          </ChargeText>
-                          <ChargeLabel>KES</ChargeLabel>
-                        </TD>
-
-                        {/* Actions */}
-                        <TD>
-                          <ActionsCell>
-                            <ActionBtn onClick={() => openDrawer(deceased)} title="View">
-                              <Eye size={15} />
-                            </ActionBtn>
-                            <ActionBtn as={Link} to={`/tenant/${tenantSlug}/deceased/${id}/edit`} title="Edit">
-                              <Edit size={15} />
-                            </ActionBtn>
-                            <ActionBtn danger onClick={() => handleDelete(id)} title="Delete">
-                              <Trash2 size={15} />
-                            </ActionBtn>
-                            <ActionBtn title="More">
-                              <MoreVertical size={15} />
-                            </ActionBtn>
-                          </ActionsCell>
-                        </TD>
-                      </TRow>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </TableWrap>
-          )}
-        </Card>
-      </Main>
-
-      {/* ─── Export Modal ────────────────────────────────────────────── */}
-      {showExportModal && (
-        <ExportModal
-          isOpen={showExportModal}
-          onClose={() => setShowExportModal(false)}
-          onExport={handleExport}
-          isExporting={isExporting}
-          filters={{ search: searchTerm, status: statusFilter }}
-        />
-      )}
-
-      {/* ─── Drawer Overlay ──────────────────────────────────────────── */}
-      {drawerOpen && <Overlay onClick={closeDrawer} />}
-
-      {/* ─── Drawer ─────────────────────────────────────────────────── */}
-      {drawerOpen && selectedRecord && (
-        <Drawer>
-          <DrawerHeader>
-            <div>
-              <DrawerTitle>{selectedRecord.full_name || 'Unknown'}</DrawerTitle>
-              <DrawerSubtitle>{selectedRecord.deceased_id || selectedRecord.id || '—'}</DrawerSubtitle>
-            </div>
-            <DrawerClose onClick={closeDrawer}><X size={16} /></DrawerClose>
-          </DrawerHeader>
-
-          <DrawerBody>
-            {/* Status + Days row */}
-            <DrawerSection>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <StatusBadge type={getStatusConfig(selectedRecord.status).type}>
-                  {getStatusConfig(selectedRecord.status).icon}
-                  {getStatusConfig(selectedRecord.status).label}
-                </StatusBadge>
-                <DaysBadge type={getDaysInMortuary(selectedRecord.date_admitted) > 30 ? 'danger' : getDaysInMortuary(selectedRecord.date_admitted) > 14 ? 'warn' : 'ok'}>
-                  <Clock size={11} /> {getDaysInMortuary(selectedRecord.date_admitted)} days in mortuary
-                </DaysBadge>
+        {/* ─── Export Modal ───────────────────────────────────────── */}
+        <ModalOverlay $open={showExport} onClick={() => setShowExport(false)}>
+          <ModalContent onClick={e => e.stopPropagation()}>
+            <ModalHeader>
+              <h2>Export Data to Excel</h2>
+              <CloseBtn onClick={() => setShowExport(false)}>&times;</CloseBtn>
+            </ModalHeader>
+            <ModalBody>
+              <SectionHead $mt0><span>01</span> Select Time Range</SectionHead>
+              <FormRow>
+                <FormGroup>
+                  <FormLabel>Start Date</FormLabel>
+                  <ModalInput type="date" value={exportStart} onChange={e => setExportStart(e.target.value)} />
+                </FormGroup>
+                <FormGroup>
+                  <FormLabel>End Date</FormLabel>
+                  <ModalInput type="date" value={exportEnd} onChange={e => setExportEnd(e.target.value)} />
+                </FormGroup>
+              </FormRow>
+              <SectionHead $mt4><span>02</span> Export History</SectionHead>
+              <div style={{ border: `1px solid ${C.borderLight}`, borderRadius: 6, overflow: 'hidden' }}>
+                <DataTable>
+                  <thead>
+                    <tr>
+                      <th>Date Generated</th>
+                      <th>Time Range</th>
+                      <th>Format</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exportHistory.map((h, i) => (
+                      <tr key={i}>
+                        <td>{h.date}</td>
+                        <td>{h.range}</td>
+                        <td>{h.format}</td>
+                        <td><StatusTag $success>{h.status}</StatusTag></td>
+                        <td><Btn $sm>Download</Btn></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
               </div>
-            </DrawerSection>
-
-            {/* Basic Info */}
-            <DrawerSection>
-              <DrawerSectionTitle>Basic Information</DrawerSectionTitle>
-              <FieldGrid>
-                <FieldCard>
-                  <FieldLabel>Date Admitted</FieldLabel>
-                  <FieldValue>{formatDate(selectedRecord.date_admitted)}</FieldValue>
-                </FieldCard>
-                <FieldCard>
-                  <FieldLabel>Burial Type</FieldLabel>
-                  <FieldValue>{selectedRecord.burial_type || '—'}</FieldValue>
-                </FieldCard>
-                <FieldCard>
-                  <FieldLabel>Date of Death</FieldLabel>
-                  <FieldValue>{formatDate(selectedRecord.date_of_death)}</FieldValue>
-                </FieldCard>
-                <FieldCard>
-                  <FieldLabel>Age</FieldLabel>
-                  <FieldValue>{selectedRecord.age || '—'}</FieldValue>
-                </FieldCard>
-                <FieldCard>
-                  <FieldLabel>Gender</FieldLabel>
-                  <FieldValue>{selectedRecord.gender || '—'}</FieldValue>
-                </FieldCard>
-                <FieldCard>
-                  <FieldLabel>ID Number</FieldLabel>
-                  <FieldValue>{selectedRecord.id_number || '—'}</FieldValue>
-                </FieldCard>
-              </FieldGrid>
-            </DrawerSection>
-
-            {/* Charges */}
-            <DrawerSection>
-              <DrawerSectionTitle>Charges</DrawerSectionTitle>
-              <FieldCardFull>
-                <FieldLabel>Total Mortuary Charges</FieldLabel>
-                <FieldValueLarge>
-                  {Number(selectedRecord.total_mortuary_charge || 0).toLocaleString()} KES
-                </FieldValueLarge>
-              </FieldCardFull>
-            </DrawerSection>
-
-            {/* Contact */}
-            <DrawerSection>
-              <DrawerSectionTitle>Contact Information</DrawerSectionTitle>
-              <div style={{ background: T.bg, borderRadius: '8px', border: `1px solid ${T.borderLight}`, padding: '0.25rem 0.75rem' }}>
-                {selectedRecord.next_of_kin_name && (
-                  <ContactRow>
-                    <ContactIcon><User size={13} /></ContactIcon>
-                    <ContactText>{selectedRecord.next_of_kin_name}</ContactText>
-                  </ContactRow>
-                )}
-                {selectedRecord.next_of_kin_phone && (
-                  <ContactRow>
-                    <ContactIcon><Phone size={13} /></ContactIcon>
-                    <ContactText>{selectedRecord.next_of_kin_phone}</ContactText>
-                  </ContactRow>
-                )}
-                {selectedRecord.next_of_kin_email && (
-                  <ContactRow>
-                    <ContactIcon><Mail size={13} /></ContactIcon>
-                    <ContactText>{selectedRecord.next_of_kin_email}</ContactText>
-                  </ContactRow>
-                )}
-                {selectedRecord.address && (
-                  <ContactRow>
-                    <ContactIcon><MapPin size={13} /></ContactIcon>
-                    <ContactText>{selectedRecord.address}</ContactText>
-                  </ContactRow>
-                )}
-                {!(selectedRecord.next_of_kin_name || selectedRecord.next_of_kin_phone || selectedRecord.next_of_kin_email || selectedRecord.address) && (
-                  <div style={{ padding: '0.75rem 0', textAlign: 'center', color: T.textMuted, fontSize: '0.8125rem' }}>
-                    No contact information on file
-                  </div>
-                )}
-              </div>
-            </DrawerSection>
-
-            {/* Additional */}
-            {(selectedRecord.cause_of_death || selectedRecord.notes) && (
-              <DrawerSection>
-                <DrawerSectionTitle>Additional Details</DrawerSectionTitle>
-                {selectedRecord.cause_of_death && (
-                  <FieldCardFull style={{ marginBottom: '0.625rem' }}>
-                    <FieldLabel>Cause of Death</FieldLabel>
-                    <FieldValue>{selectedRecord.cause_of_death}</FieldValue>
-                  </FieldCardFull>
-                )}
-                {selectedRecord.notes && (
-                  <div style={{
-                    padding: '0.75rem',
-                    background: T.warningBg,
-                    borderRadius: '8px',
-                    border: `1px solid ${T.warningBorder}`,
-                  }}>
-                    <FieldLabel>Notes</FieldLabel>
-                    <div style={{ fontSize: '0.8125rem', color: T.textBody, lineHeight: '1.6', marginTop: '0.125rem' }}>
-                      {selectedRecord.notes}
-                    </div>
-                  </div>
-                )}
-              </DrawerSection>
-            )}
-          </DrawerBody>
-
-          <DrawerFooter>
-            <DrawerBtn
-              primary
-              onClick={() => {
-                closeDrawer();
-                window.location.href = `/tenant/${tenantSlug}/deceased/${selectedRecord.deceased_id || selectedRecord.id}`;
-              }}
-            >
-              <Eye size={14} /> View Full
-            </DrawerBtn>
-            <DrawerBtn
-              onClick={() => {
-                closeDrawer();
-                window.location.href = `/tenant/${tenantSlug}/deceased/${selectedRecord.deceased_id || selectedRecord.id}/edit`;
-              }}
-            >
-              <Edit size={14} /> Edit
-            </DrawerBtn>
-          </DrawerFooter>
-        </Drawer>
-      )}
-    </Page>
+            </ModalBody>
+            <ModalFooter>
+              <Btn onClick={() => setShowExport(false)}>Cancel</Btn>
+              <Btn $export>Generate Export</Btn>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      </AppContainer>
+    </>
   );
 };
 
-export default DeceasedList;
+export default DeceasedListPage;

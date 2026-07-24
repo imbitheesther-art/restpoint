@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import { query, execute, resolveDatabase } from '../../../shared/dbConfig';
+import { query, execute, resolveDatabase, safeTenantExecute, safeTenantQuery } from '../../../shared/dbConfig';
 
 
 // Mock data for development - will be replaced with actual DB queries
 let mockCharges: any[] = [];
+let mockPayments: any[] = [];
 
 /**     
  * GET /charges/:deceased_id
@@ -132,6 +133,73 @@ export const deleteCharge = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to delete charge'
+    });
+  }
+};
+
+/**
+ * GET /payments/:deceased_id
+ * Get all payments for a deceased
+ */
+export const getPayments = async (req: Request, res: Response) => {
+  try {
+    const { deceased_id } = req.params;
+    const tenantSlug = (req as any).headers['x-slug'] || (req as any).headers['x-tenant-slug'] || 'system_shared';
+    
+    // Filter payments for this deceased
+    const payments = mockPayments.filter(p => p.deceased_id === deceased_id);
+    
+    return res.json({
+      success: true,
+      data: payments,
+      message: 'Payments retrieved successfully'
+    });
+  } catch (error: any) {
+    console.error('Error getting payments:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to retrieve payments'
+    });
+  }
+};
+
+/**
+ * POST /payments
+ * Record a new payment
+ */
+export const recordPayment = async (req: Request, res: Response) => {
+  try {
+    const tenantSlug = (req as any).headers['x-slug'] || (req as any).headers['x-tenant-slug'] || 'system_shared';
+    const paymentData = req.body;
+    
+    // Validate required fields
+    if (!paymentData.deceased_id || !paymentData.amount || !paymentData.payment_method) {
+      return res.status(400).json({
+        success: false,
+        message: 'deceased_id, amount, and payment_method are required'
+      });
+    }
+    
+    const newPayment = {
+      id: Date.now().toString(),
+      ...paymentData,
+      recorded_by: paymentData.recorded_by || (req as any).user?.name || (req as any).user?.username || 'System',
+      payment_date: paymentData.payment_date || new Date().toISOString(),
+      created_at: new Date().toISOString()
+    };
+    
+    mockPayments.push(newPayment);
+    
+    return res.status(201).json({
+      success: true,
+      data: newPayment,
+      message: 'Payment recorded successfully'
+    });
+  } catch (error: any) {
+    console.error('Error recording payment:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to record payment'
     });
   }
 };

@@ -7,8 +7,29 @@
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
-    "allowJs": true
+    "allowJs": true,
+    "typeRoots": [
+      "./types",
+      "../../node_modules/@types"
+    ],
+    "paths": {
+      "*": [
+        "./types/*"
+      ]
+    }
   },
-  "include": ["*.ts", "src/**/*.ts", "controllers/**/*.ts", "models/**/*.ts", "routes/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "*.ts",
+    "types/**/*.d.ts",
+    "controllers/**/*.ts",
+    "middleware/**/*.ts",
+    "routes/**/*.ts",
+    "config/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.js"
+  ]
 }

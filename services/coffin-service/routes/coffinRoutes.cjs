@@ -76,6 +76,21 @@ router.delete('/delete/:id', (req, res) => coffinController.deleteCoffin(req, re
 // Assignments
 router.post('/assign', (req, res) => coffinController.assignCoffin(req, res));
 
+// ============================================================
+// BOOKINGS
+// ============================================================
+router.post('/bookings', (req, res) => coffinController.createBooking(req, res));
+router.get('/bookings', (req, res) => coffinController.getBookings(req, res));
+router.patch('/bookings/:id/status', (req, res) => coffinController.updateBookingStatus(req, res));
+
+// ============================================================
+// CROSS-BRANCH STOCK REQUESTS
+// ============================================================
+router.post('/stock-requests', (req, res) => coffinController.createStockRequest(req, res));
+router.get('/stock-requests', (req, res) => coffinController.getStockRequests(req, res));
+router.post('/stock-requests/:id/approve', (req, res) => coffinController.approveStockRequest(req, res));
+router.post('/stock-requests/:id/reject', (req, res) => coffinController.rejectStockRequest(req, res));
+
 // Analytics
 router.get('/analytics/dashboard', (req, res) => coffinController.getCoffinAnalytics(req, res));
 

@@ -9,6 +9,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import express from 'express';
 import cors from 'cors';
+import knex from 'knex';
 import { flowerBookingRouter } from './routes/flowerBookingRoutes';
 
 const app = express();
@@ -19,6 +20,68 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+
+// ============================================
+// DATABASE CONNECTION
+// ============================================
+let floristKnex: knex.Knex | null = null;
+
+const initDatabase = async () => {
+    try {
+        const DB_HOST = process.env.DB_HOST || 'localhost';
+        const DB_USER = process.env.DB_USER || 'root';
+        const DB_PASSWORD = process.env.DB_PASSWORD || '';
+        const DB_NAME = process.env.DB_NAME || 'restpoint_main';
+
+        floristKnex = knex({
+            client: 'mysql2',
+            connection: {
+                host: DB_HOST,
+                user: DB_USER,
+                password: DB_PASSWORD,
+                database: DB_NAME,
+            },
+            pool: { min: 2, max: 10 },
+        });
+
+        console.log('[FLORIST] Database connection initialized');
+        
+        // Run migrations using Knex
+        await runMigrations();
+    } catch (error: any) {
+        console.error('[FLORIST] Database initialization failed:', error.message);
+        process.exit(1);
+    }
+};
+
+const runMigrations = async () => {
+    if (!floristKnex) return;
+    try {
+        // Run Knex migrations
+        const knexConfig = require('./knexfile.js');
+        const migrationKnex = knex(knexConfig.development);
+        
+        // Check if migrations table exists
+        const hasMigrationsTable = await migrationKnex.schema.hasTable('knex_migrations');
+        if (!hasMigrationsTable) {
+            await migrationKnex.migrate.latest();
+            console.log('[FLORIST] Knex migrations completed successfully');
+        } else {
+            // Check if florist migrations have been run
+            const hasFlowerBookings = await migrationKnex.schema.hasTable('flower_bookings');
+            if (!hasFlowerBookings) {
+                await migrationKnex.migrate.latest();
+                console.log('[FLORIST] Knex migrations completed successfully');
+            } else {
+                console.log('[FLORIST] Migrations already up to date');
+            }
+        }
+        
+        await migrationKnex.destroy();
+    } catch (error: any) {
+        console.error('[FLORIST] Migration failed:', error.message);
+    }
+};
 
 // ============================================
 // TENANT RESOLUTION MIDDLEWARE
@@ -80,7 +143,7 @@ app.use(async (req: any, res: any, next: any) => {
             }
         }
 
-        // Ensure florist tables exist
+        // Ensure florist tables exist in tenant database
         if (dbName) {
             try {
                 await ensureFloristTables(dbName);
@@ -112,96 +175,44 @@ app.get('/api/health', (_req: any, res: any) => {
 });
 
 // ============================================
-// AUTO-MIGRATION: Ensure florist tables exist
+// AUTO-MIGRATION: Ensure florist tables exist in tenant databases
 // ============================================
-const FLORIST_TABLES_SQL = `
-CREATE TABLE IF NOT EXISTS flower_bookings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  booking_id VARCHAR(50) NOT NULL UNIQUE,
-  flower_type VARCHAR(100) NOT NULL,
-  flower_description TEXT,
-  service_type VARCHAR(100) NOT NULL,
-  customer VARCHAR(255) NOT NULL,
-  customer_phone VARCHAR(20),
-  customer_email VARCHAR(255),
-  deceased_name VARCHAR(255),
-  branch VARCHAR(255) NOT NULL,
-  delivery_date DATE NOT NULL,
-  delivery_time VARCHAR(20) NOT NULL,
-  delivery_address TEXT,
-  invoice_number VARCHAR(100),
-  amount DECIMAL(10,2) NOT NULL DEFAULT 0,
-  status VARCHAR(50) DEFAULT 'pending',
-  notes TEXT,
-  urgent TINYINT(1) DEFAULT 0,
-  branch_id INT DEFAULT NULL,
-  created_by VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_bookings_status (status),
-  INDEX idx_bookings_date (delivery_date),
-  INDEX idx_bookings_branch (branch),
-  INDEX idx_bookings_customer (customer)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS flower_customers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  phone VARCHAR(20),
-  email VARCHAR(255),
-  address TEXT,
-  notes TEXT,
-  total_orders INT DEFAULT 0,
-  total_spent DECIMAL(10,2) DEFAULT 0,
-  branch_id INT DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_customers_name (name),
-  INDEX idx_customers_phone (phone)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-`;
-
 async function ensureFloristTables(dbName: string) {
-    let connection;
     try {
-        // @ts-ignore
-        const { getTenantDB } = await import('../../shared/dbConfig.js');
-        const pool = await getTenantDB(dbName);
-        connection = await pool.getConnection();
+        // Create a knex instance for the tenant database
+        const tenantKnex = knex({
+            client: 'mysql2',
+            connection: {
+                host: process.env.DB_HOST || 'localhost',
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: dbName,
+            },
+            pool: { min: 1, max: 5 },
+        });
 
         console.log(`[FLORIST] Ensuring florist tables in: ${dbName}`);
 
-        const statements = FLORIST_TABLES_SQL
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s.length > 0);
+        // Check if tables already exist
+        const hasFlowerBookings = await tenantKnex.schema.hasTable('flower_bookings');
+        const hasFlowerCustomers = await tenantKnex.schema.hasTable('flower_customers');
+        const hasFlowerPackages = await tenantKnex.schema.hasTable('flower_packages');
+        const hasDeliveryZones = await tenantKnex.schema.hasTable('delivery_zones');
 
-        for (let i = 0; i < statements.length; i++) {
-            const statement = statements[i];
-            if (!statement) continue;
-
-            try {
-                await connection.query(statement + ';');
-                const match = statement.match(/TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/i);
-                const objectName = match ? match[1] : 'unknown';
-                console.log(`[FLORIST] ✓ ${objectName} (${i + 1}/${statements.length})`);
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                if (errorMessage.includes('Duplicate') || errorMessage.includes('already exists')) {
-                    console.log(`[FLORIST] - ${errorMessage.split('.')[0]} (already exists)`);
-                } else {
-                    console.warn(`[FLORIST] Warning (${i + 1}/${statements.length}): ${errorMessage}`);
-                }
-            }
+        if (!hasFlowerBookings || !hasFlowerCustomers || !hasFlowerPackages || !hasDeliveryZones) {
+            // Run the migration for this tenant
+            const { up } = await import('./migrations/20240622000001_create_flower_bookings_tables.js');
+            await up(tenantKnex);
+            console.log(`[FLORIST] ✅ Florist tables created in: ${dbName}`);
+        } else {
+            console.log(`[FLORIST] ✓ Florist tables already exist in: ${dbName}`);
         }
 
-        console.log(`[FLORIST] ✅ Florist tables ensured in database: ${dbName}`);
+        await tenantKnex.destroy();
         return true;
     } catch (error: any) {
         console.error(`[FLORIST] ❌ Failed to ensure florist tables in ${dbName}:`, error.message);
         return false;
-    } finally {
-        if (connection) await connection.release();
     }
 }
 
@@ -215,11 +226,21 @@ async function startServer() {
 
     console.log('[FLORIST] Checking for tenant databases to migrate...');
     try {
-        // @ts-ignore
-        const { getRootPool } = await import('../../shared/dbConfig.js');
-        const rootPool = await getRootPool();
-        const [tenantRows] = await rootPool.query('SELECT db_name, name FROM tenant_tracking.tenants WHERE status = "active"');
-        const tenants = tenantRows as Array<{ db_name: string; name: string }>;
+        // Create temporary knex instance to query tenants
+        const tempKnex = knex({
+            client: 'mysql2',
+            connection: {
+                host: process.env.DB_HOST || 'localhost',
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: 'tenant_tracking',
+            },
+            pool: { min: 1, max: 5 },
+        });
+
+        const tenants = await tempKnex('tenants')
+            .where({ status: 'active' })
+            .select('db_name', 'name');
 
         console.log(`[FLORIST] Found ${tenants.length} active tenant(s)`);
 
@@ -232,6 +253,8 @@ async function startServer() {
                 console.error(`[FLORIST] ❌ Failed to migrate: ${tenant.name}`);
             }
         }
+
+        await tempKnex.destroy();
     } catch (error) {
         console.error('[FLORIST] Tenant migration error:', error);
     }

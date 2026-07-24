@@ -171,15 +171,38 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// Response interceptor with auto-refresh on 401
+// Response interceptor with auto-refresh on 401 and friendly service-down messages
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Handle 503 Service Unavailable (service is down)
+    if (error.response?.status === 503) {
+      const serviceName = error.response?.data?.service || 'Service';
+      const friendlyName = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+      console.warn(`[API] ${friendlyName} is unavailable:`, error.response?.data?.message);
+      // Return a structured error so UI can show friendly message
+      error.friendlyMessage = error.response?.data?.message || `${friendlyName} is temporarily unavailable. Please try again later.`;
+      return Promise.reject(error);
+    }
+    
+    // Handle Network Error (service not reachable at all)
+    if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || error.code === 'ECONNABORTED') {
+      const url = originalRequest?.url || '';
+      // Extract service name from URL path
+      const pathParts = url.split('/').filter(Boolean);
+      const serviceHint = pathParts[2] || pathParts[0] || 'Service';
+      const friendlyName = serviceHint.charAt(0).toUpperCase() + serviceHint.slice(1);
+      console.warn(`[API] ${friendlyName} is not reachable:`, url);
+      error.friendlyMessage = `${friendlyName} service is temporarily unavailable. Please try again later.`;
+      return Promise.reject(error);
+    }
+    
+    // Handle 401 Unauthorized - try token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // Try refresh using refresh token from sessionStorage first, fallback to localStorage
         const refreshToken = getRefreshToken();
         const response = await axios.post(
           env.FULL_API_URL + ENDPOINTS.AUTH.REFRESH,
@@ -193,7 +216,6 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed - force logout
         forceLogout();
         return Promise.reject(refreshError);
       }

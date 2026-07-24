@@ -14,14 +14,14 @@ services:
       MARIADB_USER: restpoint_user
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
     ports:
-      - "3306:3306"
+      - '3306:3306'
     volumes:
       - mariadb_data:/var/lib/mysql
       - ./init-db.sql:/docker-entrypoint-initdb.d/
     networks:
       - restpoint_network
     healthcheck:
-      test: [ "CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized" ]
+      test: ['CMD', 'healthcheck.sh', '--su-mysql', '--connect', '--innodb_initialized']
       interval: 15s
       timeout: 10s
       retries: 5
@@ -34,7 +34,7 @@ services:
     restart: always
     command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy noeviction
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
@@ -43,7 +43,7 @@ services:
           - restpoint_redis
           - redis
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 15s
       timeout: 10s
       retries: 5
@@ -57,8 +57,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-restpoint}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - '5672:5672'
+      - '15672:15672'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -80,9 +80,9 @@ services:
       dockerfile: ./services/api-gateway/Dockerfile
     container_name: restpoint_api_gateway
     ports:
-      - "5000:5000"
+      - '5000:5000'
     expose:
-      - "5000"
+      - '5000'
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -139,7 +139,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -152,7 +152,7 @@ services:
       dockerfile: ./services/auth-service/Dockerfile
     container_name: restpoint_auth_service
     ports:
-      - "5001:5000"
+      - '5001:5000'
     volumes:
       - auth_service_data:/usr/src/app/data
     environment:
@@ -182,7 +182,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -195,7 +195,7 @@ services:
       dockerfile: ./services/tenant-service/Dockerfile
     container_name: restpoint_tenant_service
     ports:
-      - "5002:5000"
+      - '5002:5000'
     volumes:
       - tenant_service_data:/usr/src/app/data
     environment:
@@ -226,7 +226,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -239,10 +239,10 @@ services:
       dockerfile: ./services/deceased-service/Dockerfile
     container_name: restpoint_deceased_service
     ports:
-      - "5003:5000"
+      - '5003:5000'
     volumes:
       - deceased_service_data:/usr/src/app/data
-      - ./services/deceased-service/uploads:/usr/src/app/uploads
+      - shared_uploads:/app/uploads
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -255,6 +255,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=restpoint_redis
       - REDIS_PORT=6379
+      - UPLOADS_BASE_DIR=/app/uploads
     env_file:
       - .env
     networks:
@@ -266,7 +267,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -279,7 +280,7 @@ services:
       dockerfile: ./services/billing-service/Dockerfile
     container_name: restpoint_billing_service
     ports:
-      - "5020:5000"
+      - '5020:5000'
     volumes:
       - billing_service_data:/usr/src/app/data
       - ./services/billing-service/invoices:/usr/src/app/invoices
@@ -306,7 +307,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -319,7 +320,7 @@ services:
       dockerfile: ./services/notification-service/Dockerfile
     container_name: restpoint_notification_service
     ports:
-      - "5111:5000"
+      - '5111:5000'
     volumes:
       - notification_service_data:/usr/src/app/data
     environment:
@@ -349,7 +350,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -362,7 +363,7 @@ services:
       dockerfile: ./services/support-service/Dockerfile
     container_name: restpoint_support_service
     ports:
-      - "8111:5000"
+      - '8111:5000'
     volumes:
       - support_service_data:/usr/src/app/data
     environment:
@@ -389,7 +390,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -403,7 +404,7 @@ services:
       dockerfile: ./services/leave-service/Dockerfile
     container_name: restpoint_leave_service
     ports:
-      - "5017:5000"
+      - '5017:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -426,7 +427,7 @@ services:
       dockerfile: ./services/documents-service/Dockerfile
     container_name: restpoint_documents_service
     ports:
-      - "5011:5000"
+      - '5011:5000'
     volumes:
       - documents_service_data:/usr/src/app/data
       - ./services/documents-service/uploads:/usr/src/app/uploads
@@ -453,7 +454,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -466,7 +467,7 @@ services:
       dockerfile: ./services/socketio-service/Dockerfile
     container_name: restpoint_socketio_service
     ports:
-      - "5018:5000"
+      - '5018:5000'
     volumes:
       - socketio_service_data:/usr/src/app/data
     environment:
@@ -486,7 +487,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -497,7 +498,7 @@ services:
     build: ./services/scanner-service
     container_name: restpoint_scanner_service
     ports:
-      - "2024:2024"
+      - '2024:2024'
     environment:
       - SERVER_PORT=2024
       - SERVER_HOST=0.0.0.0
@@ -515,7 +516,7 @@ services:
       - restpoint_network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2024/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:2024/health']
       interval: 30s
       timeout: 3s
       retries: 3
@@ -525,7 +526,6 @@ services:
   # MICROSERVICES
   # ============================================================================
 
-
   # Invoice Service
   invoice-service:
     build:
@@ -533,7 +533,7 @@ services:
       dockerfile: ./services/invoice-service/Dockerfile
     container_name: restpoint_invoice_service
     ports:
-      - "5005:5000"
+      - '5005:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -553,7 +553,7 @@ services:
       mariadb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -566,7 +566,7 @@ services:
       dockerfile: ./services/coffin-service/Dockerfile
     container_name: restpoint_coffin_service
     ports:
-      - "5006:5000"
+      - '5006:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -586,7 +586,7 @@ services:
       mariadb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -599,7 +599,7 @@ services:
       dockerfile: ./services/analytics-service/Dockerfile
     container_name: restpoint_analytics_service
     ports:
-      - "5009:5000"
+      - '5009:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -619,7 +619,7 @@ services:
       mariadb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -632,7 +632,7 @@ services:
       dockerfile: ./services/bodycheckout-service/Dockerfile
     container_name: restpoint_bodycheckout_service
     ports:
-      - "5015:5000"
+      - '5015:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -652,7 +652,7 @@ services:
       mariadb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -665,7 +665,7 @@ services:
       dockerfile: ./services/chemical-service/Dockerfile
     container_name: restpoint_chemical_service
     ports:
-      - "5105:5000"
+      - '5105:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -685,7 +685,7 @@ services:
       mariadb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -698,7 +698,7 @@ services:
       dockerfile: ./services/workshop-service/Dockerfile
     container_name: restpoint_workshop_service
     ports:
-      - "6969:5000"
+      - '6969:5000'
     volumes:
       - workshop_service_data:/usr/src/app/data
       - ./services/workshop-service/uploads:/usr/src/app/uploads
@@ -727,7 +727,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -740,7 +740,7 @@ services:
       dockerfile: ./services/extra-services/Dockerfile
     container_name: restpoint_extra_services
     ports:
-      - "5016:5000"
+      - '5016:5000'
     environment:
       - PORT=5000
       - NODE_ENV=production
@@ -760,7 +760,7 @@ services:
       mariadb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -773,7 +773,7 @@ services:
       dockerfile: ./services/hearse-service/Dockerfile
     container_name: restpoint_hearse_service
     ports:
-      - "5023:5000"
+      - '5023:5000'
     volumes:
       - hearse_service_data:/usr/src/app/data
       - ./services/hearse-service/uploads:/usr/src/app/uploads
@@ -802,7 +802,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:5000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -817,7 +817,7 @@ services:
     image: grafana/loki:3.0.0
     container_name: restpoint_loki
     ports:
-      - "3100:3100"
+      - '3100:3100'
     volumes:
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
@@ -825,7 +825,7 @@ services:
       - restpoint_network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3100/ready']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -851,7 +851,7 @@ services:
     image: grafana/grafana:latest
     container_name: restpoint_grafana
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
@@ -867,14 +867,14 @@ services:
       dockerfile: Dockerfile
     container_name: restpoint_frontend
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       - api-gateway
     networks:
       - restpoint_network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -921,4 +921,5 @@ volumes:
     driver: local
   loki_data:
     driver: local
-
+  shared_uploads:
+    driver: local

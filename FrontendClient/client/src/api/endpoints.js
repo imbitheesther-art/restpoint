@@ -15,7 +15,9 @@ export const getTenantHeaders = () => {
   try {
     const tenantSlug = localStorage.getItem('tenantSlug') || sessionStorage.getItem('tenantSlug');
     const tenantId = localStorage.getItem('tenantId') || sessionStorage.getItem('tenantId');
-    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    // Support both 'accessToken' and 'authToken' keys for cross-compatibility
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') ||
+                  localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     const branchSlug = localStorage.getItem('branchSlug') || sessionStorage.getItem('branchSlug');
     const branchId = localStorage.getItem('branchId') || sessionStorage.getItem('branchId');
 
@@ -29,8 +31,6 @@ export const getTenantHeaders = () => {
   }
   return headers;
 };
-
-// Helper to build branch-aware URLs for multi-tenant using database name
 export const buildBranchUrl = (tenantSlug, dbName, path) => {
   if (!tenantSlug || !dbName) return path;
   return `/tenant/${tenantSlug}/${dbName}${path}`;
@@ -60,6 +60,8 @@ export const ENDPOINTS = {
     USERS: (slug) => `/tenant/${slug}/users`,
     BRANCHES: (slug) => `/tenant/${slug}/branches`,
     CREATE_USER: (slug) => `/tenant/${slug}/users/register`,
+    MORTUARY_CHARGES: (slug) => `/tenant/${slug}/mortuary-charges`,
+    MORTUARY_CHARGES_PREVIEW: (slug) => `/tenant/${slug}/mortuary-charges/deceased-preview`,
   },
   MARKETPLACE: {
     PRODUCTS: '/marketplace/products',
@@ -71,6 +73,7 @@ export const ENDPOINTS = {
   DECEASED: {
     BASE: '/deceased',
     CREATE: '/deceased/register-deceased',
+    ADMISSION_NUMBER: (gender) => `/deceased/admission-number/${gender}`,
     POSTMORTEM: '/deceased/postmortem',
     COFFIN: '/deceased/coffin',
     LIST: '/deceased/deceased-all',
@@ -155,6 +158,8 @@ export const ENDPOINTS = {
   BODYCHECKOUT: {
     BASE: '/bodycheckout',
     CHECKOUT: '/bodycheckout/checkout',
+    GET_RELEASE: (id) => `/bodycheckout/checkout/${id}`,
+    LIST: '/bodycheckout/checkout',
   },
   EDOCUMENTS: {
     BASE: '/edocuments',
