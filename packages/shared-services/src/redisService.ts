@@ -151,10 +151,16 @@ export function getServiceConfig(serviceName: string): ServiceConfig {
 let client: RedisClient | null = null;
 let isConnected = false;
 let connectionAttempted = false;
+let redisDisabled = false;
 
 export async function getRedisClient(): Promise<RedisClient | null> {
+  if (redisDisabled) return null;
   if (client && isConnected) return client;
-  if (connectionAttempted) return client;
+  if (connectionAttempted) {
+    // If we already tried and failed, don't try again
+    redisDisabled = true;
+    return null;
+  }
 
   connectionAttempted = true;
 
@@ -162,14 +168,11 @@ export async function getRedisClient(): Promise<RedisClient | null> {
     client = createClient({
       url: DEFAULT_REDIS_URL,
       socket: {
-        reconnectStrategy: (retries) => {
-          if (retries > 5) {
-            Logger.error('[Redis] Max reconnection attempts reached');
-            return new Error('Max reconnection attempts');
-          }
-          return Math.min(retries * 200, 2000);
+        reconnectStrategy: () => {
+          // Disable reconnection - if Redis is down, just skip it
+          return false;
         },
-        connectTimeout: 5000,
+        connectTimeout: 3000,
       },
     });
 
@@ -179,25 +182,23 @@ export async function getRedisClient(): Promise<RedisClient | null> {
     });
 
     client.on('error', (err) => {
-      Logger.error('[Redis]  Error:', err.message);
+      if (isConnected) {
+        Logger.error('[Redis]  Error:', err.message);
+      }
       isConnected = false;
     });
 
     client.on('end', () => {
-      Logger.info('[Redis] 🔌 Connection closed');
+      Logger.info('[Redis]  Connection closed');
       isConnected = false;
-    });
-
-    client.on('reconnecting', () => {
-      Logger.info('[Redis] 🔄 Reconnecting...');
     });
 
     await client.connect();
     isConnected = true;
     return client;
   } catch (error: any) {
-    Logger.error(`[Redis] Failed to connect: ${error.message}`);
-    Logger.warn('[Redis] Running without Redis - caching disabled');
+    Logger.warn(`[Redis] Not available - running without Redis (${error.message})`);
+    redisDisabled = true;
     client = null;
     isConnected = false;
     return null;

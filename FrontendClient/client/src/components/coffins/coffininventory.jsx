@@ -41,12 +41,12 @@ const StatIcon = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  background: ${props => props.$c === 'teal' ? '#ccfbf1' : 
+  background: ${props => props.$c === 'teal' ? '#ccfbf1' :
     props.$c === 'grn' ? '#dcfce7' : props.$c === 'blu' ? '#dbeafe' :
-    props.$c === 'red' ? '#fee2e2' : props.$c === 'amb' ? '#fef3c7' : '#ffedd5'};
-  color: ${props => props.$c === 'teal' ? '#0d9488' : 
+      props.$c === 'red' ? '#fee2e2' : props.$c === 'amb' ? '#fef3c7' : '#ffedd5'};
+  color: ${props => props.$c === 'teal' ? '#0d9488' :
     props.$c === 'grn' ? '#16a34a' : props.$c === 'blu' ? '#2563eb' :
-    props.$c === 'red' ? '#dc2626' : props.$c === 'amb' ? '#d97706' : '#ea580c'};
+      props.$c === 'red' ? '#dc2626' : props.$c === 'amb' ? '#d97706' : '#ea580c'};
 `;
 
 const StatValue = styled.div`font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 3px;`;
@@ -150,12 +150,12 @@ const IconBtn = styled.button`
 const Tag = styled.span`
   display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px;
   border-radius: 4px; font-size: 9px; font-weight: 600;
-  background: ${p => p.$available ? '#dcfce7' : p.$low ? '#fef3c7' : p.$out ? '#fee2e2' : 
-    p.$booked ? '#dbeafe' : p.$pending ? '#fef3c7' : p.$completed ? '#dcfce7' : 
-    p.$paid ? '#dcfce7' : p.$unpaid ? '#fee2e2' : '#f1f5f9'};
-  color: ${p => p.$available ? '#16a34a' : p.$low ? '#d97706' : p.$out ? '#dc2626' : 
-    p.$booked ? '#2563eb' : p.$pending ? '#d97706' : p.$completed ? '#16a34a' : 
-    p.$paid ? '#16a34a' : p.$unpaid ? '#dc2626' : '#64748b'};
+  background: ${p => p.$available ? '#dcfce7' : p.$low ? '#fef3c7' : p.$out ? '#fee2e2' :
+    p.$booked ? '#dbeafe' : p.$pending ? '#fef3c7' : p.$completed ? '#dcfce7' :
+      p.$paid ? '#dcfce7' : p.$unpaid ? '#fee2e2' : '#f1f5f9'};
+  color: ${p => p.$available ? '#16a34a' : p.$low ? '#d97706' : p.$out ? '#dc2626' :
+    p.$booked ? '#2563eb' : p.$pending ? '#d97706' : p.$completed ? '#16a34a' :
+      p.$paid ? '#16a34a' : p.$unpaid ? '#dc2626' : '#64748b'};
 `;
 
 const EmptyState = styled.div`
@@ -340,11 +340,26 @@ const CoffinDashboard = () => {
     setSubmitLoading(true);
     try {
       const data = modal.data;
-      const res = await api.post('/coffins/create', {
-        name: data.name, sku: data.sku, type: data.type,
-        material: data.material, price: parseFloat(data.price),
-        stock: parseInt(data.stock) || 0, notes: data.notes,
-        branch_id: currentBranch
+      const formData = new FormData();
+      formData.append('name', data.name);
+      if (data.sku) formData.append('sku', data.sku);
+      formData.append('type', data.type);
+      formData.append('material', data.material);
+      formData.append('price', parseFloat(data.price));
+      formData.append('stock', parseInt(data.stock) || 0);
+      if (data.size) formData.append('size', data.size);
+      if (data.color) formData.append('color', data.color);
+      if (data.notes) formData.append('notes', data.notes);
+
+      // Append images
+      if (data.images && data.images.length > 0) {
+        Array.from(data.images).forEach(file => {
+          formData.append('images', file);
+        });
+      }
+
+      const res = await api.post('/coffins/create', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (res.data?.success) {
         toast.success('Coffin created successfully');
@@ -443,7 +458,7 @@ const CoffinDashboard = () => {
   };
 
   // ─── Filtered Data ──────────────────────────────────────────────────
-  const branchCoffins = coffins.filter(c => 
+  const branchCoffins = coffins.filter(c =>
     !currentBranch || c.branch_id === currentBranch || c.branch_id == currentBranch
   );
   const branchBookings = bookings.filter(b =>
@@ -452,7 +467,7 @@ const CoffinDashboard = () => {
 
   const filteredCoffins = branchCoffins.filter(c => {
     if (searchQuery && !c.name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !c.sku?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      !c.sku?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (inventoryFilter === 'available') return c.stock > 2;
     if (inventoryFilter === 'low') return c.stock > 0 && c.stock <= 2;
     if (inventoryFilter === 'out') return c.stock <= 0;
@@ -461,7 +476,7 @@ const CoffinDashboard = () => {
 
   const filteredBookings = branchBookings.filter(b => {
     if (searchQuery && !b.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !b.deceased_name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      !b.deceased_name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (bookingFilter === 'unpaid') return !b.paid;
     if (bookingFilter !== 'all') return b.status === bookingFilter;
     return true;
@@ -611,11 +626,16 @@ const CoffinDashboard = () => {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ width: 34, height: 34, borderRadius: 6, overflow: 'hidden', border: '1px solid #e8ecf1', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-                            {COFFIN_TYPES[coffin.type] || '⚰️'}
+                            {coffin.images && coffin.images.length > 0 ? (
+                              <img src={coffin.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              COFFIN_TYPES[coffin.type] || '⚰️'
+                            )}
                           </div>
                           <div>
                             <div style={{ fontWeight: 500, color: '#1e293b', fontSize: 11 }}>{coffin.name}</div>
                             <div style={{ fontSize: 8, color: '#94a3b8', letterSpacing: '0.5px' }}>{coffin.sku}</div>
+                            {coffin.size && <div style={{ fontSize: 8, color: '#64748b' }}>{coffin.size}</div>}
                           </div>
                         </div>
                       </td>
@@ -792,8 +812,8 @@ const CoffinDashboard = () => {
                   <FormInput required value={modal.data.name || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, name: e.target.value } })} placeholder="Mahogany Heritage" />
                 </FormGroup>
                 <FormGroup>
-                  <FormLabel>SKU *</FormLabel>
-                  <FormInput required value={modal.data.sku || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, sku: e.target.value } })} placeholder="MH-001" />
+                  <FormLabel>SKU</FormLabel>
+                  <FormInput value={modal.data.sku || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, sku: e.target.value } })} placeholder="Auto-generated from name" />
                 </FormGroup>
               </FormRow>
               <FormRow>
@@ -816,6 +836,16 @@ const CoffinDashboard = () => {
               </FormRow>
               <FormRow>
                 <FormGroup>
+                  <FormLabel>Size (ft)</FormLabel>
+                  <FormInput type="text" value={modal.data.size || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, size: e.target.value } })} placeholder="e.g. 6ft, 7ft" />
+                </FormGroup>
+                <FormGroup>
+                  <FormLabel>Color</FormLabel>
+                  <FormInput value={modal.data.color || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, color: e.target.value } })} placeholder="e.g. Black, Brown" />
+                </FormGroup>
+              </FormRow>
+              <FormRow>
+                <FormGroup>
                   <FormLabel>Price (KES) *</FormLabel>
                   <FormInput required type="number" value={modal.data.price || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, price: e.target.value } })} />
                 </FormGroup>
@@ -824,6 +854,19 @@ const CoffinDashboard = () => {
                   <FormInput type="number" value={modal.data.stock || 0} onChange={e => setModal({ ...modal, data: { ...modal.data, stock: parseInt(e.target.value) || 0 } })} />
                 </FormGroup>
               </FormRow>
+              <FormGroup>
+                <FormLabel>Images</FormLabel>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={e => {
+                    const files = Array.from(e.target.files);
+                    setModal({ ...modal, data: { ...modal.data, images: files } });
+                  }}
+                />
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px' }}>You can select multiple images (max 10)</div>
+              </FormGroup>
               <FormGroup>
                 <FormLabel>Notes</FormLabel>
                 <FormTextarea value={modal.data.notes || ''} onChange={e => setModal({ ...modal, data: { ...modal.data, notes: e.target.value } })} placeholder="Any notes..." />

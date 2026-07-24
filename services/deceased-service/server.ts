@@ -138,6 +138,14 @@ app.get('/health', (req: Request, res: Response) => {
     });
 });
 
+// Auto-migrate: Ensure deceased tables exist in tenant databases
+import { migrateTenantTables } from './migrate-tenant-tables';
+if (process.env.DB_NAME) {
+    migrateTenantTables(process.env.DB_NAME).catch(err => {
+        console.warn(`[DECEASED] Auto-migration warning for ${process.env.DB_NAME}:`, err.message);
+    });
+}
+
 // Mount routes
 import autopsyRoutes from './routes/autopsyRoutes';
 import chargesRoutes from './routes/chargesRoutes';
@@ -207,12 +215,12 @@ const io = new SocketIOServer(server, {
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log(`[SOCKET] Client connected: ${socket.id}`);
-    
+
     socket.on('join-tenant', (tenantSlug: string) => {
         socket.join(`tenant:${tenantSlug}`);
         console.log(`[SOCKET] Client ${socket.id} joined tenant: ${tenantSlug}`);
     });
-    
+
     socket.on('disconnect', () => {
         console.log(`[SOCKET] Client disconnected: ${socket.id}`);
     });

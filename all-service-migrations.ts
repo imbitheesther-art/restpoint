@@ -1,0 +1,11 @@
+  
+"  },"  
+"  {"  
+"    name: '010b_add_age_column_if_missing',"  
+"    sql: \`ALTER TABLE deceased ADD COLUMN IF NOT EXISTS age INT DEFAULT 0 AFTER gender; ALTER TABLE deceased ADD INDEX IF NOT EXISTS idx_age (age);\`,"  
+"  }," 
+"  },"  
+"  {"  
+"    name: '010b_add_age_column_if_missing',"  
+"    sql: \`ALTER TABLE deceased ADD COLUMN IF NOT EXISTS age INT DEFAULT 0 AFTER gender; ALTER TABLE deceased ADD INDEX IF NOT EXISTS idx_age (age);\`,"  
+"  }," 

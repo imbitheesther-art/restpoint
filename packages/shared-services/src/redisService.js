@@ -119,24 +119,21 @@ function getServiceConfig(serviceName) {
 let client = null;
 let isConnected = false;
 let connectionAttempted = false;
+let redisDisabled = false;
 async function getRedisClient() {
-    if (client && isConnected)
-        return client;
-    if (connectionAttempted)
-        return client;
+    if (redisDisabled) return null;
+    if (client && isConnected) return client;
+    if (connectionAttempted) {
+        redisDisabled = true;
+        return null;
+    }
     connectionAttempted = true;
     try {
         client = (0, redis_1.createClient)({
             url: DEFAULT_REDIS_URL,
             socket: {
-                reconnectStrategy: (retries) => {
-                    if (retries > 5) {
-                        index_1.default.error('[Redis] Max reconnection attempts reached');
-                        return new Error('Max reconnection attempts');
-                    }
-                    return Math.min(retries * 200, 2000);
-                },
-                connectTimeout: 5000,
+                reconnectStrategy: () => false,
+                connectTimeout: 3000,
             },
         });
         client.on('connect', () => {
@@ -144,23 +141,22 @@ async function getRedisClient() {
             isConnected = true;
         });
         client.on('error', (err) => {
-            index_1.default.error('[Redis]  Error:', err.message);
+            if (isConnected) {
+                index_1.default.error('[Redis]  Error:', err.message);
+            }
             isConnected = false;
         });
         client.on('end', () => {
-            index_1.default.info('[Redis] 🔌 Connection closed');
+            index_1.default.info('[Redis]  Connection closed');
             isConnected = false;
-        });
-        client.on('reconnecting', () => {
-            index_1.default.info('[Redis] 🔄 Reconnecting...');
         });
         await client.connect();
         isConnected = true;
         return client;
     }
     catch (error) {
-        index_1.default.error(`[Redis] Failed to connect: ${error.message}`);
-        index_1.default.warn('[Redis] Running without Redis - caching disabled');
+        index_1.default.warn(`[Redis] Not available - running without Redis (${error.message})`);
+        redisDisabled = true;
         client = null;
         isConnected = false;
         return null;

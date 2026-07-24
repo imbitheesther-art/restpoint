@@ -90,7 +90,7 @@ export const nextOfKinRegister = async (
         if (tenantSlug && tenantId) {
             await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:deceased:${deceased_id}`);
             await redisService.serviceDel('deceased-service', tenantSlug, `nextofkin:list:${tenantId}`);
-            Logger.info(`[Cache] 🧹 Next of kin cache invalidated for ${tenantSlug}`);
+            Logger.info(`[Cache]  Next of kin cache invalidated for ${tenantSlug}`);
         }
 
         return res.status(201).json({

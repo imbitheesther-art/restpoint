@@ -11,7 +11,7 @@ export const useSocket = () => {
     }
 
     return context;
-    
+
 };
 
 export const SocketProvider = ({ children }) => {
@@ -20,9 +20,9 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         // Use centralized env config for socket URL
-        // Default to hearse service on port 5002 for real-time hearse updates
+        // Default to hearse service on port 5023 for real-time hearse booking updates
         // Falls back to workshop service if SOCKET_URL is explicitly set
-        const socketUrl = env.SOCKET_URL || 'http://localhost:5002';
+        const socketUrl = env.SOCKET_URL || 'http://localhost:5023';
 
         console.log('[Socket] Connecting to:', socketUrl);
 

@@ -72,7 +72,7 @@ app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'QUERY', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code', 'x-branch-slug', 'Origin', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-slug', 'x-tenant-slug', 'x-tenant-id', 'x-user-id', 'x-branch-id', 'x-branch-code', 'x-branch-slug', 'x-user-email', 'x-user-name', 'x-branch-slug', 'Origin', 'X-Requested-With', 'Accept'],
 }));
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
@@ -113,11 +113,11 @@ const SERVICE_ROUTES = {
   'change-password': SERVICE_URLS.auth,
   'me': SERVICE_URLS.auth,
 
-   // Tenant service (port 8002)
-   'tenant': SERVICE_URLS.tenant,
-   'tenants': SERVICE_URLS.tenant,
-   'system-admin': SERVICE_URLS.tenant,
-   'uploads': SERVICE_URLS.tenant,
+  // Tenant service (port 8002)
+  'tenant': SERVICE_URLS.tenant,
+  'tenants': SERVICE_URLS.tenant,
+  'system-admin': SERVICE_URLS.tenant,
+  'uploads': SERVICE_URLS.tenant,
 
   // Deceased service (port 5003)
   'deceased': SERVICE_URLS.deceased,

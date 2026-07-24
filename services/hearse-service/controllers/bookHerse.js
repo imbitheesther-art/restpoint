@@ -50,12 +50,7 @@ const makeHearseBooking = asyncHandler(async (req, res) => {
             });
         }
 
-        if (!client_phone) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Client phone is required.'
-            });
-        }
+        // Phone is optional - don't block booking if not provided
 
         // ✅ Check if hearse is already booked (double-booking prevention)
         if (hearse_id) {

@@ -86,7 +86,7 @@ const genId = (id, plateNumber) => {
 
 const getTenantSlug = () => localStorage.getItem('tenantSlug') || localStorage.getItem('tenant_slug') || 'default';
 const getAuthHeaders = () => {
-  const token = sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+  const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || sessionStorage.getItem('accessToken');
   const headers = { 'x-tenant-slug': getTenantSlug() };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
@@ -687,6 +687,8 @@ const Toast = styled.div`
   background: ${props => props.type === 'error' ? COLORS.dangerLight : COLORS.successLight};
   color: ${props => props.type === 'error' ? COLORS.dangerDark : COLORS.successDark};
   border: 1px solid ${props => props.type === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'};
+  max-width: 400px;
+  word-break: break-word;
 `;
 
 const getTenantSlugFunc = getTenantSlug;
@@ -725,7 +727,12 @@ const HearseBookings = () => {
   const [registerLoading, setRegisterLoading] = useState(false);
 
   const showToast = useCallback((msg, type = 'success') => {
-    setToasts(p => [...p, { id: Date.now(), message: msg, type }]);
+    const id = Date.now();
+    setToasts(p => [...p, { id, message: msg, type }]);
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      setToasts(p => p.filter(t => t.id !== id));
+    }, 5000);
   }, []);
   const removeToast = useCallback((id) => setToasts(p => p.filter(t => t.id !== id)), []);
 
@@ -864,6 +871,7 @@ const HearseBookings = () => {
         hearse_id: newForm.hearse_id,
         client_name: newForm.client_name,
         client_phone: newForm.client_phone || '',
+        destination: newForm.to_location,
         from_location: newForm.from_location,
         to_location: newForm.to_location,
         from_timestamp: newForm.booking_date,
@@ -1411,8 +1419,8 @@ const HearseBookings = () => {
         <DrawerBody>
           <form onSubmit={async (e) => {
             e.preventDefault();
-            if (!hearseForm.plate_number || !hearseForm.branch_id) {
-              showToast('Plate number and branch are required', 'error');
+            if (!hearseForm.plate_number) {
+              showToast('Plate number is required', 'error');
               return;
             }
             setRegisterLoading(true);
@@ -1492,37 +1500,16 @@ const HearseBookings = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div>
-                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
-                  Branch *
-                </label>
-                <select
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
-                  value={hearseForm.branch_id}
-                  onChange={e => setHearseForm(p => ({ ...p, branch_id: e.target.value }))}
-                  required
-                >
-                  <option value="">— Select Branch —</option>
-                  {branchOptions.map(b => (
-                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
-                  Status
-                </label>
-                <select
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
-                  value={hearseForm.status}
-                  onChange={e => setHearseForm(p => ({ ...p, status: e.target.value }))}
-                >
-                  <option value="available">Available</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="unavailable">Unavailable</option>
-                </select>
-              </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.375rem', fontSize: '0.8125rem', color: COLORS.text }}>
+                Branch
+              </label>
+              <input
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${COLORS.border}`, borderRadius: COLORS.radiusSm, fontSize: '0.8125rem', color: COLORS.text, background: COLORS.surface }}
+                placeholder="Enter branch name or code"
+                value={hearseForm.branch_id}
+                onChange={e => setHearseForm(p => ({ ...p, branch_id: e.target.value }))}
+              />
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>

@@ -208,8 +208,11 @@ export class UserController {
      */
     async getBranches(req: Request, res: Response): Promise<void> {
         try {
-            // Get tenantSlug from headers or query params (no auth required for this endpoint)
-            const tenantSlug = (req.headers['x-tenant-slug'] as string) || (req.query.slug as string);
+            // Get tenantSlug from headers, query params, URL params, or req.user (no auth required)
+            const tenantSlug = (req.headers['x-tenant-slug'] as string)
+                || (req.query.slug as string)
+                || (req.params.tenantSlug as string)
+                || ((req as any).user?.tenantSlug);
             const tenant = await TenantModel.findBySubdomain(tenantSlug);
 
             if (!tenant) {

@@ -3,9 +3,9 @@ import api from '../../api/axios';
 import { getTenantHeaders } from '../../api/endpoints';
 import { useSocket } from '../../utils/context/socketContext';
 import { getTenantSlug, getAuthToken } from '../../utils/globalAuth';
-import { 
-  Bell, CheckCircle, X, Clock, Trash2, 
-  UserPlus, Truck, DollarSign, AlertTriangle, 
+import {
+  Bell, CheckCircle, X, Clock, Trash2,
+  UserPlus, Truck, DollarSign, AlertTriangle,
   AlertCircle, CheckCheck, ChevronDown
 } from '../../utils/icons/icons';
 import './NotificationBell.css';
@@ -19,7 +19,7 @@ const NotificationBell = () => {
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [expandedId, setExpandedId] = useState(null); // Track which notification is expanded
-  
+
   const dropdownRef = useRef(null);
   const audioRef = useRef(null); // Ref for the audio element
   const { socket, connected } = useSocket();
@@ -58,7 +58,7 @@ const NotificationBell = () => {
     const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { ...notification, toastId: id }]);
     playNotificationSound(); // Play audio.mp3 on new toast
-    
+
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.toastId !== id));
     }, 6000); // Auto-remove after 6 seconds
@@ -75,8 +75,8 @@ const NotificationBell = () => {
       const tenantSlug = getTenantSlug();
       const headers = getTenantHeaders();
       const url = `${NOTIFICATION_SERVICE}/notifications`;
-      
-      const response = await api.get(url, { 
+
+      const response = await api.get(url, {
         headers: { ...headers, 'x-tenant-slug': tenantSlug },
         // Prevent service worker from caching
         params: { _t: Date.now() }
@@ -94,7 +94,7 @@ const NotificationBell = () => {
           priority: notif.priority || 'low',
           data: notif.data || null,
         }));
-        
+
         setNotifications(redisNotifications);
         setUnreadCount(redisNotifications.filter(n => !n.is_read).length);
       } else {
@@ -170,6 +170,61 @@ const NotificationBell = () => {
         timestamp: new Date().toISOString()
       });
 
+      // Handle raw hearse booking events
+      if (eventName === 'new_booking') {
+        const formatted = {
+          id: data.booking_id || data.id || Date.now(),
+          type: 'info',
+          message: data.message || `New booking for ${data.booking?.client_name || 'client'}`,
+          fullContent: data.booking ? `${data.booking.client_name} - ${data.booking.destination || ''}` : 'New hearse booking created',
+          is_read: 0,
+          created_at: data.timestamp || new Date().toISOString(),
+          title: 'New Hearse Booking',
+          priority: 'high',
+          data,
+        };
+        setNotifications(prev => [formatted, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        addToast(formatted);
+        return;
+      }
+
+      if (eventName === 'booking_status_updated') {
+        const formatted = {
+          id: `status-${data.booking_id}-${Date.now()}`,
+          type: 'info',
+          message: data.message || `Booking status changed to ${data.status}`,
+          fullContent: `Booking #${data.booking_id} status updated to ${data.status}`,
+          is_read: 0,
+          created_at: data.timestamp || new Date().toISOString(),
+          title: 'Booking Status Update',
+          priority: 'medium',
+          data,
+        };
+        setNotifications(prev => [formatted, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        addToast(formatted);
+        return;
+      }
+
+      if (eventName === 'booking_postponed') {
+        const formatted = {
+          id: `postponed-${data.booking_id}-${Date.now()}`,
+          type: 'warning',
+          message: `Booking #${data.booking_id} has been postponed`,
+          fullContent: `Reason: ${data.reason || 'Not provided'}`,
+          is_read: 0,
+          created_at: data.timestamp || new Date().toISOString(),
+          title: 'Booking Postponed',
+          priority: 'high',
+          data,
+        };
+        setNotifications(prev => [formatted, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        addToast(formatted);
+        return;
+      }
+
       const eventTypeMap = {
         'notification:deceased-admitted': 'new_body',
         'notification:status-change': 'info',
@@ -184,7 +239,7 @@ const NotificationBell = () => {
       const title = data.title || eventName.split(':').pop().replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       const message = data.message || `New event: ${title}`;
       const fullContent = data.fullContent || data.details || message;
-      
+
       const formatted = {
         id: data.id || Date.now(),
         type,
@@ -196,9 +251,9 @@ const NotificationBell = () => {
         priority: data.priority || 'low',
         data,
       };
-      
+
       console.log('[NOTIFICATION] ✅ Formatted notification:', formatted);
-      
+
       setNotifications(prev => [formatted, ...prev]);
       setUnreadCount(prev => prev + 1);
       addToast(formatted);
@@ -210,6 +265,7 @@ const NotificationBell = () => {
       'notification:payment-received', 'alert:invoice-overdue',
       'alert:low-stock', 'notification:coffin-used',
       'notification:body-released', 'notification:postmortem-completed',
+      'new_booking', 'booking_status_updated', 'booking_postponed',
     ];
 
     console.log('[NOTIFICATION] 📡 Registering socket listeners for events:', notificationEvents);
@@ -221,7 +277,7 @@ const NotificationBell = () => {
       socket.on(event, handler);
       console.log(`[NOTIFICATION] 📡 Registered listener for: ${event}`);
     });
-    
+
     console.log('[NOTIFICATION] ✅ All socket listeners registered successfully');
 
     return () => {
@@ -297,8 +353,8 @@ const NotificationBell = () => {
 
       {/* ─── Bell & Dropdown ─── */}
       <div className="nb-container" ref={dropdownRef}>
-        <button 
-          className={`nb-bell-btn ${isOpen ? 'nb-active' : ''}`} 
+        <button
+          className={`nb-bell-btn ${isOpen ? 'nb-active' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
           title="Notifications"
         >
@@ -311,7 +367,7 @@ const NotificationBell = () => {
         <div className={`nb-dropdown ${isOpen ? 'nb-open' : ''}`}>
           <div className="nb-header">
             <h3 className="nb-title">
-              Notifications 
+              Notifications
               {unreadCount > 0 && <span className="nb-count-text">({unreadCount} new)</span>}
             </h3>
             {unreadCount > 0 && (
@@ -332,25 +388,25 @@ const NotificationBell = () => {
               </div>
             ) : (
               notifications.map((notif) => (
-                <div 
-                  key={notif.id} 
+                <div
+                  key={notif.id}
                   className={`nb-item ${!notif.is_read ? 'nb-unread' : ''} ${expandedId === notif.id ? 'nb-expanded' : ''}`}
                   onClick={() => handleItemClick(notif)}
                 >
-                  <div 
-                    className="nb-item-icon" 
+                  <div
+                    className="nb-item-icon"
                     style={{ background: `${getTypeColor(notif.type)}15`, color: getTypeColor(notif.type) }}
                   >
                     {getTypeIcon(notif.type)}
                   </div>
-                  
+
                   <div className="nb-item-content">
                     <div className="nb-item-top">
                       <p className="nb-item-title">{notif.title}</p>
                       <span className="nb-item-time"><Clock size={10} /> {formatTime(notif.created_at)}</span>
                     </div>
                     <p className="nb-item-message">{notif.message}</p>
-                    
+
                     {/* Expandable Full Content */}
                     {expandedId === notif.id && (
                       <div className="nb-item-details">
@@ -372,8 +428,8 @@ const NotificationBell = () => {
                     )}
                   </div>
 
-                  <button 
-                    className="nb-item-delete" 
+                  <button
+                    className="nb-item-delete"
                     onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
                     title="Delete"
                   >

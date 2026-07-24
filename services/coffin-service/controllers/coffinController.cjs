@@ -7,6 +7,7 @@ const { validateTenantActive } = require('../../../shared/tenancy');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs/promises');
+const slugify = require('slugify');
 
 // ============================================
 // CONFIGURATION
@@ -62,15 +63,15 @@ const compressAndSaveImage = async (buffer, filename, tenantSlug) => {
     const dir = await ensureUploadDir(tenantSlug);
     // WebP output for ~50% smaller files than JPEG at same quality
     const filepath = path.join(dir, filename.replace(/\.\w+$/, '.webp'));
-    
+
     await sharp(buffer)
-        .resize(1200, null, { 
+        .resize(1200, null, {
             withoutEnlargement: true,
             fit: 'inside'
         })
         .webp({ quality: 80, effort: 6 })
         .toFile(filepath);
-    
+
     return `/uploads/coffins/${tenantSlug}/${path.basename(filepath)}`;
 };
 
@@ -107,26 +108,30 @@ const createCoffin = async (req, res) => {
 
     try {
         const {
-            name, sku, type, material, price, stock, notes, branch_id
+            name, sku, type, material, price, stock, notes, size, color
         } = req.body;
 
         // Validation
-        if (!name || !sku || !type || !material || price === undefined) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields: name, sku, type, material, price' 
+        if (!name || !type || !material || price === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: name, type, material, price'
             });
         }
 
         const coffinId = generateCoffinId();
         const finalStock = parseInt(stock) || 0;
         const finalPrice = parseFloat(price);
-        const branchId = branch_id || req.tenant?.branch_id || 1;
+        const finalSize = size || null;
+        const finalColor = color || null;
+
+        // Generate SKU from name using slugify if not provided
+        const finalSku = sku || slugify(name, { lower: true, strict: true }).substring(0, 20);
 
         // Check for duplicate SKU
         const existing = await query(req,
             'SELECT coffin_id FROM coffins WHERE sku = ? AND tenant_slug = ?',
-            [sku, tenantSlug]
+            [finalSku, tenantSlug]
         );
 
         if (existing.length > 0) {
@@ -136,13 +141,13 @@ const createCoffin = async (req, res) => {
         // Insert coffin
         const insertSql = `
             INSERT INTO coffins (
-                coffin_id, tenant_slug, branch_id, name, sku, type, material,
+                coffin_id, tenant_slug, name, sku, type, material,
                 price, stock, notes, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         `;
 
         const result = await query(req, insertSql, [
-            coffinId, tenantSlug, branchId, name.trim(), sku.trim(),
+            coffinId, tenantSlug, name.trim(), finalSku,
             type.trim(), material.trim(), finalPrice, finalStock,
             notes?.trim() || null
         ]);
@@ -175,12 +180,13 @@ const createCoffin = async (req, res) => {
                 coffin_id: coffinId,
                 database_id: coffinDbId,
                 name,
-                sku,
+                sku: finalSku,
                 type,
                 material,
                 price: finalPrice,
                 stock: finalStock,
-                branch_id: branchId,
+                size: finalSize,
+                color: finalColor,
                 images: imageUrls
             }
         });
@@ -215,15 +221,15 @@ const getAllCoffins = async (req, res) => {
                 LEFT JOIN coffin_images ci ON c.coffin_id = ci.coffin_id AND c.tenant_slug = ci.tenant_slug
                 WHERE c.tenant_slug = ? AND c.is_deleted = FALSE
             `;
-            
+
             const params = [tenantSlug];
-            
+
             // Filter by branch if specified
             if (branchId) {
                 sql += ' AND c.branch_id = ?';
                 params.push(branchId);
             }
-            
+
             sql += ' GROUP BY c.coffin_id ORDER BY c.created_at DESC';
 
             coffins = await query(req, sql, params);
@@ -352,7 +358,7 @@ const updateCoffin = async (req, res) => {
                 const file = req.files[i];
                 const imageName = `coffin-${id}-${Date.now()}-${i}.jpg`;
                 const imageUrl = await compressAndSaveImage(file.buffer, imageName, tenantSlug);
-                
+
                 await query(req,
                     'INSERT INTO coffin_images (coffin_id, tenant_slug, image_url, created_at) VALUES (?, ?, ?, NOW())',
                     [id, tenantSlug, imageUrl]
@@ -624,9 +630,9 @@ const createStockRequest = async (req, res) => {
         );
 
         if (targetCoffins.length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Insufficient stock at target branch' 
+            return res.status(400).json({
+                success: false,
+                message: 'Insufficient stock at target branch'
             });
         }
 

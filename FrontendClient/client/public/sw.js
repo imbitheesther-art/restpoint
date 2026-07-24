@@ -72,27 +72,8 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // For API requests, always go to network
-    if (url.pathname.startsWith('/api/')) {
-        event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    // Cache successful API responses
-                    if (response.ok) {
-                        const responseClone = response.clone();
-                        caches.open(DYNAMIC_CACHE)
-                            .then((cache) => cache.put(request, responseClone));
-                    }
-                    return response;
-                })
-                .catch(() => {
-                    // Return offline fallback for API requests
-                    return new Response(
-                        JSON.stringify({ error: 'Offline', message: 'You are currently offline' }),
-                        { headers: { 'Content-Type': 'application/json' } }
-                    );
-                })
-        );
+    // For API requests, always go to network - do not cache to avoid stale auth issues
+    if (url.pathname.startsWith('/api/') || url.hostname !== self.location.hostname) {
         return;
     }
 
